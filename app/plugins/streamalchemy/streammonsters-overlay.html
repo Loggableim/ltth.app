@@ -149,6 +149,55 @@
       font-size:clamp(17px,2vw,26px); line-height:1.25; text-wrap:balance;
     }
     #card[data-presentation="hatch"] #hint { font-size:clamp(15px,1.5vw,21px); }
+    #card[data-presentation="elemental-hour"] {
+      position:absolute; top:7%; left:50%; transform:translate(-50%,24px) scale(calc(var(--reveal-scale,1) * .94));
+    }
+    #card[data-presentation="elemental-hour"].visible {
+      transform:translate(-50%,0) scale(var(--reveal-scale,1));
+    }
+    #evolution-panel[hidden] { display:none; }
+    #evolution-panel {
+      display:grid; gap:10px; margin-top:14px; padding:12px;
+      border:1px solid #a995ff59; border-radius:17px; background:#090f21b8;
+    }
+    #evolution-stats-title {
+      color:#f3eaff; font-size:13px; font-weight:950; letter-spacing:.08em; text-transform:uppercase;
+    }
+    #evolution-stats { display:grid; gap:7px; }
+    .evolution-stat-row {
+      display:grid; grid-template-columns:minmax(82px,1fr) auto auto auto; gap:7px 9px; align-items:center;
+      color:#e8efff; font-size:12px; font-weight:850;
+    }
+    .evolution-stat-values { display:flex; align-items:center; gap:5px; font-variant-numeric:tabular-nums; }
+    .evolution-stat-after,.evolution-stat-delta {
+      opacity:0; transform:translateY(3px); transition:opacity .3s ease,transform .3s ease;
+    }
+    .evolution-stat-delta { min-width:58px; color:var(--mint); text-align:right; }
+    .evolution-stat-track {
+      grid-column:1/-1; height:7px; overflow:hidden; border-radius:999px; background:#050914;
+    }
+    .evolution-stat-fill {
+      width:var(--evolution-before,0%); height:100%; border-radius:inherit;
+      background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold));
+      box-shadow:0 0 14px #9c7aff8c; transition:width .9s cubic-bezier(.2,.8,.2,1);
+    }
+    #evolution-panel.stats-visible .evolution-stat-fill { width:var(--evolution-after,0%); }
+    #evolution-panel.stats-visible .evolution-stat-after,
+    #evolution-panel.stats-visible .evolution-stat-delta {
+      opacity:1; transform:none;
+    }
+    #evolution-skill[hidden] { display:none; }
+    #evolution-skill {
+      display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 10px; align-items:center;
+      margin-top:3px; padding:10px; border:1px solid #ffe58c66; border-radius:14px;
+      background:linear-gradient(135deg,#44276db8,#171229d9);
+      opacity:0; transform:translateY(10px) scale(.97);
+      transition:opacity .42s ease,transform .42s cubic-bezier(.2,.8,.2,1);
+    }
+    #evolution-panel.skill-visible #evolution-skill { opacity:1; transform:none; }
+    #evolution-skill-icon { grid-row:1/3; font-size:30px; }
+    #evolution-skill-title { color:#fff2b2; font-size:14px; font-weight:950; }
+    #evolution-skill-effect { color:#c6cee3; font-size:12px; line-height:1.25; }
     #art-wrap { display:grid; place-items:center; overflow:hidden; border-radius:20px; background:radial-gradient(circle,#4a3b7c,#0a1020 70%); }
     #art { width:158px; height:158px; object-fit:contain; filter:drop-shadow(0 12px 16px #0009); }
     #art-wrap.image-fallback::before {
@@ -643,6 +692,14 @@
         animation:none!important;
         filter:none!important;
       }
+      #evolution-panel .evolution-stat-fill {
+        width:var(--evolution-after,0%)!important;
+      }
+      #evolution-panel .evolution-stat-after,
+      #evolution-panel .evolution-stat-delta,
+      #evolution-panel #evolution-skill {
+        opacity:1!important; transform:none!important;
+      }
       *,*::before,*::after {
         animation-duration:.001ms!important;
         animation-iteration-count:1!important;
@@ -677,6 +734,60 @@
       <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">League World Hybrid</h1>
       <div id="subtitle" data-i18n="plugins.streamalchemy.ui.monsters.overlayWaiting">Das nächste Monster wartet.</div>
       <div id="progress"><div id="bar"></div></div>
+      <section id="evolution-panel" hidden>
+        <div id="evolution-stats-title"></div>
+        <div id="evolution-stats">
+          <div class="evolution-stat-row" data-evolution-stat="vitality">
+            <span class="evolution-stat-label"></span>
+            <span class="evolution-stat-values">
+              <span class="evolution-stat-before"></span>
+              <span aria-hidden="true">&rarr;</span>
+              <span class="evolution-stat-after"></span>
+            </span>
+            <span class="evolution-stat-delta"></span>
+            <span aria-hidden="true"></span>
+            <div class="evolution-stat-track"><div class="evolution-stat-fill"></div></div>
+          </div>
+          <div class="evolution-stat-row" data-evolution-stat="might">
+            <span class="evolution-stat-label"></span>
+            <span class="evolution-stat-values">
+              <span class="evolution-stat-before"></span>
+              <span aria-hidden="true">&rarr;</span>
+              <span class="evolution-stat-after"></span>
+            </span>
+            <span class="evolution-stat-delta"></span>
+            <span aria-hidden="true"></span>
+            <div class="evolution-stat-track"><div class="evolution-stat-fill"></div></div>
+          </div>
+          <div class="evolution-stat-row" data-evolution-stat="guard">
+            <span class="evolution-stat-label"></span>
+            <span class="evolution-stat-values">
+              <span class="evolution-stat-before"></span>
+              <span aria-hidden="true">&rarr;</span>
+              <span class="evolution-stat-after"></span>
+            </span>
+            <span class="evolution-stat-delta"></span>
+            <span aria-hidden="true"></span>
+            <div class="evolution-stat-track"><div class="evolution-stat-fill"></div></div>
+          </div>
+          <div class="evolution-stat-row" data-evolution-stat="agility">
+            <span class="evolution-stat-label"></span>
+            <span class="evolution-stat-values">
+              <span class="evolution-stat-before"></span>
+              <span aria-hidden="true">&rarr;</span>
+              <span class="evolution-stat-after"></span>
+            </span>
+            <span class="evolution-stat-delta"></span>
+            <span aria-hidden="true"></span>
+            <div class="evolution-stat-track"><div class="evolution-stat-fill"></div></div>
+          </div>
+        </div>
+        <div id="evolution-skill" hidden>
+          <span id="evolution-skill-icon" aria-hidden="true"></span>
+          <div id="evolution-skill-title"></div>
+          <div id="evolution-skill-effect"></div>
+        </div>
+      </section>
       <div id="hint">eggs · hatch [slot] · battle</div>
     </div>
   </section>
@@ -1176,6 +1287,79 @@
     node('art-wrap').dataset.element = elementName(element);
     node('art').removeAttribute('src');
   };
+  const resetEvolutionPanel = () => {
+    const panel = node('evolution-panel');
+    panel.hidden = true;
+    panel.classList.remove('stats-visible', 'skill-visible');
+    node('evolution-stats-title').textContent = '';
+    panel.querySelectorAll('[data-evolution-stat]').forEach(row => {
+      row.style.removeProperty('--evolution-before');
+      row.style.removeProperty('--evolution-after');
+      row.querySelector('.evolution-stat-label').textContent = '';
+      row.querySelector('.evolution-stat-before').textContent = '';
+      row.querySelector('.evolution-stat-after').textContent = '';
+      row.querySelector('.evolution-stat-delta').textContent = '';
+    });
+    node('evolution-skill').hidden = true;
+    node('evolution-skill-icon').textContent = '';
+    node('evolution-skill-title').textContent = '';
+    node('evolution-skill-effect').textContent = '';
+  };
+  const prepareEvolutionPanel = evolution => {
+    resetEvolutionPanel();
+    if (!evolution || !Array.isArray(evolution.stats)) return [];
+    const panel = node('evolution-panel');
+    panel.hidden = false;
+    node('evolution-stats-title').textContent = text(
+      'evolutionStatsTitle',
+      'Combat stats increased'
+    );
+    for (const stat of evolution.stats) {
+      const row = panel.querySelector(`[data-evolution-stat="${stat.key}"]`);
+      if (!row) continue;
+      row.style.setProperty('--evolution-before', `${stat.beforePercent}%`);
+      row.style.setProperty('--evolution-after', `${stat.afterPercent}%`);
+      row.querySelector('.evolution-stat-label').textContent = statName(stat.key);
+      row.querySelector('.evolution-stat-before').textContent = String(stat.before);
+      row.querySelector('.evolution-stat-after').textContent = String(stat.after);
+      row.querySelector('.evolution-stat-delta').textContent = stat.delta > 0
+        ? text('evolutionStatDelta', '+{amount} points', { amount:stat.delta })
+        : '';
+    }
+    if (evolution.skill) {
+      const skillName = evolution.skill.nameKey
+        ? text(evolution.skill.nameKey, value(evolution.skill.name, 'Skill'))
+        : value(evolution.skill.name, 'Skill');
+      const skillEffect = evolution.skill.shortTextKey
+        ? text(evolution.skill.shortTextKey, value(evolution.skill.shortText, ''))
+        : value(evolution.skill.shortText, '');
+      node('evolution-skill').hidden = false;
+      node('evolution-skill-icon').textContent = value(evolution.skill.icon, '✨');
+      node('evolution-skill-title').textContent = text(
+        'evolutionSkillUnlocked',
+        'Skill upgraded: {skill}',
+        { skill:skillName }
+      );
+      node('evolution-skill-effect').textContent = text(
+        'evolutionSkillEffect',
+        'New effect: {effect}',
+        { effect:skillEffect }
+      );
+    }
+    const showStats = () => panel.classList.add('stats-visible');
+    const showSkill = () => {
+      if (evolution.skill) panel.classList.add('skill-visible');
+    };
+    if (evolution.finalState) {
+      showStats();
+      showSkill();
+      return [];
+    }
+    return [
+      window.setTimeout(showStats, evolution.statsRevealAtMs),
+      window.setTimeout(showSkill, evolution.skillRevealAtMs)
+    ];
+  };
   const showCard = async ({
     kicker,
     title,
@@ -1189,11 +1373,14 @@
     effectScene = null,
     effectPayload = {},
     presentation = null,
+    evolution = null,
     duration = notificationDurationMs
   }) => {
     const card = node('card');
     if (presentation === 'hatch') card.dataset.presentation = 'hatch';
+    else if (presentation === 'elemental-hour') card.dataset.presentation = 'elemental-hour';
     else card.removeAttribute('data-presentation');
+    const evolutionTimers = prepareEvolutionPanel(evolution);
     try {
       if (cue) playCue(cue);
       node('kicker').textContent = kicker;
@@ -1218,9 +1405,11 @@
       }
       await wait(Math.max(800, Number(duration) || notificationDurationMs));
     } finally {
+      evolutionTimers.forEach(timer => window.clearTimeout(timer));
       card.classList.remove('visible');
       await wait(350);
       card.removeAttribute('data-presentation');
+      resetEvolutionPanel();
     }
   };
   const showHype = async data => {
@@ -1385,11 +1574,30 @@
       }
       return;
     }
-    if (type === 'stream_started' || type === 'elemental_hour') return showToast(text(
+    if (type === 'stream_started') return showToast(text(
       'elementalHourActive',
       '{element} Hour ist aktiv',
       { element: elementName(data?.event?.element || data?.element) }
     ));
+    if (type === 'elemental_hour') {
+      const hour = window.StreamMonstersArenaDirector.buildElementalHourPresentation(data);
+      const element = elementName(hour.element);
+      return showCard({
+        kicker:text('elementalHourActive', '{element} Hour is active', { element }),
+        title:text('elementalHourActive', '{element} Hour is active', { element }),
+        subtitle:text(
+          'elementalHourExplanation',
+          '{element} eggs hatch 30 seconds faster and grant +10 Hype. ' +
+            'Combat stats and hatch quality do not improve.',
+          { element }
+        ),
+        element:hour.element,
+        progress:100,
+        charged:true,
+        presentation:hour.presentation,
+        duration:hour.durationMs
+      });
+    }
     if (type === 'egg_spawned') return presentArcadeScene(type, data, showCard({
       kicker: text('eggKicker', '{element} · {variant}', {
         element: elementName(data?.egg?.element),
@@ -1556,25 +1764,32 @@
       return playArcadeEvent(type, legacySkillAction(data));
     }
     if (type === 'monster_evolved' || type === 'monster_visual_evolved') {
+      const evolution = type === 'monster_evolved'
+        ? window.StreamMonstersArenaDirector.buildEvolutionPresentation(data, {
+            reducedMotion:Boolean(
+              window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+            )
+          })
+        : null;
+      const stage = Number(
+        data?.evolutionStage ??
+        data?.monster?.evolutionStage ??
+        data?.monster?.evolution_stage
+      ) || 2;
       return presentArcadeScene(type, data, showCard({
-      kicker: text('evolution', 'Kosmetische Evolution'),
-      title: text('evolvedTitle', '{name} strahlt neu', { name: itemName(data?.monster) }),
-      subtitle: text(
-        'evolvedCopy',
-        'Entwicklungsstufe {stage} ist freigeschaltet. Werte und Besitz bleiben unverändert.',
-        {
-          stage:Number(
-            data?.evolutionStage ??
-            data?.monster?.evolutionStage ??
-            data?.monster?.evolution_stage
-          ) || 2
-        }
+      kicker: text('evolution', 'Evolution'),
+      title: text(
+        'evolutionStageTitle',
+        '{monster} reaches Stage {stage}',
+        { monster:itemName(data?.monster), stage }
       ),
+      subtitle: text('evolutionStatsTitle', 'Combat stats increased'),
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
       charged:true,
       progress:100,
       presentation:'hatch',
+      evolution,
       duration:9_000
       }));
     }

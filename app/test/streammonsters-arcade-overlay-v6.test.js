@@ -130,6 +130,85 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       .toEqual(expect.objectContaining({ peak: true, audioCue: 'progress.level' }));
   });
 
+  test('describes Elemental Hour as an eight-second upper card with exact neutral effects', () => {
+    expect(ArenaDirector.buildElementalHourPresentation({
+      event: { element: 'Volt' }
+    })).toEqual({
+      presentation: 'elemental-hour',
+      placement: 'upper-gameplay',
+      durationMs: 8_000,
+      element: 'Volt',
+      incubationReductionSeconds: 30,
+      hypeBonus: 10,
+      combatStatBonus: 0,
+      hatchQualityBonus: 0
+    });
+    expect(ArenaDirector.buildArcadeTimeline('elemental_hour', {
+      eventId: 'elemental-hour-1',
+      event: { element: 'Volt' }
+    })).toEqual(expect.objectContaining({
+      groupKey: null,
+      scene: 'elemental_hour'
+    }));
+  });
+
+  test('stages four evolution stat bars after reveal, then reveals the upgraded skill', () => {
+    const payload = {
+      eventId: 'evolution-1',
+      evolutionStage: 2,
+      monster: { name: 'Ashfang', element: 'Ember', evolutionStage: 2 },
+      statsBefore: { vitality: 7, might: 8, guard: 6, agility: 7 },
+      statsAfter: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      unlockedSkill: {
+        choice: 'A',
+        icon: '⚔️',
+        name: 'Blazing Fang II',
+        nameKey: 'skillNameAshfangAStage2',
+        shortText: 'A stronger ember strike.',
+        shortTextKey: 'skillEffectAshfangAStage2',
+        evolutionStage: 2
+      }
+    };
+
+    const presentation = ArenaDirector.buildEvolutionPresentation(payload);
+    expect(presentation).toEqual(expect.objectContaining({
+      monster: 'Ashfang',
+      stage: 2,
+      statsRevealAtMs: 1_440,
+      skillRevealAtMs: 2_700,
+      stats: [
+        { key: 'vitality', before: 7, after: 7, delta: 0, beforePercent: 70, afterPercent: 70 },
+        { key: 'might', before: 8, after: 10, delta: 2, beforePercent: 80, afterPercent: 100 },
+        { key: 'guard', before: 6, after: 6, delta: 0, beforePercent: 60, afterPercent: 60 },
+        { key: 'agility', before: 7, after: 8, delta: 1, beforePercent: 70, afterPercent: 80 }
+      ],
+      skill: {
+        choice: 'A',
+        icon: '⚔️',
+        name: 'Blazing Fang II',
+        nameKey: 'skillNameAshfangAStage2',
+        shortText: 'A stronger ember strike.',
+        shortTextKey: 'skillEffectAshfangAStage2'
+      }
+    }));
+    expect(beatTypes(ArenaDirector.buildArcadeTimeline('monster_evolved', payload)))
+      .toEqual([
+        'silhouette',
+        'monster_reveal',
+        'evolution_stats',
+        'evolution_skill',
+        'winner_frame'
+      ]);
+
+    expect(ArenaDirector.buildEvolutionPresentation(payload, {
+      reducedMotion: true
+    })).toEqual(expect.objectContaining({
+      statsRevealAtMs: 0,
+      skillRevealAtMs: 0,
+      finalState: true
+    }));
+  });
+
   test('treats the real projected monster_discovered payload as a first discovery', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('monster_discovered', {
       eventId: 'public-discovery-event',

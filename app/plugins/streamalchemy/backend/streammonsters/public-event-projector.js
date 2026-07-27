@@ -191,6 +191,30 @@ function projectBattleSkill(skill = null) {
   return projected;
 }
 
+function projectEvolutionSkill(skill = null) {
+  const projected = projectBattleSkill(
+    skill && typeof skill === 'object'
+      ? { ...skill, available: true }
+      : null
+  );
+  if (!projected) return null;
+  return {
+    choice: projected.choice,
+    icon: projected.icon,
+    name: projected.name,
+    nameKey: projected.nameKey,
+    shortText: projected.shortText,
+    shortTextKey: projected.shortTextKey,
+    evolutionStage: Math.max(
+      1,
+      Math.min(3, finiteNumber(skill.evolutionStage, 1))
+    ),
+    ...(projected.choice === 'C'
+      ? { chargeRequired: projected.chargeRequired }
+      : {})
+  };
+}
+
 function projectBattleFighter(fighter = null) {
   if (!fighter || typeof fighter !== 'object') return null;
   const imageUrl = safeImageUrl(fighter.imageUrl ?? fighter.image_url);
@@ -425,6 +449,28 @@ class StreamMonstersPublicEventProjector {
   }
 
   project(eventType, payload = {}) {
+    if (eventType === 'streammonsters:monster_evolved') {
+      const unlockedSkill = projectEvolutionSkill(payload.unlockedSkill);
+      return {
+        ...(payload.userId || payload.user_id || payload.username || payload.nickname
+          ? { displayName: this.displayName(payload) }
+          : {}),
+        evolutionStage: Math.max(
+          1,
+          Math.min(3, finiteNumber(
+            payload.evolutionStage ??
+            payload.monster?.evolutionStage ??
+            payload.monster?.evolution_stage,
+            1
+          ))
+        ),
+        statsBefore: projectStats(payload.statsBefore),
+        statsAfter: projectStats(payload.statsAfter),
+        statChanges: projectStats(payload.statChanges),
+        ...(unlockedSkill ? { unlockedSkill } : {}),
+        monster: projectMonster(payload.monster)
+      };
+    }
     if (eventType === 'streammonsters:battle_choice_opened') {
       const chargeWindow = projectBattleChargeWindow(payload.chargeWindow);
       return {
@@ -559,6 +605,7 @@ module.exports.projectMonster = projectMonster;
 module.exports.projectEgg = projectEgg;
 module.exports.projectChatResult = projectChatResult;
 module.exports.projectBattleSkill = projectBattleSkill;
+module.exports.projectEvolutionSkill = projectEvolutionSkill;
 module.exports.projectBattleFighter = projectBattleFighter;
 module.exports.projectBattleChargeWindow = projectBattleChargeWindow;
 module.exports.projectBattleChoices = projectBattleChoices;

@@ -129,6 +129,43 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(showChatSource).not.toContain('const userId');
   });
 
+  test('provides a resettable four-stat evolution panel and upper Elemental Hour card', () => {
+    const html = fs.readFileSync(
+      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
+      'utf8'
+    );
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
+    const statRows = [...document.querySelectorAll(
+      '#evolution-stats [data-evolution-stat]'
+    )];
+    const presentSource = html.slice(
+      html.indexOf('const present = async'),
+      html.indexOf('const presentWithPreview = async')
+    );
+
+    expect(statRows.map(row => row.dataset.evolutionStat)).toEqual([
+      'vitality',
+      'might',
+      'guard',
+      'agility'
+    ]);
+    expect(document.getElementById('evolution-skill')).not.toBeNull();
+    expect(document.getElementById('evolution-skill-icon')).not.toBeNull();
+    expect(document.getElementById('evolution-skill-title')).not.toBeNull();
+    expect(document.getElementById('evolution-skill-effect')).not.toBeNull();
+    expect(presentSource).toMatch(
+      /type === 'elemental_hour'[\s\S]*?buildElementalHourPresentation[\s\S]*?showCard/
+    );
+    expect(presentSource).toContain("'elementalHourExplanation'");
+    expect(presentSource).toMatch(
+      /type === 'monster_evolved'[\s\S]*?buildEvolutionPresentation[\s\S]*?evolution/
+    );
+    expect(html).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#evolution-panel/
+    );
+  });
+
   test.each(['de', 'en', 'es', 'fr'])('localizes the upper chat views in %s', locale => {
     const translations = JSON.parse(fs.readFileSync(
       path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),

@@ -7,6 +7,7 @@
 
   const QUALITY_MODES = new Set(['auto', 'high', 'medium', 'low']);
   const ELEMENTS = Object.freeze(['Ember', 'Tide', 'Grove', 'Gale', 'Lunar', 'Volt']);
+  const EVOLUTION_STATS = Object.freeze(['vitality', 'might', 'guard', 'agility']);
   const CRITICAL_EVENT_TYPES = new Set([
     'egg_spawned',
     'hatch_started',
@@ -146,11 +147,71 @@
   function elementValue(payload = {}) {
     return String(
       payload.element ||
+      payload.event?.element ||
       payload.egg?.element ||
       payload.monster?.element ||
       payload.action?.skill?.element ||
       'Lunar'
     );
+  }
+
+  function buildElementalHourPresentation(payload = {}) {
+    return Object.freeze({
+      presentation: 'elemental-hour',
+      placement: 'upper-gameplay',
+      durationMs: 8_000,
+      element: elementValue(payload),
+      incubationReductionSeconds: 30,
+      hypeBonus: 10,
+      combatStatBonus: 0,
+      hatchQualityBonus: 0
+    });
+  }
+
+  function buildEvolutionPresentation(payload = {}, { reducedMotion = false } = {}) {
+    const before = payload.statsBefore || {};
+    const after = payload.statsAfter || {};
+    const maximum = Math.max(
+      1,
+      ...EVOLUTION_STATS.flatMap(key => [numeric(before[key]), numeric(after[key])])
+    );
+    const percent = value => Math.round((Math.max(0, numeric(value)) / maximum) * 100);
+    const sourceSkill = payload.unlockedSkill && typeof payload.unlockedSkill === 'object'
+      ? payload.unlockedSkill
+      : null;
+    const skill = sourceSkill
+      ? Object.freeze({
+          choice: ['A', 'B', 'C'].includes(sourceSkill.choice) ? sourceSkill.choice : 'A',
+          icon: String(sourceSkill.icon || '').slice(0, 16),
+          name: String(sourceSkill.name || 'Skill').slice(0, 96),
+          nameKey: String(sourceSkill.nameKey || '').slice(0, 96),
+          shortText: String(sourceSkill.shortText || '').slice(0, 240),
+          shortTextKey: String(sourceSkill.shortTextKey || '').slice(0, 96)
+        })
+      : null;
+    return Object.freeze({
+      monster: String(payload.monster?.name || 'Monster').slice(0, 80),
+      stage: Math.max(
+        1,
+        Math.min(3, numeric(
+          payload.evolutionStage ??
+          payload.monster?.evolutionStage ??
+          payload.monster?.evolution_stage
+        ) || 1)
+      ),
+      statsRevealAtMs: reducedMotion ? 0 : 1_440,
+      skillRevealAtMs: reducedMotion ? 0 : 2_700,
+      finalState: Boolean(reducedMotion),
+      stats: Object.freeze(EVOLUTION_STATS.map(key => Object.freeze({
+        key,
+        before: Math.max(0, numeric(before[key])),
+        after: Math.max(0, numeric(after[key])),
+        delta: Math.max(0, numeric(after[key]) - numeric(before[key])),
+        beforePercent: percent(before[key]),
+        afterPercent: percent(after[key])
+      }))),
+      skill
+    });
   }
 
   function decorateTimeline({
@@ -545,7 +606,20 @@
     const element = elementValue(payload);
     let scene = 'card';
     let beats = [];
-    if (type === 'egg_spawned') {
+    if (type === 'elemental_hour') {
+      const presentation = buildElementalHourPresentation(payload);
+      scene = 'elemental_hour';
+      beats = [{
+        type: 'elemental_hour_card',
+        atMs: 0,
+        durationMs: presentation.durationMs,
+        element: presentation.element,
+        incubationReductionSeconds: presentation.incubationReductionSeconds,
+        hypeBonus: presentation.hypeBonus,
+        combatStatBonus: presentation.combatStatBonus,
+        hatchQualityBonus: presentation.hatchQualityBonus
+      }];
+    } else if (type === 'egg_spawned') {
       scene = 'spawn';
       const roulette = ELEMENTS.filter(candidate => candidate !== element).concat(element);
       beats = [
@@ -657,7 +731,31 @@
           audioDucking: { amount: 0.38, durationMs: 950 }
         }
       ];
-      if (type === 'monster_evolved' || evolutionStage > 1) {
+      if (type === 'monster_evolved' && payload.statsBefore && payload.statsAfter) {
+        const presentation = buildEvolutionPresentation(payload, {
+          reducedMotion: Boolean(options.reducedMotion)
+        });
+        beats.push({
+          type: 'evolution_stats',
+          atMs: presentation.statsRevealAtMs,
+          durationMs: options.reducedMotion ? 0 : 1_200,
+          evolutionStage,
+          stats: presentation.stats,
+          peak: true,
+          audioCue: 'progress.evolution'
+        });
+        if (presentation.skill) {
+          beats.push({
+            type: 'evolution_skill',
+            atMs: presentation.skillRevealAtMs,
+            durationMs: options.reducedMotion ? 0 : 1_000,
+            evolutionStage,
+            skill: presentation.skill,
+            peak: true,
+            audioCue: 'ui.navigate'
+          });
+        }
+      } else if (type === 'monster_evolved' || evolutionStage > 1) {
         beats.push({
           type: 'evolution_peak',
           atMs: 1240,
@@ -677,7 +775,9 @@
       }
       beats.push({
         type: 'winner_frame',
-        atMs: 1960,
+        atMs: type === 'monster_evolved' && payload.statsBefore && payload.statsAfter
+          ? (options.reducedMotion ? 0 : 3_800)
+          : 1960,
         durationMs: 1100,
         element
       });
@@ -868,6 +968,8 @@
     createArenaGeometry,
     canonicalImageUrl,
     normalizeFighters,
+    buildElementalHourPresentation,
+    buildEvolutionPresentation,
     buildActionTimeline,
     buildArcadeTimeline,
     resolveQuality,

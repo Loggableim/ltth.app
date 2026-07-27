@@ -68,6 +68,64 @@ describe('Stream Monsters public critical overlay queue', () => {
     );
   });
 
+  test('allowlists evolution stats and staged skill presentation without combat internals', () => {
+    const projector = new StreamMonstersPublicEventProjector();
+    const projected = projector.project('streammonsters:monster_evolved', {
+      userId: 'private-viewer',
+      evolutionStage: 3,
+      statsBefore: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      statsAfter: { vitality: 7, might: 12, guard: 6, agility: 9 },
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
+      unlockedSkill: {
+        id: 'private-skill-id',
+        choice: 'C',
+        icon: '☄️',
+        name: 'Inferno Heart III',
+        nameKey: 'skillNameAshfangCStage3',
+        shortText: 'A staged blaze.',
+        shortTextKey: 'skillEffectAshfangCStage3',
+        evolutionStage: 3,
+        chargeRequired: 100,
+        effects: [{ type: 'damage', power: 99 }]
+      },
+      monster: {
+        monster_id: 'private-monster',
+        name: 'Ashfang',
+        element: 'Ember',
+        template_id: 'ashfang',
+        evolution_stage: 3,
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.png',
+        stats: { vitality: 7, might: 12, guard: 6, agility: 9 },
+        seed: 'private-seed'
+      }
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      displayName: 'Viewer',
+      evolutionStage: 3,
+      statsBefore: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      statsAfter: { vitality: 7, might: 12, guard: 6, agility: 9 },
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
+      unlockedSkill: {
+        choice: 'C',
+        icon: '☄️',
+        name: 'Inferno Heart III',
+        nameKey: 'skillNameAshfangCStage3',
+        shortText: 'A staged blaze.',
+        shortTextKey: 'skillEffectAshfangCStage3',
+        evolutionStage: 3,
+        chargeRequired: 100
+      },
+      monster: expect.objectContaining({
+        name: 'Ashfang',
+        evolutionStage: 3
+      })
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(
+      /private-viewer|private-monster|private-skill-id|private-seed|effects|power/
+    );
+  });
+
   test('retains every critical group under overload and evicts only noncritical work', () => {
     const queue = runtime.createPriorityQueue({
       maxSize: 3,
