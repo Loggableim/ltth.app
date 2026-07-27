@@ -679,12 +679,14 @@
       if (!matchId) return false;
       const prior = matches.get(matchId) || {
         cursor: 0,
-        terminal: false
+        terminal: false,
+        replayPending: false
       };
       const sequence = eventSequence(data);
       matches.set(matchId, {
         cursor: Math.max(prior.cursor, sequence),
-        terminal: prior.terminal || isTerminal(type)
+        terminal: prior.terminal || isTerminal(type),
+        replayPending: Boolean(prior.replayPending)
       });
       rememberEventId(data.eventId);
       trimMatches();
@@ -710,11 +712,19 @@
     }
 
     async function replayMatch(matchId, targetCursor = null) {
-      let state = matches.get(matchId) || { cursor: 0, terminal: false };
+      let state = matches.get(matchId) || {
+        cursor: 0,
+        terminal: false,
+        replayPending: false
+      };
       let replayed = 0;
       let caughtUp = false;
       for (let pageNumber = 0; pageNumber < boundedMaxPages; pageNumber += 1) {
-        if (targetCursor != null && state.cursor >= targetCursor) {
+        if (
+          targetCursor != null &&
+          state.cursor >= targetCursor &&
+          !state.replayPending
+        ) {
           caughtUp = true;
           break;
         }
@@ -733,7 +743,15 @@
         for (const event of events) {
           if (event.sequence <= state.cursor) continue;
           if (!hasSeen(event.type, event.data)) {
-            await present(event);
+            try {
+              await present(event);
+            } catch (error) {
+              matches.set(matchId, {
+                ...state,
+                replayPending: true
+              });
+              throw error;
+            }
             replayed += 1;
           }
           observe(event.type, event.data);
@@ -746,7 +764,8 @@
         );
         matches.set(matchId, {
           ...state,
-          cursor: responseCursor
+          cursor: responseCursor,
+          replayPending: false
         });
         state = matches.get(matchId);
         const reachedSnapshot = targetCursor != null && state.cursor >= targetCursor;
@@ -766,7 +785,8 @@
         for (const match of currentMatches) {
           matches.set(match.matchId, {
             cursor: match.cursor,
-            terminal: false
+            terminal: false,
+            replayPending: false
           });
         }
         initialized = true;
@@ -783,7 +803,8 @@
         if (!matches.has(match.matchId)) {
           matches.set(match.matchId, {
             cursor: 0,
-            terminal: false
+            terminal: false,
+            replayPending: false
           });
         }
       }

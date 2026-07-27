@@ -1994,8 +1994,9 @@ class BattleMatchService {
     return { matchId: match.matchId };
   }
 
-  synthesizeLegacyChoiceReveals(match, pageRows) {
-    if (Number(match?.rulesVersion) !== 5 || !pageRows.length) return new Map();
+  synthesizeLegacyChoiceReveals(match, pageRows, cursor = 0) {
+    if (Number(match?.rulesVersion) !== 5) return new Map();
+    const normalizedCursor = Math.max(0, Number(cursor) || 0);
     const historicalRows = this.db.prepare(`
       SELECT sequence, event_id, event_type, payload_json, public_payload_json
       FROM streammonsters_match_events
@@ -2054,10 +2055,16 @@ class BattleMatchService {
       const anchor = [...bySlot.values()].sort(
         (left, right) => left.sequence - right.sequence
       ).at(-1);
-      if (!pageSequences.has(anchor.sequence)) return;
+      const syntheticSequence = anchor.sequence + 0.5;
+      const followsPageAnchor = pageSequences.has(anchor.sequence);
+      const resumesInterruptedReveal = (
+        anchor.sequence <= normalizedCursor &&
+        syntheticSequence > normalizedCursor
+      );
+      if (!followsPageAnchor && !resumesInterruptedReveal) return;
       syntheticBySequence.set(anchor.sequence, {
         // Persisted sequences are integers; keep this after its lock and before the next row.
-        sequence: anchor.sequence + 0.5,
+        sequence: syntheticSequence,
         eventId: `${anchor.eventId}:compat-reveal`,
         correlationId: match.matchId,
         type: 'streammonsters:battle_choices_revealed',
@@ -2081,7 +2088,12 @@ class BattleMatchService {
       ORDER BY sequence
       LIMIT ?
     `).all(match.matchId, normalizedCursor, normalizedLimit);
-    const syntheticBySequence = this.synthesizeLegacyChoiceReveals(match, rows);
+    const syntheticBySequence = this.synthesizeLegacyChoiceReveals(
+      match,
+      rows,
+      normalizedCursor
+    );
+    const emittedSyntheticSequences = new Set();
     const events = rows.flatMap(row => {
       const storedEvent = {
         sequence: row.sequence,
@@ -2096,9 +2108,17 @@ class BattleMatchService {
         )
       };
       const syntheticReveal = syntheticBySequence.get(row.sequence);
+      if (syntheticReveal) emittedSyntheticSequences.add(row.sequence);
       return syntheticReveal ? [storedEvent, syntheticReveal] : [storedEvent];
     });
-    const nextCursor = rows.at(-1)?.sequence || normalizedCursor;
+    syntheticBySequence.forEach((event, anchorSequence) => {
+      if (!emittedSyntheticSequences.has(anchorSequence)) events.push(event);
+    });
+    events.sort((left, right) => left.sequence - right.sequence);
+    const nextCursor = Math.max(
+      normalizedCursor,
+      ...events.map(event => Number(event.sequence) || 0)
+    );
     const hasMore = Boolean(this.db.prepare(`
       SELECT 1 FROM streammonsters_match_events
       WHERE match_id = ? AND sequence > ?

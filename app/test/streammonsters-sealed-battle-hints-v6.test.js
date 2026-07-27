@@ -189,6 +189,7 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
     }));
     const firstPage = service.getPublicNormalizedReplay('legacy-v5', 0, 1);
     const secondPage = service.getPublicNormalizedReplay('legacy-v5', firstPage.cursor, 1);
+    const interruptedResumePage = service.getPublicNormalizedReplay('legacy-v5', 2, 1);
     const replay = service.getPublicNormalizedReplay('legacy-v5');
 
     expect(firstPage.events.map(event => event.type)).toEqual([
@@ -199,8 +200,12 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
       'streammonsters:battle_choice_locked',
       'streammonsters:battle_choices_revealed'
     ]);
-    expect(secondPage.cursor).toBe(2);
+    expect(secondPage.cursor).toBe(2.5);
     expect(secondPage.events.every(event => event.sequence > firstPage.cursor)).toBe(true);
+    expect(interruptedResumePage.events.map(event => event.type)).toEqual([
+      'streammonsters:battle_choices_revealed'
+    ]);
+    expect(interruptedResumePage.cursor).toBe(2.5);
     expect(replay.decisions).toEqual([
       expect.objectContaining({ slot: 1, locked: true }),
       expect.objectContaining({ slot: 2, locked: true })
@@ -214,6 +219,50 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
         { slot: 2, choice: 'C', source: 'timeout' }
       ]
     }]);
+
+    const interruptedRequests = [];
+    const interruptedShown = [];
+    let interruptReveal = true;
+    const interruptedSynchronizer = OverlayRuntime.createBattleReplaySynchronizer({
+      loadPage: ({ matchId, cursor, limit }) => {
+        interruptedRequests.push(cursor);
+        return service.getPublicNormalizedReplay(matchId, cursor, limit);
+      },
+      present: async event => {
+        if (event.type === 'battle_choices_revealed' && interruptReveal) {
+          interruptReveal = false;
+          throw new Error('PRESENTER_INTERRUPTED');
+        }
+        interruptedShown.push(event);
+      },
+      pageLimit: 1
+    });
+    await interruptedSynchronizer.sync({
+      matches: [{ matchId: 'legacy-v5', cursor: firstPage.cursor }]
+    });
+    await expect(interruptedSynchronizer.sync({
+      matches: [{ matchId: 'legacy-v5', cursor: 2 }]
+    })).rejects.toThrow('PRESENTER_INTERRUPTED');
+    expect(interruptedSynchronizer.state().matches).toEqual([
+      expect.objectContaining({ matchId: 'legacy-v5', cursor: 2 })
+    ]);
+
+    const interruptedResume = await interruptedSynchronizer.sync({
+      matches: [{ matchId: 'legacy-v5', cursor: 2 }]
+    });
+    expect(interruptedRequests).toEqual([1, 2]);
+    expect(interruptedShown.map(event => event.type)).toEqual([
+      'battle_choice_locked',
+      'battle_choices_revealed'
+    ]);
+    expect(interruptedShown.map(event => event.sequence)).toEqual([2, 2.5]);
+    expect(interruptedResume).toEqual(expect.objectContaining({
+      replayed: 1,
+      caughtUp: true
+    }));
+    expect(interruptedSynchronizer.state().matches).toEqual([
+      expect.objectContaining({ matchId: 'legacy-v5', cursor: 2.5 })
+    ]);
 
     const shown = [];
     const synchronizer = OverlayRuntime.createBattleReplaySynchronizer({
