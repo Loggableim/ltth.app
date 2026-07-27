@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-27T18:37:55.668Z",
+  "generatedAt": "2026-07-27T19:26:03.316Z",
   "locales": [
     "en",
     "de",
@@ -27,11 +27,11 @@
     },
     {
       "label": "docs:docs",
-      "files": 14,
-      "en": 44,
-      "de": 44,
-      "es": 44,
-      "fr": 44
+      "files": 15,
+      "en": 45,
+      "de": 45,
+      "es": 45,
+      "fr": 45
     },
     {
       "label": "docs:infos",
