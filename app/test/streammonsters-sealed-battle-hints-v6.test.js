@@ -11,6 +11,7 @@ const BattleMatchService = require(
 const PublicEventProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
 );
+const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 function createMatch(now) {
   const sqlite = new Database(':memory:');
@@ -209,5 +210,44 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
       kind: 'collection',
       command: '!monsters'
     }));
+  });
+
+  test('flushes the newest all-critical hint after its configured deferral and clears it on shutdown', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-27T12:00:00.000Z'));
+    const emitted = [];
+    const plugin = new StreamAlchemyPlugin({
+      log: jest.fn(),
+      emit: (event, payload) => emitted.push({ event, payload })
+    });
+    const TutorialHintDirector = require(
+      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+    );
+    plugin.config = {
+      streamMonsters: {
+        tutorialHintIntervalSeconds: 90,
+        notificationDurationMs: 8_000
+      }
+    };
+    plugin.streamMonstersTutorialHintDirector = new TutorialHintDirector({
+      getCommandReference: command => `!${command}`
+    });
+
+    plugin.emitStreamMonstersTutorialHint('streammonsters:egg_ready', true);
+    plugin.emitStreamMonstersTutorialHint('streammonsters:egg_hatched', true);
+    expect(emitted).toEqual([]);
+    jest.advanceTimersByTime(7_999);
+    expect(emitted).toEqual([]);
+    jest.advanceTimersByTime(1);
+    expect(emitted).toEqual([{
+      event: 'streammonsters:tutorial_hint',
+      payload: expect.objectContaining({ kind: 'monster', command: '!monster' })
+    }]);
+
+    plugin.emitStreamMonstersTutorialHint('streammonsters:egg_ready', true);
+    await plugin.destroy();
+    jest.advanceTimersByTime(8_000);
+    expect(emitted).toHaveLength(1);
+    jest.useRealTimers();
   });
 });

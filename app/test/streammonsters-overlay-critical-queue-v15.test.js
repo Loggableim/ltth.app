@@ -137,4 +137,32 @@ describe('Stream Monsters public critical overlay queue', () => {
       })
     ]);
   });
+
+  test('keeps the sealed reveal in its battle group before the queued skill action', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 20 });
+    const matchId = 'match-sealed-order';
+    const correlationId = 'sealed-order-correlation';
+    queue.enqueue('battle_choice_locked', {
+      eventId: 'sealed-lock', matchId, correlationId, decision: { slot: 1, locked: true }
+    }, 1);
+    queue.enqueue('battle_choices_revealed', {
+      eventId: 'sealed-reveal', matchId, correlationId,
+      choices: [{ slot: 1, choice: 'A' }, { slot: 2, choice: 'C' }]
+    }, 2);
+    queue.enqueue('battle_skill_used', {
+      eventId: 'sealed-skill', matchId, correlationId,
+      action: { actorSlot: 1, targetSlot: 2, type: 'attack' }
+    }, 3);
+
+    expect(queue.snapshot().map(entry => entry.groupKey)).toEqual([
+      `critical:${correlationId}`,
+      `critical:${correlationId}`,
+      `critical:${correlationId}`
+    ]);
+    expect([queue.shift(), queue.shift(), queue.shift()].map(entry => entry.type)).toEqual([
+      'battle_choice_locked',
+      'battle_choices_revealed',
+      'battle_skill_used'
+    ]);
+  });
 });

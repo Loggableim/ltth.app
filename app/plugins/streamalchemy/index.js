@@ -642,6 +642,10 @@ class StreamAlchemyPlugin {
       clearInterval(this.streamMonstersReadyTimer);
       this.streamMonstersReadyTimer = null;
     }
+    if (this.streamMonstersTutorialHintFlushTimer) {
+      clearTimeout(this.streamMonstersTutorialHintFlushTimer);
+      this.streamMonstersTutorialHintFlushTimer = null;
+    }
     this.streamMonstersBattleMatchService?.destroy();
     this.removeStreamMonstersGCCELifecycle();
     this.deactivateStreamMonstersGCCE();
@@ -1185,9 +1189,29 @@ class StreamAlchemyPlugin {
     const director = this.streamMonstersTutorialHintDirector;
     if (!director || eventType === 'streammonsters:tutorial_hint') return null;
     director.setIntervalSeconds(this.config?.streamMonsters?.tutorialHintIntervalSeconds);
-    const hint = director.nextHint({ eventType, criticalSequence: critical }, Date.now());
+    const criticalSequence = Boolean(critical || this.streamMonstersTutorialHintFlushTimer);
+    const hint = director.nextHint({ eventType, criticalSequence }, Date.now());
     if (hint) this.api.emit('streammonsters:tutorial_hint', hint);
+    if (critical) this.scheduleStreamMonstersTutorialHintFlush();
     return hint;
+  }
+
+  scheduleStreamMonstersTutorialHintFlush() {
+    if (this.streamMonstersTutorialHintFlushTimer) {
+      clearTimeout(this.streamMonstersTutorialHintFlushTimer);
+      this.streamMonstersTutorialHintFlushTimer = null;
+    }
+    const delayMs = this.normalizeNotificationDuration(
+      this.config?.streamMonsters?.notificationDurationMs
+    );
+    this.streamMonstersTutorialHintFlushTimer = setTimeout(() => {
+      this.streamMonstersTutorialHintFlushTimer = null;
+      const director = this.streamMonstersTutorialHintDirector;
+      if (!director) return;
+      const hint = director.nextHint({}, Date.now());
+      if (hint) this.api.emit('streammonsters:tutorial_hint', hint);
+    }, delayMs);
+    this.streamMonstersTutorialHintFlushTimer.unref?.();
   }
 
   normalizeStableGiftEventTime(data = {}) {

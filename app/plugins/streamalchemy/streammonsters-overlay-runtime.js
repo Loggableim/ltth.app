@@ -15,6 +15,7 @@
     'battle_match_found',
     'battle_choice_opened',
     'battle_choice_locked',
+    'battle_choices_revealed',
     'battle_cancelled',
     'egg_spawned',
     'egg_ready',
