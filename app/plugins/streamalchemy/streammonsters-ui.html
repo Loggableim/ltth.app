@@ -1615,7 +1615,7 @@
         body:JSON.stringify(payload)
       });
       notice(text('demoSceneSent', '{scene} preview sent to the overlay.', {
-        scene:text(`demo${payload.scene[0].toUpperCase()}${payload.scene.slice(1)}`, payload.scene)
+        scene:text(creatorRuntime.demoTranslationKey(payload.scene), payload.scene)
       }), 'success');
     } catch (error) {
       notice(apiErrorText(error), 'error');

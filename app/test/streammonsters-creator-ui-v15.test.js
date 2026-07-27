@@ -120,6 +120,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       'role_trickster',
       'role_sustain'
     ]);
+    expect(html).toContain('creatorRuntime.demoTranslationKey(payload.scene)');
   });
 
   test('separates arena rating from collector score and surfaces 72-form integrity', () => {

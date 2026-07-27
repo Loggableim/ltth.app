@@ -880,6 +880,25 @@
     return CHAT_RESULT_KEYS.has(result.messageKey) ? result.messageKey : 'chatResultUnknown';
   }
 
+  function localizedPayloadField(payload = {}, field, translate = () => '', defaultFallback = '') {
+    const normalizedField = String(field || '').trim();
+    const fallback = String(payload?.[normalizedField] ?? defaultFallback ?? '');
+    if (!normalizedField) return fallback;
+    const key = String(payload?.[`${normalizedField}Key`] || '').trim();
+    if (!key) return fallback;
+    const fieldParams = payload?.[`${normalizedField}Params`];
+    const params = fieldParams && typeof fieldParams === 'object' && !Array.isArray(fieldParams)
+      ? fieldParams
+      : (
+          payload?.params && typeof payload.params === 'object' && !Array.isArray(payload.params)
+            ? payload.params
+            : {}
+        );
+    const translated = String(translate(key, params) || '').trim();
+    if (!translated || translated === key || translated.endsWith(`.${key}`)) return fallback;
+    return translated;
+  }
+
   function enumKey(mapping, value) {
     return mapping[String(value || '').trim().toLowerCase()] || 'unknown';
   }
@@ -1051,6 +1070,7 @@
     hypeMilestonePoints,
     hatchDurationSpec,
     isCritical: type => CRITICAL_TYPES.has(type),
+    localizedPayloadField,
     normalizeVolume,
     normalizeBattleEventType,
     overlayHeartbeatPayload,

@@ -8,6 +8,7 @@ const {
   getTemplate,
   getEvolutionAssetPath
 } = require('./catalog');
+const { V6_RULES_VERSION } = require('./battle-rules-v5');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -146,7 +147,7 @@ class StreamMonstersRoutes {
         season,
         gcce: this.publicGcceState(this.gcceStateProvider()),
         battle: this.battleMatchService?.getPublicSnapshot?.() || {
-          rulesVersion: 5,
+          rulesVersion: V6_RULES_VERSION,
           matches: []
         },
         recentEvents,
@@ -155,7 +156,7 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: 5,
+        rulesVersion: V6_RULES_VERSION,
         matches: []
       };
       res.json({ success: true, ...snapshot });
@@ -185,7 +186,7 @@ class StreamMonstersRoutes {
       const overlayDiagnostics = this.getOverlayDiagnostics();
       const gcce = this.gcceStateProvider();
       const battle = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: 5,
+        rulesVersion: V6_RULES_VERSION,
         matches: []
       };
       res.json({
@@ -418,13 +419,16 @@ class StreamMonstersRoutes {
         || (command === 'eggs'
           ? `${commandPrefix}eier`
           : `${commandPrefix}${command}`);
-      const emitAdoptionHint = (title, body) => emit(
+      const emitAdoptionHint = (titleKey, bodyKey, title, body) => emit(
         'streammonsters:tutorial_hint',
         {
           kind: 'adopt',
+          titleKey,
+          bodyKey,
           title,
           body,
-          command: commandReference('adopt')
+          command: commandReference('adopt'),
+          params: { command: commandReference('adopt') }
         }
       );
       if (preview) {
@@ -532,7 +536,7 @@ class StreamMonstersRoutes {
             eventId: `demo-match:${preview.scene}:roster`,
             sequence: 1,
             round: 1,
-            deadlineMs: Date.now() + 8_000,
+            deadlineMs: this.now() + 8_000,
             choices: ['A', 'B', 'C'],
             fighters
           });
@@ -544,6 +548,8 @@ class StreamMonstersRoutes {
             hint: commandReference('adopt')
           });
           emitAdoptionHint(
+            'tutorialHintFreeOfferTitle',
+            'tutorialHintFreeOfferBody',
             'Free egg reserved',
             'Claim your reserved egg before it becomes public.'
           );
@@ -554,6 +560,8 @@ class StreamMonstersRoutes {
             hint: commandReference('adopt')
           });
           emitAdoptionHint(
+            'tutorialHintFreeReleaseTitle',
+            'tutorialHintFreeReleaseBody',
             'Free egg available',
             'The released egg can now be adopted by the next viewer.'
           );
@@ -564,6 +572,8 @@ class StreamMonstersRoutes {
             hint: commandReference('adopt')
           });
           emitAdoptionHint(
+            'tutorialHintFreeClaimTitle',
+            'tutorialHintFreeClaimBody',
             'Free egg adopted',
             'The egg is now incubating in the viewer collection.'
           );
@@ -642,12 +652,12 @@ class StreamMonstersRoutes {
         } else if (preview.scene === 'match') {
           emit('streammonsters:battle_match_found', {
             matchId: 'demo-match',
-            deadlineMs: Date.now() + 15_000
+            deadlineMs: this.now() + 15_000
           });
           emit('streammonsters:battle_choice_opened', {
             matchId: 'demo-match',
             round: 1,
-            deadlineMs: Date.now() + 8_000,
+            deadlineMs: this.now() + 8_000,
             choices: ['A', 'B', 'C'],
             fighters
           });
@@ -1614,7 +1624,7 @@ class StreamMonstersRoutes {
   publicConfig(config = {}, { includeCreator = false } = {}) {
     const result = {
       enabled: Boolean(config.enabled),
-      rulesVersion: 5,
+      rulesVersion: V6_RULES_VERSION,
       hatchDurationMs: config.hatchDurationMs,
       incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
       eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(

@@ -471,6 +471,16 @@
     return result;
   }
 
+  function demoTranslationKey(scene) {
+    const suffix = String(scene || '')
+      .trim()
+      .split(/[_-]+/)
+      .filter(Boolean)
+      .map(part => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+      .join('');
+    return suffix ? `demo${suffix}` : 'demo';
+  }
+
   return {
     COMMAND_ACTIONS,
     CREATOR_SECTIONS,
@@ -488,6 +498,7 @@
     buildCreatorLiveView,
     buildDexSlots,
     buildRepairRequest,
+    demoTranslationKey,
     eggReadinessCounts,
     leaderboardDisplayName,
     liveStatusTranslationKey,

@@ -88,7 +88,7 @@ describe('Stream Monsters Rules v5 route security', () => {
     }, res);
     expect(JSON.stringify(res.payload)).not.toMatch(/private-creator|arbitrary-viewer|user_id/);
     expect(res.payload.config.visualPack).toBe('furry');
-    expect(res.payload.battle).toEqual({ rulesVersion: 5, matches: [] });
+    expect(res.payload.battle).toEqual({ rulesVersion: 6, matches: [] });
   });
 
   test('keeps creator-only GCCE diagnostics out of the public overlay snapshot', async () => {

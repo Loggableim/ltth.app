@@ -3,15 +3,15 @@ const MIN_INTERVAL_SECONDS = 60;
 const MAX_INTERVAL_SECONDS = 300;
 
 const HINTS = Object.freeze({
-  adopt: Object.freeze({ command: 'adopt', title: 'Free egg available', body: 'Adopt the next free egg in chat.' }),
-  hatch: Object.freeze({ command: 'hatch', title: 'Egg ready', body: 'Hatch a ready egg by its slot.' }),
-  eggs: Object.freeze({ command: 'eggs', title: 'Egg inventory', body: 'Check the eggs currently waiting for you.' }),
-  collection: Object.freeze({ command: 'monsters', title: 'Collection updated', body: 'View every monster you have discovered.' }),
-  monster: Object.freeze({ command: 'monster', title: 'Monster card', body: 'Open one monster card by its slot.' }),
-  battle: Object.freeze({ command: 'battle', title: 'Battle ready', body: 'Join the next viewer battle.' }),
-  roster: Object.freeze({ command: 'choose', title: 'Choose your fighter', body: 'Lock a monster for this battle.' }),
-  skills: Object.freeze({ command: 'battle', title: 'Choose a skill', body: 'Reply A, B, or C before the timer expires.' }),
-  stats: Object.freeze({ command: 'choose', title: 'Spend a stat point', body: 'Reply 1, 2, 3, or 4 to allocate it.' })
+  adopt: Object.freeze({ command: 'adopt', titleKey: 'tutorialHintAdoptTitle', bodyKey: 'tutorialHintAdoptBody', title: 'Free egg available', body: 'Adopt the next free egg in chat.' }),
+  hatch: Object.freeze({ command: 'hatch', titleKey: 'tutorialHintHatchTitle', bodyKey: 'tutorialHintHatchBody', title: 'Egg ready', body: 'Hatch a ready egg by its slot.' }),
+  eggs: Object.freeze({ command: 'eggs', titleKey: 'tutorialHintEggsTitle', bodyKey: 'tutorialHintEggsBody', title: 'Egg inventory', body: 'Check the eggs currently waiting for you.' }),
+  collection: Object.freeze({ command: 'monsters', titleKey: 'tutorialHintCollectionTitle', bodyKey: 'tutorialHintCollectionBody', title: 'Collection updated', body: 'View every monster you have discovered.' }),
+  monster: Object.freeze({ command: 'monster', titleKey: 'tutorialHintMonsterTitle', bodyKey: 'tutorialHintMonsterBody', title: 'Monster card', body: 'Open one monster card by its slot.' }),
+  battle: Object.freeze({ command: 'battle', titleKey: 'tutorialHintBattleTitle', bodyKey: 'tutorialHintBattleBody', title: 'Battle ready', body: 'Join the next viewer battle.' }),
+  roster: Object.freeze({ command: 'choose', titleKey: 'tutorialHintRosterTitle', bodyKey: 'tutorialHintRosterBody', title: 'Choose your fighter', body: 'Lock a monster for this battle.' }),
+  skills: Object.freeze({ command: 'battle', titleKey: 'tutorialHintSkillsTitle', bodyKey: 'tutorialHintSkillsBody', title: 'Choose a skill', body: 'Reply A, B, or C before the timer expires.' }),
+  stats: Object.freeze({ command: 'choose', titleKey: 'tutorialHintStatsTitle', bodyKey: 'tutorialHintStatsBody', title: 'Spend a stat point', body: 'Reply 1, 2, 3, or 4 to allocate it.' })
 });
 
 const EVENT_KINDS = Object.freeze({
@@ -59,9 +59,12 @@ class TutorialHintDirector {
     this.nextAllowedAtMs = nowMs + this.intervalMs;
     return Object.freeze({
       kind: nextKind,
+      titleKey: definition.titleKey,
+      bodyKey: definition.bodyKey,
       title: definition.title,
       body: definition.body,
-      command
+      command,
+      params: Object.freeze({ command })
     });
   }
 }

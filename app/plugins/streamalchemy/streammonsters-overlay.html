@@ -1400,8 +1400,17 @@
     if (type === 'battle_choices_revealed') return playArcadeEvent(type, data);
     if (type === 'tutorial_hint') return showCard({
       kicker:'Stream Monsters',
-      title:safeHint(data?.title, 'Stream Monsters'),
-      subtitle:safeHint(data?.body),
+      title:safeHint(window.StreamMonstersOverlayRuntime.localizedPayloadField(
+        data,
+        'title',
+        (key, params) => text(key, safeHint(data?.title, 'Stream Monsters'), params),
+        'Stream Monsters'
+      ), 'Stream Monsters'),
+      subtitle:safeHint(window.StreamMonstersOverlayRuntime.localizedPayloadField(
+        data,
+        'body',
+        (key, params) => text(key, safeHint(data?.body), params)
+      )),
       hint:safeHint(data?.command),
       duration:6_000
     });

@@ -20,6 +20,12 @@ const { getTemplate } = require(
 const creatorRuntime = require(
   '../plugins/streamalchemy/streammonsters-creator-runtime'
 );
+const overlayRuntime = require(
+  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+);
+const TutorialHintDirector = require(
+  '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+);
 
 const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
 
@@ -52,7 +58,17 @@ function localRequest(body = undefined, query = {}) {
 function createRouteHarness({
   now = () => 100_000,
   gcceStateProvider,
-  hintStateProvider
+  hintStateProvider,
+  battleMatchService = {
+    getPublicSnapshot: () => ({
+      rulesVersion: 6,
+      matches: [{
+        matchId: 'opaque-match',
+        phase: 'action',
+        deadlineMs: 106_000
+      }]
+    })
+  }
 } = {}) {
   const registered = [];
   const emitted = [];
@@ -89,16 +105,7 @@ function createRouteHarness({
       getHeartChain: () => null,
       getStreamMission: () => null
     },
-    battleMatchService: {
-      getPublicSnapshot: () => ({
-        rulesVersion: 6,
-        matches: [{
-          matchId: 'opaque-match',
-          phase: 'action',
-          deadlineMs: 106_000
-        }]
-      })
-    },
+    battleMatchService,
     gcceStateProvider: gcceStateProvider || (() => ({
       commandPrefix: '/',
       commandReferences: {
@@ -285,6 +292,25 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       /freeEggCooldownSeconds|tutorialHintIntervalSeconds|private-creator|private-provider|private-gpu|private-disk/
     );
   });
+
+  test('reports normalized Rules v6 on public and creator surfaces including fallback snapshots', async () => {
+    const harness = createRouteHarness({ battleMatchService: null });
+    const publicState = response();
+    await harness.find('GET', '/api/streammonsters/state')(
+      { query: {} },
+      publicState
+    );
+    const creatorState = response();
+    await harness.find('GET', '/api/streammonsters/creator-state')(
+      localRequest(),
+      creatorState
+    );
+
+    expect(publicState.payload.config.rulesVersion).toBe(6);
+    expect(publicState.payload.battle).toEqual({ rulesVersion: 6, matches: [] });
+    expect(creatorState.payload.config.rulesVersion).toBe(6);
+    expect(creatorState.payload.battle).toEqual({ rulesVersion: 6, matches: [] });
+  });
 });
 
 describe('Stream Monsters Rules v6 retention creator runtime', () => {
@@ -340,6 +366,16 @@ describe('Stream Monsters Rules v6 retention creator runtime', () => {
     ]));
   });
 
+  test.each([
+    ['free_offer', 'demoFreeOffer'],
+    ['free_release', 'demoFreeRelease'],
+    ['free_claim', 'demoFreeClaim'],
+    ['sealed_lock', 'demoSealedLock'],
+    ['role_striker', 'demoRoleStriker']
+  ])('maps the %s demo scene to the visible locale key %s', (scene, expected) => {
+    expect(creatorRuntime.demoTranslationKey(scene)).toBe(expected);
+  });
+
   test('does not emit tutorial hints while the creator has disabled them', () => {
     const plugin = new StreamAlchemyPlugin({ emit: jest.fn() });
     plugin.config = {
@@ -359,6 +395,38 @@ describe('Stream Monsters Rules v6 retention creator runtime', () => {
     )).toBeNull();
     expect(plugin.streamMonstersTutorialHintDirector.nextHint)
       .not.toHaveBeenCalled();
+  });
+
+  test('emits stable localized fallback metadata through the production hint path', () => {
+    const emitted = [];
+    const plugin = new StreamAlchemyPlugin({
+      emit: (event, payload) => emitted.push({ event, payload })
+    });
+    plugin.config = {
+      streamMonsters: {
+        tutorialHintsEnabled: true,
+        tutorialHintIntervalSeconds: 90
+      }
+    };
+    plugin.streamMonstersTutorialHintDirector = new TutorialHintDirector({
+      getCommandReference: () => '!adoptieren'
+    });
+
+    plugin.emitStreamMonstersTutorialHint(
+      'streammonsters:free_egg_offered',
+      false
+    );
+
+    expect(emitted).toEqual([{
+      event: 'streammonsters:tutorial_hint',
+      payload: expect.objectContaining({
+        titleKey: 'tutorialHintAdoptTitle',
+        bodyKey: 'tutorialHintAdoptBody',
+        params: { command: '!adoptieren' },
+        title: expect.any(String),
+        body: expect.any(String)
+      })
+    }]);
   });
 
   test('cancels a pending post-sequence hint when hints are disabled before flush', () => {
@@ -447,9 +515,149 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
       expect(translations.rulesDynamic).toContain('v6');
     }
   });
+
+  test('ships localized production and free-demo hint copy in all four locales', () => {
+    const productionHint = new TutorialHintDirector({
+      getCommandReference: () => '!adoptieren'
+    }).nextHint({ eventType: 'streammonsters:free_egg_offered' }, 1_000);
+    expect(productionHint).toEqual(expect.objectContaining({
+      titleKey: 'tutorialHintAdoptTitle',
+      bodyKey: 'tutorialHintAdoptBody',
+      params: { command: '!adoptieren' },
+      title: expect.any(String),
+      body: expect.any(String)
+    }));
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const translations = JSON.parse(fs.readFileSync(
+        path.join(pluginDir, 'locales', `${locale}.json`),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters;
+      const translate = (key, params) => String(translations[key] || key)
+        .replace(/\{\{(\w+)\}\}/g, (match, name) => params[name] ?? match);
+      const title = overlayRuntime.localizedPayloadField(
+        productionHint,
+        'title',
+        translate
+      );
+      const body = overlayRuntime.localizedPayloadField(
+        productionHint,
+        'body',
+        translate
+      );
+      expect(title).toBe(translations.tutorialHintAdoptTitle);
+      expect(body).toContain('!adoptieren');
+      expect(title).not.toBe(productionHint.titleKey);
+      expect(body).not.toBe(productionHint.bodyKey);
+    }
+  });
+
+  test('localizes every production tutorial kind and preserves old or missing-key fallbacks', () => {
+    const eventKeys = [
+      ['streammonsters:free_egg_offered', 'tutorialHintAdoptTitle'],
+      ['streammonsters:egg_spawned', 'tutorialHintEggsTitle'],
+      ['streammonsters:egg_ready', 'tutorialHintHatchTitle'],
+      ['streammonsters:egg_hatched', 'tutorialHintMonsterTitle'],
+      ['streammonsters:monster_discovered', 'tutorialHintCollectionTitle'],
+      ['streammonsters:battle_match_found', 'tutorialHintBattleTitle'],
+      ['streammonsters:battle_roster_locked', 'tutorialHintRosterTitle'],
+      ['streammonsters:battle_choice_opened', 'tutorialHintSkillsTitle'],
+      ['streammonsters:monster_stat_prompt', 'tutorialHintStatsTitle']
+    ];
+    for (const [eventType, expectedTitleKey] of eventKeys) {
+      const hint = new TutorialHintDirector({
+        getCommandReference: command => `!${command}`
+      }).nextHint({ eventType }, 1_000);
+      expect(hint.titleKey).toBe(expectedTitleKey);
+      for (const locale of ['de', 'en', 'es', 'fr']) {
+        const translations = JSON.parse(fs.readFileSync(
+          path.join(pluginDir, 'locales', `${locale}.json`),
+          'utf8'
+        )).plugins.streamalchemy.ui.monsters;
+        expect(overlayRuntime.localizedPayloadField(
+          hint,
+          'title',
+          key => translations[key] || key
+        )).toBe(translations[expectedTitleKey]);
+      }
+    }
+
+    expect(overlayRuntime.localizedPayloadField(
+      { title: 'Legacy fallback' },
+      'title',
+      () => 'unused'
+    )).toBe('Legacy fallback');
+    expect(overlayRuntime.localizedPayloadField(
+      { titleKey: 'missingTitle', title: 'Compatible fallback' },
+      'title',
+      key => `plugins.streamalchemy.ui.monsters.${key}`
+    )).toBe('Compatible fallback');
+  });
 });
 
 describe('Stream Monsters Rules v6 deterministic retention demos', () => {
+  test.each(['match', 'role_striker', 'role_guardian', 'role_trickster', 'role_sustain'])(
+    'uses the injected fixed clock for deterministic %s payloads',
+    async scene => {
+      const run = async () => {
+        const harness = createRouteHarness({ now: () => 456_000 });
+        const res = response();
+        await harness.find('POST', '/api/streammonsters/demo')(
+          localRequest({ scene, layout: 'portrait' }),
+          res
+        );
+        return harness.emitted;
+      };
+
+      expect(await run()).toEqual(await run());
+      const deadlines = (await run())
+        .map(entry => entry.payload.deadlineMs)
+        .filter(Number.isFinite);
+      expect(deadlines).toEqual(expect.arrayContaining([
+        scene === 'match' ? 471_000 : 464_000
+      ]));
+    }
+  );
+
+  test.each([
+    ['free_offer', 'tutorialHintFreeOfferTitle', 'tutorialHintFreeOfferBody'],
+    ['free_release', 'tutorialHintFreeReleaseTitle', 'tutorialHintFreeReleaseBody'],
+    ['free_claim', 'tutorialHintFreeClaimTitle', 'tutorialHintFreeClaimBody']
+  ])('emits localized compatible fallback copy for the %s demo', async (
+    scene,
+    titleKey,
+    bodyKey
+  ) => {
+    const harness = createRouteHarness();
+    const res = response();
+    await harness.find('POST', '/api/streammonsters/demo')(
+      localRequest({ scene, layout: 'portrait' }),
+      res
+    );
+    const hint = harness.emitted.find(entry => (
+      entry.event === 'streammonsters:tutorial_hint'
+    )).payload;
+    expect(hint).toEqual(expect.objectContaining({
+      titleKey,
+      bodyKey,
+      params: { command: '/adoptieren' },
+      title: expect.any(String),
+      body: expect.any(String)
+    }));
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const translations = JSON.parse(fs.readFileSync(
+        path.join(pluginDir, 'locales', `${locale}.json`),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters;
+      const translate = (key, params) => String(translations[key] || key)
+        .replace(/\{\{(\w+)\}\}/g, (match, name) => params[name] ?? match);
+      expect(overlayRuntime.localizedPayloadField(hint, 'title', translate))
+        .toBe(translations[titleKey]);
+      expect(overlayRuntime.localizedPayloadField(hint, 'body', translate))
+        .toContain('/adoptieren');
+    }
+  });
+
   test.each([
     ['free_offer', ['streammonsters:free_egg_offered', 'streammonsters:tutorial_hint'], null],
     ['free_release', ['streammonsters:free_egg_released', 'streammonsters:tutorial_hint'], null],
