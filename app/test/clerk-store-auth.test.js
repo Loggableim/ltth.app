@@ -128,6 +128,7 @@ describe('Clerk store auth', () => {
     const token = jwt.sign({
       sub: 'user_123',
       sid: 'sess_123',
+      iss: 'https://clerk.ltth.app',
       azp: 'https://ltth.app'
     }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
       algorithm: 'RS256',
@@ -142,6 +143,7 @@ describe('Clerk store auth', () => {
       env: {
         CLERK_PUBLISHABLE_KEY: 'pk_test_public',
         CLERK_JWT_KEY: publicPem,
+        CLERK_ISSUER: 'https://clerk.ltth.app',
         LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/'
       }
     });
@@ -158,6 +160,157 @@ describe('Clerk store auth', () => {
     assert.strictEqual(request.storeAccount.sessionId, 'sess_123');
     assert.strictEqual(request.storeAccount.license.active, true);
     assert.strictEqual(request.storeAccount.license.plan, 'beta-free');
+  });
+
+  it('rejects a real signed session token from the wrong Clerk issuer', async () => {
+    const { verifyClerkSessionToken } = require('../modules/clerk-store-auth');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const token = jwt.sign({
+      sub: 'user_123',
+      sid: 'sess_123',
+      iss: 'https://wrong-clerk.example',
+      azp: 'http://127.0.0.1:3000'
+    }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+      algorithm: 'RS256',
+      expiresIn: '1h'
+    });
+
+    await expect(verifyClerkSessionToken(token, {
+      env: {
+        CLERK_JWT_KEY: publicPem,
+        CLERK_FRONTEND_API: 'clerk.ltth.app'
+      },
+      authorizedParties: ['http://127.0.0.1:3000'],
+      includeRequestAuthorizedParties: false,
+      requireAuthorizedParty: true
+    })).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
+  });
+
+  it('fails closed when no exact Clerk issuer can be configured or derived', async () => {
+    const { verifyClerkSessionToken } = require('../modules/clerk-store-auth');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const token = jwt.sign({
+      sub: 'user_123',
+      sid: 'sess_123',
+      iss: 'https://unconfigured-clerk.example'
+    }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+      algorithm: 'RS256',
+      expiresIn: '1h'
+    });
+
+    await expect(verifyClerkSessionToken(token, {
+      env: { CLERK_JWT_KEY: publicPem },
+      authorizedParties: [],
+      includeRequestAuthorizedParties: false
+    })).rejects.toMatchObject({
+      code: 'CLERK_ISSUER_NOT_CONFIGURED'
+    });
+  });
+
+  it.each([
+    ['wrong', 'http://evil.example'],
+    ['missing', undefined]
+  ])('rejects a real signed session token with %s azp when a local origin is expected', async (_name, azp) => {
+    const { verifyClerkSessionToken } = require('../modules/clerk-store-auth');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const claims = {
+      sub: 'user_123',
+      sid: 'sess_123',
+      iss: 'https://clerk.ltth.app'
+    };
+    if (azp !== undefined) {
+      claims.azp = azp;
+    }
+    const token = jwt.sign(
+      claims,
+      privateKey.export({ type: 'pkcs8', format: 'pem' }),
+      { algorithm: 'RS256', expiresIn: '1h' }
+    );
+
+    await expect(verifyClerkSessionToken(token, {
+      env: {
+        CLERK_JWT_KEY: publicPem,
+        CLERK_FRONTEND_API: 'clerk.ltth.app'
+      },
+      authorizedParties: ['http://127.0.0.1:3000'],
+      includeRequestAuthorizedParties: false,
+      requireAuthorizedParty: true
+    })).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
+  });
+
+  it('enforces configured Clerk session audience', async () => {
+    const { verifyClerkSessionToken } = require('../modules/clerk-store-auth');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const privatePem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const sign = audience => jwt.sign({
+      sub: 'user_123',
+      sid: 'sess_123',
+      iss: 'https://clerk.ltth.app',
+      azp: 'http://127.0.0.1:3000',
+      aud: audience
+    }, privatePem, {
+      algorithm: 'RS256',
+      expiresIn: '1h'
+    });
+    const options = {
+      env: {
+        CLERK_JWT_KEY: publicPem,
+        CLERK_FRONTEND_API: 'clerk.ltth.app',
+        LTTH_STORE_CLERK_AUDIENCE: 'ltth-desktop'
+      },
+      authorizedParties: ['http://127.0.0.1:3000'],
+      includeRequestAuthorizedParties: false,
+      requireAuthorizedParty: true
+    };
+
+    await expect(verifyClerkSessionToken(
+      sign('another-app'),
+      options
+    )).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
+    await expect(verifyClerkSessionToken(
+      sign('ltth-desktop'),
+      options
+    )).resolves.toMatchObject({
+      sub: 'user_123',
+      aud: 'ltth-desktop'
+    });
+  });
+
+  it('allows an absent azp only when no authorized party is expected', async () => {
+    const { verifyClerkSessionToken } = require('../modules/clerk-store-auth');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const token = jwt.sign({
+      sub: 'user_123',
+      sid: 'sess_123',
+      iss: 'https://clerk.ltth.app'
+    }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+      algorithm: 'RS256',
+      expiresIn: '1h'
+    });
+
+    await expect(verifyClerkSessionToken(token, {
+      env: {
+        CLERK_JWT_KEY: publicPem,
+        CLERK_ISSUER: 'https://clerk.ltth.app'
+      },
+      authorizedParties: [],
+      includeRequestAuthorizedParties: false
+    })).resolves.toMatchObject({ sub: 'user_123' });
   });
 
   it('includes beta license status in the store account response', () => {

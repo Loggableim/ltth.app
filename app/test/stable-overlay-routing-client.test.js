@@ -3,6 +3,9 @@
 const {
   StableOverlayRoutingClient
 } = require('../modules/stable-overlay-routing-client');
+const {
+  createStableOverlayRoutingLifecycle
+} = require('../modules/stable-overlay-routing-routes');
 
 function deferred() {
   let resolve;
@@ -136,6 +139,7 @@ function createHarness(overrides = {}) {
     instanceIdFactory: overrides.instanceIdFactory ||
       (() => 'process-instance'),
     requestTimeoutMs: overrides.requestTimeoutMs || 5_000,
+    shutdownTimeoutMs: overrides.shutdownTimeoutMs,
     abortControllerFactory: overrides.abortControllerFactory
   });
   return {
@@ -233,8 +237,13 @@ describe('StableOverlayRoutingClient', () => {
       tunnelURL: 'https://first-tunnel.trycloudflare.com',
       reused: true
     });
-    await Promise.resolve();
-    await Promise.resolve();
+    for (
+      let index = 0;
+      index < 20 && client.getStatus().state !== 'activating';
+      index += 1
+    ) {
+      await Promise.resolve();
+    }
     expect(client.getStatus().state).toBe('activating');
 
     activation.resolve(response(200, {
@@ -324,8 +333,13 @@ describe('StableOverlayRoutingClient', () => {
     });
 
     const starting = harness.client.start();
-    await Promise.resolve();
-    await Promise.resolve();
+    for (
+      let index = 0;
+      index < 20 && harness.timers.pendingDelays().length === 0;
+      index += 1
+    ) {
+      await Promise.resolve();
+    }
 
     expect(harness.timers.pendingDelays()).toEqual([1_000]);
     await harness.timers.advance(1_000);
@@ -383,8 +397,10 @@ describe('StableOverlayRoutingClient', () => {
     });
 
     const starting = harness.client.start();
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let index = 0; index < 20 && !activationOptions; index += 1) {
+      await Promise.resolve();
+    }
+    expect(activationOptions).toBeDefined();
     let stopSettled = false;
     const stopping = harness.client.stop().then(status => {
       stopSettled = true;
@@ -402,6 +418,51 @@ describe('StableOverlayRoutingClient', () => {
     expect(stopSettled).toBe(true);
     expect(activationOptions.signal.aborted).toBe(true);
     expect(harness.timers.pendingDelays()).toEqual([]);
+  });
+
+  test('stop cancels an in-flight slow Quick Tunnel and fences late startup', async () => {
+    const tunnel = deferred();
+    let tunnelOptions;
+    const harness = createHarness({
+      networkManager: {
+        ensureOverlayQuickTunnel: (port, options) => {
+          tunnelOptions = options;
+          return tunnel.promise;
+        }
+      }
+    });
+
+    const starting = harness.client.start();
+    for (let index = 0; index < 20 && !tunnelOptions; index += 1) {
+      await Promise.resolve();
+    }
+    expect(tunnelOptions).toBeDefined();
+
+    let stopSettled = false;
+    const stopping = harness.client.stop().then(status => {
+      stopSettled = true;
+      return status;
+    });
+    for (let index = 0; index < 20 && !stopSettled; index += 1) {
+      await Promise.resolve();
+    }
+    const settledBeforeTunnelRelease = stopSettled;
+
+    tunnel.resolve({
+      tunnelURL: 'https://late-start.trycloudflare.com',
+      reused: false
+    });
+    await starting;
+    await stopping;
+    await Promise.resolve();
+
+    expect(settledBeforeTunnelRelease).toBe(true);
+    expect(tunnelOptions.signal.aborted).toBe(true);
+    expect(harness.requests).toEqual([]);
+    expect(harness.client.getStatus()).toMatchObject({
+      state: 'offline',
+      revision: null
+    });
   });
 
   test('stop aborts and awaits stalled activation JSON consumption', async () => {
@@ -974,7 +1035,7 @@ describe('StableOverlayRoutingClient', () => {
 
     const stopping = harness.client.stop();
     expect(events).toEqual(['delete-start']);
-    expect(harness.timers.pendingDelays()).toEqual([5_000]);
+    expect(harness.timers.pendingDelays()).toEqual([2_000]);
 
     close.resolve(response(204));
     await stopping;
@@ -1072,5 +1133,86 @@ describe('StableOverlayRoutingClient', () => {
     });
     expect(closeOptions.signal.aborted).toBe(true);
     expect(harness.timers.pendingDelays()).toEqual([]);
+  });
+
+  test('uses the shorter shutdown bound for a slow lease close', async () => {
+    let closeOptions;
+    const harness = createHarness({
+      requestTimeoutMs: 10_000,
+      shutdownTimeoutMs: 2_000,
+      fetchImpl: async (url, options) => {
+        if (options.method === 'DELETE') {
+          closeOptions = options;
+          return new Promise(() => {});
+        }
+        return response(200, {
+          lease: {
+            active: true,
+            deviceId: 'device-123',
+            instanceId: 'process-instance',
+            revision: 1
+          }
+        });
+      }
+    });
+    await harness.client.start();
+
+    const stopping = harness.client.stop();
+    expect(harness.timers.pendingDelays()).toEqual([2_000]);
+    await harness.timers.advance(2_000);
+
+    await expect(stopping).resolves.toMatchObject({
+      state: 'offline',
+      revision: null
+    });
+    expect(closeOptions.signal.aborted).toBe(true);
+    expect(harness.timers.pendingDelays()).toEqual([]);
+  });
+
+  test('server lifecycle shuts NetworkManager down only after bounded client cancellation', async () => {
+    const events = [];
+    const harness = createHarness({
+      requestTimeoutMs: 10_000,
+      shutdownTimeoutMs: 2_000,
+      fetchImpl: async (url, options) => {
+        if (options.method === 'DELETE') {
+          events.push('close-start');
+          options.signal.addEventListener('abort', () => {
+            events.push('close-abort');
+          }, { once: true });
+          return new Promise(() => {});
+        }
+        return response(200, {
+          lease: {
+            active: true,
+            deviceId: 'device-123',
+            instanceId: 'process-instance',
+            revision: 1
+          }
+        });
+      }
+    });
+    await harness.client.start();
+    const lifecycle = createStableOverlayRoutingLifecycle({
+      client: harness.client,
+      networkManager: {
+        shutdown: () => events.push('network-shutdown')
+      },
+      enabled: true,
+      logger: { warn: jest.fn(), error: jest.fn() }
+    });
+
+    const stopping = lifecycle.shutdown();
+    expect(events).toEqual(['close-start']);
+    await harness.timers.advance(1_999);
+    expect(events).toEqual(['close-start']);
+    await harness.timers.advance(1);
+    await stopping;
+
+    expect(events).toEqual([
+      'close-start',
+      'close-abort',
+      'network-shutdown'
+    ]);
   });
 });

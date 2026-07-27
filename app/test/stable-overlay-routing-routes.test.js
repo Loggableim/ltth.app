@@ -12,6 +12,43 @@ const WORKER_PREFIX = `${API_ORIGIN}/_ltth/v1`;
 const TOKEN = 'fresh-clerk-session-token';
 const OTHER_TOKEN = 'another-fresh-clerk-session-token';
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+class ManualTimers {
+  constructor() {
+    this.nextId = 1;
+    this.tasks = new Map();
+  }
+
+  setTimeout = (callback, delay) => {
+    const id = this.nextId++;
+    this.tasks.set(id, { callback, delay });
+    return id;
+  };
+
+  clearTimeout = id => {
+    this.tasks.delete(id);
+  };
+
+  async advance(delay) {
+    const due = [...this.tasks.entries()]
+      .filter(([, task]) => task.delay <= delay);
+    for (const [id, task] of due) {
+      this.tasks.delete(id);
+      await task.callback();
+      await Promise.resolve();
+    }
+  }
+}
+
 function jsonResponse(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
@@ -115,7 +152,12 @@ function createHarness(overrides = {}) {
       allowInsecureLocalTestOrigin: true
     },
     logger,
-    now: () => Date.parse('2026-07-27T10:01:00.000Z')
+    now: () => Date.parse('2026-07-27T10:01:00.000Z'),
+    timers: overrides.timers,
+    requestTimeoutMs: overrides.requestTimeoutMs,
+    abortControllerFactory: overrides.abortControllerFactory,
+    getAuthorizedParties: overrides.getAuthorizedParties ||
+      (() => ['http://127.0.0.1:3000'])
   });
 
   return {
@@ -125,12 +167,17 @@ function createHarness(overrides = {}) {
     credentialStore,
     fetch,
     logger,
+    timers: overrides.timers,
     verifyClerkSessionToken
   };
 }
 
 function authorized(agent, token = TOKEN) {
   return agent.set('Authorization', `Bearer ${token}`);
+}
+
+function flushTurn() {
+  return new Promise(resolve => setImmediate(resolve));
 }
 
 describe('stable overlay routing local routes', () => {
@@ -186,6 +233,15 @@ describe('stable overlay routing local routes', () => {
     expect(harness.verifyClerkSessionToken).toHaveBeenCalledTimes(2);
     expect(harness.verifyClerkSessionToken.mock.calls.map(call => call[0]))
       .toEqual([TOKEN, OTHER_TOKEN]);
+    for (const [, options] of harness.verifyClerkSessionToken.mock.calls) {
+      expect(options).toMatchObject({
+        requireAuthorizedParty: true,
+        includeRequestAuthorizedParties: false
+      });
+      expect(options.authorizedParties).toEqual([
+        'http://127.0.0.1:3000'
+      ]);
+    }
     expect(harness.fetch).toHaveBeenCalledTimes(2);
     expect(harness.fetch.mock.calls.map(call => call[1].headers))
       .toEqual([
@@ -329,7 +385,8 @@ describe('stable overlay routing local routes', () => {
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'error',
-        referrerPolicy: 'no-referrer'
+        referrerPolicy: 'no-referrer',
+        signal: expect.any(AbortSignal)
       }
     );
     expect(response.status).toBe(200);
@@ -392,7 +449,8 @@ describe('stable overlay routing local routes', () => {
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'error',
-        referrerPolicy: 'no-referrer'
+        referrerPolicy: 'no-referrer',
+        signal: expect.any(AbortSignal)
       }
     );
     expect(harness.credentialStore.save).toHaveBeenCalledWith({
@@ -417,6 +475,295 @@ describe('stable overlay routing local routes', () => {
     expect(response.headers['set-cookie']).toBeUndefined();
     expect(response.headers['x-upstream-secret']).toBeUndefined();
     expect(JSON.stringify(harness.logger)).not.toContain(credential);
+  });
+
+  test.each([
+    [{}, 'missing'],
+    [{ 'Content-Type': 'text/html' }, 'non-JSON'],
+    [{
+      'Content-Type': 'application/json',
+      'Content-Length': String((64 * 1024) + 1)
+    }, 'oversized']
+  ])('rejects %s upstream response metadata before consuming credentials', async (headers) => {
+    const credential = 'c'.repeat(64);
+    const response = new Response(JSON.stringify({
+      device: enrolledDevice(),
+      credential
+    }), {
+      status: 201,
+      headers
+    });
+    const text = jest.spyOn(response, 'text');
+    const harness = createHarness({
+      fetch: jest.fn().mockResolvedValue(response)
+    });
+
+    const result = await authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Studio PC' })
+    );
+
+    expect(result.status).toBe(503);
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  test('caps streaming upstream bodies before reading an oversized tail', async () => {
+    const firstChunk = new Uint8Array(64 * 1024);
+    let reads = 0;
+    const response = {
+      ok: true,
+      status: 201,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      body: {
+        getReader: () => ({
+          read: jest.fn(async () => {
+            reads += 1;
+            if (reads === 1) {
+              return { done: false, value: firstChunk };
+            }
+            return {
+              done: false,
+              value: new TextEncoder().encode('hostile-tail')
+            };
+          }),
+          cancel: jest.fn()
+        })
+      },
+      text: jest.fn(() => {
+        throw new Error('must not buffer the body with response.text()');
+      })
+    };
+    const harness = createHarness({
+      fetch: jest.fn().mockResolvedValue(response)
+    });
+
+    const result = await authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Studio PC' })
+    );
+
+    expect(result.status).toBe(503);
+    expect(reads).toBe(2);
+    expect(response.text).not.toHaveBeenCalled();
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+  });
+
+  test('times out a stalled enrollment fetch and fences its late credential', async () => {
+    const timers = new ManualTimers();
+    const pendingFetch = deferred();
+    const fetch = jest.fn(() => pendingFetch.promise);
+    const harness = createHarness({
+      fetch,
+      timers,
+      requestTimeoutMs: 1_000
+    });
+
+    const pendingResponse = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Studio PC' })
+    ).then(response => response);
+    for (let index = 0; index < 20 && fetch.mock.calls.length === 0; index += 1) {
+      await flushTurn();
+    }
+
+    await timers.advance(1_000);
+    let settled = false;
+    pendingResponse.then(() => {
+      settled = true;
+    });
+    await flushTurn();
+    const settledAtDeadline = settled;
+
+    pendingFetch.resolve(jsonResponse({
+      device: enrolledDevice(),
+      credential: 'd'.repeat(64)
+    }, 201));
+    const response = await pendingResponse;
+
+    expect(settledAtDeadline).toBe(true);
+    expect(response.status).toBe(503);
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+  });
+
+  test('times out stalled body consumption and fences its late credential', async () => {
+    const timers = new ManualTimers();
+    const body = deferred();
+    let bodyStarted = false;
+    const response = {
+      ok: true,
+      status: 201,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      body: {
+        getReader: () => ({
+          read: () => {
+            bodyStarted = true;
+            return body.promise;
+          },
+          cancel: jest.fn()
+        })
+      },
+      text: () => {
+        bodyStarted = true;
+        return body.promise.then(result =>
+          new TextDecoder().decode(result.value)
+        );
+      }
+    };
+    const fetch = jest.fn().mockResolvedValue(response);
+    const harness = createHarness({
+      fetch,
+      timers,
+      requestTimeoutMs: 1_000
+    });
+
+    const pendingResponse = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Studio PC' })
+    ).then(result => result);
+    for (let index = 0; index < 20 && !bodyStarted; index += 1) {
+      await flushTurn();
+    }
+    expect(bodyStarted).toBe(true);
+
+    await timers.advance(1_000);
+    let settled = false;
+    pendingResponse.then(() => {
+      settled = true;
+    });
+    await flushTurn();
+    const settledAtDeadline = settled;
+
+    body.resolve({
+      done: false,
+      value: new TextEncoder().encode(JSON.stringify({
+        device: enrolledDevice(),
+        credential: 'e'.repeat(64)
+      }))
+    });
+    const result = await pendingResponse;
+
+    expect(settledAtDeadline).toBe(true);
+    expect(result.status).toBe(503);
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+  });
+
+  test('quiesces the old client before replacing and activating enrollment', async () => {
+    const oldRecord = {
+      deviceId: 'd-old',
+      credential: 'a'.repeat(64),
+      enrolledAt: '2026-07-27T09:00:00.000Z',
+      label: 'Old PC',
+      defaultUsername: 'pup.cid'
+    };
+    let stored = oldRecord;
+    let activeDeviceId = oldRecord.deviceId;
+    const events = [];
+    const credentialStore = {
+      load: jest.fn(() => stored),
+      save: jest.fn(record => {
+        events.push(`save:${record.deviceId}`);
+        stored = record;
+        return record;
+      }),
+      setDefaultUsername: jest.fn(),
+      remove: jest.fn()
+    };
+    const client = {
+      getStatus: jest.fn(() => ({
+        state: 'active',
+        revision: 1,
+        lastSuccessfulHeartbeat: null
+      })),
+      stop: jest.fn(async () => {
+        events.push(`stop:${activeDeviceId}`);
+        activeDeviceId = null;
+      }),
+      start: jest.fn(async () => {
+        activeDeviceId = credentialStore.load().deviceId;
+        events.push(`start:${activeDeviceId}`);
+      })
+    };
+    const harness = createHarness({
+      credentialStore,
+      client,
+      fetch: jest.fn().mockResolvedValue(jsonResponse({
+        device: {
+          ...enrolledDevice(),
+          deviceId: 'd-new'
+        },
+        credential: 'f'.repeat(64)
+      }, 201))
+    });
+
+    const response = await authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'New PC' })
+    );
+
+    expect(response.status).toBe(201);
+    expect(events).toEqual([
+      'stop:d-old',
+      'save:d-new',
+      'start:d-new'
+    ]);
+    expect(stored.deviceId).toBe('d-new');
+    expect(activeDeviceId).toBe(stored.deviceId);
+  });
+
+  test('rejects a concurrent enrollment before creating a second Worker device', async () => {
+    const firstUpstream = deferred();
+    const fetch = jest.fn()
+      .mockImplementationOnce(() => firstUpstream.promise)
+      .mockResolvedValue(jsonResponse({
+        device: {
+          ...enrolledDevice(),
+          deviceId: 'd-second'
+        },
+        credential: '2'.repeat(64)
+      }, 201));
+    const harness = createHarness({ fetch });
+
+    const first = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'First PC' })
+    ).then(response => response);
+    for (let index = 0; index < 20 && fetch.mock.calls.length === 0; index += 1) {
+      await flushTurn();
+    }
+    const second = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Second PC' })
+    ).then(response => response);
+    for (let index = 0; index < 20 && fetch.mock.calls.length < 2; index += 1) {
+      await flushTurn();
+    }
+
+    firstUpstream.resolve(jsonResponse({
+      device: {
+        ...enrolledDevice(),
+        deviceId: 'd-first'
+      },
+      credential: '1'.repeat(64)
+    }, 201));
+    const responses = await Promise.all([first, second]);
+
+    expect(responses.map(response => response.status).sort()).toEqual([
+      201,
+      409
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(harness.credentialStore.save).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(responses)).not.toMatch(/"credential"/);
   });
 
   test('forwards normalized claim, restore, release, and revoke contracts exactly', async () => {

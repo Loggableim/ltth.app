@@ -604,6 +604,24 @@ const stableOverlayRoutingLifecycle = createStableOverlayRoutingLifecycle({
     enabled: stableOverlayRoutingConfig.enabled,
     logger
 });
+const getStableOverlayAuthorizedParties = () => networkManager
+    .getAllowedOrigins(PORT || 3000)
+    .reduce((origins, value) => {
+        try {
+            const parsed = new URL(String(value || ''));
+            if (
+                ['http:', 'https:'].includes(parsed.protocol) &&
+                !parsed.username &&
+                !parsed.password &&
+                parsed.pathname === '/' &&
+                !parsed.search &&
+                !parsed.hash
+            ) {
+                origins.push(parsed.origin);
+            }
+        } catch (_) {}
+        return origins;
+    }, []);
 registerStableOverlayRoutingRoutes({
     app,
     apiLimiter,
@@ -612,7 +630,8 @@ registerStableOverlayRoutingRoutes({
     credentialStore: stableOverlayRoutingCredentials,
     client: stableOverlayRoutingClient,
     config: stableOverlayRoutingConfig,
-    logger
+    logger,
+    getAuthorizedParties: getStableOverlayAuthorizedParties
 });
 
 // Ensure soundboard_enabled has a default value so that alerts.js and the
@@ -4551,6 +4570,10 @@ async function gracefulShutdown(signal) {
     }, 5000);
     forceExitTimer.unref();
 
+    // This shutdown path has its own 2s client bound. It must finish before
+    // slower plugin cleanup can consume the process-wide 5s force-exit budget.
+    await stableOverlayRoutingLifecycle.shutdown();
+
     // Plugins own routes, sockets, timers and optional servers. Release them
     // first and in reverse load order so dependants disappear before providers.
     const loadedPluginIds = Array.from(pluginLoader.plugins.keys()).reverse();
@@ -4579,9 +4602,6 @@ async function gracefulShutdown(signal) {
     } catch (error) {
         logger.error('Error shutting down cloud sync:', error);
     }
-
-    // Stable routing must release its lease before NetworkManager stops tunnels.
-    await stableOverlayRoutingLifecycle.shutdown();
 
     // Alle Socket.io-Verbindungen sofort trennen damit server.close() nicht endlos wartet
     io.disconnectSockets(true);

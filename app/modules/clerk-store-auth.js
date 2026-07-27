@@ -26,6 +26,22 @@ function normalizeList(value) {
   return items;
 }
 
+function normalizeExactList(value) {
+  const rawItems = Array.isArray(value) ? value : String(value || '').split(',');
+  const items = [];
+  const seen = new Set();
+
+  for (const rawItem of rawItems) {
+    const item = cleanEnvValue(rawItem);
+    if (item && !seen.has(item)) {
+      seen.add(item);
+      items.push(item);
+    }
+  }
+
+  return items;
+}
+
 function parseCookies(cookieHeader = '') {
   const cookies = {};
 
@@ -159,6 +175,33 @@ function deriveClerkFrontendDomain(publishableKey) {
   }
 }
 
+function normalizeClerkIssuer(value) {
+  const raw = cleanEnvValue(value);
+  if (!raw) {
+    return '';
+  }
+  let parsed;
+  try {
+    parsed = new URL(
+      raw.includes('://') ? raw : `https://${raw}`
+    );
+  } catch (_) {
+    throw new TypeError('Clerk issuer configuration is invalid');
+  }
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username ||
+    parsed.password ||
+    parsed.port ||
+    parsed.search ||
+    parsed.hash ||
+    (parsed.pathname !== '/' && parsed.pathname !== '')
+  ) {
+    throw new TypeError('Clerk issuer configuration is invalid');
+  }
+  return parsed.origin;
+}
+
 function buildStoreAuthConfig(env = process.env) {
   const publishableKey = cleanEnvValue(
     env.LTTH_STORE_CLERK_PUBLISHABLE_KEY ||
@@ -195,6 +238,24 @@ function buildStoreAuthConfig(env = process.env) {
     `${accountPortalBaseUrl}/?mode=sign-in&reason=unauthorized`
   );
   const frontendDomain = cleanEnvValue(env.CLERK_FRONTEND_API || deriveClerkFrontendDomain(publishableKey));
+  const configuredClerkIssuer = cleanEnvValue(
+    env.LTTH_STORE_CLERK_ISSUER ||
+    env.CLERK_ISSUER
+  );
+  let clerkIssuer = '';
+  if (configuredClerkIssuer) {
+    clerkIssuer = normalizeClerkIssuer(configuredClerkIssuer);
+  } else if (frontendDomain) {
+    try {
+      clerkIssuer = normalizeClerkIssuer(frontendDomain);
+    } catch (_) {
+      // Test or placeholder publishable keys may not encode a Clerk domain.
+    }
+  }
+  const clerkAudience = normalizeExactList(
+    env.LTTH_STORE_CLERK_AUDIENCE ||
+    env.CLERK_JWT_AUDIENCE
+  );
   const jwtKey = cleanEnvValue(
     env.LTTH_STORE_CLERK_JWT_KEY ||
     env.CLERK_JWT_KEY ||
@@ -214,6 +275,8 @@ function buildStoreAuthConfig(env = process.env) {
     clerkEnabled: Boolean(publishableKey),
     publishableKey,
     frontendDomain,
+    clerkIssuer,
+    clerkAudience,
     proxyUrl,
     authBridgeUrl,
     authCallbackPath,
@@ -311,12 +374,31 @@ async function verifyClerkSessionToken(token, options = {}) {
     logger: options.logger
   });
 
+  const issuer = normalizeClerkIssuer(
+    options.issuer || config.clerkIssuer
+  );
+  if (!issuer) {
+    const error = new Error(
+      'Clerk session token verification requires an exact issuer'
+    );
+    error.code = 'CLERK_ISSUER_NOT_CONFIGURED';
+    throw error;
+  }
+  const audience = normalizeExactList(
+    options.audience || config.clerkAudience
+  );
+  const verification = {
+    algorithms: ['RS256'],
+    clockTolerance: 5
+  };
+  verification.issuer = issuer;
+  if (audience.length > 0) {
+    verification.audience = audience;
+  }
+
   let payload;
   try {
-    payload = jwt.verify(token, publicKey, {
-      algorithms: ['RS256'],
-      clockTolerance: 5
-    });
+    payload = jwt.verify(token, publicKey, verification);
   } catch (error) {
     const wrapped = new Error(`Clerk session token verification failed: ${error.message}`);
     wrapped.code = 'CLERK_TOKEN_INVALID';
@@ -325,10 +407,18 @@ async function verifyClerkSessionToken(token, options = {}) {
 
   const authorizedParties = Array.from(new Set([
     ...normalizeList(options.authorizedParties || ''),
-    ...buildAuthorizedParties(options.req || {}, config, env)
+    ...(options.includeRequestAuthorizedParties === false
+      ? []
+      : buildAuthorizedParties(options.req || {}, config, env))
   ]));
   const tokenOrigin = cleanEnvValue(payload.azp).toLowerCase();
-  if (tokenOrigin && authorizedParties.length > 0 && !authorizedParties.includes(tokenOrigin)) {
+  const requiresAuthorizedParty =
+    options.requireAuthorizedParty === true ||
+    authorizedParties.length > 0;
+  if (
+    requiresAuthorizedParty &&
+    (!tokenOrigin || !authorizedParties.includes(tokenOrigin))
+  ) {
     const error = new Error(`Clerk session token was issued for an unexpected origin: ${payload.azp}`);
     error.code = 'CLERK_TOKEN_INVALID';
     throw error;

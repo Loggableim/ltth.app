@@ -16,6 +16,7 @@ const TUNNEL_ORIGIN_PATTERN =
   /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/;
 const INSTANCE_ID_PATTERN = /^[A-Za-z0-9._:-]+$/;
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+const DEFAULT_SHUTDOWN_TIMEOUT_MS = 2_000;
 
 class ClientRequestError extends Error {
   constructor(kind) {
@@ -106,6 +107,7 @@ class StableOverlayRoutingClient {
     random = () => crypto.randomInt(0, 1_000_001) / 1_000_000,
     instanceIdFactory = () => crypto.randomUUID(),
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    shutdownTimeoutMs = DEFAULT_SHUTDOWN_TIMEOUT_MS,
     abortControllerFactory = () => new AbortController()
   } = {}) {
     if (
@@ -153,6 +155,12 @@ class StableOverlayRoutingClient {
     ) {
       throw new TypeError('A positive request timeout is required');
     }
+    if (
+      !Number.isSafeInteger(shutdownTimeoutMs) ||
+      shutdownTimeoutMs < 1
+    ) {
+      throw new TypeError('A positive shutdown timeout is required');
+    }
     if (typeof abortControllerFactory !== 'function') {
       throw new TypeError('An AbortController factory is required');
     }
@@ -167,6 +175,7 @@ class StableOverlayRoutingClient {
     this.getPort = getPort;
     this.random = random;
     this.requestTimeoutMs = requestTimeoutMs;
+    this.shutdownTimeoutMs = shutdownTimeoutMs;
     this.abortControllerFactory = abortControllerFactory;
     this.enabled = isFeatureEnabled(config.enabled);
     this.apiOrigin = this.enabled
@@ -304,9 +313,7 @@ class StableOverlayRoutingClient {
       this.state = 'starting_tunnel';
       let tunnel;
       try {
-        tunnel = await this.networkManager.ensureOverlayQuickTunnel(
-          this.getPort()
-        );
+        tunnel = await this._ensureOverlayQuickTunnel();
       } catch (_) {
         throw new ClientRequestError('transient');
       }
@@ -330,6 +337,38 @@ class StableOverlayRoutingClient {
       this._handleCycleError(error, generation);
     }
     return this.getStatus();
+  }
+
+  _ensureOverlayQuickTunnel() {
+    const controller = this._createAbortController();
+    let rejectAbort;
+    const aborted = new Promise((_, reject) => {
+      rejectAbort = reject;
+    });
+    const onAbort = () => {
+      rejectAbort(new ClientRequestError('cancelled'));
+    };
+    controller.signal.addEventListener('abort', onAbort, { once: true });
+    if (controller.signal.aborted) {
+      onAbort();
+    }
+
+    this.inflightRequestControllers.add(controller);
+    let starting;
+    try {
+      starting = Promise.resolve(
+        this.networkManager.ensureOverlayQuickTunnel(
+          this.getPort(),
+          { signal: controller.signal }
+        )
+      );
+    } catch (error) {
+      starting = Promise.reject(error);
+    }
+    return Promise.race([starting, aborted]).finally(() => {
+      this.inflightRequestControllers.delete(controller);
+      controller.signal.removeEventListener?.('abort', onAbort);
+    });
   }
 
   async _putLease(
@@ -436,7 +475,12 @@ class StableOverlayRoutingClient {
     return lease.revision;
   }
 
-  async _fetchLease(method, body, consumeResponse = response => response) {
+  async _fetchLease(
+    method,
+    body,
+    consumeResponse = response => response,
+    timeoutMs = this.requestTimeoutMs
+  ) {
     let response;
     try {
       response = await this._fetchWithTimeout(
@@ -459,7 +503,8 @@ class StableOverlayRoutingClient {
             { allowConflict: true }
           );
           return consumeResponse(leaseResponse);
-        }
+        },
+        timeoutMs
       );
     } catch (error) {
       if (error instanceof ClientRequestError) {
@@ -501,17 +546,10 @@ class StableOverlayRoutingClient {
   async _fetchWithTimeout(
     url,
     options,
-    consumeResponse = response => response
+    consumeResponse = response => response,
+    timeoutMs = this.requestTimeoutMs
   ) {
-    const controller = this.abortControllerFactory();
-    if (
-      !controller ||
-      typeof controller.abort !== 'function' ||
-      !controller.signal ||
-      typeof controller.signal.addEventListener !== 'function'
-    ) {
-      throw new TypeError('AbortController factory returned an invalid value');
-    }
+    const controller = this._createAbortController();
 
     let rejectAbort;
     const aborted = new Promise((_, reject) => {
@@ -530,7 +568,7 @@ class StableOverlayRoutingClient {
       try {
         controller.abort();
       } catch (_) {}
-    }, this.requestTimeoutMs);
+    }, timeoutMs);
 
     try {
       let request;
@@ -553,6 +591,19 @@ class StableOverlayRoutingClient {
         controller.signal.removeEventListener('abort', onAbort);
       }
     }
+  }
+
+  _createAbortController() {
+    const controller = this.abortControllerFactory();
+    if (
+      !controller ||
+      typeof controller.abort !== 'function' ||
+      !controller.signal ||
+      typeof controller.signal.addEventListener !== 'function'
+    ) {
+      throw new TypeError('AbortController factory returned an invalid value');
+    }
+    return controller;
   }
 
   _abortInflightRequests() {
@@ -672,7 +723,10 @@ class StableOverlayRoutingClient {
           deviceId: this.credentials.deviceId,
           instanceId: this.instanceId,
           expectedRevision: this.revision
-        });
+        }, response => response, Math.min(
+          this.requestTimeoutMs,
+          this.shutdownTimeoutMs
+        ));
       } catch (_) {
         this.logger.warn(
           'Stable overlay routing could not close its lease during shutdown.'
@@ -690,5 +744,6 @@ class StableOverlayRoutingClient {
 module.exports = {
   StableOverlayRoutingClient,
   HEARTBEAT_INTERVAL_MS,
-  RETRY_BACKOFF_MS
+  RETRY_BACKOFF_MS,
+  DEFAULT_SHUTDOWN_TIMEOUT_MS
 };

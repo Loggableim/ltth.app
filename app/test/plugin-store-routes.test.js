@@ -24,6 +24,7 @@ function createAuthFixture(claimOverrides = {}) {
   const token = jwt.sign({
     sub: 'user_123',
     sid: 'sess_123',
+    iss: 'https://clerk.ltth.app',
     azp: 'http://127.0.0.1:3000',
     ...claimOverrides
   }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
@@ -62,6 +63,7 @@ function createTestApp(pluginsDir, envOverrides = {}, options = {}) {
   const env = {
     CLERK_PUBLISHABLE_KEY: 'pk_test_public',
     CLERK_JWT_KEY: authFixture.publicPem,
+    CLERK_ISSUER: 'https://clerk.ltth.app',
     LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/',
     ...envOverrides
   };

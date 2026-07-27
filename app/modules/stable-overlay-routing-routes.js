@@ -6,6 +6,8 @@ const LOCAL_PREFIX = '/api/stable-overlay-routing';
 const MANAGEMENT_PREFIX = '/_ltth/v1';
 const DEFAULT_API_ORIGIN = 'https://overlay.ltth.app';
 const MAX_UPSTREAM_RESPONSE_BYTES = 64 * 1024;
+const MAX_UPSTREAM_RESPONSE_CHUNKS = 1024;
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9._:-]+$/;
 const JSON_CONTENT_TYPE_PATTERN = /^application\/json(?:\s*;.*)?$/i;
 const DOMAIN_ERROR_CODES = new Set([
@@ -300,39 +302,161 @@ function sanitizeAccount(value) {
   };
 }
 
-async function readBoundedJson(response) {
-  let text;
-  try {
-    text = await response.text();
-  } catch (_) {
-    throw new LocalRouteError(
-      503,
-      'STABLE_ROUTING_UNAVAILABLE',
-      'Stable overlay routing is temporarily unavailable.'
-    );
-  }
+function upstreamUnavailable() {
+  return new LocalRouteError(
+    503,
+    'STABLE_ROUTING_UNAVAILABLE',
+    'Stable overlay routing is temporarily unavailable.'
+  );
+}
+
+function validateAbortController(controller) {
   if (
-    Buffer.byteLength(text, 'utf8') > MAX_UPSTREAM_RESPONSE_BYTES ||
-    text.length === 0
+    !controller ||
+    typeof controller.abort !== 'function' ||
+    !controller.signal ||
+    typeof controller.signal.addEventListener !== 'function'
   ) {
-    throw new LocalRouteError(
-      503,
-      'STABLE_ROUTING_UNAVAILABLE',
-      'Stable overlay routing is temporarily unavailable.'
-    );
+    throw new TypeError('AbortController factory returned an invalid value');
   }
-  try {
-    return JSON.parse(text);
-  } catch (_) {
-    throw new LocalRouteError(
-      503,
-      'STABLE_ROUTING_UNAVAILABLE',
-      'Stable overlay routing is temporarily unavailable.'
-    );
+  return controller;
+}
+
+function createRequestDeadline({
+  timers,
+  timeoutMs,
+  abortControllerFactory
+}) {
+  const controller = validateAbortController(abortControllerFactory());
+  let expired = false;
+  let rejectDeadline;
+  const deadline = new Promise((_, reject) => {
+    rejectDeadline = reject;
+  });
+  const timeoutId = timers.setTimeout(() => {
+    expired = true;
+    try {
+      controller.abort();
+    } catch (_) {}
+    rejectDeadline(upstreamUnavailable());
+  }, timeoutMs);
+
+  return {
+    signal: controller.signal,
+    race(value) {
+      return Promise.race([Promise.resolve(value), deadline]);
+    },
+    assertActive() {
+      if (expired || controller.signal.aborted) {
+        throw upstreamUnavailable();
+      }
+    },
+    dispose() {
+      timers.clearTimeout(timeoutId);
+    }
+  };
+}
+
+function validateUpstreamJsonMetadata(response) {
+  const contentType = response?.headers?.get?.('content-type');
+  if (
+    typeof contentType !== 'string' ||
+    !JSON_CONTENT_TYPE_PATTERN.test(contentType)
+  ) {
+    throw upstreamUnavailable();
+  }
+  const contentLength = response.headers.get('content-length');
+  if (contentLength !== null) {
+    if (!/^\d+$/.test(contentLength)) {
+      throw upstreamUnavailable();
+    }
+    const declaredBytes = Number(contentLength);
+    if (
+      !Number.isSafeInteger(declaredBytes) ||
+      declaredBytes < 1 ||
+      declaredBytes > MAX_UPSTREAM_RESPONSE_BYTES
+    ) {
+      throw upstreamUnavailable();
+    }
   }
 }
 
-async function mapUpstreamFailure(response) {
+async function readBoundedJson(response, deadline) {
+  validateUpstreamJsonMetadata(response);
+  if (!response.body || typeof response.body.getReader !== 'function') {
+    throw upstreamUnavailable();
+  }
+  const reader = response.body.getReader();
+  if (
+    !reader ||
+    typeof reader.read !== 'function' ||
+    typeof reader.cancel !== 'function'
+  ) {
+    throw upstreamUnavailable();
+  }
+
+  const chunks = [];
+  let totalBytes = 0;
+  let completed = false;
+  try {
+    while (true) {
+      deadline.assertActive();
+      const item = await deadline.race(reader.read());
+      deadline.assertActive();
+      if (!item || typeof item.done !== 'boolean') {
+        throw upstreamUnavailable();
+      }
+      if (item.done) {
+        completed = true;
+        break;
+      }
+      if (
+        !(item.value instanceof Uint8Array) ||
+        item.value.byteLength < 1
+      ) {
+        throw upstreamUnavailable();
+      }
+      totalBytes += item.value.byteLength;
+      if (
+        totalBytes > MAX_UPSTREAM_RESPONSE_BYTES ||
+        chunks.length >= MAX_UPSTREAM_RESPONSE_CHUNKS
+      ) {
+        throw upstreamUnavailable();
+      }
+      chunks.push(Buffer.from(
+        item.value.buffer,
+        item.value.byteOffset,
+        item.value.byteLength
+      ));
+    }
+  } catch (error) {
+    try {
+      await reader.cancel();
+    } catch (_) {}
+    throw error instanceof LocalRouteError ? error : upstreamUnavailable();
+  } finally {
+    if (completed && typeof reader.releaseLock === 'function') {
+      try {
+        reader.releaseLock();
+      } catch (_) {}
+    }
+  }
+  if (totalBytes < 1) {
+    throw upstreamUnavailable();
+  }
+
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(
+      Buffer.concat(chunks, totalBytes)
+    );
+    return JSON.parse(text);
+  } catch (_) {
+    throw upstreamUnavailable();
+  }
+}
+
+async function mapUpstreamFailure(response, deadline) {
   if (response.status === 401 || response.status === 403) {
     throw new LocalRouteError(
       401,
@@ -343,7 +467,7 @@ async function mapUpstreamFailure(response) {
   if ([404, 409, 429].includes(response.status)) {
     let body = null;
     try {
-      body = await readBoundedJson(response);
+      body = await readBoundedJson(response, deadline);
     } catch (_) {}
     const code = DOMAIN_ERROR_CODES.has(body?.error)
       ? body.error
@@ -429,7 +553,14 @@ function registerStableOverlayRoutingRoutes({
   client,
   config = {},
   logger = console,
-  now = Date.now
+  now = Date.now,
+  timers = {
+    setTimeout,
+    clearTimeout
+  },
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  abortControllerFactory = () => new AbortController(),
+  getAuthorizedParties
 } = {}) {
   if (!app || typeof app.get !== 'function' || typeof app.post !== 'function') {
     throw new TypeError('An Express app is required');
@@ -442,6 +573,25 @@ function registerStableOverlayRoutingRoutes({
   }
   if (typeof verifyClerkSessionToken !== 'function') {
     throw new TypeError('A Clerk session verifier is required');
+  }
+  if (
+    !timers ||
+    typeof timers.setTimeout !== 'function' ||
+    typeof timers.clearTimeout !== 'function'
+  ) {
+    throw new TypeError('Timer functions are required');
+  }
+  if (
+    !Number.isSafeInteger(requestTimeoutMs) ||
+    requestTimeoutMs < 1
+  ) {
+    throw new TypeError('A positive request timeout is required');
+  }
+  if (typeof abortControllerFactory !== 'function') {
+    throw new TypeError('An AbortController factory is required');
+  }
+  if (typeof getAuthorizedParties !== 'function') {
+    throw new TypeError('A local authorized-party resolver is required');
   }
   if (
     !credentialStore ||
@@ -468,6 +618,7 @@ function registerStableOverlayRoutingRoutes({
       config.allowInsecureLocalTestOrigin
     )
     : null;
+  let enrollmentInProgress = false;
 
   function send(res, status, body) {
     res.set('Cache-Control', 'no-store');
@@ -502,9 +653,41 @@ function registerStableOverlayRoutingRoutes({
       );
     }
     const token = match[1];
+    let authorizedParties;
+    try {
+      const candidates = getAuthorizedParties(req);
+      authorizedParties = [...new Set(
+        (Array.isArray(candidates) ? candidates : [])
+          .map(value => {
+            const parsed = new URL(String(value || ''));
+            if (
+              !['http:', 'https:'].includes(parsed.protocol) ||
+              parsed.username ||
+              parsed.password ||
+              parsed.pathname !== '/' ||
+              parsed.search ||
+              parsed.hash
+            ) {
+              throw new Error('invalid authorized party');
+            }
+            return parsed.origin.toLowerCase();
+          })
+      )];
+    } catch (_) {
+      throw upstreamUnavailable();
+    }
+    if (authorizedParties.length < 1) {
+      throw upstreamUnavailable();
+    }
     let claims;
     try {
-      claims = await verifyClerkSessionToken(token, { req, logger });
+      claims = await verifyClerkSessionToken(token, {
+        req,
+        logger,
+        authorizedParties,
+        includeRequestAuthorizedParties: false,
+        requireAuthorizedParty: true
+      });
     } catch (_) {
       logger.warn?.('Stable overlay routing rejected a local Clerk session.');
       throw new LocalRouteError(
@@ -528,7 +711,14 @@ function registerStableOverlayRoutingRoutes({
     return token;
   }
 
-  async function forward(token, workerPath, method, body, expectedStatus) {
+  async function forward(
+    token,
+    workerPath,
+    method,
+    body,
+    expectedStatus,
+    deadline
+  ) {
     const headers = {
       Authorization: `Bearer ${token}`
     };
@@ -538,7 +728,8 @@ function registerStableOverlayRoutingRoutes({
       cache: 'no-store',
       credentials: 'omit',
       redirect: 'error',
-      referrerPolicy: 'no-referrer'
+      referrerPolicy: 'no-referrer',
+      signal: deadline.signal
     };
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
@@ -547,10 +738,11 @@ function registerStableOverlayRoutingRoutes({
 
     let response;
     try {
-      response = await fetch(
+      response = await deadline.race(fetch(
         `${apiOrigin}${MANAGEMENT_PREFIX}${workerPath}`,
         options
-      );
+      ));
+      deadline.assertActive();
     } catch (_) {
       throw new LocalRouteError(
         503,
@@ -566,7 +758,7 @@ function registerStableOverlayRoutingRoutes({
       );
     }
     if (!response.ok) {
-      await mapUpstreamFailure(response);
+      await mapUpstreamFailure(response, deadline);
     }
     if (response.status !== expectedStatus) {
       throw new LocalRouteError(
@@ -590,20 +782,37 @@ function registerStableOverlayRoutingRoutes({
 
   function handler(operation) {
     return async (req, res) => {
+      const deadline = createRequestDeadline({
+        timers,
+        timeoutMs: requestTimeoutMs,
+        abortControllerFactory
+      });
       try {
-        assertEnabled();
-        const token = await authorize(req);
-        rejectQuery(req);
-        return await operation(req, res, token);
+        return await deadline.race((async () => {
+          assertEnabled();
+          const token = await authorize(req);
+          deadline.assertActive();
+          rejectQuery(req);
+          return operation(req, res, token, deadline);
+        })());
       } catch (error) {
         return sendError(res, error);
+      } finally {
+        deadline.dispose();
       }
     };
   }
 
-  async function accountForToken(token) {
-    const response = await forward(token, '/account', 'GET', undefined, 200);
-    return sanitizeAccount(await readBoundedJson(response));
+  async function accountForToken(token, deadline) {
+    const response = await forward(
+      token,
+      '/account',
+      'GET',
+      undefined,
+      200,
+      deadline
+    );
+    return sanitizeAccount(await readBoundedJson(response, deadline));
   }
 
   app.get(
@@ -618,8 +827,8 @@ function registerStableOverlayRoutingRoutes({
   app.get(
     `${LOCAL_PREFIX}/account`,
     apiLimiter,
-    handler(async (_req, res, token) => {
-      const account = await accountForToken(token);
+    handler(async (_req, res, token, deadline) => {
+      const account = await accountForToken(token, deadline);
       let stored;
       try {
         stored = credentialStore.load();
@@ -641,48 +850,62 @@ function registerStableOverlayRoutingRoutes({
   app.post(
     `${LOCAL_PREFIX}/devices/enroll`,
     apiLimiter,
-    handler(async (req, res, token) => {
-      const body = requireExactBody(req, ['label']);
-      const label = normalizeLabel(body.label);
-      const response = await forward(
-        token,
-        '/devices/enroll',
-        'POST',
-        { label },
-        201
-      );
-      const payload = await readBoundedJson(response);
-      const device = sanitizeDevice(payload?.device);
-      if (
-        typeof payload?.credential !== 'string' ||
-        !/^[a-f0-9]{64}$/.test(payload.credential)
-      ) {
+    handler(async (req, res, token, deadline) => {
+      if (enrollmentInProgress) {
         throw new LocalRouteError(
-          503,
-          'STABLE_ROUTING_UNAVAILABLE',
-          'Stable overlay routing is temporarily unavailable.'
+          409,
+          'ENROLLMENT_IN_PROGRESS',
+          'A stable overlay routing enrollment is already in progress.'
         );
       }
-      credentialStore.save({
-        deviceId: device.deviceId,
-        credential: payload.credential,
-        enrolledAt: device.createdAt || new Date(Math.trunc(now())).toISOString(),
-        label: device.label,
-        defaultUsername: null
-      });
-      await client.start();
-      return send(res, 201, {
-        success: true,
-        device,
-        status: client.getStatus()
-      });
+      enrollmentInProgress = true;
+      try {
+        const body = requireExactBody(req, ['label']);
+        const label = normalizeLabel(body.label);
+        const response = await forward(
+          token,
+          '/devices/enroll',
+          'POST',
+          { label },
+          201,
+          deadline
+        );
+        const payload = await readBoundedJson(response, deadline);
+        const device = sanitizeDevice(payload?.device);
+        if (
+          typeof payload?.credential !== 'string' ||
+          !/^[a-f0-9]{64}$/.test(payload.credential)
+        ) {
+          throw upstreamUnavailable();
+        }
+        await deadline.race(client.stop());
+        deadline.assertActive();
+        credentialStore.save({
+          deviceId: device.deviceId,
+          credential: payload.credential,
+          enrolledAt: device.createdAt ||
+            new Date(Math.trunc(now())).toISOString(),
+          label: device.label,
+          defaultUsername: null
+        });
+        deadline.assertActive();
+        await deadline.race(client.start());
+        deadline.assertActive();
+        return send(res, 201, {
+          success: true,
+          device,
+          status: client.getStatus()
+        });
+      } finally {
+        enrollmentInProgress = false;
+      }
     })
   );
 
   app.post(
     `${LOCAL_PREFIX}/claims`,
     apiLimiter,
-    handler(async (req, res, token) => {
+    handler(async (req, res, token, deadline) => {
       const body = requireExactBody(req, ['username']);
       const username = normalizeUsername(body.username);
       const response = await forward(
@@ -690,9 +913,10 @@ function registerStableOverlayRoutingRoutes({
         '/claims',
         'POST',
         { username },
-        201
+        201,
+        deadline
       );
-      const payload = await readBoundedJson(response);
+      const payload = await readBoundedJson(response, deadline);
       return send(res, 201, {
         success: true,
         claim: sanitizeClaim(payload?.claim)
@@ -703,7 +927,7 @@ function registerStableOverlayRoutingRoutes({
   app.post(
     `${LOCAL_PREFIX}/claims/:username/restore`,
     apiLimiter,
-    handler(async (req, res, token) => {
+    handler(async (req, res, token, deadline) => {
       requireExactBody(req, []);
       const username = normalizeUsername(req.params.username);
       const response = await forward(
@@ -711,9 +935,10 @@ function registerStableOverlayRoutingRoutes({
         `/claims/${encodeURIComponent(username)}/restore`,
         'POST',
         {},
-        200
+        200,
+        deadline
       );
-      const payload = await readBoundedJson(response);
+      const payload = await readBoundedJson(response, deadline);
       return send(res, 200, {
         success: true,
         claim: sanitizeClaim(payload?.claim)
@@ -724,7 +949,7 @@ function registerStableOverlayRoutingRoutes({
   app.delete(
     `${LOCAL_PREFIX}/claims/:username`,
     apiLimiter,
-    handler(async (req, res, token) => {
+    handler(async (req, res, token, deadline) => {
       const body = requireExactBody(req, ['username']);
       const pathUsername = normalizeUsername(req.params.username);
       const bodyUsername = normalizeUsername(body.username);
@@ -736,9 +961,10 @@ function registerStableOverlayRoutingRoutes({
         `/claims/${encodeURIComponent(pathUsername)}`,
         'DELETE',
         { username: pathUsername },
-        200
+        200,
+        deadline
       );
-      const payload = await readBoundedJson(response);
+      const payload = await readBoundedJson(response, deadline);
       return send(res, 200, {
         success: true,
         claim: sanitizeClaim(payload?.claim)
@@ -749,7 +975,7 @@ function registerStableOverlayRoutingRoutes({
   app.delete(
     `${LOCAL_PREFIX}/devices/:deviceId`,
     apiLimiter,
-    handler(async (req, res, token) => {
+    handler(async (req, res, token, deadline) => {
       requireExactBody(req, []);
       const deviceId = normalizeIdentifier(req.params.deviceId);
       await forward(
@@ -757,7 +983,8 @@ function registerStableOverlayRoutingRoutes({
         `/devices/${encodeURIComponent(deviceId)}`,
         'DELETE',
         {},
-        204
+        204,
+        deadline
       );
 
       let stored = null;
@@ -781,10 +1008,10 @@ function registerStableOverlayRoutingRoutes({
   app.put(
     `${LOCAL_PREFIX}/default-username`,
     apiLimiter,
-    handler(async (req, res, token) => {
+    handler(async (req, res, token, deadline) => {
       const body = requireExactBody(req, ['username']);
       const username = normalizeUsername(body.username);
-      const account = await accountForToken(token);
+      const account = await accountForToken(token, deadline);
       if (!account.claims.some(
         claim => claim.username === username && claim.state === 'active'
       )) {
