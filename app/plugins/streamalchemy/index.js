@@ -9,6 +9,7 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const TutorialHintDirector = require('./backend/streammonsters/tutorial-hint-director');
 const StreamMonstersPublicEventProjector = require(
   './backend/streammonsters/public-event-projector'
 );
@@ -23,7 +24,7 @@ const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 5;
+const STREAM_MONSTERS_RULES_VERSION = 6;
 const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
 const DEFAULT_HATCH_DURATION_MS = 2 * 60 * 1000;
 const INCUBATION_PRESETS_MS = Object.freeze([
@@ -151,7 +152,8 @@ class StreamAlchemyPlugin {
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       getStreamKey: () => this.streamMonstersEngine?.streamKey || null,
       logger,
-      seasonDurationDays: this.config.streamMonsters.seasonDurationDays
+      seasonDurationDays: this.config.streamMonsters.seasonDurationDays,
+      rulesVersion: STREAM_MONSTERS_RULES_VERSION
     });
     this.streamMonstersProgression.setMonsterProgressHandler(({
       userId,
@@ -188,6 +190,10 @@ class StreamAlchemyPlugin {
     this.streamMonstersGCCERegisteredCommands = [];
     this.streamMonstersGCCEUnavailableCommands = [];
     this.streamMonstersGCCELifecycleListeners = [];
+    this.streamMonstersTutorialHintDirector = new TutorialHintDirector({
+      getCommandReference: command => this.getStreamMonstersCommandReference(command),
+      intervalSeconds: this.config.streamMonsters.tutorialHintIntervalSeconds
+    });
     this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
       execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
@@ -289,6 +295,7 @@ class StreamAlchemyPlugin {
         seasonDurationDays: 28,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        tutorialHintIntervalSeconds: 90,
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
         rendererQuality: 'auto',
@@ -310,6 +317,9 @@ class StreamAlchemyPlugin {
         freeEggDropsEnabled: storedStreamMonsters.freeEggDropsEnabled !== false,
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
+        ),
+        tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
+          storedStreamMonsters.tutorialHintIntervalSeconds
         ),
         commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
@@ -430,6 +440,13 @@ class StreamAlchemyPlugin {
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
       ? Math.round(seconds)
       : 86_400;
+  }
+
+  normalizeTutorialHintIntervalSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 60 && seconds <= 300
+      ? Math.round(seconds)
+      : 90;
   }
 
   normalizeRendererQuality(value) {
@@ -572,6 +589,9 @@ class StreamAlchemyPlugin {
         freeEggDropsEnabled: mergedStreamMonsters.freeEggDropsEnabled !== false,
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
+        ),
+        tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
+          mergedStreamMonsters.tutorialHintIntervalSeconds
         ),
         commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
@@ -1140,6 +1160,7 @@ class StreamAlchemyPlugin {
       ) {
         this.api.emit('streammonsters:battle_knockout', emitted);
       }
+      this.emitStreamMonstersTutorialHint(eventType, projector.isCritical(eventType));
     }
     this.logStructured('socket_emit', diagnostic, 'debug');
     const domainEvents = {
@@ -1158,6 +1179,15 @@ class StreamAlchemyPlugin {
     const domainEvent = domainEvents[eventType];
     if (domainEvent) this.logStructured(domainEvent, diagnostic, 'debug');
     return emitted;
+  }
+
+  emitStreamMonstersTutorialHint(eventType, critical) {
+    const director = this.streamMonstersTutorialHintDirector;
+    if (!director || eventType === 'streammonsters:tutorial_hint') return null;
+    director.setIntervalSeconds(this.config?.streamMonsters?.tutorialHintIntervalSeconds);
+    const hint = director.nextHint({ eventType, criticalSequence: critical }, Date.now());
+    if (hint) this.api.emit('streammonsters:tutorial_hint', hint);
+    return hint;
   }
 
   normalizeStableGiftEventTime(data = {}) {

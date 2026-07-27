@@ -326,6 +326,30 @@ class StreamMonstersPublicEventProjector {
   }
 
   project(eventType, payload = {}) {
+    if (eventType === 'streammonsters:battle_choice_locked') {
+      const decision = payload.decision || {};
+      return {
+        matchId: boundedText(payload.matchId, 160),
+        decision: {
+          slot: Math.max(0, finiteNumber(decision.slot, 0)),
+          locked: decision.locked !== false,
+          source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+          round: Math.max(0, finiteNumber(decision.round, 0)),
+          deadlineMs: Math.max(0, finiteNumber(decision.deadlineMs, 0))
+        }
+      };
+    }
+    if (eventType === 'streammonsters:battle_choices_revealed') {
+      return {
+        matchId: boundedText(payload.matchId, 160),
+        round: Math.max(0, finiteNumber(payload.round, 0)),
+        choices: Array.isArray(payload.choices) ? payload.choices.map(choice => ({
+          slot: Math.max(0, finiteNumber(choice?.slot, 0)),
+          choice: ['A', 'B', 'C'].includes(choice?.choice) ? choice.choice : 'A',
+          source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
+        })) : []
+      };
+    }
     if (eventType === 'streammonsters:chat_result') {
       return {
         displayName: this.displayName(payload),

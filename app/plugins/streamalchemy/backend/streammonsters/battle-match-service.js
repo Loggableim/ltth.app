@@ -2,9 +2,12 @@ const { randomUUID } = require('crypto');
 const { getEvolutionAssetPath, getTemplate } = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
 
-const ROSTER_WINDOW_MS = 15_000;
-const ACTION_WINDOW_MS = 8_000;
-const STAT_WINDOW_MS = 30_000;
+const ROSTER_WINDOW_MS = 10_000;
+const ACTION_WINDOW_MS = 6_000;
+const STAT_WINDOW_MS = 15_000;
+const RULES_V5_ROSTER_WINDOW_MS = 15_000;
+const RULES_V5_ACTION_WINDOW_MS = 8_000;
+const RULES_V5_STAT_WINDOW_MS = 30_000;
 const REMATCH_AVOIDANCE_MS = 10 * 60 * 1000;
 const MATCH_WIDEN_INTERVAL_MS = 30_000;
 const INITIAL_RATING_GAP = 150;
@@ -42,6 +45,7 @@ class BattleMatchService {
     getStreamKey = () => null,
     logger = null,
     seasonDurationDays = 28,
+    rulesVersion = 5,
     sweepIntervalMs = 1_000,
     autoStart = true
   }) {
@@ -58,6 +62,7 @@ class BattleMatchService {
     this.seasonDurationDays = ARENA_DURATION_PRESETS.includes(Number(seasonDurationDays))
       ? Number(seasonDurationDays)
       : 28;
+    this.rulesVersion = Number(rulesVersion) >= 6 ? 6 : 5;
     this.sweepIntervalMs = Math.max(250, Number(sweepIntervalMs) || 1_000);
     this.sweepTimer = null;
     if (autoStart) this.start();
@@ -109,6 +114,22 @@ class BattleMatchService {
   currentStreamKey() {
     const streamKey = String(this.getStreamKey?.() || '').trim();
     return streamKey || null;
+  }
+
+  isRulesV6(match) {
+    return Number(match?.rulesVersion ?? this.rulesVersion) >= 6;
+  }
+
+  rosterWindowMs(match = null) {
+    return this.isRulesV6(match) ? ROSTER_WINDOW_MS : RULES_V5_ROSTER_WINDOW_MS;
+  }
+
+  actionWindowMs(match = null) {
+    return this.isRulesV6(match) ? ACTION_WINDOW_MS : RULES_V5_ACTION_WINDOW_MS;
+  }
+
+  statWindowMs(match = null) {
+    return this.isRulesV6(match) ? STAT_WINDOW_MS : RULES_V5_STAT_WINDOW_MS;
   }
 
   join({ userId, stance = 'adaptive' }) {
@@ -202,12 +223,13 @@ class BattleMatchService {
       INSERT INTO streammonsters_matches (
         match_id, state, phase_version, seed, rules_version, round_number,
         matchmaking_level_gap, roster_deadline_ms, created_at_ms, updated_at_ms
-      ) VALUES (?, 'roster', 1, ?, 5, 0, ?, ?, ?, ?)
+      ) VALUES (?, 'roster', 1, ?, ?, 0, ?, ?, ?, ?)
     `).run(
       matchId,
       seed,
+      this.rulesVersion,
       Math.max(2, Number(opponent.allowedLevelGap) || 2),
-      nowMs + ROSTER_WINDOW_MS,
+      nowMs + this.rosterWindowMs(),
       nowMs,
       nowMs
     );
@@ -607,11 +629,20 @@ class BattleMatchService {
         decision: {
           sequence,
           round: match.roundNumber,
-          window: 'action',
-          slot: participant.slot,
-          choice,
-          source: normalizedSource,
-          timeout: normalizedSource === 'timeout'
+          ...(this.isRulesV6(match)
+            ? {
+                slot: participant.slot,
+                locked: true,
+                source: normalizedSource,
+                deadlineMs: match.actionDeadlineMs
+              }
+            : {
+                window: 'action',
+                slot: participant.slot,
+                choice,
+                source: normalizedSource,
+                timeout: normalizedSource === 'timeout'
+              })
         }
       })
     );
@@ -708,10 +739,12 @@ class BattleMatchService {
   }
 
   startActionWindow(matchId, expectedVersion = null) {
+    const current = this.getMatch(matchId);
+    if (!current) return null;
     const nowMs = this.now();
     const predicate = expectedVersion == null ? '' : 'AND phase_version = ?';
     const args = [
-      nowMs + ACTION_WINDOW_MS,
+      nowMs + this.actionWindowMs(current),
       nowMs,
       matchId,
       ...(expectedVersion == null ? [] : [expectedVersion])
@@ -802,6 +835,22 @@ class BattleMatchService {
       WHERE match_id = ? AND window_kind = 'action' AND window_sequence = ?
     `).all(matchId, match.roundNumber);
     if (decisions.length !== 2) return match;
+    if (this.isRulesV6(match)) {
+      this.appendEvent(matchId, 'streammonsters:battle_choices_revealed', {
+        matchId,
+        round: match.roundNumber,
+        choices: decisions.map(decision => {
+          const participant = match.participants.find(entry => (
+            entry.participantId === decision.participant_id
+          ));
+          return {
+            slot: participant?.slot || 0,
+            choice: decision.choice,
+            source: decision.source === 'timeout' ? 'timeout' : 'viewer'
+          };
+        })
+      });
+    }
     const fighters = match.participants.map(participant => participant.roster);
     const choices = Object.fromEntries(decisions.map(decision => {
       const participant = match.participants.find(entry => entry.participantId === decision.participant_id);
@@ -883,7 +932,7 @@ class BattleMatchService {
           action_deadline_ms = ?,
           updated_at_ms = ?
       WHERE match_id = ? AND state = 'action' AND phase_version = ?
-    `).run(nowMs + ACTION_WINDOW_MS, nowMs, matchId, expectedVersion);
+    `).run(nowMs + this.actionWindowMs(match), nowMs, matchId, expectedVersion);
     if (changed.changes) {
       const next = this.getMatch(matchId);
       this.appendEvent(matchId, 'streammonsters:battle_choice_opened', {
@@ -1046,7 +1095,7 @@ class BattleMatchService {
       const actions = this.getReplay(matchId).actions;
       const result = {
         matchId,
-        rulesVersion: 5,
+        rulesVersion: match.rulesVersion,
         seed: match.seed,
         winnerMonsterId,
         participants: match.participants.map(participant => ({
@@ -1064,7 +1113,7 @@ class BattleMatchService {
           battle_id, seed, monster_a_id, monster_b_id, winner_monster_id,
           user_a_id, user_b_id, rounds_json, rules_version, skills_json,
           result_json, created_at_ms, match_id, replay_version
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 5, ?, ?, ?, ?, 5)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         `battle-${matchId}`,
         match.seed,
@@ -1074,10 +1123,12 @@ class BattleMatchService {
         match.participants[0].viewerId,
         match.participants[1].viewerId,
         JSON.stringify([]),
+        match.rulesVersion,
         JSON.stringify({}),
         JSON.stringify(result),
         nowMs,
-        matchId
+        matchId,
+        match.rulesVersion
       );
       this.appendEvent(matchId, 'streammonsters:battle_completed', {
         matchId,
@@ -1138,6 +1189,7 @@ class BattleMatchService {
 
   createStatPrompt(matchId, participant, pointsGained = 1) {
     if (!participant || pointsGained < 1) return null;
+    const match = this.getMatch(matchId);
     if (!participant.lockedMonsterId) {
       participant = this.getMatch(matchId)?.participants.find(candidate => (
         candidate.participantId === participant.participantId
@@ -1163,7 +1215,7 @@ class BattleMatchService {
       participant.participantId,
       participant.viewerId,
       participant.lockedMonsterId,
-      nowMs + STAT_WINDOW_MS,
+      nowMs + this.statWindowMs(match),
       nowMs
     );
     const prompt = this.db.prepare(`
@@ -1230,7 +1282,7 @@ class BattleMatchService {
       userId,
       monsterId,
       uniqueSource,
-      nowMs + STAT_WINDOW_MS,
+      nowMs + this.statWindowMs(),
       nowMs
     );
     const prompt = this.db.prepare(`
@@ -1342,6 +1394,7 @@ class BattleMatchService {
   }
 
   getReplay(matchId, cursor = 0) {
+    const match = this.getMatch(matchId);
     const actions = this.db.prepare(`
       SELECT * FROM streammonsters_match_actions
       WHERE match_id = ? AND COALESCE(event_sequence, sequence) > ?
@@ -1364,7 +1417,7 @@ class BattleMatchService {
     }));
     return {
       matchId,
-      rulesVersion: 5,
+      rulesVersion: match?.rulesVersion || 5,
       cursor: events.at(-1)?.sequence || Math.max(0, Number(cursor) || 0),
       actions,
       events
@@ -1430,14 +1483,35 @@ class BattleMatchService {
       return {
         matchId: match.matchId,
         decision: {
-          sequence,
-          round: Number(decision.round) || 0,
-          window: 'action',
-          slot: Number(decision.slot) || 0,
-          choice: ['A', 'B', 'C'].includes(decision.choice) ? decision.choice : 'A',
-          source: decision.source === 'timeout' ? 'timeout' : 'viewer',
-          timeout: decision.source === 'timeout' || decision.timeout === true
+          ...(this.isRulesV6(match)
+            ? {
+                round: Number(decision.round) || 0,
+                slot: Number(decision.slot) || 0,
+                locked: true,
+                source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+                deadlineMs: Number(decision.deadlineMs) || match.actionDeadlineMs || 0
+              }
+            : {
+                sequence,
+                round: Number(decision.round) || 0,
+                window: 'action',
+                slot: Number(decision.slot) || 0,
+                choice: ['A', 'B', 'C'].includes(decision.choice) ? decision.choice : 'A',
+                source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+                timeout: decision.source === 'timeout' || decision.timeout === true
+              })
         }
+      };
+    }
+    if (eventType === 'streammonsters:battle_choices_revealed') {
+      return {
+        matchId: match.matchId,
+        round: Number(payload.round) || 0,
+        choices: Array.isArray(payload.choices) ? payload.choices.map(choice => ({
+          slot: Number(choice?.slot) || 0,
+          choice: ['A', 'B', 'C'].includes(choice?.choice) ? choice.choice : 'A',
+          source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
+        })) : []
       };
     }
     if (eventType === 'streammonsters:battle_match_found') {
@@ -1563,8 +1637,8 @@ class BattleMatchService {
     return {
       battleId,
       matchId: match.matchId,
-      rulesVersion: 5,
-      replayVersion: 5,
+      rulesVersion: match.rulesVersion,
+      replayVersion: match.rulesVersion,
       cursor: nextCursor,
       hasMore,
       actions: events
