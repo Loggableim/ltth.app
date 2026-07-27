@@ -30,12 +30,17 @@ const REQUEST_EXACT_HEADERS = new Set([
 ]);
 
 const RESPONSE_EXACT_HEADERS = new Set([
+  'authentication-info',
+  'proxy-authentication-info',
   'set-cookie',
   'set-cookie2',
   'server',
   'server-timing',
+  'traceparent',
   'via',
   'www-authenticate',
+  'x-request-id',
+  'x-session-id',
   'x-powered-by'
 ]);
 

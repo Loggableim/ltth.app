@@ -53,8 +53,7 @@ export function normalizeTikTokUsername(value) {
   if (
     normalized.length < 2 ||
     normalized.length > 24 ||
-    normalized === '.' ||
-    normalized === '..' ||
+    normalized.split('.').some((segment) => segment.length === 0) ||
     !/^[a-z0-9_.]+$/.test(normalized)
   ) {
     invalid('invalid_username');
@@ -136,7 +135,7 @@ function normalizeIdentifier(value, maxLength) {
 }
 
 function normalizeRevision(value) {
-  if (!Number.isSafeInteger(value) || value < 0) {
+  if (!Number.isSafeInteger(value) || value < 1) {
     invalid();
   }
   return value;

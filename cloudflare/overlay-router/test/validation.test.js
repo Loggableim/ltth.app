@@ -34,7 +34,6 @@ describe('TikTok username validation', () => {
   it('normalizes surrounding space, one leading at sign, compatibility forms, and ASCII case', () => {
     expect(normalizeTikTokUsername('  @Ｆｏｏ_１２.Bar  ')).toBe('foo_12.bar');
     expect(normalizeTikTokUsername('Creator.Name')).toBe('creator.name');
-    expect(normalizeTikTokUsername('\u2026')).toBe('...');
   });
 
   it.each([
@@ -46,6 +45,11 @@ describe('TikTok username validation', () => {
     'a'.repeat(25),
     '.',
     '..',
+    '...',
+    '.creator',
+    'creator.',
+    'creator..name',
+    '\u2026',
     'user/name',
     'user\\name',
     'user\u2215name',
@@ -173,6 +177,42 @@ describe('authenticated JSON body parsing', () => {
       });
       await expectAsyncValidationFailure(() => parseAuthenticatedJsonBody(request, schema));
     }
+  });
+
+  it('allows an omitted expected revision for initial lease activation', async () => {
+    const request = new Request('https://overlay.ltth.app/_ltth/v1/lease', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        deviceId: 'device-1',
+        instanceId: 'instance-1',
+        tunnelOrigin: 'https://valid.trycloudflare.com'
+      })
+    });
+
+    await expect(parseAuthenticatedJsonBody(request, MANAGEMENT_BODY_SCHEMAS.leaseUpdate))
+      .resolves.toEqual({
+        deviceId: 'device-1',
+        instanceId: 'instance-1',
+        tunnelOrigin: 'https://valid.trycloudflare.com'
+      });
+  });
+
+  it('rejects a supplied zero expected revision', async () => {
+    const request = new Request('https://overlay.ltth.app/_ltth/v1/lease', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        deviceId: 'device-1',
+        instanceId: 'instance-1',
+        tunnelOrigin: 'https://valid.trycloudflare.com',
+        expectedRevision: 0
+      })
+    });
+
+    await expectAsyncValidationFailure(
+      () => parseAuthenticatedJsonBody(request, MANAGEMENT_BODY_SCHEMAS.leaseUpdate)
+    );
   });
 
   it.each([
