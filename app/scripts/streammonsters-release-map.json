@@ -7,10 +7,10 @@
       "sourceCommit": "c4c0eca7a0a04617da3db042a0964d904f62a2c7",
       "manifestVersion": "1.6.0",
       "package": "plugin-store/packages/streamalchemy-1.6.0.zip",
-      "sha256": "27fa2e10ab386121df9df8c16e4d619c043cfb4df4f514fef7c76e7535c49711",
+      "sha256": "640416cc66c0668ca0547b4530144f3de4de530be9143c4d176248a8752097d1",
       "readmeOverlay": {
         "title": "Stream Monsters 1.6 – Retention Core",
-        "summary": "Stream Monsters 1.6 adds an optional recurring free egg alongside creator-selected gift eggs. A viewer receives the offer on chat contact, has a 60-second private reservation to hatch it, and then releases it to the public FIFO where another viewer may adopt it.",
+        "summary": "Stream Monsters 1.6 adds an optional recurring free egg alongside creator-selected gift eggs. During the 60-second private reservation, the viewer must claim the egg with `!adopt` before hatching it through normal incubation. If unclaimed, the egg enters the public FIFO and another viewer can claim it with `!adopt`.",
         "highlights": [
           "Creators can enable or disable the optional recurring free egg and configure its cooldown.",
           "Unclaimed free eggs become publicly adoptable after the 60-second reservation without replacing gift mappings.",
@@ -22,10 +22,10 @@
       "sourceCommit": "66b28c67972ada5774935eab447194700c06dc09",
       "manifestVersion": "1.7.0",
       "package": "plugin-store/packages/streamalchemy-1.7.0.zip",
-      "sha256": "a6370ca5fe8e1dae9248c28fa0b1d072d11ab4829ad03a9a21a85a67070b57d4",
+      "sha256": "f1cca8f3fea39c5ff58fcf0a19065bd616af6950967437dafafe544c42e60585",
       "readmeOverlay": {
         "title": "Stream Monsters 1.7 – Competitive Arcade",
-        "summary": "Stream Monsters 1.7 builds on the optional recurring free egg and its 60-second reservation followed by public adoption. The portrait-first arcade introduces sealed A/B/C battle choices and balanced Striker, Guardian, Trickster, and Sustain roles.",
+        "summary": "Stream Monsters 1.7 builds on the optional recurring free egg: claim it with `!adopt` during the 60-second reservation before hatching it through normal incubation, or leave it for public FIFO adoption. The portrait-first arcade introduces sealed A/B/C battle choices and balanced Striker, Guardian, Trickster, and Sustain roles.",
         "highlights": [
           "A/B/C choices stay sealed until both fighters have locked or timed out, then reveal together.",
           "Striker, Guardian, Trickster, and Sustain create readable strengths and counterplay across the six elements.",

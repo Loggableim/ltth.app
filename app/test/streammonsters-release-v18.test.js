@@ -264,10 +264,15 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     expect(readme16).toMatch(/optional recurring free egg/i);
     expect(readme16).toMatch(/60[- ]second/i);
     expect(readme16).toMatch(/public.*adopt|adopt.*public/is);
+    expect(readme16).toMatch(/claim.*`!adopt`|`!adopt`.*claim/is);
+    expect(readme16).toMatch(/claim.*before.*hatch|hatch.*after.*claim/is);
+    expect(readme16).not.toMatch(/reservation to hatch/i);
     expect(readme16).not.toMatch(/only source of new eggs|gift-only eggs/i);
 
     expect(readme17).toMatch(/Stream Monsters 1\.7/);
     expect(readme17).toMatch(/optional recurring free egg/i);
+    expect(readme17).toMatch(/claim.*`!adopt`|`!adopt`.*claim/is);
+    expect(readme17).toMatch(/claim.*before.*hatch|hatch.*after.*claim/is);
     expect(readme17).toMatch(/sealed A\/B\/C/i);
     expect(readme17).toMatch(/Striker.*Guardian.*Trickster.*Sustain/is);
     expect(readme17).toMatch(/portrait.*arcade|arcade.*portrait/is);
