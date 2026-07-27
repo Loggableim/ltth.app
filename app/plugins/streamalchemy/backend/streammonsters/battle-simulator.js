@@ -1,7 +1,6 @@
 const {
   ELEMENTS,
   TEMPLATE_CATALOG,
-  hashNumber,
   V6_ELEMENT_ADVANTAGE_PAIRS,
   V6_NEUTRAL_OPPONENTS
 } = require('./catalog');
