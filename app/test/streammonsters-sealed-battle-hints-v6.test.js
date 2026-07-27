@@ -11,6 +11,9 @@ const BattleMatchService = require(
 const PublicEventProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
 );
+const OverlayRuntime = require(
+  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+);
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 function createMatch(now, rulesVersion = 6) {
@@ -134,7 +137,7 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
 
   });
 
-  test('synthesizes one simultaneous reveal from stored pre-seal Rules-v5 lock rows', () => {
+  test('synthesizes and replays one simultaneous reveal from stored pre-seal Rules-v5 lock rows', async () => {
     let nowMs = 1_000;
     const { sqlite, service } = createMatch(() => nowMs);
     sqlite.prepare(`
@@ -211,6 +214,51 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
         { slot: 2, choice: 'C', source: 'timeout' }
       ]
     }]);
+
+    const shown = [];
+    const synchronizer = OverlayRuntime.createBattleReplaySynchronizer({
+      loadPage: ({ matchId, cursor, limit }) => (
+        service.getPublicNormalizedReplay(matchId, cursor, limit)
+      ),
+      present: async event => shown.push(event),
+      pageLimit: 1
+    });
+    await synchronizer.sync({
+      matches: [{ matchId: 'legacy-v5', cursor: firstPage.cursor }]
+    });
+    const synchronized = await synchronizer.sync({
+      matches: [{ matchId: 'legacy-v5', cursor: 2 }]
+    });
+
+    expect(shown.map(event => event.type)).toEqual([
+      'battle_choice_locked',
+      'battle_choices_revealed'
+    ]);
+    expect(shown[1].sequence).toBeGreaterThan(shown[0].sequence);
+    expect(synchronized).toEqual(expect.objectContaining({
+      replayed: 2,
+      caughtUp: true
+    }));
+
+    const followUp = service.appendEvent(
+      'legacy-v5',
+      'streammonsters:battle_cancelled',
+      { matchId: 'legacy-v5', reason: 'compatibility-check' }
+    );
+    const resumed = await synchronizer.sync({
+      matches: [{ matchId: 'legacy-v5', cursor: followUp.sequence }]
+    });
+
+    expect(shown.map(event => event.type)).toEqual([
+      'battle_choice_locked',
+      'battle_choices_revealed',
+      'battle_cancelled'
+    ]);
+    expect(shown.map(event => event.sequence)).toEqual([2, 2.5, 3]);
+    expect(resumed).toEqual(expect.objectContaining({
+      replayed: 1,
+      caughtUp: true
+    }));
   });
 
   test('seals Rules-v5 service locks and reveals both choices together', () => {

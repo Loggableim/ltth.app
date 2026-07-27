@@ -2056,7 +2056,8 @@ class BattleMatchService {
       ).at(-1);
       if (!pageSequences.has(anchor.sequence)) return;
       syntheticBySequence.set(anchor.sequence, {
-        sequence: anchor.sequence,
+        // Persisted sequences are integers; keep this after its lock and before the next row.
+        sequence: anchor.sequence + 0.5,
         eventId: `${anchor.eventId}:compat-reveal`,
         correlationId: match.matchId,
         type: 'streammonsters:battle_choices_revealed',
