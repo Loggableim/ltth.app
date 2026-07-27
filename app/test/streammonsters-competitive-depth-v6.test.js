@@ -55,12 +55,14 @@ function createService({
   store,
   now,
   emit = jest.fn(),
-  progression = null
+  progression = null,
+  collection = null
 }) {
   return new BattleMatchService({
     store,
     battleService: new BattleService({ store, now }),
     progression,
+    collection,
     emit,
     now,
     rulesVersion: 6,
@@ -148,7 +150,14 @@ describe('Stream Monsters competitive depth rules-v6', () => {
         : { vitality: 10, might: 10, guard: 10, agility: 10 }
     }));
     let nowMs = 10_000;
-    const service = createService({ store, now: () => nowMs });
+    const progression = { recordBattleProgress: jest.fn() };
+    const collection = { recordBattleOutcome: jest.fn() };
+    const service = createService({
+      store,
+      now: () => nowMs,
+      progression,
+      collection
+    });
 
     service.join({ userId: 'viewer-alpha' });
     const unlocked = service.join({ userId: 'viewer-beta' }).match;
@@ -164,6 +173,15 @@ describe('Stream Monsters competitive depth rules-v6', () => {
       SELECT COUNT(*) AS count FROM streammonsters_match_rewards
       WHERE match_id = ?
     `).get(unlocked.matchId).count).toBe(0);
+    expect(service.getQueueDodgeStatus('viewer-alpha')).toEqual(
+      expect.objectContaining({
+        dodgeCount: 1,
+        cooldownUntilMs: 0
+      })
+    );
+    sqlite.prepare(`
+      DELETE FROM streammonsters_queue_dodges WHERE viewer_id = ?
+    `).run('viewer-alpha');
 
     service.join({ userId: 'viewer-alpha' });
     const locked = service.join({ userId: 'viewer-beta' }).match;
@@ -194,6 +212,43 @@ describe('Stream Monsters competitive depth rules-v6', () => {
     expect(store.getViewerBattleStats('viewer-beta')).toEqual(
       expect.objectContaining({ battle_count: 1, win_streak: 1 })
     );
+    expect(service.getQueueDodgeStatus('viewer-alpha')).toEqual(
+      expect.objectContaining({
+        dodgeCount: 1,
+        cooldownUntilMs: nowMs + 60_000
+      })
+    );
+    expect(progression.recordBattleProgress).toHaveBeenCalledTimes(2);
+    expect(collection.recordBattleOutcome).toHaveBeenCalledTimes(1);
+    const rewardCount = sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_match_rewards
+      WHERE match_id = ?
+    `).get(locked.matchId).count;
+    const eventCount = sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_match_events
+      WHERE match_id = ?
+    `).get(locked.matchId).count;
+
+    expect(service.join({ userId: 'viewer-alpha' })).toEqual(
+      expect.objectContaining({
+        status: 'cooldown',
+        retryAfterMs: 60_000
+      })
+    );
+    expect(service.leave({ userId: 'viewer-alpha' }).status).toBe('not_queued');
+    expect(service.leave({ userId: 'viewer-alpha' }).status).toBe('not_queued');
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_match_rewards
+      WHERE match_id = ?
+    `).get(locked.matchId).count).toBe(rewardCount);
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_match_events
+      WHERE match_id = ?
+    `).get(locked.matchId).count).toBe(eventCount);
+    expect(store.getViewerBattleStats('viewer-alpha').battle_count).toBe(1);
+    expect(store.getViewerBattleStats('viewer-beta').battle_count).toBe(1);
+    expect(progression.recordBattleProgress).toHaveBeenCalledTimes(2);
+    expect(collection.recordBattleOutcome).toHaveBeenCalledTimes(1);
 
     for (let dodge = 1; dodge <= 3; dodge += 1) {
       expect(service.join({ userId: 'viewer-dodger' }).status).toBe('queued');
@@ -210,6 +265,61 @@ describe('Stream Monsters competitive depth rules-v6', () => {
 
     nowMs += 60_000;
     expect(service.join({ userId: 'viewer-dodger' }).status).toBe('queued');
+  });
+
+  test('awards post-cap monster XP without storing or emitting a rank presentation', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'capped-winner',
+      userId: 'viewer-capped-winner',
+      stats: { vitality: 10, might: 80, guard: 10, agility: 80 }
+    });
+    insertMonster(sqlite, {
+      id: 'capped-loser',
+      userId: 'viewer-capped-loser',
+      element: 'Tide',
+      templateId: 'ripple',
+      stats: { vitality: 1, might: 1, guard: 0, agility: 1 }
+    });
+    const nowMs = Date.parse('2026-07-27T18:00:00Z');
+    const emit = jest.fn();
+    const service = createService({ store, now: () => nowMs, emit });
+    const season = service.getCurrentArenaSeason();
+    ['viewer-capped-winner', 'viewer-capped-loser'].forEach(userId => {
+      service.setArenaRating(season.seasonId, userId, 1_200);
+      sqlite.prepare(`
+        INSERT INTO streammonsters_arena_daily_ledger (
+          viewer_id, day_key, rated_battles
+        ) VALUES (?, '2026-07-27', 10)
+      `).run(userId);
+    });
+
+    service.join({ userId: 'viewer-capped-winner' });
+    const match = service.join({ userId: 'viewer-capped-loser' }).match;
+    const completed = completeOneRound(
+      service,
+      'viewer-capped-winner',
+      'viewer-capped-loser',
+      'daily-cap'
+    );
+    const replay = service.getPublicNormalizedReplay(match.matchId, 0, 100);
+
+    expect(completed.state).toBe('completed');
+    expect(store.getMonster('capped-winner').xp).toBe(15);
+    expect(store.getMonster('capped-loser').xp).toBe(10);
+    expect(replay.result.participants).toEqual(expect.arrayContaining([
+      expect.objectContaining({ xpAwarded: 15, arenaEligible: false }),
+      expect.objectContaining({ xpAwarded: 10, arenaEligible: false })
+    ]));
+    expect(replay.ratingChanges).toEqual([]);
+    expect(replay.events.map(event => event.type))
+      .not.toContain('streammonsters:arena_rating_changed');
+    expect(emit.mock.calls.map(([type]) => type))
+      .not.toContain('streammonsters:arena_rating_changed');
+    expect(service.getArenaRating(season.seasonId, 'viewer-capped-winner').rating)
+      .toBe(1_200);
+    expect(service.getArenaRating(season.seasonId, 'viewer-capped-loser').rating)
+      .toBe(1_200);
   });
 
   test('persists highlights and exposes complete sanitized v6 replay outcomes', () => {

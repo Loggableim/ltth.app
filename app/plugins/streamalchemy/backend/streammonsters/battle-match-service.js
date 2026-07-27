@@ -1122,20 +1122,26 @@ class BattleMatchService {
             monster: publicMonster
           });
         }
-        this.appendEvent(matchId, 'streammonsters:arena_rating_changed', {
-          matchId,
-          slot: participant.slot,
-          arenaEligible: Boolean(eligibility[participant.participantId]),
-          before: {
-            rating: rating.before,
-            tier: this.arenaTier(rating.before)
-          },
-          after: {
-            rating: rating.after,
-            tier: this.arenaTier(rating.after)
-          },
-          delta: rating.delta
-        });
+        if (
+          eligibility[participant.participantId] &&
+          rating.before !== rating.after &&
+          rating.delta !== 0
+        ) {
+          this.appendEvent(matchId, 'streammonsters:arena_rating_changed', {
+            matchId,
+            slot: participant.slot,
+            arenaEligible: true,
+            before: {
+              rating: rating.before,
+              tier: this.arenaTier(rating.before)
+            },
+            after: {
+              rating: rating.after,
+              tier: this.arenaTier(rating.after)
+            },
+            delta: rating.delta
+          });
+        }
         participantResults.push({
           participantId: participant.participantId,
           monsterId: participant.lockedMonsterId,
@@ -2098,12 +2104,12 @@ class BattleMatchService {
     };
   }
 
-  recordQueueDodge(userId, nowMs = this.now()) {
+  recordQueueDodge(userId, nowMs = this.now(), { forceCooldown = false } = {}) {
     const current = this.getQueueDodgeStatus(userId, nowMs);
     const withinWindow = nowMs - current.windowStartedMs < DODGE_WINDOW_MS;
     const dodgeCount = withinWindow ? current.dodgeCount + 1 : 1;
     const windowStartedMs = withinWindow ? current.windowStartedMs : nowMs;
-    const cooldownUntilMs = dodgeCount >= DODGE_THRESHOLD
+    const cooldownUntilMs = forceCooldown || dodgeCount >= DODGE_THRESHOLD
       ? Math.max(current.cooldownUntilMs, nowMs + DODGE_COOLDOWN_MS)
       : current.cooldownUntilMs;
     this.db.prepare(`
@@ -2153,7 +2159,18 @@ class BattleMatchService {
           participant?.lockedMonsterId &&
           ['roster', 'action'].includes(match.state)
         ) {
-          return this.forfeitLockedMatch(match, participant);
+          const result = this.forfeitLockedMatch(match, participant);
+          if (result.status !== 'forfeited') return result;
+          const dodge = this.recordQueueDodge(
+            userId,
+            this.now(),
+            { forceCooldown: true }
+          );
+          return {
+            ...result,
+            retryAfterMs: Math.max(0, dodge.cooldownUntilMs - this.now()),
+            cooldownUntilMs: dodge.cooldownUntilMs
+          };
         }
         return { status: 'active', match };
       }
