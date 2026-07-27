@@ -173,17 +173,20 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Estado:** 🟡 Working / Open Beta
-**Versión:** 1.5.0
+**Versión:** 1.8.0
 **Autor:** Pup Cid
 
 **Descripción:**
-Los regalos de TikTok activados son la única fuente de huevos. Los espectadores coleccionan 72 formas Furry incluidas, evolucionan sus monstruos de forma cosmética y combaten con A, B o C.
+Los regalos de TikTok activados por el creador y los huevos gratis periódicos opcionales comparten la misma cola de incubación justa. Los espectadores coleccionan 72 formas Furry, evolucionan de forma cosmética y combaten con elecciones A, B o C selladas.
 
 **Funciones:**
 - 🎁 Huevos solo por regalos, con tres incubadoras, cola FIFO y caducidad de 24 horas
+- 🥚 Huevo gratis opcional: reservado 60 segundos y después público con `!adopt`; cooldown de 60–31.536.000 segundos, 24 horas por defecto
 - 🐾 24 plantillas en Evolución I, II y III – 72 formas incluidas
-- ⚔️ Combates A/B/C persistentes con tiempo, replay, XP y puntos de estadísticas
+- ⚔️ Combates Rules-v6 sellados: 10 segundos para monstruo, 6 para A/B/C, 15 para estadísticas y replay completo
+- ⚖️ Seis familias elementales y roles Striker, Guardian, Trickster y Sustain con ventajas y desventajas simuladas
 - 🏆 Clasificaciones separadas de Collector Score y Arena Rating
+- 📋 Misiones diarias y semanales sin regalos ni victorias; solo 10 duelos diarios cambian rating y todos los legítimos dan XP
 - 📱 Arena vertical con zona segura de chat del 26 por ciento y diseño horizontal
 - ✨ Efectos WebGPU con fallback Canvas2D y audio CC0 seleccionado
 - 🔒 Sin Art Lab, generación de imágenes por IA ni instalador de modelos
@@ -200,7 +203,7 @@ Los regalos de TikTok activados son la única fuente de huevos. Los espectadores
 http://localhost:3000/streammonsters/overlay
 ```
 
-**Integración:** Cuando GCCE está disponible, es la única entrada de comandos. El prefijo y los alias son editables y se comprueban los conflictos.
+**Integración:** Cuando GCCE está disponible, es la única entrada de comandos. El prefijo y los alias son editables; las ayudas del overlay usan esa configuración y no envían mensajes al chat.
 
 **Equidad y compatibilidad:**
 - Los regalos de pago nunca mejoran estadísticas, multiplicadores de XP, rareza ni probabilidad de victoria.

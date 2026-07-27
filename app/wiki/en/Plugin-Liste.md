@@ -173,17 +173,20 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Status:** 🟡 Working / Open Beta
-**Version:** 1.5.0
+**Version:** 1.8.0
 **Author:** Pup Cid
 
 **Description:**
-Enabled TikTok gifts are the only egg source. Viewers collect 72 bundled Furry forms, evolve monsters cosmetically, and fight interactively with A, B, or C.
+Creator-enabled TikTok gifts and optional recurring free eggs share the same fair incubation queue. Viewers collect 72 bundled Furry forms, evolve monsters cosmetically, and fight with sealed A, B, or C choices.
 
 **Features:**
 - 🎁 Gift-only eggs with three incubators, FIFO overflow, and 24-hour expiry
+- 🥚 Optional free egg: reserved for 60 seconds, then public through `!adopt`; 60–31,536,000 second cooldown, 24-hour default
 - 🐾 24 monster templates across Evolution I, II, and III – 72 bundled forms
-- ⚔️ Persistent timed A/B/C battles with replay, XP, and stat points
+- ⚔️ Sealed Rules-v6 battles: 10-second roster, 6-second A/B/C, 15-second stat choice, and complete replay
+- ⚖️ Six element families plus Striker, Guardian, Trickster, and Sustain with simulator-gated strengths and weaknesses
 - 🏆 Separate Collector Score and Arena Rating leaderboards
+- 📋 Non-gift/non-win daily and weekly quests; only 10 daily battles alter rating while every legitimate battle grants monster XP
 - 📱 Portrait arena with a 26-percent chat safe zone plus landscape layout
 - ✨ WebGPU effects with Canvas2D fallback and curated CC0 audio
 - 🔒 No Art Lab, AI image generation, or model installer in the plugin
@@ -200,7 +203,7 @@ Enabled TikTok gifts are the only egg source. Viewers collect 72 bundled Furry f
 http://localhost:3000/streammonsters/overlay
 ```
 
-**Integration:** When GCCE is available, it is the sole command ingress. Prefix and aliases are editable and conflict-checked.
+**Integration:** When GCCE is available, it is the sole command ingress. Prefix and aliases are editable and conflict-checked; overlay hints use the active configuration and never send chat messages.
 
 **Fairness and compatibility:**
 - Paid gifts never improve combat stats, XP multipliers, rarity, or win probability.

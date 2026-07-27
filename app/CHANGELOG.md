@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Stream Monsters 1.6.0 – Retention Core**: Optional recurring free eggs now reserve on first chat contact for 60 seconds, then enter a transactional public FIFO for `adopt`/`adoptieren`. Creator cooldowns accept 60–31,536,000 seconds and default to 86,400.
+- **Stream Monsters 1.7.0 – Portrait Arcade**: Rules-v6 battles keep A/B/C choices sealed until simultaneous reveal, use 10-second roster and 6-second skill windows, apply the balanced six-element matchup matrix and four template roles, and render one deterministic WebGPU/Canvas/CSS arcade timeline.
+- **Stream Monsters 1.8.0 – Competitive Depth**: Durable leave/forfeit boundaries, queue-dodge cooldowns, complete sanitized Rules-v6 replays, streak/rivalry/upset events, 15-second stat prompts, and aggregate creator diagnostics complete the Open Beta loop.
+
+### Changed
+
+- **Fair progression**: Only the first 10 legitimate daily battles alter Arena Rating and seasonal rewards, while every legitimate completion grants monster XP. Daily and weekly quests remain independent of gifts and wins.
+- **Overlay onboarding**: Contextual command hints use the active GCCE prefix and aliases, wait behind critical sequences, and never post automatic chat messages.
+- **Release provenance**: Stream Monsters 1.6.0, 1.7.0, and 1.8.0 are reproducibly mapped to audited source commits. Every archive through 1.5.0 remains byte-identical; no tags are claimed by the package map.
+
 ## [1.4.1] - 2026-07-26
 
 ### Added

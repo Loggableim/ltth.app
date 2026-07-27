@@ -36,7 +36,7 @@ describe('WebGPU Fireworks 3.1.1 release alignment', () => {
 
     expect(currentRelease.version).toBe(APP_VERSION);
     expect(currentRelease.updated_at.startsWith(RELEASE_DATE)).toBe(true);
-    expect(currentRelease.notes).toContain('Stream Monsters 1.5.0');
+    expect(currentRelease.notes).toContain('Stream Monsters 1.8.0');
 
     expect(publicRelease).toEqual(expect.objectContaining({
       version: APP_VERSION,
@@ -44,12 +44,12 @@ describe('WebGPU Fireworks 3.1.1 release alignment', () => {
       downloadVersion: APP_VERSION,
       downloadUrl: `https://github.com/Loggableim/ltth.app/releases/tag/v${APP_VERSION}`
     }));
-    expect(publicRelease.downloadNote).toContain('Stream Monsters 1.5.0');
+    expect(publicRelease.downloadNote).toContain('Stream Monsters 1.8.0');
     expect(publicRelease.changelog[APP_VERSION]).toEqual(expect.objectContaining({
       date: RELEASE_DATE,
       changes: expect.any(Array)
     }));
-    expect(publicRelease.changelog[APP_VERSION].changes.join('\n')).toContain('Stream Monsters 1.5.0');
+    expect(publicRelease.changelog[APP_VERSION].changes.join('\n')).toContain('Stream Monsters 1.8.0');
   });
 
   test('aligns active download, website, locale, and changelog surfaces', () => {

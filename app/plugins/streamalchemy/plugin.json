@@ -1,8 +1,8 @@
 {
   "id": "streamalchemy",
   "name": "Stream Monsters",
-  "version": "1.5.0",
-  "description": "Portrait-first gift egg collection with 72 bundled Furry forms, interactive A/B/C PvP, permanent progression, two seasonal leaderboards, and cinematic OBS overlays.",
+  "version": "1.8.0",
+  "description": "Portrait-first collector arena with creator-selected gift eggs, recurring free-egg adoption, sealed A/B/C PvP, balanced elemental roles, permanent progression, seasonal competition, and cinematic OBS overlays.",
   "author": "Pup Cid",
   "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
   "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
@@ -21,9 +21,9 @@
     "database"
   ],
   "descriptions": {
-    "en": "Portrait-first gift egg collection with 72 bundled Furry forms, interactive A/B/C PvP, permanent progression, two seasonal leaderboards, and cinematic OBS overlays.",
-    "de": "Portrait-first Geschenk-Eiersammlung mit 72 gebündelten Furry-Formen, interaktivem A/B/C-PvP, permanentem Fortschritt, zwei Saisonranglisten und cineastischem OBS-Overlay.",
-    "es": "Colección de huevos por regalos optimizada para retrato, con 72 formas Furry incluidas, PvP interactivo A/B/C, progreso permanente, dos clasificaciones de temporada y overlay cinematográfico para OBS.",
-    "fr": "Collection d'œufs par cadeaux pensée pour le portrait, avec 72 formes Furry intégrées, PvP interactif A/B/C, progression permanente, deux classements saisonniers et overlay OBS cinématique."
+    "en": "Portrait-first collector arena with creator-selected gift eggs, recurring free-egg adoption, sealed A/B/C PvP, balanced elemental roles, permanent progression, seasonal competition, and cinematic OBS overlays.",
+    "de": "Portrait-first Sammelarena mit vom Creator gewählten Gift-Eiern, wiederkehrender Gratis-Ei-Adoption, verdecktem A/B/C-PvP, balancierten Elementrollen, permanentem Fortschritt und Saisonwettbewerb.",
+    "es": "Arena de colección vertical con huevos por regalos elegidos por el creador, adopción periódica de huevos gratis, PvP A/B/C sellado, roles elementales equilibrados y progreso permanente.",
+    "fr": "Arène de collection portrait avec œufs issus des cadeaux choisis par le Creator, adoption récurrente d'œufs gratuits, PvP A/B/C scellé, rôles élémentaires équilibrés et progression permanente."
   }
 }

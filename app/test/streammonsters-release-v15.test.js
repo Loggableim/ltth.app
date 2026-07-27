@@ -39,7 +39,7 @@ function listFiles(root, relative = '') {
     .sort();
 }
 
-describe('Stream Monsters 1.5 release', () => {
+describe('Stream Monsters current 1.8 release', () => {
   test('aligns the plugin, store and LTTH 1.4.1 release surfaces', () => {
     const manifest = readJson('app/plugins/streamalchemy/plugin.json');
     const store = readJson('plugin-store.json');
@@ -48,14 +48,14 @@ describe('Stream Monsters 1.5 release', () => {
     expect(manifest).toEqual(expect.objectContaining({
       id: 'streamalchemy',
       name: 'Stream Monsters',
-      version: '1.5.0',
+      version: '1.8.0',
       devStatus: 'working-beta'
     }));
     expect(storeEntry).toEqual(expect.objectContaining({
-      version: '1.5.0',
+      version: '1.8.0',
       channel: 'open-beta',
       minLtthVersion: '1.4.1',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       screenshots: [
         '/screenshots/features/stream-monsters-creator-1.5.png',
@@ -77,11 +77,12 @@ describe('Stream Monsters 1.5 release', () => {
     }));
   });
 
-  test('preserves every published Stream Monsters archive through 1.4 byte-for-byte', () => {
+  test('preserves every published Stream Monsters archive through 1.5 byte-for-byte', () => {
     const expected = new Map([
       ['streamalchemy-1.2.0.zip', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
       ['streamalchemy-1.3.0.zip', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf'],
-      ['streamalchemy-1.4.0.zip', 'ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0']
+      ['streamalchemy-1.4.0.zip', 'ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0'],
+      ['streamalchemy-1.5.0.zip', '156aa28664e177f9f9c29730c390016ad3d025e30df5c323fbf2c8394e3188fe']
     ]);
     for (const [name, digest] of expected) {
       expect(sha256(path.join(repoRoot, 'plugin-store', 'packages', name))).toBe(digest);
@@ -95,7 +96,7 @@ describe('Stream Monsters 1.5 release', () => {
       repoRoot,
       'plugin-store',
       'packages',
-      'streamalchemy-1.5.0.zip'
+      'streamalchemy-1.8.0.zip'
     );
     const manifest = readJson('app/plugins/streamalchemy/assets/streammonsters/furry/manifest.json');
     const audio = readJson('app/plugins/streamalchemy/assets/audio/manifest.json');

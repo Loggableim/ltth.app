@@ -197,7 +197,7 @@ describe('Official plugin store registry', () => {
     );
   });
 
-  it('publishes Stream Monsters 1.5.0 for LTTH 1.4.1 with source-identical release assets and keeps 1.2-1.4 unchanged', async () => {
+  it('publishes Stream Monsters 1.8.0 for LTTH 1.4.1 with source-identical release assets and keeps 1.2-1.5 unchanged', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
@@ -205,16 +205,17 @@ describe('Official plugin store registry', () => {
 
     assert(storePlugin, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
-    assert.strictEqual(sourceManifest.version, '1.5.0');
+    assert.strictEqual(sourceManifest.version, '1.8.0');
     assert.strictEqual(storePlugin.version, sourceManifest.version);
     assert.strictEqual(storePlugin.minLtthVersion, '1.4.1');
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip');
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip');
     assert.strictEqual(storePlugin.channel, 'open-beta');
     assert(storePlugin.badges.includes('working-beta'));
     const legacyPackages = new Map([
       ['streamalchemy-1.2.0.zip', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
       ['streamalchemy-1.3.0.zip', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf'],
-      ['streamalchemy-1.4.0.zip', 'ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0']
+      ['streamalchemy-1.4.0.zip', 'ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0'],
+      ['streamalchemy-1.5.0.zip', '156aa28664e177f9f9c29730c390016ad3d025e30df5c323fbf2c8394e3188fe']
     ]);
     for (const [fileName, expectedHash] of legacyPackages) {
       const legacyPath = path.join(repoRoot, 'plugin-store', 'packages', fileName);
@@ -223,7 +224,7 @@ describe('Official plugin store registry', () => {
       assert.strictEqual(legacyDigest, expectedHash, `${fileName} must remain byte-for-byte unchanged`);
     }
 
-    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.5.0.zip');
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.8.0.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
     assert.strictEqual(storePlugin.sha256, digest);
 

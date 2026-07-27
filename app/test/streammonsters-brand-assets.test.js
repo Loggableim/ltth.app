@@ -9,8 +9,8 @@ function readJson(...parts) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, ...parts), 'utf8'));
 }
 
-describe('Stream Monsters 1.5 public branding', () => {
-  it('publishes the stable plugin ID with the 1.5 package and both broadcast screenshots', () => {
+describe('Stream Monsters 1.8 public branding', () => {
+  it('publishes the stable plugin ID with the 1.8 package and both broadcast screenshots', () => {
     const featurePage = fs.readFileSync(path.join(repoRoot, 'features', 'plugin-stream-alchemy.html'), 'utf8');
     const pluginPage = fs.readFileSync(path.join(repoRoot, 'plugins.html'), 'utf8');
     const storeRegistry = readJson('plugin-store.json');
@@ -19,9 +19,9 @@ describe('Stream Monsters 1.5 public branding', () => {
 
     expect(streamMonsters).toMatchObject({
       id: 'streamalchemy',
-      version: '1.5.0',
+      version: '1.8.0',
       channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip',
       screenshots: [creatorScreenshot, arenaScreenshot]
     });
     expect(streamMonsters.sha256).toMatch(/^[a-f0-9]{64}$/);
@@ -58,7 +58,7 @@ describe('Stream Monsters 1.5 public branding', () => {
       'manifest.json'
     );
 
-    expect(docsPage).toContain('Stream Monsters 1.5');
+    expect(docsPage).toContain('Stream Monsters 1.8');
     expect(docsPage).toContain('Gifts-only-Eier');
     expect(docsPage).toContain('72 gebündelte Formen');
     expect(docsPage).toContain('A/B/C-Arena');

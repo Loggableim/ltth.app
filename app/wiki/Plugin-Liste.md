@@ -173,17 +173,20 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Status:** 🟡 Working / Open Beta
-**Version:** 1.5.0
+**Version:** 1.8.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
-Aktivierte TikTok-Geschenke sind die einzige Ei-Quelle. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster kosmetisch weiter und kämpfen interaktiv mit A, B oder C.
+Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier speisen dieselbe faire Brut-Warteschlange. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster kosmetisch weiter und kämpfen mit verdeckten A-, B- oder C-Entscheidungen.
 
 **Features:**
 - 🎁 Gift-only Eier mit drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
+- 🥚 Optionales Gratis-Ei: 60 Sekunden reserviert, danach öffentlich per `!adopt`; Cooldown 60–31.536.000 Sekunden, Standard 24 Stunden
 - 🐾 24 Monster-Vorlagen mit Evolution I, II und III – insgesamt 72 gebündelte Formen
-- ⚔️ Persistente A/B/C-Duelle mit Zeitfenstern, Replay, XP und Statpunkten
+- ⚔️ Verdeckte Rules-v6-Duelle: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C, 15 Sekunden Statwahl und vollständiges Replay
+- ⚖️ Sechs Elementfamilien sowie Striker, Guardian, Trickster und Sustain mit simulatorisch geprüften Vor- und Nachteilen
 - 🏆 Getrennte Collector-Score- und Arena-Rating-Ranglisten
+- 📋 Gift-/siegunabhängige Daily-/Weekly-Quests; nur 10 Tagesduelle ändern Rating, jedes legitime Duell gibt Monster-XP
 - 📱 Portrait-Arena mit 26-Prozent-Chat-Safe-Zone plus Landscape-Layout
 - ✨ WebGPU-Effekte mit Canvas2D-Fallback und kuratiertem CC0-Audio
 - 🔒 Kein Art Lab, keine KI-Bildgenerierung und kein Modell-Installer im Plugin
@@ -200,7 +203,7 @@ Aktivierte TikTok-Geschenke sind die einzige Ei-Quelle. Zuschauer sammeln 72 geb
 http://localhost:3000/streammonsters/overlay
 ```
 
-**Integration:** Wenn GCCE verfügbar ist, ist es der einzige Kommando-Eingang. Prefix und Aliase sind editierbar und konfliktgeprüft.
+**Integration:** Wenn GCCE verfügbar ist, ist es der einzige Kommando-Eingang. Prefix und Aliase sind editierbar und konfliktgeprüft; Overlay-Hinweise verwenden die aktive Konfiguration und senden keine Chatnachrichten.
 
 **Faire Grenzen und Kompatibilität:**
 - Bezahlte Gifts verbessern niemals Kampfwerte, XP-Multiplikatoren, Seltenheit oder Gewinnwahrscheinlichkeit.

@@ -73,7 +73,7 @@ RELEASE_ASSET_ZIP_NAME = "ltth_latest.zip"
 RELEASE_ASSET_MANIFEST_NAME = "ltth_latest.json"
 SEMANTIC_VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 STREAM_MONSTERS_RELEASES = {
-    "1.4.1": "1.5.0",
+    "1.4.1": "1.8.0",
 }
 
 

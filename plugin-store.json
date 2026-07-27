@@ -623,12 +623,12 @@
         "fr": "Stream Monsters"
       },
       "description": {
-        "en": "Creator-selected TikTok gifts are the only egg source for 72 bundled Furry forms, cosmetic evolution, permanent progression, interactive A/B/C PvP in a portrait-first arena, and separate Arena Rating and Collector Score leaderboards.",
-        "de": "Vom Creator ausgewählte TikTok-Gifts sind die einzige Ei-Quelle für 72 gebündelte Furry-Formen, kosmetische Evolution, permanenten Fortschritt, interaktives A/B/C-PvP in einer Portrait-first-Arena sowie getrennte Ranglisten für Arena Rating und Collector Score.",
-        "es": "Los regalos de TikTok elegidos por el creador son la única fuente de huevos para 72 formas Furry incluidas, evolución cosmética, progresión permanente, PvP interactivo A/B/C en una arena vertical y clasificaciones separadas de Arena Rating y Collector Score.",
-        "fr": "Les cadeaux TikTok choisis par le Creator sont l’unique source d’œufs pour 72 formes Furry intégrées, l’évolution cosmétique, la progression permanente, le PvP interactif A/B/C dans une arène portrait et deux classements distincts Arena Rating et Collector Score."
+        "en": "Portrait-first collector arena with recurring free-egg adoption, creator-selected gift eggs, 72 bundled Furry forms, sealed A/B/C PvP, balanced elemental roles, permanent progression, and seasonal competition.",
+        "de": "Portrait-first Sammelarena mit wiederkehrender Gratis-Ei-Adoption, vom Creator gewählten Gift-Eiern, 72 gebündelten Furry-Formen, verdecktem A/B/C-PvP, balancierten Elementrollen, permanentem Fortschritt und Saisonwettbewerb.",
+        "es": "Arena de colección vertical con adopción periódica de huevos gratis, huevos por regalos elegidos por el creador, 72 formas Furry incluidas, PvP A/B/C sellado, roles elementales equilibrados, progreso permanente y competición de temporada.",
+        "fr": "Arène de collection portrait avec adoption récurrente d’œufs gratuits, œufs issus des cadeaux choisis par le Creator, 72 formes Furry intégrées, PvP A/B/C scellé, rôles élémentaires équilibrés, progression permanente et compétition saisonnière."
       },
-      "version": "1.5.0",
+      "version": "1.8.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
@@ -642,8 +642,8 @@
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip",
-      "sha256": "156aa28664e177f9f9c29730c390016ad3d025e30df5c323fbf2c8394e3188fe",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip",
+      "sha256": "89a6edab41db46284c937c669c0762935e198234f8b41b2b068f776d2334a362",
       "pricing": {
         "type": "free",
         "amount": 0,

@@ -24,7 +24,7 @@ const listZipEntries = archivePath => new Promise((resolve, reject) => {
   });
 });
 
-describe('Stream Monsters 1.4 compatibility in the 1.5 creator and overlay release', () => {
+describe('Stream Monsters 1.4 compatibility in the current creator and overlay release', () => {
   test('ships a reconnect-safe priority queue that protects battle and hatch events', () => {
     expect(typeof overlayRuntime.createPriorityQueue).toBe('function');
     const queue = overlayRuntime.createPriorityQueue({ maxSize: 4, staleAfterMs: 1000 });
@@ -429,7 +429,7 @@ describe('Stream Monsters 1.4 compatibility in the 1.5 creator and overlay relea
     ['en', /League World Hybrid/, /Team Heart/, /Collector Score/, /packaged|bundled/i],
     ['es', /League World Hybrid/, /Team Heart/, /Collector Score/, /incluido|paquete/i],
     ['fr', /League World Hybrid/, /Team Heart/, /Collector Score/, /incluse|paquet/i]
-  ])('uses current 1.5 product language in %s', (locale, product, teamHeart, collectorScore, packagedAsset) => {
+  ])('uses current product language in %s', (locale, product, teamHeart, collectorScore, packagedAsset) => {
     const text = JSON.parse(fs.readFileSync(
       path.join(pluginDir, 'locales', `${locale}.json`),
       'utf8'
@@ -547,24 +547,24 @@ describe('Stream Monsters 1.4 compatibility in the 1.5 creator and overlay relea
     expect(overlaySource).not.toContain('data?.quest?.title');
   });
 
-  test('keeps the stable ID and publishes the complete 1.5 product description', () => {
+  test('keeps the stable ID and publishes the complete 1.8 product description', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storeEntry = registry.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(manifest.id).toBe('streamalchemy');
-    expect(manifest.version).toBe('1.5.0');
+    expect(manifest.version).toBe('1.8.0');
     expect(manifest.devStatus).toBe('working-beta');
-    expect(storeEntry.version).toBe('1.5.0');
+    expect(storeEntry.version).toBe('1.8.0');
     expect(storeEntry.channel).toBe('open-beta');
     expect(storeEntry.badges).toContain('working-beta');
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip');
+    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip');
 
     const expectedTerms = {
-      en: [/gift/i, /72/, /Furry/i, /interactive A\/B\/C PvP/i, /progression/i, /leaderboards/i, /portrait/i],
-      de: [/(?:Geschenk|Gift)/i, /72/, /Furry/i, /interaktiv(?:em|es) A\/B\/C-PvP/i, /Fortschritt/i, /Ranglisten/i, /Portrait/i],
-      es: [/regalos/i, /72/, /Furry/i, /PvP/i, /A\/B\/C/i, /interactivo/i, /progres(?:o|ión)/i, /clasificaciones/i, /(?:vertical|retrato)/i],
-      fr: [/cadeaux/i, /72/, /Furry/i, /(?:JcJ|PvP)/i, /A\/B\/C/i, /interactif/i, /progression/i, /classements/i, /portrait/i]
+      en: [/gift/i, /free-egg adoption/i, /sealed A\/B\/C PvP/i, /elemental roles/i, /progression/i, /portrait/i],
+      de: [/(?:Geschenk|Gift)/i, /Gratis-Ei-Adoption/i, /verdecktem A\/B\/C-PvP/i, /Elementrollen/i, /Fortschritt/i, /Portrait/i],
+      es: [/regalos/i, /huevos gratis/i, /PvP A\/B\/C sellado/i, /roles elementales/i, /progreso/i, /vertical/i],
+      fr: [/cadeaux/i, /œufs gratuits/i, /PvP A\/B\/C scellé/i, /rôles élémentaires/i, /progression/i, /portrait/i]
     };
     expect(manifest.description).toEqual(manifest.descriptions.en);
     for (const locale of ['de', 'en', 'es', 'fr']) {
@@ -579,7 +579,7 @@ describe('Stream Monsters 1.4 compatibility in the 1.5 creator and overlay relea
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const localeSource = fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8');
       const translations = JSON.parse(localeSource).plugins.streamalchemy;
-      expect(translations.ui.monsters.version).toMatch(/1\.5/);
+      expect(translations.ui.monsters.version).toMatch(/1\.8/);
       expect(translations.ui.monsters.rulesDynamic).toMatch(/skill|Skill|habilidad|compétence/);
       expect(translations.ui.monsters.skillAttack).toEqual(expect.any(String));
       expect(localeSource).not.toMatch(/Stream[\s-]+Alchemy/i);
@@ -593,11 +593,11 @@ describe('Stream Monsters 1.4 compatibility in the 1.5 creator and overlay relea
       expect(fs.readFileSync(path.join(pluginDir, visibleFile), 'utf8')).not.toMatch(/Stream[\s-]+Alchemy/i);
     }
     const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
-    expect(uiSource).toContain('League World Hybrid · Version 1.5');
+    expect(uiSource).toContain('Retention Competitive Arcade · Version 1.8');
     expect(uiSource).not.toMatch(/Version 1\.[34]/);
   });
 
-  test('documents configurable hatch presets with the two-minute 1.5 default', () => {
+  test('documents configurable hatch presets with the two-minute current default', () => {
     const readme = fs.readFileSync(path.join(pluginDir, 'README.md'), 'utf8');
 
     expect(readme).toContain('New setups default to two minutes');
