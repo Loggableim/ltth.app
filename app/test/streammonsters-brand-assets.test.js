@@ -44,7 +44,7 @@ describe('Stream Monsters 1.8 public branding', () => {
     expect(pluginPage).toContain("'streamalchemy': '/assets/plugin-logos/stream-monsters-icon.png'");
   });
 
-  it('documents gifts-only progression, 72 bundled forms, portrait A/B/C battles, and the emergency fallback', () => {
+  it('documents gift eggs plus optional recurring free eggs, 72 bundled forms, portrait A/B/C battles, and the emergency fallback', () => {
     const docsPage = fs.readFileSync(path.join(repoRoot, 'docs', 'plugins', 'streamalchemy.html'), 'utf8');
     const docsIndex = readJson('docs', 'plugins', 'index.json');
     const streamMonstersDocs = docsIndex.find((plugin) => plugin.id === 'streamalchemy');
@@ -59,7 +59,9 @@ describe('Stream Monsters 1.8 public branding', () => {
     );
 
     expect(docsPage).toContain('Stream Monsters 1.8');
-    expect(docsPage).toContain('Gifts-only-Eier');
+    expect(docsPage).toMatch(/Gift-Eier|Geschenk-Eier/);
+    expect(docsPage).toMatch(/optionale wiederkehrende Gratis-Eier/);
+    expect(docsPage).not.toMatch(/Gifts-only-Eier|Gift-only Eier|nur (?:durch )?Gifts/i);
     expect(docsPage).toContain('72 gebündelte Formen');
     expect(docsPage).toContain('A/B/C-Arena');
     expect(docsPage).toContain('Portrait');

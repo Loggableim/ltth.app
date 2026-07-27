@@ -179,4 +179,3 @@
 - [ ] Run browser/OBS smoke checks at 1080×1920 and 1920×1080 from the exact release branch.
 - [ ] Request final whole-branch review, fix all Critical/Important findings, and re-run affected gates.
 - [ ] Commit as `release(streammonsters): publish retention competitive arcade`.
-

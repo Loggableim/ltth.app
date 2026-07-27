@@ -268,6 +268,9 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     expect(readme16).toMatch(/claim.*before.*hatch|hatch.*after.*claim/is);
     expect(readme16).not.toMatch(/reservation to hatch/i);
     expect(readme16).not.toMatch(/only source of new eggs|gift-only eggs/i);
+    expect(readme16).not.toMatch(
+      /creators can (?:enable|disable)|configure (?:the |its )?cooldown|creator (?:toggle|control)/i
+    );
 
     expect(readme17).toMatch(/Stream Monsters 1\.7/);
     expect(readme17).toMatch(/optional recurring free egg/i);
@@ -277,6 +280,9 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     expect(readme17).toMatch(/Striker.*Guardian.*Trickster.*Sustain/is);
     expect(readme17).toMatch(/portrait.*arcade|arcade.*portrait/is);
     expect(readme17).not.toMatch(/only source of new eggs|gift-only eggs/i);
+    expect(readme17).not.toMatch(
+      /creators can (?:enable|disable)|configure (?:the |its )?cooldown|creator (?:toggle|control)/i
+    );
   });
 
   test('keeps active guide and wiki copy consistent with optional free eggs', () => {
