@@ -16,6 +16,9 @@ describe('stable overlay routing server wiring', () => {
     expect(serverSource).toContain(
       'getAuthorizedParties: getStableOverlayAuthorizedParties'
     );
+    expect(serverSource).toContain(
+      'lifecycle: stableOverlayRoutingLifecycle'
+    );
   });
 
   test('stops stable routing before potentially slow plugin cleanup', () => {

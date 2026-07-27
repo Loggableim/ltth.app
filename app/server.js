@@ -631,7 +631,8 @@ registerStableOverlayRoutingRoutes({
     client: stableOverlayRoutingClient,
     config: stableOverlayRoutingConfig,
     logger,
-    getAuthorizedParties: getStableOverlayAuthorizedParties
+    getAuthorizedParties: getStableOverlayAuthorizedParties,
+    lifecycle: stableOverlayRoutingLifecycle
 });
 
 // Ensure soundboard_enabled has a default value so that alerts.js and the

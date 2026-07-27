@@ -18,6 +18,7 @@ const DOMAIN_ERROR_CODES = new Set([
   'lease_conflict',
   'rate_limited'
 ]);
+const cancellationTargets = new WeakSet();
 
 class LocalRouteError extends Error {
   constructor(status, code, message) {
@@ -310,6 +311,35 @@ function upstreamUnavailable() {
   );
 }
 
+function shuttingDown() {
+  return new LocalRouteError(
+    503,
+    'STABLE_ROUTING_SHUTTING_DOWN',
+    'Stable overlay routing is shutting down.'
+  );
+}
+
+function initiateCancellation(target) {
+  if (!target || typeof target.cancel !== 'function') {
+    return;
+  }
+  if (
+    (typeof target === 'object' || typeof target === 'function') &&
+    cancellationTargets.has(target)
+  ) {
+    return;
+  }
+  if (typeof target === 'object' || typeof target === 'function') {
+    cancellationTargets.add(target);
+  }
+  try {
+    const cancellation = target.cancel();
+    if (cancellation && typeof cancellation.catch === 'function') {
+      cancellation.catch(() => {});
+    }
+  } catch (_) {}
+}
+
 function validateAbortController(controller) {
   if (
     !controller ||
@@ -353,6 +383,9 @@ function createRequestDeadline({
     },
     dispose() {
       timers.clearTimeout(timeoutId);
+      try {
+        controller.abort();
+      } catch (_) {}
     }
   };
 }
@@ -382,16 +415,30 @@ function validateUpstreamJsonMetadata(response) {
 }
 
 async function readBoundedJson(response, deadline) {
-  validateUpstreamJsonMetadata(response);
+  try {
+    validateUpstreamJsonMetadata(response);
+  } catch (error) {
+    initiateCancellation(response?.body);
+    throw error;
+  }
   if (!response.body || typeof response.body.getReader !== 'function') {
+    initiateCancellation(response?.body);
     throw upstreamUnavailable();
   }
-  const reader = response.body.getReader();
+  let reader;
+  try {
+    reader = response.body.getReader();
+  } catch (_) {
+    initiateCancellation(response.body);
+    throw upstreamUnavailable();
+  }
   if (
     !reader ||
     typeof reader.read !== 'function' ||
     typeof reader.cancel !== 'function'
   ) {
+    initiateCancellation(reader);
+    initiateCancellation(response.body);
     throw upstreamUnavailable();
   }
 
@@ -430,9 +477,7 @@ async function readBoundedJson(response, deadline) {
       ));
     }
   } catch (error) {
-    try {
-      await reader.cancel();
-    } catch (_) {}
+    initiateCancellation(reader);
     throw error instanceof LocalRouteError ? error : upstreamUnavailable();
   } finally {
     if (completed && typeof reader.releaseLock === 'function') {
@@ -458,6 +503,7 @@ async function readBoundedJson(response, deadline) {
 
 async function mapUpstreamFailure(response, deadline) {
   if (response.status === 401 || response.status === 403) {
+    initiateCancellation(response.body);
     throw new LocalRouteError(
       401,
       'AUTH_REQUIRED',
@@ -482,6 +528,7 @@ async function mapUpstreamFailure(response, deadline) {
       );
     }
   }
+  initiateCancellation(response.body);
   throw new LocalRouteError(
     503,
     'STABLE_ROUTING_UNAVAILABLE',
@@ -505,15 +552,34 @@ function createStableOverlayRoutingLifecycle({
 
   let startPromise = null;
   let shutdownPromise = null;
+  let mutationGeneration = 0;
+  let shutdownStarted = false;
 
   return {
+    captureMutationGeneration() {
+      return mutationGeneration;
+    },
+
+    isMutationGenerationActive(generation) {
+      return !shutdownStarted && generation === mutationGeneration;
+    },
+
     afterServerListening() {
-      if (!isFeatureEnabled(enabled)) {
+      if (!isFeatureEnabled(enabled) || shutdownStarted) {
         return Promise.resolve();
       }
       if (!startPromise) {
+        const generation = mutationGeneration;
         startPromise = Promise.resolve()
-          .then(() => client.start())
+          .then(() => {
+            if (
+              shutdownStarted ||
+              generation !== mutationGeneration
+            ) {
+              return undefined;
+            }
+            return client.start();
+          })
           .then(() => undefined)
           .catch(() => {
             logger.warn?.(
@@ -526,6 +592,8 @@ function createStableOverlayRoutingLifecycle({
 
     shutdown() {
       if (!shutdownPromise) {
+        shutdownStarted = true;
+        mutationGeneration += 1;
         shutdownPromise = (async () => {
           try {
             await client.stop();
@@ -560,7 +628,8 @@ function registerStableOverlayRoutingRoutes({
   },
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   abortControllerFactory = () => new AbortController(),
-  getAuthorizedParties
+  getAuthorizedParties,
+  lifecycle
 } = {}) {
   if (!app || typeof app.get !== 'function' || typeof app.post !== 'function') {
     throw new TypeError('An Express app is required');
@@ -594,6 +663,13 @@ function registerStableOverlayRoutingRoutes({
     throw new TypeError('A local authorized-party resolver is required');
   }
   if (
+    !lifecycle ||
+    typeof lifecycle.captureMutationGeneration !== 'function' ||
+    typeof lifecycle.isMutationGenerationActive !== 'function'
+  ) {
+    throw new TypeError('A stable overlay routing lifecycle is required');
+  }
+  if (
     !credentialStore ||
     typeof credentialStore.load !== 'function' ||
     typeof credentialStore.save !== 'function' ||
@@ -619,6 +695,7 @@ function registerStableOverlayRoutingRoutes({
     )
     : null;
   let enrollmentInProgress = false;
+  let localMutationTail = Promise.resolve();
 
   function send(res, status, body) {
     res.set('Cache-Control', 'no-store');
@@ -717,7 +794,8 @@ function registerStableOverlayRoutingRoutes({
     method,
     body,
     expectedStatus,
-    deadline
+    deadline,
+    mutationFence = null
   ) {
     const headers = {
       Authorization: `Bearer ${token}`
@@ -738,12 +816,26 @@ function registerStableOverlayRoutingRoutes({
 
     let response;
     try {
-      response = await deadline.race(fetch(
+      const request = Promise.resolve(fetch(
         `${apiOrigin}${MANAGEMENT_PREFIX}${workerPath}`,
         options
       ));
+      request.then(
+        lateResponse => {
+          if (deadline.signal.aborted) {
+            initiateCancellation(lateResponse?.body);
+          }
+        },
+        () => {}
+      );
+      response = await deadline.race(request);
       deadline.assertActive();
-    } catch (_) {
+      mutationFence?.assert();
+    } catch (error) {
+      initiateCancellation(response?.body);
+      if (error instanceof LocalRouteError) {
+        throw error;
+      }
       throw new LocalRouteError(
         503,
         'STABLE_ROUTING_UNAVAILABLE',
@@ -751,6 +843,7 @@ function registerStableOverlayRoutingRoutes({
       );
     }
     if (!response || typeof response.status !== 'number') {
+      initiateCancellation(response?.body);
       throw new LocalRouteError(
         503,
         'STABLE_ROUTING_UNAVAILABLE',
@@ -761,11 +854,15 @@ function registerStableOverlayRoutingRoutes({
       await mapUpstreamFailure(response, deadline);
     }
     if (response.status !== expectedStatus) {
+      initiateCancellation(response.body);
       throw new LocalRouteError(
         503,
         'STABLE_ROUTING_UNAVAILABLE',
         'Stable overlay routing is temporarily unavailable.'
       );
+    }
+    if (expectedStatus === 204) {
+      initiateCancellation(response.body);
     }
     return response;
   }
@@ -780,20 +877,62 @@ function registerStableOverlayRoutingRoutes({
     }
   }
 
-  function handler(operation) {
+  function createMutationFence(deadline) {
+    const generation = lifecycle.captureMutationGeneration();
+    return {
+      assert() {
+        deadline.assertActive();
+        if (!lifecycle.isMutationGenerationActive(generation)) {
+          throw shuttingDown();
+        }
+      }
+    };
+  }
+
+  async function withLocalMutationGate(deadline, mutationFence, operation) {
+    const predecessor = localMutationTail;
+    let release;
+    const ticket = new Promise(resolve => {
+      release = resolve;
+    });
+    localMutationTail = predecessor
+      .catch(() => {})
+      .then(() => ticket);
+
+    try {
+      await deadline.race(predecessor);
+      mutationFence.assert();
+      return await operation();
+    } finally {
+      release();
+    }
+  }
+
+  function handler(operation, { stateChanging = false } = {}) {
     return async (req, res) => {
       const deadline = createRequestDeadline({
         timers,
         timeoutMs: requestTimeoutMs,
         abortControllerFactory
       });
+      const mutationFence = stateChanging
+        ? createMutationFence(deadline)
+        : null;
       try {
         return await deadline.race((async () => {
           assertEnabled();
+          mutationFence?.assert();
           const token = await authorize(req);
           deadline.assertActive();
+          mutationFence?.assert();
           rejectQuery(req);
-          return operation(req, res, token, deadline);
+          return operation(
+            req,
+            res,
+            token,
+            deadline,
+            mutationFence
+          );
         })());
       } catch (error) {
         return sendError(res, error);
@@ -803,16 +942,21 @@ function registerStableOverlayRoutingRoutes({
     };
   }
 
-  async function accountForToken(token, deadline) {
+  async function accountForToken(token, deadline, mutationFence = null) {
     const response = await forward(
       token,
       '/account',
       'GET',
       undefined,
       200,
-      deadline
+      deadline,
+      mutationFence
     );
-    return sanitizeAccount(await readBoundedJson(response, deadline));
+    const account = sanitizeAccount(
+      await readBoundedJson(response, deadline)
+    );
+    mutationFence?.assert();
+    return account;
   }
 
   app.get(
@@ -850,7 +994,7 @@ function registerStableOverlayRoutingRoutes({
   app.post(
     `${LOCAL_PREFIX}/devices/enroll`,
     apiLimiter,
-    handler(async (req, res, token, deadline) => {
+    handler(async (req, res, token, deadline, mutationFence) => {
       if (enrollmentInProgress) {
         throw new LocalRouteError(
           409,
@@ -868,9 +1012,11 @@ function registerStableOverlayRoutingRoutes({
           'POST',
           { label },
           201,
-          deadline
+          deadline,
+          mutationFence
         );
         const payload = await readBoundedJson(response, deadline);
+        mutationFence.assert();
         const device = sanitizeDevice(payload?.device);
         if (
           typeof payload?.credential !== 'string' ||
@@ -878,34 +1024,40 @@ function registerStableOverlayRoutingRoutes({
         ) {
           throw upstreamUnavailable();
         }
-        await deadline.race(client.stop());
-        deadline.assertActive();
-        credentialStore.save({
-          deviceId: device.deviceId,
-          credential: payload.credential,
-          enrolledAt: device.createdAt ||
-            new Date(Math.trunc(now())).toISOString(),
-          label: device.label,
-          defaultUsername: null
-        });
-        deadline.assertActive();
-        await deadline.race(client.start());
-        deadline.assertActive();
-        return send(res, 201, {
-          success: true,
-          device,
-          status: client.getStatus()
-        });
+        return withLocalMutationGate(
+          deadline,
+          mutationFence,
+          async () => {
+            await deadline.race(client.stop());
+            mutationFence.assert();
+            credentialStore.save({
+              deviceId: device.deviceId,
+              credential: payload.credential,
+              enrolledAt: device.createdAt ||
+                new Date(Math.trunc(now())).toISOString(),
+              label: device.label,
+              defaultUsername: null
+            });
+            mutationFence.assert();
+            await deadline.race(client.start());
+            mutationFence.assert();
+            return send(res, 201, {
+              success: true,
+              device,
+              status: client.getStatus()
+            });
+          }
+        );
       } finally {
         enrollmentInProgress = false;
       }
-    })
+    }, { stateChanging: true })
   );
 
   app.post(
     `${LOCAL_PREFIX}/claims`,
     apiLimiter,
-    handler(async (req, res, token, deadline) => {
+    handler(async (req, res, token, deadline, mutationFence) => {
       const body = requireExactBody(req, ['username']);
       const username = normalizeUsername(body.username);
       const response = await forward(
@@ -914,20 +1066,22 @@ function registerStableOverlayRoutingRoutes({
         'POST',
         { username },
         201,
-        deadline
+        deadline,
+        mutationFence
       );
       const payload = await readBoundedJson(response, deadline);
+      mutationFence.assert();
       return send(res, 201, {
         success: true,
         claim: sanitizeClaim(payload?.claim)
       });
-    })
+    }, { stateChanging: true })
   );
 
   app.post(
     `${LOCAL_PREFIX}/claims/:username/restore`,
     apiLimiter,
-    handler(async (req, res, token, deadline) => {
+    handler(async (req, res, token, deadline, mutationFence) => {
       requireExactBody(req, []);
       const username = normalizeUsername(req.params.username);
       const response = await forward(
@@ -936,20 +1090,22 @@ function registerStableOverlayRoutingRoutes({
         'POST',
         {},
         200,
-        deadline
+        deadline,
+        mutationFence
       );
       const payload = await readBoundedJson(response, deadline);
+      mutationFence.assert();
       return send(res, 200, {
         success: true,
         claim: sanitizeClaim(payload?.claim)
       });
-    })
+    }, { stateChanging: true })
   );
 
   app.delete(
     `${LOCAL_PREFIX}/claims/:username`,
     apiLimiter,
-    handler(async (req, res, token, deadline) => {
+    handler(async (req, res, token, deadline, mutationFence) => {
       const body = requireExactBody(req, ['username']);
       const pathUsername = normalizeUsername(req.params.username);
       const bodyUsername = normalizeUsername(body.username);
@@ -962,20 +1118,22 @@ function registerStableOverlayRoutingRoutes({
         'DELETE',
         { username: pathUsername },
         200,
-        deadline
+        deadline,
+        mutationFence
       );
       const payload = await readBoundedJson(response, deadline);
+      mutationFence.assert();
       return send(res, 200, {
         success: true,
         claim: sanitizeClaim(payload?.claim)
       });
-    })
+    }, { stateChanging: true })
   );
 
   app.delete(
     `${LOCAL_PREFIX}/devices/:deviceId`,
     apiLimiter,
-    handler(async (req, res, token, deadline) => {
+    handler(async (req, res, token, deadline, mutationFence) => {
       requireExactBody(req, []);
       const deviceId = normalizeIdentifier(req.params.deviceId);
       await forward(
@@ -984,34 +1142,50 @@ function registerStableOverlayRoutingRoutes({
         'DELETE',
         {},
         204,
-        deadline
+        deadline,
+        mutationFence
       );
+      mutationFence.assert();
 
-      let stored = null;
-      try {
-        stored = credentialStore.load();
-      } catch (_) {}
-      if (stored?.deviceId === deviceId) {
-        try {
-          await client.stop();
-        } catch (_) {
-          logger.warn?.(
-            'Stable overlay routing could not stop after device revocation.'
-          );
+      await withLocalMutationGate(
+        deadline,
+        mutationFence,
+        async () => {
+          mutationFence.assert();
+          let stored = null;
+          try {
+            stored = credentialStore.load();
+          } catch (_) {}
+          if (stored?.deviceId === deviceId) {
+            try {
+              await deadline.race(client.stop());
+            } catch (_) {
+              mutationFence.assert();
+              logger.warn?.(
+                'Stable overlay routing could not stop after device revocation.'
+              );
+            }
+            mutationFence.assert();
+            credentialStore.remove();
+          }
         }
-        credentialStore.remove();
-      }
+      );
+      mutationFence.assert();
       return send(res, 200, { success: true });
-    })
+    }, { stateChanging: true })
   );
 
   app.put(
     `${LOCAL_PREFIX}/default-username`,
     apiLimiter,
-    handler(async (req, res, token, deadline) => {
+    handler(async (req, res, token, deadline, mutationFence) => {
       const body = requireExactBody(req, ['username']);
       const username = normalizeUsername(body.username);
-      const account = await accountForToken(token, deadline);
+      const account = await accountForToken(
+        token,
+        deadline,
+        mutationFence
+      );
       if (!account.claims.some(
         claim => claim.username === username && claim.state === 'active'
       )) {
@@ -1021,12 +1195,20 @@ function registerStableOverlayRoutingRoutes({
           'Choose an active username claim from this account.'
         );
       }
-      credentialStore.setDefaultUsername(username);
+      await withLocalMutationGate(
+        deadline,
+        mutationFence,
+        async () => {
+          mutationFence.assert();
+          credentialStore.setDefaultUsername(username);
+        }
+      );
+      mutationFence.assert();
       return send(res, 200, {
         success: true,
         defaultUsername: username
       });
-    })
+    }, { stateChanging: true })
   );
 
   app.use(

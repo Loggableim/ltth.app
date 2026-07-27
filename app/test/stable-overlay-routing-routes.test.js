@@ -59,6 +59,29 @@ function jsonResponse(body, status = 200, headers = {}) {
   });
 }
 
+function endlessResponse({
+  status,
+  contentType = 'application/json',
+  cancel = jest.fn(() => new Promise(() => {}))
+}) {
+  const headers = new Headers();
+  if (contentType !== null) {
+    headers.set('Content-Type', contentType);
+  }
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers,
+    body: {
+      cancel,
+      getReader: jest.fn(() => ({
+        read: jest.fn(() => new Promise(() => {})),
+        cancel
+      }))
+    }
+  };
+}
+
 function activeClaim(username = 'pup.cid') {
   return {
     username,
@@ -135,6 +158,10 @@ function createHarness(overrides = {}) {
     warn: jest.fn(),
     error: jest.fn()
   };
+  const lifecycle = overrides.lifecycle || {
+    captureMutationGeneration: jest.fn(() => 0),
+    isMutationGenerationActive: jest.fn(generation => generation === 0)
+  };
   const app = express();
   app.use(express.json());
   registerStableOverlayRoutingRoutes({
@@ -157,7 +184,8 @@ function createHarness(overrides = {}) {
     requestTimeoutMs: overrides.requestTimeoutMs,
     abortControllerFactory: overrides.abortControllerFactory,
     getAuthorizedParties: overrides.getAuthorizedParties ||
-      (() => ['http://127.0.0.1:3000'])
+      (() => ['http://127.0.0.1:3000']),
+    lifecycle
   });
 
   return {
@@ -167,6 +195,7 @@ function createHarness(overrides = {}) {
     credentialStore,
     fetch,
     logger,
+    lifecycle,
     timers: overrides.timers,
     verifyClerkSessionToken
   };
@@ -509,6 +538,75 @@ describe('stable overlay routing local routes', () => {
     expect(text).not.toHaveBeenCalled();
   });
 
+  test.each([
+    ['invalid metadata', 201, null, 503],
+    ['authentication rejection', 401, 'application/json', 401],
+    ['unexpected success status', 200, 'application/json', 503],
+    ['upstream error mapping', 500, 'application/json', 503]
+  ])('releases an endless upstream body promptly on %s', async (
+    _name,
+    status,
+    contentType,
+    expectedStatus
+  ) => {
+    const cancel = jest.fn(() => new Promise(() => {}));
+    const upstream = endlessResponse({ status, contentType, cancel });
+    let upstreamSignal;
+    const harness = createHarness({
+      fetch: jest.fn((_url, options) => {
+        upstreamSignal = options.signal;
+        return Promise.resolve(upstream);
+      })
+    });
+
+    const pending = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Studio PC' })
+    ).then(response => response);
+    const result = await pending;
+
+    expect(result.status).toBe(expectedStatus);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(upstreamSignal.aborted).toBe(true);
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+  });
+
+  test('releases a body attached to an expected no-content response', async () => {
+    const cancel = jest.fn(() => new Promise(() => {}));
+    const upstream = endlessResponse({
+      status: 204,
+      contentType: null,
+      cancel
+    });
+    let upstreamSignal;
+    const harness = createHarness({
+      fetch: jest.fn((_url, options) => {
+        upstreamSignal = options.signal;
+        return Promise.resolve(upstream);
+      }),
+      credentialStore: {
+        load: jest.fn().mockReturnValue({
+          deviceId: 'd-other',
+          credential: 'a'.repeat(64),
+          enrolledAt: '2026-07-27T10:00:00.000Z',
+          label: 'Other PC',
+          defaultUsername: null
+        })
+      }
+    });
+
+    const result = await authorized(
+      request(harness.app)
+        .delete('/api/stable-overlay-routing/devices/d-old')
+        .send({})
+    );
+
+    expect(result.status).toBe(200);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(upstreamSignal.aborted).toBe(true);
+  });
+
   test('caps streaming upstream bodies before reading an oversized tail', async () => {
     const firstChunk = new Uint8Array(64 * 1024);
     let reads = 0;
@@ -554,6 +652,7 @@ describe('stable overlay routing local routes', () => {
   test('times out a stalled enrollment fetch and fences its late credential', async () => {
     const timers = new ManualTimers();
     const pendingFetch = deferred();
+    const lateCancel = jest.fn(() => new Promise(() => {}));
     const fetch = jest.fn(() => pendingFetch.promise);
     const harness = createHarness({
       fetch,
@@ -578,16 +677,18 @@ describe('stable overlay routing local routes', () => {
     await flushTurn();
     const settledAtDeadline = settled;
 
-    pendingFetch.resolve(jsonResponse({
-      device: enrolledDevice(),
-      credential: 'd'.repeat(64)
-    }, 201));
+    pendingFetch.resolve(endlessResponse({
+      status: 201,
+      cancel: lateCancel
+    }));
     const response = await pendingResponse;
+    await flushTurn();
 
     expect(settledAtDeadline).toBe(true);
     expect(response.status).toBe(503);
     expect(harness.credentialStore.save).not.toHaveBeenCalled();
     expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(lateCancel).toHaveBeenCalledTimes(1);
   });
 
   test('times out stalled body consumption and fences its late credential', async () => {
@@ -764,6 +865,256 @@ describe('stable overlay routing local routes', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(harness.credentialStore.save).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(responses)).not.toMatch(/"credential"/);
+  });
+
+  test('fences an enrollment that resumes after lifecycle shutdown', async () => {
+    const upstream = deferred();
+    const cancel = jest.fn(() => new Promise(() => {}));
+    let upstreamSignal;
+    const client = {
+      getStatus: jest.fn().mockReturnValue({
+        state: 'offline',
+        revision: null,
+        lastSuccessfulHeartbeat: null
+      }),
+      start: jest.fn(),
+      stop: jest.fn().mockResolvedValue({ state: 'offline' })
+    };
+    const networkManager = { shutdown: jest.fn() };
+    const lifecycle = createStableOverlayRoutingLifecycle({
+      client,
+      networkManager,
+      enabled: true,
+      logger: { warn: jest.fn(), error: jest.fn() }
+    });
+    const harness = createHarness({
+      client,
+      lifecycle,
+      fetch: jest.fn((_url, options) => {
+        upstreamSignal = options.signal;
+        return upstream.promise;
+      })
+    });
+
+    const enrolling = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'New PC' })
+    ).then(response => response);
+    for (
+      let index = 0;
+      index < 20 && harness.fetch.mock.calls.length === 0;
+      index += 1
+    ) {
+      await flushTurn();
+    }
+
+    await lifecycle.shutdown();
+    upstream.resolve(endlessResponse({
+      status: 201,
+      cancel
+    }));
+    const response = await enrolling;
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      success: false,
+      code: 'STABLE_ROUTING_SHUTTING_DOWN',
+      error: 'Stable overlay routing is shutting down.'
+    });
+    expect(client.stop).toHaveBeenCalledTimes(1);
+    expect(client.start).not.toHaveBeenCalled();
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+    expect(networkManager.shutdown).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(upstreamSignal.aborted).toBe(true);
+  });
+
+  test.each([
+    ['post', '/api/stable-overlay-routing/devices/enroll', { label: 'PC' }],
+    ['post', '/api/stable-overlay-routing/claims', { username: 'pup.cid' }],
+    ['post', '/api/stable-overlay-routing/claims/pup.cid/restore', {}],
+    ['delete', '/api/stable-overlay-routing/claims/pup.cid', { username: 'pup.cid' }],
+    ['delete', '/api/stable-overlay-routing/devices/d-old', {}],
+    ['put', '/api/stable-overlay-routing/default-username', { username: 'pup.cid' }]
+  ])('rejects state-changing %s %s after shutdown begins', async (
+    method,
+    pathname,
+    body
+  ) => {
+    const client = {
+      getStatus: jest.fn().mockReturnValue({ state: 'offline' }),
+      start: jest.fn(),
+      stop: jest.fn().mockResolvedValue({ state: 'offline' })
+    };
+    const lifecycle = createStableOverlayRoutingLifecycle({
+      client,
+      networkManager: { shutdown: jest.fn() },
+      enabled: true,
+      logger: { warn: jest.fn(), error: jest.fn() }
+    });
+    const harness = createHarness({ client, lifecycle });
+    await lifecycle.shutdown();
+
+    const response = await authorized(
+      request(harness.app)[method](pathname).send(body)
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe('STABLE_ROUTING_SHUTTING_DOWN');
+    expect(harness.fetch).not.toHaveBeenCalled();
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+    expect(harness.credentialStore.remove).not.toHaveBeenCalled();
+    expect(harness.credentialStore.setDefaultUsername).not.toHaveBeenCalled();
+    expect(client.start).not.toHaveBeenCalled();
+  });
+
+  test('serializes enroll-new against revoke-old without removing the new identity', async () => {
+    const stopOld = deferred();
+    let stored = {
+      deviceId: 'd-old',
+      credential: 'a'.repeat(64),
+      enrolledAt: '2026-07-27T09:00:00.000Z',
+      label: 'Old PC',
+      defaultUsername: null
+    };
+    let activeDeviceId = stored.deviceId;
+    const events = [];
+    const credentialStore = {
+      load: jest.fn(() => stored),
+      save: jest.fn(record => {
+        stored = record;
+        events.push(`save:${record.deviceId}`);
+        return record;
+      }),
+      setDefaultUsername: jest.fn(),
+      remove: jest.fn(() => {
+        events.push(`remove:${stored?.deviceId}`);
+        stored = null;
+      })
+    };
+    const client = {
+      getStatus: jest.fn(() => ({
+        state: 'active',
+        revision: 1,
+        lastSuccessfulHeartbeat: null
+      })),
+      stop: jest.fn(async () => {
+        events.push(`stop:${activeDeviceId}`);
+        await stopOld.promise;
+        activeDeviceId = null;
+      }),
+      start: jest.fn(async () => {
+        activeDeviceId = credentialStore.load().deviceId;
+        events.push(`start:${activeDeviceId}`);
+      })
+    };
+    const fetch = jest.fn((url) => {
+      if (url.endsWith('/devices/enroll')) {
+        return Promise.resolve(jsonResponse({
+          device: {
+            ...enrolledDevice(),
+            deviceId: 'd-new'
+          },
+          credential: 'b'.repeat(64)
+        }, 201));
+      }
+      return Promise.resolve(new Response(null, { status: 204 }));
+    });
+    const harness = createHarness({ credentialStore, client, fetch });
+
+    const enrolling = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'New PC' })
+    ).then(response => response);
+    for (let index = 0; index < 20 && client.stop.mock.calls.length === 0; index += 1) {
+      await flushTurn();
+    }
+    const revoking = authorized(
+      request(harness.app)
+        .delete('/api/stable-overlay-routing/devices/d-old')
+        .send({})
+    ).then(response => response);
+    for (let index = 0; index < 20 && fetch.mock.calls.length < 2; index += 1) {
+      await flushTurn();
+    }
+
+    stopOld.resolve();
+    const [enrollResponse, revokeResponse] = await Promise.all([
+      enrolling,
+      revoking
+    ]);
+
+    expect([enrollResponse.status, revokeResponse.status]).toEqual([201, 200]);
+    expect(stored.deviceId).toBe('d-new');
+    expect(activeDeviceId).toBe('d-new');
+    expect(events).toEqual([
+      'stop:d-old',
+      'save:d-new',
+      'start:d-new'
+    ]);
+    expect(credentialStore.remove).not.toHaveBeenCalled();
+    expect(events).not.toContain('start:d-old');
+    expect(JSON.stringify(enrollResponse.body)).not.toContain('credential');
+  });
+
+  test('does not mutate when a queued revoke outlives its request deadline', async () => {
+    const timers = new ManualTimers();
+    const stopOld = deferred();
+    const client = {
+      getStatus: jest.fn().mockReturnValue({ state: 'active', revision: 1 }),
+      stop: jest.fn(() => stopOld.promise),
+      start: jest.fn()
+    };
+    const fetch = jest.fn(url => {
+      if (url.endsWith('/devices/enroll')) {
+        return Promise.resolve(jsonResponse({
+          device: {
+            ...enrolledDevice(),
+            deviceId: 'd-new'
+          },
+          credential: 'c'.repeat(64)
+        }, 201));
+      }
+      return Promise.resolve(new Response(null, { status: 204 }));
+    });
+    const harness = createHarness({
+      client,
+      fetch,
+      timers,
+      requestTimeoutMs: 1_000
+    });
+
+    const enrolling = authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'New PC' })
+    ).then(response => response);
+    for (let index = 0; index < 20 && client.stop.mock.calls.length === 0; index += 1) {
+      await flushTurn();
+    }
+    const revoking = authorized(
+      request(harness.app)
+        .delete('/api/stable-overlay-routing/devices/d-0123456789abcdef')
+        .send({})
+    ).then(response => response);
+    for (let index = 0; index < 20 && fetch.mock.calls.length < 2; index += 1) {
+      await flushTurn();
+    }
+
+    await timers.advance(1_000);
+    const [enrollResponse, revokeResponse] = await Promise.all([
+      enrolling,
+      revoking
+    ]);
+    stopOld.resolve();
+    await flushTurn();
+
+    expect([enrollResponse.status, revokeResponse.status]).toEqual([503, 503]);
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
+    expect(harness.credentialStore.remove).not.toHaveBeenCalled();
+    expect(client.start).not.toHaveBeenCalled();
   });
 
   test('forwards normalized claim, restore, release, and revoke contracts exactly', async () => {
@@ -1081,6 +1432,28 @@ describe('stable overlay routing server lifecycle', () => {
     ]);
     expect(client.stop).toHaveBeenCalledTimes(1);
     expect(networkManager.shutdown).toHaveBeenCalledTimes(1);
+  });
+
+  test('never starts a deferred listening hook after shutdown begins', async () => {
+    const client = {
+      start: jest.fn().mockResolvedValue({ state: 'active' }),
+      stop: jest.fn().mockResolvedValue({ state: 'offline' })
+    };
+    const lifecycle = createStableOverlayRoutingLifecycle({
+      client,
+      networkManager: { shutdown: jest.fn() },
+      enabled: true,
+      logger: { warn: jest.fn(), error: jest.fn() }
+    });
+
+    const starting = lifecycle.afterServerListening();
+    const stopping = lifecycle.shutdown();
+    await Promise.all([starting, stopping]);
+
+    expect(client.start).not.toHaveBeenCalled();
+    expect(client.stop).toHaveBeenCalledTimes(1);
+    const generation = lifecycle.captureMutationGeneration();
+    expect(lifecycle.isMutationGenerationActive(generation)).toBe(false);
   });
 
   test('contains start/stop failures and still shuts NetworkManager down once', async () => {
