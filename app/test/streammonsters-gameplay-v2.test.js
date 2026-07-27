@@ -99,8 +99,8 @@ function createMonster(store, {
   });
 }
 
-describe('Stream Monsters rules version 3 migration', () => {
-  test('migrates only the missing-version legacy default and persists rulesVersion 3', () => {
+describe('Stream Monsters current rules migration', () => {
+  test('migrates only the missing-version legacy default and persists the current rules version', () => {
     const setConfig = jest.fn();
     const plugin = new StreamAlchemyPlugin({
       getConfig: jest.fn(),
@@ -117,7 +117,7 @@ describe('Stream Monsters rules version 3 migration', () => {
     plugin.config = plugin.loadConfig(legacy);
 
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 5,
+      rulesVersion: 6,
       hatchDurationMs: 120_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
@@ -220,7 +220,7 @@ describe('Stream Monsters rules version 3 migration', () => {
         }
       });
 
-      expect(loaded.streamMonsters.rulesVersion).toBe(5);
+      expect(loaded.streamMonsters.rulesVersion).toBe(6);
       expect(loaded.streamMonsters.hatchDurationMs).toBe(hatchDurationMs);
     }
   );
@@ -305,7 +305,7 @@ describe('Stream Monsters rules version 3 migration', () => {
     expect(routes.sanitizeConfigUpdate({ maxUnhatchedEggs: 0 })).toEqual({});
     expect(routes.sanitizeConfigUpdate({ maxUnhatchedEggs: 99 })).toEqual({});
     expect(routes.publicConfig({ rulesVersion: 2, hatchDurationMs: 300_000 })).toEqual(
-      expect.objectContaining({ rulesVersion: 5, maxUnhatchedEggs: 3 })
+      expect.objectContaining({ rulesVersion: 6, maxUnhatchedEggs: 3 })
     );
   });
 });

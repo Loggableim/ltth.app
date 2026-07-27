@@ -144,13 +144,13 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
   test('uses the six approved presets, defaults new rules to two minutes, and migrates only missing-version legacy thirty minutes', () => {
     const plugin = new StreamAlchemyPlugin({ getConfig: jest.fn(), setConfig: jest.fn() });
     expect(plugin.loadConfig({ streamMonsters: {} }).streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 5,
+      rulesVersion: 6,
       hatchDurationMs: 120_000
     }));
     expect(plugin.loadConfig({ streamMonsters: { hatchDurationMs: 1_800_000 } }).streamMonsters.hatchDurationMs)
       .toBe(120_000);
     expect(plugin.loadConfig({ streamMonsters: { rulesVersion: 2, hatchDurationMs: 300_000 } }).streamMonsters)
-      .toEqual(expect.objectContaining({ rulesVersion: 5, hatchDurationMs: 300_000 }));
+      .toEqual(expect.objectContaining({ rulesVersion: 6, hatchDurationMs: 300_000 }));
 
     const { store, engine } = createEngine();
     const { routes } = createRoutes({ store, engine });

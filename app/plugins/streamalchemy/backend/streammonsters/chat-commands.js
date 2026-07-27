@@ -320,10 +320,13 @@ class ChatCommands {
           ? `Match found. Use ${chooseReference} <slot> within 15 seconds.`
           : 'Match found. Your active monster locks in after 15 seconds.',
         active: 'Your current match is still active.',
-        no_monster: 'Hatch an egg first, then choose a monster.'
+        no_monster: 'Hatch an egg first, then choose a monster.',
+        cooldown: `Battle queue cooldown. Try again in ${Math.ceil(
+          Math.max(0, Number(result.retryAfterMs) || 0) / 1000
+        )} seconds.`
       };
       return {
-        success: !['invalid', 'no_monster'].includes(result.status),
+        success: !['invalid', 'no_monster', 'cooldown'].includes(result.status),
         ...result,
         message: messages[result.status] || result.error || result.status
       };
@@ -489,6 +492,43 @@ class ChatCommands {
   }
 
   leaveBattle(userId) {
+    if (this.battleMatchService?.leave) {
+      const result = this.battleMatchService.leave({ userId });
+      if (result.status === 'cancelled') {
+        return {
+          success: true,
+          ...result,
+          status: 'match_cancelled',
+          message: 'The reserved battle was cancelled before it started.'
+        };
+      }
+      if (result.status === 'forfeited') {
+        return {
+          success: true,
+          ...result,
+          status: 'match_forfeited',
+          message: 'The locked battle was forfeited and recorded as a loss.'
+        };
+      }
+      if (result.status === 'cooldown') {
+        return {
+          success: true,
+          ...result,
+          status: 'dodge_cooldown',
+          message: `You left the queue. Rejoin in ${Math.ceil(
+            Math.max(0, Number(result.retryAfterMs) || 0) / 1000
+          )} seconds.`
+        };
+      }
+      return {
+        success: result.status !== 'invalid',
+        ...result,
+        status: result.status === 'left_queue' ? 'left' : result.status,
+        message: result.status === 'left_queue'
+          ? 'You left the battle queue.'
+          : 'You were not in the battle queue.'
+      };
+    }
     const activeMatch = this.battleMatchService?.getActiveMatchForViewer?.(userId);
     if (activeMatch?.state === 'roster') {
       const cancelled = this.battleMatchService.cancelBeforeBattle?.(userId);

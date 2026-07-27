@@ -153,6 +153,14 @@ class StreamMonstersDatabase {
       CREATE INDEX IF NOT EXISTS streammonsters_battle_queue_time
         ON streammonsters_battle_queue(queued_at_ms, user_id);
 
+      CREATE TABLE IF NOT EXISTS streammonsters_queue_dodges (
+        viewer_id TEXT PRIMARY KEY,
+        window_started_ms INTEGER NOT NULL,
+        dodge_count INTEGER NOT NULL DEFAULT 0,
+        cooldown_until_ms INTEGER NOT NULL DEFAULT 0,
+        updated_at_ms INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS streammonsters_starter_claims (
         user_id TEXT PRIMARY KEY,
         egg_id TEXT NOT NULL UNIQUE,

@@ -11,6 +11,9 @@ const RULES_V5_ACTION_WINDOW_MS = 8_000;
 const RULES_V5_STAT_WINDOW_MS = 30_000;
 const REMATCH_AVOIDANCE_MS = 10 * 60 * 1000;
 const MATCH_WIDEN_INTERVAL_MS = 30_000;
+const DODGE_WINDOW_MS = 10 * 60 * 1000;
+const DODGE_COOLDOWN_MS = 60_000;
+const DODGE_THRESHOLD = 3;
 const INITIAL_RATING_GAP = 150;
 const RATING_GAP_STEP = 100;
 const BATTLE_QUEUE_TTL_MS = 10 * 60 * 1000;
@@ -137,6 +140,14 @@ class BattleMatchService {
     if (!userId) return { status: 'invalid', error: 'viewer_required' };
     const existing = this.getActiveMatchForViewer(userId);
     if (existing) return { status: 'active', match: existing };
+    const dodge = this.getQueueDodgeStatus(userId);
+    if (dodge.cooldownUntilMs > this.now()) {
+      return {
+        status: 'cooldown',
+        retryAfterMs: dodge.cooldownUntilMs - this.now(),
+        cooldownUntilMs: dodge.cooldownUntilMs
+      };
+    }
     const monster = this.store.getSelectedMonster(userId);
     if (!monster) return { status: 'no_monster' };
     return this.store.runInImmediateTransaction(() => {
@@ -1001,7 +1012,7 @@ class BattleMatchService {
     })), state, match.seed);
   }
 
-  finalize(matchId, expectedVersion, winnerMonsterId) {
+  finalize(matchId, expectedVersion, winnerMonsterId, options = {}) {
     return this.store.runInImmediateTransaction(() => {
       const nowMs = this.now();
       const match = this.getMatch(matchId);
@@ -1032,12 +1043,19 @@ class BattleMatchService {
       const loserParticipant = match.participants.find(
         participant => participant.lockedMonsterId !== winnerMonsterId
       );
+      const completion = options.completion === 'forfeit' ? 'forfeit' : 'battle';
+      const forfeitedParticipant = options.forfeitedParticipantId
+        ? match.participants.find(participant => (
+            participant.participantId === options.forfeitedParticipantId
+          ))
+        : null;
       const ratingChanges = this.applyArenaElo({
         seasonId: season.seasonId,
         winner: winnerParticipant,
         loser: loserParticipant,
         eligibility
       });
+      const participantResults = [];
 
       match.participants.forEach(participant => {
         const won = participant.lockedMonsterId === winnerMonsterId;
@@ -1057,6 +1075,7 @@ class BattleMatchService {
         );
         monster = this.store.getMonster(participant.lockedMonsterId) || monster;
         const rating = ratingChanges[participant.participantId] || {
+          before: participant.ratingBefore,
           after: participant.ratingBefore,
           delta: 0
         };
@@ -1117,6 +1136,18 @@ class BattleMatchService {
           },
           delta: rating.delta
         });
+        participantResults.push({
+          participantId: participant.participantId,
+          monsterId: participant.lockedMonsterId,
+          slot: participant.slot,
+          xpAwarded,
+          arenaEligible: Boolean(eligibility[participant.participantId]),
+          rating: {
+            before: rating.before,
+            after: rating.after,
+            delta: rating.delta
+          }
+        });
         if (pointsGained > 0) this.createStatPrompt(matchId, participant, pointsGained);
       });
       this.store.incrementViewer(winnerParticipant.viewerId, 'battles_won');
@@ -1131,17 +1162,106 @@ class BattleMatchService {
         }))
       });
 
+      const winnerMonster = this.store.getMonster(winnerParticipant.lockedMonsterId);
+      const loserMonster = this.store.getMonster(loserParticipant.lockedMonsterId);
+      const winnerPublic = this.projectPublicMonster(winnerParticipant, winnerMonster);
+      const loserPublic = this.projectPublicMonster(loserParticipant, loserMonster);
+      const winnerStreak = this.store.getViewerBattleStats(
+        winnerParticipant.viewerId
+      ).win_streak;
+      if (winnerStreak >= 2) {
+        this.appendEvent(
+          matchId,
+          'streammonsters:win_streak',
+          {
+            matchId,
+            viewerId: winnerParticipant.viewerId,
+            slot: winnerParticipant.slot,
+            count: winnerStreak,
+            monster: winnerPublic
+          },
+          {
+            matchId,
+            slot: winnerParticipant.slot,
+            count: winnerStreak,
+            monster: winnerPublic
+          }
+        );
+      }
+      if (
+        (Number(winnerParticipant.roster?.level) || 1) <
+        (Number(loserParticipant.roster?.level) || 1)
+      ) {
+        this.appendEvent(
+          matchId,
+          'streammonsters:upset',
+          {
+            matchId,
+            viewerId: winnerParticipant.viewerId,
+            winnerSlot: winnerParticipant.slot,
+            loserSlot: loserParticipant.slot,
+            winner: winnerPublic,
+            loser: loserPublic
+          },
+          {
+            matchId,
+            winnerSlot: winnerParticipant.slot,
+            loserSlot: loserParticipant.slot,
+            winner: winnerPublic,
+            loser: loserPublic
+          }
+        );
+      }
+      const rivalryCount = this.store.countBattlesBetween(
+        winnerParticipant.lockedMonsterId,
+        loserParticipant.lockedMonsterId
+      ) + 1;
+      if (rivalryCount >= 2) {
+        this.appendEvent(
+          matchId,
+          'streammonsters:rivalry',
+          {
+            matchId,
+            leftParticipantId: match.participants[0].participantId,
+            rightParticipantId: match.participants[1].participantId,
+            left: this.projectPublicMonster(
+              match.participants[0],
+              this.store.getMonster(match.participants[0].lockedMonsterId)
+            ),
+            right: this.projectPublicMonster(
+              match.participants[1],
+              this.store.getMonster(match.participants[1].lockedMonsterId)
+            ),
+            count: rivalryCount
+          },
+          {
+            matchId,
+            leftSlot: match.participants[0].slot,
+            rightSlot: match.participants[1].slot,
+            left: this.projectPublicMonster(
+              match.participants[0],
+              this.store.getMonster(match.participants[0].lockedMonsterId)
+            ),
+            right: this.projectPublicMonster(
+              match.participants[1],
+              this.store.getMonster(match.participants[1].lockedMonsterId)
+            ),
+            count: rivalryCount
+          }
+        );
+      }
+
       const actions = this.getReplay(matchId).actions;
       const result = {
         matchId,
         rulesVersion: match.rulesVersion,
         seed: match.seed,
         winnerMonsterId,
-        participants: match.participants.map(participant => ({
-          participantId: participant.participantId,
-          monsterId: participant.lockedMonsterId,
-          slot: participant.slot
-        })),
+        completion,
+        forfeitedParticipantId: forfeitedParticipant?.participantId || null,
+        forfeitedSlot: forfeitedParticipant?.slot || null,
+        season,
+        participants: participantResults,
         actions
       };
       this.db.prepare(`
@@ -1171,10 +1291,14 @@ class BattleMatchService {
       );
       this.appendEvent(matchId, 'streammonsters:battle_completed', {
         matchId,
-        winnerMonsterId
+        winnerMonsterId,
+        completion,
+        forfeitedParticipantId: forfeitedParticipant?.participantId || null
       }, {
         matchId,
-        winnerSlot: winnerParticipant.slot
+        winnerSlot: winnerParticipant.slot,
+        completion,
+        forfeitedSlot: forfeitedParticipant?.slot || null
       });
       return this.getMatch(matchId);
     });
@@ -1574,7 +1698,9 @@ class BattleMatchService {
       ));
       return {
         matchId: match.matchId,
-        winnerSlot: Number(payload.winnerSlot) || winner?.slot || 0
+        winnerSlot: Number(payload.winnerSlot) || winner?.slot || 0,
+        completion: payload.completion === 'forfeit' ? 'forfeit' : 'battle',
+        forfeitedSlot: Number(payload.forfeitedSlot) || null
       };
     }
     if (
@@ -1620,6 +1746,33 @@ class BattleMatchService {
           tier: this.arenaTier(rating(payload.after?.rating))
         },
         delta: Math.round(Number(payload.delta) || 0)
+      };
+    }
+    if (eventType === 'streammonsters:win_streak') {
+      return {
+        matchId: match.matchId,
+        slot: Number(payload.slot) || 0,
+        count: Math.max(2, Math.round(Number(payload.count) || 2)),
+        monster: this.sanitizePublicMonster(payload.monster)
+      };
+    }
+    if (eventType === 'streammonsters:upset') {
+      return {
+        matchId: match.matchId,
+        winnerSlot: Number(payload.winnerSlot) || 0,
+        loserSlot: Number(payload.loserSlot) || 0,
+        winner: this.sanitizePublicMonster(payload.winner),
+        loser: this.sanitizePublicMonster(payload.loser)
+      };
+    }
+    if (eventType === 'streammonsters:rivalry') {
+      return {
+        matchId: match.matchId,
+        leftSlot: Number(payload.leftSlot) || 0,
+        rightSlot: Number(payload.rightSlot) || 0,
+        left: this.sanitizePublicMonster(payload.left),
+        right: this.sanitizePublicMonster(payload.right),
+        count: Math.max(2, Math.round(Number(payload.count) || 2))
       };
     }
     if (
@@ -1673,6 +1826,10 @@ class BattleMatchService {
       WHERE match_id = ? AND sequence > ?
       LIMIT 1
     `).get(match.matchId, nextCursor));
+    const actions = events
+      .filter(event => event.type === 'streammonsters:battle_skill_used')
+      .map(event => event.payload.action);
+    const result = this.sanitizePublicMatchResult(match);
     return {
       battleId,
       matchId: match.matchId,
@@ -1680,13 +1837,77 @@ class BattleMatchService {
       replayVersion: match.rulesVersion,
       cursor: nextCursor,
       hasMore,
-      actions: events
-        .filter(event => event.type === 'streammonsters:battle_skill_used')
-        .map(event => event.payload.action),
+      result,
+      season: result?.season || null,
+      actions,
+      statuses: actions.map(action => ({
+        round: action.round,
+        sequence: action.sequence,
+        actorSlot: action.actorSlot,
+        targetSlot: action.targetSlot,
+        statusEffects: action.statusEffects,
+        actorState: action.actorState,
+        targetState: action.targetState
+      })),
       decisions: events
         .filter(event => event.type === 'streammonsters:battle_choice_locked')
         .map(event => event.payload.decision),
+      reveals: events
+        .filter(event => event.type === 'streammonsters:battle_choices_revealed')
+        .map(event => event.payload),
+      progression: events.filter(event => [
+        'streammonsters:monster_xp_awarded',
+        'streammonsters:monster_level_up',
+        'streammonsters:monster_stat_prompt',
+        'streammonsters:monster_stat_chosen',
+        'streammonsters:monster_stat_auto_assigned'
+      ].includes(event.type)),
+      ratingChanges: events
+        .filter(event => event.type === 'streammonsters:arena_rating_changed')
+        .map(event => event.payload),
       events
+    };
+  }
+
+  sanitizePublicMatchResult(match) {
+    if (!match?.result) return null;
+    const season = match.result.season && typeof match.result.season === 'object'
+      ? {
+          seasonId: String(match.result.season.seasonId || '').slice(0, 80),
+          startsAtMs: Math.max(0, Number(match.result.season.startsAtMs) || 0),
+          endsAtMs: Math.max(0, Number(match.result.season.endsAtMs) || 0),
+          durationDays: ARENA_DURATION_PRESETS.includes(
+            Number(match.result.season.durationDays)
+          )
+            ? Number(match.result.season.durationDays)
+            : this.seasonDurationDays
+        }
+      : null;
+    const winner = match.participants.find(participant => (
+      participant.lockedMonsterId === match.winnerMonsterId
+    ));
+    const forfeited = match.result.forfeitedParticipantId
+      ? match.participants.find(participant => (
+          participant.participantId === match.result.forfeitedParticipantId
+        ))
+      : null;
+    return {
+      winnerSlot: winner?.slot || 0,
+      completion: match.result.completion === 'forfeit' ? 'forfeit' : 'battle',
+      forfeitedSlot: forfeited?.slot || null,
+      season,
+      participants: Array.isArray(match.result.participants)
+        ? match.result.participants.map(result => ({
+            slot: Number(result?.slot) || 0,
+            xpAwarded: Math.max(0, Number(result?.xpAwarded) || 0),
+            arenaEligible: Boolean(result?.arenaEligible),
+            rating: {
+              before: Math.max(0, Math.round(Number(result?.rating?.before) || 0)),
+              after: Math.max(0, Math.round(Number(result?.rating?.after) || 0)),
+              delta: Math.round(Number(result?.rating?.delta) || 0)
+            }
+          }))
+        : []
     };
   }
 
@@ -1759,7 +1980,7 @@ class BattleMatchService {
       ORDER BY created_at_ms, match_id
     `).all();
     return {
-      rulesVersion: 5,
+      rulesVersion: this.rulesVersion,
       matches: matchIds.map(({ match_id: matchId }) => {
         const match = this.getMatch(matchId);
         const cursor = this.db.prepare(`
@@ -1768,6 +1989,7 @@ class BattleMatchService {
         `).get(matchId).cursor;
         return {
           matchId,
+          rulesVersion: match.rulesVersion,
           state: match.state,
           roundNumber: match.roundNumber,
           rosterDeadlineMs: match.rosterDeadlineMs,
@@ -1843,6 +2065,178 @@ class BattleMatchService {
       { matchId: match.matchId, reason }
     );
     return true;
+  }
+
+  getQueueDodgeStatus(userId, nowMs = this.now()) {
+    const row = this.db.prepare(`
+      SELECT * FROM streammonsters_queue_dodges WHERE viewer_id = ?
+    `).get(userId);
+    if (!row) {
+      return {
+        dodgeCount: 0,
+        cooldownUntilMs: 0,
+        windowStartedMs: nowMs
+      };
+    }
+    if (
+      nowMs - Number(row.window_started_ms) >= DODGE_WINDOW_MS &&
+      Number(row.cooldown_until_ms) <= nowMs
+    ) {
+      this.db.prepare(`
+        DELETE FROM streammonsters_queue_dodges WHERE viewer_id = ?
+      `).run(userId);
+      return {
+        dodgeCount: 0,
+        cooldownUntilMs: 0,
+        windowStartedMs: nowMs
+      };
+    }
+    return {
+      dodgeCount: Math.max(0, Number(row.dodge_count) || 0),
+      cooldownUntilMs: Math.max(0, Number(row.cooldown_until_ms) || 0),
+      windowStartedMs: Number(row.window_started_ms) || nowMs
+    };
+  }
+
+  recordQueueDodge(userId, nowMs = this.now()) {
+    const current = this.getQueueDodgeStatus(userId, nowMs);
+    const withinWindow = nowMs - current.windowStartedMs < DODGE_WINDOW_MS;
+    const dodgeCount = withinWindow ? current.dodgeCount + 1 : 1;
+    const windowStartedMs = withinWindow ? current.windowStartedMs : nowMs;
+    const cooldownUntilMs = dodgeCount >= DODGE_THRESHOLD
+      ? Math.max(current.cooldownUntilMs, nowMs + DODGE_COOLDOWN_MS)
+      : current.cooldownUntilMs;
+    this.db.prepare(`
+      INSERT INTO streammonsters_queue_dodges (
+        viewer_id, window_started_ms, dodge_count, cooldown_until_ms, updated_at_ms
+      ) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(viewer_id) DO UPDATE SET
+        window_started_ms = excluded.window_started_ms,
+        dodge_count = excluded.dodge_count,
+        cooldown_until_ms = excluded.cooldown_until_ms,
+        updated_at_ms = excluded.updated_at_ms
+    `).run(
+      userId,
+      windowStartedMs,
+      dodgeCount,
+      cooldownUntilMs,
+      nowMs
+    );
+    return { dodgeCount, cooldownUntilMs, windowStartedMs };
+  }
+
+  leave({ userId }) {
+    if (!userId) return { status: 'invalid', error: 'viewer_required' };
+    return this.store.runInImmediateTransaction(() => {
+      const match = this.getActiveMatchForViewer(userId);
+      if (match) {
+        const participant = match.participants.find(entry => entry.viewerId === userId);
+        if (
+          match.state === 'roster' &&
+          participant &&
+          !participant.lockedMonsterId
+        ) {
+          const cancelled = this.cancelRosterMatch(
+            match,
+            'viewer_left_before_roster_lock'
+          );
+          if (!cancelled) return { status: 'active', match: this.getMatch(match.matchId) };
+          const dodge = this.recordQueueDodge(userId);
+          return {
+            status: 'cancelled',
+            matchId: match.matchId,
+            rewarded: false,
+            cooldownUntilMs: dodge.cooldownUntilMs
+          };
+        }
+        if (
+          participant?.lockedMonsterId &&
+          ['roster', 'action'].includes(match.state)
+        ) {
+          return this.forfeitLockedMatch(match, participant);
+        }
+        return { status: 'active', match };
+      }
+      const removed = this.store.removeBattleQueueEntry(userId);
+      if (!removed) return { status: 'not_queued' };
+      const dodge = this.recordQueueDodge(userId);
+      if (dodge.cooldownUntilMs > this.now()) {
+        return {
+          status: 'cooldown',
+          retryAfterMs: dodge.cooldownUntilMs - this.now(),
+          cooldownUntilMs: dodge.cooldownUntilMs
+        };
+      }
+      return {
+        status: 'left_queue',
+        dodgeCount: dodge.dodgeCount
+      };
+    });
+  }
+
+  forfeitLockedMatch(match, forfeitedParticipant) {
+    let current = this.getMatch(match.matchId);
+    if (!current || !['roster', 'action'].includes(current.state)) {
+      return { status: 'active', match: current };
+    }
+    if (current.state === 'roster') {
+      for (const participant of current.participants.filter(entry => (
+        !entry.lockedMonsterId
+      ))) {
+        const selected = this.store.getSelectedMonster(participant.viewerId);
+        const queued = this.store.getMonster(participant.queuedMonsterId);
+        const selectedEligible = selected?.user_id === participant.viewerId &&
+          this.rosterEligibility(current, participant, selected).accepted;
+        const monster = selectedEligible
+          ? selected
+          : queued?.user_id === participant.viewerId
+            ? queued
+            : null;
+        if (!monster) {
+          this.cancelRosterMatch(current, 'forfeit_opponent_missing');
+          return {
+            status: 'cancelled',
+            matchId: current.matchId,
+            rewarded: false
+          };
+        }
+        this.db.prepare(`
+          UPDATE streammonsters_match_participants
+          SET locked_monster_id = ?, roster_json = ?
+          WHERE match_id = ? AND participant_id = ? AND locked_monster_id IS NULL
+        `).run(
+          monster.monster_id,
+          JSON.stringify(this.snapshotMonster(monster)),
+          current.matchId,
+          participant.participantId
+        );
+      }
+      current = this.startActionWindow(current.matchId, current.phaseVersion);
+    }
+    const loser = current.participants.find(entry => (
+      entry.participantId === forfeitedParticipant.participantId
+    ));
+    const winner = current.participants.find(entry => (
+      entry.participantId !== forfeitedParticipant.participantId
+    ));
+    if (!loser?.lockedMonsterId || !winner?.lockedMonsterId) {
+      return { status: 'active', match: current };
+    }
+    const completed = this.finalize(
+      current.matchId,
+      current.phaseVersion,
+      winner.lockedMonsterId,
+      {
+        completion: 'forfeit',
+        forfeitedParticipantId: loser.participantId
+      }
+    );
+    return {
+      status: 'forfeited',
+      matchId: current.matchId,
+      winnerSlot: winner.slot,
+      match: completed
+    };
   }
 
   cancelBeforeBattle(userId) {
