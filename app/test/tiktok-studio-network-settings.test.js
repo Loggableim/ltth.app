@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 const {
   render,
   stop,
@@ -191,6 +192,24 @@ describe('Overlay Quick Tunnel dashboard integration', () => {
     ].forEach(id => expect(dashboard).toContain(`id="${id}"`));
   });
 
+  test('loads the stable management helper before network settings', () => {
+    const dashboard = fs.readFileSync(
+      path.join(publicRoot, 'dashboard.html'),
+      'utf8'
+    );
+    const stableIndex = dashboard.indexOf(
+      '<script src="/js/stable-overlay-routing.js"></script>'
+    );
+    const settingsIndex = dashboard.indexOf(
+      '<script src="/js/network-settings.js"></script>'
+    );
+
+    expect(stableIndex).toBeGreaterThan(-1);
+    expect(stableIndex).toBeLessThan(settingsIndex);
+    expect(dashboard).toContain('id="stable-overlay-routing-card"');
+    expect(dashboard).toContain('data-stable-overlay-routing-root');
+  });
+
   test('renders and stops through the helper without starting on page load', () => {
     const settings = fs.readFileSync(
       path.join(publicRoot, 'js', 'network-settings.js'),
@@ -206,6 +225,91 @@ describe('Overlay Quick Tunnel dashboard integration', () => {
     );
   });
 
+  test('initializes the stable card and forwards attention without management mutations', async () => {
+    const settings = fs.readFileSync(
+      path.join(publicRoot, 'js', 'network-settings.js'),
+      'utf8'
+    );
+    const dom = new JSDOM(`
+      <select id="network-bind-mode"><option value="local">Local</option></select>
+      <div data-stable-overlay-routing-root></div>
+    `, {
+      url: 'http://127.0.0.1:3000/dashboard.html#settings',
+      runScripts: 'outside-only'
+    });
+    const { window } = dom;
+    const attention = jest.fn();
+    const init = jest.fn().mockResolvedValue(undefined);
+    const renderStable = jest.fn();
+    const createUI = jest.fn().mockReturnValue({
+      attention,
+      init,
+      render: renderStable
+    });
+    const configureAccountAccess = jest.fn();
+    let languageChange;
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        success: true,
+        config: {
+          bindMode: 'local',
+          interfaces: [],
+          overlayTunnel: {},
+          externalURLs: [],
+          accessURLs: {}
+        }
+      })
+    });
+    window.fetch = fetchImpl;
+    window.i18n = {
+      t: jest.fn(key => key),
+      onLanguageChange: jest.fn(callback => {
+        languageChange = callback;
+      })
+    };
+    window.StoreAuth = {
+      getFreshToken: jest.fn(),
+      beginBridgeAuth: jest.fn()
+    };
+    window.LTTHStableOverlayRouting = {
+      accountAccess: { getFreshToken: jest.fn() },
+      configureAccountAccess,
+      createUI
+    };
+    window.LTTHNetworkOverlayTunnel = {
+      render: jest.fn()
+    };
+    window.LTTHTikTokStudioUrl = {};
+
+    window.eval(settings);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(configureAccountAccess).toHaveBeenCalledTimes(1);
+    expect(createUI).toHaveBeenCalledWith(expect.objectContaining({
+      root: window.document.querySelector(
+        '[data-stable-overlay-routing-root]'
+      ),
+      copyApi: window.LTTHTikTokStudioUrl,
+      translate: expect.any(Function),
+      notify: expect.any(Function)
+    }));
+    expect(init).toHaveBeenCalledTimes(1);
+    expect(window.i18n.onLanguageChange).toHaveBeenCalledTimes(1);
+    languageChange();
+    expect(renderStable).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new window.CustomEvent(
+      'ltth:stable-overlay-routing-attention',
+      { detail: { code: 'STABLE_OVERLAY_CLAIM_REQUIRED' } }
+    ));
+    expect(attention).toHaveBeenCalledWith({
+      code: 'STABLE_OVERLAY_CLAIM_REQUIRED'
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledWith('/api/network/config');
+  });
+
   test('defines the complete four-language UI contract', () => {
     const expectedKeys = [
       ['common', 'tiktok_studio', 'copy_url'],
@@ -214,6 +318,9 @@ describe('Overlay Quick Tunnel dashboard integration', () => {
       ['common', 'tiktok_studio', 'copy_failed'],
       ['common', 'tiktok_studio', 'tunnel_failed'],
       ['common', 'tiktok_studio', 'url_unavailable'],
+      ['common', 'tiktok_studio', 'claim_required'],
+      ['common', 'tiktok_studio', 'copying'],
+      ['common', 'tiktok_studio', 'preparing_stable'],
       ['network', 'overlay_tunnel', 'title'],
       ['network', 'overlay_tunnel', 'active'],
       ['network', 'overlay_tunnel', 'inactive'],

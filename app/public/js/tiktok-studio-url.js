@@ -499,7 +499,9 @@
       let token;
       let payload;
       try {
-        token = await accountAccess.getFreshToken();
+        token = await accountAccess.getFreshToken({
+          action: 'copy_stable'
+        });
         if (typeof token !== 'string' || !token) throw new Error('auth unavailable');
         payload = await accountAccess.getAccount({
           token,

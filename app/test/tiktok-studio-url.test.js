@@ -85,7 +85,9 @@ describe('LTTHTikTokStudioUrl.copy', () => {
     );
 
     expect(deps.fetchImpl).not.toHaveBeenCalled();
-    expect(deps.accountAccess.getFreshToken).toHaveBeenCalledTimes(1);
+    expect(deps.accountAccess.getFreshToken).toHaveBeenCalledWith({
+      action: 'copy_stable'
+    });
     expect(deps.accountAccess.getAccount).toHaveBeenCalledWith({
       token: 'fresh-clerk-token',
       fetchImpl: deps.fetchImpl
