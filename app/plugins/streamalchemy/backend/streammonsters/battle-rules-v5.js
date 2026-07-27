@@ -1,9 +1,18 @@
-const { buildV5SkillCatalog, hashNumber } = require('./catalog');
+const {
+  buildV5SkillCatalog,
+  buildV6SkillCatalog,
+  hashNumber,
+  V6_ELEMENT_ADVANTAGE_PAIRS,
+  V6_ELEMENT_ADVANTAGE_DAMAGE
+} = require('./catalog');
 const { elementAdvantage } = require('./battle-rules-v3');
 
 const RULES_VERSION = 5;
+const V6_RULES_VERSION = 6;
 const CHOICES = Object.freeze(['A', 'B', 'C']);
 const SKILL_CATALOG = Object.freeze(buildV5SkillCatalog());
+const V6_SKILL_CATALOG = Object.freeze(buildV6SkillCatalog());
+const V6_ELEMENT_ADVANTAGES = new Set(V6_ELEMENT_ADVANTAGE_PAIRS);
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -46,13 +55,25 @@ function heal(state, amount, outcomes, type = 'heal') {
   outcomes.push({ type, requested, amount: state.hp - before });
 }
 
-function damageFor(fighter, target, effect, disableElementAdvantage = false) {
+function damageFor(
+  fighter,
+  target,
+  effect,
+  disableElementAdvantage = false,
+  rulesVersion = RULES_VERSION
+) {
   const might = Math.max(0, Number(fighter.stats?.might) || 0);
   const guard = Math.max(0, Number(target.stats?.guard) || 0);
   const weakened = Math.max(0, Number(fighter.weakened) || 0);
-  const elementBonus = !disableElementAdvantage &&
-    elementAdvantage(fighter.element, target.element)
-    ? 3
+  const hasAdvantage = rulesVersion >= V6_RULES_VERSION
+    ? V6_ELEMENT_ADVANTAGES.has(`${fighter.element}:${target.element}`)
+    : elementAdvantage(fighter.element, target.element);
+  const elementBonus = !disableElementAdvantage && hasAdvantage
+    ? (
+      rulesVersion >= V6_RULES_VERSION
+        ? V6_ELEMENT_ADVANTAGE_DAMAGE[`${fighter.element}:${target.element}`]
+        : 3
+    )
     : 0;
   return Math.max(
     1,
@@ -153,11 +174,19 @@ function resolveAction({
   round,
   sequence,
   seed,
-  disableElementAdvantage = false
+  disableElementAdvantage = false,
+  rulesVersion = RULES_VERSION
 }) {
   const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState);
-  const skill = SKILL_CATALOG[actor.template_id]?.[choice];
-  if (!skill) throw new Error(`STREAM_MONSTERS_V5_SKILL_MISSING:${actor.template_id}:${choice}`);
+  const skillCatalog = rulesVersion >= V6_RULES_VERSION
+    ? V6_SKILL_CATALOG
+    : SKILL_CATALOG;
+  const skill = skillCatalog[actor.template_id]?.[choice];
+  if (!skill) {
+    throw new Error(
+      `STREAM_MONSTERS_V${rulesVersion}_SKILL_MISSING:${actor.template_id}:${choice}`
+    );
+  }
   const before = {
     actor: clone(actorState),
     target: clone(targetState)
@@ -166,11 +195,12 @@ function resolveAction({
   const outcomes = [];
   const retaliations = [];
   const statusEffects = [];
+  const rolls = [];
   let dealtHpDamage = 0;
 
   applyBurnTick(actorState, statusEffects);
   if (actorState.hp <= 0) {
-    return {
+    const action = {
       sequence,
       round,
       actorId: actor.monster_id,
@@ -188,6 +218,11 @@ function resolveAction({
       terminal: true,
       skipped: 'burn_ko'
     };
+    if (rulesVersion >= V6_RULES_VERSION) {
+      action.rolls = rolls;
+      action.knockout = { monsterId: actor.monster_id, cause: 'status' };
+    }
+    return action;
   }
   if (choice === 'A') addCharge(actorState, 25);
   if (choice === 'B') addCharge(actorState, 50);
@@ -199,7 +234,8 @@ function resolveAction({
         { ...actor, weakened: actorState.weakened },
         target,
         effect,
-        disableElementAdvantage
+        disableElementAdvantage,
+        rulesVersion
       );
       const count = Math.max(1, Number(effect.hits) || 1);
       if (count > 1) outcomes.push({ type: 'multihit', hits: count });
@@ -209,6 +245,15 @@ function resolveAction({
       const actionEvadeRoll = hashNumber(
         `${seed}:round:${round}:sequence:${sequence}:hit:1:evade:${target.monster_id}`
       ) % 100;
+      if (rulesVersion >= V6_RULES_VERSION) {
+        rolls.push({
+          purpose: 'evade',
+          hitIndex: 1,
+          targetId: target.monster_id,
+          chance: actionEvadeChance,
+          value: actionEvadeRoll
+        });
+      }
       for (let index = 0; index < count && targetState.hp > 0; index += 1) {
         const remaining = total - hits.reduce((sum, hit) => sum + hit.requestedDamage, 0);
         const requested = Math.max(1, Math.ceil(remaining / (count - index)));
@@ -272,7 +317,7 @@ function resolveAction({
     actorState.weakened = Math.max(0, actorState.weakened - 1);
   }
 
-  return {
+  const action = {
     sequence,
     round,
     actorId: actor.monster_id,
@@ -292,6 +337,17 @@ function resolveAction({
     statusEffects,
     terminal: actorState.hp <= 0 || targetState.hp <= 0
   };
+  if (rulesVersion >= V6_RULES_VERSION) {
+    action.rolls = rolls;
+    action.knockout = targetState.hp <= 0
+      ? { monsterId: target.monster_id, cause: 'skill' }
+      : (
+        actorState.hp <= 0
+          ? { monsterId: actor.monster_id, cause: 'retaliation' }
+          : null
+      );
+  }
+  return action;
 }
 
 function resolveInteractiveRound({
@@ -300,7 +356,8 @@ function resolveInteractiveRound({
   seed,
   round = 1,
   state = {},
-  disableElementAdvantage = false
+  disableElementAdvantage = false,
+  rulesVersion = RULES_VERSION
 }) {
   if (!Array.isArray(fighters) || fighters.length !== 2) {
     throw new Error('STREAM_MONSTERS_V5_REQUIRES_TWO_FIGHTERS');
@@ -328,13 +385,14 @@ function resolveInteractiveRound({
       round,
       sequence: actions.length + 1,
       seed,
-      disableElementAdvantage
+      disableElementAdvantage,
+      rulesVersion
     }));
     if (states[target.monster_id].hp <= 0) break;
   }
   const living = fighters.filter(fighter => states[fighter.monster_id].hp > 0);
   return {
-    rulesVersion: RULES_VERSION,
+    rulesVersion: rulesVersion >= V6_RULES_VERSION ? V6_RULES_VERSION : RULES_VERSION,
     round,
     actions,
     state: states,
@@ -345,8 +403,10 @@ function resolveInteractiveRound({
 
 module.exports = {
   RULES_VERSION,
+  V6_RULES_VERSION,
   CHOICES,
   SKILL_CATALOG,
+  V6_SKILL_CATALOG,
   maxHp,
   normalizeChoice,
   resolveInteractiveRound

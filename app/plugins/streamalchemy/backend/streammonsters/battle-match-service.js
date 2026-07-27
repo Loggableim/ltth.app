@@ -864,7 +864,8 @@ class BattleMatchService {
       choices,
       seed: match.seed,
       round: match.roundNumber,
-      state
+      state,
+      rulesVersion: match.rulesVersion
     });
     const existingCount = this.db.prepare(`
       SELECT COUNT(*) AS count FROM streammonsters_match_actions WHERE match_id = ?

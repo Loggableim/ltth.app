@@ -1,5 +1,90 @@
 const ELEMENTS = Object.freeze(['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar']);
 const FURRY_ASSET_VERSION = 'furry-1.5.0';
+const V6_ELEMENT_ADVANTAGE_PAIRS = Object.freeze([
+  'Ember:Grove',
+  'Ember:Gale',
+  'Tide:Ember',
+  'Tide:Lunar',
+  'Grove:Tide',
+  'Grove:Volt',
+  'Gale:Grove',
+  'Gale:Lunar',
+  'Volt:Gale',
+  'Volt:Tide',
+  'Lunar:Volt',
+  'Lunar:Ember'
+]);
+const V6_NEUTRAL_OPPONENTS = Object.freeze({
+  Ember: 'Volt',
+  Tide: 'Gale',
+  Grove: 'Lunar',
+  Gale: 'Tide',
+  Volt: 'Ember',
+  Lunar: 'Grove'
+});
+const TEMPLATE_ROLES = Object.freeze({
+  ashfang: 'striker',
+  reefbite: 'striker',
+  fernmask: 'striker',
+  skyrend: 'striker',
+  neonclaw: 'striker',
+  umbra: 'striker',
+  embergrin: 'guardian',
+  brine: 'guardian',
+  oakheart: 'guardian',
+  cirrus: 'guardian',
+  pulse: 'guardian',
+  selene: 'guardian',
+  cinder: 'trickster',
+  ripple: 'trickster',
+  mosswhisker: 'trickster',
+  zephyr: 'trickster',
+  flashstep: 'trickster',
+  tsuki: 'trickster',
+  pyrra: 'sustain',
+  axi: 'sustain',
+  cloverhop: 'sustain',
+  gusttail: 'sustain',
+  ampjack: 'sustain',
+  lumen: 'sustain'
+});
+const ROLE_EFFECT_BUDGET_EQUIVALENTS = Object.freeze({
+  evadeChancePerPoint: 25,
+  lifestealRatioPerPoint: 0.5
+});
+const V6_ELEMENT_ADVANTAGE_DAMAGE = Object.freeze({
+  'Ember:Grove': 0.4,
+  'Ember:Gale': 1,
+  'Tide:Ember': 0.3,
+  'Tide:Lunar': 1.25,
+  'Grove:Tide': 1.2,
+  'Grove:Volt': 1.7,
+  'Gale:Grove': 0.8,
+  'Gale:Lunar': 1.3,
+  'Volt:Gale': 1,
+  'Volt:Tide': 1.05,
+  'Lunar:Volt': 1.4,
+  'Lunar:Ember': 0.3
+});
+const V6_SUSTAIN_TUNING = Object.freeze({
+  attackDamagePenalty: 2,
+  attackHeal: 1,
+  defenseTransfer: 1,
+  specialDamagePenalty: 3,
+  specialHeal: 1
+});
+const V6_STRIKER_TUNING = Object.freeze({
+  offenseDamage: 0.1,
+  defenseBudget: 1,
+  specialSecondaryBudget: 1
+});
+const V6_TRICKSTER_TUNING = Object.freeze({
+  transferBudget: 0.75
+});
+const V6_ELEMENT_DAMAGE_TUNING = Object.freeze({
+  Lunar: 0.5,
+  Volt: 0.5
+});
 
 const SKILL_PRESENTATION = Object.freeze({
   Ember: Object.freeze({
@@ -118,6 +203,7 @@ function template(templateId, element, name, species, skillPrefix) {
   return Object.freeze({
     templateId,
     element,
+    role: TEMPLATE_ROLES[templateId],
     name,
     species,
     assetPath: `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.png`,
@@ -265,9 +351,189 @@ function buildV5SkillCatalog() {
   ]));
 }
 
+function cloneEffects(effects) {
+  return effects.map(effect => ({ ...effect }));
+}
+
+function numericEffectValue(effect) {
+  if (!effect) return 0;
+  if (effect.type === 'evade') {
+    return effect.chance / ROLE_EFFECT_BUDGET_EQUIVALENTS.evadeChancePerPoint;
+  }
+  if (effect.type === 'lifesteal') {
+    return effect.ratio / ROLE_EFFECT_BUDGET_EQUIVALENTS.lifestealRatioPerPoint;
+  }
+  return Number(effect.power) || 0;
+}
+
+function adjustPower(effects, type, delta, floor = 0) {
+  let target = effects.find(effect => effect.type === type);
+  if (!target) {
+    target = { type, power: 0 };
+    effects.push(target);
+  }
+  target.power = Math.max(floor, (Number(target.power) || 0) + delta);
+}
+
+function adjustSecondary(effects, type, delta) {
+  let target = effects.find(effect => effect.type === type);
+  if (!target) {
+    target = type === 'evade'
+      ? { type, chance: 0 }
+      : (type === 'lifesteal' ? { type, ratio: 0 } : { type, power: 0 });
+    effects.push(target);
+  }
+  if (type === 'evade') {
+    target.chance = Math.max(
+      0,
+      (Number(target.chance) || 0) +
+        (delta * ROLE_EFFECT_BUDGET_EQUIVALENTS.evadeChancePerPoint)
+    );
+  } else if (type === 'lifesteal') {
+    target.ratio = Math.max(
+      0,
+      (Number(target.ratio) || 0) +
+        (delta * ROLE_EFFECT_BUDGET_EQUIVALENTS.lifestealRatioPerPoint)
+    );
+  } else {
+    target.power = Math.max(0, (Number(target.power) || 0) + delta);
+  }
+}
+
+function applyRoleEffects(element, role, choice, sourceEffects) {
+  const effects = cloneEffects(sourceEffects);
+  if (role === 'striker') {
+    if (choice === 'A') {
+      adjustPower(effects, 'damage', V6_STRIKER_TUNING.offenseDamage, 1);
+    }
+    if (choice === 'B') {
+      const defensive = effects.find(effect => (
+        effect.type === 'shield' || effect.type === 'heal'
+      ));
+      if (defensive) {
+        defensive.power = Math.max(
+          0,
+          defensive.power - V6_STRIKER_TUNING.defenseBudget
+        );
+      }
+    }
+    if (choice === 'C') {
+      adjustPower(effects, 'damage', V6_STRIKER_TUNING.offenseDamage, 1);
+      const secondary = effects
+        .filter(effect => effect.type !== 'damage')
+        .sort((left, right) => numericEffectValue(right) - numericEffectValue(left))[0];
+      if (secondary) {
+        adjustSecondary(
+          effects,
+          secondary.type,
+          -V6_STRIKER_TUNING.specialSecondaryBudget
+        );
+      }
+    }
+  } else if (role === 'guardian') {
+    if (choice === 'A') adjustPower(effects, 'damage', -1, 1);
+    if (choice === 'B') adjustPower(effects, 'shield', 2);
+    if (choice === 'C') {
+      adjustPower(effects, 'damage', -1, 1);
+      adjustPower(effects, 'shield', 2);
+    }
+  } else if (role === 'sustain') {
+    if (choice === 'A') {
+      adjustPower(
+        effects,
+        'damage',
+        -V6_SUSTAIN_TUNING.attackDamagePenalty,
+        1
+      );
+      adjustPower(effects, 'heal', V6_SUSTAIN_TUNING.attackHeal);
+    }
+    if (choice === 'B') {
+      const shield = effects.find(effect => effect.type === 'shield');
+      const moved = Math.min(
+        V6_SUSTAIN_TUNING.defenseTransfer,
+        Number(shield?.power) || 0
+      );
+      if (shield) shield.power -= moved;
+      adjustPower(effects, 'heal', moved);
+    }
+    if (choice === 'C') {
+      adjustPower(
+        effects,
+        'damage',
+        -V6_SUSTAIN_TUNING.specialDamagePenalty,
+        1
+      );
+      adjustPower(effects, 'heal', V6_SUSTAIN_TUNING.specialHeal);
+    }
+  } else if (role === 'trickster') {
+    const primary = effects.find(effect => (
+      effect.type === 'damage' || effect.type === 'shield' || effect.type === 'heal'
+    ));
+    if (primary) {
+      primary.power = Math.max(
+        primary.type === 'damage' ? 1 : 0,
+        primary.power - V6_TRICKSTER_TUNING.transferBudget
+      );
+    }
+    const secondaryType = {
+      Ember: 'burn',
+      Tide: 'weaken',
+      Grove: 'thorns',
+      Gale: 'evade',
+      Volt: 'pierce',
+      Lunar: 'lifesteal'
+    }[element];
+    adjustSecondary(
+      effects,
+      secondaryType,
+      V6_TRICKSTER_TUNING.transferBudget
+    );
+  }
+  if (
+    role !== 'trickster' &&
+    V6_ELEMENT_DAMAGE_TUNING[element] &&
+    effects.some(effect => effect.type === 'damage')
+  ) {
+    adjustPower(
+      effects,
+      'damage',
+      -V6_ELEMENT_DAMAGE_TUNING[element],
+      1
+    );
+  }
+  return Object.freeze(effects.map(effect => Object.freeze(effect)));
+}
+
+function buildV6SkillCatalog() {
+  const v5Catalog = buildV5SkillCatalog();
+  return Object.fromEntries(TEMPLATE_CATALOG.map(entry => [
+    entry.templateId,
+    Object.freeze(Object.fromEntries(['A', 'B', 'C'].map(choice => {
+      const skill = v5Catalog[entry.templateId][choice];
+      return [
+        choice,
+        Object.freeze({
+          ...skill,
+          role: entry.role,
+          effects: applyRoleEffects(entry.element, entry.role, choice, skill.effects)
+        })
+      ];
+    })))
+  ]));
+}
+
 module.exports = {
   ELEMENTS,
   FURRY_ASSET_VERSION,
+  V6_ELEMENT_ADVANTAGE_PAIRS,
+  V6_NEUTRAL_OPPONENTS,
+  TEMPLATE_ROLES,
+  ROLE_EFFECT_BUDGET_EQUIVALENTS,
+  V6_ELEMENT_ADVANTAGE_DAMAGE,
+  V6_SUSTAIN_TUNING,
+  V6_STRIKER_TUNING,
+  V6_TRICKSTER_TUNING,
+  V6_ELEMENT_DAMAGE_TUNING,
   TEMPLATE_CATALOG,
   getTemplate,
   getTemplatesForElement,
@@ -275,5 +541,6 @@ module.exports = {
   deterministicTemplateId,
   hashNumber,
   V5_ELEMENT_EFFECTS,
-  buildV5SkillCatalog
+  buildV5SkillCatalog,
+  buildV6SkillCatalog
 };
