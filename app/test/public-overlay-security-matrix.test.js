@@ -221,8 +221,17 @@ describe('public overlay HTTP security matrix', () => {
     '/api/network/config',
     '/api/plugins',
     '/api/plugins/game-engine/reload',
+    '/api/stable-overlay-routing/recover',
+    '/api/stable-overlay-routing/probe',
+    '/api/weather/private',
+    '/_ltth/v1/account',
+    '/_ltth/v1/recover',
+    '/_ltth_probe',
+    '/stable-overlay-recovery.html',
+    '/js/stable-overlay-recovery.js',
     '/plugins/game-engine/ui.html',
     '/plugins/interactive-story/ui.html',
+    '/plugins/weather-control/not-registered.js',
     '/plugin-store.json',
     '/logs',
     '/config',
@@ -247,6 +256,39 @@ describe('public overlay HTTP security matrix', () => {
       expect(response.body).toEqual({ error: 'Not found' });
     }
   );
+
+  test.each([
+    ['get', '/api/stable-overlay-routing/status'],
+    ['get', '/api/stable-overlay-routing/account'],
+    ['post', '/api/stable-overlay-routing/devices/enroll'],
+    ['post', '/api/stable-overlay-routing/claims'],
+    ['post', '/api/stable-overlay-routing/claims/streamer/restore'],
+    ['delete', '/api/stable-overlay-routing/claims/streamer'],
+    ['delete', '/api/stable-overlay-routing/devices/device-1'],
+    ['put', '/api/stable-overlay-routing/default-username']
+  ])('keeps local stable-routing management operation %s %s off the Quick Tunnel surface',
+    async (method, pathname) => {
+      const response = await request(app)[method](pathname)
+        .set('Host', publicHost);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({ error: 'Not found' });
+    }
+  );
+
+  test.each([
+    'X-HTTP-Method-Override',
+    'X-Method-Override',
+    'X-Original-Method'
+  ])('denies allowed reads carrying public method override header %s', async header => {
+    const response = await request(app)
+      .get('/api/weather/config')
+      .set('Host', publicHost)
+      .set(header, 'DELETE');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: 'Not found' });
+  });
 
   test('keeps the exact Socket.IO transport exception narrow', async () => {
     expect(isHttpAllowed({ method: 'POST', pathname: '/socket.io/' })).toBe(true);

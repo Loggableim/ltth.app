@@ -122,6 +122,30 @@ describe('public overlay Socket.IO source contract', () => {
     ).toEqual([]);
   });
 
+  test.each([
+    'test:alert',
+    'test:goal:increment',
+    'test:goal:reset',
+    'test:goal:set',
+    'minigame:request',
+    'plugins:reload',
+    'settings:update',
+    'stable-overlay-routing:recover'
+  ])('keeps privileged or mutating incoming event %s off the public surface', eventName => {
+    expect(isIncomingSocketEventAllowed(eventName)).toBe(false);
+  });
+
+  test.each([
+    'init:state',
+    'tiktok:status',
+    'tiktok:stats',
+    'plugin:error',
+    'admin:settings-updated',
+    'stable-overlay-routing:status'
+  ])('keeps private direct outgoing event %s off the public surface', eventName => {
+    expect(isOutgoingSocketEventAllowed(eventName)).toBe(false);
+  });
+
   test('the initial public surface uses Socket.IO instead of raw WebSocket clients', () => {
     const offenders = [];
     for (const relativePath of overlaySources) {

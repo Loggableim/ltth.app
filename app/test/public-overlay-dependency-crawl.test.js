@@ -137,6 +137,7 @@ function describeDependency(source, dependency) {
 describe('registered overlay dependency crawl', () => {
   test('allows render dependencies and keeps game test-control writes local-only', () => {
     const blocked = [];
+    const allowedNonReads = [];
     for (const relativePath of surfaceSources) {
       const absolutePath = path.join(appRoot, relativePath);
       if (!fs.existsSync(absolutePath)) {
@@ -144,7 +145,11 @@ describe('registered overlay dependency crawl', () => {
       }
       const source = fs.readFileSync(absolutePath, 'utf8');
       for (const dependency of collectDependencies(source)) {
-        if (!isHttpAllowed(dependency)) {
+        if (isHttpAllowed(dependency)) {
+          if (!['GET', 'HEAD'].includes(dependency.method)) {
+            allowedNonReads.push(describeDependency(relativePath, dependency));
+          }
+        } else {
           blocked.push(describeDependency(relativePath, dependency));
         }
       }
@@ -169,6 +174,13 @@ describe('registered overlay dependency crawl', () => {
         source: 'plugins/game-engine/overlay/wheel.html',
         method: 'POST',
         pathname: '/api/game-engine/wheel/spin'
+      }
+    ]);
+    expect(allowedNonReads).toEqual([
+      {
+        source: 'plugins/streamalchemy/streammonsters-overlay.html',
+        method: 'POST',
+        pathname: '/api/streammonsters/overlay/heartbeat'
       }
     ]);
   });
