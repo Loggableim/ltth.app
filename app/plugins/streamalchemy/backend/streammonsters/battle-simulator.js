@@ -9,6 +9,10 @@ const {
   resolveInteractiveRound
 } = require('./battle-rules-v5');
 const { selectBattleWinner } = require('./battle-tie-break');
+const {
+  applyEvolutionGrant,
+  effectiveCombatPower
+} = require('./evolution-rules');
 
 const DEFAULT_LEVELS = Object.freeze([1, 5, 10, 15, 20]);
 const DEFAULT_SKILL_SEQUENCES = Object.freeze([
@@ -24,6 +28,9 @@ const DEFAULT_SEEDS = Object.freeze(
 );
 const DEFAULT_V6_SEEDS = Object.freeze(
   Array.from({ length: 6 }, (_, index) => `rules-v6-balance-${index}`)
+);
+const DEFAULT_V7_SEEDS = Object.freeze(
+  Array.from({ length: 6 }, (_, index) => `rules-v7-evolution-${index}`)
 );
 const DEFAULT_STAT_PROFILES = Object.freeze(['balanced', 'power', 'guard']);
 const NEUTRAL_ELEMENT_PAIRS = Object.freeze(ELEMENTS
@@ -80,7 +87,20 @@ function assertLegalSequence(sequence) {
   return normalized;
 }
 
-function simulatorMonster(id, template, level, statProfile = 'balanced') {
+function simulatorMonster(
+  id,
+  template,
+  level,
+  statProfile = 'balanced',
+  evolutionStage = 1
+) {
+  const stage = Math.max(1, Math.min(3, Number(evolutionStage) || 1));
+  let stats = statProfile === 'v5'
+    ? statsForLevel(level)
+    : statsForProfile(level, statProfile);
+  for (let grantedStage = 2; grantedStage <= stage; grantedStage += 1) {
+    stats = applyEvolutionGrant(stats, template.element, grantedStage);
+  }
   return {
     monster_id: id,
     user_id: `sim-user:${id}`,
@@ -89,9 +109,8 @@ function simulatorMonster(id, template, level, statProfile = 'balanced') {
     template_id: template.templateId,
     personality: 'Adaptive',
     level,
-    stats: statProfile === 'v5'
-      ? statsForLevel(level)
-      : statsForProfile(level, statProfile)
+    evolution_stage: stage,
+    stats
   };
 }
 
@@ -112,15 +131,19 @@ function simulateMatch({
   mirrored = false,
   rulesVersion = 5,
   statProfile = 'v5',
+  leftStage = 1,
+  rightStage = 1,
   disableElementAdvantage = true
 }) {
   const firstTemplate = mirrored ? rightTemplate : leftTemplate;
   const secondTemplate = mirrored ? leftTemplate : rightTemplate;
   const firstSequence = mirrored ? rightSequence : leftSequence;
   const secondSequence = mirrored ? leftSequence : rightSequence;
+  const firstStage = mirrored ? rightStage : leftStage;
+  const secondStage = mirrored ? leftStage : rightStage;
   const fighters = [
-    simulatorMonster('sim-left', firstTemplate, level, statProfile),
-    simulatorMonster('sim-right', secondTemplate, level, statProfile)
+    simulatorMonster('sim-left', firstTemplate, level, statProfile, firstStage),
+    simulatorMonster('sim-right', secondTemplate, level, statProfile, secondStage)
   ];
   let state = {};
   let winnerId = null;
@@ -156,6 +179,141 @@ function simulateMatch({
       fighter.monster_id,
       maxHp(fighter)
     ]))
+  };
+}
+
+function evolutionScore(higherStage, lowerStage) {
+  return {
+    higherStage,
+    lowerStage,
+    wins: 0,
+    losses: 0,
+    samples: 0,
+    winRate: 0,
+    maxPowerGap: 0
+  };
+}
+
+function runV7EvolutionBalanceMatrix(options = {}) {
+  const levels = options.levels || DEFAULT_LEVELS;
+  const stages = Object.freeze([1, 2, 3]);
+  const skillSequences = (options.skillSequences || DEFAULT_SKILL_SEQUENCES)
+    .map(assertLegalSequence);
+  const seeds = options.seeds || DEFAULT_V7_SEEDS;
+  const templates = options.templates || TEMPLATE_CATALOG;
+  const admittedPowerGap = Math.max(1, Number(options.admittedPowerGap) || 15);
+  const comparisons = [
+    [1, 1],
+    [2, 2],
+    [3, 3],
+    [2, 1],
+    [3, 2],
+    [3, 1]
+  ];
+  const scores = new Map(comparisons.map(([higherStage, lowerStage]) => [
+    `${higherStage}:${lowerStage}`,
+    evolutionScore(higherStage, lowerStage)
+  ]));
+  let battleCount = 0;
+  let mirroredBattleCount = 0;
+
+  templates.forEach(leftTemplate => {
+    const neutralElement = V6_NEUTRAL_OPPONENTS[leftTemplate.element];
+    const rightTemplate = templates.find(template => (
+      template.element === neutralElement && template.role === leftTemplate.role
+    )) || templates.find(template => template.element === neutralElement);
+    if (!rightTemplate) return;
+    comparisons.forEach(([higherStage, lowerStage]) => {
+      const row = scores.get(`${higherStage}:${lowerStage}`);
+      levels.forEach(level => {
+        skillSequences.forEach((leftSequence, sequenceIndex) => {
+          seeds.forEach((baseSeed, seedIndex) => {
+            const rightSequence = skillSequences[
+              (sequenceIndex + seedIndex + 1) % skillSequences.length
+            ];
+            const battleSeed = [
+              baseSeed,
+              leftTemplate.templateId,
+              rightTemplate.templateId,
+              higherStage,
+              lowerStage,
+              level,
+              sequenceIndex
+            ].join(':');
+            const higherPower = effectiveCombatPower(simulatorMonster(
+              'sim-power-higher',
+              leftTemplate,
+              level,
+              'balanced',
+              higherStage
+            ));
+            const lowerPower = effectiveCombatPower(simulatorMonster(
+              'sim-power-lower',
+              rightTemplate,
+              level,
+              'balanced',
+              lowerStage
+            ));
+            row.maxPowerGap = Math.max(
+              row.maxPowerGap,
+              Math.abs(higherPower - lowerPower)
+            );
+            for (const mirrored of [false, true]) {
+              const result = simulateMatch({
+                leftTemplate,
+                rightTemplate,
+                level,
+                leftSequence,
+                rightSequence,
+                seed: battleSeed,
+                mirrored,
+                rulesVersion: 7,
+                statProfile: 'balanced',
+                leftStage: higherStage,
+                rightStage: lowerStage,
+                disableElementAdvantage: true
+              });
+              if (result.winnerTemplateId === leftTemplate.templateId) {
+                row.wins += 1;
+              } else {
+                row.losses += 1;
+              }
+              row.samples += 1;
+              battleCount += 1;
+              mirroredBattleCount += mirrored ? 1 : 0;
+            }
+          });
+        });
+      });
+    });
+  });
+  const finalized = [...scores.values()].map(row => ({
+    ...row,
+    winRate: row.samples ? row.wins / row.samples : 0
+  }));
+  return {
+    rulesVersion: 7,
+    mirroredOpponentSampling: true,
+    admittedPowerGap,
+    battleCount,
+    participantSampleCount: battleCount * 2,
+    mirroredBattleCount,
+    levels: [...levels],
+    stages: [...stages],
+    skillSequences: [...skillSequences],
+    seeds: [...seeds],
+    templates: templates.map(template => template.templateId),
+    sameStageResults: finalized.filter(row => row.higherStage === row.lowerStage)
+      .map(row => ({
+        stage: row.higherStage,
+        wins: row.wins,
+        losses: row.losses,
+        samples: row.samples,
+        winRate: row.winRate,
+        deviation: Math.abs(0.5 - row.winRate),
+        maxPowerGap: row.maxPowerGap
+      })),
+    crossStageResults: finalized.filter(row => row.higherStage !== row.lowerStage)
   };
 }
 
@@ -476,6 +634,7 @@ module.exports = {
   runNeutralBalanceMatrix: runV5BalanceMatrix,
   runV5BalanceMatrix,
   runV6BalanceMatrix,
+  runV7EvolutionBalanceMatrix,
   simulateMatch,
   tieBreakWinner,
   assertLegalSequence,

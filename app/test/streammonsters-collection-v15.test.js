@@ -45,7 +45,12 @@ function createCollection(progression = null, assetRegistry = null) {
   return { sqlite, store, collection, monster, emitted };
 }
 
-describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
+function sumStats(stats) {
+  return ['vitality', 'might', 'guard', 'agility']
+    .reduce((total, key) => total + stats[key], 0);
+}
+
+describe('Stream Monsters 1.5 collection and combat evolution', () => {
   test('awards the exact Collector points for mastery milestones, evolutions and missions once', () => {
     const progression = { awardCollectorPoints: jest.fn(() => ({ awarded: true })) };
     const { store, collection, monster } = createCollection(progression);
@@ -77,7 +82,7 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
       ]);
   });
 
-  test('spends essence durably for cosmetic Evolution II and III without changing stats', () => {
+  test('Stage II and III each grant exactly three element stats once', () => {
     const { sqlite, store, collection, monster } = createCollection();
     const originalStats = monster.stats;
     sqlite.prepare(`
@@ -94,18 +99,29 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
     expect(stageTwo).toEqual(expect.objectContaining({
       evolutionStage: 2,
       spentEssence: 3,
+      statsBefore: originalStats,
+      statsAfter: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
+      unlockedSkill: expect.objectContaining({
+        choice: 'A',
+        evolutionStage: 2
+      }),
       monster: expect.objectContaining({
         evolution_stage: 2,
         image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.png',
         visual_source: 'furry',
         visual_key: 'furry:ashfang:stage-2',
-        stats: originalStats
+        stats: { vitality: 7, might: 10, guard: 6, agility: 8 }
       })
     }));
+    expect(sumStats(stageTwo.monster.stats) - sumStats(originalStats)).toBe(3);
     expect(collection.getEssence('viewer-a', 'Ember')).toEqual(expect.objectContaining({
       amount: 0,
       spent: 3
     }));
+    expect(() => collection.evolveMonster('viewer-a', 'monster-a'))
+      .toThrow('STREAM_MONSTERS_EVOLUTION_MASTERY_REQUIRED');
+    expect(store.getMonster('monster-a').stats).toEqual(stageTwo.statsAfter);
 
     store.setTemplateMastery('viewer-a', 'ashfang', 50, []);
     store.setElementEssence('viewer-a', 'Ember', 5, []);
@@ -114,20 +130,89 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
     expect(stageThree).toEqual(expect.objectContaining({
       evolutionStage: 3,
       spentEssence: 8,
+      statsBefore: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      statsAfter: { vitality: 7, might: 12, guard: 6, agility: 9 },
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
+      unlockedSkill: expect.objectContaining({
+        choice: 'C',
+        evolutionStage: 3,
+        chargeRequired: 100
+      }),
       monster: expect.objectContaining({
         evolution_stage: 3,
         image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.png',
         visual_key: 'furry:ashfang:stage-3',
-        stats: originalStats
+        stats: { vitality: 7, might: 12, guard: 6, agility: 9 }
       })
     }));
+    expect(sumStats(stageThree.monster.stats) - sumStats(stageTwo.monster.stats)).toBe(3);
     expect(store.getMonster('monster-a')).toEqual(expect.objectContaining({
       level: 1,
       xp: 0,
-      stats: originalStats,
+      stats: { vitality: 7, might: 12, guard: 6, agility: 9 },
       evolution_stage: 3,
       visual_source: 'furry'
     }));
+  });
+
+  test.each([
+    ['Ember', { vitality: 0, might: 2, guard: 0, agility: 1 }],
+    ['Tide', { vitality: 2, might: 0, guard: 1, agility: 0 }],
+    ['Grove', { vitality: 1, might: 0, guard: 2, agility: 0 }],
+    ['Gale', { vitality: 0, might: 1, guard: 0, agility: 2 }],
+    ['Volt', { vitality: 0, might: 2, guard: 0, agility: 1 }],
+    ['Lunar', { vitality: 1, might: 1, guard: 1, agility: 0 }]
+  ])('%s uses its fixed three-point Stage II and III grant', (element, expected) => {
+    let evolutionRules;
+    expect(() => {
+      evolutionRules = require(
+        '../plugins/streamalchemy/backend/streammonsters/evolution-rules'
+      );
+    }).not.toThrow();
+
+    expect(evolutionRules.evolutionStatGrant(element, 2)).toEqual(expected);
+    expect(evolutionRules.evolutionStatGrant(element, 3)).toEqual(expected);
+    expect(sumStats(evolutionRules.evolutionStatGrant(element, 2))).toBe(3);
+  });
+
+  test('backfills historical Stage II and III grants exactly once across initialization', () => {
+    const { sqlite, store, monster } = createCollection();
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters
+      SET evolution_stage = 3, evolution_essence_spent = 8, stats_json = ?
+      WHERE monster_id = ?
+    `).run(JSON.stringify(monster.stats), monster.monster_id);
+
+    store.initialize();
+    const afterFirstInitialization = store.getMonster(monster.monster_id);
+    store.initialize();
+    const afterSecondInitialization = store.getMonster(monster.monster_id);
+    const grantTable = sqlite.prepare(`
+      SELECT name FROM sqlite_master
+      WHERE type = 'table' AND name = 'streammonsters_evolution_grants'
+    `).get();
+
+    expect(grantTable).toEqual({ name: 'streammonsters_evolution_grants' });
+    expect(afterFirstInitialization.stats).toEqual({
+      vitality: 7,
+      might: 12,
+      guard: 6,
+      agility: 9
+    });
+    expect(afterSecondInitialization.stats).toEqual(afterFirstInitialization.stats);
+    expect(sqlite.prepare(`
+      SELECT stage, stats_json FROM streammonsters_evolution_grants
+      WHERE monster_id = ? ORDER BY stage
+    `).all(monster.monster_id)).toEqual([
+      {
+        stage: 2,
+        stats_json: JSON.stringify({ vitality: 0, might: 2, guard: 0, agility: 1 })
+      },
+      {
+        stage: 3,
+        stats_json: JSON.stringify({ vitality: 0, might: 2, guard: 0, agility: 1 })
+      }
+    ]);
   });
 
   test('upgrades automatic Kenney fallback visuals to their bundled canonical Furry form', () => {

@@ -4,7 +4,8 @@ const {
   getTemplate,
   getTemplatesForElement,
   getEvolutionAssetPath,
-  hashNumber
+  hashNumber,
+  resolveStageSkill
 } = require('./catalog');
 
 const MASTERY_UNLOCKS = Object.freeze([
@@ -201,7 +202,7 @@ class CollectionService {
   }
 
   evolveMonster(userId, monsterId) {
-    return this.runAtomic(() => {
+    return this.store.runInImmediateTransaction(() => {
       const monster = this.store.getMonster(monsterId);
       if (!monster || monster.user_id !== userId) {
         throw new Error('STREAM_MONSTERS_MONSTER_NOT_FOUND');
@@ -240,7 +241,7 @@ class CollectionService {
       }
       const afterSpend = this.store.spendElementEssence(userId, monster.element, spendNow);
       if (!afterSpend) throw new Error('STREAM_MONSTERS_EVOLUTION_ESSENCE_REQUIRED');
-      const evolved = this.store.setMonsterEvolutionStage(
+      this.store.setMonsterEvolutionStage(
         monsterId,
         nextStage,
         spentRequired,
@@ -249,10 +250,28 @@ class CollectionService {
         evolutionVisual.visualSource,
         evolutionVisual.assetVersion
       );
+      const grant = this.store.applyEvolutionGrant(
+        monsterId,
+        nextStage,
+        this.now()
+      );
+      const template = getTemplate(monster.template_id);
+      const unlockedChoice = nextStage >= 3
+        ? 'C'
+        : (['striker', 'trickster'].includes(template.role) ? 'A' : 'B');
       const result = {
         evolutionStage: nextStage,
         spentEssence: spentRequired,
-        monster: evolved
+        statsBefore: grant.statsBefore,
+        statsAfter: grant.statsAfter,
+        statChanges: grant.statChanges,
+        unlockedSkill: resolveStageSkill(
+          monster.template_id,
+          unlockedChoice,
+          nextStage,
+          7
+        ),
+        monster: grant.monster
       };
       this.emitAfterCommit('streammonsters:monster_evolved', {
         userId,

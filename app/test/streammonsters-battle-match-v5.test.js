@@ -16,6 +16,9 @@ const {
   PASSIVE_CHARGE_PER_SECOND,
   projectPassiveCharge
 } = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
+const {
+  effectiveCombatPower
+} = require('../plugins/streamalchemy/backend/streammonsters/evolution-rules');
 
 test('adds five charge per completed active-window second and caps at 100', () => {
   expect(PASSIVE_CHARGE_PER_SECOND).toBe(5);
@@ -54,14 +57,16 @@ function insertMonster(sqlite, {
   templateId = 'ashfang',
   element = 'Ember',
   level = 1,
+  evolutionStage = 1,
   selected = true,
   stats = { vitality: 10, might: 10, guard: 10, agility: 10 }
 }) {
   sqlite.prepare(`
     INSERT INTO streammonsters_monsters (
       monster_id, user_id, egg_id, name, element, rarity, level, xp,
-      stats_json, personality, template_id, is_selected, created_at_ms
-    ) VALUES (?, ?, ?, ?, ?, 'Common', ?, 0, ?, 'Adaptive', ?, ?, ?)
+      stats_json, personality, template_id, evolution_stage, is_selected,
+      created_at_ms
+    ) VALUES (?, ?, ?, ?, ?, 'Common', ?, 0, ?, 'Adaptive', ?, ?, ?, ?)
   `).run(
     id,
     userId,
@@ -71,6 +76,7 @@ function insertMonster(sqlite, {
     level,
     JSON.stringify(stats),
     templateId,
+    evolutionStage,
     selected ? 1 : 0,
     1
   );
@@ -113,7 +119,8 @@ function createReservedRulesV7Match({
     id: 'beta-v7',
     userId: 'viewer-b',
     element: 'Tide',
-    templateId: 'ripple'
+    templateId: 'ripple',
+    stats: { vitality: 10, might: 10, guard: 10, agility: 20 }
   });
   const service = createMatchService({
     store,
@@ -1658,6 +1665,97 @@ describe('Stream Monsters durable BattleMatchService', () => {
       event.sequence === firstWindow.sequence
     ));
     expect(replayedFirstWindow.payload.fighters).toEqual(originalFighters);
+  });
+
+  test('uses one persisted effective-power score for queue widening and roster swaps', () => {
+    expect(typeof effectiveCombatPower).toBe('function');
+    const { sqlite, store } = createStore();
+    const stageOne = {
+      id: 'power-stage-one',
+      userId: 'stage-one-viewer',
+      level: 5,
+      stats: { vitality: 7, might: 7, guard: 7, agility: 7 }
+    };
+    const stageThree = {
+      id: 'power-stage-three',
+      userId: 'stage-three-viewer',
+      level: 5,
+      evolutionStage: 3,
+      stats: { vitality: 7, might: 11, guard: 7, agility: 9 }
+    };
+    insertMonster(sqlite, stageOne);
+    insertMonster(sqlite, stageThree);
+    insertMonster(sqlite, {
+      id: 'stronger-unqueued-monster',
+      userId: 'stage-one-viewer',
+      level: 5,
+      evolutionStage: 3,
+      selected: false,
+      stats: { vitality: 20, might: 20, guard: 20, agility: 20 }
+    });
+    let nowMs = 50_000;
+    const service = createMatchService({
+      store,
+      now: () => nowMs,
+      rulesVersion: 7
+    });
+    const stageOneMonster = store.getMonster(stageOne.id);
+    const stageThreeMonster = store.getMonster(stageThree.id);
+
+    expect(effectiveCombatPower(stageOneMonster)).toBe(48);
+    expect(effectiveCombatPower(stageThreeMonster)).toBe(60);
+    expect(effectiveCombatPower(stageThreeMonster))
+      .toBeGreaterThan(effectiveCombatPower(stageOneMonster));
+
+    store.enqueueBattle({
+      userId: stageThree.userId,
+      monsterId: stageThree.id,
+      stance: 'adaptive',
+      queuedAtMs: nowMs
+    });
+    expect(service.join({ userId: stageOne.userId }).status).toBe('queued');
+    expect(store.getBattleQueueEntry(stageOne.userId)).toEqual(
+      expect.objectContaining({ queued_power: 48 })
+    );
+    expect(store.getBattleQueueEntry(stageThree.userId)).toEqual(
+      expect.objectContaining({ queued_power: 60 })
+    );
+    expect(service.reserveBestMatch(stageOne.userId)).toBeNull();
+
+    nowMs += 30_000;
+    const reserved = service.reserveBestMatch(stageOne.userId);
+    expect(reserved).toEqual(expect.objectContaining({
+      rulesVersion: 7,
+      matchmakingPowerGap: 15
+    }));
+    expect(reserved.participants.map(participant => participant.queuedPower))
+      .toEqual([48, 60]);
+    expect(service.lockRoster({
+      userId: stageOne.userId,
+      monsterId: 'stronger-unqueued-monster'
+    })).toEqual(expect.objectContaining({
+      accepted: false,
+      reason: 'monster_out_of_power_range',
+      allowedPowerGap: 15
+    }));
+    expect(service.lockRoster({
+      userId: stageOne.userId,
+      monsterId: stageOne.id
+    })).toEqual(expect.objectContaining({ accepted: true }));
+    expect(service.lockRoster({
+      userId: stageThree.userId,
+      monsterId: stageThree.id
+    })).toEqual(expect.objectContaining({ accepted: true }));
+
+    const locked = service.getMatch(reserved.matchId);
+    expect(locked.participants.map(participant => participant.lockedPower))
+      .toEqual([48, 60]);
+    expect(locked.participants[1].roster.skills.map(skill => skill.id))
+      .toEqual([
+        'ashfang:A:stage-2',
+        'ashfang:B',
+        'ashfang:C:stage-3'
+      ]);
   });
 
   test('retains the safe Rules-v7 charge window in public reconnect replays', () => {

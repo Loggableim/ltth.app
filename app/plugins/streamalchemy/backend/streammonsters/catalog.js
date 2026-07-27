@@ -550,6 +550,75 @@ function buildV6SkillCatalog() {
   ]));
 }
 
+const V6_SKILL_CATALOG = Object.freeze(buildV6SkillCatalog());
+
+function stageSkillKey(prefix, templateId, choice, revision) {
+  const templateKey = `${templateId[0].toUpperCase()}${templateId.slice(1)}`;
+  return `${prefix}${templateKey}${choice}Stage${revision}`;
+}
+
+function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 7) {
+  const normalizedChoice = String(choice || '').trim().toUpperCase();
+  const base = V6_SKILL_CATALOG[templateId]?.[normalizedChoice];
+  if (!base) {
+    throw new Error(`STREAM_MONSTERS_SKILL_MISSING:${templateId}:${normalizedChoice}`);
+  }
+  if (Number(rulesVersion) < 7) return base;
+
+  const templateEntry = getTemplate(templateId);
+  const normalizedStage = Math.max(1, Math.min(3, Number(stage) || 1));
+  const upgradedChoice = ['striker', 'trickster'].includes(templateEntry.role)
+    ? 'A'
+    : 'B';
+  let revision = 1;
+  const effects = cloneEffects(base.effects);
+  if (normalizedStage >= 2 && normalizedChoice === upgradedChoice) {
+    revision = 2;
+    if (templateEntry.role === 'guardian') {
+      adjustPower(effects, 'shield', 1);
+    } else if (templateEntry.role === 'sustain') {
+      adjustPower(effects, 'heal', 1);
+    } else {
+      adjustPower(effects, 'damage', 1, 1);
+    }
+  }
+  if (normalizedStage >= 3 && normalizedChoice === 'C') {
+    revision = 3;
+    const primary = effects.find(effect => (
+      effect.type === 'damage' || effect.type === 'shield' || effect.type === 'heal'
+    ));
+    const secondary = effects.find(effect => effect !== primary);
+    if (primary) adjustPower(effects, primary.type, secondary ? 1 : 2);
+    if (secondary) adjustSecondary(effects, secondary.type, 1);
+  }
+  const nameKey = stageSkillKey(
+    'skillName',
+    templateId,
+    normalizedChoice,
+    revision
+  );
+  const effectKey = stageSkillKey(
+    'skillEffect',
+    templateId,
+    normalizedChoice,
+    revision
+  );
+  const frozenEffects = Object.freeze(
+    effects.map(effect => Object.freeze({ ...effect }))
+  );
+  return Object.freeze({
+    ...base,
+    id: revision > 1 ? `${base.id}:stage-${revision}` : base.id,
+    name: revision > 1 ? `${base.name} · ${revision === 2 ? 'II' : 'III'}` : base.name,
+    shortTextKey: effectKey,
+    choice: normalizedChoice,
+    nameKey,
+    effectKey,
+    evolutionStage: normalizedStage,
+    effects: frozenEffects
+  });
+}
+
 module.exports = {
   ELEMENTS,
   FURRY_ASSET_VERSION,
@@ -571,5 +640,7 @@ module.exports = {
   hashNumber,
   V5_ELEMENT_EFFECTS,
   buildV5SkillCatalog,
-  buildV6SkillCatalog
+  buildV6SkillCatalog,
+  V6_SKILL_CATALOG,
+  resolveStageSkill
 };

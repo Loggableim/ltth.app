@@ -10,7 +10,8 @@ const {
   V6_STRIKER_TUNING,
   V6_ELEMENT_DAMAGE_TUNING,
   V6_GUARDIAN_TUNING,
-  buildV6SkillCatalog
+  buildV6SkillCatalog,
+  resolveStageSkill
 } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const Rules = require(
   '../plugins/streamalchemy/backend/streammonsters/battle-rules-v5'
@@ -253,6 +254,86 @@ describe('Stream Monsters Rules-v6 catalog contracts', () => {
   });
 });
 
+describe('Stream Monsters Rules-v7 stage skill contracts', () => {
+  test.each(TEMPLATE_CATALOG.map(entry => [entry.templateId, entry.role]))(
+    '%s receives only its role-appropriate Stage-II upgrade and Stage-III Special',
+    (templateId, role) => {
+      expect(typeof resolveStageSkill).toBe('function');
+      const base = ['A', 'B', 'C'].map(choice =>
+        resolveStageSkill(templateId, choice, 1, 7));
+      const stageTwo = ['A', 'B', 'C'].map(choice =>
+        resolveStageSkill(templateId, choice, 2, 7));
+      const stageThree = ['A', 'B', 'C'].map(choice =>
+        resolveStageSkill(templateId, choice, 3, 7));
+      const upgradedChoice = ['striker', 'trickster'].includes(role) ? 'A' : 'B';
+      const untouchedChoice = upgradedChoice === 'A' ? 'B' : 'A';
+      const byChoice = (skills, choice) =>
+        skills.find(skill => skill.choice === choice);
+
+      expect(byChoice(stageTwo, upgradedChoice).id)
+        .not.toBe(byChoice(base, upgradedChoice).id);
+      expect(byChoice(stageTwo, untouchedChoice).id)
+        .toBe(byChoice(base, untouchedChoice).id);
+      expect(
+        effectBudget(byChoice(stageTwo, upgradedChoice).effects) -
+        effectBudget(byChoice(base, upgradedChoice).effects)
+      ).toBeCloseTo(1, 8);
+      expect(
+        effectBudget(byChoice(stageTwo, untouchedChoice).effects)
+      ).toBeCloseTo(effectBudget(byChoice(base, untouchedChoice).effects), 8);
+      expect(byChoice(stageThree, 'A').id).toBe(byChoice(stageTwo, 'A').id);
+      expect(byChoice(stageThree, 'B').id).toBe(byChoice(stageTwo, 'B').id);
+      expect(byChoice(stageThree, 'C').id)
+        .not.toBe(byChoice(stageTwo, 'C').id);
+      expect(
+        effectBudget(byChoice(stageThree, 'C').effects) -
+        effectBudget(byChoice(stageTwo, 'C').effects)
+      ).toBeGreaterThan(0);
+      expect(
+        effectBudget(byChoice(stageThree, 'C').effects) -
+        effectBudget(byChoice(stageTwo, 'C').effects)
+      ).toBeLessThanOrEqual(2);
+
+      [base, stageTwo, stageThree].forEach((skills, stageIndex) => {
+        skills.forEach((skill, choiceIndex) => {
+          const choice = ['A', 'B', 'C'][choiceIndex];
+          const baseline = Rules.V6_SKILL_CATALOG[templateId][choice];
+          expect(skill).toEqual(expect.objectContaining({
+            choice,
+            element: baseline.element,
+            vfxKey: baseline.vfxKey,
+            nameKey: expect.any(String),
+            effectKey: expect.any(String),
+            evolutionStage: stageIndex + 1
+          }));
+          if (choice === 'C') expect(skill.chargeRequired).toBe(100);
+          expect(Object.isFrozen(skill)).toBe(true);
+          expect(Object.isFrozen(skill.effects)).toBe(true);
+          skill.effects.forEach(entry => expect(Object.isFrozen(entry)).toBe(true));
+        });
+      });
+    }
+  );
+
+  test('keeps the frozen Rules-v6 fixture byte-for-byte unchanged', () => {
+    expect(typeof resolveStageSkill).toBe('function');
+    const expectedFixture = '{"id":"ashfang:A","name":"Ashfang: Flamefang",' +
+      '"icon":"🔥","shortText":"A fierce strike that leaves a brief burn.",' +
+      '"shortTextKey":"skillCopyEmberAttack","type":"attack","element":"Ember",' +
+      '"vfxKey":"ashfang:attack","effects":[{"type":"damage","power":5.1},' +
+      '{"type":"burn","power":1}],"role":"striker"}';
+    const catalogBefore = JSON.stringify(Rules.V6_SKILL_CATALOG);
+
+    expect(JSON.stringify(resolveStageSkill('ashfang', 'A', 3, 6)))
+      .toBe(expectedFixture);
+    resolveStageSkill('ashfang', 'A', 3, 7);
+
+    expect(JSON.stringify(Rules.V6_SKILL_CATALOG)).toBe(catalogBefore);
+    expect(Object.isFrozen(Rules.V6_SKILL_CATALOG.ashfang.A)).toBe(true);
+    expect(Object.isFrozen(Rules.V6_SKILL_CATALOG.ashfang.A.effects)).toBe(true);
+  });
+});
+
 describe('Stream Monsters Rules-v6 deterministic resolver', () => {
   test('preserves the caller Rules version for v5, v6, and v7 resolutions', () => {
     const input = {
@@ -303,6 +384,34 @@ describe('Stream Monsters Rules-v6 deterministic resolver', () => {
         actor: expect.objectContaining({ charge: 25 })
       }),
       knockout: null
+    }));
+  });
+
+  test('routes only Rules-v7 actions through the fighter evolution stage', () => {
+    const left = {
+      ...fighter('left-stage', 'ashfang', { agility: 20 }),
+      evolution_stage: 3
+    };
+    const right = fighter('right-stage', 'ripple', { agility: 1 });
+    const input = {
+      fighters: [left, right],
+      choices: { 'left-stage': 'C', 'right-stage': 'B' },
+      seed: 'rules-v7-stage-routing',
+      round: 1,
+      state: {
+        'left-stage': { charge: 100 },
+        'right-stage': { charge: 0 }
+      }
+    };
+
+    const rulesSix = Rules.resolveInteractiveRound({ ...input, rulesVersion: 6 });
+    const rulesSeven = Rules.resolveInteractiveRound({ ...input, rulesVersion: 7 });
+
+    expect(rulesSix.actions[0].skill.id).toBe('ashfang:C');
+    expect(rulesSeven.actions[0].skill).toEqual(expect.objectContaining({
+      id: 'ashfang:C:stage-3',
+      choice: 'C',
+      evolutionStage: 3
     }));
   });
 

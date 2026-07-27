@@ -1,5 +1,10 @@
 const { randomUUID } = require('crypto');
 const { deterministicTemplateId, getTemplate } = require('./catalog');
+const {
+  evolutionStatGrant,
+  applyEvolutionGrant: applyEvolutionStatGrant,
+  effectiveCombatPower
+} = require('./evolution-rules');
 
 class StreamMonstersDatabase {
   constructor(sqlite, { logger = null, assetRegistry = null } = {}) {
@@ -113,6 +118,15 @@ class StreamMonstersDatabase {
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user
         ON streammonsters_monsters(user_id, created_at_ms);
 
+      CREATE TABLE IF NOT EXISTS streammonsters_evolution_grants (
+        monster_id TEXT NOT NULL,
+        stage INTEGER NOT NULL CHECK (stage IN (2, 3)),
+        stats_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (monster_id, stage),
+        FOREIGN KEY (monster_id) REFERENCES streammonsters_monsters(monster_id)
+      );
+
       CREATE TABLE IF NOT EXISTS streammonsters_viewer_progress (
         user_id TEXT PRIMARY KEY,
         gifts_sent INTEGER NOT NULL DEFAULT 0,
@@ -148,6 +162,7 @@ class StreamMonstersDatabase {
         monster_id TEXT NOT NULL,
         stance TEXT NOT NULL,
         stream_key TEXT,
+        queued_power INTEGER,
         queued_at_ms INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS streammonsters_battle_queue_time
@@ -396,6 +411,7 @@ class StreamMonstersDatabase {
         seed TEXT NOT NULL,
         rules_version INTEGER NOT NULL DEFAULT 5,
         matchmaking_level_gap INTEGER NOT NULL DEFAULT 2,
+        matchmaking_power_gap INTEGER NOT NULL DEFAULT 10,
         round_number INTEGER NOT NULL DEFAULT 0,
         roster_deadline_ms INTEGER,
         action_opened_at_ms INTEGER,
@@ -417,7 +433,9 @@ class StreamMonstersDatabase {
         slot INTEGER NOT NULL CHECK (slot IN (1, 2)),
         queued_monster_id TEXT NOT NULL,
         queued_level INTEGER,
+        queued_power INTEGER,
         locked_monster_id TEXT,
+        locked_power INTEGER,
         roster_json TEXT,
         combat_state_json TEXT,
         rating_before INTEGER,
@@ -599,8 +617,16 @@ class StreamMonstersDatabase {
       'matchmaking_level_gap',
       'INTEGER NOT NULL DEFAULT 2'
     );
+    this.ensureColumn(
+      'streammonsters_matches',
+      'matchmaking_power_gap',
+      'INTEGER NOT NULL DEFAULT 10'
+    );
     this.ensureColumn('streammonsters_match_participants', 'queued_level', 'INTEGER');
+    this.ensureColumn('streammonsters_match_participants', 'queued_power', 'INTEGER');
+    this.ensureColumn('streammonsters_match_participants', 'locked_power', 'INTEGER');
     this.ensureColumn('streammonsters_battle_queue', 'stream_key', 'TEXT');
+    this.ensureColumn('streammonsters_battle_queue', 'queued_power', 'INTEGER');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
@@ -630,11 +656,11 @@ class StreamMonstersDatabase {
       WHERE ready_at_ms IS NULL AND state != 'queued'
     `).run();
       this.migrateLegacyTemplateIds();
+      this.migrateEvolutionGrants();
+      this.backfillBattleQueuePower();
       this.migrateCanonicalFurryVisuals();
     };
-    const transaction = this.db.transaction(migrate);
-    if (typeof transaction.immediate === 'function') transaction.immediate();
-    else transaction();
+    this.runInImmediateTransaction(migrate);
   }
 
   migrateLegacyTemplateIds() {
@@ -683,6 +709,42 @@ class StreamMonstersDatabase {
         asset.assetVersion || null,
         row.monster_id
       );
+    });
+  }
+
+  migrateEvolutionGrants() {
+    const rows = this.db.prepare(`
+      SELECT monster_id, element, evolution_stage, created_at_ms
+      FROM streammonsters_monsters
+      WHERE evolution_stage >= 2
+      ORDER BY created_at_ms, monster_id
+    `).all();
+    rows.forEach(row => {
+      const maximumStage = Math.min(3, Number(row.evolution_stage) || 1);
+      for (let stage = 2; stage <= maximumStage; stage += 1) {
+        this.applyEvolutionGrant(
+          row.monster_id,
+          stage,
+          row.created_at_ms
+        );
+      }
+    });
+  }
+
+  backfillBattleQueuePower() {
+    const rows = this.db.prepare(`
+      SELECT user_id, monster_id
+      FROM streammonsters_battle_queue
+      WHERE queued_power IS NULL
+    `).all();
+    const update = this.db.prepare(`
+      UPDATE streammonsters_battle_queue
+      SET queued_power = ?
+      WHERE user_id = ?
+    `);
+    rows.forEach(row => {
+      const monster = this.getMonster(row.monster_id);
+      if (monster) update.run(effectiveCombatPower(monster), row.user_id);
     });
   }
 
@@ -1550,6 +1612,55 @@ class StreamMonstersDatabase {
     return this.getMonster(monsterId);
   }
 
+  applyEvolutionGrant(monsterId, stage, createdAtMs) {
+    return this.runInImmediateTransaction(() => {
+      const monster = this.getMonster(monsterId);
+      if (!monster) throw new Error('STREAM_MONSTERS_MONSTER_NOT_FOUND');
+      const normalizedStage = Number(stage);
+      if (![2, 3].includes(normalizedStage)) {
+        throw new Error('STREAM_MONSTERS_EVOLUTION_STAGE_INVALID');
+      }
+      const normalizedChanges = evolutionStatGrant(monster.element, normalizedStage);
+      const inserted = this.db.prepare(`
+        INSERT OR IGNORE INTO streammonsters_evolution_grants (
+          monster_id, stage, stats_json, created_at_ms
+        ) VALUES (?, ?, ?, ?)
+      `).run(
+        monsterId,
+        normalizedStage,
+        JSON.stringify(normalizedChanges),
+        Math.max(0, Number(createdAtMs) || 0)
+      );
+      const statsBefore = { ...monster.stats };
+      if (!inserted.changes) {
+        return {
+          applied: false,
+          monster,
+          statsBefore,
+          statsAfter: statsBefore,
+          statChanges: { vitality: 0, might: 0, guard: 0, agility: 0 }
+        };
+      }
+      const statsAfter = applyEvolutionStatGrant(
+        statsBefore,
+        monster.element,
+        normalizedStage
+      );
+      this.db.prepare(`
+        UPDATE streammonsters_monsters
+        SET stats_json = ?
+        WHERE monster_id = ?
+      `).run(JSON.stringify(statsAfter), monsterId);
+      return {
+        applied: true,
+        monster: this.getMonster(monsterId),
+        statsBefore,
+        statsAfter,
+        statChanges: normalizedChanges
+      };
+    });
+  }
+
   unlockCollectionCosmetic(userId, cosmeticKey, unlockedAtMs) {
     return this.db.prepare(`
       INSERT OR IGNORE INTO streammonsters_collection_cosmetics (user_id, cosmetic_key, unlocked_at_ms)
@@ -1766,17 +1877,28 @@ class StreamMonstersDatabase {
     `).get(sinceMs, userAId, userBId, userBId, userAId));
   }
 
-  enqueueBattle({ userId, monsterId, stance, streamKey = null, queuedAtMs }) {
+  enqueueBattle({
+    userId,
+    monsterId,
+    stance,
+    streamKey = null,
+    queuedPower = null,
+    queuedAtMs
+  }) {
+    const power = Number.isInteger(queuedPower)
+      ? queuedPower
+      : effectiveCombatPower(this.getMonster(monsterId));
     this.db.prepare(`
       INSERT INTO streammonsters_battle_queue (
-        user_id, monster_id, stance, stream_key, queued_at_ms
-      ) VALUES (?, ?, ?, ?, ?)
+        user_id, monster_id, stance, stream_key, queued_power, queued_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         monster_id = excluded.monster_id,
         stance = excluded.stance,
         stream_key = excluded.stream_key,
+        queued_power = excluded.queued_power,
         queued_at_ms = excluded.queued_at_ms
-    `).run(userId, monsterId, stance, streamKey, queuedAtMs);
+    `).run(userId, monsterId, stance, streamKey, power, queuedAtMs);
     return this.getBattleQueueEntry(userId);
   }
 

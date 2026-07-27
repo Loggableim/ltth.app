@@ -1,17 +1,18 @@
 const {
   buildV5SkillCatalog,
-  buildV6SkillCatalog,
   hashNumber,
   V6_ELEMENT_ADVANTAGE_PAIRS,
-  V6_ELEMENT_ADVANTAGE_DAMAGE
+  V6_ELEMENT_ADVANTAGE_DAMAGE,
+  V6_SKILL_CATALOG,
+  resolveStageSkill
 } = require('./catalog');
 const { elementAdvantage } = require('./battle-rules-v3');
 
 const RULES_VERSION = 5;
 const V6_RULES_VERSION = 6;
+const V7_RULES_VERSION = 7;
 const CHOICES = Object.freeze(['A', 'B', 'C']);
 const SKILL_CATALOG = Object.freeze(buildV5SkillCatalog());
-const V6_SKILL_CATALOG = Object.freeze(buildV6SkillCatalog());
 const V6_ELEMENT_ADVANTAGES = new Set(V6_ELEMENT_ADVANTAGE_PAIRS);
 
 function clone(value) {
@@ -178,10 +179,18 @@ function resolveAction({
   rulesVersion = RULES_VERSION
 }) {
   const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState);
-  const skillCatalog = rulesVersion >= V6_RULES_VERSION
-    ? V6_SKILL_CATALOG
-    : SKILL_CATALOG;
-  const skill = skillCatalog[actor.template_id]?.[choice];
+  const skill = rulesVersion >= V7_RULES_VERSION
+    ? resolveStageSkill(
+      actor.template_id,
+      choice,
+      actor.evolution_stage ?? actor.evolutionStage,
+      rulesVersion
+    )
+    : (
+      rulesVersion >= V6_RULES_VERSION
+        ? V6_SKILL_CATALOG[actor.template_id]?.[choice]
+        : SKILL_CATALOG[actor.template_id]?.[choice]
+    );
   if (!skill) {
     throw new Error(
       `STREAM_MONSTERS_V${rulesVersion}_SKILL_MISSING:${actor.template_id}:${choice}`
@@ -416,6 +425,7 @@ function resolveInteractiveRound({
 module.exports = {
   RULES_VERSION,
   V6_RULES_VERSION,
+  V7_RULES_VERSION,
   CHOICES,
   SKILL_CATALOG,
   V6_SKILL_CATALOG,

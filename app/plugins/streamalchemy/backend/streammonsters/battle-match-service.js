@@ -1,6 +1,11 @@
 const { randomUUID } = require('crypto');
-const { getEvolutionAssetPath, getTemplate } = require('./catalog');
+const {
+  getEvolutionAssetPath,
+  getTemplate,
+  resolveStageSkill
+} = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
+const { effectiveCombatPower } = require('./evolution-rules');
 const { selectBattleWinner } = require('./battle-tie-break');
 const {
   PASSIVE_CHARGE_PER_SECOND,
@@ -20,6 +25,8 @@ const DODGE_COOLDOWN_MS = 60_000;
 const DODGE_THRESHOLD = 3;
 const INITIAL_RATING_GAP = 150;
 const RATING_GAP_STEP = 100;
+const INITIAL_POWER_GAP = 10;
+const POWER_GAP_STEP = 5;
 const BATTLE_QUEUE_TTL_MS = 10 * 60 * 1000;
 const ARENA_K = 32;
 const ARENA_START_RATING = 900;
@@ -201,6 +208,7 @@ class BattleMatchService {
         monsterId: monster.monster_id,
         stance,
         streamKey,
+        queuedPower: effectiveCombatPower(monster),
         queuedAtMs: nowMs
       });
       const match = this.reserveBestMatch(userId);
@@ -221,6 +229,10 @@ class BattleMatchService {
     const streamKey = own.stream_key || null;
     const season = this.getCurrentArenaSeason();
     const ownRating = this.getArenaRating(season.seasonId, userId).rating;
+    const ownPower = Number.isInteger(own.queued_power)
+      ? own.queued_power
+      : effectiveCombatPower(ownMonster);
+    const usePowerMatchmaking = this.rulesVersion >= 7;
     let candidates = this.store.getBattleQueue()
       .filter(candidate => (
         candidate.user_id !== userId &&
@@ -234,6 +246,13 @@ class BattleMatchService {
         );
         const allowedGap = 2 + Math.floor(waitedMs / MATCH_WIDEN_INTERVAL_MS);
         if (!monster || Math.abs(monster.level - ownMonster.level) > allowedGap) return null;
+        const power = Number.isInteger(candidate.queued_power)
+          ? candidate.queued_power
+          : effectiveCombatPower(monster);
+        const powerGap = Math.abs(power - ownPower);
+        const allowedPowerGap = INITIAL_POWER_GAP +
+          (Math.floor(waitedMs / MATCH_WIDEN_INTERVAL_MS) * POWER_GAP_STEP);
+        if (usePowerMatchmaking && powerGap > allowedPowerGap) return null;
         const rating = this.getArenaRating(season.seasonId, candidate.user_id).rating;
         const ratingGap = Math.abs(rating - ownRating);
         const allowedRatingGap = INITIAL_RATING_GAP +
@@ -243,6 +262,9 @@ class BattleMatchService {
           ...candidate,
           monster,
           allowedLevelGap: allowedGap,
+          allowedPowerGap,
+          power,
+          powerGap,
           rating,
           ratingGap,
           recentRematch: this.hasRecentOpponent(userId, candidate.user_id, nowMs)
@@ -254,12 +276,13 @@ class BattleMatchService {
       candidates = candidates.filter(candidate => !candidate.recentRematch);
     }
     candidates.sort((left, right) => (
+      (usePowerMatchmaking ? left.powerGap - right.powerGap : 0) ||
       left.ratingGap - right.ratingGap ||
       left.queued_at_ms - right.queued_at_ms ||
       String(left.user_id).localeCompare(String(right.user_id))
     ));
     return this.createReservation(
-      { ...own, monster: ownMonster },
+      { ...own, monster: ownMonster, power: ownPower },
       candidates[0],
       ownRating,
       season
@@ -274,13 +297,15 @@ class BattleMatchService {
     this.db.prepare(`
       INSERT INTO streammonsters_matches (
         match_id, state, phase_version, seed, rules_version, round_number,
-        matchmaking_level_gap, roster_deadline_ms, created_at_ms, updated_at_ms
-      ) VALUES (?, 'roster', 1, ?, ?, 0, ?, ?, ?, ?)
+        matchmaking_level_gap, matchmaking_power_gap, roster_deadline_ms,
+        created_at_ms, updated_at_ms
+      ) VALUES (?, 'roster', 1, ?, ?, 0, ?, ?, ?, ?, ?)
     `).run(
       matchId,
       seed,
       this.rulesVersion,
       Math.max(2, Number(opponent.allowedLevelGap) || 2),
+      Math.max(INITIAL_POWER_GAP, Number(opponent.allowedPowerGap) || INITIAL_POWER_GAP),
       nowMs + this.rosterWindowMs(),
       nowMs,
       nowMs
@@ -292,8 +317,8 @@ class BattleMatchService {
       this.db.prepare(`
         INSERT INTO streammonsters_match_participants (
           match_id, participant_id, viewer_id, slot, queued_monster_id,
-          queued_level, rating_before, active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+          queued_level, queued_power, rating_before, active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
       `).run(
         matchId,
         `${matchId}:p${slot}`,
@@ -301,6 +326,9 @@ class BattleMatchService {
         slot,
         entry.monster_id,
         Math.max(1, Number(entry.monster?.level) || 1),
+        Number.isInteger(entry.power)
+          ? entry.power
+          : effectiveCombatPower(entry.monster),
         rating
       );
     });
@@ -352,6 +380,10 @@ class BattleMatchService {
         2,
         Number(row.matchmaking_level_gap) || 2
       ),
+      matchmakingPowerGap: Math.max(
+        INITIAL_POWER_GAP,
+        Number(row.matchmaking_power_gap) || INITIAL_POWER_GAP
+      ),
       roundNumber: row.round_number,
       rosterDeadlineMs: row.roster_deadline_ms,
       actionOpenedAtMs: row.action_opened_at_ms,
@@ -374,7 +406,9 @@ class BattleMatchService {
       slot: row.slot,
       queuedMonsterId: row.queued_monster_id,
       queuedLevel: Number(row.queued_level) || null,
+      queuedPower: Number.isInteger(row.queued_power) ? row.queued_power : null,
       lockedMonsterId: row.locked_monster_id,
+      lockedPower: Number.isInteger(row.locked_power) ? row.locked_power : null,
       roster: parseJson(row.roster_json),
       combatState: parseJson(row.combat_state_json),
       ratingBefore: row.rating_before,
@@ -444,13 +478,15 @@ class BattleMatchService {
       }
       const eligibility = this.rosterEligibility(match, participant, monster);
       if (!eligibility.accepted) return eligibility;
-      const snapshot = this.snapshotMonster(monster);
+      const snapshot = this.snapshotMonster(monster, match.rulesVersion);
+      const lockedPower = effectiveCombatPower(monster);
       const result = this.db.prepare(`
         UPDATE streammonsters_match_participants
-        SET locked_monster_id = ?, roster_json = ?
+        SET locked_monster_id = ?, locked_power = ?, roster_json = ?
         WHERE match_id = ? AND participant_id = ? AND locked_monster_id IS NULL
       `).run(
         monster.monster_id,
+        lockedPower,
         JSON.stringify(snapshot),
         match.matchId,
         participant.participantId
@@ -501,16 +537,44 @@ class BattleMatchService {
         allowedLevelGap
       };
     }
+    if (Number(match?.rulesVersion) >= 7) {
+      const allowedPowerGap = Math.max(
+        INITIAL_POWER_GAP,
+        Number(match?.matchmakingPowerGap) || INITIAL_POWER_GAP
+      );
+      const ownPower = Number.isInteger(participant?.queuedPower)
+        ? participant.queuedPower
+        : effectiveCombatPower(ownQueued);
+      const opponentPower = Number.isInteger(opponent?.lockedPower)
+        ? opponent.lockedPower
+        : (
+          Number.isInteger(opponent?.queuedPower)
+            ? opponent.queuedPower
+            : effectiveCombatPower(opponentQueued)
+        );
+      const selectedPower = effectiveCombatPower(monster);
+      if (
+        Math.abs(selectedPower - ownPower) > allowedPowerGap ||
+        Math.abs(selectedPower - opponentPower) > allowedPowerGap
+      ) {
+        return {
+          accepted: false,
+          reason: 'monster_out_of_power_range',
+          allowedPowerGap
+        };
+      }
+      return { accepted: true, allowedLevelGap, allowedPowerGap };
+    }
     return { accepted: true, allowedLevelGap };
   }
 
-  snapshotMonster(monster) {
+  snapshotMonster(monster, rulesVersion = this.rulesVersion) {
     const evolutionStage = Math.max(
       1,
       Math.min(3, Number(monster.evolution_stage) || 1)
     );
     const egg = monster.egg_id ? this.store.getEgg(monster.egg_id) : null;
-    return {
+    const snapshot = {
       monster_id: monster.monster_id,
       user_id: monster.user_id,
       name: monster.name,
@@ -530,6 +594,18 @@ class BattleMatchService {
       visual_key: monster.visual_key || null,
       stats: { ...monster.stats }
     };
+    if (Number(rulesVersion) >= 7) {
+      snapshot.combat_power = effectiveCombatPower(monster);
+      snapshot.skills = ['A', 'B', 'C'].map(choice => (
+        resolveStageSkill(
+          monster.template_id,
+          choice,
+          evolutionStage,
+          rulesVersion
+        )
+      ));
+    }
+    return snapshot;
   }
 
   resolveFighterImage(
