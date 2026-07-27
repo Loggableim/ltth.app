@@ -179,6 +179,13 @@ describe('stable overlay management HTTP contract', () => {
     expect(opaque.status).toBe(404);
     expect(await opaque.text()).toBe('Not Found');
 
+    const alternatePort = await call('/account', {
+      user: 'user-a',
+      host: 'overlay.ltth.app:8443'
+    });
+    expect(alternatePort.status).toBe(404);
+    expect(await alternatePort.text()).toBe('Not Found');
+
     const unknown = await call('/unknown', { user: 'user-a' });
     expect(unknown.status).toBe(404);
     expect(await unknown.text()).toBe('Not Found');

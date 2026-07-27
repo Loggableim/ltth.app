@@ -66,12 +66,12 @@ function isNavigationRequest(request) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return false;
   }
-  if (request.headers.get('sec-fetch-mode') === 'navigate') {
-    return true;
-  }
+  const mode = request.headers.get('sec-fetch-mode');
   const destination = request.headers.get('sec-fetch-dest');
-  if (destination === 'document' || destination === 'iframe') {
-    return true;
+  if (mode !== null || destination !== null) {
+    return mode === 'navigate' ||
+      destination === 'document' ||
+      destination === 'iframe';
   }
   const accept = request.headers.get('accept') || '';
   return accept
@@ -111,6 +111,7 @@ export function createPublicRouter(options = {}) {
     }
     if (url.protocol !== 'https:' ||
         url.hostname !== PUBLIC_ENTRY_HOST ||
+        url.port !== '' ||
         (request.method !== 'GET' && request.method !== 'HEAD')) {
       return createNeutralErrorResponse(404);
     }

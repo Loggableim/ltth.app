@@ -780,7 +780,9 @@ export function createManagementHandler(options = {}) {
     if (relativePath === null) {
       return null;
     }
-    if (url.hostname !== MANAGEMENT_HOST || url.protocol !== 'https:') {
+    if (url.hostname !== MANAGEMENT_HOST ||
+        url.protocol !== 'https:' ||
+        url.port !== '') {
       return createNeutralErrorResponse(404);
     }
 

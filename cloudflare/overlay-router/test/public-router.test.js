@@ -171,6 +171,42 @@ describe('stable public entry routing', () => {
     expect(reservedRepository.calls).toEqual([]);
   });
 
+  it('rejects an entry authority with a non-default port', async () => {
+    const repository = createRepository();
+    const handle = createPublicRouter({
+      repository,
+      now: () => NOW_MS
+    });
+    const response = await handle(new Request(
+      'https://overlay.ltth.app:8443/creator.name/overlay.html',
+      { headers: navigationHeaders() }
+    ));
+
+    expect(response.status).toBe(404);
+    expect(repository.calls).toEqual([]);
+  });
+
+  it('does not treat explicit non-navigation fetch metadata as navigation', async () => {
+    const handle = createPublicRouter({
+      repository: createRepository({ lease: null }),
+      now: () => NOW_MS
+    });
+    const response = await handle(new Request(
+      'https://overlay.ltth.app/creator.name/fragment.html',
+      {
+        headers: {
+          accept: 'text/html',
+          'sec-fetch-dest': 'empty',
+          'sec-fetch-mode': 'cors'
+        }
+      }
+    ));
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('content-type')).toContain('text/plain');
+    expect(await response.text()).toBe('Service Unavailable');
+  });
+
   it('never constructs a redirect from a malformed stored route key', async () => {
     const handle = createPublicRouter({
       repository: createRepository({

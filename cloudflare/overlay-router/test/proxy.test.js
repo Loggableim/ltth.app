@@ -116,7 +116,7 @@ describe('strict opaque-host HTTP proxy', () => {
       .toBe('https://overlay.ltth.app');
     expect(response.headers.get('access-control-allow-credentials')).toBeNull();
     expect(response.headers.get('access-control-allow-methods'))
-      .toBe('GET, HEAD, OPTIONS, POST');
+      .toBe('GET, HEAD, OPTIONS');
   });
 
   it.each([
@@ -166,7 +166,10 @@ describe('strict opaque-host HTTP proxy', () => {
       `https://${ROUTE_HOST}/socket.io/?EIO=4&transport=polling`,
       {
         method: 'POST',
-        headers: { 'content-type': 'text/plain;charset=UTF-8' },
+        headers: {
+          'content-type': 'text/plain;charset=UTF-8',
+          origin: 'https://overlay.ltth.app'
+        },
         body: '40{"event":"opaque-payload"}'
       }
     ));
@@ -177,6 +180,8 @@ describe('strict opaque-host HTTP proxy', () => {
     );
     expect(upstreamRedirect).toBe('manual');
     expect(upstreamBody).toBe('40{"event":"opaque-payload"}');
+    expect(response.headers.get('access-control-allow-methods'))
+      .toBe('GET, HEAD, OPTIONS, POST');
   });
 
   it('rejects WebSocket upgrade semantics on non-GET requests', async () => {
@@ -223,6 +228,23 @@ describe('strict opaque-host HTTP proxy', () => {
 
     expect(response.status).toBe(502);
     expect(await response.text()).toBe('Bad Gateway');
+    expect(fetchCalls).toBe(0);
+  });
+
+  it('rejects an opaque route authority with a non-default port', async () => {
+    let fetchCalls = 0;
+    const { repository, handle } = createHandler({
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response('unexpected');
+      }
+    });
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}:8443/overlay.html`
+    ));
+
+    expect(response.status).toBe(404);
+    expect(repository.calls).toEqual([]);
     expect(fetchCalls).toBe(0);
   });
 

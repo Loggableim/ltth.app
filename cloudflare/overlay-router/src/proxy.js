@@ -13,7 +13,8 @@ const METHOD_OVERRIDE_HEADERS = Object.freeze([
   'x-method-override',
   'x-original-method'
 ]);
-const ALLOWED_CORS_METHODS = 'GET, HEAD, OPTIONS, POST';
+const READ_ONLY_CORS_METHODS = 'GET, HEAD, OPTIONS';
+const SOCKET_CORS_METHODS = `${READ_ONLY_CORS_METHODS}, POST`;
 const ALLOWED_CORS_HEADERS = 'Accept, Content-Type';
 const PUBLIC_ENTRY_ORIGIN = 'https://overlay.ltth.app';
 
@@ -97,7 +98,12 @@ function applyNarrowCors(request, publicUrl, headers) {
     return;
   }
   headers.set('Access-Control-Allow-Origin', origin);
-  headers.set('Access-Control-Allow-Methods', ALLOWED_CORS_METHODS);
+  headers.set(
+    'Access-Control-Allow-Methods',
+    publicUrl.pathname === '/socket.io/'
+      ? SOCKET_CORS_METHODS
+      : READ_ONLY_CORS_METHODS
+  );
   headers.set('Access-Control-Allow-Headers', ALLOWED_CORS_HEADERS);
 }
 
@@ -142,7 +148,8 @@ export function createProxyHandler(options = {}) {
     } catch {
       return createNeutralErrorResponse(404);
     }
-    const routeKey = publicUrl.protocol === 'https:'
+    const routeKey = publicUrl.protocol === 'https:' &&
+      publicUrl.port === ''
       ? parseInternalRouteHost(publicUrl.hostname)
       : null;
     if (!routeKey ||
