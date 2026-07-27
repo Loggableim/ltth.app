@@ -6,6 +6,14 @@ const NOW_ISO = '2026-07-27T10:00:00.000Z';
 const ROUTE_KEY = '0123456789abcdef0123456789abcdef';
 const ROUTE_HOST = `r-${ROUTE_KEY}.ltth.app`;
 
+function nestPercentEncoding(value, additionalLayers) {
+  let encoded = value;
+  for (let layer = 0; layer < additionalLayers; layer += 1) {
+    encoded = encoded.replaceAll('%', '%25');
+  }
+  return encoded;
+}
+
 function activeClaim(overrides = {}) {
   return {
     routeKey: ROUTE_KEY,
@@ -121,7 +129,9 @@ describe('strict opaque-host HTTP proxy', () => {
 
   it.each([
     '/plugins/overlay%2Ehtml',
-    '/plugins/100%25-ready%2525.html'
+    '/plugins/100%25-ready%2525.html',
+    `/plugins/overlay${nestPercentEncoding('%2e', 6)}html`,
+    `/plugins/100${nestPercentEncoding('%25', 6)}-ready.html`
   ])('preserves a legitimate encoded proxy filename %s', async (
     pathname
   ) => {
@@ -240,6 +250,9 @@ describe('strict opaque-host HTTP proxy', () => {
     '/socket.io/%255ctransport',
     '/socket.io/%252e/transport',
     '/socket.io/%25%32%65/transport',
+    `/socket.io/${nestPercentEncoding('%2f', 2)}transport`,
+    `/socket.io/${nestPercentEncoding('%5c', 5)}transport`,
+    `/socket.io/${nestPercentEncoding('%2e%2e', 3)}/transport`,
     '/socket.io/bad%zz'
   ])('rejects an ambiguous visible proxy path %s before route lookup', async (
     pathname

@@ -5,7 +5,7 @@ export const RAW_PATH_GUARD_TOKEN_ENV =
 const GUARD_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
 const INVALID_PERCENT_ESCAPE_PATTERN = /%(?![0-9a-f]{2})/i;
 const PERCENT_ESCAPE_PATTERN = /%([0-9a-f]{2})/gi;
-const STRUCTURAL_DECODE_PASSES = 2;
+const MAX_STRUCTURAL_DECODE_PASSES = 16;
 
 function constantTimeEqual(left, right) {
   if (left.length !== right.length) {
@@ -43,15 +43,11 @@ function countSlashes(pathname) {
       count + (character === '/' ? 1 : 0), 0);
 }
 
-function decodeAsciiPercentLayer(pathname) {
+function decodePercentLayer(pathname) {
   return pathname.replace(
     PERCENT_ESCAPE_PATTERN,
-    (escape, hexadecimal) => {
-      const value = Number.parseInt(hexadecimal, 16);
-      return value <= 0x7f
-        ? String.fromCharCode(value)
-        : escape;
-    }
+    (_escape, hexadecimal) =>
+      String.fromCharCode(Number.parseInt(hexadecimal, 16))
   );
 }
 
@@ -66,8 +62,10 @@ export function isUnambiguousPublicPath(pathname) {
   }
 
   let decodedPathname = pathname;
-  for (let pass = 0; pass < STRUCTURAL_DECODE_PASSES; pass += 1) {
-    const nextPathname = decodeAsciiPercentLayer(decodedPathname);
+  for (let pass = 0;
+    pass < MAX_STRUCTURAL_DECODE_PASSES;
+    pass += 1) {
+    const nextPathname = decodePercentLayer(decodedPathname);
     if (nextPathname === decodedPathname) {
       return true;
     }
@@ -78,5 +76,5 @@ export function isUnambiguousPublicPath(pathname) {
     }
     decodedPathname = nextPathname;
   }
-  return true;
+  return decodePercentLayer(decodedPathname) === decodedPathname;
 }

@@ -54,6 +54,14 @@ function navigationHeaders(extra = {}) {
   };
 }
 
+function nestPercentEncoding(value, additionalLayers) {
+  let encoded = value;
+  for (let layer = 0; layer < additionalLayers; layer += 1) {
+    encoded = encoded.replaceAll('%', '%25');
+  }
+  return encoded;
+}
+
 describe('stable public entry routing', () => {
   it('normalizes the username and temporarily redirects while preserving path and query bytes', async () => {
     const repository = createRepository();
@@ -88,6 +96,14 @@ describe('stable public entry routing', () => {
     [
       '/creator.name/plugins/100%25-ready%2525.html?label=100%25',
       '/plugins/100%25-ready%2525.html?label=100%25'
+    ],
+    [
+      `/creator.name/plugins/overlay${nestPercentEncoding('%2e', 6)}html`,
+      `/plugins/overlay${nestPercentEncoding('%2e', 6)}html`
+    ],
+    [
+      `/creator.name/plugins/100${nestPercentEncoding('%25', 6)}-ready.html`,
+      `/plugins/100${nestPercentEncoding('%25', 6)}-ready.html`
     ]
   ])('preserves a legitimate encoded filename in %s', async (
     publicPath,
@@ -295,6 +311,36 @@ describe('visible public path ambiguity guard', () => {
     ['/plugins/%5ctransport', false],
     ['/plugins/%255ctransport', false],
     ['/plugins/%25%35%63transport', false],
+    [`/plugins/${nestPercentEncoding('%2f', 2)}transport`, false],
+    [`/plugins/${nestPercentEncoding('%5c', 5)}transport`, false],
+    [
+      `/plugins/${nestPercentEncoding('%2e%2e', 2)}/overlay.html`,
+      false
+    ],
+    [
+      `/plugins/${nestPercentEncoding('%2e', 7)}/overlay.html`,
+      false
+    ],
+    [
+      `/plugins/overlay${nestPercentEncoding('%2e', 6)}html`,
+      true
+    ],
+    [
+      `/plugins/100${nestPercentEncoding('%25', 6)}-ready.html`,
+      true
+    ],
+    [
+      `/plugins/overlay${nestPercentEncoding('%2e', 15)}html`,
+      true
+    ],
+    [
+      `/plugins/${nestPercentEncoding('%2f', 15)}transport`,
+      false
+    ],
+    [
+      `/plugins/overlay${nestPercentEncoding('%2e', 16)}html`,
+      false
+    ],
     ['/plugins/bad%zz', false],
     ['/plugins\\overlay.html', false],
     ['/plugins//overlay.html', false],
