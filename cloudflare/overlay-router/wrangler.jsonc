@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ltth-overlay-router",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-27",
+  "d1_databases": [
+    {
+      "binding": "OVERLAY_ROUTING_DB",
+      "database_name": "ltth-overlay-routing-local",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "env": {
+    "staging": {
+      "d1_databases": [
+        {
+          "binding": "OVERLAY_ROUTING_DB",
+          "database_name": "ltth-overlay-routing-staging"
+        }
+      ]
+    },
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "OVERLAY_ROUTING_DB",
+          "database_name": "ltth-overlay-routing-production"
+        }
+      ]
+    }
+  }
+}
