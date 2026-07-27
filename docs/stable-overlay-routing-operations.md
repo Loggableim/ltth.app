@@ -87,9 +87,17 @@ Before the migration, inspect the target account/environment and confirm the
 binding name is exactly `OVERLAY_ROUTING_DB`; do not infer a database from a
 similar name. Capture the migration name, Worker version, operator, time, and
 sanitized result in the release record, but never record IDs or secret values.
-Use the same ordered sequence for production only after the canary gates below
-are accepted, replacing `staging` with `production` and using
-`npm run deploy:production`.
+
+After the full staging end-to-end gate has passed, deploy and migrate the
+production Worker while `LTTH_STABLE_OVERLAY_ROUTING_ENABLED` remains disabled:
+
+```powershell
+npx wrangler d1 migrations apply OVERLAY_ROUTING_DB --env production --remote
+npm run deploy:production
+```
+
+This production deployment precedes DNS cutover and the production canary; it
+does not itself enable the desktop feature or route user traffic.
 
 ### Worker configuration names
 
@@ -118,11 +126,18 @@ token unset: the Worker fails closed rather than weakening validation.
 
 Plan this as a change window with a rollback owner. Before changing Porkbun
 nameservers, export the complete Porkbun zone and make a record-by-record
-comparison sheet containing every A, AAAA, CNAME, MX, TXT, CAA, SRV, NS, and
-third-party/domain-verification record. Record TTL, target/value, priority,
-and whether Cloudflare must proxy it. Inspect the registrar's DNSSEC DS state
-as a separate item; stale DS data can make an otherwise correct migration fail
-validation.
+comparison sheet containing every A, AAAA, CNAME, MX, TXT, CAA, SRV, and
+third-party/domain-verification record. Include genuine child-zone delegation
+NS records only when they exist. Do **not** recreate the old Porkbun
+authoritative nameserver delegation as NS records inside the Cloudflare zone:
+that delegation belongs at the registrar and will be replaced by Cloudflare's
+nameservers. Record TTL, target/value, priority, and whether Cloudflare must
+proxy each recreated record.
+
+Inspect the registrar's DNSSEC DS state separately before delegation. Identify
+whether a DS for the currently Porkbun-hosted zone exists and whether it points
+to the old zone's signer; a stale DS can make an otherwise correct migration
+fail validation.
 
 1. Create the Cloudflare zone without changing the registrar.
 2. Recreate and compare every exported record, including mail and verification
@@ -130,31 +145,45 @@ validation.
 3. Keep the GitHub Pages apex and `www` records DNS-only for the initial move;
    verify `ltth.app`, `www.ltth.app`, HTTPS, MX/TXT, CAA, and verification
    records from independent resolvers.
-4. Complete the Worker staging gate on the `workers.dev` staging hostname. Do
-   not treat successful local tests as edge acceptance.
-5. Prepare, but do not yet broadly enable, the production Custom Domain,
-   routing DNS record, Worker route, D1 migration, and raw-path transform.
-6. Only after the comparison and staging evidence are reviewed, change the
-   Porkbun nameservers to the Cloudflare-assigned nameservers and complete the
-   DNSSEC action that Cloudflare's activation flow requires. The domain remains
-   registered at Porkbun throughout.
-7. Re-run the DNS checks after propagation before inviting any canary account.
+4. Complete the Worker staging end-to-end gate on the `workers.dev` staging
+   hostname, including the raw-path Trace acceptance evidence. Do not treat
+   successful local tests as edge acceptance.
+5. After staging is accepted, migrate/deploy the production Worker and D1
+   binding while the LTTH feature flag remains disabled. Prepare the Custom
+   Domain, raw-path transform, and routing configuration, but do not treat
+   their edge status as accepted until Cloudflare is authoritative.
+6. Before changing delegation, disable/remove any old Porkbun-zone DS that
+   does not belong to Cloudflare and verify at the registrar that the stale DS
+   is absent. Do not publish a Cloudflare DS while Porkbun remains authoritative.
+7. Change Porkbun nameservers to the Cloudflare-assigned nameservers. The
+   domain remains registered at Porkbun throughout. Wait until Cloudflare is
+   authoritative and the non-DNSSEC DNS/edge checks below pass.
+8. Only then publish the DS supplied by Cloudflare at Porkbun, and validate the
+   DS-to-DNSKEY chain with independent validating resolvers. If Cloudflare does
+   not supply a DS or DNSSEC is intentionally disabled, verify that no stale DS
+   remains instead.
+9. Re-run the DNS and edge checks after propagation. Invite a production canary
+   account only after those checks pass.
 
 ### Production Worker routing scope
 
 Configure `overlay.ltth.app` as the Worker Custom Domain. Provision the
 proxied first-level wildcard DNS needed for opaque route labels and attach the
-Worker wildcard route only to `r-*.ltth.app/*` (not the apex). Cloudflare DNS
+actual Cloudflare first-level Worker wildcard route
+`*.ltth.app/*` (not the apex). `r-*.ltth.app/*` is a conceptual hostname shape,
+not the Worker-route literal to enter in Cloudflare. Cloudflare DNS/route
 wildcards are not a substitute for application validation: `src/validation.js`
 accepts only exactly `r-` plus 32 lowercase hexadecimal characters followed by
-`.ltth.app`.
+`.ltth.app`; all other hosts receive the Worker's neutral rejection.
 
-Before adding any unrelated first-level hostname, add and verify a more
-specific Worker-route exclusion for it. Existing non-routing hosts, `www`, and
-the GitHub Pages apex must bypass the routing Worker. Never use a broad
-`*.ltth.app/*` route without reviewed exclusions for every non-routing host;
-the Worker returns a neutral response for nonconforming hosts, but that is not
-a safe substitute for preserving another service's route.
+Before activating `*.ltth.app/*`, create and test a reviewed list of literal,
+more-specific exclusions for every existing non-routing first-level hostname.
+The list must include `www.ltth.app/*` for the GitHub Pages website and every
+additional first-level A/AAAA/CNAME service hostname found in the pre-cutover
+inventory; the apex remains outside this wildcard route. Add a literal
+exclusion before adding any future non-routing first-level hostname. A neutral
+Worker response for a nonconforming host is not a safe substitute for an
+exclusion that preserves another service's route.
 
 Post-change DNS/edge acceptance requires all of the following:
 
@@ -170,8 +199,9 @@ Post-change DNS/edge acceptance requires all of the following:
 The desktop feature is disabled unless
 `LTTH_STABLE_OVERLAY_ROUTING_ENABLED` is exactly `true`; its API origin is
 server-owned through `LTTH_STABLE_OVERLAY_ROUTING_API_ORIGIN`. Keep it disabled
-until staging, DNS, and routing checks pass. Enable it for one test Clerk
-account first, with an explicit rollback owner and observation window.
+through staging, production Worker deployment, and DNS/edge acceptance. Only
+then enable it for one test Clerk account, with an explicit rollback owner and
+observation window.
 
 For that canary, retain a sanitized evidence record showing that one unchanged
 stable entry URL:
@@ -187,12 +217,18 @@ stable entry URL:
 6. works again after a third distinct Quick Tunnel origin is published.
 
 For every rotation, record only a rotation ordinal, lease revision, timestamp,
-test URL class, and pass/fail outcome. Do not retain the tunnel origin, device
-credential, Clerk ID, route key, or query values. The three successful origins
-must be distinct, while the human-facing `overlay.ltth.app/<username>/...`
-entry URL remains unchanged. Then verify device revocation, lease expiry (at
-most 120 seconds), claim release/restore, and that public responses do not
-reveal owner or tunnel details.
+test URL class, and pass/fail outcome. The test harness must compare each
+current origin to every earlier origin in memory using a run-scoped HMAC-SHA256
+fingerprint with a randomly generated key. It must record only
+`distinct_from_all_previous: true` and the distinct-count result; it must not
+persist the origin, fingerprint, or HMAC key, and must discard the in-memory
+set/key when the evidence run ends. This provides proof of three distinct Quick
+Tunnel origins without retaining URLs or creating a long-lived correlation
+identifier. Do not retain the device credential, Clerk ID, route key, or query
+values. The human-facing `overlay.ltth.app/<username>/...` entry URL remains
+unchanged. Then verify device revocation, lease expiry (at most 120 seconds),
+claim release/restore, and that public responses do not reveal owner or tunnel
+details.
 
 ## Clerk, admin disputes, audit, and device incidents
 

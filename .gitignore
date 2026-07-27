@@ -27,6 +27,8 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 app/.env
+# Private local-only Cloudflare Worker configuration; commit only its example.
+cloudflare/overlay-router/.dev.vars
 
 # Editor
 .vscode/
