@@ -522,7 +522,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
         expect(translations[key]).toEqual(expect.any(String));
         expect(translations[key].trim()).not.toHaveLength(0);
       }
-      expect(translations.rulesDynamic).toContain('v6');
+      expect(translations.rulesDynamic).toContain('v7');
     }
   });
 
