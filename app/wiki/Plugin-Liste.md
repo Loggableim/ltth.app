@@ -180,7 +180,7 @@ http://localhost:3000/gcce-hud/overlay
 Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier speisen dieselbe faire Brut-Warteschlange. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster kosmetisch weiter und kämpfen mit verdeckten A-, B- oder C-Entscheidungen.
 
 **Features:**
-- 🎁 Gift-only Eier mit drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
+- 🎁 Geschenk-Eier und optionale Gratis-Eier teilen drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
 - 🥚 Optionales Gratis-Ei: 60 Sekunden reserviert, danach öffentlich per `!adopt`; Cooldown 60–31.536.000 Sekunden, Standard 24 Stunden
 - 🐾 24 Monster-Vorlagen mit Evolution I, II und III – insgesamt 72 gebündelte Formen
 - ⚔️ Verdeckte Rules-v6-Duelle: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C, 15 Sekunden Statwahl und vollständiges Replay

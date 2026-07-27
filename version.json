@@ -3,7 +3,7 @@
   "releaseDate": "2026-07-26",
   "status": "stable",
   "downloadVersion": "1.4.1",
-  "downloadNote": "LTTH 1.4.1 ships Stream Monsters 1.8.0 with optional recurring free eggs, 72 bundled evolution forms, sealed Rules-v6 A/B/C PvP, balanced elemental roles, durable progression, and portrait-first arcade OBS arenas.",
+  "downloadNote": "LTTH 1.4.1 ships Stream Monsters 1.5.0 with gift-only eggs, 72 bundled evolution forms, interactive A/B/C PvP, permanent progression, two seasonal leaderboards, and portrait-first OBS arenas.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.1",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
@@ -22,17 +22,14 @@
     "1.4.1": {
       "date": "2026-07-26",
       "changes": [
-        "NEW: Stream Monsters 1.8.0 adds optional recurring free eggs with a 60-second reservation, public FIFO adoption, and configurable 60–31,536,000 second cooldown",
+        "NEW: Stream Monsters 1.5.0 makes enabled TikTok gifts the only egg source and retires free starter/adopt ingress",
         "NEW: 72 bundled Furry forms cover 24 templates across Evolution I, II, and III with a verified local asset manifest",
         "NEW: Persistent interactive A/B/C PvP adds timed viewer choices, deterministic recovery, replay, XP, and stat progression",
         "NEW: Separate Collector Score and Arena Rating leaderboards run in configurable seasons while permanent progression remains intact",
         "NEW: Portrait-first and landscape OBS arenas share one deterministic timeline with WebGPU effects, Canvas2D fallback, and curated CC0 audio",
-        "NEW: Rules-v6 PvP seals A/B/C decisions until simultaneous reveal and uses 10-second roster, 6-second skill, and 15-second stat windows",
-        "NEW: Six element families and Striker, Guardian, Trickster, and Sustain roles provide simulator-gated strengths and weaknesses",
-        "CHANGED: The first 10 legitimate daily battles alter rating and seasonal rewards; every legitimate completion still grants monster XP",
-        "CHANGED: The six-area Creator Live Center replaces Art Lab; Stream Monsters 1.8.0 ships no image-generation provider, model installer, or generation pool",
+        "CHANGED: The six-area Creator Live Center replaces Art Lab; Stream Monsters 1.5.0 ships no image-generation provider, model installer, or generation pool",
         "IMPROVED: Egg lifecycle, GCCE aliases, critical overlay queues, renderer recovery, and privacy-safe diagnostics are hardened",
-        "COMPATIBILITY: The streamalchemy plugin ID, existing player data, legacy replays, and every Stream Monsters archive through 1.5.0 are preserved; other plugin versions remain unchanged"
+        "COMPATIBILITY: The streamalchemy plugin ID, existing player data, legacy replays, and every Stream Monsters archive through 1.4.0 are preserved; other plugin versions remain unchanged"
       ]
     },
     "1.4.0": {

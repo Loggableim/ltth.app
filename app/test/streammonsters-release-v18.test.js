@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -6,6 +7,7 @@ const yauzl = require('yauzl');
 
 const {
   RELEASE_MAP_PATH,
+  buildArchiveFromFiles,
   buildReleaseFromGit,
   loadReleaseMap
 } = require('../scripts/build-streammonsters-release-v18');
@@ -27,7 +29,7 @@ const LEGACY_ARCHIVES = Object.freeze({
 const RELEASE_COMMITS = Object.freeze({
   '1.6.0': 'c4c0eca7a0a04617da3db042a0964d904f62a2c7',
   '1.7.0': '66b28c67972ada5774935eab447194700c06dc09',
-  '1.8.0': '21fb84af9c3d8e898abd47290f6973e773c810b7'
+  '1.8.0': 'ecedf7d19adcb12bd56db883620a2b963d7a8cf7'
 });
 
 function sha256(filename) {
@@ -36,6 +38,14 @@ function sha256(filename) {
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'));
+}
+
+function git(...args) {
+  return childProcess.execFileSync(
+    'git',
+    ['-C', repoRoot, ...args],
+    { encoding: 'utf8', windowsHide: true }
+  ).trim();
 }
 
 function readZip(filename) {
@@ -100,7 +110,27 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     expect(releaseMap.releases['1.8.0']).toEqual(expect.objectContaining({
       sourceTree: expect.stringMatching(/^[a-f0-9]{40}$/)
     }));
+    expect(releaseMap.releases['1.8.0'].sourceTree).toBe(
+      git('rev-parse', 'HEAD:app/plugins/streamalchemy')
+    );
     expect(releaseMap.releases['1.8.0']).not.toHaveProperty('manifestOverrides');
+  });
+
+  test('keeps the fixed LTTH 1.4.1 release metadata on Stream Monsters 1.5', () => {
+    const currentRelease = readJson('app/CURRENT_RELEASE.json');
+    const publicRelease = readJson('version.json');
+    const bundleSource = fs.readFileSync(
+      path.join(repoRoot, 'scripts', 'build_release_bundle.py'),
+      'utf8'
+    );
+
+    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.5\.0/);
+    expect(currentRelease.notes).not.toMatch(/Stream Monsters 1\.8\.0/);
+    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.5\.0/);
+    expect(publicRelease.changelog['1.4.1'].changes.join('\n')).toMatch(
+      /Stream Monsters 1\.5\.0/
+    );
+    expect(bundleSource).toContain('"1.4.1": "1.5.0"');
   });
 
   test('publishes 1.8.0 Open Beta as the current source and store version', () => {
@@ -166,6 +196,15 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
       }));
       if (version === '1.8.0') {
         expect(manifest).toEqual(readJson('app/plugins/streamalchemy/plugin.json'));
+        expect(entries.get('streammonsters-overlay.html').toString('utf8')).toBe(
+          fs.readFileSync(path.join(
+            repoRoot,
+            'app',
+            'plugins',
+            'streamalchemy',
+            'streammonsters-overlay.html'
+          ), 'utf8').replace(/\r\n?/g, '\n')
+        );
       }
       expect(names.every(name => (
         !name.startsWith('/')
@@ -214,4 +253,137 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
       }
     }
   );
+
+  test('ships release-specific retention guidance in the 1.6 and 1.7 root READMEs', async () => {
+    const release16 = await readZip(path.join(packageDir, 'streamalchemy-1.6.0.zip'));
+    const release17 = await readZip(path.join(packageDir, 'streamalchemy-1.7.0.zip'));
+    const readme16 = release16.get('README.md').toString('utf8');
+    const readme17 = release17.get('README.md').toString('utf8');
+
+    expect(readme16).toMatch(/Stream Monsters 1\.6/);
+    expect(readme16).toMatch(/optional recurring free egg/i);
+    expect(readme16).toMatch(/60[- ]second/i);
+    expect(readme16).toMatch(/public.*adopt|adopt.*public/is);
+    expect(readme16).not.toMatch(/only source of new eggs|gift-only eggs/i);
+
+    expect(readme17).toMatch(/Stream Monsters 1\.7/);
+    expect(readme17).toMatch(/optional recurring free egg/i);
+    expect(readme17).toMatch(/sealed A\/B\/C/i);
+    expect(readme17).toMatch(/Striker.*Guardian.*Trickster.*Sustain/is);
+    expect(readme17).toMatch(/portrait.*arcade|arcade.*portrait/is);
+    expect(readme17).not.toMatch(/only source of new eggs|gift-only eggs/i);
+  });
+
+  test('keeps active guide and wiki copy consistent with optional free eggs', () => {
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const automation = guide.steps.find(step => step.id === 'automation-rule').copy[locale];
+      const retention = guide.steps.find(step => step.id === 'retention-rules').copy[locale];
+      const copy = JSON.stringify({ automation, retention });
+      expect(copy).not.toMatch(
+        /Gifts-only|gifts-only|huevos solo por regalos|uniquement par cadeaux|Ohne aktiviertes Gift entsteht kein Ei|No egg is created without an enabled gift/i
+      );
+      if (locale === 'de' || locale === 'es') {
+        expect(retention.body).toContain('31.536.000');
+        expect(retention.body).not.toContain('31.836.000');
+      }
+    }
+
+    for (const relativePath of [
+      'app/wiki/Plugin-Liste.md',
+      'app/wiki/de/Plugin-Liste.md',
+      'app/wiki/en/Plugin-Liste.md',
+      'app/wiki/es/Plugin-Liste.md',
+      'app/wiki/fr/Plugin-Liste.md'
+    ]) {
+      const copy = fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
+      expect(copy).not.toMatch(
+        /Gift-only Eier|Gift-only eggs|Huevos solo por regalos|Œufs uniquement par cadeaux/i
+      );
+    }
+  });
+
+  test('documents Stream Monsters 1.8 on main without rewriting fixed LTTH history', () => {
+    const changelog = fs.readFileSync(path.join(repoRoot, 'CHANGELOG.md'), 'utf8');
+    const unreleased = changelog.split('## [1.4.1]')[0];
+    const fixedRelease = changelog.split('## [1.4.1]')[1].split('## [1.4.0]')[0];
+
+    expect(unreleased).toMatch(/Stream Monsters 1\.8\.0/);
+    expect(unreleased).toMatch(/recurring free egg/i);
+    expect(unreleased).toMatch(/sealed.*A\/B\/C/i);
+    expect(fixedRelease).toMatch(/Stream Monsters 1\.5\.0/);
+    expect(fixedRelease).not.toMatch(/Stream Monsters 1\.8\.0/);
+  });
+
+  test('refuses an existing release archive unless overwrite is explicit', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-protected-'));
+    try {
+      const pluginDir = path.join(tempDir, 'app', 'plugins', 'streamalchemy');
+      const packagePath = path.join(
+        tempDir,
+        'plugin-store',
+        'packages',
+        'streamalchemy-9.9.9.zip'
+      );
+      fs.mkdirSync(pluginDir, { recursive: true });
+      fs.mkdirSync(path.dirname(packagePath), { recursive: true });
+      fs.writeFileSync(
+        path.join(pluginDir, 'plugin.json'),
+        JSON.stringify({ id: 'streamalchemy', name: 'Stream Monsters', version: '9.9.9' })
+      );
+      fs.writeFileSync(path.join(pluginDir, 'README.md'), '# Test release\n');
+      fs.writeFileSync(packagePath, 'published-sentinel');
+      childProcess.execFileSync('git', ['-C', tempDir, 'init', '--quiet']);
+      childProcess.execFileSync('git', ['-C', tempDir, 'config', 'user.email', 'test@example.invalid']);
+      childProcess.execFileSync('git', ['-C', tempDir, 'config', 'user.name', 'Release Test']);
+      childProcess.execFileSync('git', ['-C', tempDir, 'add', '.']);
+      childProcess.execFileSync('git', ['-C', tempDir, 'commit', '--quiet', '-m', 'fixture']);
+      const sourceCommit = childProcess.execFileSync(
+        'git',
+        ['-C', tempDir, 'rev-parse', 'HEAD'],
+        { encoding: 'utf8' }
+      ).trim();
+      const releaseMap = {
+        schemaVersion: 1,
+        pluginId: 'streamalchemy',
+        sourcePath: 'app/plugins/streamalchemy',
+        releases: {
+          '9.9.9': {
+            sourceCommit,
+            manifestVersion: '9.9.9',
+            package: 'plugin-store/packages/streamalchemy-9.9.9.zip',
+            sha256: '0'.repeat(64)
+          }
+        }
+      };
+
+      await expect(buildReleaseFromGit({
+        repoRoot: tempDir,
+        version: '9.9.9',
+        releaseMap
+      })).rejects.toThrow(/overwrite.*explicit|explicit.*overwrite/i);
+      expect(fs.readFileSync(packagePath, 'utf8')).toBe('published-sentinel');
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test('keeps an existing archive intact when an explicit atomic rebuild fails', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-atomic-'));
+    try {
+      const outputPath = path.join(tempDir, 'streamalchemy.zip');
+      fs.writeFileSync(outputPath, 'published-sentinel');
+      await expect(buildArchiveFromFiles({
+        files: [
+          { relativePath: 'README.md', bytes: Buffer.from('first') },
+          { relativePath: 'broken.bin', bytes: null }
+        ],
+        outputPath,
+        overwrite: true
+      })).rejects.toThrow();
+      expect(fs.readFileSync(outputPath, 'utf8')).toBe('published-sentinel');
+      expect(fs.readdirSync(tempDir)).toEqual(['streamalchemy.zip']);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });

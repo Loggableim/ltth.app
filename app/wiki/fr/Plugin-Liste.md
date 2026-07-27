@@ -180,7 +180,7 @@ http://localhost:3000/gcce-hud/overlay
 Les cadeaux TikTok activés par le Creator et les œufs gratuits récurrents facultatifs partagent la même file d’incubation équitable. Les spectateurs collectionnent 72 formes Furry, évoluent de façon cosmétique et combattent avec des choix A, B ou C scellés.
 
 **Fonctionnalités :**
-- 🎁 Œufs uniquement par cadeaux, avec trois incubateurs, file FIFO et expiration après 24 heures
+- 🎁 Les œufs-cadeaux et les œufs gratuits facultatifs partagent trois incubateurs, une file FIFO et une expiration après 24 heures
 - 🥚 Œuf gratuit facultatif : réservé 60 secondes puis public via `!adopt` ; délai de 60–31 536 000 secondes, 24 heures par défaut
 - 🐾 24 modèles en Évolution I, II et III – 72 formes intégrées
 - ⚔️ Combats Rules-v6 scellés : 10 secondes pour le monstre, 6 pour A/B/C, 15 pour les statistiques et replay complet

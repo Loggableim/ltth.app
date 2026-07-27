@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Stream Monsters 1.8.0 (Open Beta)**: The current `main` plugin adds an optional recurring free egg with a 60-second private reservation and transactional public FIFO adoption.
+- **Sealed Rules-v6 Arena**: A/B/C choices remain sealed until both fighters lock or time out, then reveal together with deterministic replays and balanced elemental roles.
+
+### Changed
+
+- **Release separation**: Stream Monsters 1.8.0 is published through the plugin store independently of the fixed LTTH 1.4.1 application release, whose bundled Stream Monsters version remains 1.5.0.
+
 ## [1.4.1] - 2026-07-26
 
 ### Added

@@ -82,7 +82,7 @@ function createTempRepo() {
     JSON.stringify({
       id: 'streamalchemy',
       name: 'Stream Monsters',
-      version: '1.8.0'
+      version: '1.5.0'
     }, null, 2)
   );
   fs.mkdirSync(path.join(root, 'app', 'output', 'playwright'), { recursive: true });
@@ -314,7 +314,7 @@ describe('Release bundle script', () => {
     }
   });
 
-  it('enforces the Stream Monsters 1.8 store contract for LTTH 1.4.1', () => {
+  it('enforces the Stream Monsters 1.5 store contract for LTTH 1.4.1', () => {
     const python = findPythonCommand();
     tempRoot = createTempRepo();
 
@@ -338,8 +338,8 @@ describe('Release bundle script', () => {
 
     const packageDir = path.join(tempRoot, 'plugin-store', 'packages');
     fs.mkdirSync(packageDir, { recursive: true });
-    const packagePath = path.join(packageDir, 'streamalchemy-1.8.0.zip');
-    fs.writeFileSync(packagePath, Buffer.from('stream-monsters-1.8-package'));
+    const packagePath = path.join(packageDir, 'streamalchemy-1.5.0.zip');
+    fs.writeFileSync(packagePath, Buffer.from('stream-monsters-1.5-package'));
 
     fs.writeFileSync(
       path.join(tempRoot, 'plugin-store.json'),
@@ -355,7 +355,7 @@ describe('Release bundle script', () => {
           version: '1.4.9',
           minLtthVersion: '1.4.1',
           channel: 'open-beta',
-          packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip',
+          packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip',
           sha256: sha256(packagePath)
         }]
       }, null, 2)
@@ -374,11 +374,11 @@ describe('Release bundle script', () => {
     const rejected = runBuilder();
     expect(rejected.status).not.toBe(0);
     expect(rejected.stderr).toContain(
-      'plugin-store.json streamalchemy.version must be 1.8.0 for LTTH 1.4.1'
+      'plugin-store.json streamalchemy.version must be 1.5.0 for LTTH 1.4.1'
     );
 
     const store = JSON.parse(fs.readFileSync(path.join(tempRoot, 'plugin-store.json'), 'utf8'));
-    store.plugins[0].version = '1.8.0';
+    store.plugins[0].version = '1.5.0';
     store.plugins[0].minLtthVersion = '1.4.0';
     fs.writeFileSync(path.join(tempRoot, 'plugin-store.json'), JSON.stringify(store, null, 2));
 

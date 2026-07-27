@@ -160,7 +160,7 @@ module.exports = Object.freeze({
     readOnlyStep('retention-rules', '#gameplay', {
       de: {
         title: 'Gratis-Eier, verdeckte Wahl und faire Saisonregeln prüfen',
-        body: 'Wiederkehrende Gratis-Eier sind optional: 60 bis 31.836.000 Sekunden Cooldown, standardmäßig 24 Stunden. Beim ersten Chatkontakt bleibt das Ei 60 Sekunden reserviert; danach kann es öffentlich mit !adopt oder !adoptieren FIFO adoptiert werden. Im Kampf bleiben Entscheidungen verdeckt: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C und 15 Sekunden für 1–4-Statpunkte. Striker, Guardian, Trickster und Sustain nutzen balancierte Elementvorteile. Daily- und Weekly-Quests bleiben gift- und siegunabhängig; nur die ersten 10 legitimen Tagesduelle ändern Arena Rating, jedes legitime Duell gibt Monster-XP.',
+        body: 'Wiederkehrende Gratis-Eier sind optional: 60 bis 31.536.000 Sekunden Cooldown, standardmäßig 24 Stunden. Beim ersten Chatkontakt bleibt das Ei 60 Sekunden reserviert; danach kann es öffentlich mit !adopt oder !adoptieren FIFO adoptiert werden. Im Kampf bleiben Entscheidungen verdeckt: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C und 15 Sekunden für 1–4-Statpunkte. Striker, Guardian, Trickster und Sustain nutzen balancierte Elementvorteile. Daily- und Weekly-Quests bleiben gift- und siegunabhängig; nur die ersten 10 legitimen Tagesduelle ändern Arena Rating, jedes legitime Duell gibt Monster-XP.',
         expected: 'Gameplay zeigt Gratis-Ei-Cooldown, Tutorial-Hinweise, faire Rollen, Quests und Saisonregeln.',
         alt: 'Stream Monsters 1.8 Gameplay mit Gratis-Eiern und verdeckten Entscheidungen'
       },
@@ -172,7 +172,7 @@ module.exports = Object.freeze({
       },
       es: {
         title: 'Comprueba huevos gratis, elecciones selladas y temporadas justas',
-        body: 'Los huevos gratis periódicos son opcionales: el cooldown de 60 a 31.836.000 segundos usa 24 horas por defecto. El primer contacto por chat reserva el huevo 60 segundos; después pasa a la cola FIFO pública y se adopta con !adopt. Las elecciones quedan selladas: 10 segundos para monstruo, 6 segundos para A/B/C y 15 segundos para puntos 1–4. Striker, Guardian, Trickster y Sustain usan ventajas elementales equilibradas. Las misiones diarias y semanales no exigen regalos ni victorias; solo los primeros 10 duelos legítimos diarios cambian Arena Rating y todos dan XP al monstruo.',
+        body: 'Los huevos gratis periódicos son opcionales: el cooldown de 60 a 31.536.000 segundos usa 24 horas por defecto. El primer contacto por chat reserva el huevo 60 segundos; después pasa a la cola FIFO pública y se adopta con !adopt. Las elecciones quedan selladas: 10 segundos para monstruo, 6 segundos para A/B/C y 15 segundos para puntos 1–4. Striker, Guardian, Trickster y Sustain usan ventajas elementales equilibradas. Las misiones diarias y semanales no exigen regalos ni victorias; solo los primeros 10 duelos legítimos diarios cambian Arena Rating y todos dan XP al monstruo.',
         expected: 'Gameplay muestra el cooldown, las ayudas, los roles equilibrados, las misiones y los límites de temporada.',
         alt: 'Gameplay de Stream Monsters 1.8 con huevos gratis y elecciones selladas'
       },
@@ -185,28 +185,28 @@ module.exports = Object.freeze({
     }),
     readOnlyStep('automation-rule', '#gifts-chat', {
       de: {
-        title: 'Gifts-only-Eier und Chat-Aliase einrichten',
-        body: 'Wähle im vollständigen TikTok-Gift-Katalog ein Geschenk, ordne Spawn oder Boost und ein Element zu und prüfe die konfliktfreien Chat-Aliase. Ohne aktiviertes Gift entsteht kein Ei.',
+        title: 'Geschenk-Eier und optionale Gratis-Eier einrichten',
+        body: 'Wähle im vollständigen TikTok-Gift-Katalog ein Geschenk, ordne Spawn oder Boost und ein Element zu und prüfe die konfliktfreien Chat-Aliase. Gift-Mappings steuern ausschließlich Geschenk-Eier; das optionale wiederkehrende Gratis-Ei wird unabhängig davon unter Gameplay konfiguriert.',
         expected: 'Die Gifts-&-Chat-Ansicht zeigt aktive Gift-Mappings und die verfügbaren Ei-, Monster- und Battle-Kommandos.',
-        alt: 'Stream Monsters 1.8 Gifts-only-Eier und Chat-Aliase'
+        alt: 'Stream Monsters 1.8 Geschenk-Eier, optionale Gratis-Eier und Chat-Aliase'
       },
       en: {
-        title: 'Set up gifts-only eggs and chat aliases',
-        body: 'Choose a gift from the complete TikTok gift catalog, assign Spawn or Boost and an element, then review conflict-free chat aliases. No egg is created without an enabled gift.',
+        title: 'Set up gift eggs, optional free eggs, and chat aliases',
+        body: 'Choose a gift from the complete TikTok gift catalog, assign Spawn or Boost and an element, then review conflict-free chat aliases. Gift mappings only control gift-triggered eggs; configure the optional recurring free egg independently under Gameplay.',
         expected: 'The Gifts & Chat view shows enabled gift mappings and the available egg, monster, and battle commands.',
-        alt: 'Stream Monsters 1.8 gifts-only eggs and chat aliases'
+        alt: 'Stream Monsters 1.8 gift eggs, optional free eggs, and chat aliases'
       },
       es: {
-        title: 'Configura huevos solo por regalos y alias de chat',
-        body: 'Elige un regalo del catálogo completo de TikTok, asigna Spawn o Boost y un elemento, y revisa los alias de chat sin conflictos. Sin un regalo activado no se crea ningún huevo.',
+        title: 'Configura huevos de regalos, huevos gratis opcionales y alias',
+        body: 'Elige un regalo del catálogo completo de TikTok, asigna Spawn o Boost y un elemento, y revisa los alias de chat sin conflictos. Los mapeos solo controlan huevos activados por regalos; el huevo gratis periódico opcional se configura por separado en Gameplay.',
         expected: 'La vista Gifts & Chat muestra los mapeos activos y los comandos de huevos, monstruos y combate disponibles.',
-        alt: 'Huevos solo por regalos y alias de chat en Stream Monsters 1.8'
+        alt: 'Huevos de regalos, huevos gratis opcionales y alias en Stream Monsters 1.8'
       },
       fr: {
-        title: 'Configurez les œufs par cadeaux et les alias du chat',
-        body: 'Choisissez un cadeau dans le catalogue TikTok complet, attribuez Spawn ou Boost et un élément, puis vérifiez les alias de chat sans conflit. Aucun œuf n’est créé sans cadeau activé.',
+        title: 'Configurez les œufs-cadeaux, les œufs gratuits facultatifs et les alias',
+        body: 'Choisissez un cadeau dans le catalogue TikTok complet, attribuez Spawn ou Boost et un élément, puis vérifiez les alias de chat sans conflit. Les mappages contrôlent uniquement les œufs déclenchés par cadeau ; configurez séparément l’œuf gratuit récurrent facultatif dans Gameplay.',
         expected: 'La vue Gifts & Chat affiche les mappages actifs et les commandes disponibles pour les œufs, monstres et combats.',
-        alt: 'Œufs par cadeaux et alias de chat dans Stream Monsters 1.8'
+        alt: 'Œufs-cadeaux, œufs gratuits facultatifs et alias dans Stream Monsters 1.8'
       }
     }),
     readOnlyStep('action-chain', '#asset-library', {

@@ -180,7 +180,7 @@ http://localhost:3000/gcce-hud/overlay
 Creator-enabled TikTok gifts and optional recurring free eggs share the same fair incubation queue. Viewers collect 72 bundled Furry forms, evolve monsters cosmetically, and fight with sealed A, B, or C choices.
 
 **Features:**
-- 🎁 Gift-only eggs with three incubators, FIFO overflow, and 24-hour expiry
+- 🎁 Gift-triggered eggs and optional free eggs share three incubators, FIFO overflow, and 24-hour expiry
 - 🥚 Optional free egg: reserved for 60 seconds, then public through `!adopt`; 60–31,536,000 second cooldown, 24-hour default
 - 🐾 24 monster templates across Evolution I, II, and III – 72 bundled forms
 - ⚔️ Sealed Rules-v6 battles: 10-second roster, 6-second A/B/C, 15-second stat choice, and complete replay

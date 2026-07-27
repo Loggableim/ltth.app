@@ -7,20 +7,38 @@
       "sourceCommit": "c4c0eca7a0a04617da3db042a0964d904f62a2c7",
       "manifestVersion": "1.6.0",
       "package": "plugin-store/packages/streamalchemy-1.6.0.zip",
-      "sha256": "c5d985811f7a62c1a92410ea75cdc9dce29cceb0efe576714a8d4301fc407285"
+      "sha256": "27fa2e10ab386121df9df8c16e4d619c043cfb4df4f514fef7c76e7535c49711",
+      "readmeOverlay": {
+        "title": "Stream Monsters 1.6 – Retention Core",
+        "summary": "Stream Monsters 1.6 adds an optional recurring free egg alongside creator-selected gift eggs. A viewer receives the offer on chat contact, has a 60-second private reservation to hatch it, and then releases it to the public FIFO where another viewer may adopt it.",
+        "highlights": [
+          "Creators can enable or disable the optional recurring free egg and configure its cooldown.",
+          "Unclaimed free eggs become publicly adoptable after the 60-second reservation without replacing gift mappings.",
+          "Gift eggs, incubation queues, hatching, collections, and permanent progress remain compatible."
+        ]
+      }
     },
     "1.7.0": {
       "sourceCommit": "66b28c67972ada5774935eab447194700c06dc09",
       "manifestVersion": "1.7.0",
       "package": "plugin-store/packages/streamalchemy-1.7.0.zip",
-      "sha256": "20efae997c98a2e04b3bedab44fd546aecbbcbe5051cdc9bba04e28c26a64a62"
+      "sha256": "a6370ca5fe8e1dae9248c28fa0b1d072d11ab4829ad03a9a21a85a67070b57d4",
+      "readmeOverlay": {
+        "title": "Stream Monsters 1.7 – Competitive Arcade",
+        "summary": "Stream Monsters 1.7 builds on the optional recurring free egg and its 60-second reservation followed by public adoption. The portrait-first arcade introduces sealed A/B/C battle choices and balanced Striker, Guardian, Trickster, and Sustain roles.",
+        "highlights": [
+          "A/B/C choices stay sealed until both fighters have locked or timed out, then reveal together.",
+          "Striker, Guardian, Trickster, and Sustain create readable strengths and counterplay across the six elements.",
+          "Portrait arcade presentation, deterministic replays, gift eggs, and public free-egg adoption remain compatible."
+        ]
+      }
     },
     "1.8.0": {
-      "sourceCommit": "21fb84af9c3d8e898abd47290f6973e773c810b7",
-      "sourceTree": "5929eaba9706eda3e21b60089f3c77658feeb8b8",
+      "sourceCommit": "ecedf7d19adcb12bd56db883620a2b963d7a8cf7",
+      "sourceTree": "1c4b1a7acf9e9969c1b486acc1f26918eb1f56d8",
       "manifestVersion": "1.8.0",
       "package": "plugin-store/packages/streamalchemy-1.8.0.zip",
-      "sha256": "89a6edab41db46284c937c669c0762935e198234f8b41b2b068f776d2334a362"
+      "sha256": "60b29d2eea0e4c30329798c99e6eba5e101fa38cecdc2c93b8ec946da1a2df8e"
     }
   }
 }

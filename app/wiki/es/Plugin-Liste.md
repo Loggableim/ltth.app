@@ -180,7 +180,7 @@ http://localhost:3000/gcce-hud/overlay
 Los regalos de TikTok activados por el creador y los huevos gratis periódicos opcionales comparten la misma cola de incubación justa. Los espectadores coleccionan 72 formas Furry, evolucionan de forma cosmética y combaten con elecciones A, B o C selladas.
 
 **Funciones:**
-- 🎁 Huevos solo por regalos, con tres incubadoras, cola FIFO y caducidad de 24 horas
+- 🎁 Los huevos de regalos y los huevos gratis opcionales comparten tres incubadoras, cola FIFO y caducidad de 24 horas
 - 🥚 Huevo gratis opcional: reservado 60 segundos y después público con `!adopt`; cooldown de 60–31.536.000 segundos, 24 horas por defecto
 - 🐾 24 plantillas en Evolución I, II y III – 72 formas incluidas
 - ⚔️ Combates Rules-v6 sellados: 10 segundos para monstruo, 6 para A/B/C, 15 para estadísticas y replay completo
