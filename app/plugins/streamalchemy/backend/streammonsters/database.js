@@ -1175,11 +1175,22 @@ class StreamMonstersDatabase {
 
   cleanupFreeEggStream(streamKey) {
     const offersRemoved = this.db.prepare(`
-      DELETE FROM streammonsters_free_egg_offers WHERE stream_key = ?
+      DELETE FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND status != 'claimed'
     `).run(streamKey).changes;
     const eventsRemoved = this.db.prepare(`
-      DELETE FROM streammonsters_free_egg_events WHERE stream_key = ?
-    `).run(streamKey).changes;
+      DELETE FROM streammonsters_free_egg_events
+      WHERE stream_key = ?
+        AND event_id NOT IN (
+          SELECT offer_event_id
+          FROM streammonsters_free_egg_offers
+          WHERE stream_key = ? AND status = 'claimed'
+          UNION
+          SELECT claim_event_id
+          FROM streammonsters_free_egg_claims
+          WHERE stream_key = ?
+        )
+    `).run(streamKey, streamKey, streamKey).changes;
     return { offersRemoved, eventsRemoved };
   }
 

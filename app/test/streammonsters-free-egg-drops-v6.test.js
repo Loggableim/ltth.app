@@ -1,4 +1,8 @@
 const Database = require('better-sqlite3');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { Worker } = require('worker_threads');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const FreeEggDropService = require('../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service');
@@ -48,6 +52,104 @@ function adopt(subject, userId, eventId, nowMs) {
     eventId,
     nowMs
   });
+}
+
+function runContendingAdopters({ databasePath, attempts = 20 } = {}) {
+  const gate = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  const workerSource = `
+    const { parentPort, workerData } = require('worker_threads');
+    const Database = require(workerData.databaseModule);
+    const Store = require(workerData.storeModule);
+    const Engine = require(workerData.engineModule);
+    const Service = require(workerData.serviceModule);
+    const db = new Database(workerData.databasePath);
+    db.pragma('foreign_keys = ON');
+    const store = new Store(db);
+    store.initialize();
+    const engine = new Engine({
+      store,
+      now: () => 61_000,
+      config: { hatchDurationMs: 120_000, eggExpiryMs: 86_400_000 }
+    });
+    engine.setStreamKey('creator:stream-1');
+    const service = new Service({
+      store,
+      engine,
+      now: () => 61_000,
+      config: { freeEggCooldownSeconds: 86_400 }
+    });
+    parentPort.postMessage({ ready: true });
+    Atomics.wait(new Int32Array(workerData.gate), 0, 0);
+    try {
+      parentPort.postMessage({ result: service.adopt({
+        userId: workerData.userId,
+        streamKey: 'creator:stream-1',
+        eventId: workerData.eventId,
+        nowMs: 61_000
+      }) });
+    } catch (error) {
+      parentPort.postMessage({ error: error.message });
+    } finally {
+      db.close();
+    }
+  `;
+  const modules = {
+    databaseModule: require.resolve('better-sqlite3'),
+    storeModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/database'),
+    engineModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/game-engine'),
+    serviceModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service')
+  };
+  const workers = Array.from({ length: attempts }, (_, index) => {
+    let resolveReady;
+    let resolveResult;
+    let resolveExit;
+    const ready = new Promise(resolve => { resolveReady = resolve; });
+    const result = new Promise(resolve => {
+      resolveResult = resolve;
+    });
+    const exited = new Promise(resolve => { resolveExit = resolve; });
+    const worker = new Worker(workerSource, {
+      eval: true,
+      workerData: {
+        ...modules,
+        databasePath,
+        gate,
+        userId: `contender-${index}`,
+        eventId: `contender-event-${index}`
+      }
+    });
+    worker.on('message', message => {
+      if (message.ready) resolveReady();
+      else if (message.error) resolveResult({ success: false, error: message.error });
+      else resolveResult(message.result);
+    });
+    worker.on('error', error => resolveResult({ success: false, error: error.message }));
+    worker.on('exit', resolveExit);
+    return { worker, ready, result, exited };
+  });
+  return {
+    async waitForResults() {
+      await Promise.all(workers.map(entry => entry.ready));
+      Atomics.store(new Int32Array(gate), 0, 1);
+      Atomics.notify(new Int32Array(gate), 0, attempts);
+      const results = await Promise.all(workers.map(entry => entry.result));
+      await Promise.all(workers.map(entry => entry.worker.terminate()));
+      await Promise.all(workers.map(entry => entry.exited));
+      return results;
+    }
+  };
+}
+
+async function removeTempDirectory(directory) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      fs.rmSync(directory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (error.code !== 'EBUSY' || attempt === 19) throw error;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+  }
 }
 
 describe('Stream Monsters recurring free egg drops', () => {
@@ -163,6 +265,23 @@ describe('Stream Monsters recurring free egg drops', () => {
       .toEqual(expect.objectContaining({ success: false, status: 'no_offer' }));
   });
 
+  test('keeps claimed offers and cooldown audit rows when a stream is cleaned up with foreign keys enforced', () => {
+    const subject = createSubject();
+    subject.store.db.pragma('foreign_keys = ON');
+    offer(subject, 'viewer-a', 'chat-a', 1_000);
+    const claimed = adopt(subject, 'viewer-a', 'adopt-a', 1_000);
+
+    expect(() => subject.service.cleanupStream({ streamKey: 'creator:stream-1' })).not.toThrow();
+    expect(subject.store.getFreeEggOffer(claimed.offerId)).toEqual(expect.objectContaining({
+      status: 'claimed',
+      claimed_by_user_id: 'viewer-a'
+    }));
+    expect(subject.store.getLatestFreeEggClaim('viewer-a')).toEqual(expect.objectContaining({
+      offer_id: claimed.offerId
+    }));
+    expect(subject.store.db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+  });
+
   test('recovers reserved offers after a service reload', () => {
     const subject = createSubject();
     offer(subject, 'viewer-a', 'chat-a', 1_000);
@@ -178,19 +297,41 @@ describe('Stream Monsters recurring free egg drops', () => {
     })).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
   });
 
-  test('atomically creates twenty eggs for twenty concurrent public claims', async () => {
-    const subject = createSubject();
-    for (let index = 0; index < 20; index += 1) {
-      offer(subject, `source-${index}`, `chat-${index}`, 1_000 + index);
+  test('atomically allows one winner when twenty independent SQLite callers contend for one released offer', async () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-free-egg-'));
+    const databasePath = path.join(directory, 'streammonsters.sqlite');
+    const sqlite = new Database(databasePath);
+    const store = new StreamMonstersDatabase(sqlite);
+    store.initialize();
+    const engine = new StreamMonstersEngine({
+      store,
+      now: () => 1_000,
+      config: { hatchDurationMs: 120_000, eggExpiryMs: 86_400_000 }
+    });
+    engine.setStreamKey('creator:stream-1');
+    const service = new FreeEggDropService({ store, engine, now: () => 1_000 });
+    offer({ service }, 'source-a', 'chat-a', 1_000);
+    sqlite.close();
+
+    try {
+      const contention = runContendingAdopters({ databasePath });
+      const results = await contention.waitForResults();
+      const verificationDb = new Database(databasePath);
+      verificationDb.pragma('foreign_keys = ON');
+      const verificationStore = new StreamMonstersDatabase(verificationDb);
+
+      expect(results.filter(result => result.error)).toHaveLength(0);
+      expect(results.filter(result => result.success)).toHaveLength(1);
+      expect(verificationStore.getFreeEggOffers('creator:stream-1'))
+        .toEqual([expect.objectContaining({ status: 'claimed' })]);
+      expect(verificationDb.prepare('SELECT COUNT(*) AS count FROM streammonsters_free_egg_claims').get().count)
+        .toBe(1);
+      expect(verificationDb.prepare('SELECT COUNT(*) AS count FROM streammonsters_eggs').get().count)
+        .toBe(1);
+      expect(verificationDb.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+      verificationDb.close();
+    } finally {
+      await removeTempDirectory(directory);
     }
-
-    const claims = await Promise.all(Array.from({ length: 20 }, (_, index) => Promise.resolve(
-      adopt(subject, `adopter-${index}`, `adopt-${index}`, 61_100)
-    )));
-
-    expect(claims.filter(result => result.success)).toHaveLength(20);
-    expect(new Set(claims.map(result => result.offerId)).size).toBe(20);
-    expect(subject.store.db.prepare('SELECT COUNT(*) AS count FROM streammonsters_free_egg_claims').get().count)
-      .toBe(20);
   });
 });
