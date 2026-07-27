@@ -6,6 +6,7 @@ import { createPublicRouter } from './src/public-router.js';
 const NOW_MS = Date.parse('2026-07-27T10:00:00.000Z');
 const NOW_ISO = '2026-07-27T10:00:00.000Z';
 const ROUTE_KEY = '0123456789abcdef0123456789abcdef';
+const RAW_PATH_GUARD_TOKEN = 'g'.repeat(64);
 
 function activeClaim(overrides = {}) {
   return {
@@ -225,6 +226,28 @@ describe('stable public entry routing', () => {
     expect(response.headers.get('location')).toBeNull();
     expect(await response.text()).toBe('Service Unavailable');
   });
+
+  it.each([
+    '/creator.name//plugins/overlay.html',
+    '/creator.name/plugins/%5c/overlay.html',
+    '/creator.name/plugins/%2Foverlay.html',
+    '/creator.name/plugins/%252e%252e/overlay.html'
+  ])('rejects an ambiguous visible entry path %s before claim lookup', async (
+    pathname
+  ) => {
+    const repository = createRepository();
+    const handle = createPublicRouter({
+      repository,
+      now: () => NOW_MS
+    });
+    const response = await handle(new Request(
+      `https://overlay.ltth.app${pathname}`,
+      { headers: navigationHeaders() }
+    ));
+
+    expect(response.status).toBe(404);
+    expect(repository.calls).toEqual([]);
+  });
 });
 
 describe('Worker public dispatcher', () => {
@@ -255,7 +278,8 @@ describe('Worker public dispatcher', () => {
           events.push('proxy');
           return new Response('proxy');
         };
-      }
+      },
+      rawPathAttestationVerifier: () => true
     });
 
     const management = await worker.fetch(new Request(
@@ -299,7 +323,8 @@ describe('Worker public dispatcher', () => {
       proxyHandlerFactory: () => async () => {
         proxyCalls += 1;
         return new Response('proxy');
-      }
+      },
+      rawPathAttestationVerifier: () => true
     });
 
     const malformed = await worker.fetch(new Request(
@@ -321,5 +346,97 @@ describe('Worker public dispatcher', () => {
     expect(alternateEntryPort.status).toBe(404);
     expect(entryCalls).toBe(0);
     expect(proxyCalls).toBe(0);
+  });
+
+  it('fails closed when Fetch has discarded an encoded dot path before dispatch', async () => {
+    const events = [];
+    const worker = createOverlayRouterWorker({
+      repositoryFactory: () => ({}),
+      managementHandlerFactory: () => async () => {
+        events.push('management');
+        return null;
+      },
+      publicRouterFactory: () => async () => {
+        events.push('entry');
+        return new Response('entry');
+      },
+      proxyHandlerFactory: () => async () => {
+        events.push('proxy');
+        return new Response('proxy');
+      }
+    });
+    const rawEntry = new Request(
+      'https://overlay.ltth.app/creator.name/%2e%2e/socket.io/'
+    );
+    const rawSocketPost = new Request(
+      `https://${`r-${ROUTE_KEY}.ltth.app`}/foo/%2e%2e/socket.io/`,
+      { method: 'POST', body: 'ambiguous' }
+    );
+    const rawSocketSuffixPost = new Request(
+      `https://${`r-${ROUTE_KEY}.ltth.app`}/socket.io/%2e`,
+      { method: 'POST', body: 'ambiguous-suffix' }
+    );
+
+    expect(rawEntry.url).toBe(
+      'https://overlay.ltth.app/socket.io/'
+    );
+    expect(rawSocketPost.url).toBe(
+      `https://r-${ROUTE_KEY}.ltth.app/socket.io/`
+    );
+    expect(rawSocketSuffixPost.url).toBe(
+      `https://r-${ROUTE_KEY}.ltth.app/socket.io/`
+    );
+
+    const entryResponse = await worker.fetch(rawEntry, {
+      OVERLAY_RAW_PATH_GUARD_TOKEN: RAW_PATH_GUARD_TOKEN
+    }, {});
+    const proxyResponse = await worker.fetch(rawSocketPost, {
+      OVERLAY_RAW_PATH_GUARD_TOKEN: RAW_PATH_GUARD_TOKEN
+    }, {});
+    const suffixResponse = await worker.fetch(rawSocketSuffixPost, {
+      OVERLAY_RAW_PATH_GUARD_TOKEN: RAW_PATH_GUARD_TOKEN
+    }, {});
+
+    expect(entryResponse.status).toBe(503);
+    expect(proxyResponse.status).toBe(503);
+    expect(suffixResponse.status).toBe(503);
+    expect(events).toEqual([]);
+  });
+
+  it('dispatches only when the trusted raw-path attestation matches', async () => {
+    const events = [];
+    const worker = createOverlayRouterWorker({
+      repositoryFactory: () => ({}),
+      managementHandlerFactory: () => async () => {
+        events.push('management');
+        return null;
+      },
+      publicRouterFactory: () => async () => {
+        events.push('entry');
+        return new Response('entry');
+      },
+      proxyHandlerFactory: () => async () => new Response('proxy')
+    });
+    const request = new Request(
+      'https://overlay.ltth.app/creator.name/plugins/%E2%9C%93/overlay.html?scene=two%20words',
+      {
+        headers: {
+          'x-ltth-raw-path-guard': RAW_PATH_GUARD_TOKEN
+        }
+      }
+    );
+    const rejected = await worker.fetch(request, {
+      OVERLAY_RAW_PATH_GUARD_TOKEN: 'x'.repeat(64)
+    }, {});
+
+    expect(rejected.status).toBe(503);
+    expect(events).toEqual([]);
+
+    const response = await worker.fetch(request, {
+      OVERLAY_RAW_PATH_GUARD_TOKEN: RAW_PATH_GUARD_TOKEN
+    }, {});
+
+    expect(await response.text()).toBe('entry');
+    expect(events).toEqual(['management', 'entry']);
   });
 });

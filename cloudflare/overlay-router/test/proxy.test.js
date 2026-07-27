@@ -82,7 +82,7 @@ describe('strict opaque-host HTTP proxy', () => {
       }
     });
     const response = await handle(new Request(
-      `https://${ROUTE_HOST}//plugins/%E2%9C%93/overlay.js?scene=two%20words&asset=%2Fkeep`,
+      `https://${ROUTE_HOST}/plugins/%E2%9C%93/overlay.js?scene=two%20words&asset=%2Fkeep`,
       {
         headers: {
           accept: 'text/plain',
@@ -95,7 +95,7 @@ describe('strict opaque-host HTTP proxy', () => {
     ));
 
     expect(upstreamRequest.url).toBe(
-      'https://quiet-river.trycloudflare.com//plugins/%E2%9C%93/overlay.js?scene=two%20words&asset=%2Fkeep'
+      'https://quiet-river.trycloudflare.com/plugins/%E2%9C%93/overlay.js?scene=two%20words&asset=%2Fkeep'
     );
     expect(upstreamRequest.redirect).toBe('manual');
     expect(upstreamRequest.headers.get('accept')).toBe('text/plain');
@@ -202,6 +202,30 @@ describe('strict opaque-host HTTP proxy', () => {
         },
         body: 'unexpected'
       }
+    ));
+
+    expect(response.status).toBe(404);
+    expect(repository.calls).toEqual([]);
+    expect(fetchCalls).toBe(0);
+  });
+
+  it.each([
+    '//socket.io/',
+    '/socket.io/%5c/transport',
+    '/socket.io/%2Ftransport',
+    '/socket.io/%252e/transport'
+  ])('rejects an ambiguous visible proxy path %s before route lookup', async (
+    pathname
+  ) => {
+    let fetchCalls = 0;
+    const { repository, handle } = createHandler({
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response('unexpected');
+      }
+    });
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}${pathname}`
     ));
 
     expect(response.status).toBe(404);

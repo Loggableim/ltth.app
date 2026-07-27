@@ -2,6 +2,7 @@ import {
   MANAGEMENT_HOST,
   createManagementHandlerFromEnvironment
 } from './management.js';
+import { hasTrustedRawPathAttestation } from './public-path.js';
 import { createProxyHandler } from './proxy.js';
 import { createPublicRouter } from './public-router.js';
 import { createOverlayRepository } from './repository.js';
@@ -21,12 +22,18 @@ export function createOverlayRouterWorker(options = {}) {
     ((repository) => createPublicRouter({ repository }));
   const proxyHandlerFactory = options.proxyHandlerFactory ||
     ((repository) => createProxyHandler({ repository }));
+  const rawPathAttestationVerifier =
+    options.rawPathAttestationVerifier ||
+    hasTrustedRawPathAttestation;
 
   return Object.freeze({
     async fetch(request, env, context) {
       let repository;
       let managementHandler;
       try {
+        if (!rawPathAttestationVerifier(request, env)) {
+          return createNeutralErrorResponse(503);
+        }
         repository = repositoryFactory(env);
         managementHandler = managementHandlerFactory(
           env,

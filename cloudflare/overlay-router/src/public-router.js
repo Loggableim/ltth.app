@@ -2,6 +2,7 @@ import {
   OFFLINE_PROBE_PARAMETER,
   createOfflinePageResponse
 } from './offline-page.js';
+import { isUnambiguousPublicPath } from './public-path.js';
 import {
   createNeutralErrorResponse,
   normalizeTikTokUsername,
@@ -83,6 +84,9 @@ function createRedirectResponse(routeKey, remainingPath, search) {
   const target = new URL(`https://r-${routeKey}.ltth.app`);
   target.pathname = remainingPath;
   target.search = search;
+  if (target.pathname !== remainingPath || target.search !== search) {
+    return null;
+  }
   return new Response(null, {
     status: 307,
     headers: noStoreHeaders({
@@ -112,6 +116,7 @@ export function createPublicRouter(options = {}) {
     if (url.protocol !== 'https:' ||
         url.hostname !== PUBLIC_ENTRY_HOST ||
         url.port !== '' ||
+        !isUnambiguousPublicPath(url.pathname) ||
         (request.method !== 'GET' && request.method !== 'HEAD')) {
       return createNeutralErrorResponse(404);
     }
@@ -158,6 +163,6 @@ export function createPublicRouter(options = {}) {
       claim.routeKey,
       entry.remainingPath,
       url.search
-    );
+    ) || createNeutralErrorResponse(503);
   };
 }

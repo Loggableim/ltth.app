@@ -3,6 +3,8 @@
   "name": "ltth-overlay-router",
   "main": "src/index.js",
   "compatibility_date": "2026-07-27",
+  // Production also requires OVERLAY_RAW_PATH_GUARD_TOKEN plus the ordered
+  // Cloudflare raw-path transform rules recorded in the Task 6 report.
   "d1_databases": [
     {
       "binding": "OVERLAY_ROUTING_DB",

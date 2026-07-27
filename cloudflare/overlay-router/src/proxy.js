@@ -2,6 +2,7 @@ import {
   filterProxyRequestHeaders,
   filterProxyResponseHeaders
 } from './headers.js';
+import { isUnambiguousPublicPath } from './public-path.js';
 import {
   createNeutralErrorResponse,
   parseInternalRouteHost,
@@ -43,6 +44,10 @@ function buildTargetUrl(tunnelOrigin, publicUrl) {
   const target = new URL(validatedOrigin);
   target.pathname = publicUrl.pathname;
   target.search = publicUrl.search;
+  if (target.pathname !== publicUrl.pathname ||
+      target.search !== publicUrl.search) {
+    throw new TypeError('Public path did not round-trip');
+  }
   return target;
 }
 
@@ -153,6 +158,7 @@ export function createProxyHandler(options = {}) {
       ? parseInternalRouteHost(publicUrl.hostname)
       : null;
     if (!routeKey ||
+        !isUnambiguousPublicPath(publicUrl.pathname) ||
         !isAllowedMethod(request, publicUrl.pathname)) {
       return createNeutralErrorResponse(404);
     }
