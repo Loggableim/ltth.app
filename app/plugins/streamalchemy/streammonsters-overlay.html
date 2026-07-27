@@ -214,6 +214,37 @@
       width:40px; height:40px; border:2px solid #d8fff0; border-radius:50%; color:white; background:#218b67;
       font-size:20px; font-weight:1000; box-shadow:0 8px 22px #0009;
     }
+    .arena-fighter.choice-locked:not(.choice-revealed) .fighter-hud::after {
+      content:"✓"; color:#d8fff0; background:#173c38;
+      animation:arena-sealed-pulse 1s ease-in-out infinite alternate;
+    }
+    .arena-fighter.choice-revealed .fighter-hud::after {
+      content:attr(data-choice); color:white; background:linear-gradient(145deg,#694cff,#d24dff);
+      animation:arena-choice-reveal .58s cubic-bezier(.12,.82,.2,1.2) both;
+    }
+    #battle.camera-impulse {
+      animation:arena-camera-impulse .24s cubic-bezier(.12,.75,.2,1);
+    }
+    #battle.hit-stop .arena-sprite,
+    #battle.hit-stop .arena-sprite-wrap {
+      animation-play-state:paused!important; transition-duration:.001ms!important;
+    }
+    #arena-impact.damage-number { color:#fff3ed; text-shadow:0 0 24px #ff5f86,0 8px 4px #000d; }
+    #arena-impact.shield-number { color:#bcf5ff; text-shadow:0 0 24px #55dcff,0 8px 4px #000d; }
+    #arena-impact.heal-number { color:#b9ffd9; text-shadow:0 0 24px #4ff09b,0 8px 4px #000d; }
+    #streammonsters-overlay.arcade-egg-impact #card {
+      animation:arcade-egg-impact .62s cubic-bezier(.12,.82,.22,1.24);
+    }
+    #streammonsters-overlay.arcade-monster-reveal #card {
+      animation:arcade-monster-reveal .95s cubic-bezier(.12,.78,.2,1.08);
+    }
+    #streammonsters-overlay.arcade-new-discovery #card {
+      border-color:#fff3a4; box-shadow:0 0 72px #ffe8767d,0 28px 90px #000c;
+    }
+    #streammonsters-overlay.arcade-level-up #card,
+    #streammonsters-overlay.arcade-rank-up #card {
+      animation:arcade-reward-rise .9s cubic-bezier(.12,.78,.2,1.08);
+    }
     #arena-chat-safe-zone {
       position:absolute; left:0; right:0; bottom:0; z-index:1; height:var(--arena-safe-zone-height);
       visibility:hidden; pointer-events:none;
@@ -240,6 +271,35 @@
       67% { transform:translateX(-3%); }
     }
     @keyframes arena-evade { 50% { transform:translateY(-8%) scale(.96); opacity:.65; } }
+    @keyframes arena-sealed-pulse {
+      to { border-color:#99ffe0; box-shadow:0 0 28px #61efbd88; transform:scale(1.06); }
+    }
+    @keyframes arena-choice-reveal {
+      0% { opacity:0; transform:rotateY(90deg) scale(.7); }
+      70% { opacity:1; transform:rotateY(-8deg) scale(1.12); }
+      100% { transform:none; }
+    }
+    @keyframes arena-camera-impulse {
+      0%,100% { transform:translate3d(0,0,0); }
+      25% { transform:translate3d(calc(-10px * var(--arena-impulse,.35)),calc(5px * var(--arena-impulse,.35)),0) scale(1.006); }
+      58% { transform:translate3d(calc(8px * var(--arena-impulse,.35)),calc(-4px * var(--arena-impulse,.35)),0) scale(1.003); }
+    }
+    @keyframes arcade-egg-impact {
+      0% { transform:translateY(-22%) scale(.82) rotate(-5deg); filter:brightness(1.7); }
+      45% { transform:translateY(5%) scale(1.08, .92) rotate(2deg); }
+      72% { transform:translateY(-3%) scale(.97,1.04); }
+      100% { transform:none; }
+    }
+    @keyframes arcade-monster-reveal {
+      0% { opacity:0; transform:translateY(10%) scale(.62); filter:brightness(3) blur(10px); }
+      48% { opacity:1; transform:translateY(-2%) scale(1.08); filter:brightness(1.8) blur(0); }
+      100% { transform:none; filter:none; }
+    }
+    @keyframes arcade-reward-rise {
+      0% { transform:translateY(9%) scale(.88); filter:brightness(1.8); }
+      62% { transform:translateY(-2%) scale(1.04); }
+      100% { transform:none; filter:none; }
+    }
     #chat-card {
       position:absolute; left:34px; bottom:34px; max-width:min(460px,calc(100vw - 68px)); padding:12px 15px;
       border:1px solid #3d6d75; border-radius:15px; color:#dffcff; background:#0d2429eb; box-shadow:0 16px 42px #0009;
@@ -379,6 +439,10 @@
       #toast { top:104px; width:calc(100vw - 32px); }
       #reveal-stage { inset:0 0 26%; padding:50px 16px; }
       #card { grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
+      #card:not([data-presentation="hatch"]) { min-height:250px; padding:22px 18px; }
+      #card:not([data-presentation="hatch"]) #title { font-size:clamp(34px,7vw,58px); }
+      #card:not([data-presentation="hatch"]) #subtitle { font-size:clamp(20px,3.7vw,30px); line-height:1.2; }
+      #card:not([data-presentation="hatch"]) #hint { font-size:clamp(17px,3vw,24px); }
       #art-wrap { width:160px; height:160px; margin:auto; }
       #card[data-presentation="hatch"] {
         top:clamp(92px,7vh,128px); right:auto; bottom:clamp(18px,2vh,34px); left:50%;
@@ -669,10 +733,30 @@
     openChoice:() => {},
     lockChoice:() => {},
     revealChoices:() => {},
+    playEvent:async () => false,
     playAction:async () => {},
     complete:async () => {},
     cancel:() => {}
   };
+  const playArcadeEvent = (type, data = {}) => {
+    if (typeof arenaView.playEvent === 'function') return arenaView.playEvent(type, data);
+    if (type === 'battle_choice_locked') return arenaView.lockChoice?.(data);
+    if (type === 'battle_choices_revealed') return arenaView.revealChoices?.(data);
+    if (type === 'battle_skill_used') {
+      return arenaView.playAction?.(data.action ? {
+        ...data.action,
+        matchId:data.matchId || data.action.matchId,
+        eventId:data.eventId || data.action.eventId,
+        eventSequence:data.action.eventSequence || data.sequence
+      } : data);
+    }
+    if (type === 'battle_completed') return arenaView.complete?.(data);
+    return Promise.resolve(false);
+  };
+  const presentArcadeScene = (type, data, presentation) => Promise.all([
+    playArcadeEvent(type, data),
+    Promise.resolve(presentation)
+  ]);
   const layoutConfig = {};
   const layoutController = window.StreamMonstersOverlayRuntime.createLayoutController({
     window,
@@ -834,8 +918,13 @@
     spawn:'egg.spawn',
     ready:'egg.ready',
     hatch:'egg.hatch',
+    crack:'egg.crack',
     hit:'arena.hit',
-    win:'arena.victory'
+    win:'arena.victory',
+    xp:'progress.xp',
+    level:'progress.level',
+    evolution:'progress.evolution',
+    rank:'progress.rank'
   });
   const playCue = (cue, eventId = cue) => {
     const cueId = LEGACY_CUE_IDS[cue] || cue;
@@ -1094,7 +1183,7 @@
       '{element} Hour ist aktiv',
       { element: elementName(data?.event?.element || data?.element) }
     ));
-    if (type === 'egg_spawned') return showCard({
+    if (type === 'egg_spawned') return presentArcadeScene(type, data, showCard({
       kicker: text('eggKicker', '{element} · {variant}', {
         element: elementName(data?.egg?.element),
         variant: variantName(data?.egg?.variant)
@@ -1108,10 +1197,8 @@
       charged:data?.egg?.variant === 'charged',
       hint: safeHint(data?.hint, commandHint('eggsTimer', '{eggs} shows the timer')),
       progress:4,
-      cue:'spawn',
-      effectScene:'spawn',
       duration:5_200
-    });
+    }));
     if (type === 'egg_boosted') return showCard({
       kicker: text('speedBoost', 'Tempo-Boost'),
       title: text('eggGlows', 'Das Ei leuchtet!'),
@@ -1153,16 +1240,14 @@
       cue:'ready',
       duration:8_000
     });
-    if (type === 'hatch_started') return showToast(
+    if (type === 'hatch_started') return presentArcadeScene(type, data, showToast(
       text('hatchStarted', '{viewer} öffnet ein {element}-Ei …', {
         viewer: publicDisplayName(data),
         element: elementName(data?.egg?.element)
       }),
-      2_800,
-      'egg.crack',
-      { scene:'hatch', payload:{ element:data?.egg?.element } }
-    );
-    if (type === 'egg_hatched') return showCard({
+      2_800
+    ));
+    if (type === 'egg_hatched') return presentArcadeScene(type, data, showCard({
       kicker: text('monsterKicker', '{element} · {personality}', {
         element: elementName(data?.monster?.element || data?.egg?.element),
         personality: personalityName(data?.monster?.personality)
@@ -1176,10 +1261,9 @@
       charged:data?.egg?.variant === 'charged',
       hint: commandHint('monsterCardHint', '{monster} [slot] shows the card'),
       progress:100,
-      cue:'hatch',
       presentation:'hatch',
       duration:7_000
-    });
+    }));
     if (type === 'battle_match_found') return arenaView.applyMatch({
       matchId:data?.matchId,
       state:'roster',
@@ -1187,8 +1271,8 @@
       fighters:Array.isArray(data?.fighters) ? data.fighters : []
     });
     if (type === 'battle_choice_opened') return arenaView.openChoice(data);
-    if (type === 'battle_choice_locked') return arenaView.lockChoice(data);
-    if (type === 'battle_choices_revealed') return arenaView.revealChoices(data);
+    if (type === 'battle_choice_locked') return playArcadeEvent(type, data);
+    if (type === 'battle_choices_revealed') return playArcadeEvent(type, data);
     if (type === 'tutorial_hint') return showCard({
       kicker:'Stream Monsters',
       title:safeHint(data?.title, 'Stream Monsters'),
@@ -1219,12 +1303,7 @@
     }
     if (type === 'battle_skill_used') {
       if (data?.action && data?.matchId) {
-        return arenaView.playAction({
-          ...data.action,
-          matchId:data.matchId,
-          eventId:data.eventId || data.action.eventId,
-          eventSequence:data.action.eventSequence || data.sequence
-        });
+        return playArcadeEvent(type, data);
       }
       if (!battleMonsters.some(Boolean) && (data?.monster || data?.target)) {
         battleIds = [
@@ -1242,9 +1321,10 @@
           ]
         });
       }
-      return arenaView.playAction(legacySkillAction(data));
+      return playArcadeEvent(type, legacySkillAction(data));
     }
-    if (type === 'monster_evolved' || type === 'monster_visual_evolved') return showCard({
+    if (type === 'monster_evolved' || type === 'monster_visual_evolved') {
+      return presentArcadeScene(type, data, showCard({
       kicker: text('evolution', 'Kosmetische Evolution'),
       title: text('evolvedTitle', '{name} strahlt neu', { name: itemName(data?.monster) }),
       subtitle: text(
@@ -1262,12 +1342,10 @@
       element:data?.monster?.element,
       charged:true,
       progress:100,
-      cue:'progress.evolution',
-      effectScene:'special',
-      effectPayload:{ vfxKey:`${itemTemplateId(data?.monster) || 'monster'}:evolution` },
       presentation:'hatch',
       duration:9_000
-    });
+      }));
+    }
     if (type === 'stance_revealed') return showToast(text(
       'stanceCard',
       '{monster} kämpft in Haltung {stance}.',
@@ -1318,10 +1396,10 @@
       const winnerId = itemMonsterId(data?.winner) ||
         data?.battle?.winnerMonsterId || data?.battle?.winner_monster_id;
       const winnerSlot = Number(data?.winnerSlot) || (winnerId === battleIds[1] ? 2 : 1);
-      return arenaView.complete({ ...data, winnerSlot });
+      return playArcadeEvent(type, { ...data, winnerSlot });
     }
     if (type === 'battle_cancelled') return arenaView.cancel(data);
-    if (type === 'monster_xp_awarded') return showCard({
+    if (type === 'monster_xp_awarded') return presentArcadeScene(type, data, showCard({
       kicker:text('monsterXpKicker', 'Monster-XP'),
       title:text('monsterXpTitle', '{name} erhält +{amount} XP', {
         name:itemName(data?.monster),
@@ -1333,10 +1411,9 @@
       ),
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
-      progress:Math.min(100, Number(data?.monster?.xp) || 0),
-      cue:'progress.xp'
-    });
-    if (type === 'monster_level_up') return showCard({
+      progress:Math.min(100, Number(data?.monster?.xp) || 0)
+    }));
+    if (type === 'monster_level_up') return presentArcadeScene(type, data, showCard({
       kicker:text('monsterLevelKicker', 'Level-up'),
       title:text('monsterLevelTitle', '{name} erreicht Level {level}', {
         name:itemName(data?.monster),
@@ -1350,11 +1427,8 @@
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
       progress:100,
-      charged:true,
-      cue:'progress.level',
-      effectScene:'special',
-      effectPayload:{ vfxKey:`${itemTemplateId(data?.monster) || 'monster'}:level-up` }
-    });
+      charged:true
+    }));
     if (type === 'stat_choice_opened' || type === 'monster_stat_prompt') {
       if (!acceptStatPrompt(type, data)) return;
       return showCard({
@@ -1390,7 +1464,7 @@
         cue:'progress.level'
       });
     }
-    if (type === 'arena_rating_changed') return showCard({
+    if (type === 'arena_rating_changed') return presentArcadeScene(type, data, showCard({
       kicker:text('arenaRankKicker', 'Arena-Rang'),
       title:text('arenaRankTitle', '{tier} · {rating} Rating', {
         tier:value(data?.after?.tier, 'Arena'),
@@ -1400,9 +1474,8 @@
         delta:(Number(data?.delta) || 0) >= 0 ? `+${Number(data?.delta) || 0}` : Number(data?.delta)
       }),
       progress:100,
-      charged:true,
-      cue:'progress.rank'
-    });
+      charged:true
+    }));
     if (type === 'win_streak') return showCard({
       kicker: text('winStreak', 'Siegesserie'),
       title: text('winStreakTitle', '{monster} · {count} Siege', {
@@ -1442,7 +1515,8 @@
       progress:100,
       charged:true
     });
-    if (type === 'season_rank_changed' || type === 'rank_card') return showCard({
+    if (type === 'season_rank_changed' || type === 'rank_card') {
+      return presentArcadeScene(type, data, showCard({
       kicker:text('collectorLeaderboardTitle', 'Collector Score'),
       title:text('rankReachedTitle', '{rank}!', {
         rank:rankLabel(data?.after || data?.rank || data?.score?.rank)
@@ -1452,9 +1526,9 @@
         points: data?.score?.points || data?.points || 0
       }),
       progress:100,
-      charged:true,
-      cue:'progress.rank'
-    });
+      charged:true
+      }));
+    }
     if (type === 'quest_completed') return showToast(text('questComplete', 'Quest geschafft · {reward}', {
       reward: text(questTitleKey(data?.quest), 'Belohnung eingesammelt')
     }));

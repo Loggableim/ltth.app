@@ -58,6 +58,15 @@
       ? clock.clearInterval
       : (Object.keys(clock).length ? null : handle => clearInterval(handle));
     const arena = documentLike.getElementById('battle');
+    const surface = documentLike.getElementById('streammonsters-overlay') || arena;
+    const transientPresentationClasses = Object.freeze([
+      'arcade-egg-impact',
+      'arcade-silhouette',
+      'arcade-monster-reveal',
+      'arcade-new-discovery',
+      'arcade-level-up',
+      'arcade-rank-up'
+    ]);
     const stateBySlot = new Map();
     let activeMatchId = null;
     let activeDeadlineMs = 0;
@@ -65,6 +74,7 @@
     let countdownHandle = null;
     let surfaceVersion = 0;
     const acceptedEventIds = new Set();
+    const acceptedTimelineEventIds = new Set();
     const choicesByKey = {
       A: 'Attack',
       B: 'Defense',
@@ -108,6 +118,13 @@
       const percent = clampPercent(value);
       target.style.width = `${percent}%`;
       target.setAttribute('aria-valuenow', String(Math.round(percent)));
+    }
+
+    function pulseClass(target, className) {
+      if (!target) return;
+      target.classList.remove(className);
+      void target.offsetWidth;
+      target.classList.add(className);
     }
 
     function renderState(slot, incoming = {}) {
@@ -219,6 +236,52 @@
       try {
         Promise.resolve(output?.play?.(cue, payload)).catch(() => {});
       } catch (_) {}
+    }
+
+    function rememberTimelineEvent(eventId) {
+      const normalized = String(eventId || '').trim();
+      if (!normalized || acceptedTimelineEventIds.has(normalized)) return false;
+      acceptedTimelineEventIds.add(normalized);
+      while (acceptedTimelineEventIds.size > 512) {
+        acceptedTimelineEventIds.delete(acceptedTimelineEventIds.values().next().value);
+      }
+      return true;
+    }
+
+    function syncRendererStatus() {
+      let status = {};
+      try {
+        status = effects?.status?.() || {};
+      } catch (_) {}
+      const renderer = String(status.backend || status.renderer || 'css');
+      const fallbackReason = status.fallbackReason == null
+        ? null
+        : String(status.fallbackReason);
+      if (surface?.dataset) {
+        surface.dataset.renderer = renderer;
+        if (fallbackReason) surface.dataset.fallbackReason = fallbackReason;
+        else delete surface.dataset.fallbackReason;
+      }
+      return { renderer, fallbackReason };
+    }
+
+    function fireTimelineOutputs(beat, payload = {}) {
+      if (beat.effect?.scene) {
+        fire(effects, beat.effect.scene, {
+          ...beat.effect,
+          eventId: beat.eventId,
+          beatId: beat.beatId,
+          correlationId: payload.correlationId || null,
+          motion: beat.motion
+        });
+      }
+      if (beat.audioCue) {
+        fire(audio, beat.audioCue, {
+          eventId: beat.beatId,
+          timelineEventId: beat.eventId,
+          duck: beat.audioDucking || false
+        });
+      }
     }
 
     function applyMatch(match = {}) {
@@ -338,7 +401,9 @@
             });
           }
           const cue = cueForSkill(action.skill);
-          if (cue) fire(audio, cue, { eventId: `${action.eventId || action.eventSequence}:skill` });
+          if (cue) fire(audio, cue, {
+            eventId: beat.beatId || `${action.eventId || action.eventSequence}:skill`
+          });
           break;
         }
         case 'advance':
@@ -346,16 +411,10 @@
           break;
         case 'special':
           node('arena-special')?.classList.add('visible');
-          fire(effects, 'special', {
-            eventId: action.eventId,
-            element: beat.element,
-            vfxKey: beat.vfxKey,
-            actorSlot: action.actorSlot,
-            targetSlot: action.targetSlot
-          });
-          fire(audio, 'arena.special', {
-            eventId: `${action.eventId || action.eventSequence}:special`
-          });
+          fireTimelineOutputs(beat, action);
+          break;
+        case 'element_trail':
+          fireTimelineOutputs(beat, action);
           break;
         case 'impact': {
           const hit = action.hits?.find(candidate => (
@@ -372,10 +431,30 @@
           const impact = node('arena-impact');
           impact?.classList.add('visible');
           fire(audio, 'arena.hit', {
-            eventId: `${action.eventId || action.eventSequence}:hit:${beat.hitIndex}`
+            eventId: beat.beatId
+              ? `${beat.beatId}:hit:${beat.hitIndex}`
+              : `${action.eventId || action.eventSequence}:hit:${beat.hitIndex}`
           });
           break;
         }
+        case 'hit_stop':
+          if (arena) {
+            arena.dataset.hitStop = String(beat.hitIndex || 1);
+            arena.classList.add('hit-stop');
+          }
+          break;
+        case 'camera_impulse':
+          if (arena) {
+            arena.style.setProperty('--arena-impulse', String(beat.intensity || 0.35));
+            arena.classList.remove('camera-impulse');
+            void arena.offsetWidth;
+            arena.classList.add('camera-impulse');
+          }
+          break;
+        case 'damage_number':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.amount))}`);
+          node('arena-impact')?.classList.add('visible', 'damage-number');
+          break;
         case 'hud': {
           const hitCount = timeline
             .slice(0, beatIndex)
@@ -384,27 +463,38 @@
           if (hit) applyHit(action, hit);
           node('arena-impact')?.classList.remove('visible');
           target?.classList.remove('hit', 'evaded');
+          arena?.classList.remove('hit-stop', 'camera-impulse');
+          if (arena?.dataset) delete arena.dataset.hitStop;
           break;
         }
-        case 'shield': {
-          const current = stateBySlot.get(action.actorSlot) || {};
-          renderState(action.actorSlot, {
-            ...current,
-            shield: numeric(current.shield) + numeric(beat.amount)
-          });
+        case 'shield_number': {
+          const slot = [1, 2].includes(numeric(beat.actorSlot))
+            ? numeric(beat.actorSlot)
+            : numeric(beat.targetSlot);
+          if (!beat.hitIndex && [1, 2].includes(slot)) {
+            const current = stateBySlot.get(slot) || {};
+            renderState(slot, {
+              ...current,
+              shield: numeric(current.shield) + numeric(beat.amount)
+            });
+          }
+          setText('arena-impact', `+${Math.max(0, numeric(beat.amount))} 🛡`);
+          node('arena-impact')?.classList.add('visible', 'shield-number');
           fire(audio, 'arena.shield', {
-            eventId: `${action.eventId || action.eventSequence}:shield`
+            eventId: beat.beatId || `${action.eventId || action.eventSequence}:shield`
           });
           break;
         }
-        case 'heal': {
+        case 'heal_number': {
           const current = stateBySlot.get(action.actorSlot) || {};
           renderState(action.actorSlot, {
             ...current,
             hp: Math.min(numeric(current.maxHp, 1), numeric(current.hp) + numeric(beat.amount))
           });
+          setText('arena-impact', `+${Math.max(0, numeric(beat.amount))} ♥`);
+          node('arena-impact')?.classList.add('visible', 'heal-number');
           fire(audio, 'arena.heal', {
-            eventId: `${action.eventId || action.eventSequence}:heal`
+            eventId: beat.beatId || `${action.eventId || action.eventSequence}:heal`
           });
           break;
         }
@@ -413,12 +503,14 @@
           if (arena) arena.dataset.phase = 'knockout';
           setText('arena-feed', labels.knockout);
           fire(audio, 'arena.ko', {
-            eventId: `${action.eventId || action.eventSequence}:ko`
+            eventId: beat.beatId || `${action.eventId || action.eventSequence}:ko`,
+            duck: beat.audioDucking || false
           });
           break;
         case 'recover':
           actor?.classList.remove('telegraphing', 'advancing');
           target?.classList.remove('hit', 'evaded');
+          arena?.classList.remove('hit-stop', 'camera-impulse');
           node('arena-special')?.classList.remove('visible');
           break;
         default:
@@ -446,7 +538,14 @@
       stopCountdown();
       setText('arena-countdown', '');
       if (arena) arena.dataset.phase = 'action';
-      const timeline = ArenaDirector.buildActionTimeline(action);
+      const arcadeTimeline = ArenaDirector.buildArcadeTimeline('battle_skill_used', {
+        ...payload,
+        eventId: action.eventId,
+        matchId: action.matchId,
+        correlationId: payload.correlationId || action.matchId,
+        action
+      });
+      const timeline = arcadeTimeline.beats;
       let cursor = 0;
       for (let index = 0; index < timeline.length; index += 1) {
         const beat = timeline[index];
@@ -454,8 +553,124 @@
         cursor = beat.atMs;
         playBeat(beat, action, index, timeline);
       }
+      await wait(Math.max(0, arcadeTimeline.durationMs - cursor));
       if (action.actorState) renderState(action.actorSlot, action.actorState);
       if (action.targetState) renderState(action.targetSlot, action.targetState);
+      return true;
+    }
+
+    function playPresentationBeat(beat, timeline, payload = {}) {
+      const rootDataset = surface?.dataset;
+      if (rootDataset) {
+        rootDataset.arcadeScene = timeline.scene;
+        rootDataset.arcadeBeat = beat.type;
+        rootDataset.arcadeEventId = beat.eventId;
+        rootDataset.arcadeBeatId = beat.beatId;
+      }
+      switch (beat.type) {
+        case 'sealed_card':
+          lockChoice({
+            decision: {
+              slot: beat.slot,
+              locked: beat.locked,
+              source: beat.source
+            }
+          });
+          break;
+        case 'simultaneous_reveal':
+          revealChoices({ choices: beat.choices });
+          break;
+        case 'element_roulette':
+          setText('arena-feed', beat.element);
+          break;
+        case 'roulette_lock':
+          setText('arena-feed', beat.element);
+          if (rootDataset) rootDataset.rouletteElement = beat.element;
+          break;
+        case 'egg_impact':
+          pulseClass(surface, 'arcade-egg-impact');
+          break;
+        case 'hatch_crack':
+          if (rootDataset) rootDataset.hatchCrack = String(beat.crackIndex);
+          break;
+        case 'silhouette':
+          if (surface) surface.classList.add('arcade-silhouette');
+          break;
+        case 'monster_reveal':
+          if (surface) {
+            surface.classList.remove('arcade-silhouette');
+            pulseClass(surface, 'arcade-monster-reveal');
+          }
+          break;
+        case 'new_discovery':
+          setText('arena-feed', 'NEW');
+          if (surface) surface.classList.add('arcade-new-discovery');
+          break;
+        case 'duplicate_reward':
+          if (rootDataset) rootDataset.discovery = 'duplicate';
+          break;
+        case 'evolution_peak':
+          if (rootDataset) rootDataset.evolutionStage = String(beat.evolutionStage);
+          break;
+        case 'winner_frame':
+          if (beat.winnerSlot) {
+            for (const slot of [1, 2]) {
+              fighterNode(slot)?.classList.toggle('winner', slot === beat.winnerSlot);
+              fighterNode(slot)?.classList.toggle('defeated', slot !== beat.winnerSlot);
+            }
+          }
+          if (arena) arena.dataset.phase = 'winner';
+          if (beat.winnerSlot) {
+            setText('arena-feed', formatLabel('winner', {
+              name: stateBySlot.get(beat.winnerSlot)?.name ||
+                formatLabel('monster', { slot: beat.winnerSlot })
+            }));
+          }
+          break;
+        case 'xp_reward':
+          if (rootDataset) rootDataset.xpReward = String(beat.amount || 0);
+          break;
+        case 'level_up':
+          pulseClass(surface, 'arcade-level-up');
+          break;
+        case 'win_streak':
+          if (rootDataset) rootDataset.winStreak = String(beat.count || 0);
+          break;
+        case 'rank_up':
+          if (rootDataset) rootDataset.rank = String(beat.tier || '');
+          pulseClass(surface, 'arcade-rank-up');
+          break;
+        default:
+          break;
+      }
+      fireTimelineOutputs(beat, payload);
+    }
+
+    async function playEvent(eventType, payload = {}) {
+      const normalized = String(eventType || '').replace(/^streammonsters:/, '');
+      if (['battle_skill_used', 'battle_action', 'battle_knockout'].includes(normalized)) {
+        return playAction(payload.action ? {
+          ...payload.action,
+          matchId: payload.matchId || payload.action.matchId,
+          eventId: payload.eventId || payload.action.eventId,
+          eventSequence: payload.action.eventSequence || payload.sequence,
+          correlationId: payload.correlationId
+        } : payload);
+      }
+      const timeline = ArenaDirector.buildArcadeTimeline(normalized, payload);
+      if (!timeline.beats.length || !rememberTimelineEvent(timeline.eventId)) return false;
+      transientPresentationClasses.forEach(className => surface?.classList.remove(className));
+      syncRendererStatus();
+      let cursor = 0;
+      for (const beat of timeline.beats) {
+        await wait(Math.max(0, beat.atMs - cursor));
+        cursor = beat.atMs;
+        playPresentationBeat(beat, timeline, payload);
+      }
+      await wait(Math.max(0, timeline.durationMs - cursor));
+      if (timeline.type === 'battle_completed') {
+        arena?.classList.remove('visible');
+      }
       return true;
     }
 
@@ -533,6 +748,7 @@
       lockChoice,
       revealChoices,
       openChoice,
+      playEvent,
       playAction,
       renderCountdown,
       destroy: stopCountdown,

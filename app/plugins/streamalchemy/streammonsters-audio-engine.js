@@ -70,7 +70,14 @@
           channelConfig = normalizeChannelConfig(value);
           return channelConfig;
         },
-        status: () => ({ ready: false, cached: 0, channels: channelConfig, reason: 'audio_context_unavailable' })
+        status: () => ({
+          ready: false,
+          cached: 0,
+          channels: channelConfig,
+          limiter: false,
+          ducking: false,
+          reason: 'audio_context_unavailable'
+        })
       };
     }
 
@@ -90,6 +97,7 @@
         return [channel, node];
       })
     );
+    let duckingUsed = false;
 
     function applyConfig() {
       masterGain.gain.value = channelConfig.master.enabled ? channelConfig.master.volume : 0;
@@ -99,6 +107,33 @@
       });
     }
     applyConfig();
+
+    function automateDucking(focusedChannel, startAt, duck) {
+      if (!duck || typeof duck !== 'object') return false;
+      const amount = clampVolume(duck.amount, 0.4);
+      const durationMs = Math.max(120, Math.min(5_000, Number(duck.durationMs) || 800));
+      const attackAt = startAt + 0.03;
+      const restoreAt = startAt + (durationMs / 1000);
+      Object.entries(channelGains).forEach(([channel, node]) => {
+        if (channel === focusedChannel) return;
+        const baseline = channelConfig[channel].enabled
+          ? channelConfig[channel].volume
+          : 0;
+        const gain = node.gain;
+        if (
+          typeof gain?.cancelScheduledValues !== 'function' ||
+          typeof gain?.setValueAtTime !== 'function' ||
+          typeof gain?.linearRampToValueAtTime !== 'function'
+        ) return;
+        gain.cancelScheduledValues(startAt);
+        gain.setValueAtTime(baseline, startAt);
+        gain.linearRampToValueAtTime(baseline * amount, attackAt);
+        gain.setValueAtTime(baseline * amount, Math.max(attackAt, restoreAt - 0.08));
+        gain.linearRampToValueAtTime(baseline, restoreAt);
+      });
+      duckingUsed = true;
+      return true;
+    }
 
     async function loadVariant(variant) {
       const key = variant?.assetPath;
@@ -129,7 +164,7 @@
       return results.every(result => result.status === 'fulfilled');
     }
 
-    async function play(cueId, { eventId = cueId, delayMs = 0 } = {}) {
+    async function play(cueId, { eventId = cueId, delayMs = 0, duck = false } = {}) {
       try {
         const cue = manifest?.cues?.[cueId];
         if (!cue || !channelGains[cue.channel]) return false;
@@ -144,7 +179,9 @@
         cueGain.gain.value = 10 ** ((Number(cue.gainDb) || 0) / 20);
         source.connect(cueGain);
         cueGain.connect(channelGains[cue.channel]);
-        source.start(context.currentTime + (Math.max(0, Number(delayMs) || 0) / 1000));
+        const startAt = context.currentTime + (Math.max(0, Number(delayMs) || 0) / 1000);
+        automateDucking(cue.channel, startAt, duck);
+        source.start(startAt);
         return true;
       } catch {
         return false;
@@ -163,7 +200,8 @@
         ready: true,
         cached: buffers.size,
         channels: channelConfig,
-        limiter: true
+        limiter: true,
+        ducking: duckingUsed
       })
     };
   }
