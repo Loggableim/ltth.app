@@ -95,6 +95,22 @@ function expectPublicChatPrivacy(entries) {
 }
 
 describe('Stream Monsters plugin integration', () => {
+  test('starts the real match service on Rules v7 for new matches', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+
+    await plugin.init();
+
+    expect(plugin.config.streamMonsters.rulesVersion).toBe(7);
+    expect(plugin.streamMonstersBattleMatchService.rulesVersion).toBe(7);
+    expect(plugin.streamMonstersBattleMatchService.getPublicSnapshot())
+      .toEqual(expect.objectContaining({
+        rulesVersion: 7,
+        matches: []
+      }));
+    await plugin.destroy();
+  });
+
   test('uses Stream Monsters for gifts, chat and new stream sessions without removing the plugin id', async () => {
     const { api, events, emitted } = createApi();
     const plugin = new StreamAlchemyPlugin(api);

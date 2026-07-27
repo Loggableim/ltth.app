@@ -293,7 +293,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     );
   });
 
-  test('reports normalized Rules v6 on public and creator surfaces including fallback snapshots', async () => {
+  test('reports current Rules v7 on public and creator surfaces including fallback snapshots', async () => {
     const harness = createRouteHarness({ battleMatchService: null });
     const publicState = response();
     await harness.find('GET', '/api/streammonsters/state')(
@@ -305,11 +305,21 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       localRequest(),
       creatorState
     );
+    const battleState = response();
+    await harness.find('GET', '/api/streammonsters/battle-state')(
+      { query: {} },
+      battleState
+    );
 
-    expect(publicState.payload.config.rulesVersion).toBe(6);
-    expect(publicState.payload.battle).toEqual({ rulesVersion: 6, matches: [] });
-    expect(creatorState.payload.config.rulesVersion).toBe(6);
-    expect(creatorState.payload.battle).toEqual({ rulesVersion: 6, matches: [] });
+    expect(publicState.payload.config.rulesVersion).toBe(7);
+    expect(publicState.payload.battle).toEqual({ rulesVersion: 7, matches: [] });
+    expect(creatorState.payload.config.rulesVersion).toBe(7);
+    expect(creatorState.payload.battle).toEqual({ rulesVersion: 7, matches: [] });
+    expect(battleState.payload).toEqual({
+      success: true,
+      rulesVersion: 7,
+      matches: []
+    });
   });
 });
 

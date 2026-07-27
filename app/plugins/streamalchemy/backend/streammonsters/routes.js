@@ -8,7 +8,7 @@ const {
   getTemplate,
   getEvolutionAssetPath
 } = require('./catalog');
-const { V6_RULES_VERSION } = require('./battle-rules-v5');
+const { V7_RULES_VERSION } = require('./battle-rules-v5');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -147,7 +147,7 @@ class StreamMonstersRoutes {
         season,
         gcce: this.publicGcceState(this.gcceStateProvider()),
         battle: this.battleMatchService?.getPublicSnapshot?.() || {
-          rulesVersion: V6_RULES_VERSION,
+          rulesVersion: V7_RULES_VERSION,
           matches: []
         },
         recentEvents,
@@ -156,7 +156,7 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: V6_RULES_VERSION,
+        rulesVersion: V7_RULES_VERSION,
         matches: []
       };
       res.json({ success: true, ...snapshot });
@@ -186,7 +186,7 @@ class StreamMonstersRoutes {
       const overlayDiagnostics = this.getOverlayDiagnostics();
       const gcce = this.gcceStateProvider();
       const battle = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: V6_RULES_VERSION,
+        rulesVersion: V7_RULES_VERSION,
         matches: []
       };
       res.json({
@@ -1624,7 +1624,7 @@ class StreamMonstersRoutes {
   publicConfig(config = {}, { includeCreator = false } = {}) {
     const result = {
       enabled: Boolean(config.enabled),
-      rulesVersion: V6_RULES_VERSION,
+      rulesVersion: V7_RULES_VERSION,
       hatchDurationMs: config.hatchDurationMs,
       incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
       eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(
