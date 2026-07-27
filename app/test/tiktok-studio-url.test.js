@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
 const {
   TikTokStudioUrlError,
   copy,
@@ -8,6 +11,9 @@ const {
   handleButtonClick,
   readButtonURL
 } = require('../public/js/tiktok-studio-url');
+
+const VDO_DIRECTOR_URL =
+  'https://vdo.ninja/?director=aaaaaaaaaaaa&password=bbbbbbbbbbbbbbbb&cleanoutput&api=aaaaaaaaaaaa';
 
 function response(body, ok = true) {
   return {
@@ -193,16 +199,15 @@ describe('LTTHTikTokStudioUrl.copy', () => {
 
   test('copies intentional external HTTPS controls only through the external path', async () => {
     const deps = dependencies();
-    const directorURL = 'https://vdo.ninja/?director=room-7&cleanoutput';
 
-    await expect(copy(directorURL, deps)).rejects.toMatchObject({
+    await expect(copy(VDO_DIRECTOR_URL, deps)).rejects.toMatchObject({
       code: 'STABLE_OVERLAY_INVALID'
     });
-    const copied = await copyExternal(directorURL, deps);
+    const copied = await copyExternal(VDO_DIRECTOR_URL, deps);
 
     expect(deps.fetchImpl).not.toHaveBeenCalled();
-    expect(deps.writeText).toHaveBeenCalledWith(directorURL);
-    expect(copied).toBe(directorURL);
+    expect(deps.writeText).toHaveBeenCalledWith(VDO_DIRECTOR_URL);
+    expect(copied).toBe(VDO_DIRECTOR_URL);
   });
 
   test('uses a readonly temporary textarea when Clipboard API is unavailable', async () => {
@@ -227,11 +232,11 @@ describe('LTTHTikTokStudioUrl.copy', () => {
     });
 
     const copied = await copyExternal(
-      'https://vdo.ninja/?director=room-7',
+      VDO_DIRECTOR_URL,
       deps
     );
 
-    expect(copied).toBe('https://vdo.ninja/?director=room-7');
+    expect(copied).toBe(VDO_DIRECTOR_URL);
     expect(textarea.readOnly).toBe(true);
     expect(documentRef.body.appendChild).toHaveBeenCalledWith(textarea);
     expect(documentRef.execCommand).toHaveBeenCalledWith('copy');
@@ -255,7 +260,7 @@ describe('LTTHTikTokStudioUrl.copy', () => {
     });
 
     await expect(copyExternal(
-      'https://vdo.ninja/?director=room-7',
+      VDO_DIRECTOR_URL,
       deps
     )).rejects.toBeInstanceOf(TikTokStudioUrlError);
     expect(textarea.remove).toHaveBeenCalledTimes(1);
@@ -436,7 +441,7 @@ describe('declarative TikTok Studio copy buttons', () => {
     const documentRef = {
       querySelector: jest.fn(() => ({
         value: expected === 'external'
-          ? 'https://vdo.ninja/?director=room-7'
+          ? VDO_DIRECTOR_URL
           : 'http://127.0.0.1:3000/goals/overlay'
       }))
     };
@@ -458,5 +463,139 @@ describe('declarative TikTok Studio copy buttons', () => {
     for (const [name, implementation] of Object.entries(implementations)) {
       if (name !== expected) expect(implementation).not.toHaveBeenCalled();
     }
+  });
+
+  test('an external mode attribute cannot authorize a non-VDO.Ninja URL', async () => {
+    const writeText = jest.fn();
+    const report = jest.fn();
+    const attributes = {
+      'data-copy-tiktok-studio-url': '',
+      'data-tiktok-studio-url-mode': 'external',
+      'data-overlay-url-source': '#overlay-url'
+    };
+    const button = {
+      disabled: false,
+      hasAttribute: jest.fn(name => Object.hasOwn(attributes, name)),
+      getAttribute: jest.fn(name => attributes[name] ?? null),
+      setAttribute: jest.fn(),
+      removeAttribute: jest.fn()
+    };
+
+    await expect(handleButtonClick(button, {
+      documentRef: {
+        querySelector: jest.fn(() => ({
+          value: 'https://evil.example/?director=aaaaaaaaaaaa'
+        }))
+      },
+      copyExternalImpl: rawUrl => copyExternal(rawUrl, {
+        locationHref: 'http://127.0.0.1:3000/vdoninja/ui',
+        navigatorRef: { clipboard: { writeText } },
+        documentRef: null
+      }),
+      report
+    })).resolves.toBeNull();
+
+    expect(writeText).not.toHaveBeenCalled();
+    expect(report).toHaveBeenLastCalledWith(
+      'error',
+      'Could not copy the TikTok Studio URL'
+    );
+  });
+});
+
+describe('same-origin iframe account handoff', () => {
+  function browserApi(windowRef) {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', 'public', 'js', 'tiktok-studio-url.js'),
+      'utf8'
+    );
+    vm.runInNewContext(source, {
+      window: windowRef,
+      URL,
+      Promise,
+      Map,
+      Set,
+      WeakSet
+    });
+    return windowRef.LTTHTikTokStudioUrl;
+  }
+
+  function iframeWindow(topRef) {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    return {
+      top: topRef,
+      location: {
+        href: 'http://127.0.0.1:3000/plugins/goals/ui',
+        origin: 'http://127.0.0.1:3000'
+      },
+      document: {
+        readyState: 'loading',
+        addEventListener: jest.fn()
+      },
+      navigator: { clipboard: { writeText } },
+      open: jest.fn(),
+      writeText
+    };
+  }
+
+  test('uses only same-origin top-level in-memory account getters', async () => {
+    const getFreshClerkToken = jest.fn().mockResolvedValue('fresh-top-token');
+    const getAccount = jest.fn().mockResolvedValue({
+      success: true,
+      account: {
+        claims: [{ username: 'top_creator', state: 'active' }],
+        devices: [],
+        lease: { active: false }
+      },
+      defaultUsername: 'top_creator'
+    });
+    const getConnectedUsername = jest.fn().mockResolvedValue('top_creator');
+    const topRef = {
+      location: { origin: 'http://127.0.0.1:3000' },
+      LTTHStableOverlayRouting: {
+        getFreshClerkToken,
+        accountAccess: {
+          getAccount,
+          getConnectedUsername
+        }
+      }
+    };
+    const windowRef = iframeWindow(topRef);
+    const api = browserApi(windowRef);
+
+    await expect(api.copy(
+      'http://127.0.0.1:3000/goals/overlay?id=goal-1'
+    )).resolves.toBe(
+      'https://overlay.ltth.app/top_creator/goals/overlay?id=goal-1'
+    );
+
+    expect(getFreshClerkToken).toHaveBeenCalledTimes(1);
+    expect(getAccount).toHaveBeenCalledWith({
+      token: 'fresh-top-token',
+      fetchImpl: null
+    });
+    expect(windowRef.writeText).toHaveBeenCalledWith(
+      'https://overlay.ltth.app/top_creator/goals/overlay?id=goal-1'
+    );
+  });
+
+  test('contains cross-origin top access failures as claim-required', async () => {
+    const windowRef = iframeWindow(null);
+    Object.defineProperty(windowRef, 'top', {
+      get() {
+        throw new Error('cross-origin secret details');
+      }
+    });
+    const api = browserApi(windowRef);
+
+    await expect(api.copy(
+      'http://127.0.0.1:3000/goals/overlay?private=value'
+    )).rejects.toMatchObject({
+      code: 'STABLE_OVERLAY_CLAIM_REQUIRED',
+      message: 'An active TikTok username claim is required'
+    });
+
+    expect(windowRef.writeText).not.toHaveBeenCalled();
+    expect(windowRef.open).not.toHaveBeenCalled();
   });
 });

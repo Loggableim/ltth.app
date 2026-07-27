@@ -349,29 +349,64 @@
       };
     }
 
+    function safeValue(owner, key, fallback = null) {
+      try {
+        return owner?.[key] ?? fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function sameOriginTopRoutingApi() {
+      try {
+        const topWindow = root?.top;
+        if (!topWindow || topWindow === root) return null;
+        const currentOrigin = root?.location?.origin;
+        if (
+          !currentOrigin ||
+          topWindow.location?.origin !== currentOrigin
+        ) {
+          return null;
+        }
+        return safeValue(topWindow, 'LTTHStableOverlayRouting');
+      } catch (_) {
+        return null;
+      }
+    }
+
     function resolveAccountAccess(dependencies, fetchImpl) {
-      const injected =
-        dependencies.accountAccess ||
-        root?.LTTHStableOverlayRouting?.accountAccess ||
-        {};
+      const injected = safeValue(dependencies, 'accountAccess', {});
+      const currentRouting = safeValue(root, 'LTTHStableOverlayRouting');
+      const currentAccess = safeValue(currentRouting, 'accountAccess', {});
+      const topRouting = sameOriginTopRoutingApi();
+      const topAccess = safeValue(topRouting, 'accountAccess', {});
       const getFreshToken =
-        injected.getFreshToken ||
-        root?.LTTHStableOverlayRouting?.getFreshClerkToken;
-      const getAccount = injected.getAccount || (async ({ token }) => {
-        if (!fetchImpl) throw new Error('account unavailable');
-        const response = await fetchImpl('/api/stable-overlay-routing/account', {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+        safeValue(injected, 'getFreshToken') ||
+        safeValue(currentAccess, 'getFreshToken') ||
+        safeValue(currentRouting, 'getFreshClerkToken') ||
+        safeValue(topAccess, 'getFreshToken') ||
+        safeValue(topRouting, 'getFreshClerkToken');
+      const getAccount =
+        safeValue(injected, 'getAccount') ||
+        safeValue(currentAccess, 'getAccount') ||
+        safeValue(topAccess, 'getAccount') ||
+        (async ({ token }) => {
+          if (!fetchImpl) throw new Error('account unavailable');
+          const response = await fetchImpl('/api/stable-overlay-routing/account', {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (!response.ok) throw new Error('account unavailable');
+          return response.json();
         });
-        if (!response.ok) throw new Error('account unavailable');
-        return response.json();
-      });
       const getConnectedUsername =
-        injected.getConnectedUsername ||
+        safeValue(injected, 'getConnectedUsername') ||
+        safeValue(currentAccess, 'getConnectedUsername') ||
+        safeValue(topAccess, 'getConnectedUsername') ||
         (async () => {
           if (!fetchImpl) return null;
           const response = await fetchImpl('/api/status', {
@@ -553,13 +588,33 @@
     async function copyExternal(rawUrl, dependencies = {}) {
       const context = dependencyContext(dependencies);
       const candidate = parseCandidate(rawUrl, context.locationHref);
+      const raw = typeof rawUrl === 'string' ? rawUrl : '';
+      const entries = [...candidate.searchParams.entries()];
+      const director = entries[0]?.[1] || '';
+      const password = entries[1]?.[1] || '';
+      const canonical = (
+        /^[0-9a-f]{12}$/.test(director) &&
+        /^[0-9a-f]{16}$/.test(password) &&
+        entries.length === 4 &&
+        entries[0]?.[0] === 'director' &&
+        entries[1]?.[0] === 'password' &&
+        entries[2]?.[0] === 'cleanoutput' &&
+        entries[2]?.[1] === '' &&
+        entries[3]?.[0] === 'api' &&
+        entries[3]?.[1] === director
+      )
+        ? `https://vdo.ninja/?director=${director}` +
+          `&password=${password}&cleanoutput&api=${director}`
+        : '';
       if (
-        candidate.protocol !== 'https:' ||
-        isLocalHostname(candidate.hostname)
+        raw !== raw.trim() ||
+        !canonical ||
+        raw !== canonical ||
+        candidate.href !== canonical
       ) {
         fail(
-          'EXTERNAL_HTTPS_REQUIRED',
-          'External overlay URL must use public HTTPS'
+          'EXTERNAL_VDO_DIRECTOR_URL_REQUIRED',
+          'External copy requires a canonical VDO.Ninja Director URL'
         );
       }
       await writeClipboard(
