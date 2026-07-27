@@ -35,7 +35,7 @@ function normalizeProfileId(value) {
   if (typeof value !== 'string') {
     throw credentialError('A valid LTTH profile is required');
   }
-  const normalized = value.trim().normalize('NFKC').toLowerCase();
+  const normalized = value.trim().normalize('NFKC');
   if (!normalized || normalized.length > 256) {
     throw credentialError('A valid LTTH profile is required');
   }
@@ -162,15 +162,15 @@ class StableOverlayRoutingCredentials {
   } = {}) {
     if (
       !configPathManager ||
-      typeof configPathManager.getConfigDir !== 'function' ||
-      typeof configPathManager.getUserDataDir !== 'function' ||
+      typeof configPathManager.getDefaultConfigDir !== 'function' ||
       typeof configPathManager.getPluginsDir !== 'function'
     ) {
       throw new TypeError('A config path manager is required');
     }
 
-    const configDir = path.resolve(configPathManager.getConfigDir());
-    const userDataDir = path.resolve(configPathManager.getUserDataDir());
+    const defaultConfigDir = path.resolve(
+      configPathManager.getDefaultConfigDir()
+    );
     const pluginsDir = path.resolve(configPathManager.getPluginsDir());
     const applicationSource = path.resolve(sourceRoot);
     const profileKey = crypto
@@ -178,25 +178,52 @@ class StableOverlayRoutingCredentials {
       .update(normalizeProfileId(profileId), 'utf8')
       .digest('hex');
 
-    if (!isInside(configDir, userDataDir)) {
-      throw credentialError('Credential storage must stay inside profile application data');
-    }
-    if (isInside(applicationSource, userDataDir)) {
+    if (isInside(applicationSource, defaultConfigDir)) {
       throw credentialError('Credential storage must stay outside application source');
     }
-    if (isInside(pluginsDir, userDataDir)) {
+    if (isInside(pluginsDir, defaultConfigDir)) {
       throw credentialError('Credential storage must stay outside plugin paths');
     }
 
-    const resolvedConfigDir = fs.realpathSync(configDir);
-    const resolvedUserDataDir = fs.realpathSync(userDataDir);
-    const resolvedPluginsDir = fs.realpathSync(pluginsDir);
+    if (fs.existsSync(defaultConfigDir)) {
+      const defaultEntry = fs.lstatSync(defaultConfigDir);
+      if (defaultEntry.isSymbolicLink() || !defaultEntry.isDirectory()) {
+        throw credentialError('Credential storage contains an unsafe default root');
+      }
+    } else {
+      fs.mkdirSync(defaultConfigDir, { recursive: true, mode: 0o700 });
+    }
+    const resolvedDefaultConfigDir = fs.realpathSync(defaultConfigDir);
+    const resolvedPluginsDir = fs.existsSync(pluginsDir)
+      ? fs.realpathSync(pluginsDir)
+      : pluginsDir;
     const resolvedSource = fs.existsSync(applicationSource)
       ? fs.realpathSync(applicationSource)
       : applicationSource;
 
-    if (!isInside(resolvedConfigDir, resolvedUserDataDir)) {
-      throw credentialError('Credential storage must stay inside profile application data');
+    if (isInside(resolvedSource, resolvedDefaultConfigDir)) {
+      throw credentialError('Credential storage must stay outside application source');
+    }
+    if (isInside(resolvedPluginsDir, resolvedDefaultConfigDir)) {
+      throw credentialError('Credential storage must stay outside plugin paths');
+    }
+    applyMode(resolvedDefaultConfigDir, 0o700);
+
+    const userDataDir = path.resolve(
+      resolvedDefaultConfigDir,
+      'user_data'
+    );
+    if (fs.existsSync(userDataDir)) {
+      const userDataEntry = fs.lstatSync(userDataDir);
+      if (userDataEntry.isSymbolicLink() || !userDataEntry.isDirectory()) {
+        throw credentialError('Credential storage contains unsafe application data');
+      }
+    } else {
+      fs.mkdirSync(userDataDir, { mode: 0o700 });
+    }
+    const resolvedUserDataDir = fs.realpathSync(userDataDir);
+    if (!isInside(resolvedDefaultConfigDir, resolvedUserDataDir)) {
+      throw credentialError('Credential storage escaped profile application data');
     }
     if (isInside(resolvedSource, resolvedUserDataDir)) {
       throw credentialError('Credential storage must stay outside application source');
@@ -204,6 +231,7 @@ class StableOverlayRoutingCredentials {
     if (isInside(resolvedPluginsDir, resolvedUserDataDir)) {
       throw credentialError('Credential storage must stay outside plugin paths');
     }
+    applyMode(resolvedUserDataDir, 0o700);
 
     const boundaries = {
       userDataDir: resolvedUserDataDir,

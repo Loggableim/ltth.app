@@ -21,6 +21,7 @@ function makeTempConfig() {
     userDataDir,
     pluginsDir,
     manager: {
+      getDefaultConfigDir: () => configDir,
       getConfigDir: () => configDir,
       getUserDataDir: () => userDataDir,
       getPluginsDir: () => pluginsDir
@@ -75,6 +76,56 @@ describe('StableOverlayRoutingCredentials', () => {
     expect(first.getFilePath()).not.toBe(second.getFilePath());
   });
 
+  test('preserves profile case when deriving credential identity', () => {
+    const fixture = makeTempConfig();
+    roots.push(fixture.configDir);
+    const upper = new StableOverlayRoutingCredentials({
+      configPathManager: fixture.manager,
+      profileId: 'Creator',
+      sourceRoot: path.join(fixture.configDir, 'source')
+    });
+    const lower = new StableOverlayRoutingCredentials({
+      configPathManager: fixture.manager,
+      profileId: 'creator',
+      sourceRoot: path.join(fixture.configDir, 'source')
+    });
+
+    expect(upper.getFilePath()).not.toBe(lower.getFilePath());
+  });
+
+  test('keeps credentials in the fixed default user root when config is redirected', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-stable-custom-root-'));
+    roots.push(root);
+    const defaultConfigDir = path.join(root, 'default-user-root');
+    const customConfigDir = path.join(root, 'shared-custom-root');
+    const customUserDataDir = path.join(customConfigDir, 'user_data');
+    const customPluginsDir = path.join(customConfigDir, 'plugins');
+    fs.mkdirSync(path.join(defaultConfigDir, 'user_data'), { recursive: true });
+    fs.mkdirSync(customUserDataDir, { recursive: true });
+    fs.mkdirSync(customPluginsDir, { recursive: true });
+    const manager = {
+      getDefaultConfigDir: () => defaultConfigDir,
+      getConfigDir: () => customConfigDir,
+      getUserDataDir: () => customUserDataDir,
+      getPluginsDir: () => customPluginsDir
+    };
+    const store = new StableOverlayRoutingCredentials({
+      configPathManager: manager,
+      profileId: 'Creator',
+      sourceRoot: path.join(root, 'source')
+    });
+
+    expect(path.relative(
+      path.join(defaultConfigDir, 'user_data'),
+      store.getFilePath()
+    )).toMatch(/^\.stable-overlay-routing[\\/]/);
+    expect(path.relative(customConfigDir, store.getFilePath())).toMatch(/^\.\./);
+    store.save(enrollment());
+    expect(fs.existsSync(
+      path.join(customUserDataDir, '.stable-overlay-routing')
+    )).toBe(false);
+  });
+
   test('rejects a configuration root that would put credentials in source or plugin paths', () => {
     const fixture = makeTempConfig();
     roots.push(fixture.configDir);
@@ -87,7 +138,10 @@ describe('StableOverlayRoutingCredentials', () => {
 
     const pluginManager = {
       ...fixture.manager,
-      getUserDataDir: () => path.join(fixture.pluginsDir, 'credential-data')
+      getDefaultConfigDir: () => path.join(
+        fixture.pluginsDir,
+        'credential-data'
+      )
     };
     expect(() => new StableOverlayRoutingCredentials({
       configPathManager: pluginManager,

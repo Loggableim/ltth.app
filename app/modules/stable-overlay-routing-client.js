@@ -15,6 +15,7 @@ const MANAGEMENT_PATH = '/_ltth/v1';
 const TUNNEL_ORIGIN_PATTERN =
   /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/;
 const INSTANCE_ID_PATTERN = /^[A-Za-z0-9._:-]+$/;
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 
 class ClientRequestError extends Error {
   constructor(kind) {
@@ -103,7 +104,9 @@ class StableOverlayRoutingClient {
     logger,
     getPort,
     random = () => crypto.randomInt(0, 1_000_001) / 1_000_000,
-    instanceIdFactory = () => crypto.randomUUID()
+    instanceIdFactory = () => crypto.randomUUID(),
+    requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    abortControllerFactory = () => new AbortController()
   } = {}) {
     if (
       !networkManager ||
@@ -144,6 +147,15 @@ class StableOverlayRoutingClient {
     if (typeof instanceIdFactory !== 'function') {
       throw new TypeError('An instance ID factory is required');
     }
+    if (
+      !Number.isSafeInteger(requestTimeoutMs) ||
+      requestTimeoutMs < 1
+    ) {
+      throw new TypeError('A positive request timeout is required');
+    }
+    if (typeof abortControllerFactory !== 'function') {
+      throw new TypeError('An AbortController factory is required');
+    }
 
     this.networkManager = networkManager;
     this.fetch = fetch;
@@ -154,6 +166,8 @@ class StableOverlayRoutingClient {
     this.logger = logger;
     this.getPort = getPort;
     this.random = random;
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.abortControllerFactory = abortControllerFactory;
     this.enabled = isFeatureEnabled(config.enabled);
     this.apiOrigin = this.enabled
       ? normalizeApiOrigin(
@@ -174,6 +188,8 @@ class StableOverlayRoutingClient {
     this.cyclePromise = null;
     this.stopPromise = null;
     this.stopping = false;
+    this.lifecycleGeneration = 0;
+    this.inflightRequestControllers = new Set();
   }
 
   getStatus() {
@@ -198,11 +214,16 @@ class StableOverlayRoutingClient {
     if (this.startPromise) {
       return this.startPromise;
     }
+    if (this.stopping && this.stopPromise) {
+      return this.stopPromise.then(() => this.start());
+    }
     if (this.state === 'active' && this.revision !== null) {
       return Promise.resolve(this.getStatus());
     }
 
-    const starting = this._start();
+    this.stopping = false;
+    const generation = ++this.lifecycleGeneration;
+    const starting = this._start(generation);
     this.startPromise = starting.finally(() => {
       if (this.startPromise === wrapped) {
         this.startPromise = null;
@@ -212,8 +233,7 @@ class StableOverlayRoutingClient {
     return wrapped;
   }
 
-  async _start() {
-    this.stopping = false;
+  async _start(generation) {
     let loaded;
     try {
       loaded = this.credentialStore.load();
@@ -221,6 +241,9 @@ class StableOverlayRoutingClient {
         loaded = await loaded;
       }
     } catch (error) {
+      if (!this._isActiveGeneration(generation)) {
+        return this.getStatus();
+      }
       if (error?.code === 'STABLE_OVERLAY_CREDENTIAL_INVALID') {
         this.state = 'auth_error';
         this.logger.warn(
@@ -235,13 +258,16 @@ class StableOverlayRoutingClient {
       return this.getStatus();
     }
 
+    if (!this._isActiveGeneration(generation)) {
+      return this.getStatus();
+    }
     if (!loaded) {
       this.credentials = null;
       this.state = 'unenrolled';
       return this.getStatus();
     }
     this.credentials = loaded;
-    return this._beginCycle();
+    return this._beginCycle(generation);
   }
 
   publishTunnelRotation() {
@@ -253,14 +279,17 @@ class StableOverlayRoutingClient {
       return Promise.resolve(this.getStatus());
     }
     this._clearTimer();
-    return this._beginCycle();
+    return this._beginCycle(this.lifecycleGeneration);
   }
 
-  _beginCycle() {
+  _beginCycle(generation) {
+    if (!this._isActiveGeneration(generation)) {
+      return Promise.resolve(this.getStatus());
+    }
     if (this.cyclePromise) {
       return this.cyclePromise;
     }
-    const cycling = this._runCycle();
+    const cycling = this._runCycle(generation);
     this.cyclePromise = cycling.finally(() => {
       if (this.cyclePromise === wrapped) {
         this.cyclePromise = null;
@@ -270,7 +299,7 @@ class StableOverlayRoutingClient {
     return wrapped;
   }
 
-  async _runCycle() {
+  async _runCycle(generation) {
     try {
       this.state = 'starting_tunnel';
       let tunnel;
@@ -281,34 +310,70 @@ class StableOverlayRoutingClient {
       } catch (_) {
         throw new ClientRequestError('transient');
       }
+      if (!this._isActiveGeneration(generation)) {
+        throw new ClientRequestError('cancelled');
+      }
       const tunnelOrigin = normalizeTunnelOrigin(tunnel?.tunnelURL);
       this.state = 'activating';
-      const lease = await this._putLease(tunnelOrigin);
+      const lease = await this._putLease(tunnelOrigin, { generation });
       this.tunnelOrigin = tunnelOrigin;
       this.revision = lease.revision;
+      if (!this._isActiveGeneration(generation)) {
+        throw new ClientRequestError('cancelled');
+      }
       this.lastSuccessfulHeartbeat =
         new Date(Math.trunc(this.clock())).toISOString();
       this.retryIndex = 0;
       this.state = 'active';
-      if (!this.stopping) {
-        this._schedule(HEARTBEAT_INTERVAL_MS);
-      }
+      this._schedule(HEARTBEAT_INTERVAL_MS, generation);
     } catch (error) {
-      this._handleCycleError(error);
+      this._handleCycleError(error, generation);
     }
     return this.getStatus();
   }
 
-  async _putLease(tunnelOrigin) {
+  async _putLease(
+    tunnelOrigin,
+    {
+      generation = this.lifecycleGeneration,
+      reconcileConflict = true
+    } = {}
+  ) {
+    if (!this._isActiveGeneration(generation)) {
+      throw new ClientRequestError('cancelled');
+    }
     const body = {
       deviceId: this.credentials.deviceId,
       instanceId: this.instanceId,
       tunnelOrigin
     };
-    if (Number.isSafeInteger(this.revision) && this.revision > 0) {
+    const hasExpectedRevision =
+      Number.isSafeInteger(this.revision) && this.revision > 0;
+    if (hasExpectedRevision) {
       body.expectedRevision = this.revision;
     }
-    const response = await this._fetchLease('PUT', body);
+    let response;
+    try {
+      response = await this._fetchLease('PUT', body);
+    } catch (error) {
+      if (
+        !(error instanceof ClientRequestError) ||
+        error.kind !== 'conflict' ||
+        !hasExpectedRevision ||
+        !reconcileConflict
+      ) {
+        throw error;
+      }
+      if (!this._isActiveGeneration(generation)) {
+        throw new ClientRequestError('cancelled');
+      }
+      const reconciledRevision = await this._getActiveLeaseRevision(generation);
+      this.revision = reconciledRevision;
+      return this._putLease(tunnelOrigin, {
+        generation,
+        reconcileConflict: false
+      });
+    }
     let payload;
     try {
       payload = await response.json();
@@ -329,10 +394,55 @@ class StableOverlayRoutingClient {
     return lease;
   }
 
+  async _getActiveLeaseRevision(generation) {
+    let response;
+    try {
+      response = await this._fetchWithTimeout(
+        `${this.apiOrigin}${MANAGEMENT_PATH}/device/status`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${this.credentials.credential}`,
+            'X-LTTH-Device-ID': this.credentials.deviceId
+          },
+          cache: 'no-store',
+          credentials: 'omit',
+          redirect: 'error',
+          referrerPolicy: 'no-referrer'
+        }
+      );
+    } catch (_) {
+      throw new ClientRequestError('transient');
+    }
+    if (!this._isActiveGeneration(generation)) {
+      throw new ClientRequestError('cancelled');
+    }
+    this._throwForResponseStatus(response);
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (_) {
+      throw new ClientRequestError('protocol');
+    }
+    const lease = payload?.lease;
+    if (
+      !lease ||
+      lease.active !== true ||
+      lease.deviceId !== this.credentials.deviceId ||
+      lease.instanceId !== this.instanceId ||
+      !Number.isSafeInteger(lease.revision) ||
+      lease.revision < 1
+    ) {
+      throw new ClientRequestError('protocol');
+    }
+    return lease.revision;
+  }
+
   async _fetchLease(method, body) {
     let response;
     try {
-      response = await this.fetch(
+      response = await this._fetchWithTimeout(
         `${this.apiOrigin}${MANAGEMENT_PATH}/lease`,
         {
           method,
@@ -351,8 +461,13 @@ class StableOverlayRoutingClient {
       throw new ClientRequestError('transient');
     }
 
+    this._throwForResponseStatus(response, { allowConflict: true });
+    return response;
+  }
+
+  _throwForResponseStatus(response, { allowConflict = false } = {}) {
     if (response?.ok) {
-      return response;
+      return;
     }
     if (response?.status === 401 || response?.status === 403) {
       throw new ClientRequestError('auth');
@@ -363,11 +478,78 @@ class StableOverlayRoutingClient {
     ) {
       throw new ClientRequestError('transient');
     }
+    if (allowConflict && response?.status === 409) {
+      throw new ClientRequestError('conflict');
+    }
     throw new ClientRequestError('terminal');
   }
 
-  _handleCycleError(error) {
-    if (this.stopping) {
+  async _fetchWithTimeout(url, options) {
+    const controller = this.abortControllerFactory();
+    if (
+      !controller ||
+      typeof controller.abort !== 'function' ||
+      !controller.signal ||
+      typeof controller.signal.addEventListener !== 'function'
+    ) {
+      throw new TypeError('AbortController factory returned an invalid value');
+    }
+
+    let rejectAbort;
+    const aborted = new Promise((_, reject) => {
+      rejectAbort = reject;
+    });
+    const onAbort = () => {
+      rejectAbort(new ClientRequestError('transient'));
+    };
+    controller.signal.addEventListener('abort', onAbort, { once: true });
+    if (controller.signal.aborted) {
+      onAbort();
+    }
+
+    this.inflightRequestControllers.add(controller);
+    const timeoutId = this.timers.setTimeout(() => {
+      try {
+        controller.abort();
+      } catch (_) {}
+    }, this.requestTimeoutMs);
+
+    try {
+      let request;
+      try {
+        request = Promise.resolve(this.fetch(url, {
+          ...options,
+          signal: controller.signal
+        }));
+      } catch (error) {
+        request = Promise.reject(error);
+      }
+      return await Promise.race([
+        request,
+        aborted
+      ]);
+    } finally {
+      this.timers.clearTimeout(timeoutId);
+      this.inflightRequestControllers.delete(controller);
+      if (typeof controller.signal.removeEventListener === 'function') {
+        controller.signal.removeEventListener('abort', onAbort);
+      }
+    }
+  }
+
+  _abortInflightRequests() {
+    for (const controller of this.inflightRequestControllers) {
+      try {
+        controller.abort();
+      } catch (_) {}
+    }
+  }
+
+  _handleCycleError(error, generation) {
+    if (
+      !this._isActiveGeneration(generation) ||
+      (error instanceof ClientRequestError && error.kind === 'cancelled')
+    ) {
       return;
     }
     if (error instanceof ClientRequestError && error.kind === 'auth') {
@@ -397,7 +579,7 @@ class StableOverlayRoutingClient {
       this.logger.warn(
         'Stable overlay routing is offline and will retry.'
       );
-      this._schedule(delay);
+      this._schedule(delay, generation);
       return;
     }
     this.state = 'error';
@@ -406,15 +588,19 @@ class StableOverlayRoutingClient {
     );
   }
 
-  _schedule(delay) {
+  _schedule(delay, generation) {
     this._clearTimer();
     this.timerId = this.timers.setTimeout(() => {
       this.timerId = null;
-      if (this.stopping) {
+      if (!this._isActiveGeneration(generation)) {
         return this.getStatus();
       }
-      return this._beginCycle();
+      return this._beginCycle(generation);
     }, delay);
+  }
+
+  _isActiveGeneration(generation) {
+    return !this.stopping && generation === this.lifecycleGeneration;
   }
 
   _clearTimer() {
@@ -429,9 +615,12 @@ class StableOverlayRoutingClient {
     if (this.stopPromise) {
       return this.stopPromise;
     }
+    const pendingStart = this.startPromise;
     this.stopping = true;
+    this.lifecycleGeneration += 1;
     this._clearTimer();
-    const stopping = this._stop();
+    this._abortInflightRequests();
+    const stopping = this._stop(pendingStart);
     this.stopPromise = stopping.finally(() => {
       if (this.stopPromise === wrapped) {
         this.stopPromise = null;
@@ -441,7 +630,12 @@ class StableOverlayRoutingClient {
     return wrapped;
   }
 
-  async _stop() {
+  async _stop(pendingStart) {
+    if (pendingStart) {
+      try {
+        await pendingStart;
+      } catch (_) {}
+    }
     if (this.cyclePromise) {
       try {
         await this.cyclePromise;
