@@ -352,9 +352,13 @@ class StableOverlayRoutingClient {
     if (hasExpectedRevision) {
       body.expectedRevision = this.revision;
     }
-    let response;
+    let payload;
     try {
-      response = await this._fetchLease('PUT', body);
+      payload = await this._fetchLease(
+        'PUT',
+        body,
+        leaseResponse => this._consumeJsonResponse(leaseResponse)
+      );
     } catch (error) {
       if (
         !(error instanceof ClientRequestError) ||
@@ -374,12 +378,6 @@ class StableOverlayRoutingClient {
         reconcileConflict: false
       });
     }
-    let payload;
-    try {
-      payload = await response.json();
-    } catch (_) {
-      throw new ClientRequestError('protocol');
-    }
     const lease = payload?.lease;
     if (
       !lease ||
@@ -395,9 +393,9 @@ class StableOverlayRoutingClient {
   }
 
   async _getActiveLeaseRevision(generation) {
-    let response;
+    let payload;
     try {
-      response = await this._fetchWithTimeout(
+      payload = await this._fetchWithTimeout(
         `${this.apiOrigin}${MANAGEMENT_PATH}/device/status`,
         {
           method: 'GET',
@@ -409,21 +407,20 @@ class StableOverlayRoutingClient {
           credentials: 'omit',
           redirect: 'error',
           referrerPolicy: 'no-referrer'
+        },
+        statusResponse => {
+          this._throwForResponseStatus(statusResponse);
+          return this._consumeJsonResponse(statusResponse);
         }
       );
-    } catch (_) {
+    } catch (error) {
+      if (error instanceof ClientRequestError) {
+        throw error;
+      }
       throw new ClientRequestError('transient');
     }
     if (!this._isActiveGeneration(generation)) {
       throw new ClientRequestError('cancelled');
-    }
-    this._throwForResponseStatus(response);
-
-    let payload;
-    try {
-      payload = await response.json();
-    } catch (_) {
-      throw new ClientRequestError('protocol');
     }
     const lease = payload?.lease;
     if (
@@ -439,7 +436,7 @@ class StableOverlayRoutingClient {
     return lease.revision;
   }
 
-  async _fetchLease(method, body) {
+  async _fetchLease(method, body, consumeResponse = response => response) {
     let response;
     try {
       response = await this._fetchWithTimeout(
@@ -455,13 +452,22 @@ class StableOverlayRoutingClient {
           credentials: 'omit',
           redirect: 'error',
           referrerPolicy: 'no-referrer'
+        },
+        leaseResponse => {
+          this._throwForResponseStatus(
+            leaseResponse,
+            { allowConflict: true }
+          );
+          return consumeResponse(leaseResponse);
         }
       );
-    } catch (_) {
+    } catch (error) {
+      if (error instanceof ClientRequestError) {
+        throw error;
+      }
       throw new ClientRequestError('transient');
     }
 
-    this._throwForResponseStatus(response, { allowConflict: true });
     return response;
   }
 
@@ -484,7 +490,19 @@ class StableOverlayRoutingClient {
     throw new ClientRequestError('terminal');
   }
 
-  async _fetchWithTimeout(url, options) {
+  async _consumeJsonResponse(response) {
+    try {
+      return await response.json();
+    } catch (_) {
+      throw new ClientRequestError('protocol');
+    }
+  }
+
+  async _fetchWithTimeout(
+    url,
+    options,
+    consumeResponse = response => response
+  ) {
     const controller = this.abortControllerFactory();
     if (
       !controller ||
@@ -520,7 +538,7 @@ class StableOverlayRoutingClient {
         request = Promise.resolve(this.fetch(url, {
           ...options,
           signal: controller.signal
-        }));
+        })).then(consumeResponse);
       } catch (error) {
         request = Promise.reject(error);
       }

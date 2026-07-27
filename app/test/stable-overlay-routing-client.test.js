@@ -337,6 +337,40 @@ describe('StableOverlayRoutingClient', () => {
     expect(harness.timers.pendingDelays()).toEqual([2_000]);
   });
 
+  test('keeps successful activation JSON consumption inside the request timeout', async () => {
+    let activationOptions;
+    let jsonStarted = false;
+    const harness = createHarness({
+      requestTimeoutMs: 1_000,
+      fetchImpl: async (url, options) => {
+        activationOptions = options;
+        return {
+          ok: true,
+          status: 200,
+          json: () => {
+            jsonStarted = true;
+            return new Promise(() => {});
+          }
+        };
+      }
+    });
+
+    const starting = harness.client.start();
+    for (let index = 0; index < 10 && !jsonStarted; index += 1) {
+      await Promise.resolve();
+    }
+
+    expect(jsonStarted).toBe(true);
+    expect(harness.timers.pendingDelays()).toEqual([1_000]);
+    await harness.timers.advance(1_000);
+    await expect(starting).resolves.toMatchObject({
+      state: 'offline',
+      revision: null
+    });
+    expect(activationOptions.signal.aborted).toBe(true);
+    expect(harness.timers.pendingDelays()).toEqual([2_000]);
+  });
+
   test('stop aborts and awaits a stalled activation request', async () => {
     const activation = deferred();
     let activationOptions;
@@ -367,6 +401,67 @@ describe('StableOverlayRoutingClient', () => {
 
     expect(stopSettled).toBe(true);
     expect(activationOptions.signal.aborted).toBe(true);
+    expect(harness.timers.pendingDelays()).toEqual([]);
+  });
+
+  test('stop aborts and awaits stalled activation JSON consumption', async () => {
+    let activationOptions;
+    let jsonStarted = false;
+    let releaseBody;
+    const harness = createHarness({
+      requestTimeoutMs: 1_000,
+      fetchImpl: async (url, options) => {
+        if (options.method === 'DELETE') {
+          return response(204);
+        }
+        activationOptions = options;
+        return {
+          ok: true,
+          status: 200,
+          json: () => {
+            jsonStarted = true;
+            return new Promise((resolve, reject) => {
+              releaseBody = resolve;
+              options.signal.addEventListener('abort', () => {
+                reject(new TypeError('response body aborted'));
+              }, { once: true });
+            });
+          }
+        };
+      }
+    });
+
+    const starting = harness.client.start();
+    for (let index = 0; index < 10 && !jsonStarted; index += 1) {
+      await Promise.resolve();
+    }
+    expect(jsonStarted).toBe(true);
+
+    let stopSettled = false;
+    const stopping = harness.client.stop().then(status => {
+      stopSettled = true;
+      return status;
+    });
+    for (let index = 0; index < 20 && !stopSettled; index += 1) {
+      await Promise.resolve();
+    }
+    const settledBeforeFallback = stopSettled;
+    const abortedBeforeFallback = activationOptions.signal.aborted;
+    if (!stopSettled) {
+      releaseBody({
+        lease: {
+          active: true,
+          deviceId: 'device-123',
+          instanceId: 'process-instance',
+          revision: 1
+        }
+      });
+    }
+    await starting;
+    await stopping;
+
+    expect(settledBeforeFallback).toBe(true);
+    expect(abortedBeforeFallback).toBe(true);
     expect(harness.timers.pendingDelays()).toEqual([]);
   });
 
@@ -616,6 +711,69 @@ describe('StableOverlayRoutingClient', () => {
     expect(statusOptions).toBeDefined();
     expect(harness.timers.pendingDelays()).toEqual([1_000]);
 
+    await harness.timers.advance(1_000);
+    await expect(rotating).resolves.toMatchObject({
+      state: 'offline',
+      revision: 1
+    });
+    expect(statusOptions.signal.aborted).toBe(true);
+    expect(harness.timers.pendingDelays()).toEqual([2_000]);
+  });
+
+  test('keeps successful conflict status JSON consumption inside the request timeout', async () => {
+    let putCount = 0;
+    let statusOptions;
+    let statusJsonStarted = false;
+    const harness = createHarness({
+      requestTimeoutMs: 1_000,
+      tunnelResults: [
+        {
+          tunnelURL: 'https://first-tunnel.trycloudflare.com',
+          reused: true
+        },
+        {
+          tunnelURL: 'https://rotated-tunnel.trycloudflare.com',
+          reused: false
+        }
+      ],
+      fetchImpl: async (url, options) => {
+        if (options.method === 'GET') {
+          statusOptions = options;
+          return {
+            ok: true,
+            status: 200,
+            json: () => {
+              statusJsonStarted = true;
+              return new Promise(() => {});
+            }
+          };
+        }
+        putCount += 1;
+        return putCount === 1
+          ? response(200, {
+            lease: {
+              active: true,
+              deviceId: 'device-123',
+              instanceId: 'process-instance',
+              revision: 1
+            }
+          })
+          : response(409, { error: 'lease_conflict' });
+      }
+    });
+    await harness.client.start();
+
+    const rotating = harness.client.publishTunnelRotation();
+    for (
+      let index = 0;
+      index < 20 && !statusJsonStarted;
+      index += 1
+    ) {
+      await Promise.resolve();
+    }
+
+    expect(statusJsonStarted).toBe(true);
+    expect(harness.timers.pendingDelays()).toEqual([1_000]);
     await harness.timers.advance(1_000);
     await expect(rotating).resolves.toMatchObject({
       state: 'offline',
