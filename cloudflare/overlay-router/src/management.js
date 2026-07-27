@@ -221,7 +221,7 @@ export function createManagementHandler(options = {}) {
     workerEnv.OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT
   );
 
-  async function record(
+  function record(
     request,
     context,
     actorClerkUserId,
@@ -230,7 +230,7 @@ export function createManagementHandler(options = {}) {
     targets = {},
     occurredAt = new Date(Math.trunc(clock())).toISOString()
   ) {
-    await audit.record({
+    const pending = audit.record({
       request,
       occurredAt,
       actorClerkUserId,
@@ -238,7 +238,14 @@ export function createManagementHandler(options = {}) {
       resultCode,
       usernameKey: targets.usernameKey || null,
       deviceId: targets.deviceId || null
-    }, context);
+    }).catch(() => undefined);
+    if (typeof context.waitUntil === 'function') {
+      try {
+        context.waitUntil(pending);
+      } catch {
+        // The state mutation result remains authoritative.
+      }
+    }
   }
 
   async function enrollDevice(request, context) {
@@ -255,7 +262,7 @@ export function createManagementHandler(options = {}) {
       timestamp.milliseconds
     );
     if (!rate.allowed) {
-      await record(
+      record(
         request,
         context,
         auth.clerkUserId,
@@ -266,9 +273,22 @@ export function createManagementHandler(options = {}) {
       );
       domainError('rate_limited', 429);
     }
-    if (await repository.countActiveDevicesByOwner(auth.clerkUserId) >=
-        maxActiveDevices) {
-      await record(
+    const deviceId = `d-${randomHex(16)}`;
+    const credential = randomHex(32);
+    const tokenHash = await hashDeviceCredential(
+      credential,
+      workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
+    );
+    const device = await repository.createDeviceWithActiveLimit({
+      deviceId,
+      clerkUserId: auth.clerkUserId,
+      tokenHash,
+      label: body.label,
+      now: timestamp.iso,
+      activeDeviceLimit: maxActiveDevices
+    });
+    if (!device) {
+      record(
         request,
         context,
         auth.clerkUserId,
@@ -279,21 +299,7 @@ export function createManagementHandler(options = {}) {
       );
       domainError('active_device_limit_reached', 409);
     }
-
-    const deviceId = `d-${randomHex(16)}`;
-    const credential = randomHex(32);
-    const tokenHash = await hashDeviceCredential(
-      credential,
-      workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
-    );
-    const device = await repository.createDevice({
-      deviceId,
-      clerkUserId: auth.clerkUserId,
-      tokenHash,
-      label: body.label,
-      now: timestamp.iso
-    });
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -337,7 +343,7 @@ export function createManagementHandler(options = {}) {
       timestamp.milliseconds
     );
     if (!limits.allowed) {
-      await record(
+      record(
         request,
         context,
         auth.clerkUserId,
@@ -356,7 +362,7 @@ export function createManagementHandler(options = {}) {
       now: timestamp.iso
     });
     const resultCode = result.ok ? 'claimed' : 'unavailable';
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -371,8 +377,15 @@ export function createManagementHandler(options = {}) {
     return jsonResponse({ claim: sanitizeClaim(result.claim) }, 201);
   }
 
-  async function restoreClaim(request, context, usernameKey) {
+  async function restoreClaim(
+    request,
+    context,
+    encodedUsername
+  ) {
     const auth = await authenticateClerk(request);
+    const usernameKey = normalizeTikTokUsername(
+      decodePathValue(encodedUsername)
+    );
     await parseEmptyBody(request);
     const current = await repository.findClaimByUsername(usernameKey);
     if (
@@ -380,7 +393,7 @@ export function createManagementHandler(options = {}) {
       current.clerkUserId !== auth.clerkUserId ||
       current.state !== 'cooldown'
     ) {
-      await record(
+      record(
         request,
         context,
         auth.clerkUserId,
@@ -398,7 +411,7 @@ export function createManagementHandler(options = {}) {
       expectedUpdatedAt: current.updatedAt,
       now: timestamp.iso
     });
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -413,8 +426,15 @@ export function createManagementHandler(options = {}) {
     return jsonResponse({ claim: sanitizeClaim(restored) });
   }
 
-  async function releaseClaim(request, context, usernameKey) {
+  async function releaseClaim(
+    request,
+    context,
+    encodedUsername
+  ) {
     const auth = await authenticateClerk(request);
+    const usernameKey = normalizeTikTokUsername(
+      decodePathValue(encodedUsername)
+    );
     const body = await parseAuthenticatedJsonBody(
       request,
       MANAGEMENT_BODY_SCHEMAS.claimRelease
@@ -428,7 +448,7 @@ export function createManagementHandler(options = {}) {
       current.clerkUserId !== auth.clerkUserId ||
       current.state !== 'active'
     ) {
-      await record(
+      record(
         request,
         context,
         auth.clerkUserId,
@@ -448,7 +468,7 @@ export function createManagementHandler(options = {}) {
         timestamp.milliseconds + SEVEN_DAYS_MS
       ).toISOString()
     });
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -463,8 +483,15 @@ export function createManagementHandler(options = {}) {
     return jsonResponse({ claim: sanitizeClaim(released) });
   }
 
-  async function revokeDevice(request, context, deviceId) {
+  async function revokeDevice(
+    request,
+    context,
+    encodedDeviceId
+  ) {
     const auth = await authenticateClerk(request);
+    const deviceId = normalizeDeviceId(
+      decodePathValue(encodedDeviceId)
+    );
     await parseEmptyBody(request);
     const timestamp = mutationTimestamp(clock());
     const revoked = await repository.revokeDevice({
@@ -472,7 +499,7 @@ export function createManagementHandler(options = {}) {
       clerkUserId: auth.clerkUserId,
       now: timestamp.iso
     });
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -501,7 +528,7 @@ export function createManagementHandler(options = {}) {
       timestamp.milliseconds
     );
     if (!rate.allowed) {
-      await record(
+      record(
         request,
         context,
         auth.clerkUserId,
@@ -528,7 +555,7 @@ export function createManagementHandler(options = {}) {
         ...parameters,
         expectedRevision: body.expectedRevision
       });
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -561,7 +588,7 @@ export function createManagementHandler(options = {}) {
       expectedRevision: body.expectedRevision
     });
     const occurredAt = new Date(Math.trunc(clock())).toISOString();
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -600,13 +627,16 @@ export function createManagementHandler(options = {}) {
   async function adminRelease(
     request,
     context,
-    usernameKey
+    encodedUsername
   ) {
     const auth = await authenticateAdmin(request);
+    const usernameKey = normalizeTikTokUsername(
+      decodePathValue(encodedUsername)
+    );
     await parseEmptyBody(request);
     const timestamp = mutationTimestamp(clock());
     const released = await repository.forceReleaseClaim(usernameKey);
-    await record(
+    record(
       request,
       context,
       auth.clerkUserId,
@@ -663,24 +693,18 @@ export function createManagementHandler(options = {}) {
 
       let match = /^\/claims\/([^/]+)\/restore$/.exec(relativePath);
       if (request.method === 'POST' && match) {
-        const usernameKey = normalizeTikTokUsername(
-          decodePathValue(match[1])
-        );
         return await restoreClaim(
           request,
           context,
-          usernameKey
+          match[1]
         );
       }
       match = /^\/claims\/([^/]+)$/.exec(relativePath);
       if (request.method === 'DELETE' && match) {
-        const usernameKey = normalizeTikTokUsername(
-          decodePathValue(match[1])
-        );
         return await releaseClaim(
           request,
           context,
-          usernameKey
+          match[1]
         );
       }
       match = /^\/devices\/([^/]+)$/.exec(relativePath);
@@ -688,7 +712,7 @@ export function createManagementHandler(options = {}) {
         return await revokeDevice(
           request,
           context,
-          normalizeDeviceId(decodePathValue(match[1]))
+          match[1]
         );
       }
       match =
@@ -697,7 +721,7 @@ export function createManagementHandler(options = {}) {
         return await adminRelease(
           request,
           context,
-          normalizeTikTokUsername(decodePathValue(match[1]))
+          match[1]
         );
       }
       return createNeutralErrorResponse(404);

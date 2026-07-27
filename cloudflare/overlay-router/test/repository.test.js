@@ -260,6 +260,33 @@ describe('overlay routing repository', () => {
     expect(await repository.countActiveDevicesByOwner('user-devices')).toBe(1);
   });
 
+  it('atomically admits only one concurrent device at an account limit of one', async () => {
+    const admissions = await Promise.all([
+      repository.createDeviceWithActiveLimit({
+        deviceId: 'device-admission-a',
+        clerkUserId: 'user-admission-limit',
+        tokenHash: HASH_A,
+        label: 'Concurrent A',
+        now: T0,
+        activeDeviceLimit: 1
+      }),
+      repository.createDeviceWithActiveLimit({
+        deviceId: 'device-admission-b',
+        clerkUserId: 'user-admission-limit',
+        tokenHash: HASH_B,
+        label: 'Concurrent B',
+        now: T0,
+        activeDeviceLimit: 1
+      })
+    ]);
+
+    expect(admissions.filter(Boolean)).toHaveLength(1);
+    expect(admissions.filter((device) => device === null)).toHaveLength(1);
+    expect(await repository.countActiveDevicesByOwner(
+      'user-admission-limit'
+    )).toBe(1);
+  });
+
   it('lets a newly activated valid device replace the account lease', async () => {
     await repository.createDevice({
       deviceId: 'device-active-a',

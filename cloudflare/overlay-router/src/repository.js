@@ -332,6 +332,57 @@ export class OverlayRepository {
     return mapDevice(row);
   }
 
+  async createDeviceWithActiveLimit({
+    deviceId,
+    clerkUserId,
+    tokenHash,
+    label,
+    now,
+    activeDeviceLimit
+  }) {
+    requireString(deviceId, 'deviceId');
+    requireString(clerkUserId, 'clerkUserId');
+    requireTokenHash(tokenHash);
+    requireString(label, 'label');
+    requireUtcIso(now, 'now');
+    if (!Number.isSafeInteger(activeDeviceLimit) ||
+        activeDeviceLimit < 1) {
+      throw new TypeError(
+        'activeDeviceLimit must be a positive safe integer'
+      );
+    }
+
+    const row = await this.database.prepare(`
+      INSERT INTO devices (
+        device_id,
+        clerk_user_id,
+        token_hash,
+        label,
+        created_at,
+        last_seen_at,
+        revoked_at
+      )
+      SELECT ?, ?, ?, ?, ?, ?, NULL
+      WHERE (
+        SELECT COUNT(*)
+        FROM devices
+        WHERE clerk_user_id = ?
+          AND revoked_at IS NULL
+      ) < ?
+      RETURNING *
+    `).bind(
+      deviceId,
+      clerkUserId,
+      tokenHash,
+      label,
+      now,
+      now,
+      clerkUserId,
+      activeDeviceLimit
+    ).first();
+    return mapDevice(row);
+  }
+
   async findDeviceById(deviceId) {
     requireString(deviceId, 'deviceId');
     const row = await this.database.prepare(`

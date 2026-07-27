@@ -36,6 +36,18 @@ function adminAuthenticator(request) {
   return auth;
 }
 
+function proxyRepository(repository, overrides) {
+  return new Proxy(repository, {
+    get(target, property) {
+      if (Object.hasOwn(overrides, property)) {
+        return overrides[property];
+      }
+      const value = Reflect.get(target, property);
+      return typeof value === 'function' ? value.bind(target) : value;
+    }
+  });
+}
+
 describe('stable overlay management HTTP contract', () => {
   let repository;
   let nowMs;
@@ -86,7 +98,8 @@ describe('stable overlay management HTTP contract', () => {
     admin = false,
     ip = '203.0.113.10',
     host = 'overlay.ltth.app',
-    headers = {}
+    headers = {},
+    context
   } = {}) {
     const requestHeaders = {
       ...(body === undefined ? {} : jsonHeaders()),
@@ -97,11 +110,21 @@ describe('stable overlay management HTTP contract', () => {
       ...(ip ? { 'cf-connecting-ip': ip } : {}),
       ...headers
     };
-    return handler(new Request(`https://${host}/_ltth/v1${path}`, {
+    const background = [];
+    const executionContext = context || {
+      waitUntil(promise) {
+        background.push(promise);
+      }
+    };
+    const response = await handler(new Request(`https://${host}/_ltth/v1${path}`, {
       method,
       headers: requestHeaders,
       body: body === undefined ? undefined : JSON.stringify(body)
-    }), { waitUntil() {} });
+    }), executionContext);
+    if (!context) {
+      await Promise.all(background);
+    }
+    return response;
   }
 
   async function enroll(user = 'user-a', label = 'Desktop A') {
@@ -219,6 +242,56 @@ describe('stable overlay management HTTP contract', () => {
     expect(await limited.json()).toEqual({ error: 'rate_limited' });
   });
 
+  it('atomically admits only one of two controlled concurrent enrollments at the active-device limit', async () => {
+    let countCalls = 0;
+    let releaseCounts;
+    const countsReady = new Promise((resolve) => {
+      releaseCounts = resolve;
+    });
+    const controlledRepository = proxyRepository(repository, {
+      async countActiveDevicesByOwner(clerkUserId) {
+        const count = await repository.countActiveDevicesByOwner(
+          clerkUserId
+        );
+        countCalls += 1;
+        if (countCalls === 2) {
+          releaseCounts();
+        } else {
+          await countsReady;
+        }
+        return count;
+      }
+    });
+    handler = createManagementHandler({
+      repository: controlledRepository,
+      env: {
+        OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER,
+        OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT: '1'
+      },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const responses = await Promise.all([
+      call('/devices/enroll', {
+        method: 'POST',
+        user: 'atomic-enrollment',
+        body: { label: 'Concurrent A' }
+      }),
+      call('/devices/enroll', {
+        method: 'POST',
+        user: 'atomic-enrollment',
+        body: { label: 'Concurrent B' }
+      })
+    ]);
+
+    expect(responses.map((response) => response.status).sort())
+      .toEqual([201, 409]);
+    expect(await repository.countActiveDevicesByOwner('atomic-enrollment'))
+      .toBe(1);
+  });
+
   it('enforces first claimant ownership plus account and source-IP claim limits', async () => {
     const first = await call('/claims', {
       method: 'POST',
@@ -320,6 +393,114 @@ describe('stable overlay management HTTP contract', () => {
     });
     expect(restored.status).toBe(200);
     expect((await restored.json()).claim.state).toBe('active');
+  });
+
+  it('rejects release and restore when real D1 state changes between the read and compare-and-swap write', async () => {
+    await call('/claims', {
+      method: 'POST',
+      user: 'cas-owner',
+      body: { username: 'cas.release' }
+    });
+    advance(10);
+
+    let releaseInterleaved = false;
+    handler = createManagementHandler({
+      repository: proxyRepository(repository, {
+        async findClaimByUsername(usernameKey) {
+          const current = await repository.findClaimByUsername(usernameKey);
+          if (!releaseInterleaved && usernameKey === 'cas.release') {
+            releaseInterleaved = true;
+            await repository.releaseClaim({
+              usernameKey,
+              clerkUserId: 'cas-owner',
+              expectedUpdatedAt: current.updatedAt,
+              now: new Date(START + 5).toISOString(),
+              reusableAfter: new Date(
+                START + 5 + 7 * 24 * 60 * 60 * 1000
+              ).toISOString()
+            });
+          }
+          return current;
+        }
+      }),
+      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const staleRelease = await call('/claims/cas.release', {
+      method: 'DELETE',
+      user: 'cas-owner',
+      body: { username: 'cas.release' }
+    });
+    expect(staleRelease.status).toBe(409);
+    expect(await staleRelease.json()).toEqual({
+      error: 'claim_conflict'
+    });
+    expect((await repository.findClaimByUsername('cas.release')).state)
+      .toBe('cooldown');
+
+    await call('/claims', {
+      method: 'POST',
+      user: 'restore-owner',
+      body: { username: 'cas.restore' }
+    });
+    advance(10);
+    await call('/claims/cas.restore', {
+      method: 'DELETE',
+      user: 'restore-owner',
+      body: { username: 'cas.restore' }
+    });
+    const cooldown = await repository.findClaimByUsername('cas.restore');
+    advance(10);
+
+    let restoreInterleaved = false;
+    handler = createManagementHandler({
+      repository: proxyRepository(repository, {
+        async findClaimByUsername(usernameKey) {
+          const current = await repository.findClaimByUsername(usernameKey);
+          if (!restoreInterleaved && usernameKey === 'cas.restore') {
+            restoreInterleaved = true;
+            const restored = await repository.restoreClaim({
+              usernameKey,
+              clerkUserId: 'restore-owner',
+              displayUsername: current.displayUsername,
+              expectedUpdatedAt: current.updatedAt,
+              now: new Date(Date.parse(current.updatedAt) + 1).toISOString()
+            });
+            await repository.releaseClaim({
+              usernameKey,
+              clerkUserId: 'restore-owner',
+              expectedUpdatedAt: restored.updatedAt,
+              now: new Date(Date.parse(restored.updatedAt) + 1).toISOString(),
+              reusableAfter: new Date(
+                Date.parse(restored.updatedAt) + 1 +
+                7 * 24 * 60 * 60 * 1000
+              ).toISOString()
+            });
+          }
+          return current;
+        }
+      }),
+      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const staleRestore = await call('/claims/cas.restore/restore', {
+      method: 'POST',
+      user: 'restore-owner',
+      body: {}
+    });
+    expect(staleRestore.status).toBe(409);
+    expect(await staleRestore.json()).toEqual({
+      error: 'claim_conflict'
+    });
+    const afterRace = await repository.findClaimByUsername('cas.restore');
+    expect(afterRace.state).toBe('cooldown');
+    expect(afterRace.updatedAt).not.toBe(cooldown.updatedAt);
   });
 
   it('atomically transfers an expired cooldown with a new opaque key', async () => {
@@ -443,6 +624,94 @@ describe('stable overlay management HTTP contract', () => {
     expect(rejected.status).toBe(401);
   });
 
+  it('fails a lease update when real D1 revocation wins after device authentication', async () => {
+    const device = await enroll('revoke-race');
+    advance(10001);
+    let revoked = false;
+    const racingRepository = proxyRepository(repository, {
+      async activateLease(parameters) {
+        if (!revoked) {
+          revoked = true;
+          await repository.revokeDevice({
+            deviceId: parameters.deviceId,
+            clerkUserId: parameters.clerkUserId,
+            now: parameters.now
+          });
+        }
+        return repository.activateLease(parameters);
+      }
+    });
+    handler = createManagementHandler({
+      repository: racingRepository,
+      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const response = await putLease(device);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'lease_conflict' });
+    expect(await repository.findActiveLeaseByOwner(
+      'revoke-race',
+      new Date(nowMs).toISOString()
+    )).toBeNull();
+    expect((await repository.findDeviceById(device.device.deviceId)).revokedAt)
+      .not.toBeNull();
+  });
+
+  it('orders controlled competing activations by the last real D1 acceptance', async () => {
+    const first = await enroll('activation-race', 'First');
+    advance(1);
+    const second = await enroll('activation-race', 'Second');
+    advance(10001);
+
+    let firstEntered;
+    let releaseFirst;
+    const firstIsWaiting = new Promise((resolve) => {
+      firstEntered = resolve;
+    });
+    const secondCommitted = new Promise((resolve) => {
+      releaseFirst = resolve;
+    });
+    const controlledRepository = proxyRepository(repository, {
+      async activateLease(parameters) {
+        if (parameters.deviceId === first.device.deviceId) {
+          firstEntered();
+          await secondCommitted;
+          return repository.activateLease(parameters);
+        }
+        await firstIsWaiting;
+        const lease = await repository.activateLease(parameters);
+        releaseFirst();
+        return lease;
+      }
+    });
+    handler = createManagementHandler({
+      repository: controlledRepository,
+      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const [firstResponse, secondResponse] = await Promise.all([
+      putLease(first, { instanceId: 'instance-first' }),
+      putLease(second, { instanceId: 'instance-second' })
+    ]);
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect((await firstResponse.json()).lease.revision).toBe(2);
+    expect((await secondResponse.json()).lease.revision).toBe(1);
+    const active = await repository.findActiveLeaseByOwner(
+      'activation-race',
+      new Date(nowMs).toISOString()
+    );
+    expect(active.deviceId).toBe(first.device.deviceId);
+    expect(active.instanceId).toBe('instance-first');
+    expect(active.revision).toBe(2);
+  });
+
   it('isolates account output and strips owner, route, tunnel, hash, and credential fields', async () => {
     const deviceA = await enroll('account-a', 'A');
     advance(1);
@@ -519,6 +788,122 @@ describe('stable overlay management HTTP contract', () => {
       cfRayId: 'safe-ray-123'
     });
     expect(JSON.stringify(events)).not.toContain('trycloudflare');
+  });
+
+  it('returns a committed enrollment credential even when asynchronous audit persistence fails', async () => {
+    const failingAuditRepository = proxyRepository(repository, {
+      async recordAuditEvent() {
+        throw new Error('controlled audit outage');
+      }
+    });
+    handler = createManagementHandler({
+      repository: failingAuditRepository,
+      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const response = await call('/devices/enroll', {
+      method: 'POST',
+      user: 'audit-outage',
+      body: { label: 'Recoverable credential' }
+    });
+    expect(response.status).toBe(201);
+    const enrollment = await response.json();
+    expect(enrollment.credential).toMatch(/^[0-9a-f]{64}$/);
+    const stored = await repository.findDeviceById(
+      enrollment.device.deviceId
+    );
+    expect(stored).not.toBeNull();
+    expect(stored.tokenHash).toBe(
+      await hashDeviceCredential(enrollment.credential, PEPPER)
+    );
+
+    advance(1);
+    expect((await call('/claims', {
+      method: 'POST',
+      user: 'audit-outage',
+      body: { username: 'audit.claim' }
+    })).status).toBe(201);
+    advance(1);
+    const conflict = await call('/claims', {
+      method: 'POST',
+      user: 'audit-other',
+      body: { username: 'audit.claim' }
+    });
+    expect(conflict.status).toBe(409);
+    expect(await conflict.json()).toEqual({
+      error: 'claim_unavailable'
+    });
+
+    advance(10001);
+    const activation = await putLease(enrollment);
+    expect(activation.status).toBe(200);
+    advance(1);
+    expect((await call('/claims/audit.claim', {
+      method: 'DELETE',
+      user: 'audit-outage',
+      body: { username: 'audit.claim' }
+    })).status).toBe(200);
+    advance(1);
+    expect((await call('/lease', {
+      method: 'DELETE',
+      credential: enrollment.credential,
+      body: {
+        deviceId: enrollment.device.deviceId,
+        instanceId: 'instance-a',
+        expectedRevision: 1
+      }
+    })).status).toBe(204);
+    advance(1);
+    expect((await call(`/devices/${enrollment.device.deviceId}`, {
+      method: 'DELETE',
+      user: 'audit-outage',
+      body: {}
+    })).status).toBe(204);
+
+    advance(1);
+    await call('/claims', {
+      method: 'POST',
+      user: 'audit-admin-owner',
+      body: { username: 'audit.admin' }
+    });
+    advance(1);
+    expect((await call('/admin/claims/audit.admin/release', {
+      method: 'POST',
+      user: 'admin-user',
+      admin: true,
+      body: {}
+    })).status).toBe(204);
+  });
+
+  it.each([
+    ['POST', '/claims/%/restore', {}],
+    ['DELETE', '/claims/%', { username: 'valid.name' }],
+    ['DELETE', '/devices/%', {}],
+    ['POST', '/admin/claims/%/release', {}]
+  ])('authenticates malformed dynamic endpoint %s %s before path validation', async (
+    method,
+    path,
+    body
+  ) => {
+    const malformed = await call(path, { method, body });
+    expect(malformed.status).toBe(401);
+  });
+
+  it.each([
+    ['POST', '/claims/valid.name/restore', {}],
+    ['DELETE', '/claims/valid.name', { username: 'valid.name' }],
+    ['DELETE', '/devices/d-valid', {}],
+    ['POST', '/admin/claims/valid.name/release', {}]
+  ])('keeps the same authentication boundary for valid dynamic endpoint %s %s', async (
+    method,
+    path,
+    body
+  ) => {
+    const valid = await call(path, { method, body });
+    expect(valid.status).toBe(401);
   });
 
   it.each([
