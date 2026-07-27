@@ -242,6 +242,24 @@ function projectBattleChargeWindow(chargeWindow = null) {
   };
 }
 
+function projectBattleChoices(choices = null) {
+  if (!Array.isArray(choices) || choices.length !== 2) return [];
+  const projected = choices.map(entry => {
+    const slot = finiteNumber(entry?.slot);
+    if (![1, 2].includes(slot) || !['A', 'B', 'C'].includes(entry?.choice)) {
+      return null;
+    }
+    return {
+      slot,
+      choice: entry.choice,
+      source: entry?.source === 'timeout' ? 'timeout' : 'viewer'
+    };
+  });
+  if (projected.some(entry => !entry)) return [];
+  if (new Set(projected.map(entry => entry.slot)).size !== 2) return [];
+  return projected.sort((left, right) => left.slot - right.slot);
+}
+
 function projectWait(wait = null) {
   if (!wait || typeof wait !== 'object') return null;
   return {
@@ -437,11 +455,7 @@ class StreamMonstersPublicEventProjector {
       return {
         matchId: boundedText(payload.matchId, 160),
         round: Math.max(0, finiteNumber(payload.round, 0)),
-        choices: Array.isArray(payload.choices) ? payload.choices.map(choice => ({
-          slot: Math.max(0, finiteNumber(choice?.slot, 0)),
-          choice: ['A', 'B', 'C'].includes(choice?.choice) ? choice.choice : 'A',
-          source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
-        })) : []
+        choices: projectBattleChoices(payload.choices)
       };
     }
     if (eventType === 'streammonsters:chat_result') {
@@ -547,3 +561,4 @@ module.exports.projectChatResult = projectChatResult;
 module.exports.projectBattleSkill = projectBattleSkill;
 module.exports.projectBattleFighter = projectBattleFighter;
 module.exports.projectBattleChargeWindow = projectBattleChargeWindow;
+module.exports.projectBattleChoices = projectBattleChoices;

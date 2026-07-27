@@ -12,7 +12,8 @@ const {
   projectPassiveCharge
 } = require('./battle-charge');
 const {
-  projectBattleFighter
+  projectBattleFighter,
+  projectBattleChoices
 } = require('./public-event-projector');
 
 const ROSTER_WINDOW_MS = 10_000;
@@ -746,7 +747,7 @@ class BattleMatchService {
         templateId,
         evolutionStage: stage,
         imageUrl,
-        ...(skills.length ? { skills } : {})
+        skills
       });
     });
   }
@@ -1852,11 +1853,7 @@ class BattleMatchService {
       return {
         matchId: match.matchId,
         round: Number(payload.round) || 0,
-        choices: Array.isArray(payload.choices) ? payload.choices.map(choice => ({
-          slot: Number(choice?.slot) || 0,
-          choice: ['A', 'B', 'C'].includes(choice?.choice) ? choice.choice : 'A',
-          source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
-        })) : []
+        choices: projectBattleChoices(payload.choices)
       };
     }
     if (eventType === 'streammonsters:battle_match_found') {
@@ -1997,6 +1994,82 @@ class BattleMatchService {
     return { matchId: match.matchId };
   }
 
+  synthesizeLegacyChoiceReveals(match, pageRows) {
+    if (Number(match?.rulesVersion) !== 5 || !pageRows.length) return new Map();
+    const historicalRows = this.db.prepare(`
+      SELECT sequence, event_id, event_type, payload_json, public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ?
+        AND event_type IN (
+          'streammonsters:battle_choice_locked',
+          'streammonsters:battle_choices_revealed'
+        )
+      ORDER BY sequence
+    `).all(match.matchId);
+    const revealedRounds = new Set();
+    historicalRows.forEach(row => {
+      if (row.event_type !== 'streammonsters:battle_choices_revealed') return;
+      const publicPayload = parseJson(row.public_payload_json, {});
+      const privatePayload = parseJson(row.payload_json, {});
+      revealedRounds.add(Number(publicPayload.round ?? privatePayload.round) || 0);
+    });
+    const locksByRound = new Map();
+    historicalRows.forEach(row => {
+      if (row.event_type !== 'streammonsters:battle_choice_locked') return;
+      const publicPayload = parseJson(row.public_payload_json, {});
+      const privatePayload = parseJson(row.payload_json, {});
+      const publicDecision = publicPayload.decision || publicPayload;
+      const privateDecision = privatePayload.decision || privatePayload;
+      const participant = match.participants.find(entry => (
+        entry.participantId === privateDecision.participantId
+      ));
+      const decision = {
+        sequence: row.sequence,
+        eventId: row.event_id,
+        round: Number(publicDecision.round ?? privateDecision.round) || 0,
+        slot: Number(
+          publicDecision.slot ?? privateDecision.slot ?? participant?.slot
+        ) || 0,
+        choice: publicDecision.choice ?? privateDecision.choice,
+        source: (
+          publicDecision.source ?? privateDecision.source
+        ) === 'timeout' ? 'timeout' : 'viewer'
+      };
+      if (
+        ![1, 2].includes(decision.slot) ||
+        !['A', 'B', 'C'].includes(decision.choice)
+      ) {
+        return;
+      }
+      const bySlot = locksByRound.get(decision.round) || new Map();
+      if (!bySlot.has(decision.slot)) bySlot.set(decision.slot, decision);
+      locksByRound.set(decision.round, bySlot);
+    });
+    const pageSequences = new Set(pageRows.map(row => row.sequence));
+    const syntheticBySequence = new Map();
+    locksByRound.forEach((bySlot, round) => {
+      if (revealedRounds.has(round)) return;
+      const choices = projectBattleChoices([bySlot.get(1), bySlot.get(2)]);
+      if (!choices.length) return;
+      const anchor = [...bySlot.values()].sort(
+        (left, right) => left.sequence - right.sequence
+      ).at(-1);
+      if (!pageSequences.has(anchor.sequence)) return;
+      syntheticBySequence.set(anchor.sequence, {
+        sequence: anchor.sequence,
+        eventId: `${anchor.eventId}:compat-reveal`,
+        correlationId: match.matchId,
+        type: 'streammonsters:battle_choices_revealed',
+        payload: {
+          matchId: match.matchId,
+          round,
+          choices
+        }
+      });
+    });
+    return syntheticBySequence;
+  }
+
   getPublicMatchReplay(match, battleId, cursor = 0, limit = 50) {
     const normalizedCursor = Math.max(0, Number(cursor) || 0);
     const normalizedLimit = Math.max(1, Math.min(100, Number(limit) || 50));
@@ -2007,19 +2080,24 @@ class BattleMatchService {
       ORDER BY sequence
       LIMIT ?
     `).all(match.matchId, normalizedCursor, normalizedLimit);
-    const events = rows.map(row => ({
-      sequence: row.sequence,
-      eventId: row.event_id,
-      correlationId: match.matchId,
-      type: row.event_type,
-      payload: this.sanitizePublicEvent(
-        row.event_type,
-        parseJson(row.public_payload_json, {}),
-        match,
-        row.sequence
-      )
-    }));
-    const nextCursor = events.at(-1)?.sequence || normalizedCursor;
+    const syntheticBySequence = this.synthesizeLegacyChoiceReveals(match, rows);
+    const events = rows.flatMap(row => {
+      const storedEvent = {
+        sequence: row.sequence,
+        eventId: row.event_id,
+        correlationId: match.matchId,
+        type: row.event_type,
+        payload: this.sanitizePublicEvent(
+          row.event_type,
+          parseJson(row.public_payload_json, {}),
+          match,
+          row.sequence
+        )
+      };
+      const syntheticReveal = syntheticBySequence.get(row.sequence);
+      return syntheticReveal ? [storedEvent, syntheticReveal] : [storedEvent];
+    });
+    const nextCursor = rows.at(-1)?.sequence || normalizedCursor;
     const hasMore = Boolean(this.db.prepare(`
       SELECT 1 FROM streammonsters_match_events
       WHERE match_id = ? AND sequence > ?

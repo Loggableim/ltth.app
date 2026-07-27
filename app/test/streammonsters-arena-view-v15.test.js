@@ -171,6 +171,41 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-fighter-2').dataset.choice).toBe('C');
   });
 
+  test.each([
+    ['one choice', [{ slot: 1, choice: 'A', source: 'viewer' }]],
+    ['duplicate slots', [
+      { slot: 1, choice: 'A', source: 'viewer' },
+      { slot: 1, choice: 'B', source: 'timeout' }
+    ]],
+    ['invalid choice', [
+      { slot: 1, choice: 'A', source: 'viewer' },
+      { slot: 2, choice: 'Z', source: 'timeout' }
+    ]]
+  ])('does not partially reveal a payload with %s', (_label, choices) => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    view.applyMatch({
+      matchId: 'match-malformed',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ashfang', templateId: 'ashfang', element: 'Ember' },
+        { slot: 2, name: 'Ripple', templateId: 'ripple', element: 'Tide' }
+      ]
+    });
+    view.lockChoice({ decision: { slot: 1, locked: true, source: 'viewer' } });
+    view.lockChoice({ decision: { slot: 2, locked: true, source: 'timeout' } });
+
+    expect(view.revealChoices({ choices })).toBe(false);
+    for (const slot of [1, 2]) {
+      const fighter = document.querySelector(`#arena-fighter-${slot}`);
+      expect(fighter.dataset.choice).toBeUndefined();
+      expect(fighter.classList.contains('choice-revealed')).toBe(false);
+      expect(document.querySelectorAll(
+        `[data-skill-deck="${slot}"] [data-skill].selected`
+      )).toHaveLength(0);
+    }
+  });
+
   test('renders localized fighter skill decks and advances special charge from server time', () => {
     mountArena();
     let currentTime = 1_000;

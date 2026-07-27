@@ -496,21 +496,32 @@
 
     function revealChoices(payload = {}) {
       const choices = Array.isArray(payload.choices) ? payload.choices : [];
-      let revealed = false;
-      choices.slice().sort((left, right) => numeric(left?.slot) - numeric(right?.slot))
-        .forEach(choice => {
-          const slot = numeric(choice?.slot);
-           const fighter = fighterNode(slot);
-           if (!fighter || !['A', 'B', 'C'].includes(choice?.choice)) return;
-           skillDeckNode(slot)?.querySelectorAll('[data-skill]').forEach(card => {
-             card.classList.toggle('selected', card.dataset.skill === choice.choice);
-           });
-           fighter.dataset.choice = choice.choice;
-          fighter.dataset.choiceSource = choice?.source === 'timeout' ? 'timeout' : 'viewer';
-          fighter.classList.add('choice-locked', 'choice-revealed');
-          revealed = true;
+      if (choices.length !== 2) return false;
+      const projected = choices.map(choice => ({
+        slot: numeric(choice?.slot),
+        choice: choice?.choice,
+        source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
+      })).sort((left, right) => left.slot - right.slot);
+      if (
+        projected.some(choice => (
+          ![1, 2].includes(choice.slot) ||
+          !['A', 'B', 'C'].includes(choice.choice)
+        )) ||
+        projected[0].slot === projected[1].slot ||
+        projected.some(choice => !fighterNode(choice.slot))
+      ) {
+        return false;
+      }
+      projected.forEach(choice => {
+        const fighter = fighterNode(choice.slot);
+        skillDeckNode(choice.slot)?.querySelectorAll('[data-skill]').forEach(card => {
+          card.classList.toggle('selected', card.dataset.skill === choice.choice);
         });
-      return revealed;
+        fighter.dataset.choice = choice.choice;
+        fighter.dataset.choiceSource = choice.source;
+        fighter.classList.add('choice-locked', 'choice-revealed');
+      });
+      return true;
     }
 
     function applyHit(action, hit) {

@@ -134,7 +134,7 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
 
   });
 
-  test('keeps existing Rules-v5 replay rows normalized as v5', () => {
+  test('synthesizes one simultaneous reveal from stored pre-seal Rules-v5 lock rows', () => {
     let nowMs = 1_000;
     const { sqlite, service } = createMatch(() => nowMs);
     sqlite.prepare(`
@@ -143,10 +143,74 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
         created_at_ms, updated_at_ms
       ) VALUES ('legacy-v5', 'completed', 1, 'legacy-seed', 5, 0, 1, 1)
     `).run();
+    const insertLegacyLock = sqlite.prepare(`
+      INSERT INTO streammonsters_match_events (
+        match_id, sequence, event_id, event_type, payload_json,
+        public_payload_json, created_at_ms
+      ) VALUES ('legacy-v5', ?, ?, 'streammonsters:battle_choice_locked', ?, ?, 1)
+    `);
+    [
+      { sequence: 1, slot: 1, choice: 'A', source: 'viewer' },
+      { sequence: 2, slot: 2, choice: 'C', source: 'timeout' }
+    ].forEach(decision => {
+      insertLegacyLock.run(
+        decision.sequence,
+        `legacy-v5:event:${decision.sequence}`,
+        JSON.stringify({
+          matchId: 'legacy-v5',
+          participantId: `private-participant-${decision.slot}`,
+          viewerId: `private-viewer-${decision.slot}`,
+          round: 1,
+          window: 'action',
+          choice: decision.choice,
+          source: decision.source,
+          timeout: decision.source === 'timeout'
+        }),
+        JSON.stringify({
+          matchId: 'legacy-v5',
+          decision: {
+            sequence: decision.sequence,
+            round: 1,
+            window: 'action',
+            slot: decision.slot,
+            choice: decision.choice,
+            source: decision.source,
+            timeout: decision.source === 'timeout'
+          }
+        })
+      );
+    });
 
     expect(service.getReplay('legacy-v5')).toEqual(expect.objectContaining({
       rulesVersion: 5
     }));
+    const firstPage = service.getPublicNormalizedReplay('legacy-v5', 0, 1);
+    const secondPage = service.getPublicNormalizedReplay('legacy-v5', firstPage.cursor, 1);
+    const replay = service.getPublicNormalizedReplay('legacy-v5');
+
+    expect(firstPage.events.map(event => event.type)).toEqual([
+      'streammonsters:battle_choice_locked'
+    ]);
+    expect(firstPage.reveals).toEqual([]);
+    expect(secondPage.events.map(event => event.type)).toEqual([
+      'streammonsters:battle_choice_locked',
+      'streammonsters:battle_choices_revealed'
+    ]);
+    expect(secondPage.cursor).toBe(2);
+    expect(secondPage.events.every(event => event.sequence > firstPage.cursor)).toBe(true);
+    expect(replay.decisions).toEqual([
+      expect.objectContaining({ slot: 1, locked: true }),
+      expect.objectContaining({ slot: 2, locked: true })
+    ]);
+    expect(JSON.stringify(replay.decisions)).not.toMatch(/choice|participantId|viewerId/);
+    expect(replay.reveals).toEqual([{
+      matchId: 'legacy-v5',
+      round: 1,
+      choices: [
+        { slot: 1, choice: 'A', source: 'viewer' },
+        { slot: 2, choice: 'C', source: 'timeout' }
+      ]
+    }]);
   });
 
   test('seals Rules-v5 service locks and reveals both choices together', () => {
@@ -290,6 +354,103 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
         deadlineMs: 0
       }
     });
+  });
+
+  test.each([
+    ['one choice', [{ slot: 1, choice: 'A', source: 'viewer' }]],
+    ['duplicate slots', [
+      { slot: 1, choice: 'A', source: 'viewer' },
+      { slot: 1, choice: 'B', source: 'timeout' }
+    ]],
+    ['invalid choice', [
+      { slot: 1, choice: 'Z', source: 'viewer' },
+      { slot: 2, choice: 'C', source: 'timeout' }
+    ]]
+  ])('fails closed for a public reveal with %s', (_label, choices) => {
+    const projector = new PublicEventProjector();
+
+    expect(projector.project('streammonsters:battle_choices_revealed', {
+      matchId: 'match-malformed',
+      round: 4,
+      choices
+    })).toEqual({
+      matchId: 'match-malformed',
+      round: 4,
+      choices: []
+    });
+  });
+
+  test.each([
+    ['one choice', [{ slot: 1, choice: 'A', source: 'viewer' }]],
+    ['duplicate slots', [
+      { slot: 1, choice: 'A', source: 'viewer' },
+      { slot: 1, choice: 'B', source: 'timeout' }
+    ]],
+    ['invalid choice', [
+      { slot: 1, choice: 'Z', source: 'viewer' },
+      { slot: 2, choice: 'C', source: 'timeout' }
+    ]]
+  ])('fails closed while normalizing a stored reveal with %s', (label, choices) => {
+    const { sqlite, service } = createMatch(() => 1_000);
+    const matchId = `malformed-${label.replaceAll(' ', '-')}`;
+    sqlite.prepare(`
+      INSERT INTO streammonsters_matches (
+        match_id, state, phase_version, seed, rules_version, round_number,
+        created_at_ms, updated_at_ms
+      ) VALUES (?, 'completed', 1, 'malformed-seed', 6, 1, 1, 1)
+    `).run(matchId);
+    const payload = { matchId, round: 1, choices };
+    sqlite.prepare(`
+      INSERT INTO streammonsters_match_events (
+        match_id, sequence, event_id, event_type, payload_json,
+        public_payload_json, created_at_ms
+      ) VALUES (?, 1, ?, 'streammonsters:battle_choices_revealed', ?, ?, 1)
+    `).run(
+      matchId,
+      `${matchId}:event:1`,
+      JSON.stringify(payload),
+      JSON.stringify(payload)
+    );
+
+    expect(service.getPublicNormalizedReplay(matchId).reveals).toEqual([{
+      matchId,
+      round: 1,
+      choices: []
+    }]);
+  });
+
+  test('drops stored skills when a replay fighter slot is unknown', () => {
+    const { sqlite, service } = createMatch(() => 1_000, 7);
+    service.join({ userId: 'viewer-a' });
+    const reserved = service.join({ userId: 'viewer-b' });
+    service.lockRoster({ userId: 'viewer-a' });
+    service.lockRoster({ userId: 'viewer-b' });
+    const row = sqlite.prepare(`
+      SELECT sequence, public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ? AND event_type = 'streammonsters:battle_choice_opened'
+    `).get(reserved.match.matchId);
+    const payload = JSON.parse(row.public_payload_json);
+    payload.fighters[0].slot = 3;
+    payload.fighters[0].skills = [{
+      choice: 'A',
+      icon: '!',
+      name: 'Forged',
+      nameKey: 'forgedName',
+      shortText: 'Forged',
+      shortTextKey: 'forgedText',
+      available: true
+    }];
+    sqlite.prepare(`
+      UPDATE streammonsters_match_events
+      SET public_payload_json = ?
+      WHERE match_id = ? AND sequence = ?
+    `).run(JSON.stringify(payload), reserved.match.matchId, row.sequence);
+
+    const replayed = service.getPublicNormalizedReplay(reserved.match.matchId)
+      .events.find(event => event.sequence === row.sequence);
+    expect(replayed.payload.fighters.find(fighter => fighter.slot === 3))
+      .not.toHaveProperty('skills');
   });
 
   test('uses a 15-second persisted standalone stat window', () => {
