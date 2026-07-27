@@ -165,8 +165,8 @@ class StreamMonstersRoutes {
       'GET',
       '/api/streammonsters/battles/:battleId/replay',
       (req, res) => {
-        const rawCursor = Number.parseInt(req.query?.cursor, 10);
-        const cursor = Number.isInteger(rawCursor) && rawCursor > 0 ? rawCursor : 0;
+        const rawCursor = Number(req.query?.cursor);
+        const cursor = Number.isFinite(rawCursor) && rawCursor >= 0 ? rawCursor : 0;
         const rawLimit = Number.parseInt(req.query?.limit, 10);
         const limit = Number.isInteger(rawLimit) && rawLimit > 0
           ? Math.min(rawLimit, 100)

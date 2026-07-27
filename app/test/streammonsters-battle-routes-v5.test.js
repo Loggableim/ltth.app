@@ -86,6 +86,49 @@ function insertMonster(sqlite, { id, userId, element, templateId, agility }) {
   );
 }
 
+function insertLegacyChoiceLocks(sqlite, matchId = 'legacy-http-v5') {
+  sqlite.prepare(`
+    INSERT INTO streammonsters_matches (
+      match_id, state, phase_version, seed, rules_version, round_number,
+      created_at_ms, updated_at_ms
+    ) VALUES (?, 'completed', 1, 'legacy-http-seed', 5, 0, 1, 1)
+  `).run(matchId);
+  const insertLock = sqlite.prepare(`
+    INSERT INTO streammonsters_match_events (
+      match_id, sequence, event_id, event_type, payload_json,
+      public_payload_json, created_at_ms
+    ) VALUES (?, ?, ?, 'streammonsters:battle_choice_locked', ?, ?, 1)
+  `);
+  [
+    { sequence: 1, slot: 1, choice: 'A', source: 'viewer' },
+    { sequence: 2, slot: 2, choice: 'C', source: 'timeout' }
+  ].forEach(decision => {
+    const payload = {
+      matchId,
+      round: 1,
+      choice: decision.choice,
+      source: decision.source
+    };
+    insertLock.run(
+      matchId,
+      decision.sequence,
+      `${matchId}:event:${decision.sequence}`,
+      JSON.stringify(payload),
+      JSON.stringify({
+        matchId,
+        decision: {
+          sequence: decision.sequence,
+          round: 1,
+          slot: decision.slot,
+          choice: decision.choice,
+          source: decision.source
+        }
+      })
+    );
+  });
+  return matchId;
+}
+
 function createRealRoutes(rulesVersion = 5) {
   const registered = [];
   const sqlite = new Database(':memory:');
@@ -167,6 +210,46 @@ describe('Stream Monsters rules-v5 battle routes', () => {
     route.handler({ params: { battleId: 'missing' }, query: {} }, missing);
     expect(missing.statusCode).toBe(404);
     expect(missing.body).toEqual({ error: 'battle_not_found' });
+  });
+
+  test('preserves a virtual reveal decimal cursor and safely defaults invalid cursors', () => {
+    const { registered, sqlite } = createRealRoutes();
+    try {
+      const matchId = insertLegacyChoiceLocks(sqlite);
+      const route = registered.find(entry => (
+        entry.method === 'GET' &&
+        entry.routePath === '/api/streammonsters/battles/:battleId/replay'
+      ));
+      const requestReplay = cursor => {
+        const res = response();
+        route.handler({
+          params: { battleId: matchId },
+          query: { cursor, limit: '50' }
+        }, res);
+        return res;
+      };
+
+      const resumed = requestReplay('2.5');
+      expect(resumed.statusCode).toBe(200);
+      expect(resumed.body).toEqual(expect.objectContaining({
+        success: true,
+        cursor: 2.5,
+        events: []
+      }));
+
+      for (const cursor of ['2.5junk', '-4']) {
+        const safe = requestReplay(cursor);
+        expect(safe.statusCode).toBe(200);
+        expect(safe.body.cursor).toBe(2.5);
+        expect(safe.body.events.map(event => event.type)).toEqual([
+          'streammonsters:battle_choice_locked',
+          'streammonsters:battle_choice_locked',
+          'streammonsters:battle_choices_revealed'
+        ]);
+      }
+    } finally {
+      sqlite.close();
+    }
   });
 
   test('serves service-backed replay from public payloads and redacted action projections only', () => {
