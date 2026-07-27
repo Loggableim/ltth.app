@@ -585,9 +585,8 @@
       return copiedUrl;
     }
 
-    async function copyExternal(rawUrl, dependencies = {}) {
-      const context = dependencyContext(dependencies);
-      const candidate = parseCandidate(rawUrl, context.locationHref);
+    function canonicalVdoDirectorUrl(rawUrl, locationHref) {
+      const candidate = parseCandidate(rawUrl, locationHref);
       const raw = typeof rawUrl === 'string' ? rawUrl : '';
       const entries = [...candidate.searchParams.entries()];
       const director = entries[0]?.[1] || '';
@@ -617,12 +616,89 @@
           'External copy requires a canonical VDO.Ninja Director URL'
         );
       }
+      return canonical;
+    }
+
+    function activeVdoUnavailable() {
+      return new TikTokStudioUrlError(
+        'EXTERNAL_VDO_ACTIVE_ROOM_UNAVAILABLE',
+        'Current VDO.Ninja Director URL is unavailable'
+      );
+    }
+
+    async function loadActiveVdoDirectorUrl(dependencies, fetchImpl) {
+      const injected = safeValue(
+        dependencies,
+        'getActiveVdoDirectorUrl'
+      );
+      if (typeof injected === 'function') {
+        try {
+          const activeUrl = await injected();
+          if (typeof activeUrl !== 'string') throw new Error('invalid active room');
+          return activeUrl;
+        } catch (_) {
+          throw activeVdoUnavailable();
+        }
+      }
+      if (!fetchImpl) throw activeVdoUnavailable();
+
+      let response;
+      let payload;
+      try {
+        response = await fetchImpl('/api/vdoninja/room/active', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' }
+        });
+        if (!response?.ok) throw new Error('active room unavailable');
+        payload = await response.json();
+      } catch (_) {
+        throw activeVdoUnavailable();
+      }
+      if (
+        payload?.success !== true ||
+        !payload.activeRoom ||
+        typeof payload.activeRoom !== 'object' ||
+        Array.isArray(payload.activeRoom) ||
+        typeof payload.activeRoom.directorUrl !== 'string'
+      ) {
+        throw activeVdoUnavailable();
+      }
+      return payload.activeRoom.directorUrl;
+    }
+
+    async function copyExternal(rawUrl, dependencies = {}) {
+      const context = dependencyContext(dependencies);
+      const candidateUrl = canonicalVdoDirectorUrl(
+        rawUrl,
+        context.locationHref
+      );
+      const activeRawUrl = await loadActiveVdoDirectorUrl(
+        dependencies,
+        context.fetchImpl
+      );
+      let activeUrl;
+      try {
+        activeUrl = canonicalVdoDirectorUrl(
+          activeRawUrl,
+          context.locationHref
+        );
+      } catch (_) {
+        throw activeVdoUnavailable();
+      }
+      if (candidateUrl !== activeUrl) {
+        fail(
+          'EXTERNAL_VDO_ACTIVE_ROOM_MISMATCH',
+          'VDO.Ninja Director URL does not match the active room'
+        );
+      }
       await writeClipboard(
-        candidate.href,
+        candidateUrl,
         context.navigatorRef,
         context.documentRef
       );
-      return candidate.href;
+      return candidateUrl;
     }
 
     function readButtonURL(button, {

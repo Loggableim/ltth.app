@@ -68,6 +68,7 @@ function dependencies(overrides = {}) {
     navigatorRef: { clipboard: { writeText } },
     documentRef: null,
     accountAccess,
+    getActiveVdoDirectorUrl: jest.fn().mockResolvedValue(VDO_DIRECTOR_URL),
     focusNetworkSettings,
     writeText,
     ...overrides
@@ -490,7 +491,10 @@ describe('declarative TikTok Studio copy buttons', () => {
       copyExternalImpl: rawUrl => copyExternal(rawUrl, {
         locationHref: 'http://127.0.0.1:3000/vdoninja/ui',
         navigatorRef: { clipboard: { writeText } },
-        documentRef: null
+        documentRef: null,
+        getActiveVdoDirectorUrl: jest.fn().mockResolvedValue(
+          VDO_DIRECTOR_URL
+        )
       }),
       report
     })).resolves.toBeNull();
