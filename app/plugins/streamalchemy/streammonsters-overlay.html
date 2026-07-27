@@ -1721,17 +1721,21 @@
       const expectedDeadline = queueWakeDeadline;
       queueWakeTimer = null;
       queueWakeDeadline = 0;
-      // Test clocks and suspended browser tabs may wake early. A later enqueue
-      // will retry without spinning; real timers resume at the held deadline.
-      if (Date.now() + 4 < expectedDeadline) return;
-      drainQueue();
+      // Treat the scheduled callback as the logical release deadline. This
+      // keeps queued durable cards live even when a browser clock moves
+      // backwards or a test/runtime timer reports an early wall-clock value.
+      drainQueue(expectedDeadline);
     }, Math.max(1, deadline - nowMs));
   };
-  const drainQueue = async () => {
+  const drainQueue = async logicalReleaseMs => {
     if (queueRunning || !snapshotReady) return;
     queueRunning = true;
+    let releaseMs = Number.isFinite(Number(logicalReleaseMs))
+      ? Number(logicalReleaseMs)
+      : null;
     while (snapshotReady) {
-      const next = eventQueue.shift(Date.now());
+      const next = eventQueue.shift(releaseMs ?? Date.now());
+      releaseMs = null;
       if (!next) break;
       try { await presentWithPreview(next); } catch (_) {}
       if (!snapshotReady) break;

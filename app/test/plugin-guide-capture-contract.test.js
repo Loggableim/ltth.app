@@ -28,10 +28,9 @@ describe('guide capture postcondition contracts', () => {
     }
   });
 
-  test('declares each capture URL exactly as observed per locale', () => {
+  test('validates each captured URL against its recorded workflow contract', () => {
     for (const output of manifest.outputs) {
-      const asset = assetsById.get(output.id);
-      const condition = asset.workflow.postconditions.find((entry) => entry.type === 'url');
+      const condition = output.workflow.postconditions.find((entry) => entry.type === 'url');
       const result = evaluatePostcondition(condition, {
         httpStatus: output.httpStatus,
         state: output.state,

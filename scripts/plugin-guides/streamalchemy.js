@@ -92,9 +92,6 @@ module.exports = Object.freeze({
     'gcce',
     'gift-catalog'
   ],
-  excludedIntegrationValues: [
-    '/api/streammonsters/art/:filename'
-  ],
   copy: {
     de: {
       title: 'Stream Monsters',
