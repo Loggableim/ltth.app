@@ -38,6 +38,7 @@ describe('Stream Monsters creator controls', () => {
     ]);
     expect(COMMAND_ACTIONS).toEqual([
       'eggs',
+      'adopt',
       'hatch',
       'inventory',
       'monsters',
@@ -64,7 +65,16 @@ describe('Stream Monsters creator controls', () => {
       'xp',
       'rankup',
       'attack',
-      'defense'
+      'defense',
+      'free_offer',
+      'free_release',
+      'free_claim',
+      'sealed_lock',
+      'sealed_reveal',
+      'role_striker',
+      'role_guardian',
+      'role_trickster',
+      'role_sustain'
     ]);
   });
 
@@ -102,6 +112,10 @@ describe('Stream Monsters creator controls', () => {
       },
       rendererQuality: 'low',
       notificationDurationMs: 12_000,
+      freeEggDropsEnabled: true,
+      freeEggCooldownSeconds: 86_400,
+      tutorialHintsEnabled: true,
+      tutorialHintIntervalSeconds: 90,
       commandAliases: { eggs: { enabled: ['eier'], disabled: ['eggs'] } },
       audioChannels: { master: { enabled: true, volume: 0.8 } },
       giftMappingCustomized: true

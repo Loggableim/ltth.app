@@ -51,6 +51,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
   test('offers all command alias actions with conflict feedback and full catalog mapping', () => {
     const expectedCommands = [
       'eggs',
+      'adopt',
       'hatch',
       'inventory',
       'monsters',
@@ -108,7 +109,16 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       'xp',
       'rankup',
       'attack',
-      'defense'
+      'defense',
+      'free_offer',
+      'free_release',
+      'free_claim',
+      'sealed_lock',
+      'sealed_reveal',
+      'role_striker',
+      'role_guardian',
+      'role_trickster',
+      'role_sustain'
     ]);
   });
 

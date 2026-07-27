@@ -180,7 +180,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     expect(plugin.composeStoredConfig(config).historicalProviderSetting)
       .toBe('preserved-but-unused');
     expect(config.streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 5,
+      rulesVersion: 6,
       hatchDurationMs: 300_000,
       incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
       eggExpiryMs: 86_400_000,

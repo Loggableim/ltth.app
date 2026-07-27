@@ -245,6 +245,9 @@
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveCountdownLabel">Countdown</span><strong id="liveCountdown">—</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveRendererLabel">Renderer</span><strong id="liveRenderer">waiting</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveAudioLabel">Audio</span><strong id="liveAudio">active</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggOfferCounts">Free egg offers</span><strong id="freeEggOfferCounts">0</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggNextCleanup">Next offer release</span><strong id="freeEggNextCleanup">—</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintState">Tutorial hints</span><strong id="tutorialHintState">waiting</strong></div>
     </div>
     <div class="grid" style="margin-top:14px">
       <article class="card">
@@ -278,7 +281,7 @@
   </section>
 
   <section id="gameplay" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v5</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v6</span></div>
     <div class="grid">
       <article class="card wide">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTiming">Eggs &amp; seasons</h3>
@@ -300,7 +303,14 @@
             <option value="28" data-i18n="plugins.streamalchemy.ui.monsters.duration28Days">28 days</option><option value="60" data-i18n="plugins.streamalchemy.ui.monsters.duration60Days">60 days</option><option value="90" data-i18n="plugins.streamalchemy.ui.monsters.duration90Days">90 days</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack"><option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry · bundled</option></select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
+        <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
         <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">No stream data yet</div>
       </article>
       <article class="card">
@@ -350,6 +360,11 @@
           <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandEggs">Egg list</strong><code data-command="eggs">!eier</code></header>
           <div class="alias-fields"><label id="alias-eggs-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsEnabled">Active egg aliases</span><input id="aliasEggsEnabled" data-alias-command="eggs" data-alias-mode="enabled" value="eier, eierliste, meineeier"></label><label id="alias-eggs-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsDisabled">Optional egg aliases</span><input id="aliasEggsDisabled" data-alias-command="eggs" data-alias-mode="disabled" value="eggs, huevos, oeufs"></label></div>
           <div class="language-toggles"><label><input type="checkbox" data-alias-locale="eggs" data-locale="de" data-alias="eier" checked>DE</label><label><input type="checkbox" data-alias-locale="eggs" data-locale="en" data-alias="eggs">EN</label><label><input type="checkbox" data-alias-locale="eggs" data-locale="es" data-alias="huevos">ES</label><label><input type="checkbox" data-alias-locale="eggs" data-locale="fr" data-alias="oeufs">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="adopt">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandAdopt">Adopt a free egg</strong><code data-command="adopt">!adopt</code></header>
+          <div class="alias-fields"><label id="alias-adopt-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasAdoptEnabled" data-alias-command="adopt" data-alias-mode="enabled" value="adopt, adoptieren"></label><label id="alias-adopt-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasAdoptDisabled" data-alias-command="adopt" data-alias-mode="disabled" value="adoptar, adopter"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="adopt" data-locale="de" data-alias="adoptieren" checked>DE</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="en" data-alias="adopt" checked>EN</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="es" data-alias="adoptar">ES</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="fr" data-alias="adopter">FR</label></div>
         </article>
         <article class="alias-row" data-command-alias="hatch">
           <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandHatch">Hatch</strong><code data-command="hatch">!hatch [slot]</code></header>
@@ -490,6 +505,15 @@
             <option value="rankup" data-i18n="plugins.streamalchemy.ui.monsters.demoRankup">Rank up</option>
             <option value="attack" data-i18n="plugins.streamalchemy.ui.monsters.demoAttack">Attack · compatibility</option>
             <option value="defense" data-i18n="plugins.streamalchemy.ui.monsters.demoDefense">Defense · compatibility</option>
+            <option value="free_offer" data-i18n="plugins.streamalchemy.ui.monsters.demoFreeOffer">Free egg offer</option>
+            <option value="free_release" data-i18n="plugins.streamalchemy.ui.monsters.demoFreeRelease">Free egg release</option>
+            <option value="free_claim" data-i18n="plugins.streamalchemy.ui.monsters.demoFreeClaim">Free egg claim</option>
+            <option value="sealed_lock" data-i18n="plugins.streamalchemy.ui.monsters.demoSealedLock">Sealed skill lock</option>
+            <option value="sealed_reveal" data-i18n="plugins.streamalchemy.ui.monsters.demoSealedReveal">Simultaneous skill reveal</option>
+            <option value="role_striker" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleStriker">Striker role</option>
+            <option value="role_guardian" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleGuardian">Guardian role</option>
+            <option value="role_trickster" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleTrickster">Trickster role</option>
+            <option value="role_sustain" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleSustain">Sustain role</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.demoTemplate">Demo monster</span><select id="demoTemplate"></select></label>
         </div>
@@ -907,6 +931,7 @@
       leavebattle:'commandLeaveBattle',
       rank:'commandRank',
       quests:'commandQuests',
+      adopt:'commandAdopt',
       monstershelp:'commandHelp'
     };
     const formatCooldown = milliseconds => {
@@ -1275,6 +1300,10 @@
         portraitScale:byId('portraitScale').value,
         rendererQuality:byId('rendererQuality').value,
         notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
+        freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
+        freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
+        tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
+        tutorialHintIntervalSeconds:byId('tutorialHintIntervalSeconds').value,
         commandAliases:collectCommandAliases(),
         audioChannels:{
           master:audioChannel('Master'),
@@ -1356,6 +1385,16 @@
     byId('notificationDuration').value = String(
       Math.round((state.config?.notificationDurationMs || 12000) / 1000)
     );
+    byId('freeEggDropsEnabled').checked =
+      state.config?.freeEggDropsEnabled !== false;
+    byId('freeEggCooldownSeconds').value = String(
+      state.config?.freeEggCooldownSeconds || 86400
+    );
+    byId('tutorialHintsEnabled').checked =
+      state.config?.tutorialHintsEnabled !== false;
+    byId('tutorialHintIntervalSeconds').value = String(
+      state.config?.tutorialHintIntervalSeconds || 90
+    );
     currentGcceState = state.gcce || {};
     applyAliasState(state.config?.commandAliases || {});
     renderCommandDiagnostics(currentGcceState);
@@ -1395,6 +1434,7 @@
         target:state.streamMission?.target || 0
       }
     );
+    renderRetentionTimerWarning();
     renderSafeZone();
   };
   const renderLiveCenter = (status = currentLiveStatus, state = currentCreatorState) => {
@@ -1434,6 +1474,26 @@
     Object.entries(fields).forEach(([id, value]) => {
       byId(id).textContent = value;
     });
+    const freeEggs = state?.diagnostics?.freeEggs || {};
+    const offers = freeEggs.offers || {};
+    byId('freeEggOfferCounts').textContent = text(
+      'freeEggOfferCountsValue',
+      '{reserved} reserved · {public} public · {claimed} claimed',
+      {
+        reserved:Number(offers.reserved) || 0,
+        public:Number(offers.public) || 0,
+        claimed:Number(offers.claimed) || 0
+      }
+    );
+    byId('freeEggNextCleanup').textContent = freeEggs.nextCleanupAtMs
+      ? formatDuration(Math.max(0, Number(freeEggs.nextCleanupAtMs) - Date.now()))
+      : '—';
+    const hints = state?.diagnostics?.hints || {};
+    byId('tutorialHintState').textContent = hints.enabled === false
+      ? text('statusDisabled', 'disabled')
+      : (hints.pending
+        ? text('tutorialHintPending', 'pending')
+        : text('statusActive', 'active'));
     byId('liveBadge').textContent = view.tiktok === 'connected'
       ? text('liveConnected', '● LIVE')
       : text('liveOffline', '● Offline');
@@ -1453,13 +1513,28 @@
       });
     }
   };
+  const renderRetentionTimerWarning = () => {
+    const cooldown = Number(byId('freeEggCooldownSeconds').value);
+    const interval = Number(byId('tutorialHintIntervalSeconds').value);
+    const warning = byId('retentionTimerWarning');
+    const invalid = !Number.isFinite(cooldown) ||
+      cooldown < 60 ||
+      cooldown > 31536000 ||
+      !Number.isFinite(interval) ||
+      interval < 60 ||
+      interval > 300;
+    warning.textContent = invalid
+      ? text('retentionTimerInvalid', 'Use valid timer values before saving.')
+      : text('retentionTimerWarning', 'Use at least 60 seconds so chat stays readable.');
+    warning.classList.toggle('error', invalid);
+  };
   const applyDynamicRules = state => {
     const prefix = state.gcce?.commandPrefix || '!';
     const hatchDurationMs = state.config?.hatchDurationMs || 0;
     const duration = formatDuration(hatchDurationMs);
     byId('activePrefix').textContent = prefix;
     byId('activeHatchDuration').textContent = duration;
-    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v5 skill arena.', { duration, prefix });
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v6 skill arena.', { duration, prefix });
     document.querySelectorAll('[data-command]').forEach(command => {
       const name = command.dataset.command;
       const alias = creatorRuntime.resolveCommandReference(name, {
@@ -1555,6 +1630,15 @@
   ]) {
     byId(id).addEventListener('input', renderSafeZone);
     byId(id).addEventListener('change', renderSafeZone);
+  }
+  for (const id of [
+    'freeEggDropsEnabled',
+    'freeEggCooldownSeconds',
+    'tutorialHintsEnabled',
+    'tutorialHintIntervalSeconds'
+  ]) {
+    byId(id).addEventListener('input', renderRetentionTimerWarning);
+    byId(id).addEventListener('change', renderRetentionTimerWarning);
   }
   byId('giftEffect').addEventListener('change', () => {
     byId('giftElement').disabled = byId('giftEffect').value === 'boost';

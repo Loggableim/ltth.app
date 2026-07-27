@@ -239,6 +239,12 @@ class StreamAlchemyPlugin {
       battleMatchService: this.streamMonstersBattleMatchService,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
       gcceStateProvider: () => this.getStreamMonstersGCCEState(),
+      hintStateProvider: () => ({
+        nextAllowedAtMs:
+          this.streamMonstersTutorialHintDirector?.nextAllowedAtMs || null,
+        pendingKind:
+          this.streamMonstersTutorialHintDirector?.pendingKind || null
+      }),
       configProvider: {
         getConfig: () => this.config,
         updateConfig: updates => this.updateConfig(updates)
@@ -295,6 +301,7 @@ class StreamAlchemyPlugin {
         seasonDurationDays: 28,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90,
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
@@ -318,6 +325,7 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
         ),
+        tutorialHintsEnabled: storedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           storedStreamMonsters.tutorialHintIntervalSeconds
         ),
@@ -590,6 +598,7 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
         ),
+        tutorialHintsEnabled: mergedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           mergedStreamMonsters.tutorialHintIntervalSeconds
         ),
@@ -1188,6 +1197,7 @@ class StreamAlchemyPlugin {
   emitStreamMonstersTutorialHint(eventType, critical) {
     const director = this.streamMonstersTutorialHintDirector;
     if (!director || eventType === 'streammonsters:tutorial_hint') return null;
+    if (this.config?.streamMonsters?.tutorialHintsEnabled === false) return null;
     director.setIntervalSeconds(this.config?.streamMonsters?.tutorialHintIntervalSeconds);
     const criticalSequence = Boolean(critical || this.streamMonstersTutorialHintFlushTimer);
     const hint = director.nextHint({ eventType, criticalSequence }, Date.now());
@@ -1208,6 +1218,7 @@ class StreamAlchemyPlugin {
       this.streamMonstersTutorialHintFlushTimer = null;
       const director = this.streamMonstersTutorialHintDirector;
       if (!director) return;
+      if (this.config?.streamMonsters?.tutorialHintsEnabled === false) return;
       const hint = director.nextHint({}, Date.now());
       if (hint) this.api.emit('streammonsters:tutorial_hint', hint);
     }, delayMs);

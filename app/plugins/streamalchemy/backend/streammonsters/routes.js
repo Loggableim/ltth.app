@@ -48,6 +48,7 @@ class StreamMonstersRoutes {
     giftCatalogProvider,
     configProvider,
     now = () => Date.now(),
+    hintStateProvider = () => ({}),
     gcceStateProvider = () => ({
       commandPrefix: '!',
       registrationState: 'fallback',
@@ -66,6 +67,7 @@ class StreamMonstersRoutes {
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.now = now;
+    this.hintStateProvider = hintStateProvider;
     this.gcceStateProvider = gcceStateProvider;
     this.adminAuth = createAdminAuth();
     this.assetCatalogCache = null;
@@ -181,6 +183,11 @@ class StreamMonstersRoutes {
       const userId = String(req.query?.userId || '').trim();
       const config = this.configProvider.getConfig().streamMonsters;
       const overlayDiagnostics = this.getOverlayDiagnostics();
+      const gcce = this.gcceStateProvider();
+      const battle = this.battleMatchService?.getPublicSnapshot?.() || {
+        rulesVersion: 5,
+        matches: []
+      };
       res.json({
         success: true,
         config: this.publicConfig(config, { includeCreator: true }),
@@ -199,11 +206,9 @@ class StreamMonstersRoutes {
         streamMission: this.collection?.getStreamMission(this.engine.streamKey || 'offline') || null,
         visualPack: 'furry',
         season: this.progression?.getCurrentSeason?.() || null,
-        gcce: this.gcceStateProvider(),
-        battle: this.battleMatchService?.getPublicSnapshot?.() || {
-          rulesVersion: 5,
-          matches: []
-        },
+        gcce,
+        battle,
+        diagnostics: this.getCreatorDiagnostics({ config, gcce, battle }),
         obs: overlayDiagnostics.obs,
         renderer: overlayDiagnostics.renderer,
         audioRuntime: overlayDiagnostics.audio,
@@ -261,7 +266,13 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
       const current = this.configProvider.getConfig().streamMonsters || {};
-      const update = this.sanitizeConfigUpdate(req.body);
+      let update = null;
+      try {
+        this.validateRetentionConfigUpdate(req.body);
+        update = this.sanitizeConfigUpdate(req.body);
+      } catch (error) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
       if (current.giftMappingCustomized) update.giftMappingCustomized = true;
       const next = this.configProvider.updateConfig({ streamMonsters: update });
       res.json({
@@ -327,7 +338,15 @@ class StreamMonstersRoutes {
         return res.status(400).json({ success: false, error: error.message });
       }
       const config = this.configProvider.getConfig().streamMonsters;
-      const selectedTemplate = getTemplate(preview?.templateId) || TEMPLATE_CATALOG[0];
+      const roleScene = /^role_(striker|guardian|trickster|sustain)$/.exec(
+        preview?.scene || ''
+      );
+      const selectedTemplate = roleScene
+        ? (
+          TEMPLATE_CATALOG.find(template => template.role === roleScene[1]) ||
+          TEMPLATE_CATALOG[0]
+        )
+        : (getTemplate(preview?.templateId) || TEMPLATE_CATALOG[0]);
       const gift = {
         giftId: 0,
         giftName: 'Demo Heart',
@@ -389,9 +408,25 @@ class StreamMonstersRoutes {
           scale: preview.scale
         } } : {})
       });
-      const commandReferences = this.gcceStateProvider()?.commandReferences || {};
+      const gcceState = this.gcceStateProvider() || {};
+      const commandReferences = gcceState.commandReferences || {};
+      const commandPrefix = typeof gcceState.commandPrefix === 'string' &&
+        gcceState.commandPrefix
+        ? gcceState.commandPrefix
+        : '!';
       const commandReference = command => commandReferences[command]
-        || (command === 'eggs' ? '!eier' : `!${command}`);
+        || (command === 'eggs'
+          ? `${commandPrefix}eier`
+          : `${commandPrefix}${command}`);
+      const emitAdoptionHint = (title, body) => emit(
+        'streammonsters:tutorial_hint',
+        {
+          kind: 'adopt',
+          title,
+          body,
+          command: commandReference('adopt')
+        }
+      );
       if (preview) {
         const fighters = [
           {
@@ -485,7 +520,11 @@ class StreamMonstersRoutes {
           'skill',
           'multihit',
           'special',
-          'ko'
+          'ko',
+          'role_striker',
+          'role_guardian',
+          'role_trickster',
+          'role_sustain'
         ]);
         if (isolatedBattleScenes.has(preview.scene)) {
           emit('streammonsters:battle_choice_opened', {
@@ -498,7 +537,71 @@ class StreamMonstersRoutes {
             fighters
           });
         }
-        if (preview.scene === 'spawn') {
+        if (preview.scene === 'free_offer') {
+          emit('streammonsters:free_egg_offered', {
+            offerId: 'demo-offer',
+            reservedUntilMs: this.now() + 60_000,
+            hint: commandReference('adopt')
+          });
+          emitAdoptionHint(
+            'Free egg reserved',
+            'Claim your reserved egg before it becomes public.'
+          );
+        } else if (preview.scene === 'free_release') {
+          emit('streammonsters:free_egg_released', {
+            offerId: 'demo-offer',
+            releasedAtMs: this.now(),
+            hint: commandReference('adopt')
+          });
+          emitAdoptionHint(
+            'Free egg available',
+            'The released egg can now be adopted by the next viewer.'
+          );
+        } else if (preview.scene === 'free_claim') {
+          emit('streammonsters:free_egg_claimed', {
+            offerId: 'demo-offer',
+            egg,
+            hint: commandReference('adopt')
+          });
+          emitAdoptionHint(
+            'Free egg adopted',
+            'The egg is now incubating in the viewer collection.'
+          );
+        } else if (preview.scene === 'sealed_lock') {
+          emit('streammonsters:battle_choice_locked', {
+            matchId: 'demo-match',
+            decision: {
+              sequence: 3,
+              round: 1,
+              slot: 1,
+              locked: true,
+              source: 'viewer',
+              deadlineMs: this.now() + 6_000
+            }
+          });
+        } else if (preview.scene === 'sealed_reveal') {
+          for (const slot of [1, 2]) {
+            emit('streammonsters:battle_choice_locked', {
+              matchId: 'demo-match',
+              decision: {
+                sequence: slot + 2,
+                round: 1,
+                slot,
+                locked: true,
+                source: 'viewer',
+                deadlineMs: this.now() + 6_000
+              }
+            });
+          }
+          emit('streammonsters:battle_choices_revealed', {
+            matchId: 'demo-match',
+            round: 1,
+            choices: [
+              { slot: 1, choice: 'A', source: 'viewer' },
+              { slot: 2, choice: 'B', source: 'viewer' }
+            ]
+          });
+        } else if (preview.scene === 'spawn') {
           emit('streammonsters:egg_spawned', {
             userId: 'demo-viewer',
             egg,
@@ -618,6 +721,14 @@ class StreamMonstersRoutes {
               frame: 'gold'
             }
           });
+        } else if (roleScene) {
+          const roleSkillType = {
+            striker: 'attack',
+            guardian: 'defense',
+            trickster: 'attack',
+            sustain: 'special'
+          }[roleScene[1]];
+          emit('streammonsters:battle_skill_used', skillPayload(roleSkillType));
         } else {
           emit('streammonsters:battle_skill_used', skillPayload(preview.scene));
         }
@@ -919,6 +1030,151 @@ class StreamMonstersRoutes {
     };
   }
 
+  getCreatorDiagnostics({ config = {}, gcce = {}, battle = {} } = {}) {
+    const streamKey = this.engine.streamKey || 'offline';
+    const offerRows = this.store.db.prepare(`
+      SELECT status, COUNT(*) AS count
+      FROM streammonsters_free_egg_offers
+      WHERE stream_key = ?
+      GROUP BY status
+    `).all(streamKey);
+    const offers = { reserved: 0, public: 0, claimed: 0, total: 0 };
+    for (const row of offerRows) {
+      if (Object.prototype.hasOwnProperty.call(offers, row.status)) {
+        offers[row.status] = Math.max(0, Number(row.count) || 0);
+      }
+    }
+    offers.total = offers.reserved + offers.public + offers.claimed;
+    const claims = this.store.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_free_egg_claims
+      WHERE stream_key = ?
+    `).get(streamKey).count;
+    const nextCleanup = this.store.db.prepare(`
+      SELECT MIN(reserved_until_ms) AS at_ms
+      FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND status = 'reserved'
+    `).get(streamKey);
+    const matches = Array.isArray(battle.matches) ? battle.matches : [];
+    const activeMatch = matches[0] || null;
+    const deadlineMs = Number(
+      activeMatch?.deadlineMs ??
+      activeMatch?.deadline_ms ??
+      activeMatch?.rosterDeadlineMs ??
+      activeMatch?.actionDeadlineMs ??
+      0
+    );
+    const hintState = this.hintStateProvider() || {};
+    const aliasConflicts = Array.isArray(gcce.registrationConflicts)
+      ? gcce.registrationConflicts
+        .map(value => String(value || '').slice(0, 96))
+        .filter(Boolean)
+      : [];
+    return {
+      freeEggs: {
+        enabled: config.freeEggDropsEnabled !== false,
+        cooldownSeconds: this.normalizeFreeEggCooldownSeconds(
+          config.freeEggCooldownSeconds
+        ),
+        offers,
+        claims: Math.max(0, Number(claims) || 0),
+        nextCleanupAtMs: Number(nextCleanup?.at_ms) || null
+      },
+      ingress: {
+        transport: gcce.commandsRegistered ? 'gcce' : 'fallback',
+        prefix: typeof gcce.commandPrefix === 'string' && gcce.commandPrefix
+          ? gcce.commandPrefix
+          : '!',
+        registrationState: String(gcce.registrationState || 'fallback'),
+        commandsRegistered: Boolean(gcce.commandsRegistered),
+        aliasConflicts,
+        unavailableCommands: Array.isArray(gcce.unavailableCommands)
+          ? gcce.unavailableCommands
+            .map(value => String(value || '').slice(0, 64))
+            .filter(Boolean)
+          : [],
+        filterStatus: String(gcce.tiktokFilter?.status || 'unavailable'),
+        commandPolicies: this.publicCommandPolicies(gcce.commandPolicies)
+      },
+      hints: {
+        enabled: config.tutorialHintsEnabled !== false,
+        intervalSeconds: this.normalizeTutorialHintIntervalSeconds(
+          config.tutorialHintIntervalSeconds
+        ),
+        nextAllowedAtMs: Number(hintState.nextAllowedAtMs) || null,
+        pending: Boolean(hintState.pendingKind)
+      },
+      match: {
+        phase: String(activeMatch?.phase || activeMatch?.state || 'idle'),
+        deadlineMs: deadlineMs > 0 ? deadlineMs : null,
+        activeMatches: matches.length
+      }
+    };
+  }
+
+  publicCommandPolicies(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const result = {};
+    for (const [command, policy] of Object.entries(input)) {
+      if (!/^[a-z][a-z0-9_-]{0,31}$/.test(command) || !policy || typeof policy !== 'object') {
+        continue;
+      }
+      result[command] = {
+        enabledAliases: Array.isArray(policy.enabledAliases)
+          ? policy.enabledAliases.map(value => String(value).slice(0, 32)).slice(0, 16)
+          : [],
+        registeredAliases: Array.isArray(policy.registeredAliases)
+          ? policy.registeredAliases.map(value => String(value).slice(0, 32)).slice(0, 16)
+          : [],
+        userCooldownMs: Math.max(0, Number(policy.userCooldownMs) || 0),
+        globalCooldownMs: Math.max(0, Number(policy.globalCooldownMs) || 0)
+      };
+    }
+    return result;
+  }
+
+  normalizeFreeEggCooldownSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
+      ? Math.round(seconds)
+      : 86_400;
+  }
+
+  normalizeTutorialHintIntervalSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 60 && seconds <= 300
+      ? Math.round(seconds)
+      : 90;
+  }
+
+  validateRetentionConfigUpdate(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return;
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'freeEggDropsEnabled') &&
+      typeof input.freeEggDropsEnabled !== 'boolean'
+    ) {
+      throw new Error('STREAM_MONSTERS_FREE_EGG_ENABLED_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'freeEggCooldownSeconds')) {
+      const seconds = Number(input.freeEggCooldownSeconds);
+      if (!Number.isFinite(seconds) || seconds < 60 || seconds > 31_536_000) {
+        throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'tutorialHintsEnabled') &&
+      typeof input.tutorialHintsEnabled !== 'boolean'
+    ) {
+      throw new Error('STREAM_MONSTERS_TUTORIAL_HINTS_ENABLED_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'tutorialHintIntervalSeconds')) {
+      const seconds = Number(input.tutorialHintIntervalSeconds);
+      if (!Number.isFinite(seconds) || seconds < 60 || seconds > 300) {
+        throw new Error('STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID');
+      }
+    }
+  }
+
   getEggRepairPlan() {
     const nowMs = this.now();
     const expiryMs = Number(
@@ -1182,6 +1438,22 @@ class StreamMonstersRoutes {
       if (Object.prototype.hasOwnProperty.call(input, key)) safe[key] = input[key];
     }
     if (typeof input.giftMappingCustomized === 'boolean') safe.giftMappingCustomized = input.giftMappingCustomized;
+    if (typeof input.freeEggDropsEnabled === 'boolean') {
+      safe.freeEggDropsEnabled = input.freeEggDropsEnabled;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'freeEggCooldownSeconds')) {
+      safe.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
+        input.freeEggCooldownSeconds
+      );
+    }
+    if (typeof input.tutorialHintsEnabled === 'boolean') {
+      safe.tutorialHintsEnabled = input.tutorialHintsEnabled;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'tutorialHintIntervalSeconds')) {
+      safe.tutorialHintIntervalSeconds = this.normalizeTutorialHintIntervalSeconds(
+        input.tutorialHintIntervalSeconds
+      );
+    }
     const allowedHatchDurations = new Set([30_000, 60_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
     )));
@@ -1285,7 +1557,16 @@ class StreamMonstersRoutes {
       'special',
       'ko',
       'xp',
-      'rankup'
+      'rankup',
+      'free_offer',
+      'free_release',
+      'free_claim',
+      'sealed_lock',
+      'sealed_reveal',
+      'role_striker',
+      'role_guardian',
+      'role_trickster',
+      'role_sustain'
     ]);
     if (!scenes.has(input.scene)) throw new Error('STREAM_MONSTERS_DEMO_SCENE_INVALID');
     const template = input.templateId ? getTemplate(input.templateId) : TEMPLATE_CATALOG[0];
@@ -1358,7 +1639,17 @@ class StreamMonstersRoutes {
       notificationDurationMs: Number(config.notificationDurationMs) || 12_000,
       audioChannels: config.audioChannels || {}
     };
-    if (includeCreator) result.creatorName = config.creatorName || '';
+    if (includeCreator) {
+      result.creatorName = config.creatorName || '';
+      result.freeEggDropsEnabled = config.freeEggDropsEnabled !== false;
+      result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
+        config.freeEggCooldownSeconds
+      );
+      result.tutorialHintsEnabled = config.tutorialHintsEnabled !== false;
+      result.tutorialHintIntervalSeconds = this.normalizeTutorialHintIntervalSeconds(
+        config.tutorialHintIntervalSeconds
+      );
+    }
     return result;
   }
 

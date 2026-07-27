@@ -15,6 +15,7 @@
   ]);
   const COMMAND_ACTIONS = Object.freeze([
     'eggs',
+    'adopt',
     'hatch',
     'inventory',
     'monsters',
@@ -41,7 +42,16 @@
     'xp',
     'rankup',
     'attack',
-    'defense'
+    'defense',
+    'free_offer',
+    'free_release',
+    'free_claim',
+    'sealed_lock',
+    'sealed_reveal',
+    'role_striker',
+    'role_guardian',
+    'role_trickster',
+    'role_sustain'
   ]);
   const HATCH_PRESETS = Object.freeze([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
   const EGG_EXPIRY_PRESETS = Object.freeze([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
@@ -61,6 +71,8 @@
 
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
+    const freeEggCooldownSeconds = Number(values.freeEggCooldownSeconds);
+    const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
     return {
       creatorName: String(values.creatorName || '').trim(),
       hatchDurationMs: HATCH_PRESETS.includes(Number(values.hatchDurationMs))
@@ -89,6 +101,18 @@
       notificationDurationMs: Number.isFinite(notificationDurationMs)
         ? notificationDurationMs
         : 12_000,
+      freeEggDropsEnabled: values.freeEggDropsEnabled !== false,
+      freeEggCooldownSeconds: Number.isFinite(freeEggCooldownSeconds) &&
+        freeEggCooldownSeconds >= 60 &&
+        freeEggCooldownSeconds <= 31_536_000
+        ? Math.round(freeEggCooldownSeconds)
+        : 86_400,
+      tutorialHintsEnabled: values.tutorialHintsEnabled !== false,
+      tutorialHintIntervalSeconds: Number.isFinite(tutorialHintIntervalSeconds) &&
+        tutorialHintIntervalSeconds >= 60 &&
+        tutorialHintIntervalSeconds <= 300
+        ? Math.round(tutorialHintIntervalSeconds)
+        : 90,
       commandAliases: values.commandAliases || currentConfig.commandAliases || {},
       audioChannels: values.audioChannels || currentConfig.audioChannels || {},
       giftMappingCustomized: Boolean(currentConfig.giftMappingCustomized)
