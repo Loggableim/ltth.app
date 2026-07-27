@@ -104,6 +104,41 @@ function createJwksFetch(...keySets) {
   };
 }
 
+function createBlockedJwksFetch(keys, blockedCallNumber) {
+  let callCount = 0;
+  let releaseBlockedFetch;
+  let markBlockedFetchStarted;
+  const blockedFetchGate = new Promise((resolve) => {
+    releaseBlockedFetch = resolve;
+  });
+  const blockedFetchStarted = new Promise((resolve) => {
+    markBlockedFetchStarted = resolve;
+  });
+
+  return {
+    fetch: async () => {
+      callCount += 1;
+      if (callCount === blockedCallNumber) {
+        markBlockedFetchStarted();
+        await blockedFetchGate;
+      }
+      return new Response(JSON.stringify({ keys }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      });
+    },
+    get callCount() {
+      return callCount;
+    },
+    release() {
+      releaseBlockedFetch();
+    },
+    waitUntilBlocked() {
+      return blockedFetchStarted;
+    }
+  };
+}
+
 function createVerifier(fetchImpl, overrides = {}) {
   return createClerkJwtVerifier({
     issuer: CLERK_ISSUER,
@@ -306,6 +341,83 @@ describe('Clerk management authentication', () => {
 
     expect(secondClaims.sub).toBe('user-second');
     expect(jwks.callCount).toBe(1);
+  });
+
+  it('coalesces parallel unknown-kid loads when the JWKS cache is absent', async () => {
+    const jwks = createBlockedJwksFetch(
+      [primaryKeys.publicJwk],
+      1
+    );
+    const sharedCache = new Map();
+    const tokens = await Promise.all([
+      signJwt(validClaims(), attackerKeys, { kid: 'cold-unknown-a' }),
+      signJwt(validClaims(), attackerKeys, { kid: 'cold-unknown-b' }),
+      signJwt(validClaims(), attackerKeys, { kid: 'cold-unknown-c' })
+    ]);
+    const verifiers = tokens.map(() => createVerifier(jwks.fetch, {
+      jwksCache: sharedCache
+    }));
+
+    const pending = Promise.allSettled(
+      tokens.map((token, index) =>
+        verifiers[index].verifyToken(token)
+      )
+    );
+    await jwks.waitUntilBlocked();
+    const callsWhileBlocked = jwks.callCount;
+    jwks.release();
+    const results = await pending;
+
+    expect(results.every((result) =>
+      result.status === 'rejected' &&
+      result.reason instanceof AuthenticationError &&
+      result.reason.code === AUTH_ERROR_CODES.CLERK_UNAUTHORIZED
+    )).toBe(true);
+    expect(callsWhileBlocked).toBe(1);
+    expect(jwks.callCount).toBe(1);
+  });
+
+  it('coalesces one initial JWKS load across parallel unknown kids after expiry', async () => {
+    let currentTime = NOW_SECONDS * 1000;
+    const jwks = createBlockedJwksFetch(
+      [primaryKeys.publicJwk],
+      2
+    );
+    const sharedCache = new Map();
+    const verifierOptions = {
+      cacheTtlMs: 1000,
+      jwksCache: sharedCache,
+      now: () => currentTime
+    };
+    await createVerifier(jwks.fetch, verifierOptions)
+      .verifyToken(await signJwt(validClaims()));
+    currentTime += 1001;
+    const tokens = await Promise.all([
+      signJwt(validClaims(), attackerKeys, { kid: 'expired-unknown-a' }),
+      signJwt(validClaims(), attackerKeys, { kid: 'expired-unknown-b' }),
+      signJwt(validClaims(), attackerKeys, { kid: 'expired-unknown-c' })
+    ]);
+    const verifiers = tokens.map(() =>
+      createVerifier(jwks.fetch, verifierOptions)
+    );
+
+    const pending = Promise.allSettled(
+      tokens.map((token, index) =>
+        verifiers[index].verifyToken(token)
+      )
+    );
+    await jwks.waitUntilBlocked();
+    const callsWhileBlocked = jwks.callCount;
+    jwks.release();
+    const results = await pending;
+
+    expect(results.every((result) =>
+      result.status === 'rejected' &&
+      result.reason instanceof AuthenticationError &&
+      result.reason.code === AUTH_ERROR_CODES.CLERK_UNAUTHORIZED
+    )).toBe(true);
+    expect(callsWhileBlocked).toBe(2);
+    expect(jwks.callCount).toBe(2);
   });
 
   it('requires a strict Authorization bearer value and does not read cookies', async () => {

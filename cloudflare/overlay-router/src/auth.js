@@ -284,16 +284,11 @@ export function createClerkJwtVerifier(options = {}) {
     return entry;
   }
 
-  async function fetchKeys(forceRefresh = false, previousEntry = null) {
-    const currentTime = now();
-    const cached = jwksCache.get(jwksUrl);
-    if (!forceRefresh && cached && cached.expiresAt > currentTime) {
-      return {
-        entry: normalizeCacheEntry(cached),
-        fetched: false
-      };
-    }
-
+  async function requestKeys(
+    forceRefresh,
+    previousEntry,
+    currentTime
+  ) {
     let response;
     try {
       response = await fetchImpl(jwksUrl, {
@@ -335,6 +330,42 @@ export function createClerkJwtVerifier(options = {}) {
     };
     jwksCache.set(jwksUrl, entry);
     return { entry, fetched: true };
+  }
+
+  async function fetchKeys(forceRefresh = false, previousEntry = null) {
+    const currentTime = now();
+    const cached = jwksCache.get(jwksUrl);
+    if (!forceRefresh && cached && cached.expiresAt > currentTime) {
+      return {
+        entry: normalizeCacheEntry(cached),
+        fetched: false
+      };
+    }
+    if (forceRefresh) {
+      return requestKeys(true, previousEntry, currentTime);
+    }
+
+    const loadingEntry = normalizeCacheEntry(cached || {
+      keys: [],
+      expiresAt: 0,
+      refreshUsed: false,
+      refreshPromise: null,
+      unknownKids: new Set()
+    });
+    if (!loadingEntry.loadPromise) {
+      loadingEntry.loadPromise = requestKeys(
+        false,
+        null,
+        currentTime
+      ).catch((error) => {
+        if (jwksCache.get(jwksUrl) === loadingEntry) {
+          jwksCache.delete(jwksUrl);
+        }
+        throw error;
+      });
+      jwksCache.set(jwksUrl, loadingEntry);
+    }
+    return loadingEntry.loadPromise;
   }
 
   async function resolveKey(kid) {
