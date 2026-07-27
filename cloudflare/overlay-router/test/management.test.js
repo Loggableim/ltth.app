@@ -150,6 +150,24 @@ describe('stable overlay management HTTP contract', () => {
     });
   }
 
+  async function installAtomicAuditFailureHandler() {
+    await repository.recordAuditEvent({
+      eventId: 'a-controlled-duplicate',
+      occurredAt: new Date(START - 1).toISOString(),
+      actorClerkUserId: 'audit-fixture',
+      action: 'audit_fixture',
+      resultCode: 'seeded'
+    });
+    handler = createManagementHandler({
+      repository,
+      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator,
+      auditEventIdFactory: () => 'a-controlled-duplicate'
+    });
+  }
+
   it('selects management only on the exact entry host and rejects reserved paths on opaque hosts', async () => {
     expect(await handler(new Request('https://overlay.ltth.app/public-overlay')))
       .toBeNull();
@@ -790,92 +808,70 @@ describe('stable overlay management HTTP contract', () => {
     expect(JSON.stringify(events)).not.toContain('trycloudflare');
   });
 
-  it('returns a committed enrollment credential even when asynchronous audit persistence fails', async () => {
-    const failingAuditRepository = proxyRepository(repository, {
-      async recordAuditEvent() {
-        throw new Error('controlled audit outage');
-      }
-    });
-    handler = createManagementHandler({
-      repository: failingAuditRepository,
-      env: { OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER },
-      now: () => nowMs,
-      authenticateClerk: clerkAuthenticator,
-      authenticateAdmin: adminAuthenticator
-    });
-
+  it('rolls back enrollment and withholds the credential when its atomic audit insert fails', async () => {
+    await installAtomicAuditFailureHandler();
     const response = await call('/devices/enroll', {
       method: 'POST',
       user: 'audit-outage',
-      body: { label: 'Recoverable credential' }
+      body: { label: 'Must roll back' }
     });
-    expect(response.status).toBe(201);
-    const enrollment = await response.json();
-    expect(enrollment.credential).toMatch(/^[0-9a-f]{64}$/);
-    const stored = await repository.findDeviceById(
-      enrollment.device.deviceId
-    );
-    expect(stored).not.toBeNull();
-    expect(stored.tokenHash).toBe(
-      await hashDeviceCredential(enrollment.credential, PEPPER)
-    );
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('Service Unavailable');
+    expect(await repository.listDevicesByOwner('audit-outage')).toEqual([]);
+    expect((await repository.listAuditEvents()).filter(
+      (event) => event.action === 'device_enroll'
+    )).toEqual([]);
+  });
 
-    advance(1);
-    expect((await call('/claims', {
+  it('rolls back claim creation when its atomic audit insert fails', async () => {
+    await installAtomicAuditFailureHandler();
+    const response = await call('/claims', {
       method: 'POST',
       user: 'audit-outage',
       body: { username: 'audit.claim' }
-    })).status).toBe(201);
-    advance(1);
-    const conflict = await call('/claims', {
-      method: 'POST',
-      user: 'audit-other',
-      body: { username: 'audit.claim' }
     });
-    expect(conflict.status).toBe(409);
-    expect(await conflict.json()).toEqual({
-      error: 'claim_unavailable'
-    });
+    expect(response.status).toBe(503);
+    expect(await repository.findClaimByUsername('audit.claim')).toBeNull();
+    expect((await repository.listAuditEvents()).filter(
+      (event) => event.action === 'claim_create'
+    )).toEqual([]);
+  });
 
+  it('rolls back lease activation when its atomic audit insert fails', async () => {
+    const enrollment = await enroll('audit-lease-owner');
     advance(10001);
-    const activation = await putLease(enrollment);
-    expect(activation.status).toBe(200);
-    advance(1);
-    expect((await call('/claims/audit.claim', {
-      method: 'DELETE',
-      user: 'audit-outage',
-      body: { username: 'audit.claim' }
-    })).status).toBe(200);
-    advance(1);
-    expect((await call('/lease', {
-      method: 'DELETE',
-      credential: enrollment.credential,
-      body: {
-        deviceId: enrollment.device.deviceId,
-        instanceId: 'instance-a',
-        expectedRevision: 1
-      }
-    })).status).toBe(204);
-    advance(1);
-    expect((await call(`/devices/${enrollment.device.deviceId}`, {
-      method: 'DELETE',
-      user: 'audit-outage',
-      body: {}
-    })).status).toBe(204);
+    await installAtomicAuditFailureHandler();
+    const response = await putLease(enrollment);
+    expect(response.status).toBe(503);
+    expect(await repository.findActiveLeaseByOwner(
+      'audit-lease-owner',
+      new Date(nowMs).toISOString()
+    )).toBeNull();
+    expect((await repository.listAuditEvents()).filter(
+      (event) => event.action === 'lease_update'
+    )).toEqual([]);
+  });
 
-    advance(1);
+  it('rolls back administrative release when its atomic audit insert fails', async () => {
     await call('/claims', {
       method: 'POST',
       user: 'audit-admin-owner',
       body: { username: 'audit.admin' }
     });
     advance(1);
-    expect((await call('/admin/claims/audit.admin/release', {
+    await installAtomicAuditFailureHandler();
+    const response = await call('/admin/claims/audit.admin/release', {
       method: 'POST',
       user: 'admin-user',
       admin: true,
       body: {}
-    })).status).toBe(204);
+    });
+    expect(response.status).toBe(503);
+    expect(await repository.findClaimByUsername('audit.admin'))
+      .not.toBeNull();
+    expect((await repository.listAuditEvents()).filter(
+      (event) => event.action === 'admin_claim_release'
+    )).toEqual([]);
   });
 
   it.each([

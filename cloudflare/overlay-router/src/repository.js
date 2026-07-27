@@ -109,6 +109,82 @@ function mapAuditEvent(row) {
   };
 }
 
+function validateAuditEvent({
+  eventId,
+  occurredAt,
+  actorClerkUserId,
+  action,
+  usernameKey = null,
+  deviceId = null,
+  resultCode,
+  cfRayId = null
+}) {
+  requireString(eventId, 'eventId');
+  requireUtcIso(occurredAt, 'occurredAt');
+  requireString(actorClerkUserId, 'actorClerkUserId');
+  requireString(action, 'action');
+  requireString(resultCode, 'resultCode');
+  if (usernameKey !== null) {
+    requireString(usernameKey, 'usernameKey');
+  }
+  if (deviceId !== null) {
+    requireString(deviceId, 'deviceId');
+  }
+  if (cfRayId !== null) {
+    requireString(cfRayId, 'cfRayId');
+  }
+}
+
+function prepareAuditInsert(database, auditEvent, conditional = false) {
+  validateAuditEvent(auditEvent);
+  const values = conditional
+    ? 'SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE changes() = 1'
+    : 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+  return database.prepare(`
+    INSERT INTO audit_events (
+      event_id,
+      occurred_at,
+      actor_clerk_user_id,
+      action,
+      username_key,
+      device_id,
+      result_code,
+      cf_ray_id
+    )
+    ${values}
+  `).bind(
+    auditEvent.eventId,
+    auditEvent.occurredAt,
+    auditEvent.actorClerkUserId,
+    auditEvent.action,
+    auditEvent.usernameKey ?? null,
+    auditEvent.deviceId ?? null,
+    auditEvent.resultCode,
+    auditEvent.cfRayId ?? null
+  );
+}
+
+function firstResult(batchResult) {
+  return batchResult?.results?.[0] || null;
+}
+
+async function firstWithOptionalAudit(
+  database,
+  mutation,
+  auditEvent,
+  trailingStatements = []
+) {
+  if (!auditEvent) {
+    return mutation.first();
+  }
+  const [result] = await database.batch([
+    mutation,
+    prepareAuditInsert(database, auditEvent, true),
+    ...trailingStatements
+  ]);
+  return firstResult(result);
+}
+
 export class OverlayRepository {
   constructor(database) {
     if (!database || typeof database.prepare !== 'function'
@@ -123,7 +199,8 @@ export class OverlayRepository {
     displayUsername,
     clerkUserId,
     routeKey,
-    now
+    now,
+    auditEvent = null
   }) {
     requireString(usernameKey, 'usernameKey');
     requireString(displayUsername, 'displayUsername');
@@ -131,7 +208,7 @@ export class OverlayRepository {
     requireString(routeKey, 'routeKey');
     requireUtcIso(now, 'now');
 
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       INSERT INTO claims (
         username_key,
         display_username,
@@ -163,7 +240,12 @@ export class OverlayRepository {
       routeKey,
       now,
       now
-    ).first();
+    );
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    );
 
     if (!row) {
       return { ok: false, reason: 'unavailable' };
@@ -219,7 +301,8 @@ export class OverlayRepository {
     clerkUserId,
     expectedUpdatedAt,
     now,
-    reusableAfter
+    reusableAfter,
+    auditEvent = null
   }) {
     requireString(usernameKey, 'usernameKey');
     requireString(clerkUserId, 'clerkUserId');
@@ -227,7 +310,7 @@ export class OverlayRepository {
     requireLaterTimestamp(now, 'now', expectedUpdatedAt);
     requireLaterTimestamp(reusableAfter, 'reusableAfter', now);
 
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       UPDATE claims
       SET state = 'cooldown',
         release_requested_at = ?,
@@ -245,7 +328,12 @@ export class OverlayRepository {
       usernameKey,
       clerkUserId,
       expectedUpdatedAt
-    ).first();
+    );
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    );
     return mapClaim(row);
   }
 
@@ -254,7 +342,8 @@ export class OverlayRepository {
     clerkUserId,
     displayUsername,
     expectedUpdatedAt,
-    now
+    now,
+    auditEvent = null
   }) {
     requireString(usernameKey, 'usernameKey');
     requireString(clerkUserId, 'clerkUserId');
@@ -262,7 +351,7 @@ export class OverlayRepository {
     requireUtcIso(expectedUpdatedAt, 'expectedUpdatedAt');
     requireLaterTimestamp(now, 'now', expectedUpdatedAt);
 
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       UPDATE claims
       SET display_username = ?,
         state = 'active',
@@ -282,17 +371,27 @@ export class OverlayRepository {
       clerkUserId,
       now,
       expectedUpdatedAt
-    ).first();
+    );
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    );
     return mapClaim(row);
   }
 
-  async forceReleaseClaim(usernameKey) {
+  async forceReleaseClaim(usernameKey, auditEvent = null) {
     requireString(usernameKey, 'usernameKey');
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       DELETE FROM claims
       WHERE username_key = ?
       RETURNING *
-    `).bind(usernameKey).first();
+    `).bind(usernameKey);
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    );
     return mapClaim(row);
   }
 
@@ -338,7 +437,8 @@ export class OverlayRepository {
     tokenHash,
     label,
     now,
-    activeDeviceLimit
+    activeDeviceLimit,
+    auditEvent = null
   }) {
     requireString(deviceId, 'deviceId');
     requireString(clerkUserId, 'clerkUserId');
@@ -352,7 +452,7 @@ export class OverlayRepository {
       );
     }
 
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       INSERT INTO devices (
         device_id,
         clerk_user_id,
@@ -379,7 +479,12 @@ export class OverlayRepository {
       now,
       clerkUserId,
       activeDeviceLimit
-    ).first();
+    );
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    );
     return mapDevice(row);
   }
 
@@ -455,28 +560,36 @@ export class OverlayRepository {
   async revokeDevice({
     deviceId,
     clerkUserId,
-    now
+    now,
+    auditEvent = null
   }) {
     requireString(deviceId, 'deviceId');
     requireString(clerkUserId, 'clerkUserId');
     requireUtcIso(now, 'now');
 
-    const [revocation] = await this.database.batch([
-      this.database.prepare(`
-        UPDATE devices
-        SET revoked_at = ?,
-          last_seen_at = ?
-        WHERE device_id = ?
-          AND clerk_user_id = ?
-          AND revoked_at IS NULL
-      `).bind(now, now, deviceId, clerkUserId),
-      this.database.prepare(`
+    const revocation = this.database.prepare(`
+      UPDATE devices
+      SET revoked_at = ?,
+        last_seen_at = ?
+      WHERE device_id = ?
+        AND clerk_user_id = ?
+        AND revoked_at IS NULL
+    `).bind(now, now, deviceId, clerkUserId);
+    const leaseDelete = this.database.prepare(`
         DELETE FROM account_leases
         WHERE clerk_user_id = ?
           AND device_id = ?
-      `).bind(clerkUserId, deviceId)
-    ]);
-    return revocation.meta.changes === 1;
+          ${auditEvent ? 'AND changes() = 1' : ''}
+    `).bind(clerkUserId, deviceId);
+    const statements = [revocation];
+    if (auditEvent) {
+      statements.push(
+        prepareAuditInsert(this.database, auditEvent, true)
+      );
+    }
+    statements.push(leaseDelete);
+    const [result] = await this.database.batch(statements);
+    return result.meta.changes === 1;
   }
 
   async activateLease({
@@ -485,7 +598,8 @@ export class OverlayRepository {
     instanceId,
     tunnelOrigin,
     now,
-    expiresAt
+    expiresAt,
+    auditEvent = null
   }) {
     requireString(clerkUserId, 'clerkUserId');
     requireString(deviceId, 'deviceId');
@@ -494,7 +608,7 @@ export class OverlayRepository {
     requireUtcIso(now, 'now');
     requireLaterTimestamp(expiresAt, 'expiresAt', now);
 
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       INSERT INTO account_leases (
         clerk_user_id,
         device_id,
@@ -524,7 +638,21 @@ export class OverlayRepository {
       expiresAt,
       deviceId,
       clerkUserId
-    ).first();
+    );
+    const touch = this.database.prepare(`
+      UPDATE devices
+      SET last_seen_at = ?
+      WHERE device_id = ?
+        AND clerk_user_id = ?
+        AND revoked_at IS NULL
+        AND changes() = 1
+    `).bind(now, deviceId, clerkUserId);
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent,
+      [touch]
+    );
     return mapLease(row);
   }
 
@@ -535,7 +663,8 @@ export class OverlayRepository {
     expectedRevision,
     tunnelOrigin,
     now,
-    expiresAt
+    expiresAt,
+    auditEvent = null
   }) {
     requireString(clerkUserId, 'clerkUserId');
     requireString(deviceId, 'deviceId');
@@ -545,7 +674,7 @@ export class OverlayRepository {
     requireUtcIso(now, 'now');
     requireLaterTimestamp(expiresAt, 'expiresAt', now);
 
-    const row = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       UPDATE account_leases
       SET tunnel_origin = ?,
         revision = CASE
@@ -579,7 +708,21 @@ export class OverlayRepository {
       expectedRevision,
       now,
       expiresAt
-    ).first();
+    );
+    const touch = this.database.prepare(`
+      UPDATE devices
+      SET last_seen_at = ?
+      WHERE device_id = ?
+        AND clerk_user_id = ?
+        AND revoked_at IS NULL
+        AND changes() = 1
+    `).bind(now, deviceId, clerkUserId);
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent,
+      [touch]
+    );
     return mapLease(row);
   }
 
@@ -622,74 +765,38 @@ export class OverlayRepository {
     clerkUserId,
     deviceId,
     instanceId,
-    expectedRevision
+    expectedRevision,
+    auditEvent = null
   }) {
     requireString(clerkUserId, 'clerkUserId');
     requireString(deviceId, 'deviceId');
     requireString(instanceId, 'instanceId');
     requireRevision(expectedRevision);
 
-    const result = await this.database.prepare(`
+    const mutation = this.database.prepare(`
       DELETE FROM account_leases
       WHERE clerk_user_id = ?
         AND device_id = ?
         AND instance_id = ?
         AND revision = ?
+      RETURNING clerk_user_id
     `).bind(
       clerkUserId,
       deviceId,
       instanceId,
       expectedRevision
-    ).run();
-    return result.meta.changes === 1;
+    );
+    return Boolean(await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    ));
   }
 
-  async recordAuditEvent({
-    eventId,
-    occurredAt,
-    actorClerkUserId,
-    action,
-    usernameKey = null,
-    deviceId = null,
-    resultCode,
-    cfRayId = null
-  }) {
-    requireString(eventId, 'eventId');
-    requireUtcIso(occurredAt, 'occurredAt');
-    requireString(actorClerkUserId, 'actorClerkUserId');
-    requireString(action, 'action');
-    requireString(resultCode, 'resultCode');
-    if (usernameKey !== null) {
-      requireString(usernameKey, 'usernameKey');
-    }
-    if (deviceId !== null) {
-      requireString(deviceId, 'deviceId');
-    }
-    if (cfRayId !== null) {
-      requireString(cfRayId, 'cfRayId');
-    }
-
-    await this.database.prepare(`
-      INSERT INTO audit_events (
-        event_id,
-        occurred_at,
-        actor_clerk_user_id,
-        action,
-        username_key,
-        device_id,
-        result_code,
-        cf_ray_id
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      eventId,
-      occurredAt,
-      actorClerkUserId,
-      action,
-      usernameKey,
-      deviceId,
-      resultCode,
-      cfRayId
+  async recordAuditEvent(auditEvent) {
+    await prepareAuditInsert(
+      this.database,
+      auditEvent
     ).run();
   }
 

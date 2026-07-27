@@ -23,49 +23,77 @@ function requireIdentifier(value, name) {
   return value;
 }
 
-export function createAuditRecorder(repository) {
+function requireUtcIso(value) {
+  if (typeof value !== 'string' ||
+      new Date(value).toISOString() !== value) {
+    throw new TypeError(
+      'occurredAt must be a canonical UTC ISO-8601 timestamp'
+    );
+  }
+  return value;
+}
+
+export function createSanitizedAuditEvent({
+  request,
+  occurredAt,
+  actorClerkUserId,
+  action,
+  usernameKey = null,
+  deviceId = null,
+  resultCode
+}, options = {}) {
+  requireUtcIso(occurredAt);
+  requireIdentifier(actorClerkUserId, 'actorClerkUserId');
+  requireIdentifier(action, 'action');
+  requireIdentifier(resultCode, 'resultCode');
+  if (usernameKey !== null) {
+    requireIdentifier(usernameKey, 'usernameKey');
+  }
+  if (deviceId !== null) {
+    requireIdentifier(deviceId, 'deviceId');
+  }
+  const eventId = options.eventIdFactory
+    ? options.eventIdFactory()
+    : `a-${randomHex(16)}`;
+  requireIdentifier(eventId, 'eventId');
+  return {
+    eventId,
+    occurredAt,
+    actorClerkUserId,
+    action,
+    usernameKey,
+    deviceId,
+    resultCode,
+    cfRayId: safeOptionalIdentifier(
+      request?.headers?.get('cf-ray')
+    )
+  };
+}
+
+export function createAuditRecorder(repository, options = {}) {
   if (!repository ||
       typeof repository.recordAuditEvent !== 'function' ||
       typeof repository.pruneAuditEvents !== 'function') {
     throw new TypeError('An audit-capable repository is required');
   }
 
+  const create = (fields) => createSanitizedAuditEvent(
+    fields,
+    { eventIdFactory: options.eventIdFactory }
+  );
+
   return Object.freeze({
-    async record({
-      request,
-      occurredAt,
-      actorClerkUserId,
-      action,
-      usernameKey = null,
-      deviceId = null,
-      resultCode
-    }, context = {}) {
-      requireIdentifier(actorClerkUserId, 'actorClerkUserId');
-      requireIdentifier(action, 'action');
-      requireIdentifier(resultCode, 'resultCode');
-      if (usernameKey !== null) {
-        requireIdentifier(usernameKey, 'usernameKey');
-      }
-      if (deviceId !== null) {
-        requireIdentifier(deviceId, 'deviceId');
-      }
-
-      await repository.recordAuditEvent({
-        eventId: `a-${randomHex(16)}`,
-        occurredAt,
-        actorClerkUserId,
-        action,
-        usernameKey,
-        deviceId,
-        resultCode,
-        cfRayId: safeOptionalIdentifier(
-          request?.headers?.get('cf-ray')
-        )
-      });
-
+    create,
+    async prune(occurredAt) {
       const prune = repository.pruneAuditEvents(
         new Date(Date.parse(occurredAt) - RETENTION_MS).toISOString()
       );
+      await prune;
+    },
+    async record(fields, context = {}) {
+      const event = create(fields);
+      await repository.recordAuditEvent(event);
+      const prune = this.prune(event.occurredAt);
       if (typeof context.waitUntil === 'function') {
         context.waitUntil(prune);
       } else {

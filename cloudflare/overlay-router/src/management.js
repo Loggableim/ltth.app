@@ -216,10 +216,42 @@ export function createManagementHandler(options = {}) {
       deviceId,
       pepper: workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
     }));
-  const audit = createAuditRecorder(repository);
+  const audit = createAuditRecorder(repository, {
+    eventIdFactory: options.auditEventIdFactory
+  });
   const maxActiveDevices = parseMaximumActiveDevices(
     workerEnv.OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT
   );
+
+  function scheduleBackground(pending, context) {
+    const safePending = pending.catch(() => undefined);
+    if (typeof context.waitUntil === 'function') {
+      try {
+        context.waitUntil(safePending);
+      } catch {
+        // The foreground result remains authoritative.
+      }
+    }
+  }
+
+  function auditFields(
+    request,
+    actorClerkUserId,
+    action,
+    resultCode,
+    targets = {},
+    occurredAt = new Date(Math.trunc(clock())).toISOString()
+  ) {
+    return {
+      request,
+      occurredAt,
+      actorClerkUserId,
+      action,
+      resultCode,
+      usernameKey: targets.usernameKey || null,
+      deviceId: targets.deviceId || null
+    };
+  }
 
   function record(
     request,
@@ -230,22 +262,39 @@ export function createManagementHandler(options = {}) {
     targets = {},
     occurredAt = new Date(Math.trunc(clock())).toISOString()
   ) {
-    const pending = audit.record({
+    scheduleBackground(
+      audit.record(auditFields(
+        request,
+        actorClerkUserId,
+        action,
+        resultCode,
+        targets,
+        occurredAt
+      )),
+      context
+    );
+  }
+
+  function atomicAudit(
+    request,
+    actorClerkUserId,
+    action,
+    resultCode,
+    targets,
+    occurredAt
+  ) {
+    return audit.create(auditFields(
       request,
-      occurredAt,
       actorClerkUserId,
       action,
       resultCode,
-      usernameKey: targets.usernameKey || null,
-      deviceId: targets.deviceId || null
-    }).catch(() => undefined);
-    if (typeof context.waitUntil === 'function') {
-      try {
-        context.waitUntil(pending);
-      } catch {
-        // The state mutation result remains authoritative.
-      }
-    }
+      targets,
+      occurredAt
+    ));
+  }
+
+  function pruneAfterAtomicAudit(context, occurredAt) {
+    scheduleBackground(audit.prune(occurredAt), context);
   }
 
   async function enrollDevice(request, context) {
@@ -279,13 +328,22 @@ export function createManagementHandler(options = {}) {
       credential,
       workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
     );
+    const auditEvent = atomicAudit(
+      request,
+      auth.clerkUserId,
+      'device_enroll',
+      'enrolled',
+      { deviceId },
+      timestamp.iso
+    );
     const device = await repository.createDeviceWithActiveLimit({
       deviceId,
       clerkUserId: auth.clerkUserId,
       tokenHash,
       label: body.label,
       now: timestamp.iso,
-      activeDeviceLimit: maxActiveDevices
+      activeDeviceLimit: maxActiveDevices,
+      auditEvent
     });
     if (!device) {
       record(
@@ -299,15 +357,7 @@ export function createManagementHandler(options = {}) {
       );
       domainError('active_device_limit_reached', 409);
     }
-    record(
-      request,
-      context,
-      auth.clerkUserId,
-      'device_enroll',
-      'enrolled',
-      { deviceId },
-      timestamp.iso
-    );
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return jsonResponse({
       device: sanitizeDevice(device),
       credential
@@ -354,26 +404,35 @@ export function createManagementHandler(options = {}) {
       );
       domainError('rate_limited', 429);
     }
+    const auditEvent = atomicAudit(
+      request,
+      auth.clerkUserId,
+      'claim_create',
+      'claimed',
+      { usernameKey: body.username },
+      timestamp.iso
+    );
     const result = await repository.claimUsername({
       usernameKey: body.username,
       displayUsername: body.username,
       clerkUserId: auth.clerkUserId,
       routeKey: generateRouteKey(),
-      now: timestamp.iso
+      now: timestamp.iso,
+      auditEvent
     });
-    const resultCode = result.ok ? 'claimed' : 'unavailable';
-    record(
-      request,
-      context,
-      auth.clerkUserId,
-      'claim_create',
-      resultCode,
-      { usernameKey: body.username },
-      timestamp.iso
-    );
     if (!result.ok) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'claim_create',
+        'unavailable',
+        { usernameKey: body.username },
+        timestamp.iso
+      );
       domainError('claim_unavailable', 409);
     }
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return jsonResponse({ claim: sanitizeClaim(result.claim) }, 201);
   }
 
@@ -404,25 +463,35 @@ export function createManagementHandler(options = {}) {
       domainError('claim_unavailable', 409);
     }
     const timestamp = mutationTimestamp(clock(), current.updatedAt);
+    const auditEvent = atomicAudit(
+      request,
+      auth.clerkUserId,
+      'claim_restore',
+      'restored',
+      { usernameKey },
+      timestamp.iso
+    );
     const restored = await repository.restoreClaim({
       usernameKey,
       clerkUserId: auth.clerkUserId,
       displayUsername: current.displayUsername,
       expectedUpdatedAt: current.updatedAt,
-      now: timestamp.iso
+      now: timestamp.iso,
+      auditEvent
     });
-    record(
-      request,
-      context,
-      auth.clerkUserId,
-      'claim_restore',
-      restored ? 'restored' : 'conflict',
-      { usernameKey },
-      timestamp.iso
-    );
     if (!restored) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'claim_restore',
+        'conflict',
+        { usernameKey },
+        timestamp.iso
+      );
       domainError('claim_conflict', 409);
     }
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return jsonResponse({ claim: sanitizeClaim(restored) });
   }
 
@@ -459,6 +528,14 @@ export function createManagementHandler(options = {}) {
       domainError('claim_unavailable', 409);
     }
     const timestamp = mutationTimestamp(clock(), current.updatedAt);
+    const auditEvent = atomicAudit(
+      request,
+      auth.clerkUserId,
+      'claim_release',
+      'released',
+      { usernameKey },
+      timestamp.iso
+    );
     const released = await repository.releaseClaim({
       usernameKey,
       clerkUserId: auth.clerkUserId,
@@ -466,20 +543,22 @@ export function createManagementHandler(options = {}) {
       now: timestamp.iso,
       reusableAfter: new Date(
         timestamp.milliseconds + SEVEN_DAYS_MS
-      ).toISOString()
+      ).toISOString(),
+      auditEvent
     });
-    record(
-      request,
-      context,
-      auth.clerkUserId,
-      'claim_release',
-      released ? 'released' : 'conflict',
-      { usernameKey },
-      timestamp.iso
-    );
     if (!released) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'claim_release',
+        'conflict',
+        { usernameKey },
+        timestamp.iso
+      );
       domainError('claim_conflict', 409);
     }
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return jsonResponse({ claim: sanitizeClaim(released) });
   }
 
@@ -494,23 +573,33 @@ export function createManagementHandler(options = {}) {
     );
     await parseEmptyBody(request);
     const timestamp = mutationTimestamp(clock());
-    const revoked = await repository.revokeDevice({
-      deviceId,
-      clerkUserId: auth.clerkUserId,
-      now: timestamp.iso
-    });
-    record(
+    const auditEvent = atomicAudit(
       request,
-      context,
       auth.clerkUserId,
       'device_revoke',
-      revoked ? 'revoked' : 'unavailable',
+      'revoked',
       { deviceId },
       timestamp.iso
     );
+    const revoked = await repository.revokeDevice({
+      deviceId,
+      clerkUserId: auth.clerkUserId,
+      now: timestamp.iso,
+      auditEvent
+    });
     if (!revoked) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'device_revoke',
+        'unavailable',
+        { deviceId },
+        timestamp.iso
+      );
       domainError('device_unavailable', 404);
     }
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return emptyResponse();
   }
 
@@ -547,7 +636,15 @@ export function createManagementHandler(options = {}) {
       now: timestamp.iso,
       expiresAt: new Date(
         timestamp.milliseconds + LEASE_DURATION_MS
-      ).toISOString()
+      ).toISOString(),
+      auditEvent: atomicAudit(
+        request,
+        auth.clerkUserId,
+        'lease_update',
+        'accepted',
+        { deviceId: auth.deviceId },
+        timestamp.iso
+      )
     };
     const lease = body.expectedRevision === undefined
       ? await repository.activateLease(parameters)
@@ -555,23 +652,19 @@ export function createManagementHandler(options = {}) {
         ...parameters,
         expectedRevision: body.expectedRevision
       });
-    record(
-      request,
-      context,
-      auth.clerkUserId,
-      'lease_update',
-      lease ? 'accepted' : 'conflict',
-      { deviceId: auth.deviceId },
-      timestamp.iso
-    );
     if (!lease) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'lease_update',
+        'conflict',
+        { deviceId: auth.deviceId },
+        timestamp.iso
+      );
       domainError('lease_conflict', 409);
     }
-    await repository.touchDevice({
-      deviceId: auth.deviceId,
-      clerkUserId: auth.clerkUserId,
-      now: timestamp.iso
-    });
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return jsonResponse({ lease: sanitizeLease(lease) });
   }
 
@@ -581,25 +674,35 @@ export function createManagementHandler(options = {}) {
       MANAGEMENT_BODY_SCHEMAS.leaseClose
     );
     const auth = await authenticateDevice(request, body.deviceId);
+    const occurredAt = new Date(Math.trunc(clock())).toISOString();
+    const auditEvent = atomicAudit(
+      request,
+      auth.clerkUserId,
+      'lease_close',
+      'closed',
+      { deviceId: auth.deviceId },
+      occurredAt
+    );
     const closed = await repository.closeLease({
       clerkUserId: auth.clerkUserId,
       deviceId: auth.deviceId,
       instanceId: body.instanceId,
-      expectedRevision: body.expectedRevision
+      expectedRevision: body.expectedRevision,
+      auditEvent
     });
-    const occurredAt = new Date(Math.trunc(clock())).toISOString();
-    record(
-      request,
-      context,
-      auth.clerkUserId,
-      'lease_close',
-      closed ? 'closed' : 'conflict',
-      { deviceId: auth.deviceId },
-      occurredAt
-    );
     if (!closed) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'lease_close',
+        'conflict',
+        { deviceId: auth.deviceId },
+        occurredAt
+      );
       domainError('lease_conflict', 409);
     }
+    pruneAfterAtomicAudit(context, occurredAt);
     return emptyResponse();
   }
 
@@ -635,19 +738,31 @@ export function createManagementHandler(options = {}) {
     );
     await parseEmptyBody(request);
     const timestamp = mutationTimestamp(clock());
-    const released = await repository.forceReleaseClaim(usernameKey);
-    record(
+    const auditEvent = atomicAudit(
       request,
-      context,
       auth.clerkUserId,
       'admin_claim_release',
-      released ? 'released' : 'unavailable',
+      'released',
       { usernameKey },
       timestamp.iso
     );
+    const released = await repository.forceReleaseClaim(
+      usernameKey,
+      auditEvent
+    );
     if (!released) {
+      record(
+        request,
+        context,
+        auth.clerkUserId,
+        'admin_claim_release',
+        'unavailable',
+        { usernameKey },
+        timestamp.iso
+      );
       domainError('claim_unavailable', 404);
     }
+    pruneAfterAtomicAudit(context, timestamp.iso);
     return emptyResponse();
   }
 
