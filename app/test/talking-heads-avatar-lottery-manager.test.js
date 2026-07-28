@@ -4,16 +4,20 @@ const AssetSpriteLibrary = require('../plugins/talking-heads/engines/asset-sprit
 function createDatabase() {
   const rows = new Map();
   return {
+    rows,
     prepare: jest.fn((sql) => ({
       run: (...values) => {
         if (sql.includes('INSERT INTO talking_heads_avatar_lottery')) {
           const [userId, username, selection, createdAt, updatedAt] = values;
-          rows.set(userId, { user_id: userId, username, selection_json: selection, state: 'pending', created_at: createdAt, updated_at: updatedAt });
-        }
-        if (sql.includes('UPDATE talking_heads_avatar_lottery SET state')) {
-          const [state, now, userId] = values;
-          const row = rows.get(userId);
-          if (row) rows.set(userId, { ...row, state, updated_at: now });
+          const existing = rows.get(userId);
+          rows.set(userId, {
+            user_id: userId,
+            username,
+            selection_json: selection,
+            state: 'kept',
+            created_at: existing?.created_at || createdAt,
+            updated_at: updatedAt
+          });
         }
         return { changes: 1 };
       },
@@ -24,44 +28,62 @@ function createDatabase() {
 
 describe('Talking Heads avatar lottery manager', () => {
   let manager;
+  let db;
 
   beforeEach(() => {
-    manager = new AvatarLotteryManager(createDatabase(), { info: jest.fn(), warn: jest.fn(), error: jest.fn() });
+    db = createDatabase();
+    manager = new AvatarLotteryManager(db, { info: jest.fn(), warn: jest.fn(), error: jest.fn() });
     manager.init();
   });
 
-  test('rerolls by default until !keep, then redraws after !reroll', () => {
-    expect(manager.shouldDraw(null)).toBe(true);
+  test('treats a valid legacy lottery row as an existing avatar assignment', () => {
+    db.rows.set('legacy-user', {
+      user_id: 'legacy-user',
+      username: 'Legacy Viewer',
+      selection_json: JSON.stringify({ packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } }),
+      state: 'pending',
+      created_at: 100,
+      updated_at: 200
+    });
 
-    const drawn = manager.draw('u1', 'Viewer', { packId: 'boba', characterId: 'Fox', options: {} });
-    expect(drawn.state).toBe('pending');
-    expect(manager.shouldDraw(manager.getChoice('u1'))).toBe(true);
-
-    expect(manager.applyCommand('u1', '!keep').state).toBe('kept');
-    expect(manager.shouldDraw(manager.getChoice('u1'))).toBe(false);
-
-    expect(manager.applyCommand('u1', '!reroll').state).toBe('reroll_armed');
-    expect(manager.shouldDraw(manager.getChoice('u1'))).toBe(true);
+    expect(manager.getAssignment('legacy-user')).toMatchObject({
+      userId: 'legacy-user',
+      selection: { packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } },
+      createdAt: 100
+    });
   });
 
-  test('accepts only exact keep and reroll commands', () => {
-    manager.draw('u1', 'Viewer', { packId: 'boba', characterId: 'Fox', options: {} });
+  test('persists an assignment and only rerolls an existing avatar to a different selection', () => {
+    const fox = { packId: 'boba', characterId: 'Fox', options: { expression: 'Default' } };
+    const bear = { packId: 'boba', characterId: 'Bear', options: { expression: 'Happy' } };
 
-    expect(manager.applyCommand('u1', '!keeper')).toBeNull();
-    expect(manager.applyCommand('u1', ' !KEEP ')).toMatchObject({ state: 'kept' });
-    expect(manager.applyCommand('u1', 'hello !reroll')).toBeNull();
-    expect(manager.applyCommand('u1', '!ReRoLl')).toMatchObject({ state: 'reroll_armed' });
+    expect(manager.reroll('missing', 'Missing', bear)).toBeNull();
+    expect(manager.assign('u1', 'Viewer', fox)).toMatchObject({ selection: fox, state: 'kept' });
+    expect(manager.reroll('u1', 'Viewer', fox)).toBeNull();
+    expect(manager.reroll('u1', 'Viewer', bear)).toMatchObject({ selection: bear, state: 'kept' });
+    expect(manager.getAssignment('u1').selection).toEqual(bear);
   });
 
-  test('creates deterministic and valid random local asset selections', () => {
+  test('draws uniformly from unique Boba animal-expression assignments only', () => {
     const library = new AssetSpriteLibrary({ dataDir: '/tmp/talking-heads-lottery-test' });
     const first = library.getRandomSelection(() => 0);
     const last = library.getRandomSelection(() => 0.999999);
-    const candidates = library.getLotteryCandidates(3, () => 0.4);
+    const all = library.getLotteryCandidates(120, () => 0);
+    const reroll = library.getRandomSelection(() => 0, first);
 
-    expect(first).toMatchObject({ packId: 'boba', characterId: 'Axolotl' });
-    expect(last).toHaveProperty('packId');
-    expect(candidates).toHaveLength(3);
-    expect(candidates.every((selection) => selection.packId && selection.characterId)).toBe(true);
+    expect(first).toEqual({
+      packId: 'boba',
+      characterId: 'Axolotl',
+      options: { expression: 'Default' }
+    });
+    expect(last).toEqual({
+      packId: 'boba',
+      characterId: 'Spider',
+      options: { expression: 'Scared' }
+    });
+    expect(all).toHaveLength(120);
+    expect(new Set(all.map((selection) => JSON.stringify(selection))).size).toBe(120);
+    expect(all.every((selection) => selection.packId === 'boba')).toBe(true);
+    expect(reroll).not.toEqual(first);
   });
 });

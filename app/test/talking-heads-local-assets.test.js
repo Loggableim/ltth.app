@@ -9,10 +9,10 @@ const TRANSPARENT_PNG = Buffer.from(
   'base64'
 );
 
-async function writePng(root, relativePath) {
+async function writePng(root, relativePath, data = TRANSPARENT_PNG) {
   const target = path.join(root, relativePath);
   await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.writeFile(target, TRANSPARENT_PNG);
+  await fs.writeFile(target, data);
 }
 
 describe('Talking Heads local asset library', () => {
@@ -25,11 +25,13 @@ describe('Talking Heads local asset library', () => {
     dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'talking-heads-output-'));
 
     await Promise.all([
-      writePng(assetRoot, 'boba/animals/Fox/Fox_Base.png'),
-      writePng(assetRoot, 'boba/animals/Fox/Fox_Eyes_Default.png'),
-      writePng(assetRoot, 'boba/animals/Fox/Fox_Mouth_Default.png'),
-      writePng(assetRoot, 'boba/animals/Fox/Fox_Mouth_Happy.png'),
-      writePng(assetRoot, 'boba/animals/Fox/Fox_Mouth_Scared.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Fox_Base.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Eyes_Default.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/EyeBrows_Default.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Nose.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Mouth_Default.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Mouth_Happy.png'),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Mouth_Scared.png'),
       writePng(assetRoot, 'kenney/PNG/Default/body_blueA.png'),
       writePng(assetRoot, 'kenney/PNG/Default/eye_human.png'),
       writePng(assetRoot, 'kenney/PNG/Default/eye_closed_happy.png'),
@@ -94,5 +96,50 @@ describe('Talking Heads local asset library', () => {
 
     expect(result.packId).toBe('boba');
     expect(result.characterId).toBe('Fox');
+  });
+
+  test('composes a selected Boba expression with the real eyebrow, nose and mouth filenames', async () => {
+    await Promise.all([
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Fox_Base.png', Buffer.from('fox-base')),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Eyes_Happy.png', Buffer.from('happy-eyes')),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/EyeBrows_Happy.png', Buffer.from('happy-brows')),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Nose.png', Buffer.from('fox-nose')),
+      writePng(assetRoot, 'boba/animals/Fox/Layers/Mouth_Happy.png', Buffer.from('happy-mouth'))
+    ]);
+
+    const result = await library.getSpriteSet({
+      packId: 'boba',
+      characterId: 'Fox',
+      options: { expression: 'Happy' }
+    });
+    const idleSvg = await fs.readFile(
+      path.join(dataDir, 'avatars', result.sprites.idle_neutral.split('/').pop()),
+      'utf8'
+    );
+
+    expect(result.options).toEqual({ expression: 'Happy' });
+    for (const layer of ['fox-base', 'happy-eyes', 'happy-brows', 'fox-nose', 'happy-mouth']) {
+      expect(idleSvg).toContain(Buffer.from(layer).toString('base64'));
+    }
+  });
+
+  test('uses the Boba combined expression layer when separate face layers are unavailable', async () => {
+    await Promise.all([
+      writePng(assetRoot, 'boba/animals/Pinguin/Layers/Pinguin_Base.png', Buffer.from('pinguin-base')),
+      writePng(assetRoot, 'boba/animals/Pinguin/Layers/Happy.png', Buffer.from('pinguin-happy')),
+      writePng(assetRoot, 'boba/animals/Pinguin/Layers/Nose.png', Buffer.from('pinguin-nose'))
+    ]);
+
+    const result = await library.getSpriteSet({
+      packId: 'boba',
+      characterId: 'Pinguin',
+      options: { expression: 'Happy' }
+    });
+
+    for (const spriteUrl of Object.values(result.sprites)) {
+      const svg = await fs.readFile(path.join(dataDir, 'avatars', spriteUrl.split('/').pop()), 'utf8');
+      expect(svg).toContain(Buffer.from('pinguin-base').toString('base64'));
+      expect(svg).toContain(Buffer.from('pinguin-happy').toString('base64'));
+    }
   });
 });

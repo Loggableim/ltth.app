@@ -274,6 +274,49 @@ class TalkingHeadsPlugin {
   }
 
   /**
+   * Resolve or create the persistent automatic avatar assignment used by TTS.
+   * Manual and cached legacy avatars are resolved by their existing paths before
+   * this primitive is asked to create a new assignment.
+   * @param {{userId: string, username: string, hasAssignedVoice: boolean}} input
+   * @returns {{created: boolean, selection: object|null, reason: string, assignment?: object}}
+   */
+  prepareAvatarAssignment({ userId, username, hasAssignedVoice } = {}) {
+    if (!userId || !this.avatarLotteryManager) {
+      return { created: false, selection: null, reason: 'unavailable' };
+    }
+
+    const existing = this.avatarLotteryManager.getAssignment(userId);
+    if (existing?.selection) {
+      return {
+        created: false,
+        selection: existing.selection,
+        reason: 'existing',
+        assignment: existing
+      };
+    }
+
+    if (hasAssignedVoice !== true) {
+      return { created: false, selection: null, reason: 'voice-not-assigned' };
+    }
+
+    if (!this.assetSpriteLibrary) {
+      this.assetSpriteLibrary = new AssetSpriteLibrary({
+        dataDir: this.api.getPluginDataDir(),
+        logger: this.logger
+      });
+    }
+    const selection = this.assetSpriteLibrary.getRandomSelection();
+    const assignment = this.avatarLotteryManager.assign(userId, username || userId, selection);
+    this._log(`Assigned ${selection.characterId}/${selection.options.expression} to ${username || userId}`, 'info');
+    return {
+      created: true,
+      selection,
+      reason: 'assigned-voice',
+      assignment
+    };
+  }
+
+  /**
    * Register the TikTok events used by the gift avatar lottery.
    * @private
    */
@@ -283,14 +326,6 @@ class TalkingHeadsPlugin {
         await this._handleLotteryGift(data || {});
       } catch (error) {
         this.logger.error('TalkingHeads: Avatar lottery gift event failed', error);
-      }
-    });
-
-    this.api.registerTikTokEvent('chat', async (data) => {
-      try {
-        await this._handleLotteryCommand(data || {});
-      } catch (error) {
-        this.logger.error('TalkingHeads: Avatar lottery chat command failed', error);
       }
     });
   }
@@ -334,9 +369,7 @@ class TalkingHeadsPlugin {
   }
 
   /**
-   * Draw and publish one local avatar lottery result for a matching gift.
-   * Pending users deliberately draw again on their next matching gift; only
-   * a kept selection is protected from another draw.
+   * Reroll and publish one local avatar result for an existing assignment.
    * @param {object} data
    * @returns {Promise<boolean>}
    * @private
@@ -346,11 +379,8 @@ class TalkingHeadsPlugin {
     const user = this._getLotteryUser(data);
     if (!user) return false;
 
-    const currentChoice = this.avatarLotteryManager.getChoice(user.userId);
-    if (!this.avatarLotteryManager.shouldDraw(currentChoice)) {
-      this._log(`Avatar lottery: ${user.username} kept their current avatar`, 'debug');
-      return false;
-    }
+    const currentAssignment = this.avatarLotteryManager.getAssignment(user.userId);
+    if (!currentAssignment?.selection) return false;
 
     if (!this.assetSpriteLibrary) {
       this.assetSpriteLibrary = new AssetSpriteLibrary({
@@ -359,8 +389,12 @@ class TalkingHeadsPlugin {
       });
     }
 
-    const winnerSelection = this.assetSpriteLibrary.getRandomSelection();
-    const candidateSelections = this.assetSpriteLibrary.getLotteryCandidates(3);
+    const winnerSelection = this.assetSpriteLibrary.getRandomSelection(Math.random, currentAssignment.selection);
+    const candidateSelections = this.assetSpriteLibrary.getLotteryCandidates(
+      3,
+      Math.random,
+      [currentAssignment.selection, winnerSelection]
+    );
     const [winnerSpriteSet, candidates] = await Promise.all([
       this.assetSpriteLibrary.getSpriteSet(winnerSelection),
       Promise.all(candidateSelections.map(async (selection) => {
@@ -373,7 +407,8 @@ class TalkingHeadsPlugin {
       }))
     ]);
 
-    const draw = this.avatarLotteryManager.draw(user.userId, user.username, winnerSelection);
+    const assignment = this.avatarLotteryManager.reroll(user.userId, user.username, winnerSelection);
+    if (!assignment) return false;
     this.io.emit('talkingheads:avatar:lottery:start', {
       userId: user.userId,
       username: user.username,
@@ -382,39 +417,11 @@ class TalkingHeadsPlugin {
         selection: winnerSelection,
         sprites: winnerSpriteSet.sprites
       },
-      state: draw.state,
-      duration: this.config.lotteryAnimationDuration,
-      keepCommand: '!keep',
-      rerollCommand: '!reroll'
+      state: assignment.state,
+      duration: this.config.lotteryAnimationDuration
     });
     this._log(`Avatar lottery: drew ${winnerSelection.packId}/${winnerSelection.characterId} for ${user.username}`, 'info');
     return true;
-  }
-
-  /**
-   * Apply exact `!keep` or `!reroll` chat choices to the user's current draw.
-   * @param {object} data
-   * @returns {Promise<object|null>}
-   * @private
-   */
-  async _handleLotteryCommand(data = {}) {
-    if (!this.avatarLotteryManager) return null;
-    const command = String(data.comment || data.message || data.text || '').trim().toLowerCase();
-    if (command !== '!keep' && command !== '!reroll') return null;
-
-    const user = this._getLotteryUser(data);
-    if (!user) return null;
-    const choice = this.avatarLotteryManager.applyCommand(user.userId, command);
-    if (!choice) return null;
-
-    this.io.emit('talkingheads:avatar:lottery:choice', {
-      userId: user.userId,
-      username: user.username,
-      state: choice.state,
-      command
-    });
-    this._log(`Avatar lottery: ${user.username} selected ${command}`, 'info');
-    return choice;
   }
 
   /**
@@ -607,7 +614,7 @@ class TalkingHeadsPlugin {
     // Bridge playback events from TTS plugin so avatars follow speech
     this._registerPlaybackBridge();
 
-    // Register gift and chat commands for the avatar lottery.
+    // Register configured gifts that reroll existing avatar assignments.
     this._registerAvatarLotteryEvents();
 
     // Register Viewer Bar TikTok events
@@ -1836,17 +1843,16 @@ class TalkingHeadsPlugin {
     let avatarData = null;
     let wasCached = false;
 
-    // A gift-awarded avatar takes precedence over the generic local selection.
-    // Pending choices remain active for TTS even though their next matching
-    // gift will draw a fresh avatar unless the viewer sends !keep.
-    const lotteryChoice = this.avatarLotteryManager?.getChoice(userId);
-    if (lotteryChoice?.selection) {
+    // Existing assignment records include valid rows created by the legacy
+    // gift-lottery implementation.
+    const existingAssignment = this.avatarLotteryManager?.getAssignment(userId);
+    if (existingAssignment?.selection) {
       try {
-        avatarData = await this._getConfiguredAssetAvatar(userId, username, lotteryChoice.selection);
+        avatarData = await this._getConfiguredAssetAvatar(userId, username, existingAssignment.selection);
         wasCached = true;
-        this._log(`Using lottery avatar for ${username}`, 'debug', lotteryChoice.selection);
+        this._log(`Using assigned avatar for ${username}`, 'debug', existingAssignment.selection);
       } catch (error) {
-        this._log(`Failed to prepare lottery avatar for ${username}: ${error.message}`, 'warn');
+        this._log(`Failed to prepare assigned avatar for ${username}: ${error.message}`, 'warn');
       }
     }
 
@@ -1883,6 +1889,22 @@ class TalkingHeadsPlugin {
       // Retain previously assigned legacy/manual sprites when they exist.
       avatarData = this.cacheManager.getAvatar(userId, 'asset-library');
       wasCached = !!avatarData;
+    }
+
+    if (!avatarData) {
+      const prepared = this.prepareAvatarAssignment({
+        userId,
+        username,
+        hasAssignedVoice: enrichedUserData.hasAssignedVoice
+      });
+      if (prepared.selection) {
+        try {
+          avatarData = await this._getConfiguredAssetAvatar(userId, username, prepared.selection);
+          wasCached = !prepared.created;
+        } catch (error) {
+          this._log(`Failed to prepare automatic avatar for ${username}: ${error.message}`, 'warn');
+        }
+      }
     }
 
     if (!avatarData) {

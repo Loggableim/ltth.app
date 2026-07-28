@@ -17,7 +17,7 @@ class AvatarLotteryManager {
     `).run();
   }
 
-  getChoice(userId) {
+  getAssignment(userId) {
     if (!userId) return null;
     try {
       const row = this.db.prepare(
@@ -26,7 +26,7 @@ class AvatarLotteryManager {
       if (!row) return null;
 
       const selection = JSON.parse(row.selection_json);
-      if (!selection || typeof selection !== 'object') return null;
+      if (!this._isValidSelection(selection)) return null;
       return {
         userId: row.user_id,
         username: row.username,
@@ -41,27 +41,28 @@ class AvatarLotteryManager {
     }
   }
 
-  shouldDraw(choice) {
-    return !choice || choice.state !== 'kept';
+  getChoice(userId) {
+    return this.getAssignment(userId);
   }
 
-  draw(userId, username, selection) {
-    if (!userId || !selection || typeof selection !== 'object') {
-      throw new Error('A user ID and asset selection are required for an avatar lottery draw');
+  assign(userId, username, selection) {
+    if (!userId || !this._isValidSelection(selection)) {
+      throw new Error('A user ID and valid asset selection are required for an avatar assignment');
     }
 
     const now = Date.now();
     const safeUserId = String(userId);
     const safeUsername = String(username || userId).slice(0, 50);
     const serializedSelection = JSON.stringify(selection);
+    const existing = this.getAssignment(safeUserId);
     this.db.prepare(`
       INSERT INTO talking_heads_avatar_lottery (
         user_id, username, selection_json, state, created_at, updated_at
-      ) VALUES (?, ?, ?, 'pending', ?, ?)
+      ) VALUES (?, ?, ?, 'kept', ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         username = excluded.username,
         selection_json = excluded.selection_json,
-        state = 'pending',
+        state = 'kept',
         updated_at = excluded.updated_at
     `).run(safeUserId, safeUsername, serializedSelection, now, now);
 
@@ -69,30 +70,38 @@ class AvatarLotteryManager {
       userId: safeUserId,
       username: safeUsername,
       selection,
-      state: 'pending',
-      createdAt: now,
+      state: 'kept',
+      createdAt: existing?.createdAt || now,
       updatedAt: now
     };
   }
 
-  applyCommand(userId, command) {
-    const normalizedCommand = String(command || '').trim().toLowerCase();
-    const nextState = normalizedCommand === '!keep'
-      ? 'kept'
-      : normalizedCommand === '!reroll'
-        ? 'reroll_armed'
-        : null;
-    if (!nextState) return null;
+  reroll(userId, username, selection) {
+    const current = this.getAssignment(userId);
+    if (!current || !this._isValidSelection(selection) || this._sameSelection(current.selection, selection)) {
+      return null;
+    }
+    return this.assign(userId, username || current.username, selection);
+  }
 
-    const choice = this.getChoice(userId);
-    if (!choice) return null;
+  _isValidSelection(selection) {
+    return !!selection
+      && typeof selection === 'object'
+      && typeof selection.packId === 'string'
+      && selection.packId.length > 0
+      && typeof selection.characterId === 'string'
+      && selection.characterId.length > 0
+      && (selection.options === undefined || (
+        selection.options
+        && typeof selection.options === 'object'
+        && !Array.isArray(selection.options)
+      ));
+  }
 
-    const updatedAt = Date.now();
-    this.db.prepare(
-      'UPDATE talking_heads_avatar_lottery SET state = ?, updated_at = ? WHERE user_id = ?'
-    ).run(nextState, updatedAt, choice.userId);
-
-    return { ...choice, state: nextState, updatedAt };
+  _sameSelection(left, right) {
+    return left.packId === right.packId
+      && left.characterId === right.characterId
+      && JSON.stringify(left.options || {}) === JSON.stringify(right.options || {});
   }
 }
 
