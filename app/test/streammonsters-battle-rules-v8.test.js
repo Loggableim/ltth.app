@@ -15,6 +15,9 @@ const {
 const PublicEventProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
 );
+const ChatCommands = require(
+  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+);
 
 function createStore() {
   const sqlite = new Database(':memory:');
@@ -135,6 +138,61 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(singleLocale.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
     expect(singleLocale.statWindowMs({ rulesVersion: 8 })).toBe(10_000);
     expect(bilingual.actionWindowMs({ rulesVersion: 8 })).toBe(10_000);
+  });
+
+  test('derives the battle roster instruction from the persisted v8 deadline', () => {
+    const { sqlite, store } = createStore();
+    const nowMs = 1_000;
+    insertMonster(sqlite, {
+      id: 'roster-alpha',
+      userId: 'roster-viewer-a',
+      name: 'Ashfang'
+    });
+    insertMonster(sqlite, {
+      id: 'roster-beta',
+      userId: 'roster-viewer-b',
+      name: 'Ripple',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const service = createService({
+      store,
+      now: () => nowMs
+    });
+    const commands = new ChatCommands({
+      store,
+      engine: { streamKey: 'stream-v8' },
+      battleService: service.battleService,
+      battleMatchService: service,
+      now: () => nowMs,
+      getCommandReference: command => `!${command}`
+    });
+
+    expect(commands.executeBattle('roster-viewer-a')).toEqual(
+      expect.objectContaining({ status: 'queued' })
+    );
+    const reserved = commands.executeBattle('roster-viewer-b');
+
+    expect(reserved.match.rosterDeadlineMs).toBe(9_000);
+    expect(reserved.message).toContain('within 8 seconds');
+    expect(reserved.message).not.toContain('15 seconds');
+    expect(reserved.rosterInstruction).toEqual({
+      deadlineMs: 9_000,
+      remainingSeconds: 8,
+      command: '!choose <slot>'
+    });
+    expect(new PublicEventProjector().project(
+      'streammonsters:chat_result',
+      {
+        username: 'Roster Viewer',
+        command: 'battle',
+        transport: 'gcce',
+        result: {
+          ...reserved,
+          messageKey: 'chatResultReserved'
+        }
+      }
+    ).result.rosterInstruction).toEqual(reserved.rosterInstruction);
   });
 
   test('caps time charge at thirty points even when locale presentation runs longer', () => {
@@ -432,10 +490,33 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       terminal: false,
       winnerId: null,
       state: {
-        'alpha-v8': { hp: 1, maxHp: 30, shield: 8, charge: 0 },
-        'beta-v8': { hp: 8, maxHp: 30, shield: 4, charge: 0 }
+        'alpha-v8': { hp: 1, maxHp: 30, shield: 5, charge: 0 },
+        'beta-v8': { hp: 8, maxHp: 30, shield: 2, charge: 0 }
       },
-      actions: []
+      actions: [
+        {
+          actorId: 'alpha-v8',
+          outcomes: [
+            {
+              type: 'shield',
+              requested: 6,
+              amount: 3,
+              arenaCollapseReduction: 3
+            }
+          ]
+        },
+        {
+          actorId: 'beta-v8',
+          outcomes: [
+            {
+              type: 'shield',
+              requested: 4,
+              amount: 2,
+              arenaCollapseReduction: 2
+            }
+          ]
+        }
+      ]
     }));
 
     submitRound(service, 5);
@@ -465,6 +546,105 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         expect.objectContaining({ shieldReduced: 2, hpDamage: 1, hp: 7, shield: 2 })
       ])
     }));
+  });
+
+  test('halves a round-five shield gain after an equal old shield was consumed', () => {
+    const { sqlite, service, matchId } = createLockedMatch();
+    const match = service.getMatch(matchId);
+    const alpha = match.participants.find(entry => (
+      entry.lockedMonsterId === 'alpha-v8'
+    ));
+    const beta = match.participants.find(entry => (
+      entry.lockedMonsterId === 'beta-v8'
+    ));
+    alpha.roster.stats.agility = 1;
+    beta.roster.stats.agility = 50;
+    sqlite.prepare(`
+      UPDATE streammonsters_matches SET round_number = 5 WHERE match_id = ?
+    `).run(matchId);
+    sqlite.prepare(`
+      UPDATE streammonsters_match_participants
+      SET roster_json = ?, combat_state_json = ?
+      WHERE match_id = ? AND participant_id = ?
+    `).run(
+      JSON.stringify(alpha.roster),
+      JSON.stringify({
+        hp: 62,
+        maxHp: 62,
+        shield: 6,
+        charge: 0,
+        burn: 0,
+        evade: 0,
+        thorns: 0,
+        reflect: 0,
+        weakened: 0
+      }),
+      matchId,
+      alpha.participantId
+    );
+    sqlite.prepare(`
+      UPDATE streammonsters_match_participants
+      SET roster_json = ?, combat_state_json = ?
+      WHERE match_id = ? AND participant_id = ?
+    `).run(
+      JSON.stringify(beta.roster),
+      JSON.stringify({
+        hp: 62,
+        maxHp: 62,
+        shield: 0,
+        charge: 0,
+        burn: 0,
+        evade: 0,
+        thorns: 0,
+        reflect: 0,
+        weakened: 0
+      }),
+      matchId,
+      beta.participantId
+    );
+
+    expect(service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'B',
+      eventId: 'collapse-defender'
+    })).toEqual(expect.objectContaining({ handled: true, waiting: true }));
+    service.submitChoice({
+      userId: 'viewer-b',
+      choice: 'A',
+      eventId: 'collapse-attacker'
+    });
+
+    const resolved = service.getMatch(matchId);
+    const resolvedAlpha = resolved.participants.find(entry => (
+      entry.lockedMonsterId === 'alpha-v8'
+    ));
+    expect(resolvedAlpha.combatState.shield).toBe(3);
+
+    const replay = service.getPublicNormalizedReplay(matchId, 0, 100);
+    const shieldAction = replay.actions.find(action => (
+      action.actorSlot === alpha.slot &&
+      action.outcomes.some(outcome => outcome.type === 'shield')
+    ));
+    expect(shieldAction.outcomes).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'shield',
+        requested: 6,
+        amount: 3,
+        arenaCollapseReduction: 3
+      })
+    ]));
+    expect(shieldAction.actorState.shield).toBe(3);
+
+    const collapse = replay.events.find(event => (
+      event.type === 'streammonsters:battle_arena_collapse'
+    ));
+    expect(collapse.payload.fighters).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        slot: alpha.slot,
+        shieldReduced: 3,
+        shield: 3
+      })
+    ]));
   });
 
   test('serializes stat windows and identifies the sanitized player and monster', () => {

@@ -156,7 +156,9 @@ function createRealRoutes(rulesVersion = 5) {
     battleMatchService,
     giftCatalogProvider: () => [],
     configProvider: {
-      getConfig: () => ({ streamMonsters: { hatchDurationMs: 120_000 } }),
+      getConfig: () => ({
+        streamMonsters: { hatchDurationMs: 120_000, rulesVersion }
+      }),
       updateConfig: jest.fn()
     }
   });
@@ -165,6 +167,78 @@ function createRealRoutes(rulesVersion = 5) {
 }
 
 describe('Stream Monsters rules-v5 battle routes', () => {
+  test('reports the active v8 contract while preserving legacy replay versions', () => {
+    const { registered, sqlite, battleMatchService } = createRealRoutes(8);
+    try {
+      insertMonster(sqlite, {
+        id: 'v8-route-alpha',
+        userId: 'viewer-v8-route-a',
+        element: 'Ember',
+        templateId: 'ashfang',
+        agility: 20
+      });
+      insertMonster(sqlite, {
+        id: 'v8-route-beta',
+        userId: 'viewer-v8-route-b',
+        element: 'Tide',
+        templateId: 'ripple',
+        agility: 10
+      });
+      battleMatchService.join({ userId: 'viewer-v8-route-a' });
+      const reserved = battleMatchService.join({ userId: 'viewer-v8-route-b' });
+
+      const stateRoute = registered.find(entry => (
+        entry.method === 'GET' && entry.routePath === '/api/streammonsters/state'
+      ));
+      const state = response();
+      stateRoute.handler({ query: {} }, state);
+      expect(state.body.config.rulesVersion).toBe(8);
+      expect(state.body.battle.rulesVersion).toBe(8);
+      expect(state.body.battle.matches).toEqual([
+        expect.objectContaining({
+          matchId: reserved.match.matchId,
+          rulesVersion: 8
+        })
+      ]);
+
+      const battleRoute = registered.find(entry => (
+        entry.method === 'GET' &&
+        entry.routePath === '/api/streammonsters/battle-state'
+      ));
+      const battleState = response();
+      battleRoute.handler({}, battleState);
+      expect(battleState.body).toEqual(expect.objectContaining({
+        success: true,
+        rulesVersion: 8,
+        matches: [
+          expect.objectContaining({
+            matchId: reserved.match.matchId,
+            rulesVersion: 8
+          })
+        ]
+      }));
+
+      [5, 6, 7].forEach(version => {
+        const matchId = `legacy-v${version}-route-contract`;
+        sqlite.prepare(`
+          INSERT INTO streammonsters_matches (
+            match_id, state, phase_version, seed, rules_version, round_number,
+            created_at_ms, updated_at_ms
+          ) VALUES (?, 'completed', 1, ?, ?, 0, 1, 1)
+        `).run(matchId, `legacy-v${version}-seed`, version);
+        expect(
+          battleMatchService.getPublicNormalizedReplay(matchId, 0, 50)
+        ).toEqual(expect.objectContaining({
+          matchId,
+          rulesVersion: version,
+          replayVersion: version
+        }));
+      });
+    } finally {
+      sqlite.close();
+    }
+  });
+
   test('serves a redacted public battle snapshot', () => {
     const { registered, battleMatchService } = createRoutes();
     const route = registered.find(entry => (

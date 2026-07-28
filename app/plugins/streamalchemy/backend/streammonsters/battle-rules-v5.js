@@ -11,6 +11,7 @@ const { elementAdvantage } = require('./battle-rules-v3');
 const RULES_VERSION = 5;
 const V6_RULES_VERSION = 6;
 const V7_RULES_VERSION = 7;
+const V8_RULES_VERSION = 8;
 const CHOICES = Object.freeze(['A', 'B', 'C']);
 const SKILL_CATALOG = Object.freeze(buildV5SkillCatalog());
 const V6_ELEMENT_ADVANTAGES = new Set(V6_ELEMENT_ADVANTAGE_PAIRS);
@@ -43,10 +44,18 @@ function addCharge(state, amount) {
   state.charge = Math.min(100, state.charge + Math.max(0, amount));
 }
 
-function addShield(state, amount, outcomes) {
-  const gained = Math.max(0, Math.round(amount));
+function addShield(state, amount, outcomes, { arenaCollapse = false } = {}) {
+  const requested = Math.max(0, Math.round(amount));
+  const gained = arenaCollapse ? Math.floor(requested / 2) : requested;
   state.shield += gained;
-  outcomes.push({ type: 'shield', amount: gained });
+  outcomes.push({
+    type: 'shield',
+    requested,
+    amount: gained,
+    ...(arenaCollapse
+      ? { arenaCollapseReduction: requested - gained }
+      : {})
+  });
 }
 
 function heal(state, amount, outcomes, type = 'heal') {
@@ -300,7 +309,14 @@ function resolveAction({
       }
       if (actionEvadeChance > 0) targetState.evade = 0;
     } else if (effect.type === 'shield') {
-      addShield(actorState, effect.power + Math.floor((Number(actor.stats?.guard) || 0) / 3), outcomes);
+      addShield(
+        actorState,
+        effect.power + Math.floor((Number(actor.stats?.guard) || 0) / 3),
+        outcomes,
+        {
+          arenaCollapse: rulesVersion >= V8_RULES_VERSION && round >= 5
+        }
+      );
     } else if (effect.type === 'heal') {
       heal(actorState, effect.power, outcomes);
     } else if (effect.type === 'lifesteal') {
@@ -426,6 +442,7 @@ module.exports = {
   RULES_VERSION,
   V6_RULES_VERSION,
   V7_RULES_VERSION,
+  V8_RULES_VERSION,
   CHOICES,
   SKILL_CATALOG,
   V6_SKILL_CATALOG,

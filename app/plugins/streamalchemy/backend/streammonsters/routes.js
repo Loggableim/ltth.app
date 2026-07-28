@@ -9,7 +9,7 @@ const {
   getEvolutionAssetPath,
   resolveStageSkill
 } = require('./catalog');
-const { V7_RULES_VERSION } = require('./battle-rules-v5');
+const { V8_RULES_VERSION } = require('./battle-rules-v5');
 const EggStageProjector = require('./egg-stage-projector');
 const {
   avatarUrlFromToken,
@@ -175,7 +175,7 @@ class StreamMonstersRoutes {
         battle: this.battleMatchService?.getPublicSnapshot?.({
           restoreReconnect: true
         }) || {
-          rulesVersion: V7_RULES_VERSION,
+          rulesVersion: this.currentRulesVersion(config),
           matches: []
         },
         recentEvents,
@@ -183,8 +183,9 @@ class StreamMonstersRoutes {
       });
     });
     this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
+      const config = this.configProvider.getConfig().streamMonsters;
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: V7_RULES_VERSION,
+        rulesVersion: this.currentRulesVersion(config),
         matches: []
       };
       res.json({ success: true, ...snapshot });
@@ -214,7 +215,7 @@ class StreamMonstersRoutes {
       const overlayDiagnostics = this.getOverlayDiagnostics();
       const gcce = this.gcceStateProvider();
       const battle = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: V7_RULES_VERSION,
+        rulesVersion: this.currentRulesVersion(config),
         matches: []
       };
       res.json({
@@ -420,7 +421,7 @@ class StreamMonstersRoutes {
             template.templateId,
             choice,
             evolutionStage,
-            V7_RULES_VERSION
+            this.currentRulesVersion(config)
           );
           const chargeRequired = choice === 'C'
             ? Math.max(1, Number(skill.chargeRequired) || 100)
@@ -464,7 +465,7 @@ class StreamMonstersRoutes {
           selectedTemplate.templateId,
           unlockedChoice,
           evolutionStage,
-          V7_RULES_VERSION
+          this.currentRulesVersion(config)
         )
       };
       const rounds = [
@@ -1779,10 +1780,21 @@ class StreamMonstersRoutes {
     };
   }
 
+  currentRulesVersion(config = {}) {
+    const candidate = Number(
+      this.battleMatchService?.rulesVersion ?? config.rulesVersion
+    );
+    if (candidate >= V8_RULES_VERSION) return V8_RULES_VERSION;
+    if (candidate >= 7) return 7;
+    if (candidate >= 6) return 6;
+    if (candidate >= 5) return 5;
+    return V8_RULES_VERSION;
+  }
+
   publicConfig(config = {}, { includeCreator = false } = {}) {
     const result = {
       enabled: Boolean(config.enabled),
-      rulesVersion: V7_RULES_VERSION,
+      rulesVersion: this.currentRulesVersion(config),
       hatchDurationMs: config.hatchDurationMs,
       incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
       eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(

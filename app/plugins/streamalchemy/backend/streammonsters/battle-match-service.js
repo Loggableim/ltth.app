@@ -1167,6 +1167,13 @@ class BattleMatchService {
       type: String(outcome.type || ''),
       ...(outcome.amount != null ? { amount: numeric(outcome.amount) } : {}),
       ...(outcome.requested != null ? { requested: numeric(outcome.requested) } : {}),
+      ...(outcome.arenaCollapseReduction != null
+        ? {
+            arenaCollapseReduction: numeric(
+              outcome.arenaCollapseReduction
+            )
+          }
+        : {}),
       ...(outcome.hits != null ? { hits: numeric(outcome.hits) } : {}),
       ...(outcome.chance != null ? { chance: numeric(outcome.chance) } : {}),
       ...(outcome.pending != null ? { pending: numeric(outcome.pending) } : {})
@@ -1462,7 +1469,11 @@ class BattleMatchService {
       );
     });
     if (this.isRulesV8(match) && match.roundNumber >= 5) {
-      outcome.state = this.applyArenaCollapse(match, state, outcome.state);
+      outcome.state = this.applyArenaCollapse(
+        match,
+        outcome.state,
+        outcome.actions
+      );
     }
     match.participants.forEach(participant => {
       this.db.prepare(`
@@ -1523,19 +1534,26 @@ class BattleMatchService {
     return this.getMatch(matchId);
   }
 
-  applyArenaCollapse(match, previousState, resolvedState) {
+  applyArenaCollapse(match, resolvedState, actions = []) {
     const damage = Math.max(1, Math.round(Number(match.roundNumber) || 5) - 4);
+    const shieldReductions = new Map();
+    actions.forEach(action => {
+      const reduced = (Array.isArray(action?.outcomes) ? action.outcomes : [])
+        .filter(outcome => outcome?.type === 'shield')
+        .reduce((total, outcome) => (
+          total + Math.max(0, Number(outcome.arenaCollapseReduction) || 0)
+        ), 0);
+      if (reduced <= 0 || !action?.actorId) return;
+      shieldReductions.set(
+        action.actorId,
+        (shieldReductions.get(action.actorId) || 0) + reduced
+      );
+    });
     const fighters = [];
     const collapsedState = Object.fromEntries(match.participants.map(participant => {
       const monsterId = participant.lockedMonsterId;
-      const before = previousState[monsterId] || {};
       const after = { ...(resolvedState[monsterId] || {}) };
-      const previousShield = Math.max(0, Math.round(Number(before.shield) || 0));
-      const resolvedShield = Math.max(0, Math.round(Number(after.shield) || 0));
-      const gainedShield = Math.max(0, resolvedShield - previousShield);
-      const retainedGain = Math.floor(gainedShield / 2);
-      const shieldReduced = gainedShield - retainedGain;
-      if (gainedShield > 0) after.shield = previousShield + retainedGain;
+      const shieldReduced = shieldReductions.get(monsterId) || 0;
       const hp = Math.max(0, Math.round(Number(after.hp) || 0));
       const hpDamage = hp > 0 ? Math.max(0, Math.min(damage, hp - 1)) : 0;
       after.hp = hp > 0 ? Math.max(1, hp - hpDamage) : 0;
@@ -2662,11 +2680,15 @@ class BattleMatchService {
       .filter(event => event.type === 'streammonsters:battle_skill_used')
       .map(event => event.payload.action);
     const result = this.sanitizePublicMatchResult(match);
+    const replayVersion = this.normalizeReplayRulesVersion(
+      match.rulesVersion,
+      this.rulesVersion
+    );
     return {
       battleId,
       matchId: match.matchId,
-      rulesVersion: match.rulesVersion,
-      replayVersion: match.rulesVersion,
+      rulesVersion: replayVersion,
+      replayVersion,
       cursor: nextCursor,
       hasMore,
       result,
@@ -2778,6 +2800,10 @@ class BattleMatchService {
       { lockedMonsterId: battle.monster_b_id, slot: 2 }
     ];
     const match = { matchId: null, participants };
+    const replayVersion = this.normalizeReplayRulesVersion(
+      battle.rulesVersion,
+      3
+    );
     const actions = (battle.rounds || []).flatMap(round => (
       Array.isArray(round.actions) ? round.actions.map(action => {
         sequence += 1;
@@ -2791,8 +2817,8 @@ class BattleMatchService {
     return {
       battleId: battle.battle_id,
       matchId: null,
-      rulesVersion: battle.rulesVersion,
-      replayVersion: battle.rulesVersion || 3,
+      rulesVersion: replayVersion,
+      replayVersion,
       winnerSlot: battle.winner_monster_id === battle.monster_a_id ? 1 : 2,
       cursor: actions.at(-1)?.eventSequence || 0,
       hasMore: false,
@@ -2827,6 +2853,17 @@ class BattleMatchService {
         : null;
     }
     return this.getPublicLegacyReplay(battle);
+  }
+
+  normalizeReplayRulesVersion(value, fallback = 3) {
+    const version = Number(value);
+    if (Number.isInteger(version) && version >= 3 && version <= this.rulesVersion) {
+      return version;
+    }
+    const normalizedFallback = Number(fallback);
+    return Number.isInteger(normalizedFallback) && normalizedFallback >= 3
+      ? Math.min(normalizedFallback, this.rulesVersion)
+      : 3;
   }
 
   getNormalizedReplay(battleOrMatchId, cursor = 0, limit = 50) {

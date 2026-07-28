@@ -345,6 +345,21 @@ function projectWait(wait = null) {
   };
 }
 
+function projectRosterInstruction(instruction = null) {
+  if (!instruction || typeof instruction !== 'object') return null;
+  const deadlineMs = Math.max(0, finiteNumber(instruction.deadlineMs, 0));
+  const remainingSeconds = Math.max(
+    0,
+    Math.min(300, finiteNumber(instruction.remainingSeconds, 0))
+  );
+  const command = boundedText(instruction.command, 64);
+  return {
+    deadlineMs,
+    remainingSeconds,
+    command: command || null
+  };
+}
+
 function projectMastery(mastery = null) {
   if (!mastery || typeof mastery !== 'object') return null;
   return {
@@ -394,6 +409,7 @@ function projectCard(card = null) {
 
 function projectChatResult(result = {}) {
   const wait = projectWait(result.wait);
+  const rosterInstruction = projectRosterInstruction(result.rosterInstruction);
   const monsters = Array.isArray(result.monsters)
     ? result.monsters.map(projectMonster).filter(Boolean)
     : [];
@@ -433,6 +449,7 @@ function projectChatResult(result = {}) {
     messageKey: boundedText(result.messageKey, 96) || 'chatResultUnknown',
     hint: boundedText(result.hint, 160),
     ...(wait ? { wait } : {}),
+    ...(rosterInstruction ? { rosterInstruction } : {}),
     ...(result.card ? { card: projectCard(result.card) } : {}),
     ...(monsters.length ? { monsters } : {}),
     ...(eggs.length ? { eggs } : {}),
