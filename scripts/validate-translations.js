@@ -9,6 +9,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { walkSource } = require('./lib/translation-source-walker');
 
 const repoRoot = path.join(__dirname, '..');
 const appRoot = path.join(repoRoot, 'app');
@@ -86,21 +87,6 @@ function checkSet(label, directory, findings) {
     }
   }
   return { label, directory: reportDirectory, keys: reference.length };
-}
-
-function walkSource(directory, output = []) {
-  if (!fs.existsSync(directory)) return output;
-  const entries = fs.readdirSync(
-    directory,
-    { withFileTypes: true }
-  ).sort((left, right) => compareText(left.name, right.name));
-  for (const entry of entries) {
-    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'docs_archive') continue;
-    const full = path.join(directory, entry.name);
-    if (entry.isDirectory()) walkSource(full, output);
-    else if (/\.(html|js)$/i.test(entry.name)) output.push(full);
-  }
-  return output;
 }
 
 function collectReferencedKeys(source) {
