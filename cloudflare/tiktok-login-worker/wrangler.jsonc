@@ -33,21 +33,16 @@
     },
     "production": {
       "name": "ltth-tiktok-login-worker",
-      "workers_dev": false,
+      "workers_dev": true,
       "preview_urls": false,
       "logpush": false,
       "observability": {
         "enabled": false
       },
       "vars": {
-        "TIKTOK_REDIRECT_URI": "https://auth.ltth.app/oauth/tiktok/callback"
+        "TIKTOK_REDIRECT_URI": "https://ltth-tiktok-login-worker.pixstash.workers.dev/oauth/tiktok/callback"
       },
-      "routes": [
-        {
-          "pattern": "auth.ltth.app",
-          "custom_domain": true
-        }
-      ]
+      "routes": []
     }
   }
 }

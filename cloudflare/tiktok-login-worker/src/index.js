@@ -1,6 +1,7 @@
 const ALLOWED_HOSTS = new Set([
   'auth.ltth.app',
-  'auth-staging.ltth.app'
+  'auth-staging.ltth.app',
+  'ltth-tiktok-login-worker.pixstash.workers.dev'
 ]);
 const AUTHORIZE_ENDPOINT = 'https://www.tiktok.com/v2/auth/authorize/';
 const TOKEN_ENDPOINT = 'https://open.tiktokapis.com/v2/oauth/token/';

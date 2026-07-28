@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createTikTokLoginWorker } from '../src/index.js';
 
 const PRODUCTION_HOST = 'auth.ltth.app';
+const WORKERS_DEV_HOST = 'ltth-tiktok-login-worker.pixstash.workers.dev';
 const CALLBACK_PATH = '/oauth/tiktok/callback';
 const TOKEN_ENDPOINT = 'https://open.tiktokapis.com/v2/oauth/token/';
 const VALID_STATE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ';
@@ -83,6 +84,24 @@ describe('TikTok Login Kit Worker request boundary', () => {
 });
 
 describe('GET /oauth/tiktok/start', () => {
+  it('accepts the deployed workers.dev callback host', async () => {
+    const worker = createTikTokLoginWorker({
+      fetchImpl: vi.fn(),
+      cryptoImpl: webcrypto
+    });
+
+    const response = await worker.fetch(
+      new Request(`https://${WORKERS_DEV_HOST}/oauth/tiktok/start`),
+      createEnv(WORKERS_DEV_HOST)
+    );
+
+    expect(response.status).toBe(302);
+    const redirect = new URL(response.headers.get('Location'));
+    expect(redirect.searchParams.get('redirect_uri')).toBe(
+      `https://${WORKERS_DEV_HOST}${CALLBACK_PATH}`
+    );
+  });
+
   it('sets a hardened random state cookie and redirects with only the basic scope', async () => {
     const worker = createTikTokLoginWorker({
       fetchImpl: vi.fn(),
