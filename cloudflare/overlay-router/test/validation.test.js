@@ -150,11 +150,63 @@ describe('authenticated JSON body parsing', () => {
     );
   });
 
-  it('enforces label and instance identifier bounds in management schemas', async () => {
+  it('accepts only exact desktop-generated enrollment material', async () => {
+    const validEnrollment = {
+      deviceId: 'd-0123456789abcdef0123456789abcdef',
+      credential: 'a'.repeat(64),
+      label: ' Studio PC '
+    };
+    const request = new Request(
+      'https://overlay.ltth.app/_ltth/v1/devices/enroll',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(validEnrollment)
+      }
+    );
+
+    await expect(parseAuthenticatedJsonBody(
+      request,
+      MANAGEMENT_BODY_SCHEMAS.deviceEnrollment
+    )).resolves.toEqual({
+      ...validEnrollment,
+      label: 'Studio PC'
+    });
+  });
+
+  it('enforces enrollment material and instance identifier bounds in management schemas', async () => {
+    const enrollmentBase = {
+      deviceId: 'd-0123456789abcdef0123456789abcdef',
+      credential: 'a'.repeat(64)
+    };
     const invalidCases = [
-      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, { label: '' }],
-      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, { label: 'x'.repeat(65) }],
-      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, { label: 'Studio\nPC' }],
+      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, {
+        ...enrollmentBase,
+        label: ''
+      }],
+      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, {
+        ...enrollmentBase,
+        label: 'x'.repeat(65)
+      }],
+      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, {
+        ...enrollmentBase,
+        label: 'Studio\nPC'
+      }],
+      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, {
+        ...enrollmentBase,
+        deviceId: 'bad id',
+        label: 'Studio PC'
+      }],
+      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, {
+        ...enrollmentBase,
+        credential: 'A'.repeat(64),
+        label: 'Studio PC'
+      }],
+      [MANAGEMENT_BODY_SCHEMAS.deviceEnrollment, {
+        ...enrollmentBase,
+        credential: 'a'.repeat(63),
+        label: 'Studio PC'
+      }],
       [MANAGEMENT_BODY_SCHEMAS.leaseUpdate, {
         deviceId: 'device-1',
         instanceId: 'x'.repeat(129),

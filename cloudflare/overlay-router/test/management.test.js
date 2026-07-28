@@ -52,6 +52,7 @@ describe('stable overlay management HTTP contract', () => {
   let repository;
   let nowMs;
   let handler;
+  let enrollmentSequence;
 
   beforeAll(async () => {
     await env.OVERLAY_ROUTING_DB.batch(
@@ -73,6 +74,7 @@ describe('stable overlay management HTTP contract', () => {
       env.OVERLAY_ROUTING_DB.prepare('DELETE FROM rate_limit_buckets')
     ]);
     nowMs = START;
+    enrollmentSequence = 0;
     handler = createManagementHandler({
       repository,
       env: {
@@ -87,6 +89,16 @@ describe('stable overlay management HTTP contract', () => {
 
   function advance(milliseconds) {
     nowMs += milliseconds;
+  }
+
+  function enrollmentBody(label = 'Desktop A') {
+    enrollmentSequence += 1;
+    const suffix = enrollmentSequence.toString(16);
+    return {
+      deviceId: `d-${suffix.padStart(32, '0')}`,
+      credential: suffix.padStart(64, '0'),
+      label
+    };
   }
 
   async function call(path, {
@@ -127,14 +139,23 @@ describe('stable overlay management HTTP contract', () => {
     return response;
   }
 
-  async function enroll(user = 'user-a', label = 'Desktop A') {
+  async function enroll(
+    user = 'user-a',
+    label = 'Desktop A',
+    enrollment = enrollmentBody(label)
+  ) {
     const response = await call('/devices/enroll', {
       method: 'POST',
       user,
-      body: { label }
+      body: enrollment
     });
     expect(response.status).toBe(201);
-    return response.json();
+    const payload = await response.json();
+    expect(payload).not.toHaveProperty('credential');
+    return {
+      ...payload,
+      credential: enrollment.credential
+    };
   }
 
   async function putLease(device, body = {}) {
@@ -191,26 +212,88 @@ describe('stable overlay management HTTP contract', () => {
     expect(await unknown.text()).toBe('Not Found');
   });
 
-  it('enrolls a random device with a one-time 256-bit credential and stores only its hash', async () => {
-    const enrolled = await enroll();
+  it('accepts desktop-generated identity and credential material but returns metadata only', async () => {
+    const material = enrollmentBody();
+    const enrolled = await enroll('user-a', 'Desktop A', material);
     expect(enrolled).toMatchObject({
       device: {
-        deviceId: expect.stringMatching(/^d-[0-9a-f]{32}$/),
+        deviceId: material.deviceId,
         label: 'Desktop A'
-      },
-      credential: expect.stringMatching(/^[0-9a-f]{64}$/)
+      }
     });
 
     const stored = await repository.findDeviceById(enrolled.device.deviceId);
     expect(stored.tokenHash).toBe(
-      await hashDeviceCredential(enrolled.credential, PEPPER)
+      await hashDeviceCredential(material.credential, PEPPER)
     );
-    expect(JSON.stringify(stored)).not.toContain(enrolled.credential);
+    expect(JSON.stringify(stored)).not.toContain(material.credential);
 
     const account = await call('/account', { user: 'user-a' });
     const payload = await account.json();
-    expect(JSON.stringify(payload)).not.toContain(enrolled.credential);
+    expect(JSON.stringify(payload)).not.toContain(material.credential);
     expect(JSON.stringify(payload)).not.toContain(stored.tokenHash);
+  });
+
+  it('replays a committed enrollment after a lost response without allocating another device', async () => {
+    handler = createManagementHandler({
+      repository,
+      env: {
+        OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER,
+        OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT: '1'
+      },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+    const material = enrollmentBody('Retry PC');
+    const first = await call('/devices/enroll', {
+      method: 'POST',
+      user: 'retry-owner',
+      body: material
+    });
+    expect(first.status).toBe(201);
+
+    let replay;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      replay = await call('/devices/enroll', {
+        method: 'POST',
+        user: 'retry-owner',
+        body: material
+      });
+      expect(replay.status).toBe(201);
+    }
+    const replayPayload = await replay.json();
+    expect(replayPayload).toEqual({
+      device: expect.objectContaining({
+        deviceId: material.deviceId,
+        label: material.label
+      })
+    });
+    expect(JSON.stringify(replayPayload)).not.toContain(material.credential);
+    expect(await repository.countActiveDevicesByOwner('retry-owner')).toBe(1);
+
+    const wrongCredential = await call('/devices/enroll', {
+      method: 'POST',
+      user: 'retry-owner',
+      body: {
+        ...material,
+        credential: 'f'.repeat(64)
+      }
+    });
+    expect(wrongCredential.status).toBe(409);
+    expect(await wrongCredential.json()).toEqual({
+      error: 'device_enrollment_conflict'
+    });
+
+    const wrongOwner = await call('/devices/enroll', {
+      method: 'POST',
+      user: 'another-owner',
+      body: material
+    });
+    expect(wrongOwner.status).toBe(409);
+    expect(await wrongOwner.json()).toEqual({
+      error: 'device_enrollment_conflict'
+    });
   });
 
   it('bounds active devices and limits enrollment to ten attempts per account per day', async () => {
@@ -223,7 +306,7 @@ describe('stable overlay management HTTP contract', () => {
     const bounded = await call('/devices/enroll', {
       method: 'POST',
       user: 'bounded-user',
-      body: { label: 'Four' }
+      body: enrollmentBody('Four')
     });
     expect(bounded.status).toBe(409);
     expect(await bounded.json()).toEqual({
@@ -235,7 +318,7 @@ describe('stable overlay management HTTP contract', () => {
       const response = await call('/devices/enroll', {
         method: 'POST',
         user: 'daily-user',
-        body: { label: `Device ${attempt}` }
+        body: enrollmentBody(`Device ${attempt}`)
       });
       if (attempt < 3) {
         expect(response.status).toBe(201);
@@ -261,7 +344,7 @@ describe('stable overlay management HTTP contract', () => {
     const limited = await call('/devices/enroll', {
       method: 'POST',
       user: 'daily-user',
-      body: { label: 'Eleven' }
+      body: enrollmentBody('Eleven')
     });
     expect(limited.status).toBe(429);
     expect(await limited.json()).toEqual({ error: 'rate_limited' });
@@ -302,12 +385,12 @@ describe('stable overlay management HTTP contract', () => {
       call('/devices/enroll', {
         method: 'POST',
         user: 'atomic-enrollment',
-        body: { label: 'Concurrent A' }
+        body: enrollmentBody('Concurrent A')
       }),
       call('/devices/enroll', {
         method: 'POST',
         user: 'atomic-enrollment',
-        body: { label: 'Concurrent B' }
+        body: enrollmentBody('Concurrent B')
       })
     ]);
 
@@ -820,7 +903,7 @@ describe('stable overlay management HTTP contract', () => {
     const response = await call('/devices/enroll', {
       method: 'POST',
       user: 'audit-outage',
-      body: { label: 'Must roll back' }
+      body: enrollmentBody('Must roll back')
     });
     expect(response.status).toBe(503);
     expect(await response.text()).toBe('Service Unavailable');
@@ -910,7 +993,17 @@ describe('stable overlay management HTTP contract', () => {
   });
 
   it.each([
-    ['POST', '/devices/enroll', { label: 'ok', extra: true }, 'user-a'],
+    [
+      'POST',
+      '/devices/enroll',
+      {
+        deviceId: 'd-0123456789abcdef0123456789abcdef',
+        credential: 'a'.repeat(64),
+        label: 'ok',
+        extra: true
+      },
+      'user-a'
+    ],
     ['POST', '/claims', { username: 'valid.name', extra: true }, 'user-a'],
     ['POST', '/claims/valid.name/restore', { extra: true }, 'user-a'],
     ['DELETE', '/claims/valid.name', { username: 'valid.name', extra: true }, 'user-a'],

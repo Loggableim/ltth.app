@@ -127,6 +127,25 @@ describe('strict opaque-host HTTP proxy', () => {
       .toBe('GET, HEAD, OPTIONS');
   });
 
+  it('keeps an origin-less request origin-less on the private upstream hop', async () => {
+    let upstreamRequest;
+    const { handle } = createHandler({
+      fetchImpl: async (request) => {
+        upstreamRequest = request;
+        return new Response('ok');
+      }
+    });
+
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}/overlay.html`
+    ));
+
+    expect(response.status).toBe(200);
+    expect(upstreamRequest.headers.get('origin')).toBeNull();
+    expect(response.headers.get('access-control-allow-origin')).toBeNull();
+    expect(response.headers.get('vary')).toBe('Origin');
+  });
+
   it.each([
     '/plugins/overlay%2Ehtml',
     '/plugins/100%25-ready%2525.html',
@@ -156,6 +175,7 @@ describe('strict opaque-host HTTP proxy', () => {
     ['PUT', '/api/state', {}],
     ['DELETE', '/socket.io/', {}],
     ['POST', '/api/state', {}],
+    ['POST', '/api/streammonsters/overlay/heartbeat/adjacent', {}],
     ['PATCH', '/overlay.html', {}],
     ['GET', '/overlay.html', { 'x-http-method-override': 'DELETE' }],
     ['GET', '/overlay.html', { 'x-method-override': 'POST' }],
@@ -179,16 +199,19 @@ describe('strict opaque-host HTTP proxy', () => {
 
     expect(response.status).toBe(404);
     expect(await response.text()).toBe('Not Found');
+    expect(response.headers.get('vary')).toBe('Origin');
     expect(repository.calls).toEqual([]);
     expect(fetchCalls).toBe(0);
   });
 
   it('allows POST only at the exact Socket.IO transport path and streams its body', async () => {
+    let upstreamRequest;
     let upstreamUrl;
     let upstreamBody;
     let upstreamRedirect;
     const { handle } = createHandler({
       fetchImpl: async (request) => {
+        upstreamRequest = request;
         upstreamUrl = request.url;
         upstreamRedirect = request.redirect;
         upstreamBody = await request.text();
@@ -213,8 +236,78 @@ describe('strict opaque-host HTTP proxy', () => {
     );
     expect(upstreamRedirect).toBe('manual');
     expect(upstreamBody).toBe('40{"event":"opaque-payload"}');
+    expect(upstreamRequest.headers.get('origin')).toBe(
+      'https://quiet-river.trycloudflare.com'
+    );
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      'https://overlay.ltth.app'
+    );
     expect(response.headers.get('access-control-allow-methods'))
       .toBe('GET, HEAD, OPTIONS, POST');
+  });
+
+  it('allows only the exact registered Stream Monsters heartbeat POST', async () => {
+    let upstreamRequest;
+    const { handle } = createHandler({
+      fetchImpl: async (request) => {
+        upstreamRequest = request;
+        return new Response('accepted', { status: 202 });
+      }
+    });
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}/api/streammonsters/overlay/heartbeat`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: `https://${ROUTE_HOST}`
+        },
+        body: '{"renderer":"webgpu"}'
+      }
+    ));
+
+    expect(response.status).toBe(202);
+    expect(upstreamRequest.url).toBe(
+      'https://quiet-river.trycloudflare.com/api/streammonsters/overlay/heartbeat'
+    );
+    expect(upstreamRequest.headers.get('origin')).toBe(
+      'https://quiet-river.trycloudflare.com'
+    );
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      `https://${ROUTE_HOST}`
+    );
+    expect(response.headers.get('access-control-allow-methods')).toBe(
+      'GET, HEAD, OPTIONS, POST'
+    );
+  });
+
+  it('rewrites accepted Socket.IO preflight origins only on the upstream hop', async () => {
+    let upstreamRequest;
+    const { handle } = createHandler({
+      fetchImpl: async (request) => {
+        upstreamRequest = request;
+        return new Response(null, {
+          status: 204,
+          headers: { vary: 'Accept-Encoding' }
+        });
+      }
+    });
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}/socket.io/?EIO=4&transport=polling`,
+      {
+        method: 'OPTIONS',
+        headers: { origin: `https://${ROUTE_HOST}` }
+      }
+    ));
+
+    expect(response.status).toBe(204);
+    expect(upstreamRequest.headers.get('origin')).toBe(
+      'https://quiet-river.trycloudflare.com'
+    );
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      `https://${ROUTE_HOST}`
+    );
+    expect(response.headers.get('vary')).toBe('Accept-Encoding, Origin');
   });
 
   it('rejects WebSocket upgrade semantics on non-GET requests', async () => {
@@ -330,27 +423,103 @@ describe('strict opaque-host HTTP proxy', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('does not forward upstream CORS authority to unrelated origins', async () => {
+  it('rejects an arbitrary browser origin before route lookup or proxying', async () => {
+    let fetchCalls = 0;
     const { handle } = createHandler({
-      fetchImpl: async () => new Response('ok', {
-        headers: {
-          'access-control-allow-origin': '*',
-          'access-control-allow-methods': '*',
-          'access-control-allow-headers': '*',
-          'access-control-allow-credentials': 'true'
-        }
-      })
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response('unexpected');
+      }
     });
     const response = await handle(new Request(
       `https://${ROUTE_HOST}/overlay.html`,
       { headers: { origin: 'https://evil.example' } }
     ));
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(404);
+    expect(fetchCalls).toBe(0);
     expect(response.headers.get('access-control-allow-origin')).toBeNull();
-    expect(response.headers.get('access-control-allow-methods')).toBeNull();
-    expect(response.headers.get('access-control-allow-headers')).toBeNull();
-    expect(response.headers.get('access-control-allow-credentials')).toBeNull();
+    expect(response.headers.get('vary')).toBe('Origin');
+  });
+
+  it.each([
+    [
+      'Socket.IO polling',
+      'POST',
+      '/socket.io/?EIO=4&transport=polling',
+      { origin: 'https://evil.example' },
+      '40'
+    ],
+    [
+      'Socket.IO preflight',
+      'OPTIONS',
+      '/socket.io/?EIO=4&transport=polling',
+      {
+        origin: 'https://evil.example',
+        'access-control-request-method': 'POST'
+      },
+      undefined
+    ],
+    [
+      'Socket.IO WebSocket upgrade',
+      'GET',
+      '/socket.io/?EIO=4&transport=websocket',
+      {
+        connection: 'Upgrade',
+        upgrade: 'websocket',
+        origin: 'https://evil.example'
+      },
+      undefined
+    ]
+  ])('rejects an arbitrary origin for %s before route lookup', async (
+    _label,
+    method,
+    pathname,
+    headers,
+    body
+  ) => {
+    let fetchCalls = 0;
+    const { repository, handle } = createHandler({
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response('unexpected');
+      }
+    });
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}${pathname}`,
+      { method, headers, body }
+    ));
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('vary')).toBe('Origin');
+    expect(repository.calls).toEqual([]);
+    expect(fetchCalls).toBe(0);
+  });
+
+  it.each([
+    [undefined, null, 'Origin'],
+    [undefined, 'Accept-Encoding', 'Accept-Encoding, Origin'],
+    [undefined, 'Origin', 'Origin'],
+    [undefined, '*', '*'],
+    ['https://overlay.ltth.app', 'Accept-Encoding', 'Accept-Encoding, Origin']
+  ])('varies every proxy response by Origin for request %s and upstream Vary %s', async (
+    origin,
+    upstreamVary,
+    expectedVary
+  ) => {
+    const { handle } = createHandler({
+      fetchImpl: async () => new Response('ok', {
+        headers: upstreamVary ? { vary: upstreamVary } : {}
+      })
+    });
+    const headers = origin ? { origin } : {};
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}/overlay.html`,
+      { headers }
+    ));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('vary')).toBe(expectedVary);
   });
 
   it('returns neutral unavailability without trying a stale route lease', async () => {
@@ -396,7 +565,8 @@ describe('strict opaque-host HTTP proxy', () => {
           connection: 'Upgrade',
           upgrade: 'websocket',
           'sec-websocket-protocol': 'socket.io',
-          cookie: 'private=session'
+          cookie: 'private=session',
+          origin: `https://${ROUTE_HOST}`
         }
       }
     ));
@@ -406,8 +576,14 @@ describe('strict opaque-host HTTP proxy', () => {
     );
     expect(upstreamRequest.headers.get('upgrade')).toBe('websocket');
     expect(upstreamRequest.headers.get('cookie')).toBeNull();
+    expect(upstreamRequest.headers.get('origin')).toBe(
+      'https://quiet-river.trycloudflare.com'
+    );
     expect(response.status).toBe(101);
     expect(response.webSocket).toBe(client);
     expect(response.headers.get('sec-websocket-protocol')).toBe('socket.io');
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      `https://${ROUTE_HOST}`
+    );
   });
 });

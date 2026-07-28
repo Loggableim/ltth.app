@@ -7,6 +7,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:raw-path-ruleset": "node --test test/raw-path-ruleset-validator.node.mjs",
+    "test:configuration": "node --test test/configuration-validator.node.mjs",
     "validate:raw-path-ruleset": "node scripts/validate-raw-path-ruleset.mjs",
     "dev": "wrangler dev",
     "deploy:staging": "wrangler deploy --env staging",

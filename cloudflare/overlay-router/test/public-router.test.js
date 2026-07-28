@@ -429,6 +429,43 @@ describe('Worker public dispatcher', () => {
     ]);
   });
 
+  it('dispatches only the isolated staging custom authorities and rejects workers.dev', async () => {
+    const events = [];
+    const worker = createOverlayRouterWorker({
+      repositoryFactory: () => ({}),
+      managementHandlerFactory: () => async () => null,
+      publicRouterFactory: () => async () => {
+        events.push('entry');
+        return new Response('entry');
+      },
+      proxyHandlerFactory: () => async () => {
+        events.push('proxy');
+        return new Response('proxy');
+      },
+      rawPathAttestationVerifier: () => true
+    });
+    const env = { OVERLAY_ROUTING_ENVIRONMENT: 'staging' };
+
+    const entry = await worker.fetch(new Request(
+      'https://overlay-staging.ltth.app/creator/overlay.html'
+    ), env, {});
+    const proxy = await worker.fetch(new Request(
+      `https://r-${ROUTE_KEY}.overlay-staging.ltth.app/overlay.html`
+    ), env, {});
+    const workersDev = await worker.fetch(new Request(
+      'https://ltth-overlay-router-staging.example.workers.dev/creator/overlay.html'
+    ), env, {});
+    const production = await worker.fetch(new Request(
+      'https://overlay.ltth.app/creator/overlay.html'
+    ), env, {});
+
+    expect(await entry.text()).toBe('entry');
+    expect(await proxy.text()).toBe('proxy');
+    expect(workersDev.status).toBe(404);
+    expect(production.status).toBe(404);
+    expect(events).toEqual(['entry', 'proxy']);
+  });
+
   it('never dispatches malformed opaque or non-HTTPS hosts to proxying', async () => {
     let entryCalls = 0;
     let proxyCalls = 0;
@@ -566,5 +603,42 @@ describe('Worker public dispatcher', () => {
 
     expect(await response.text()).toBe('entry');
     expect(events).toEqual(['management', 'entry']);
+  });
+
+  it.each([
+    ['raw-path attestation failure', {
+      rawPathAttestationVerifier: () => false
+    }],
+    ['repository setup failure', {
+      rawPathAttestationVerifier: () => true,
+      repositoryFactory: () => {
+        throw new Error('repository unavailable');
+      }
+    }],
+    ['proxy handler failure', {
+      rawPathAttestationVerifier: () => true,
+      repositoryFactory: () => ({}),
+      managementHandlerFactory: () => async () => null,
+      proxyHandlerFactory: () => {
+        throw new Error('proxy unavailable');
+      }
+    }]
+  ])('varies opaque-host neutral responses for %s', async (
+    _label,
+    overrides
+  ) => {
+    const worker = createOverlayRouterWorker({
+      repositoryFactory: () => ({}),
+      managementHandlerFactory: () => async () => null,
+      proxyHandlerFactory: () => async () => new Response('proxy'),
+      ...overrides
+    });
+
+    const response = await worker.fetch(new Request(
+      `https://r-${ROUTE_KEY}.ltth.app/overlay.html`
+    ), {}, {});
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('vary')).toBe('Origin');
   });
 });

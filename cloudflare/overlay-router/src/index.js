@@ -1,27 +1,38 @@
 import {
-  MANAGEMENT_HOST,
   createManagementHandlerFromEnvironment
 } from './management.js';
+import {
+  classifyRoutingAuthority,
+  resolveRoutingAuthorities
+} from './authority.js';
 import { hasTrustedRawPathAttestation } from './public-path.js';
-import { createProxyHandler } from './proxy.js';
+import {
+  createProxyHandler,
+  createProxyNeutralResponse
+} from './proxy.js';
 import { createPublicRouter } from './public-router.js';
 import { createOverlayRepository } from './repository.js';
-import {
-  createNeutralErrorResponse,
-  parseInternalRouteHost
-} from './validation.js';
+import { createNeutralErrorResponse } from './validation.js';
 
 export function createOverlayRouterWorker(options = {}) {
   const repositoryFactory = options.repositoryFactory ||
     ((env) => createOverlayRepository(env?.OVERLAY_ROUTING_DB));
   const managementHandlerFactory =
     options.managementHandlerFactory ||
-    ((env, repository) =>
-      createManagementHandlerFromEnvironment(env, repository));
+    ((env, repository, authorities) =>
+      createManagementHandlerFromEnvironment(
+        env,
+        repository,
+        { authorities }
+      ));
   const publicRouterFactory = options.publicRouterFactory ||
-    ((repository) => createPublicRouter({ repository }));
+    ((repository, authorities) =>
+      createPublicRouter({ repository, authorities }));
   const proxyHandlerFactory = options.proxyHandlerFactory ||
-    ((repository) => createProxyHandler({ repository }));
+    ((repository, authorities) =>
+      createProxyHandler({ repository, authorities }));
+  const authorityResolver = options.authorityResolver ||
+    resolveRoutingAuthorities;
   const rawPathAttestationVerifier =
     options.rawPathAttestationVerifier ||
     hasTrustedRawPathAttestation;
@@ -37,25 +48,32 @@ export function createOverlayRouterWorker(options = {}) {
       if (url.protocol !== 'https:' || url.port !== '') {
         return createNeutralErrorResponse(404);
       }
-      const routeKind = url.hostname === MANAGEMENT_HOST
-        ? 'entry'
-        : parseInternalRouteHost(url.hostname)
-          ? 'proxy'
-          : null;
-      if (routeKind === null) {
+      let authorities;
+      let route;
+      try {
+        authorities = authorityResolver(env);
+        route = classifyRoutingAuthority(url.hostname, authorities);
+      } catch {
+        return createNeutralErrorResponse(503);
+      }
+      if (!route) {
         return createNeutralErrorResponse(404);
       }
+      const neutral = (status) => route.kind === 'proxy'
+        ? createProxyNeutralResponse(status)
+        : createNeutralErrorResponse(status);
 
       let repository;
       let managementHandler;
       try {
         if (!rawPathAttestationVerifier(request, env)) {
-          return createNeutralErrorResponse(503);
+          return neutral(503);
         }
         repository = repositoryFactory(env);
         managementHandler = managementHandlerFactory(
           env,
-          repository
+          repository,
+          authorities
         );
         const managementResponse = await managementHandler(
           request,
@@ -66,20 +84,26 @@ export function createOverlayRouterWorker(options = {}) {
           return managementResponse;
         }
       } catch {
-        return createNeutralErrorResponse(503);
+        return neutral(503);
       }
 
       try {
-        if (routeKind === 'entry') {
-          return await publicRouterFactory(repository)(request);
+        if (route.kind === 'entry') {
+          return await publicRouterFactory(
+            repository,
+            authorities
+          )(request);
         }
-        if (routeKind === 'proxy') {
-          return await proxyHandlerFactory(repository)(request);
+        if (route.kind === 'proxy') {
+          return await proxyHandlerFactory(
+            repository,
+            authorities
+          )(request);
         }
       } catch {
-        return createNeutralErrorResponse(503);
+        return neutral(503);
       }
-      return createNeutralErrorResponse(404);
+      return neutral(404);
     }
   });
 }

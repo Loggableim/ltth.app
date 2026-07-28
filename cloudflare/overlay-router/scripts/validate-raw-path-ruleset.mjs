@@ -5,13 +5,16 @@ const DEFAULT_TEMPLATE_URL = new URL(
   import.meta.url
 );
 const MARKER_HEADER = 'x-ltth-raw-path-guard';
-const TOKEN_PLACEHOLDER =
-  '<REPLACE_WITH_64_CHAR_URL_SAFE_TOKEN>';
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
-const HOST_SCOPE =
+const PRODUCTION_HOST_SCOPE =
   'http.host eq "overlay.ltth.app" or ' +
   '(starts_with(http.host, "r-") and ' +
   'ends_with(http.host, ".ltth.app") and len(http.host) eq 43)';
+const STAGING_HOST_SCOPE =
+  'http.host eq "overlay-staging.ltth.app" or ' +
+  '(starts_with(http.host, "r-") and ' +
+  'ends_with(http.host, ".overlay-staging.ltth.app") and ' +
+  'len(http.host) eq 59)';
 const RAW_PATH = 'raw.http.request.uri.path';
 const DECODED_PATH = `url_decode(${RAW_PATH}, "r")`;
 const SAFETY_CLAUSES = [
@@ -36,8 +39,24 @@ const SAFETY_CLAUSES = [
   `not (lower(${DECODED_PATH}) contains "%2f")`,
   `not (lower(${DECODED_PATH}) contains "%5c")`
 ];
-const SAFE_RESTORE_EXPRESSION =
-  `(${HOST_SCOPE}) and ${SAFETY_CLAUSES.join(' and ')}`;
+const ENVIRONMENTS = Object.freeze([
+  Object.freeze({
+    label: 'production',
+    removeRef: 'ltth_production_raw_path_guard_remove_caller_marker',
+    restoreRef: 'ltth_production_raw_path_guard_restore_safe_marker',
+    hostScope: PRODUCTION_HOST_SCOPE,
+    placeholder:
+      '<REPLACE_WITH_PRODUCTION_64_CHAR_URL_SAFE_TOKEN>'
+  }),
+  Object.freeze({
+    label: 'staging',
+    removeRef: 'ltth_staging_raw_path_guard_remove_caller_marker',
+    restoreRef: 'ltth_staging_raw_path_guard_restore_safe_marker',
+    hostScope: STAGING_HOST_SCOPE,
+    placeholder:
+      '<REPLACE_WITH_STAGING_64_CHAR_URL_SAFE_TOKEN>'
+  })
+]);
 
 function requireCondition(condition, message, failures) {
   if (!condition) {
@@ -67,57 +86,67 @@ if (ruleset) {
     failures
   );
   requireCondition(
-    Array.isArray(ruleset.rules) && ruleset.rules.length === 2,
-    'Ruleset must contain exactly two ordered rules',
+    Array.isArray(ruleset.rules) && ruleset.rules.length === 4,
+    'Ruleset must contain two ordered rules per isolated environment',
     failures
   );
 
-  const [removeRule, restoreRule] = ruleset.rules || [];
-  const removeHeader =
-    removeRule?.action_parameters?.headers?.[MARKER_HEADER];
-  const restoreHeader =
-    restoreRule?.action_parameters?.headers?.[MARKER_HEADER];
-  const removeHeaders = removeRule?.action_parameters?.headers;
-  const restoreHeaders = restoreRule?.action_parameters?.headers;
+  for (const [environmentIndex, environment] of
+    ENVIRONMENTS.entries()) {
+    const removeRule = ruleset.rules?.[environmentIndex * 2];
+    const restoreRule = ruleset.rules?.[(environmentIndex * 2) + 1];
+    const removeHeaders = removeRule?.action_parameters?.headers;
+    const restoreHeaders = restoreRule?.action_parameters?.headers;
+    const removeHeader = removeHeaders?.[MARKER_HEADER];
+    const restoreHeader = restoreHeaders?.[MARKER_HEADER];
+    const safeRestoreExpression =
+      `(${environment.hostScope}) and ${SAFETY_CLAUSES.join(' and ')}`;
+
+    requireCondition(
+      removeRule?.ref === environment.removeRef &&
+        removeRule?.action === 'rewrite' &&
+        removeRule?.enabled === true &&
+        removeHeader?.operation === 'remove' &&
+        removeHeaders &&
+        Object.keys(removeHeaders).length === 1,
+      `${environment.label} first rule must remove every caller marker`,
+      failures
+    );
+    requireCondition(
+      restoreRule?.ref === environment.restoreRef &&
+        restoreRule?.action === 'rewrite' &&
+        restoreRule?.enabled === true &&
+        restoreHeader?.operation === 'set' &&
+        restoreHeaders &&
+        Object.keys(restoreHeaders).length === 1,
+      `${environment.label} second rule must restore only safe markers`,
+      failures
+    );
+    requireCondition(
+      restoreHeader?.value === environment.placeholder &&
+        !TOKEN_PATTERN.test(restoreHeader?.value || ''),
+      `${environment.label} must use its fail-closed token placeholder`,
+      failures
+    );
+    requireCondition(
+      removeRule?.expression === environment.hostScope,
+      `${environment.label} removal must use its exact routing-host scope`,
+      failures
+    );
+    requireCondition(
+      restoreRule?.expression === safeRestoreExpression,
+      `${environment.label} restore must enforce exact path safety`,
+      failures
+    );
+    requireCondition(
+      !/\bmatches\b|~/.test(restoreRule?.expression || ''),
+      `${environment.label} must avoid paid-plan regex operators`,
+      failures
+    );
+  }
   requireCondition(
-    removeRule?.ref === 'ltth_raw_path_guard_remove_caller_marker' &&
-      removeRule?.action === 'rewrite' &&
-      removeRule?.enabled === true &&
-      removeHeader?.operation === 'remove' &&
-      removeHeaders &&
-      Object.keys(removeHeaders).length === 1,
-    'First rule must remove every caller marker in routing scope',
-    failures
-  );
-  requireCondition(
-    restoreRule?.ref === 'ltth_raw_path_guard_restore_safe_marker' &&
-      restoreRule?.action === 'rewrite' &&
-      restoreRule?.enabled === true &&
-      restoreHeader?.operation === 'set' &&
-      restoreHeaders &&
-      Object.keys(restoreHeaders).length === 1,
-    'Second rule must restore the marker only for safe raw paths',
-    failures
-  );
-  requireCondition(
-    restoreHeader?.value === TOKEN_PLACEHOLDER &&
-      !TOKEN_PATTERN.test(restoreHeader?.value || ''),
-    'Template must contain only the fail-closed token placeholder',
-    failures
-  );
-  requireCondition(
-    removeRule?.expression === HOST_SCOPE,
-    'Removal rule must use the exact Free-compatible routing-host scope',
-    failures
-  );
-  requireCondition(
-    restoreRule?.expression === SAFE_RESTORE_EXPRESSION,
-    'Restore rule must exactly enforce raw and recursively decoded path safety',
-    failures
-  );
-  requireCondition(
-    !/\bmatches\b|~/.test(restoreRule?.expression || ''),
-    'Ruleset must not use paid-plan regular-expression operators',
+    ENVIRONMENTS[0].placeholder !== ENVIRONMENTS[1].placeholder,
+    'Production and staging must use distinct token placeholders',
     failures
   );
 }

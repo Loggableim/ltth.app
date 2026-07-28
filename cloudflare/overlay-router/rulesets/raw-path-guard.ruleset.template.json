@@ -1,12 +1,12 @@
 {
   "name": "LTTH overlay raw-path guard",
-  "description": "Ordered caller-marker removal and safe raw-path attestation for the overlay Worker.",
+  "description": "Environment-isolated caller-marker removal and safe raw-path attestation for the overlay Workers.",
   "kind": "zone",
   "phase": "http_request_late_transform",
   "rules": [
     {
-      "ref": "ltth_raw_path_guard_remove_caller_marker",
-      "description": "Remove every caller-supplied LTTH raw-path marker on routing authorities.",
+      "ref": "ltth_production_raw_path_guard_remove_caller_marker",
+      "description": "Remove every caller-supplied production LTTH raw-path marker.",
       "action": "rewrite",
       "expression": "http.host eq \"overlay.ltth.app\" or (starts_with(http.host, \"r-\") and ends_with(http.host, \".ltth.app\") and len(http.host) eq 43)",
       "action_parameters": {
@@ -19,15 +19,44 @@
       "enabled": true
     },
     {
-      "ref": "ltth_raw_path_guard_restore_safe_marker",
-      "description": "Restore the marker only when immutable raw path structure is safe.",
+      "ref": "ltth_production_raw_path_guard_restore_safe_marker",
+      "description": "Restore the production marker only when immutable raw path structure is safe.",
       "action": "rewrite",
       "expression": "(http.host eq \"overlay.ltth.app\" or (starts_with(http.host, \"r-\") and ends_with(http.host, \".ltth.app\") and len(http.host) eq 43)) and not (raw.http.request.uri.path contains \"\\\\\") and not (raw.http.request.uri.path contains \"//\") and not (raw.http.request.uri.path eq \"/.\") and not (raw.http.request.uri.path eq \"/..\") and not (raw.http.request.uri.path contains \"/./\") and not (raw.http.request.uri.path contains \"/../\") and not ends_with(raw.http.request.uri.path, \"/.\") and not ends_with(raw.http.request.uri.path, \"/..\") and not (lower(raw.http.request.uri.path) contains \"%2f\") and not (lower(raw.http.request.uri.path) contains \"%5c\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"\\\\\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"//\") and not (url_decode(raw.http.request.uri.path, \"r\") eq \"/.\") and not (url_decode(raw.http.request.uri.path, \"r\") eq \"/..\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"/./\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"/../\") and not ends_with(url_decode(raw.http.request.uri.path, \"r\"), \"/.\") and not ends_with(url_decode(raw.http.request.uri.path, \"r\"), \"/..\") and not (lower(url_decode(raw.http.request.uri.path, \"r\")) contains \"%2f\") and not (lower(url_decode(raw.http.request.uri.path, \"r\")) contains \"%5c\")",
       "action_parameters": {
         "headers": {
           "x-ltth-raw-path-guard": {
             "operation": "set",
-            "value": "<REPLACE_WITH_64_CHAR_URL_SAFE_TOKEN>"
+            "value": "<REPLACE_WITH_PRODUCTION_64_CHAR_URL_SAFE_TOKEN>"
+          }
+        }
+      },
+      "enabled": true
+    },
+    {
+      "ref": "ltth_staging_raw_path_guard_remove_caller_marker",
+      "description": "Remove every caller-supplied staging LTTH raw-path marker.",
+      "action": "rewrite",
+      "expression": "http.host eq \"overlay-staging.ltth.app\" or (starts_with(http.host, \"r-\") and ends_with(http.host, \".overlay-staging.ltth.app\") and len(http.host) eq 59)",
+      "action_parameters": {
+        "headers": {
+          "x-ltth-raw-path-guard": {
+            "operation": "remove"
+          }
+        }
+      },
+      "enabled": true
+    },
+    {
+      "ref": "ltth_staging_raw_path_guard_restore_safe_marker",
+      "description": "Restore the staging marker only when immutable raw path structure is safe.",
+      "action": "rewrite",
+      "expression": "(http.host eq \"overlay-staging.ltth.app\" or (starts_with(http.host, \"r-\") and ends_with(http.host, \".overlay-staging.ltth.app\") and len(http.host) eq 59)) and not (raw.http.request.uri.path contains \"\\\\\") and not (raw.http.request.uri.path contains \"//\") and not (raw.http.request.uri.path eq \"/.\") and not (raw.http.request.uri.path eq \"/..\") and not (raw.http.request.uri.path contains \"/./\") and not (raw.http.request.uri.path contains \"/../\") and not ends_with(raw.http.request.uri.path, \"/.\") and not ends_with(raw.http.request.uri.path, \"/..\") and not (lower(raw.http.request.uri.path) contains \"%2f\") and not (lower(raw.http.request.uri.path) contains \"%5c\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"\\\\\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"//\") and not (url_decode(raw.http.request.uri.path, \"r\") eq \"/.\") and not (url_decode(raw.http.request.uri.path, \"r\") eq \"/..\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"/./\") and not (url_decode(raw.http.request.uri.path, \"r\") contains \"/../\") and not ends_with(url_decode(raw.http.request.uri.path, \"r\"), \"/.\") and not ends_with(url_decode(raw.http.request.uri.path, \"r\"), \"/..\") and not (lower(url_decode(raw.http.request.uri.path, \"r\")) contains \"%2f\") and not (lower(url_decode(raw.http.request.uri.path, \"r\")) contains \"%5c\")",
+      "action_parameters": {
+        "headers": {
+          "x-ltth-raw-path-guard": {
+            "operation": "set",
+            "value": "<REPLACE_WITH_STAGING_64_CHAR_URL_SAFE_TOKEN>"
           }
         }
       },

@@ -2,25 +2,36 @@
 
 `raw-path-guard.ruleset.template.json` is the zone-level
 `http_request_late_transform` entry-point template for the overlay Worker. Its
-two rules are deliberately ordered:
+four rules are two deliberately ordered, environment-isolated pairs:
 
-1. remove every caller-supplied `x-ltth-raw-path-guard` header on routing
-   authorities;
-2. restore the marker only when the immutable raw path passes the structural
-   predicate.
+1. remove every caller-supplied `x-ltth-raw-path-guard` header on production
+   routing authorities;
+2. restore the production marker only when the immutable raw path passes the
+   structural predicate;
+3. remove every caller-supplied marker on staging routing authorities;
+4. restore the distinct staging marker only for a structurally safe raw path.
 
 The template uses Cloudflare's documented recursive form
-`url_decode(raw.http.request.uri.path, "r")`. It contains the invalid,
-fail-closed placeholder `<REPLACE_WITH_64_CHAR_URL_SAFE_TOKEN>`, never a usable
-secret.
+`url_decode(raw.http.request.uri.path, "r")`. It contains separate invalid,
+fail-closed production and staging placeholders, never usable secrets. The two
+tokens must be generated independently and must never be shared.
 
-Both rules use the same exact routing-host scope:
+The production pair uses this exact routing-host scope:
 
 ```text
 http.host eq "overlay.ltth.app" or
 (starts_with(http.host, "r-") and
  ends_with(http.host, ".ltth.app") and
  len(http.host) eq 43)
+```
+
+The staging pair uses this disjoint exact scope:
+
+```text
+http.host eq "overlay-staging.ltth.app" or
+(starts_with(http.host, "r-") and
+ ends_with(http.host, ".overlay-staging.ltth.app") and
+ len(http.host) eq 59)
 ```
 
 The restoration predicate uses equality, `contains`, `lower`,
@@ -47,11 +58,11 @@ npm run validate:raw-path-ruleset
 
 This parses the JSON and verifies:
 
-- the zone-level late-transform phase and exact two-rule order;
-- caller-marker removal first and restoration second, with no other header
-  mutations;
-- the exact Free-compatible routing-host scope on both rules;
-- the fail-closed placeholder;
+- the zone-level late-transform phase and exact four-rule order;
+- caller-marker removal before restoration within each environment, with no
+  other header mutations;
+- the exact, disjoint Free-compatible production and staging host scopes;
+- both distinct fail-closed placeholders;
 - every raw and recursively decoded backslash, repeated-separator, dot-segment,
   and encoded-separator clause;
 - the documented `url_decode(raw.http.request.uri.path, "r")` syntax;
@@ -76,15 +87,22 @@ Task 6:
 $env:CLOUDFLARE_API_TOKEN = '<external API token with Zone Transform Rules Write>'
 $env:CLOUDFLARE_ZONE_ID = '<external zone id>'
 $env:CLOUDFLARE_ACCOUNT_ID = '<external account id with Allow Request Tracer Read>'
-$env:OVERLAY_RAW_PATH_GUARD_TOKEN = '<random 64-character URL-safe token>'
+$env:OVERLAY_PRODUCTION_RAW_PATH_GUARD_TOKEN = '<random production 64-character URL-safe token>'
+$env:OVERLAY_STAGING_RAW_PATH_GUARD_TOKEN = '<different random staging 64-character URL-safe token>'
 ```
 
-Refuse deployment unless the token is exactly 64 URL-safe characters and the
-offline gate passes:
+Refuse deployment unless both tokens are exactly 64 URL-safe characters,
+differ from each other, and the offline gate passes:
 
 ```powershell
-if ($env:OVERLAY_RAW_PATH_GUARD_TOKEN -notmatch '^[A-Za-z0-9_-]{64}$') {
-  throw 'OVERLAY_RAW_PATH_GUARD_TOKEN must be 64 URL-safe characters'
+if ($env:OVERLAY_PRODUCTION_RAW_PATH_GUARD_TOKEN -notmatch '^[A-Za-z0-9_-]{64}$') {
+  throw 'OVERLAY_PRODUCTION_RAW_PATH_GUARD_TOKEN must be 64 URL-safe characters'
+}
+if ($env:OVERLAY_STAGING_RAW_PATH_GUARD_TOKEN -notmatch '^[A-Za-z0-9_-]{64}$') {
+  throw 'OVERLAY_STAGING_RAW_PATH_GUARD_TOKEN must be 64 URL-safe characters'
+}
+if ($env:OVERLAY_PRODUCTION_RAW_PATH_GUARD_TOKEN -ceq $env:OVERLAY_STAGING_RAW_PATH_GUARD_TOKEN) {
+  throw 'Production and staging raw-path guard tokens must differ'
 }
 npm run validate:raw-path-ruleset
 if ($LASTEXITCODE -ne 0) { throw 'Ruleset template validation failed' }
@@ -96,7 +114,8 @@ Prepare an untracked temporary payload and replace only the placeholder:
 $templatePath = Resolve-Path '.\rulesets\raw-path-guard.ruleset.template.json'
 $payloadPath = Join-Path ([IO.Path]::GetTempPath()) ("ltth-raw-path-{0}.json" -f [guid]::NewGuid())
 $payload = Get-Content -LiteralPath $templatePath -Raw | ConvertFrom-Json
-$payload.rules[1].action_parameters.headers.'x-ltth-raw-path-guard'.value = $env:OVERLAY_RAW_PATH_GUARD_TOKEN
+$payload.rules[1].action_parameters.headers.'x-ltth-raw-path-guard'.value = $env:OVERLAY_PRODUCTION_RAW_PATH_GUARD_TOKEN
+$payload.rules[3].action_parameters.headers.'x-ltth-raw-path-guard'.value = $env:OVERLAY_STAGING_RAW_PATH_GUARD_TOKEN
 $payload | ConvertTo-Json -Depth 20 -Compress | Set-Content -LiteralPath $payloadPath -NoNewline
 ```
 
@@ -119,7 +138,7 @@ curl.exe --fail-with-body --request POST `
   --data-binary "@$payloadPath"
 ```
 
-If the phase already exists and contains only these two stable `ref` values,
+If the phase already exists and contains only these four stable `ref` values,
 remove `name`, `kind`, and `phase` from the temporary object and update the
 entry point. If any unrelated rule exists, stop and perform a reviewed merge
 instead of using this replacement command:
@@ -142,11 +161,14 @@ Always remove the temporary payload after the API call:
 Remove-Item -LiteralPath $payloadPath -Force
 ```
 
-Store the same token as a Worker secret only after the Ruleset API accepted
-the expression:
+Store each environment's matching token as its own Worker secret only after
+the Ruleset API accepted the complete four-rule expression:
 
 ```powershell
-$env:OVERLAY_RAW_PATH_GUARD_TOKEN | npx wrangler secret put OVERLAY_RAW_PATH_GUARD_TOKEN --env staging
+$env:OVERLAY_STAGING_RAW_PATH_GUARD_TOKEN |
+  npx wrangler secret put OVERLAY_RAW_PATH_GUARD_TOKEN --env staging
+$env:OVERLAY_PRODUCTION_RAW_PATH_GUARD_TOKEN |
+  npx wrangler secret put OVERLAY_RAW_PATH_GUARD_TOKEN --env production
 ```
 
 ## Trace and staging acceptance gate
@@ -168,12 +190,12 @@ curl.exe --fail-with-body --request POST `
   --data-binary $traceBody
 ```
 
-Before enabling the Worker secret in production, repeat Trace and real staging
-requests for all of these classes:
+Before enabling either Worker secret, repeat Trace and real requests against
+both `overlay-staging.ltth.app` and `overlay.ltth.app` for all of these classes:
 
 - safe encoded filename dots and percents, including deep nesting: removal and
-  restoration rules match in order, and the staging request preserves the
-  original path/query;
+  the environment's removal/restoration pair matches in order, the other
+  pair does not match, and the request preserves the original path/query;
 - raw or encoded backslash, repeated slash, exact dot segments, and
   recursively encoded structural forms: removal matches but restoration does
   not, or the Worker returns neutral `404`;

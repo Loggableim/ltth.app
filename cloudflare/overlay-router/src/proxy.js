@@ -8,6 +8,10 @@ import {
   parseInternalRouteHost,
   parseQuickTunnelOrigin
 } from './validation.js';
+import {
+  PRODUCTION_ROUTING_AUTHORITIES,
+  publicEntryOrigin
+} from './authority.js';
 
 const METHOD_OVERRIDE_HEADERS = Object.freeze([
   'x-http-method-override',
@@ -17,7 +21,13 @@ const METHOD_OVERRIDE_HEADERS = Object.freeze([
 const READ_ONLY_CORS_METHODS = 'GET, HEAD, OPTIONS';
 const SOCKET_CORS_METHODS = `${READ_ONLY_CORS_METHODS}, POST`;
 const ALLOWED_CORS_HEADERS = 'Accept, Content-Type';
-const PUBLIC_ENTRY_ORIGIN = 'https://overlay.ltth.app';
+const STREAM_MONSTERS_HEARTBEAT_PATH =
+  '/api/streammonsters/overlay/heartbeat';
+
+function isAllowedPublicPostPath(pathname) {
+  return pathname === '/socket.io/' ||
+    pathname === STREAM_MONSTERS_HEARTBEAT_PATH;
+}
 
 function isAllowedMethod(request, pathname) {
   if (METHOD_OVERRIDE_HEADERS.some((name) =>
@@ -30,7 +40,8 @@ function isAllowedMethod(request, pathname) {
       request.method === 'OPTIONS') {
     return true;
   }
-  return request.method === 'POST' && pathname === '/socket.io/';
+  return request.method === 'POST' &&
+    isAllowedPublicPostPath(pathname);
 }
 
 function isWebSocketUpgrade(request) {
@@ -51,8 +62,17 @@ function buildTargetUrl(tunnelOrigin, publicUrl) {
   return target;
 }
 
-function createUpstreamRequest(request, target, webSocketUpgrade) {
+function createUpstreamRequest(
+  request,
+  target,
+  webSocketUpgrade
+) {
   const headers = filterProxyRequestHeaders(request.headers);
+  if (request.headers.has('origin')) {
+    headers.set('Origin', target.origin);
+  } else {
+    headers.delete('Origin');
+  }
   if (webSocketUpgrade) {
     headers.set('Upgrade', 'websocket');
   }
@@ -92,20 +112,34 @@ function addVaryOrigin(headers) {
   }
 }
 
-function applyNarrowCors(request, publicUrl, headers) {
+export function createProxyNeutralResponse(status) {
+  const response = createNeutralErrorResponse(status);
+  addVaryOrigin(response.headers);
+  return response;
+}
+
+function applyNarrowCors(
+  request,
+  publicUrl,
+  headers,
+  authorities
+) {
+  addVaryOrigin(headers);
   const origin = request.headers.get('origin');
   if (!origin) {
     return;
   }
-  addVaryOrigin(headers);
   const routeOrigin = `https://${publicUrl.hostname}`;
-  if (origin !== PUBLIC_ENTRY_ORIGIN && origin !== routeOrigin) {
+  if (
+    origin !== publicEntryOrigin(authorities) &&
+    origin !== routeOrigin
+  ) {
     return;
   }
   headers.set('Access-Control-Allow-Origin', origin);
   headers.set(
     'Access-Control-Allow-Methods',
-    publicUrl.pathname === '/socket.io/'
+    isAllowedPublicPostPath(publicUrl.pathname)
       ? SOCKET_CORS_METHODS
       : READ_ONLY_CORS_METHODS
   );
@@ -115,11 +149,12 @@ function applyNarrowCors(request, publicUrl, headers) {
 function createFilteredUpstreamResponse(
   request,
   publicUrl,
-  upstream
+  upstream,
+  authorities
 ) {
   const headers = filterProxyResponseHeaders(upstream.headers);
   removeUnsafeNavigationAndCorsHeaders(headers);
-  applyNarrowCors(request, publicUrl, headers);
+  applyNarrowCors(request, publicUrl, headers, authorities);
   const init = {
     status: upstream.status,
     statusText: upstream.statusText,
@@ -134,6 +169,8 @@ function createFilteredUpstreamResponse(
 export function createProxyHandler(options = {}) {
   const repository = options.repository;
   const fetchImpl = options.fetch || globalThis.fetch;
+  const authorities = options.authorities ||
+    PRODUCTION_ROUTING_AUTHORITIES;
   const now = typeof options.now === 'function'
     ? options.now
     : Date.now;
@@ -146,28 +183,45 @@ export function createProxyHandler(options = {}) {
     throw new TypeError('A proxy fetch implementation is required');
   }
 
+  function neutral(status) {
+    return createProxyNeutralResponse(status);
+  }
+
   return async function handleProxyRequest(request) {
     let publicUrl;
     try {
       publicUrl = new URL(request.url);
     } catch {
-      return createNeutralErrorResponse(404);
+      return neutral(404);
     }
     const routeKey = publicUrl.protocol === 'https:' &&
       publicUrl.port === ''
-      ? parseInternalRouteHost(publicUrl.hostname)
+      ? parseInternalRouteHost(
+        publicUrl.hostname,
+        authorities
+      )
       : null;
     if (!routeKey ||
         !isUnambiguousPublicPath(publicUrl.pathname) ||
         !isAllowedMethod(request, publicUrl.pathname)) {
-      return createNeutralErrorResponse(404);
+      return neutral(404);
+    }
+
+    const requestOrigin = request.headers.get('origin');
+    const routeOrigin = `https://${publicUrl.hostname}`;
+    if (
+      requestOrigin !== null &&
+      requestOrigin !== publicEntryOrigin(authorities) &&
+      requestOrigin !== routeOrigin
+    ) {
+      return neutral(404);
     }
 
     const upgradeHeader = request.headers.get('upgrade');
     const webSocketUpgrade = isWebSocketUpgrade(request);
     if ((upgradeHeader && !webSocketUpgrade) ||
         (webSocketUpgrade && request.method !== 'GET')) {
-      return createNeutralErrorResponse(404);
+      return neutral(404);
     }
 
     let claim;
@@ -175,7 +229,7 @@ export function createProxyHandler(options = {}) {
     try {
       claim = await repository.findActiveClaimByRouteKey(routeKey);
       if (!claim) {
-        return createNeutralErrorResponse(404);
+        return neutral(404);
       }
       const timestamp = new Date(Math.trunc(now())).toISOString();
       lease = await repository.findActiveLeaseByRouteKey(
@@ -183,17 +237,17 @@ export function createProxyHandler(options = {}) {
         timestamp
       );
     } catch {
-      return createNeutralErrorResponse(503);
+      return neutral(503);
     }
     if (!lease || lease.clerkUserId !== claim.clerkUserId) {
-      return createNeutralErrorResponse(503);
+      return neutral(503);
     }
 
     let target;
     try {
       target = buildTargetUrl(lease.tunnelOrigin, publicUrl);
     } catch {
-      return createNeutralErrorResponse(502);
+      return neutral(502);
     }
 
     let upstream;
@@ -205,22 +259,23 @@ export function createProxyHandler(options = {}) {
       );
       upstream = await fetchImpl(upstreamRequest);
     } catch {
-      return createNeutralErrorResponse(502);
+      return neutral(502);
     }
     if (!upstream ||
         !Number.isInteger(upstream.status) ||
         (upstream.status >= 300 && upstream.status < 400)) {
-      return createNeutralErrorResponse(502);
+      return neutral(502);
     }
 
     try {
       return createFilteredUpstreamResponse(
         request,
         publicUrl,
-        upstream
+        upstream,
+        authorities
       );
     } catch {
-      return createNeutralErrorResponse(502);
+      return neutral(502);
     }
   };
 }

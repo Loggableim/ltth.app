@@ -287,6 +287,82 @@ describe('overlay routing repository', () => {
     )).toBe(1);
   });
 
+  it('atomically creates or exactly replays enrollment while rejecting conflicts and a full account', async () => {
+    const enrollment = {
+      deviceId: 'device-idempotent',
+      clerkUserId: 'user-idempotent',
+      tokenHash: HASH_A,
+      label: 'Idempotent PC',
+      now: T0,
+      activeDeviceLimit: 1
+    };
+
+    const created = await repository.createOrReplayDeviceEnrollment(
+      enrollment
+    );
+    const replayed = await repository.createOrReplayDeviceEnrollment({
+      ...enrollment,
+      now: T1
+    });
+
+    expect(created).toEqual(replayed);
+    expect(replayed).toMatchObject({
+      deviceId: enrollment.deviceId,
+      clerkUserId: enrollment.clerkUserId,
+      tokenHash: HASH_A,
+      label: enrollment.label,
+      createdAt: T0,
+      lastSeenAt: T0,
+      revokedAt: null
+    });
+    expect(await repository.countActiveDevicesByOwner(
+      enrollment.clerkUserId
+    )).toBe(1);
+
+    expect(await repository.createOrReplayDeviceEnrollment({
+      ...enrollment,
+      tokenHash: HASH_B,
+      now: T1
+    })).toBeNull();
+    expect(await repository.createOrReplayDeviceEnrollment({
+      ...enrollment,
+      clerkUserId: 'another-owner',
+      now: T1
+    })).toBeNull();
+    expect(await repository.createOrReplayDeviceEnrollment({
+      ...enrollment,
+      deviceId: 'another-device',
+      now: T1
+    })).toBeNull();
+  });
+
+  it('atomically admits only one of two different enrollment identities at the device limit', async () => {
+    const admissions = await Promise.all([
+      repository.createOrReplayDeviceEnrollment({
+        deviceId: 'enrollment-admission-a',
+        clerkUserId: 'user-enrollment-limit',
+        tokenHash: HASH_A,
+        label: 'Enrollment A',
+        now: T0,
+        activeDeviceLimit: 1
+      }),
+      repository.createOrReplayDeviceEnrollment({
+        deviceId: 'enrollment-admission-b',
+        clerkUserId: 'user-enrollment-limit',
+        tokenHash: HASH_B,
+        label: 'Enrollment B',
+        now: T0,
+        activeDeviceLimit: 1
+      })
+    ]);
+
+    expect(admissions.filter(Boolean)).toHaveLength(1);
+    expect(admissions.filter((device) => device === null)).toHaveLength(1);
+    expect(await repository.countActiveDevicesByOwner(
+      'user-enrollment-limit'
+    )).toBe(1);
+  });
+
   it('lets a newly activated valid device replace the account lease', async () => {
     await repository.createDevice({
       deviceId: 'device-active-a',

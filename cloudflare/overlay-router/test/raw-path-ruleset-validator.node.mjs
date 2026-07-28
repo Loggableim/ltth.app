@@ -20,10 +20,15 @@ const VALIDATOR_PATH = path.join(
   'scripts',
   'validate-raw-path-ruleset.mjs'
 );
-const HOST_SCOPE =
+const PRODUCTION_HOST_SCOPE =
   'http.host eq "overlay.ltth.app" or ' +
   '(starts_with(http.host, "r-") and ' +
   'ends_with(http.host, ".ltth.app") and len(http.host) eq 43)';
+const STAGING_HOST_SCOPE =
+  'http.host eq "overlay-staging.ltth.app" or ' +
+  '(starts_with(http.host, "r-") and ' +
+  'ends_with(http.host, ".overlay-staging.ltth.app") and ' +
+  'len(http.host) eq 59)';
 const RAW_PATH = 'raw.http.request.uri.path';
 const DECODED_PATH = `url_decode(${RAW_PATH}, "r")`;
 const RAW_PATH_SAFETY_CLAUSES = [
@@ -55,8 +60,8 @@ const SAFETY_CLAUSES = [
   ...DECODED_PATH_SAFETY_CLAUSES
 ];
 
-function expressionFor(clauses = SAFETY_CLAUSES) {
-  return `(${HOST_SCOPE}) and ${clauses.join(' and ')}`;
+function expressionFor(scope, clauses = SAFETY_CLAUSES) {
+  return `(${scope}) and ${clauses.join(' and ')}`;
 }
 
 function runValidator(candidatePath) {
@@ -80,8 +85,23 @@ test('raw-path ruleset validator rejects every structural policy weakening', asy
   try {
     const template = JSON.parse(await readFile(TEMPLATE_PATH, 'utf8'));
     const validRuleset = structuredClone(template);
-    validRuleset.rules[0].expression = HOST_SCOPE;
-    validRuleset.rules[1].expression = expressionFor();
+    assert.deepEqual(
+      validRuleset.rules.map((rule) => rule.ref),
+      [
+        'ltth_production_raw_path_guard_remove_caller_marker',
+        'ltth_production_raw_path_guard_restore_safe_marker',
+        'ltth_staging_raw_path_guard_remove_caller_marker',
+        'ltth_staging_raw_path_guard_restore_safe_marker'
+      ]
+    );
+    validRuleset.rules[0].expression = PRODUCTION_HOST_SCOPE;
+    validRuleset.rules[1].expression = expressionFor(
+      PRODUCTION_HOST_SCOPE
+    );
+    validRuleset.rules[2].expression = STAGING_HOST_SCOPE;
+    validRuleset.rules[3].expression = expressionFor(
+      STAGING_HOST_SCOPE
+    );
 
     await t.test('accepts the complete Free-compatible safety policy', async () => {
       const candidatePath = await writeCandidate(
@@ -96,21 +116,40 @@ test('raw-path ruleset validator rejects every structural policy weakening', asy
 
     const mutations = [
       {
-        name: 'caller marker removal is not first',
+        name: 'production caller marker removal is not first',
         mutate(ruleset) {
-          ruleset.rules.reverse();
+          [ruleset.rules[0], ruleset.rules[1]] = [
+            ruleset.rules[1],
+            ruleset.rules[0]
+          ];
         }
       },
       {
-        name: 'caller marker removal scope is broader than routing hosts',
+        name: 'production marker removal scope is broader than its hosts',
         mutate(ruleset) {
           ruleset.rules[0].expression = 'true';
         }
       },
       {
-        name: 'restoration scope is broader than routing hosts',
+        name: 'production restoration scope is broader than its hosts',
         mutate(ruleset) {
           ruleset.rules[1].expression = SAFETY_CLAUSES.join(' and ');
+        }
+      },
+      {
+        name: 'staging marker removal scope is broader than its hosts',
+        mutate(ruleset) {
+          ruleset.rules[2].expression = 'true';
+        }
+      },
+      {
+        name: 'staging restoration reuses the production token',
+        mutate(ruleset) {
+          ruleset.rules[3].action_parameters.headers[
+            'x-ltth-raw-path-guard'
+          ].value = validRuleset.rules[1].action_parameters.headers[
+            'x-ltth-raw-path-guard'
+          ].value;
         }
       },
       {
@@ -123,8 +162,8 @@ test('raw-path ruleset validator rejects every structural policy weakening', asy
       {
         name: 'recursive decode uses an invalid option',
         mutate(ruleset) {
-          ruleset.rules[1].expression =
-            ruleset.rules[1].expression.replaceAll('"r"', '"u"');
+          ruleset.rules[3].expression =
+            ruleset.rules[3].expression.replaceAll('"r"', '"u"');
         }
       },
       {
@@ -140,14 +179,20 @@ test('raw-path ruleset validator rejects every structural policy weakening', asy
     ];
 
     for (const [index, clause] of SAFETY_CLAUSES.entries()) {
-      mutations.push({
-        name: `required safety clause ${index + 1} is missing`,
-        mutate(ruleset) {
-          ruleset.rules[1].expression = expressionFor(
-            SAFETY_CLAUSES.filter((candidate) => candidate !== clause)
-          );
-        }
-      });
+      for (const [label, ruleIndex, scope] of [
+        ['production', 1, PRODUCTION_HOST_SCOPE],
+        ['staging', 3, STAGING_HOST_SCOPE]
+      ]) {
+        mutations.push({
+          name: `${label} safety clause ${index + 1} is missing`,
+          mutate(ruleset) {
+            ruleset.rules[ruleIndex].expression = expressionFor(
+              scope,
+              SAFETY_CLAUSES.filter((candidate) => candidate !== clause)
+            );
+          }
+        });
+      }
     }
 
     for (const [index, mutation] of mutations.entries()) {

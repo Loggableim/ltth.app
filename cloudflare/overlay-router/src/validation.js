@@ -1,11 +1,13 @@
+import {
+  PRODUCTION_ROUTING_AUTHORITIES,
+  classifyRoutingAuthority
+} from './authority.js';
+
 export const AUTHENTICATED_JSON_MAX_BYTES = 4096;
 export const DEVICE_LABEL_MAX_LENGTH = 64;
 export const INSTANCE_ID_MAX_LENGTH = 128;
 export const DEVICE_ID_MAX_LENGTH = 128;
 
-const ROUTE_KEY_PATTERN = /^[0-9a-f]{32}$/;
-const INTERNAL_ROUTE_HOST_PATTERN =
-  /^r-([0-9a-f]{32})\.ltth\.app$/;
 const QUICK_TUNNEL_HOST_PATTERN =
   /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.trycloudflare\.com$/;
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9._:-]+$/;
@@ -68,12 +70,12 @@ export function generateRouteKey() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export function parseInternalRouteHost(hostname) {
-  if (typeof hostname !== 'string') {
-    return null;
-  }
-  const match = INTERNAL_ROUTE_HOST_PATTERN.exec(hostname);
-  return match && ROUTE_KEY_PATTERN.test(match[1]) ? match[1] : null;
+export function parseInternalRouteHost(
+  hostname,
+  authorities = PRODUCTION_ROUTING_AUTHORITIES
+) {
+  const classified = classifyRoutingAuthority(hostname, authorities);
+  return classified?.kind === 'proxy' ? classified.routeKey : null;
 }
 
 export function parseQuickTunnelOrigin(value) {
@@ -134,6 +136,26 @@ function normalizeIdentifier(value, maxLength) {
   return value;
 }
 
+function normalizeEnrollmentDeviceId(value) {
+  if (
+    typeof value !== 'string' ||
+    !/^d-[0-9a-f]{32}$/.test(value)
+  ) {
+    invalid();
+  }
+  return value;
+}
+
+function normalizeEnrollmentCredential(value) {
+  if (
+    typeof value !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(value)
+  ) {
+    invalid();
+  }
+  return value;
+}
+
 function normalizeRevision(value) {
   if (!Number.isSafeInteger(value) || value < 1) {
     invalid();
@@ -154,6 +176,8 @@ function schema(maxBytes, fields) {
 
 export const MANAGEMENT_BODY_SCHEMAS = Object.freeze({
   deviceEnrollment: schema(512, {
+    deviceId: field(normalizeEnrollmentDeviceId),
+    credential: field(normalizeEnrollmentCredential),
     label: field(normalizeDeviceLabel)
   }),
   claim: schema(256, {

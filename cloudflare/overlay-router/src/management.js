@@ -20,8 +20,13 @@ import {
   RequestValidationError,
   createNeutralErrorResponse
 } from './validation.js';
+import {
+  PRODUCTION_ROUTING_AUTHORITIES,
+  resolveRoutingAuthorities
+} from './authority.js';
 
-export const MANAGEMENT_HOST = 'overlay.ltth.app';
+export const MANAGEMENT_HOST =
+  PRODUCTION_ROUTING_AUTHORITIES.entryHost;
 export const MANAGEMENT_PREFIX = '/_ltth/v1';
 export const DEVICE_ID_HEADER = 'x-ltth-device-id';
 export const DEFAULT_MAX_ACTIVE_DEVICES = 5;
@@ -37,15 +42,6 @@ class ManagementError extends Error {
     this.code = code;
     this.status = status;
   }
-}
-
-function randomHex(byteLength) {
-  const bytes = new Uint8Array(byteLength);
-  crypto.getRandomValues(bytes);
-  return Array.from(
-    bytes,
-    (byte) => byte.toString(16).padStart(2, '0')
-  ).join('');
 }
 
 function jsonResponse(payload, status = 200) {
@@ -195,6 +191,8 @@ export function createManagementHandler(options = {}) {
     throw new TypeError('A management repository is required');
   }
   const workerEnv = options.env || {};
+  const authorities = options.authorities ||
+    PRODUCTION_ROUTING_AUTHORITIES;
   const clock = typeof options.now === 'function'
     ? options.now
     : Date.now;
@@ -304,6 +302,24 @@ export function createManagementHandler(options = {}) {
       MANAGEMENT_BODY_SCHEMAS.deviceEnrollment
     );
     const timestamp = mutationTimestamp(clock());
+    const tokenHash = await hashDeviceCredential(
+      body.credential,
+      workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
+    );
+    const existing = await repository.findDeviceById(body.deviceId);
+    if (existing) {
+      if (
+        existing.clerkUserId !== auth.clerkUserId ||
+        existing.tokenHash !== tokenHash ||
+        existing.label !== body.label ||
+        existing.revokedAt !== null
+      ) {
+        domainError('device_enrollment_conflict', 409);
+      }
+      return jsonResponse({
+        device: sanitizeDevice(existing)
+      }, 201);
+    }
     const rate = await consumeRateLimit(
       repository,
       RATE_LIMITS.ENROLLMENTS_PER_ACCOUNT,
@@ -322,22 +338,16 @@ export function createManagementHandler(options = {}) {
       );
       domainError('rate_limited', 429);
     }
-    const deviceId = `d-${randomHex(16)}`;
-    const credential = randomHex(32);
-    const tokenHash = await hashDeviceCredential(
-      credential,
-      workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
-    );
     const auditEvent = atomicAudit(
       request,
       auth.clerkUserId,
       'device_enroll',
       'enrolled',
-      { deviceId },
+      { deviceId: body.deviceId },
       timestamp.iso
     );
-    const device = await repository.createDeviceWithActiveLimit({
-      deviceId,
+    const device = await repository.createOrReplayDeviceEnrollment({
+      deviceId: body.deviceId,
       clerkUserId: auth.clerkUserId,
       tokenHash,
       label: body.label,
@@ -346,6 +356,19 @@ export function createManagementHandler(options = {}) {
       auditEvent
     });
     if (!device) {
+      const conflict = await repository.findDeviceById(body.deviceId);
+      if (conflict) {
+        record(
+          request,
+          context,
+          auth.clerkUserId,
+          'device_enroll',
+          'device_enrollment_conflict',
+          { deviceId: body.deviceId },
+          timestamp.iso
+        );
+        domainError('device_enrollment_conflict', 409);
+      }
       record(
         request,
         context,
@@ -359,8 +382,7 @@ export function createManagementHandler(options = {}) {
     }
     pruneAfterAtomicAudit(context, timestamp.iso);
     return jsonResponse({
-      device: sanitizeDevice(device),
-      credential
+      device: sanitizeDevice(device)
     }, 201);
   }
 
@@ -780,7 +802,7 @@ export function createManagementHandler(options = {}) {
     if (relativePath === null) {
       return null;
     }
-    if (url.hostname !== MANAGEMENT_HOST ||
+    if (url.hostname !== authorities.entryHost ||
         url.protocol !== 'https:' ||
         url.port !== '') {
       return createNeutralErrorResponse(404);
@@ -866,6 +888,8 @@ export function createManagementHandlerFromEnvironment(
   return createManagementHandler({
     ...options,
     env,
-    repository
+    repository,
+    authorities: options.authorities ||
+      resolveRoutingAuthorities(env)
   });
 }

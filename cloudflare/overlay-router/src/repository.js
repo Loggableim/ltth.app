@@ -488,6 +488,92 @@ export class OverlayRepository {
     return mapDevice(row);
   }
 
+  async createOrReplayDeviceEnrollment({
+    deviceId,
+    clerkUserId,
+    tokenHash,
+    label,
+    now,
+    activeDeviceLimit,
+    auditEvent = null
+  }) {
+    requireString(deviceId, 'deviceId');
+    requireString(clerkUserId, 'clerkUserId');
+    requireTokenHash(tokenHash);
+    requireString(label, 'label');
+    requireUtcIso(now, 'now');
+    if (!Number.isSafeInteger(activeDeviceLimit) ||
+        activeDeviceLimit < 1) {
+      throw new TypeError(
+        'activeDeviceLimit must be a positive safe integer'
+      );
+    }
+
+    const mutation = this.database.prepare(`
+      INSERT INTO devices (
+        device_id,
+        clerk_user_id,
+        token_hash,
+        label,
+        created_at,
+        last_seen_at,
+        revoked_at
+      )
+      SELECT ?, ?, ?, ?, ?, ?, NULL
+      WHERE (
+        EXISTS (
+          SELECT 1
+          FROM devices
+          WHERE device_id = ?
+            AND clerk_user_id = ?
+            AND token_hash = ?
+            AND label = ?
+            AND revoked_at IS NULL
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1
+            FROM devices
+            WHERE device_id = ?
+          )
+          AND (
+            SELECT COUNT(*)
+            FROM devices
+            WHERE clerk_user_id = ?
+              AND revoked_at IS NULL
+          ) < ?
+        )
+      )
+      ON CONFLICT(device_id) DO UPDATE SET
+        device_id = excluded.device_id
+      WHERE devices.clerk_user_id = excluded.clerk_user_id
+        AND devices.token_hash = excluded.token_hash
+        AND devices.label = excluded.label
+        AND devices.revoked_at IS NULL
+      RETURNING *
+    `).bind(
+      deviceId,
+      clerkUserId,
+      tokenHash,
+      label,
+      now,
+      now,
+      deviceId,
+      clerkUserId,
+      tokenHash,
+      label,
+      deviceId,
+      clerkUserId,
+      activeDeviceLimit
+    );
+    const row = await firstWithOptionalAudit(
+      this.database,
+      mutation,
+      auditEvent
+    );
+    return mapDevice(row);
+  }
+
   async findDeviceById(deviceId) {
     requireString(deviceId, 'deviceId');
     const row = await this.database.prepare(`

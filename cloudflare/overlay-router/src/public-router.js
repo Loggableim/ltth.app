@@ -8,8 +8,11 @@ import {
   normalizeTikTokUsername,
   parseInternalRouteHost
 } from './validation.js';
+import {
+  PRODUCTION_ROUTING_AUTHORITIES,
+  buildOpaqueRouteHost
+} from './authority.js';
 
-const PUBLIC_ENTRY_HOST = 'overlay.ltth.app';
 const RESERVED_ENTRY_SEGMENT = '_ltth';
 const OFFLINE_PROBE_RETRY_SECONDS = 5;
 
@@ -80,8 +83,15 @@ function isNavigationRequest(request) {
     .some((value) => value.trim().toLowerCase().startsWith('text/html'));
 }
 
-function createRedirectResponse(routeKey, remainingPath, search) {
-  const target = new URL(`https://r-${routeKey}.ltth.app`);
+function createRedirectResponse(
+  routeKey,
+  remainingPath,
+  search,
+  authorities
+) {
+  const target = new URL(
+    `https://${buildOpaqueRouteHost(routeKey, authorities)}`
+  );
   target.pathname = remainingPath;
   target.search = search;
   if (target.pathname !== remainingPath || target.search !== search) {
@@ -97,6 +107,8 @@ function createRedirectResponse(routeKey, remainingPath, search) {
 
 export function createPublicRouter(options = {}) {
   const repository = options.repository;
+  const authorities = options.authorities ||
+    PRODUCTION_ROUTING_AUTHORITIES;
   const now = typeof options.now === 'function'
     ? options.now
     : Date.now;
@@ -114,7 +126,7 @@ export function createPublicRouter(options = {}) {
       return createNeutralErrorResponse(404);
     }
     if (url.protocol !== 'https:' ||
-        url.hostname !== PUBLIC_ENTRY_HOST ||
+        url.hostname !== authorities.entryHost ||
         url.port !== '' ||
         !isUnambiguousPublicPath(url.pathname) ||
         (request.method !== 'GET' && request.method !== 'HEAD')) {
@@ -134,7 +146,8 @@ export function createPublicRouter(options = {}) {
         return createNeutralErrorResponse(404);
       }
       if (parseInternalRouteHost(
-        `r-${claim.routeKey}.ltth.app`
+        buildOpaqueRouteHost(claim.routeKey, authorities),
+        authorities
       ) !== claim.routeKey) {
         return createNeutralErrorResponse(503);
       }
@@ -162,7 +175,8 @@ export function createPublicRouter(options = {}) {
     return createRedirectResponse(
       claim.routeKey,
       entry.remainingPath,
-      url.search
+      url.search,
+      authorities
     ) || createNeutralErrorResponse(503);
   };
 }

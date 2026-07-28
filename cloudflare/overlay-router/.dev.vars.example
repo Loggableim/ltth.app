@@ -5,6 +5,8 @@
 
 # The Worker rejects Clerk-authenticated requests until these are replaced in
 # your private environment with values for the existing LTTH Clerk application.
+# This is a fixed JWT trust list: a present azp must match it exactly; aud is
+# checked only when azp is absent. Never derive it from CORS or request Origin.
 CLERK_ISSUER=https://clerk.invalid
 CLERK_AUTHORIZED_PARTIES=http://localhost:3000
 CLERK_JWKS_URL=https://clerk.invalid/.well-known/jwks.json
@@ -15,7 +17,10 @@ OVERLAY_ADMIN_CLERK_USER_IDS=
 
 # Deliberately fake local-only values. The raw-path token is syntactically valid
 # so local guard tests can supply it as x-ltth-raw-path-guard; it is not a
-# production secret and cannot stand in for the Cloudflare Transform Rule gate.
+# production or staging secret and cannot stand in for the Cloudflare Transform
+# Rule gate. Staging and production must use different private tokens in their
+# respective four-rule template placeholders; never copy this local value to
+# either environment.
 OVERLAY_DEVICE_TOKEN_PEPPER=LOCAL_DEVELOPMENT_ONLY_NOT_A_SECRET
 OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT=5
 OVERLAY_RAW_PATH_GUARD_TOKEN=local-development-only-raw-path-guard-token-0000
