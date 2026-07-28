@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -627,6 +628,199 @@ func TestFailedProductionDependencyReverificationRefusesServerStart(t *testing.T
 	}
 	if serverStartCalls != 0 {
 		t.Fatalf("server command was started %d time(s) after failed dependency preflight", serverStartCalls)
+	}
+}
+
+func TestNativeDependencyInstallRevokesAuthorizationUntilIntegrityReverification(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.appDir = t.TempDir()
+	launcher.nodePath = filepath.Join(t.TempDir(), "node.exe")
+	launcher.dependenciesVerified = true
+	if err := os.Mkdir(filepath.Join(launcher.appDir, "node_modules"), 0755); err != nil {
+		t.Fatalf("failed to create node_modules: %v", err)
+	}
+
+	installCalls := 0
+	verifyCalls := 0
+	serverStartCalls := 0
+	launcher.dependencyInstaller = func() error {
+		installCalls++
+		return nil
+	}
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		verifyCalls++
+		return []byte("production dependency integrity check failed"), errors.New("exit status 1")
+	}
+	launcher.serverCommandStarter = func(_ *exec.Cmd) error {
+		serverStartCalls++
+		return nil
+	}
+
+	err := launcher.installAndVerifyProductionDependencies()
+	if err == nil {
+		t.Fatal("failed integrity verification after native dependency install should fail")
+	}
+	if installCalls != 1 || verifyCalls != 1 {
+		t.Fatalf("native dependency repair calls: install=%d verify=%d, expected 1/1", installCalls, verifyCalls)
+	}
+	if launcher.dependenciesVerified {
+		t.Fatal("dependency installation must revoke stale startup authorization")
+	}
+
+	cmd, startErr := launcher.startTool()
+	if startErr == nil || cmd != nil {
+		t.Fatalf("server start should be refused after failed post-install verification, cmd=%v err=%v", cmd, startErr)
+	}
+	if serverStartCalls != 0 {
+		t.Fatalf("server command was started %d time(s) after failed post-install verification", serverStartCalls)
+	}
+}
+
+func TestConcurrentManualStartsPerformOneRepairAndStartAtMostOnce(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.appDir = filepath.Join(launcher.exeDir, "app")
+	launcher.nodePath = filepath.Join(launcher.exeDir, "runtime", "node", "node.exe")
+	port := 43210
+	launcher.preferredPort = port
+	launcher.settings = defaultLauncherSettings()
+	if err := os.MkdirAll(filepath.Join(launcher.appDir, "node_modules"), 0755); err != nil {
+		t.Fatalf("failed to create node_modules: %v", err)
+	}
+
+	oldPortAvailable := selectedPortAvailable
+	selectedPortAvailable = func(_ int) bool { return true }
+	defer func() { selectedPortAvailable = oldPortAvailable }()
+
+	var repaired atomic.Bool
+	var installCalls atomic.Int32
+	var startCalls atomic.Int32
+	installEntered := make(chan struct{}, 2)
+	allowInstall := make(chan struct{})
+	serverDone := make(chan struct{})
+
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		if repaired.Load() {
+			return []byte("production-dependencies-ok"), nil
+		}
+		return []byte("partial SDK"), errors.New("exit status 1")
+	}
+	launcher.dependencyInstaller = func() error {
+		installCalls.Add(1)
+		installEntered <- struct{}{}
+		<-allowInstall
+		repaired.Store(true)
+		return nil
+	}
+	launcher.serverCommandStarter = func(_ *exec.Cmd) error {
+		startCalls.Add(1)
+		return nil
+	}
+	launcher.serverCommandWaiter = func(_ *exec.Cmd) error {
+		<-serverDone
+		return nil
+	}
+
+	firstResult := make(chan error, 1)
+	secondResult := make(chan error, 1)
+	go func() { firstResult <- launcher.manualStartServer(port) }()
+	<-installEntered
+	go func() { secondResult <- launcher.manualStartServer(port) }()
+
+	secondRepairStarted := false
+	var secondErr error
+	select {
+	case <-installEntered:
+		secondRepairStarted = true
+	case secondErr = <-secondResult:
+	case <-time.After(2 * time.Second):
+		t.Fatal("concurrent server start did not reject or enter dependency repair")
+	}
+	close(allowInstall)
+
+	firstErr := <-firstResult
+	if secondRepairStarted {
+		secondErr = <-secondResult
+	}
+	close(serverDone)
+
+	if secondRepairStarted {
+		t.Fatal("concurrent server start entered a duplicate dependency repair")
+	}
+	if firstErr != nil {
+		t.Fatalf("first server start failed: %v", firstErr)
+	}
+	if secondErr == nil {
+		t.Fatal("concurrent server start should be rejected while the first transaction is reserved")
+	}
+	if installCalls.Load() != 1 || startCalls.Load() != 1 {
+		t.Fatalf("concurrent starts performed install=%d start=%d, expected 1/1", installCalls.Load(), startCalls.Load())
+	}
+}
+
+func TestConcurrentManualStartsDoNotRetryOrStartAfterFailedPreflight(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.appDir = filepath.Join(launcher.exeDir, "app")
+	launcher.nodePath = filepath.Join(launcher.exeDir, "runtime", "node", "node.exe")
+	port := 43211
+	launcher.preferredPort = port
+	launcher.settings = defaultLauncherSettings()
+	if err := os.MkdirAll(filepath.Join(launcher.appDir, "node_modules"), 0755); err != nil {
+		t.Fatalf("failed to create node_modules: %v", err)
+	}
+
+	var installCalls atomic.Int32
+	var startCalls atomic.Int32
+	installEntered := make(chan struct{}, 2)
+	allowInstall := make(chan struct{})
+
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		return []byte("partial SDK"), errors.New("exit status 1")
+	}
+	launcher.dependencyInstaller = func() error {
+		installCalls.Add(1)
+		installEntered <- struct{}{}
+		<-allowInstall
+		return nil
+	}
+	launcher.serverCommandStarter = func(_ *exec.Cmd) error {
+		startCalls.Add(1)
+		return nil
+	}
+
+	firstResult := make(chan error, 1)
+	secondResult := make(chan error, 1)
+	go func() { firstResult <- launcher.manualStartServer(port) }()
+	<-installEntered
+	go func() { secondResult <- launcher.manualStartServer(port) }()
+
+	secondRepairStarted := false
+	var secondErr error
+	select {
+	case <-installEntered:
+		secondRepairStarted = true
+	case secondErr = <-secondResult:
+	case <-time.After(2 * time.Second):
+		t.Fatal("concurrent failed preflight did not reject or enter dependency repair")
+	}
+	close(allowInstall)
+
+	firstErr := <-firstResult
+	if secondRepairStarted {
+		secondErr = <-secondResult
+	}
+	if secondRepairStarted {
+		t.Fatal("concurrent failed preflight entered a duplicate dependency repair")
+	}
+	if firstErr == nil || secondErr == nil {
+		t.Fatalf("both failed/concurrent starts should be rejected, first=%v second=%v", firstErr, secondErr)
+	}
+	if installCalls.Load() != 1 {
+		t.Fatalf("failed concurrent preflight installed %d times, expected exactly once", installCalls.Load())
+	}
+	if startCalls.Load() != 0 {
+		t.Fatalf("server started %d time(s) after failed concurrent preflight", startCalls.Load())
 	}
 }
 

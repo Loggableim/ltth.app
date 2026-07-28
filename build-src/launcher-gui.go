@@ -94,6 +94,7 @@ type loggedWriteCounter struct {
 
 type dependencyCommandRunner func(executable string, args []string, dir string, env []string) ([]byte, error)
 type serverCommandStarter func(cmd *exec.Cmd) error
+type serverCommandWaiter func(cmd *exec.Cmd) error
 
 func (wc *loggedWriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
@@ -141,6 +142,7 @@ type Launcher struct {
 	nodeCmd                 *exec.Cmd  // Referenz auf laufenden Node-Prozess
 	nodeMu                  sync.Mutex // Schützt nodeCmd-Zugriff
 	startMu                 sync.Mutex
+	startupGate             sync.Mutex
 	resolvedNodeVersion     string // Node.js LTS version resolved at startup
 	settings                LauncherSettings
 	pluginFailures          []PluginFailure
@@ -148,6 +150,7 @@ type Launcher struct {
 	dependencyInstaller     func() error
 	dependenciesVerified    bool
 	serverCommandStarter    serverCommandStarter
+	serverCommandWaiter     serverCommandWaiter
 }
 
 var allowedLocales = []string{"de", "en", "es", "fr"}
@@ -2801,6 +2804,12 @@ func (l *Launcher) verifyProductionDependencies() error {
 }
 
 func (l *Launcher) ensureProductionDependencies() (bool, error) {
+	l.startupGate.Lock()
+	defer l.startupGate.Unlock()
+	return l.ensureProductionDependenciesLocked()
+}
+
+func (l *Launcher) ensureProductionDependenciesLocked() (bool, error) {
 	l.dependenciesVerified = false
 	needsRepair := !l.checkNodeModules()
 
@@ -2816,24 +2825,40 @@ func (l *Launcher) ensureProductionDependencies() (bool, error) {
 	l.updateProgressLocalized(40, "status.installing_dependencies", "Installiere Abhängigkeiten...")
 	l.updateProgressLocalized(45, "status.installation_hint", "HINWEIS: npm ci --omit=dev kann einige Minuten dauern, bitte das Fenster offen halten und warten")
 
-	installer := l.dependencyInstaller
-	if installer == nil {
-		installer = l.installDependencies
-	}
-	if err := installer(); err != nil {
+	if err := l.installAndVerifyProductionDependenciesLocked(); err != nil {
 		return true, fmt.Errorf("production dependency repair failed: %w", err)
 	}
-	if !l.checkNodeModules() {
-		return true, fmt.Errorf("production dependency repair completed without creating node_modules")
-	}
-	if err := l.verifyProductionDependencies(); err != nil {
-		return true, fmt.Errorf("production dependencies still fail integrity verification after one repair: %w", err)
-	}
-
-	l.dependenciesVerified = true
 	l.updateProgressLocalized(80, "status.installation_done", "Installation abgeschlossen!")
 	l.logAndSync("[SUCCESS] Production dependencies repaired and re-verified")
 	return true, nil
+}
+
+func (l *Launcher) runDependencyInstallerLocked() error {
+	l.dependenciesVerified = false
+	if l.dependencyInstaller != nil {
+		return l.dependencyInstaller()
+	}
+	return l.installDependenciesLocked()
+}
+
+func (l *Launcher) installAndVerifyProductionDependencies() error {
+	l.startupGate.Lock()
+	defer l.startupGate.Unlock()
+	return l.installAndVerifyProductionDependenciesLocked()
+}
+
+func (l *Launcher) installAndVerifyProductionDependenciesLocked() error {
+	if err := l.runDependencyInstallerLocked(); err != nil {
+		return err
+	}
+	if !l.checkNodeModules() {
+		return fmt.Errorf("production dependency installation completed without creating node_modules")
+	}
+	if err := l.verifyProductionDependencies(); err != nil {
+		return fmt.Errorf("production dependencies failed integrity verification after installation: %w", err)
+	}
+	l.dependenciesVerified = true
+	return nil
 }
 
 func sanitizeNodeEnvironment(env []string) []string {
@@ -2936,6 +2961,13 @@ func (l *Launcher) verifyNativeModules() error {
 }
 
 func (l *Launcher) installDependencies() error {
+	l.startupGate.Lock()
+	defer l.startupGate.Unlock()
+	return l.installDependenciesLocked()
+}
+
+func (l *Launcher) installDependenciesLocked() error {
+	l.dependenciesVerified = false
 	l.logger.Println("[INFO] Starting npm ci --omit=dev...")
 	l.updateProgressLocalized(45, "status.npm_install_start", "npm ci --omit=dev wird gestartet...")
 	l.updateProgressLocalized(45, "status.npm_install_delay_notice", "HINWEIS: Die Installation kann bei langsamer Internetverbindung mehrere Minuten dauern. Bitte warten...")
@@ -3061,6 +3093,12 @@ func (l *Launcher) installDependencies() error {
 }
 
 func (l *Launcher) startTool() (*exec.Cmd, error) {
+	l.startupGate.Lock()
+	defer l.startupGate.Unlock()
+	return l.startToolLocked()
+}
+
+func (l *Launcher) startToolLocked() (*exec.Cmd, error) {
 	if !l.dependenciesVerified {
 		return nil, fmt.Errorf("server start refused because production dependencies were not verified")
 	}
@@ -3146,6 +3184,13 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 	l.nodeMu.Unlock()
 
 	return cmd, nil
+}
+
+func (l *Launcher) waitForServerCommand(cmd *exec.Cmd) error {
+	if l.serverCommandWaiter != nil {
+		return l.serverCommandWaiter(cmd)
+	}
+	return cmd.Wait()
 }
 
 // killNodeProcess beendet den Node-Child-Prozess sauber.
@@ -3441,36 +3486,54 @@ func (l *Launcher) markServerStartDone(err error) {
 	}
 }
 
+func (l *Launcher) beginStartupTransaction() error {
+	if !l.startupGate.TryLock() {
+		return fmt.Errorf("server start is already in progress")
+	}
+
+	l.startMu.Lock()
+	if l.startupInProgress {
+		l.startMu.Unlock()
+		l.startupGate.Unlock()
+		return fmt.Errorf("server start is already in progress")
+	}
+	if l.isNodeRunning() || l.serverStarted {
+		l.startMu.Unlock()
+		l.startupGate.Unlock()
+		return fmt.Errorf("server process is already running")
+	}
+	l.startupInProgress = true
+	l.serverStarted = false
+	l.lastStartError = ""
+	l.startMu.Unlock()
+	return nil
+}
+
 func (l *Launcher) manualStartServer(port int) error {
 	port = normalizePort(port, l.preferredPort)
 	if port == 0 {
 		port = defaultBackendPort
 	}
 
-	l.startMu.Lock()
-	if l.startupInProgress {
-		l.startMu.Unlock()
-		return fmt.Errorf("server start is already in progress")
+	if err := l.beginStartupTransaction(); err != nil {
+		return err
 	}
-	if l.isNodeRunning() {
-		l.startMu.Unlock()
-		return fmt.Errorf("server process is already running")
-	}
-	l.startMu.Unlock()
+	defer l.startupGate.Unlock()
 
 	if stopped, err := l.stopDetectedLTTHServers("MANUAL"); err != nil {
+		l.markServerStartDone(err)
 		return err
 	} else if stopped {
 		l.updateProgressLocalized(88, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
 	}
-	if _, err := l.ensureProductionDependencies(); err != nil {
-		return fmt.Errorf("server start refused by production dependency preflight: %w", err)
+	if _, err := l.ensureProductionDependenciesLocked(); err != nil {
+		startErr := fmt.Errorf("server start refused by production dependency preflight: %w", err)
+		l.markServerStartDone(startErr)
+		return startErr
 	}
 	if !selectedPortAvailable(port) {
 		err := selectedPortInUseError(port, describePortOwner(port))
-		l.startMu.Lock()
-		l.lastStartError = err.Error()
-		l.startMu.Unlock()
+		l.markServerStartDone(err)
 		l.updateProgressLocalized(95, "status.port_occupied", "%v", err)
 		return err
 	}
@@ -3486,7 +3549,7 @@ func (l *Launcher) manualStartServer(port int) error {
 	l.updateProgressLocalized(90, "status.manual_starting", "Manueller Serverstart auf Port %d...", port)
 
 	startedAt := time.Now()
-	cmd, err := l.startTool()
+	cmd, err := l.startToolLocked()
 	if err != nil {
 		l.markServerStartDone(err)
 		l.updateProgressLocalized(95, "status.start_error", "FEHLER beim Starten: %v", err)
@@ -3495,7 +3558,7 @@ func (l *Launcher) manualStartServer(port int) error {
 
 	processDied := make(chan error, 1)
 	go func(startedCmd *exec.Cmd) {
-		waitErr := startedCmd.Wait()
+		waitErr := l.waitForServerCommand(startedCmd)
 		l.nodeMu.Lock()
 		if l.nodeCmd == startedCmd {
 			l.nodeCmd = nil
@@ -4668,13 +4731,24 @@ func (l *Launcher) runLauncher() {
 	l.logger.Printf("[SUCCESS] App directory exists: %s\n", l.appDir)
 	time.Sleep(300 * time.Millisecond)
 
+	if err := l.beginStartupTransaction(); err != nil {
+		l.logAndSync("[INFO] Automatic server start skipped: %v", err)
+		return
+	}
+	startupTransactionHeld := true
+	releaseStartupTransaction := func() {
+		if startupTransactionHeld {
+			l.startupGate.Unlock()
+			startupTransactionHeld = false
+		}
+	}
+
 	// Resolve the selected port before an expensive dependency operation. A
 	// foreign owner must be visible before a Node process can be spawned.
 	if stopped, err := l.prepareFreshBackendStartup("STARTUP"); err != nil {
 		l.logAndSync("[ERROR] Could not prepare backend startup: %v", err)
-		l.startMu.Lock()
-		l.lastStartError = err.Error()
-		l.startMu.Unlock()
+		l.markServerStartDone(err)
+		releaseStartupTransaction()
 		l.cleanupAbandonedLauncherSiblings("backend preparation failure")
 		l.updateProgressLocalized(95, "status.port_occupied", "%v", err)
 		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Port wählen oder Fremdprozess beenden.")
@@ -4688,11 +4762,13 @@ func (l *Launcher) runLauncher() {
 	l.logger.Println("[Phase 3] Checking dependencies...")
 	time.Sleep(300 * time.Millisecond)
 
-	dependenciesInstalledThisRun, err := l.ensureProductionDependencies()
+	dependenciesInstalledThisRun, err := l.ensureProductionDependenciesLocked()
 	if err != nil {
 		l.logger.Printf("[ERROR] Production dependency preflight failed: %v\n", err)
 		l.updateProgressLocalized(45, "status.installation_failed", "FEHLER: %v", err)
 		time.Sleep(5 * time.Second)
+		l.markServerStartDone(err)
+		releaseStartupTransaction()
 		l.cleanupAbandonedLauncherSiblings("dependency preflight failure")
 		l.closeLogging()
 		os.Exit(1)
@@ -4734,10 +4810,12 @@ func (l *Launcher) runLauncher() {
 				if removeErr := l.removeNativeModulePackage("better-sqlite3"); removeErr != nil {
 					l.logAndSync("[WARNING] Could not remove broken better-sqlite3 package before reinstall: %v", removeErr)
 				}
-				if installErr := l.installDependencies(); installErr != nil {
-					l.logAndSync("[ERROR] Dependency reinstall after native module failure failed: %v", installErr)
+				if installErr := l.installAndVerifyProductionDependenciesLocked(); installErr != nil {
+					l.logAndSync("[ERROR] Dependency reinstall or integrity verification after native module failure failed: %v", installErr)
 					l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
 					time.Sleep(5 * time.Second)
+					l.markServerStartDone(installErr)
+					releaseStartupTransaction()
 					l.cleanupAbandonedLauncherSiblings("native dependency repair failure")
 					l.closeLogging()
 					os.Exit(1)
@@ -4748,11 +4826,25 @@ func (l *Launcher) runLauncher() {
 			l.logAndSync("[ERROR] Native modules still fail after repair: %v", verifyErr)
 			l.updateProgressLocalized(95, "status.native_modules_failed", "Native Module konnten nicht repariert werden")
 			time.Sleep(5 * time.Second)
+			l.markServerStartDone(verifyErr)
+			releaseStartupTransaction()
 			l.cleanupAbandonedLauncherSiblings("native module verification failure")
 			l.closeLogging()
 			os.Exit(1)
 		}
 	}
+	l.dependenciesVerified = false
+	if err := l.verifyProductionDependencies(); err != nil {
+		l.logAndSync("[ERROR] Final production dependency integrity verification failed after native module checks: %v", err)
+		l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", err)
+		l.markServerStartDone(err)
+		releaseStartupTransaction()
+		l.cleanupAbandonedLauncherSiblings("final dependency integrity failure")
+		l.closeLogging()
+		os.Exit(1)
+	}
+	l.dependenciesVerified = true
+
 	// Phase 3.5: Auto-fix common issues (80-89%)
 	l.updateProgressLocalized(82, "status.checking_config", "Prüfe Konfiguration...")
 	l.logger.Println("[Phase 3.5] Auto-fixing common issues...")
@@ -4785,7 +4877,8 @@ func (l *Launcher) runLauncher() {
 	l.startMu.Unlock()
 
 	startedAt := time.Now()
-	cmd, err := l.startTool()
+	cmd, err := l.startToolLocked()
+	releaseStartupTransaction()
 	if err != nil {
 		l.logger.Printf("[ERROR] Failed to start server: %v\n", err)
 		l.markServerStartDone(err)
