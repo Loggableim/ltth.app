@@ -156,7 +156,7 @@
   function materializeSelectedFrame({ force = false } = {}) {
     const preview = el('assetPreview');
     const selection = readSelection();
-    if (!preview || selection.assetPack !== 'boba') return Promise.resolve(null);
+    if (!preview) return Promise.resolve(null);
 
     const key = selectionKey(selection);
     if (state.framePreviewRequest?.key === key) return state.framePreviewRequest.promise;

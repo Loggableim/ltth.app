@@ -194,4 +194,77 @@ describe('Talking Heads Broadcast Arcade Stream Director', () => {
 
     expect(preview.getAttribute('src')).toBe('/api/talkingheads/sprite/Bear-Default.svg');
   });
+
+  test('materializes a generic frame before confirming a non-Boba Character Lab selection', async () => {
+    const html = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets', 'ui.js'), 'utf8');
+    const dom = new JSDOM(html, {
+      url: 'http://127.0.0.1:3000/plugins/talking-heads/ui.html',
+      pretendToBeVisual: true
+    });
+    const fetchImpl = jest.fn(async (url, options = {}) => {
+      if (url === '/api/talkingheads/config') {
+        return response({
+          success: true,
+          config: {
+            enabled: true,
+            assetPack: 'boba',
+            assetCharacter: 'Fox',
+            assetOptions: { expression: 'Default' },
+            firstAssignmentEnabled: true,
+            rerollGiftEnabled: true,
+            rerollGiftNames: ['Heart Me'],
+            spinDurationMs: 2600
+          },
+          assetCatalog: {
+            packs: [
+              { id: 'boba', name: 'Boba Animals', characters: ['Fox'], options: { expression: ['Default'] } },
+              { id: 'kenney', name: 'Kenney Monster Builder', characters: ['blueA'], options: { eye: ['human'] } }
+            ]
+          }
+        });
+      }
+      if (url === '/api/talkingheads/status') {
+        return response({ success: true, status: { enabled: true, rendererBridge: { available: true } } });
+      }
+      if (url === '/api/talkingheads/test-generate') {
+        const selection = JSON.parse(options.body || '{}');
+        return response({
+          success: true,
+          spriteUrls: { idle_neutral: `/api/talkingheads/sprite/${selection.assetPack}-${selection.assetCharacter}.svg` }
+        });
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    const context = {
+      window: dom.window,
+      document: dom.window.document,
+      fetch: fetchImpl,
+      console,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      URL
+    };
+    dom.window.i18n = { t: jest.fn(() => '') };
+    vm.runInNewContext(source, context, { filename: 'talking-heads-ui.js' });
+
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+    await flush();
+    await flush();
+    await flush();
+
+    const pack = dom.window.document.getElementById('assetPack');
+    pack.value = 'kenney';
+    pack.dispatchEvent(new dom.window.Event('change'));
+    await flush();
+    await flush();
+
+    const preview = dom.window.document.getElementById('assetPreview');
+    expect(preview.getAttribute('src')).toBe('/api/talkingheads/sprite/kenney-blueA.svg');
+    expect(fetchImpl).toHaveBeenCalledWith('/api/talkingheads/test-generate', expect.objectContaining({
+      body: expect.stringContaining('"assetPack":"kenney"')
+    }));
+  });
 });

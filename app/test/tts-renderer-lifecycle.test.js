@@ -172,39 +172,50 @@ describe('TTS renderer lifecycle', () => {
     }));
   });
 
-  test('does not block playback when Talking Heads is absent or its gate times out', async () => {
-    jest.useFakeTimers();
+  test('continues without an avatar gate when Talking Heads is absent', async () => {
     const plugin = createPlugin();
 
     await expect(plugin._prepareAvatarForPlayback({ playbackId: 'without-plugin' }))
       .resolves.toEqual(expect.objectContaining({ state: 'unavailable' }));
-
-    plugin.api.getPlugin.mockReturnValue({
-      prepareAvatarForPlayback: jest.fn(() => new Promise(() => {}))
-    });
-    const timed = plugin._prepareAvatarForPlayback({ playbackId: 'gate-timeout' });
-    await jest.advanceTimersByTimeAsync(10501);
-    await expect(timed).resolves.toEqual(expect.objectContaining({ state: 'timeout' }));
   });
 
-  test('keeps the maximum ten-second avatar reveal gate alive through its 500ms grace period', async () => {
+  test('does not dispatch native audio before cold frame composition and a full maximum spin gate finish', async () => {
     jest.useFakeTimers();
     const plugin = createPlugin();
-    plugin.config.avatarPreparationTimeoutMs = 8500;
+    plugin.config.avatarPreparationTimeoutMs = 10500;
+    plugin._resolvePlaybackDuration = jest.fn(() => ({ durationMs: 10, source: 'test', format: 'wav' }));
     plugin.api.getPlugin.mockReturnValue({
-      prepareAvatarForPlayback: jest.fn(() => new Promise(() => {}))
+      prepareAvatarForPlayback: jest.fn(() => new Promise((resolve) => {
+        // 500ms cold asset composition + a 10s configured spin gate + 500ms fallback.
+        setTimeout(() => resolve({ created: true, spinStatus: 'timeout' }), 11000);
+      }))
     });
 
-    const gate = plugin._prepareAvatarForPlayback({ playbackId: 'maximum-spin-gate' });
-    let settled = false;
-    gate.then(() => { settled = true; });
+    const playback = plugin._playAudio({
+      id: 'cold-max-spin',
+      userId: 'viewer-cold',
+      username: 'Cold Viewer',
+      text: 'Wait for the reveal.',
+      voice: 'voice-cold',
+      engine: 'tiktok',
+      hasAssignedVoice: true,
+      source: 'chat',
+      audioData: 'base64-audio',
+      volume: 75,
+      speed: 1,
+      isStreaming: false
+    });
 
-    await jest.advanceTimersByTimeAsync(8500);
-    expect(settled).toBe(false);
-    await jest.advanceTimersByTimeAsync(1999);
-    expect(settled).toBe(false);
-    await jest.advanceTimersByTimeAsync(1);
-    await expect(gate).resolves.toEqual(expect.objectContaining({ state: 'timeout' }));
+    await jest.advanceTimersByTimeAsync(10500);
+    expect(lifecycleEvents(plugin.api, 'tts:play')).toHaveLength(0);
+
+    await jest.advanceTimersByTimeAsync(500);
+    expect(lifecycleEvents(plugin.api, 'tts:play')).toEqual([
+      expect.objectContaining({ playbackId: 'cold-max-spin', userId: 'viewer-cold' })
+    ]);
+    plugin._handleRendererLifecycle('tts:renderer:started', { playbackId: 'cold-max-spin' });
+    plugin._handleRendererLifecycle('tts:renderer:ended', { playbackId: 'cold-max-spin' });
+    await expect(playback).resolves.toBeUndefined();
   });
 
   test('keeps legacy tts:play fields while waiting for native renderer ended', async () => {
