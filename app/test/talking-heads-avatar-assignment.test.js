@@ -199,4 +199,133 @@ describe('Talking Heads persistent avatar assignment', () => {
       plugin._cancelPendingAvatarSpins();
     }
   });
+
+  test('treats the active default manual set as an existing avatar for an assigned voice', async () => {
+    const { plugin, api } = createPlugin();
+    const defaultSprites = {
+      idle_neutral: '/default/idle.png',
+      blink: '/default/blink.png',
+      speak_closed: '/default/closed.png',
+      speak_mid: '/default/mid.png',
+      speak_open: '/default/open.png'
+    };
+    plugin.config.spriteMode = 'hybrid';
+    plugin.config.defaultManualSetId = 'broadcast-default';
+    plugin.cacheManager = {
+      getAvatar: jest.fn(() => null),
+      getManualSet: jest.fn((setId) => (
+        setId === 'broadcast-default' ? { setId, sprites: defaultSprites } : null
+      ))
+    };
+    plugin._getManualStyleKeyForUser = jest.fn(() => null);
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => null),
+      assign: jest.fn()
+    };
+    plugin.assetSpriteLibrary.getLotteryCandidates = jest.fn(() => [fox]);
+    const preparation = plugin.prepareAvatarForPlayback({
+      playbackId: 'default-manual-playback',
+      userId: 'default-manual-user',
+      username: 'Default Manual User',
+      hasAssignedVoice: true
+    });
+
+    try {
+      expect(plugin.avatarLotteryManager.assign).not.toHaveBeenCalled();
+      await expect(preparation).resolves.toEqual(expect.objectContaining({
+        created: false,
+        reason: 'existing-cache-avatar'
+      }));
+      expect(plugin.io.emit).not.toHaveBeenCalledWith(
+        'talkingheads:avatar:spin:start',
+        expect.anything()
+      );
+
+      plugin._registerPlaybackBridge();
+      const handlers = new Map(api.pluginLoader.on.mock.calls);
+      await handlers.get('tts:renderer:started')({
+        playbackId: 'default-manual-playback',
+        userId: 'default-manual-user',
+        username: 'Default Manual User',
+        hasAssignedVoice: true,
+        source: 'chat'
+      });
+
+      expect(plugin.animationController.startAnimation).toHaveBeenCalledWith(
+        'default-manual-user',
+        'Default Manual User',
+        defaultSprites,
+        expect.any(Number),
+        expect.objectContaining({
+          playbackId: 'default-manual-playback',
+          externalLifecycle: true
+        })
+      );
+    } finally {
+      plugin._cancelPendingAvatarSpins();
+      await preparation.catch(() => undefined);
+    }
+  });
+
+  test('keeps an existing asset-library cache avatar out of the first-voice spin', async () => {
+    const { plugin, api } = createPlugin();
+    const cachedAvatar = {
+      userId: 'asset-cache-user',
+      username: 'Asset Cache User',
+      styleKey: 'asset-library',
+      sprites: {
+        idle_neutral: '/legacy/idle.png',
+        blink: '/legacy/blink.png',
+        speak_closed: '/legacy/closed.png',
+        speak_mid: '/legacy/mid.png',
+        speak_open: '/legacy/open.png'
+      }
+    };
+    plugin.cacheManager = {
+      getAvatar: jest.fn((_userId, styleKey) => (
+        styleKey === 'asset-library' ? cachedAvatar : null
+      )),
+      getManualSet: jest.fn(() => null)
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => null),
+      assign: jest.fn()
+    };
+
+    await expect(plugin.prepareAvatarForPlayback({
+      playbackId: 'asset-cache-playback',
+      userId: 'asset-cache-user',
+      username: 'Asset Cache User',
+      hasAssignedVoice: true
+    })).resolves.toEqual(expect.objectContaining({
+      created: false,
+      reason: 'existing-cache-avatar'
+    }));
+    expect(plugin.avatarLotteryManager.assign).not.toHaveBeenCalled();
+    expect(plugin.io.emit).not.toHaveBeenCalledWith(
+      'talkingheads:avatar:spin:start',
+      expect.anything()
+    );
+
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    await handlers.get('tts:renderer:started')({
+      playbackId: 'asset-cache-playback',
+      userId: 'asset-cache-user',
+      username: 'Asset Cache User',
+      hasAssignedVoice: true,
+      source: 'chat'
+    });
+
+    expect(plugin.animationController.startAnimation).toHaveBeenCalledWith(
+      'asset-cache-user',
+      'Asset Cache User',
+      cachedAvatar.sprites,
+      expect.any(Number),
+      expect.objectContaining({
+        playbackId: 'asset-cache-playback',
+        externalLifecycle: true
+      })
+    );
+  });
 });

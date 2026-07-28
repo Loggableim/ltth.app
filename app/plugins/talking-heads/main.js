@@ -270,25 +270,33 @@ class TalkingHeadsPlugin {
 
   /**
    * Return an avatar already owned by this viewer that the normal renderer can
-   * use without creating a first-voice assignment. Manual assignments only
-   * participate in manual or hybrid mode, matching _handleTTSEvent.
+   * use without creating a first-voice assignment. Manual assignments and a
+   * configured default manual set only participate in manual or hybrid mode,
+   * matching _handleTTSEvent.
    * @param {string} userId
    * @returns {object|null}
    * @private
    */
   _getExistingCachedAvatar(userId) {
-    if (!userId || typeof this.cacheManager?.getAvatar !== 'function') return null;
+    if (!userId || !this.cacheManager) return null;
 
     const spriteMode = this.config.spriteMode || 'auto';
     if (spriteMode === 'manual' || spriteMode === 'hybrid') {
       const manualStyleKey = this._getManualStyleKeyForUser(userId);
-      if (manualStyleKey) {
+      if (manualStyleKey && typeof this.cacheManager.getAvatar === 'function') {
         const manualAvatar = this.cacheManager.getAvatar(userId, manualStyleKey);
         if (manualAvatar) return manualAvatar;
       }
+
+      if (this.config.defaultManualSetId && typeof this.cacheManager.getManualSet === 'function') {
+        const defaultSet = this.cacheManager.getManualSet(this.config.defaultManualSetId);
+        if (defaultSet?.sprites) return defaultSet;
+      }
     }
 
-    return this.cacheManager.getAvatar(userId, 'asset-library');
+    return typeof this.cacheManager.getAvatar === 'function'
+      ? this.cacheManager.getAvatar(userId, 'asset-library')
+      : null;
   }
 
   /**
