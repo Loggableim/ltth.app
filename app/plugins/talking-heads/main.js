@@ -49,7 +49,7 @@ class TalkingHeadsPlugin {
     this.initialAvatarPlaybackReservations = new Map();
     this.activePlaybackByUser = new Map();
     this.pendingGiftRerolls = new Map();
-    this.generatedAssetCleanupTimers = new Set();
+    this.generatedAssetCleanupTimers = new Map();
 
     // Viewer presence tracker for Viewer Bar
     this.viewerPresence = new Map(); // userId → { username, sprites, lastSeen, joinedAt }
@@ -335,10 +335,14 @@ class TalkingHeadsPlugin {
   }
 
   _getActiveGeneratedAssetOwnerIds() {
-    return [...new Set([
+    const playbackOwnerIds = [
       ...this.activePlaybackByUser.values(),
       ...this.initialAvatarPlaybackReservations.values()
-    ].map(playbackId => this._playbackAssetOwnerId(playbackId)).filter(Boolean))];
+    ].map(playbackId => this._playbackAssetOwnerId(playbackId)).filter(Boolean);
+    return [...new Set([
+      ...playbackOwnerIds,
+      ...this.generatedAssetCleanupTimers.values()
+    ])];
   }
 
   _scheduleGeneratedAssetRelease(ownerId, delayMs) {
@@ -350,7 +354,7 @@ class TalkingHeadsPlugin {
       });
     }, Math.max(0, Number(delayMs) || 0));
     timer.unref?.();
-    this.generatedAssetCleanupTimers.add(timer);
+    this.generatedAssetCleanupTimers.set(timer, ownerId);
   }
 
   /**
@@ -2762,8 +2766,20 @@ class TalkingHeadsPlugin {
       this.initialAvatarPlaybackReservations.clear();
       this.activePlaybackByUser.clear();
       this.pendingGiftRerolls.clear();
-      this.generatedAssetCleanupTimers.forEach(timer => clearTimeout(timer));
+      const pendingGeneratedAssetOwnerIds = [
+        ...new Set(this.generatedAssetCleanupTimers.values())
+      ];
+      this.generatedAssetCleanupTimers.forEach((ownerId, timer) => clearTimeout(timer));
       this.generatedAssetCleanupTimers.clear();
+      if (pendingGeneratedAssetOwnerIds.length && this.cacheManager?.releaseGeneratedAssetOwner) {
+        await Promise.all(pendingGeneratedAssetOwnerIds.map(async (ownerId) => {
+          try {
+            await this.cacheManager.releaseGeneratedAssetOwner(ownerId);
+          } catch (error) {
+            this.logger.warn(`TalkingHeads: Destroy asset cleanup failed for ${ownerId}`, error);
+          }
+        }));
+      }
 
       // Clear cleanup interval
       if (this.cacheCleanupInterval) {
