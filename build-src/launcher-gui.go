@@ -92,6 +92,9 @@ type loggedWriteCounter struct {
 	logger     *log.Logger
 }
 
+type dependencyCommandRunner func(executable string, args []string, dir string, env []string) ([]byte, error)
+type serverCommandStarter func(cmd *exec.Cmd) error
+
 func (wc *loggedWriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
 	wc.Downloaded += int64(n)
@@ -109,38 +112,42 @@ func (wc *loggedWriteCounter) Write(p []byte) (int, error) {
 }
 
 type Launcher struct {
-	nodePath            string
-	appDir              string
-	exeDir              string
-	configDir           string
-	userConfigsDir      string
-	progress            int
-	status              string
-	statusKey           string
-	statusFallback      string
-	statusArgs          []interface{}
-	clients             map[chan string]bool
-	clientsMu           sync.Mutex // Protects concurrent map access to clients
-	logFile             *os.File
-	logger              *log.Logger
-	logPath             string
-	envFileFixed        bool // Track if we auto-created .env file
-	serverPort          int  // Actual port the server responded on
-	preferredPort       int
-	startupInProgress   bool
-	serverStarted       bool
-	lastStartError      string
-	profiles            []ProfileInfo
-	profilesLoaded      time.Time // Last time profiles were loaded
-	selectedProfile     string
-	locale              string
-	translations        map[string]interface{}
-	nodeCmd             *exec.Cmd  // Referenz auf laufenden Node-Prozess
-	nodeMu              sync.Mutex // Schützt nodeCmd-Zugriff
-	startMu             sync.Mutex
-	resolvedNodeVersion string // Node.js LTS version resolved at startup
-	settings            LauncherSettings
-	pluginFailures      []PluginFailure
+	nodePath                string
+	appDir                  string
+	exeDir                  string
+	configDir               string
+	userConfigsDir          string
+	progress                int
+	status                  string
+	statusKey               string
+	statusFallback          string
+	statusArgs              []interface{}
+	clients                 map[chan string]bool
+	clientsMu               sync.Mutex // Protects concurrent map access to clients
+	logFile                 *os.File
+	logger                  *log.Logger
+	logPath                 string
+	envFileFixed            bool // Track if we auto-created .env file
+	serverPort              int  // Actual port the server responded on
+	preferredPort           int
+	startupInProgress       bool
+	serverStarted           bool
+	lastStartError          string
+	profiles                []ProfileInfo
+	profilesLoaded          time.Time // Last time profiles were loaded
+	selectedProfile         string
+	locale                  string
+	translations            map[string]interface{}
+	nodeCmd                 *exec.Cmd  // Referenz auf laufenden Node-Prozess
+	nodeMu                  sync.Mutex // Schützt nodeCmd-Zugriff
+	startMu                 sync.Mutex
+	resolvedNodeVersion     string // Node.js LTS version resolved at startup
+	settings                LauncherSettings
+	pluginFailures          []PluginFailure
+	dependencyCommandRunner dependencyCommandRunner
+	dependencyInstaller     func() error
+	dependenciesVerified    bool
+	serverCommandStarter    serverCommandStarter
 }
 
 var allowedLocales = []string{"de", "en", "es", "fr"}
@@ -2756,6 +2763,79 @@ func (l *Launcher) checkNodeModules() bool {
 	return info.IsDir()
 }
 
+func runDependencyCommand(executable string, args []string, dir string, env []string) ([]byte, error) {
+	cmd := hiddenCommand(executable, args...)
+	cmd.Dir = dir
+	cmd.Env = env
+	return cmd.CombinedOutput()
+}
+
+func (l *Launcher) verifyProductionDependencies() error {
+	nodePath := strings.TrimSpace(l.nodePath)
+	if nodePath == "" {
+		return fmt.Errorf("production dependency integrity check requires a selected Node.js executable")
+	}
+
+	cliPath := filepath.Join(l.appDir, "modules", "dependency-integrity-cli.js")
+	runner := l.dependencyCommandRunner
+	if runner == nil {
+		runner = runDependencyCommand
+	}
+
+	output, err := runner(
+		nodePath,
+		[]string{cliPath},
+		l.appDir,
+		nodeCommandEnvironment(os.Environ(), nodePath),
+	)
+	if err != nil {
+		detail := strings.TrimSpace(string(output))
+		if detail != "" {
+			return fmt.Errorf("production dependency integrity check failed: %s", detail)
+		}
+		return fmt.Errorf("production dependency integrity check could not run: %w", err)
+	}
+
+	l.logAndSync("[SUCCESS] Production dependencies verified: %s", strings.TrimSpace(string(output)))
+	return nil
+}
+
+func (l *Launcher) ensureProductionDependencies() (bool, error) {
+	l.dependenciesVerified = false
+	needsRepair := !l.checkNodeModules()
+
+	if needsRepair {
+		l.logAndSync("[WARNING] node_modules is missing; one production dependency repair will be attempted.")
+	} else if err := l.verifyProductionDependencies(); err != nil {
+		l.logAndSync("[WARNING] Production dependency integrity check failed: %v", err)
+	} else {
+		l.dependenciesVerified = true
+		return false, nil
+	}
+
+	l.updateProgressLocalized(40, "status.installing_dependencies", "Installiere Abhängigkeiten...")
+	l.updateProgressLocalized(45, "status.installation_hint", "HINWEIS: npm ci --omit=dev kann einige Minuten dauern, bitte das Fenster offen halten und warten")
+
+	installer := l.dependencyInstaller
+	if installer == nil {
+		installer = l.installDependencies
+	}
+	if err := installer(); err != nil {
+		return true, fmt.Errorf("production dependency repair failed: %w", err)
+	}
+	if !l.checkNodeModules() {
+		return true, fmt.Errorf("production dependency repair completed without creating node_modules")
+	}
+	if err := l.verifyProductionDependencies(); err != nil {
+		return true, fmt.Errorf("production dependencies still fail integrity verification after one repair: %w", err)
+	}
+
+	l.dependenciesVerified = true
+	l.updateProgressLocalized(80, "status.installation_done", "Installation abgeschlossen!")
+	l.logAndSync("[SUCCESS] Production dependencies repaired and re-verified")
+	return true, nil
+}
+
 func sanitizeNodeEnvironment(env []string) []string {
 	sanitized := make([]string, 0, len(env))
 	for _, entry := range env {
@@ -2981,6 +3061,10 @@ func (l *Launcher) installDependencies() error {
 }
 
 func (l *Launcher) startTool() (*exec.Cmd, error) {
+	if !l.dependenciesVerified {
+		return nil, fmt.Errorf("server start refused because production dependencies were not verified")
+	}
+
 	launchJS := filepath.Join(l.appDir, "launch.js")
 	cmd := hiddenCommand(l.nodePath, launchJS)
 	cmd.Dir = l.appDir
@@ -3046,7 +3130,13 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 
 	setSysProcAttr(cmd)
 
-	err := cmd.Start()
+	starter := l.serverCommandStarter
+	if starter == nil {
+		starter = func(cmd *exec.Cmd) error {
+			return cmd.Start()
+		}
+	}
+	err := starter(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -3372,6 +3462,9 @@ func (l *Launcher) manualStartServer(port int) error {
 		return err
 	} else if stopped {
 		l.updateProgressLocalized(88, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+	}
+	if _, err := l.ensureProductionDependencies(); err != nil {
+		return fmt.Errorf("server start refused by production dependency preflight: %w", err)
 	}
 	if !selectedPortAvailable(port) {
 		err := selectedPortInUseError(port, describePortOwner(port))
@@ -4595,26 +4688,17 @@ func (l *Launcher) runLauncher() {
 	l.logger.Println("[Phase 3] Checking dependencies...")
 	time.Sleep(300 * time.Millisecond)
 
-	dependenciesInstalledThisRun := false
-	if !l.checkNodeModules() {
-		l.updateProgressLocalized(40, "status.installing_dependencies", "Installiere Abhängigkeiten...")
-		l.logger.Println("[INFO] node_modules not found, installing dependencies...")
-		time.Sleep(500 * time.Millisecond)
-		l.updateProgressLocalized(45, "status.installation_hint", "HINWEIS: npm ci --omit=dev kann einige Minuten dauern, bitte das Fenster offen halten und warten")
-
-		err = l.installDependencies()
-		if err != nil {
-			l.logger.Printf("[ERROR] Dependency installation failed: %v\n", err)
-			l.updateProgressLocalized(45, "status.installation_failed", "FEHLER: %v", err)
-			time.Sleep(5 * time.Second)
-			l.cleanupAbandonedLauncherSiblings("dependency installation failure")
-			l.closeLogging()
-			os.Exit(1)
-		}
-		dependenciesInstalledThisRun = true
-
-		l.updateProgressLocalized(80, "status.installation_done", "Installation abgeschlossen!")
-		l.logger.Println("[SUCCESS] Dependencies installed successfully")
+	dependenciesInstalledThisRun, err := l.ensureProductionDependencies()
+	if err != nil {
+		l.logger.Printf("[ERROR] Production dependency preflight failed: %v\n", err)
+		l.updateProgressLocalized(45, "status.installation_failed", "FEHLER: %v", err)
+		time.Sleep(5 * time.Second)
+		l.cleanupAbandonedLauncherSiblings("dependency preflight failure")
+		l.closeLogging()
+		os.Exit(1)
+	}
+	if dependenciesInstalledThisRun {
+		l.logger.Println("[SUCCESS] Dependencies installed and verified successfully")
 	} else if nodeWasUpdated {
 		// Node.js was updated → rebuild native modules
 		l.updateProgressLocalized(40, "status.rebuilding_native", "Baue native Module neu (better-sqlite3)...")

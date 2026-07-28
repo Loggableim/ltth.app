@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"html/template"
 	"net"
 	"net/http"
@@ -450,6 +451,182 @@ func TestProductionInstallArgsUseCleanProductionInstall(t *testing.T) {
 	args := productionInstallArgs()
 	if len(args) != 2 || args[0] != "ci" || args[1] != "--omit=dev" {
 		t.Fatalf("expected npm ci --omit=dev, got %#v", args)
+	}
+}
+
+func TestProductionDependencyVerificationUsesSelectedNodeAndAppDirectory(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.appDir = t.TempDir()
+	launcher.nodePath = filepath.Join(t.TempDir(), "node.exe")
+
+	var gotExecutable string
+	var gotArgs []string
+	var gotDir string
+	launcher.dependencyCommandRunner = func(executable string, args []string, dir string, _ []string) ([]byte, error) {
+		gotExecutable = executable
+		gotArgs = append([]string(nil), args...)
+		gotDir = dir
+		return []byte("production-dependencies-ok"), nil
+	}
+
+	if err := launcher.verifyProductionDependencies(); err != nil {
+		t.Fatalf("valid dependency verification failed: %v", err)
+	}
+	if gotExecutable != launcher.nodePath {
+		t.Fatalf("integrity CLI executable = %q, expected selected Node %q", gotExecutable, launcher.nodePath)
+	}
+	expectedCLI := filepath.Join(launcher.appDir, "modules", "dependency-integrity-cli.js")
+	if len(gotArgs) != 1 || gotArgs[0] != expectedCLI {
+		t.Fatalf("integrity CLI args = %#v, expected [%q]", gotArgs, expectedCLI)
+	}
+	if gotDir != launcher.appDir {
+		t.Fatalf("integrity CLI cwd = %q, expected app directory %q", gotDir, launcher.appDir)
+	}
+}
+
+func TestProductionDependencyPreflightAcceptsValidInstallWithoutRepair(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.appDir = t.TempDir()
+	launcher.nodePath = filepath.Join(t.TempDir(), "node.exe")
+	if err := os.Mkdir(filepath.Join(launcher.appDir, "node_modules"), 0755); err != nil {
+		t.Fatalf("failed to create node_modules: %v", err)
+	}
+
+	verifyCalls := 0
+	installCalls := 0
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		verifyCalls++
+		return []byte("production-dependencies-ok"), nil
+	}
+	launcher.dependencyInstaller = func() error {
+		installCalls++
+		return nil
+	}
+
+	repaired, err := launcher.ensureProductionDependencies()
+	if err != nil {
+		t.Fatalf("valid dependency preflight failed: %v", err)
+	}
+	if repaired {
+		t.Fatal("valid dependency tree should not be repaired")
+	}
+	if verifyCalls != 1 || installCalls != 0 {
+		t.Fatalf("valid dependency preflight calls: verify=%d install=%d, expected 1/0", verifyCalls, installCalls)
+	}
+	if !launcher.dependenciesVerified {
+		t.Fatal("valid dependency preflight should authorize server start")
+	}
+}
+
+func TestProductionDependencyPreflightRepairsPartialSDKExactlyOnceAndReverifies(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.appDir = t.TempDir()
+	launcher.nodePath = filepath.Join(t.TempDir(), "node.exe")
+	if err := os.Mkdir(filepath.Join(launcher.appDir, "node_modules"), 0755); err != nil {
+		t.Fatalf("failed to create node_modules: %v", err)
+	}
+
+	verifyCalls := 0
+	installCalls := 0
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		verifyCalls++
+		if verifyCalls == 1 {
+			return []byte("production dependency integrity check failed"), errors.New("exit status 1")
+		}
+		return []byte("production-dependencies-ok"), nil
+	}
+	launcher.dependencyInstaller = func() error {
+		installCalls++
+		return nil
+	}
+
+	repaired, err := launcher.ensureProductionDependencies()
+	if err != nil {
+		t.Fatalf("partial SDK should be repaired: %v", err)
+	}
+	if !repaired {
+		t.Fatal("partial SDK should report a dependency repair")
+	}
+	if verifyCalls != 2 || installCalls != 1 {
+		t.Fatalf("partial SDK repair calls: verify=%d install=%d, expected 2/1", verifyCalls, installCalls)
+	}
+	if !launcher.dependenciesVerified {
+		t.Fatal("successful re-verification should authorize server start")
+	}
+}
+
+func TestProductionDependencyPreflightRepairsMissingNodeModulesBeforeVerification(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.appDir = t.TempDir()
+	launcher.nodePath = filepath.Join(t.TempDir(), "node.exe")
+
+	verifyCalls := 0
+	installCalls := 0
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		verifyCalls++
+		return []byte("production-dependencies-ok"), nil
+	}
+	launcher.dependencyInstaller = func() error {
+		installCalls++
+		return os.Mkdir(filepath.Join(launcher.appDir, "node_modules"), 0755)
+	}
+
+	repaired, err := launcher.ensureProductionDependencies()
+	if err != nil {
+		t.Fatalf("missing node_modules should be repaired: %v", err)
+	}
+	if !repaired {
+		t.Fatal("missing node_modules should report a dependency repair")
+	}
+	if verifyCalls != 1 || installCalls != 1 {
+		t.Fatalf("missing node_modules repair calls: verify=%d install=%d, expected 1/1", verifyCalls, installCalls)
+	}
+}
+
+func TestFailedProductionDependencyReverificationRefusesServerStart(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.appDir = t.TempDir()
+	launcher.nodePath = filepath.Join(t.TempDir(), "node.exe")
+	if err := os.Mkdir(filepath.Join(launcher.appDir, "node_modules"), 0755); err != nil {
+		t.Fatalf("failed to create node_modules: %v", err)
+	}
+
+	verifyCalls := 0
+	installCalls := 0
+	serverStartCalls := 0
+	launcher.dependencyCommandRunner = func(_ string, _ []string, _ string, _ []string) ([]byte, error) {
+		verifyCalls++
+		return []byte("production dependency integrity check failed"), errors.New("exit status 1")
+	}
+	launcher.dependencyInstaller = func() error {
+		installCalls++
+		return nil
+	}
+	launcher.serverCommandStarter = func(_ *exec.Cmd) error {
+		serverStartCalls++
+		return nil
+	}
+
+	repaired, err := launcher.ensureProductionDependencies()
+	if err == nil {
+		t.Fatal("failed dependency re-verification should fail startup preflight")
+	}
+	if !repaired {
+		t.Fatal("failed dependency re-verification should report the attempted repair")
+	}
+	if verifyCalls != 2 || installCalls != 1 {
+		t.Fatalf("failed repair calls: verify=%d install=%d, expected 2/1", verifyCalls, installCalls)
+	}
+	if launcher.dependenciesVerified {
+		t.Fatal("failed re-verification must not authorize server start")
+	}
+
+	cmd, startErr := launcher.startTool()
+	if startErr == nil || cmd != nil {
+		t.Fatalf("server start should be refused after failed dependency preflight, cmd=%v err=%v", cmd, startErr)
+	}
+	if serverStartCalls != 0 {
+		t.Fatalf("server command was started %d time(s) after failed dependency preflight", serverStartCalls)
 	}
 }
 
