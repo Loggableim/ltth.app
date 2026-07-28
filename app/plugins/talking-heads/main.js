@@ -42,6 +42,7 @@ class TalkingHeadsPlugin {
     // Bridge handlers for TTS playback events
     this.ttsBridgeHandlers = null;
     this.pendingAvatarSpins = new Map();
+    this.initialAvatarPlaybackReservations = new Map();
     this.activePlaybackByUser = new Map();
     this.pendingGiftRerolls = new Map();
 
@@ -392,6 +393,19 @@ class TalkingHeadsPlugin {
     ));
   }
 
+  _reserveInitialAvatarPlayback(userId, playbackId) {
+    const normalizedUserId = String(userId || '').trim();
+    const normalizedPlaybackId = String(playbackId || '').trim();
+    if (!normalizedUserId || !normalizedPlaybackId) return false;
+    this.initialAvatarPlaybackReservations.set(normalizedUserId, normalizedPlaybackId);
+    return true;
+  }
+
+  _hasInitialAvatarPlaybackReservation(userId) {
+    const normalizedUserId = String(userId || '').trim();
+    return Boolean(normalizedUserId && this.initialAvatarPlaybackReservations.has(normalizedUserId));
+  }
+
   _completeAvatarSpin(data = {}) {
     const playbackId = String(data.playbackId || '').trim();
     const pending = this.pendingAvatarSpins.get(playbackId);
@@ -428,10 +442,13 @@ class TalkingHeadsPlugin {
     });
     if (!preparation.created) return preparation;
 
+    const playbackId = String(meta.playbackId || meta.id || '').trim();
+    this._reserveInitialAvatarPlayback(meta.userId, playbackId);
+
     const payload = await this._emitAvatarSpin({
       userId: meta.userId,
       username: meta.username || meta.userId,
-      playbackId: meta.playbackId || meta.id,
+      playbackId,
       winnerSelection: preparation.selection,
       reason: 'initial-assignment'
     });
@@ -509,7 +526,11 @@ class TalkingHeadsPlugin {
     // speaking avatar or while its first persisted assignment is revealing.
     // Keep just the latest configured gift for this viewer and run it after
     // the renderer terminal event.
-    if (this.activePlaybackByUser.has(user.userId) || this._hasPendingAvatarSpinForUser(user.userId)) {
+    if (
+      this.activePlaybackByUser.has(user.userId)
+      || this._hasPendingAvatarSpinForUser(user.userId)
+      || this._hasInitialAvatarPlaybackReservation(user.userId)
+    ) {
       this.pendingGiftRerolls.set(user.userId, data);
       this._log(`Avatar reroll deferred until ${user.username} finishes speaking or revealing`, 'debug');
       return true;
@@ -1911,9 +1932,18 @@ class TalkingHeadsPlugin {
     const rendererTerminalHandler = (payload = {}) => {
       const playbackId = String(payload.playbackId || '').trim();
       const userId = String(payload.userId || payload.username || '').trim();
-      if (!playbackId || !userId || this.activePlaybackByUser.get(userId) !== playbackId) return;
-      this.activePlaybackByUser.delete(userId);
-      this.animationController?.endExternalAnimation(userId, playbackId);
+      if (!playbackId || !userId) return;
+      const isActivePlayback = this.activePlaybackByUser.get(userId) === playbackId;
+      const isInitialReservation = this.initialAvatarPlaybackReservations.get(userId) === playbackId;
+      if (!isActivePlayback && !isInitialReservation) return;
+
+      if (isActivePlayback) {
+        this.activePlaybackByUser.delete(userId);
+        this.animationController?.endExternalAnimation(userId, playbackId);
+      }
+      if (isInitialReservation) {
+        this.initialAvatarPlaybackReservations.delete(userId);
+      }
       const pendingGift = this.pendingGiftRerolls.get(userId);
       if (pendingGift) {
         this.pendingGiftRerolls.delete(userId);
@@ -2407,6 +2437,7 @@ class TalkingHeadsPlugin {
       }
 
       this._cancelPendingAvatarSpins();
+      this.initialAvatarPlaybackReservations.clear();
       this.activePlaybackByUser.clear();
       this.pendingGiftRerolls.clear();
 

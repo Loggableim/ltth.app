@@ -181,4 +181,85 @@ describe('Talking Heads gift avatar lottery', () => {
     expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledTimes(1);
     expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer-1', 'ViewerOne', dog);
   });
+
+  test('keeps a first-spin reservation after acknowledgement until renderer failure terminal', async () => {
+    const { plugin, api } = createPlugin();
+    let currentAssignment = null;
+    plugin.config.avatarLotteryEnabled = true;
+    plugin.config.lotteryGiftNames = ['Heart Me'];
+    plugin.assetSpriteLibrary = {
+      getRandomSelection: jest.fn((random, excludedSelection) => excludedSelection ? dog : fox),
+      getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
+      getSpriteSet: jest.fn(async (selection) => ({
+        ...selection,
+        sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` }
+      }))
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => currentAssignment),
+      assign: jest.fn((userId, username, selection) => {
+        currentAssignment = { userId, username, selection, state: 'kept' };
+        return currentAssignment;
+      }),
+      reroll: jest.fn((userId, username, selection) => {
+        currentAssignment = { userId, username, selection, state: 'kept' };
+        return currentAssignment;
+      })
+    };
+
+    const preparation = plugin.prepareAvatarForPlayback({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      username: 'ViewerOne',
+      hasAssignedVoice: true
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1'
+    })).toBe(true);
+    await expect(preparation).resolves.toEqual(expect.objectContaining({ spinStatus: 'complete' }));
+
+    expect(plugin.initialAvatarPlaybackReservations?.get('viewer-1')).toBe('post-reveal-gap');
+    await expect(plugin._handleLotteryGift({
+      userId: 'viewer-1',
+      uniqueId: 'ViewerOne',
+      giftName: 'Heart Me'
+    })).resolves.toBe(true);
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+    expect(plugin.pendingGiftRerolls.get('viewer-1')).toEqual(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
+
+    plugin.animationController = { endExternalAnimation: jest.fn(), setMouthIntensity: jest.fn() };
+    plugin._handleTTSEvent = jest.fn().mockResolvedValue();
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    handlers.get('tts:renderer:failed')({
+      playbackId: 'stale-playback',
+      userId: 'viewer-1',
+      reason: 'renderer-watchdog'
+    });
+    expect(plugin.initialAvatarPlaybackReservations.get('viewer-1')).toBe('post-reveal-gap');
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+
+    await handlers.get('tts:renderer:started')({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      username: 'ViewerOne',
+      source: 'chat'
+    });
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+
+    handlers.get('tts:renderer:failed')({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      reason: 'renderer-watchdog'
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(plugin.initialAvatarPlaybackReservations?.has('viewer-1')).toBe(false);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledTimes(1);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer-1', 'ViewerOne', dog);
+  });
 });

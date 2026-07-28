@@ -3434,8 +3434,8 @@ class TTSPlugin {
             }
 
             // Step 5: Generate TTS (no caching)
-            // For Fish Audio (not in quality mode), use lazy queuing with streaming
-            const useLazyQueuing = selectedEngine === 'fishaudio' && this.config.performanceMode !== 'quality' && requestOverrides.streaming;
+            // For Fish Audio requests, use lazy queuing with streaming
+            const useLazyQueuing = selectedEngine === 'fishaudio' && requestOverrides.streaming;
             
             this._logDebug('SPEAK_STEP5', 'Starting TTS synthesis', {
                 engine: selectedEngine,

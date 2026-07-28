@@ -64,25 +64,27 @@ return runTest('synthesizeStream should accept correct parameters', async () => 
 
 }).then(() => {
 
-// Test 3: Lazy queuing logic - Fish Audio in balanced/fast mode should use streaming
-return runTest('Lazy queuing logic - Fish Audio should use streaming in balanced mode', async () => {
+// Test 3: Lazy queuing logic follows the explicit request, independent of quality mode
+return runTest('Lazy queuing logic - Fish Audio should stream when requested', async () => {
     // Simulate the logic from speak() method
     const selectedEngine = 'fishaudio';
-    const performanceMode = 'balanced';
-    const useLazyQueuing = selectedEngine === 'fishaudio' && performanceMode !== 'quality';
+    const requestOverrides = { streaming: true };
+    const useLazyQueuing = selectedEngine === 'fishaudio' && requestOverrides.streaming;
     
-    assert.strictEqual(useLazyQueuing, true, 'Fish Audio in balanced mode should use lazy queuing');
+    assert.strictEqual(useLazyQueuing, true, 'Fish Audio should use lazy queuing when streaming is requested');
 });
 
 }).then(() => {
 
-// Test 4: Lazy queuing logic - Fish Audio in quality mode should NOT use streaming
-return runTest('Lazy queuing logic - Fish Audio should NOT use streaming in quality mode', async () => {
+// Test 4: Quality mode must not silently override an explicit streaming request
+return runTest('Lazy queuing logic - Fish Audio may stream in quality mode when requested', async () => {
     const selectedEngine = 'fishaudio';
     const performanceMode = 'quality';
-    const useLazyQueuing = selectedEngine === 'fishaudio' && performanceMode !== 'quality';
+    const requestOverrides = { streaming: true };
+    const useLazyQueuing = selectedEngine === 'fishaudio' && requestOverrides.streaming;
     
-    assert.strictEqual(useLazyQueuing, false, 'Fish Audio in quality mode should NOT use lazy queuing');
+    assert.strictEqual(performanceMode, 'quality');
+    assert.strictEqual(useLazyQueuing, true, 'Fish Audio streaming must follow the explicit request in quality mode');
 });
 
 }).then(() => {
@@ -92,8 +94,8 @@ return runTest('Lazy queuing logic - Other engines should not use streaming', as
     const engines = ['google', 'speechify', 'elevenlabs', 'openai', 'siliconflow'];
     
     for (const engine of engines) {
-        const performanceMode = 'balanced';
-        const useLazyQueuing = engine === 'fishaudio' && performanceMode !== 'quality';
+        const requestOverrides = { streaming: true };
+        const useLazyQueuing = engine === 'fishaudio' && requestOverrides.streaming;
         assert.strictEqual(useLazyQueuing, false, `${engine} should not use lazy queuing`);
     }
 });
@@ -241,8 +243,17 @@ return runTest('Streaming should only apply to Fish Audio engine', async () => {
     const mainCode = fs.readFileSync(require.resolve('../plugins/tts/main'), 'utf-8');
     
     // Verify lazy queuing condition
-    const lazyQueuingRegex = /useLazyQueuing.*?fishaudio.*?quality/;
-    assert.ok(lazyQueuingRegex.test(mainCode), 'Lazy queuing should check for fishaudio and not quality mode');
+    const lazyQueuingLine = mainCode.split(/\r?\n/)
+        .find((line) => line.includes('const useLazyQueuing ='));
+    assert.ok(lazyQueuingLine, 'Lazy queuing condition should exist');
+    assert.ok(
+        lazyQueuingLine.includes("selectedEngine === 'fishaudio' && requestOverrides.streaming"),
+        'Lazy queuing should follow the Fish Audio streaming request exactly'
+    );
+    assert.ok(
+        !lazyQueuingLine.includes('performanceMode'),
+        'Quality mode must not silently override an explicit streaming request'
+    );
 });
 
 }).then(() => {
