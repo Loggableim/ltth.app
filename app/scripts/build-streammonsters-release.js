@@ -54,6 +54,12 @@ function loadReleaseMap(filename = RELEASE_MAP_PATH) {
       )
       || release.package !== `plugin-store/packages/streamalchemy-${version}.zip`
       || !/^[a-f0-9]{64}$/.test(String(release.sha256 || ''))
+      || (
+        release.packageBuilder !== undefined
+        && !/^app\/scripts\/build-streammonsters-release(?:-v18)?\.js$/.test(
+          String(release.packageBuilder)
+        )
+      )
       || overrideKeys.some(key => !['description', 'descriptions', 'devStatus'].includes(key))
       || (
         release.manifestOverrides !== undefined
@@ -114,9 +120,26 @@ function verifyTree(repoRoot, sourceTree) {
   }
 }
 
+function verifySourceTreeBinding(repoRoot, sourceCommit, sourceTree, sourcePath) {
+  const committedTree = childProcess.execFileSync(
+    'git',
+    ['-C', repoRoot, 'rev-parse', `${sourceCommit}:${normalizeRelativePath(sourcePath)}`],
+    { encoding: 'utf8', windowsHide: true }
+  ).trim();
+  if (committedTree !== sourceTree) {
+    throw new Error(
+      `Release source tree does not belong to source commit: ` +
+      `expected ${committedTree}, got ${sourceTree}`
+    );
+  }
+}
+
 function readGitPluginFiles({ repoRoot, sourceCommit, sourceTree, sourcePath }) {
   verifyCommit(repoRoot, sourceCommit);
-  if (sourceTree) verifyTree(repoRoot, sourceTree);
+  if (sourceTree) {
+    verifyTree(repoRoot, sourceTree);
+    verifySourceTreeBinding(repoRoot, sourceCommit, sourceTree, sourcePath);
+  }
   const prefix = sourceTree
     ? ''
     : `${normalizeRelativePath(sourcePath).replace(/\/+$/, '')}/`;
@@ -223,7 +246,12 @@ function applyManifestVersion(files, manifestVersion, manifestOverrides = {}) {
   return files;
 }
 
-function renderReleaseReadme({ version, sourceCommit, overlay }) {
+function renderReleaseReadme({
+  version,
+  sourceCommit,
+  overlay,
+  packageBuilder = 'app/scripts/build-streammonsters-release.js'
+}) {
   return [
     `# ${overlay.title}`,
     '',
@@ -242,7 +270,7 @@ function renderReleaseReadme({ version, sourceCommit, overlay }) {
     '',
     `- Version: ${version}`,
     `- Audited source commit: ${sourceCommit}`,
-    '- Package builder: `app/scripts/build-streammonsters-release.js`',
+    `- Package builder: \`${packageBuilder}\``,
     ''
   ].join('\n');
 }
@@ -254,7 +282,8 @@ function applyReadmeOverlay(files, release, version) {
   readmeFile.bytes = Buffer.from(renderReleaseReadme({
     version,
     sourceCommit: release.sourceCommit,
-    overlay: release.readmeOverlay
+    overlay: release.readmeOverlay,
+    packageBuilder: release.packageBuilder
   }), 'utf8');
   return files;
 }
@@ -392,6 +421,7 @@ module.exports = {
   readGitPluginFiles,
   renderReleaseReadme,
   verifyCommit,
+  verifySourceTreeBinding,
   verifyTree
 };
 
