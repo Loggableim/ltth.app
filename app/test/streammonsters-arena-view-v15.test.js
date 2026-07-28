@@ -124,6 +124,26 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-feed').textContent).toContain('Tidal Renewal');
   });
 
+  test('keeps each fighter owner readable beside the monster name', () => {
+    mountArena();
+    for (const slot of [1, 2]) {
+      const owner = document.createElement('span');
+      owner.id = `arena-owner-${slot}`;
+      document.getElementById(`arena-fighter-${slot}`).appendChild(owner);
+    }
+    const view = ArenaView.createArenaView({ document });
+    view.applyMatch({
+      matchId: 'players-visible',
+      state: 'roster',
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@pupcid', imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png', hp: 10, maxHp: 10 },
+        { slot: 2, name: 'Selene', viewerName: '@mark_teufel01', imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/selene.png', hp: 10, maxHp: 10 }
+      ]
+    });
+    expect(document.getElementById('arena-owner-1').textContent).toBe('@pupcid');
+    expect(document.getElementById('arena-owner-2').textContent).toBe('@mark_teufel01');
+  });
+
   test('marks locks, cancellation and winner without leaking the lower chat safe zone', async () => {
     mountArena();
     const waited = [];

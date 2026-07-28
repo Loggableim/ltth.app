@@ -343,8 +343,10 @@
       border:1px solid var(--arena-edge); border-radius:18px; background:linear-gradient(150deg,#1b2643ee,#0c1223e8);
       box-shadow:0 14px 34px #0009,inset 0 0 22px #8da9ff0b; backdrop-filter:blur(10px);
     }
-    .fighter-heading { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:7px; }
+    .fighter-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:7px; }
+    .fighter-identity { display:grid; min-width:0; gap:2px; }
     .fighter-name { overflow:hidden; font-size:clamp(17px,2.4vw,30px); font-weight:950; text-overflow:ellipsis; white-space:nowrap; }
+    .fighter-owner { overflow:hidden; color:#8eefff; font-size:clamp(11px,1.35vw,17px); font-weight:950; letter-spacing:.035em; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 2px 5px #000; }
     .fighter-level { flex:none; color:var(--gold); font-size:clamp(12px,1.5vw,18px); font-weight:900; }
     .fighter-hp-row { display:flex; align-items:center; gap:8px; color:#e8f1ff; font-size:clamp(11px,1.35vw,17px); font-weight:800; }
     .arena-meter {
@@ -946,7 +948,10 @@
       </div>
       <div class="fighter-hud">
         <div class="fighter-heading">
-          <span id="arena-name-1" class="fighter-name">Monster A</span>
+          <div class="fighter-identity">
+            <span id="arena-name-1" class="fighter-name">Monster A</span>
+            <span id="arena-owner-1" class="fighter-owner">Viewer</span>
+          </div>
           <span id="arena-level-1" class="fighter-level">Lv. 1</span>
         </div>
         <div class="fighter-hp-row"><span>HP</span><span id="arena-hp-text-1">0 / 0</span></div>
@@ -982,7 +987,10 @@
       </div>
       <div class="fighter-hud">
         <div class="fighter-heading">
-          <span id="arena-name-2" class="fighter-name">Monster B</span>
+          <div class="fighter-identity">
+            <span id="arena-name-2" class="fighter-name">Monster B</span>
+            <span id="arena-owner-2" class="fighter-owner">Viewer</span>
+          </div>
           <span id="arena-level-2" class="fighter-level">Lv. 1</span>
         </div>
         <div class="fighter-hp-row"><span>HP</span><span id="arena-hp-text-2">0 / 0</span></div>

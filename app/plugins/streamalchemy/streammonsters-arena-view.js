@@ -93,6 +93,7 @@
       evaded: 'AUSGEWICHEN',
       knockout: 'K. O.',
       winner: '{name} gewinnt!',
+      viewer: 'Viewer',
       battleEnded: 'Kampf beendet',
       cancelledRoster: 'Kampf abgebrochen · Monsterwahl unvollständig',
       cancelled: 'Kampf abgebrochen',
@@ -298,6 +299,7 @@
       stateBySlot.set(slot, state);
       const fallbackName = formatLabel('monster', { slot });
       setText(`arena-name-${slot}`, state.name || fallbackName);
+      setText(`arena-owner-${slot}`, state.viewerName || labels.viewer);
       setText(`arena-level-${slot}`, formatLabel('level', {
         level: Math.max(1, numeric(state.level, 1))
       }));

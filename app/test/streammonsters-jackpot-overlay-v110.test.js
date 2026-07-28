@@ -112,14 +112,9 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
         state: 'incubating',
         adoptionStatus: 'owned',
         adoptable: false
-      })
+      }),
+      removedEggStage: { visualId: 'free-public' }
     });
-    const claimed = dom.window.document.querySelector('[data-egg-id="free-public"]');
-    expect(claimed).not.toBeNull();
-    expect(claimed.classList.contains('gold-ring')).toBe(false);
-    expect(claimed.dataset.adoptable).toBe('false');
-
-    view.applyEvent('egg_stage_removed', { eggStage: { visualId: 'free-public' } });
     expect(dom.window.document.querySelector('[data-egg-id="free-public"]')).toBeNull();
   });
 

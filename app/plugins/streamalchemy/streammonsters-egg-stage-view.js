@@ -270,6 +270,15 @@
     }
 
     function applyEvent(type, payload = {}) {
+      if (type === 'free_egg_claimed' && payload.removedEggStage) {
+        const removedId = boundedText(payload.removedEggStage.visualId, 64);
+        if (!removedId) return false;
+        eggsById.delete(removedId);
+        calloutDeadlineById.delete(removedId);
+        removeCallout(removedId);
+        render();
+        return true;
+      }
       const egg = payload.eggStage || payload.egg_stage || payload.egg;
       const visualId = boundedText(egg?.visualId || payload.visualId, 64);
       if (!visualId) return false;

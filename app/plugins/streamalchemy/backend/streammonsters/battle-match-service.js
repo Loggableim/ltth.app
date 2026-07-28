@@ -861,6 +861,21 @@ class BattleMatchService {
     });
   }
 
+  publicViewerName(viewerId, fallback = null) {
+    const candidate = String(
+      this.store?.getViewerDisplayName?.(viewerId) || fallback || ''
+    ).trim().replace(/^@+/, '');
+    if (
+      !candidate ||
+      /^viewer$/i.test(candidate) ||
+      /^\d{8,}$/.test(candidate) ||
+      /^tiktok:\d+$/i.test(candidate)
+    ) {
+      return 'Viewer';
+    }
+    return `@${candidate.slice(0, 64)}`;
+  }
+
   projectPublicFighters(match) {
     const chargeWindow = this.chargeWindow(match);
     return match.participants.map(participant => {
@@ -878,6 +893,7 @@ class BattleMatchService {
         locked: Boolean(participant.lockedMonsterId),
         ...(roster ? {
           name: roster.name,
+          viewerName: this.publicViewerName(participant.viewerId),
           element: roster.element,
           templateId: roster.template_id,
           evolutionStage: Math.max(
@@ -930,6 +946,7 @@ class BattleMatchService {
       return projectBattleFighter({
         ...fighter,
         name: String(fighter?.name || '').slice(0, 80),
+        viewerName: this.publicViewerName(participant?.viewerId, fighter?.viewerName),
         element: String(fighter?.element || '').slice(0, 16),
         templateId,
         evolutionStage: stage,

@@ -233,6 +233,9 @@ describe('Stream Monsters recurring free egg drops', () => {
       'streammonsters:free_egg_reserved',
       'streammonsters:free_egg_claimed'
     ]);
+    expect(subject.emitted.at(-1).payload).toEqual(expect.objectContaining({
+      removedEggStage: expect.objectContaining({ visualId: expect.any(String) })
+    }));
   });
 
   test('keeps an offer reserved for exactly 60 seconds before releasing it publicly', () => {

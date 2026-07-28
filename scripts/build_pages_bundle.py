@@ -43,6 +43,7 @@ ROOT_DIRS = [
     "oauth",
     "plugin-store/packages",
     "screenshots",
+    "streammonsters",
 ]
 
 
@@ -99,6 +100,14 @@ def build_bundle(output_dir: Path) -> None:
         if copied:
             copied_dirs += 1
             copied_files += copied
+
+    # The public Stream Monsters guide reuses the canonical, versioned Furry
+    # roster. Publish copies because app/ is intentionally runtime-only.
+    monster_assets = REPO_ROOT / "app/plugins/streamalchemy/assets/streammonsters/furry"
+    copied = copy_tree(monster_assets, output_dir / "assets/streammonsters/furry")
+    if copied:
+        copied_dirs += 1
+        copied_files += copied
 
     for html_file in sorted(REPO_ROOT.glob("*.html")):
         if copy_file(html_file, output_dir / html_file.name):

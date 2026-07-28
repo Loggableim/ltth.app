@@ -254,6 +254,7 @@ function projectBattleFighter(fighter = null) {
   return {
     ...projected,
     name: boundedText(fighter.name, 80) || 'Monster',
+    viewerName: boundedText(fighter.viewerName ?? fighter.viewer_name, 80) || 'Viewer',
     element: boundedText(fighter.element, 24),
     templateId: boundedText(fighter.templateId ?? fighter.template_id, 48),
     evolutionStage: Math.max(

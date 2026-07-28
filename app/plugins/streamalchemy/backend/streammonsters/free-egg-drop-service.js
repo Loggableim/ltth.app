@@ -160,7 +160,10 @@ class FreeEggDropService {
         sourceUserId: claimedOffer.source_user_id,
         userId: input.userId,
         egg,
-        eggStage: this.engine.eggStageProjector.projectEgg(egg)
+        eggStage: this.engine.eggStageProjector.projectEgg(egg),
+        // Free eggs are an adoption offer on the shared shelf, not a second
+        // public representation of the claimant's private inventory egg.
+        removedEggStage: this.engine.eggStageProjector.projectOffer(claimedOffer)
       });
       return result;
     });
