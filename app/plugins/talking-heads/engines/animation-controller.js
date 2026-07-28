@@ -34,13 +34,20 @@ class AnimationController {
    * @param {object} sprites - Sprite paths
    * @param {number} audioDuration - Duration of TTS audio in milliseconds
    */
-  async startAnimation(userId, username, sprites, audioDuration) {
+  async startAnimation(userId, username, sprites, audioDuration, options = {}) {
     try {
       // Check if animation already active for this user - queue instead of skip
       if (this.activeAnimations.has(userId)) {
-        this.logger.info(`TalkingHeads: Animation already active for ${username}, adding to queue`);
-        this.animationQueue.push({ userId, username, sprites, audioDuration });
-        return;
+        const activeAnimation = this.activeAnimations.get(userId);
+        if (options.externalLifecycle === true && activeAnimation?.externalLifecycle) {
+          // Renderer playback IDs are authoritative. A new native `playing`
+          // event must not sit behind a previous message's visual fade-out.
+          this.stopAnimation(userId);
+        } else {
+          this.logger.info(`TalkingHeads: Animation already active for ${username}, adding to queue`);
+          this.animationQueue.push({ userId, username, sprites, audioDuration, options });
+          return;
+        }
       }
 
       this.logger.info(`TalkingHeads: Starting animation for ${username} (${audioDuration}ms)`);
@@ -53,8 +60,11 @@ class AnimationController {
         state: this.STATES.IDLE,
         startTime: Date.now(),
         audioDuration,
+        playbackId: options.playbackId || null,
+        externalLifecycle: options.externalLifecycle === true,
         blinkTimer: null,
         speakTimer: null,
+        fallbackMouthTimer: null,
         endTimer: null
       };
 
@@ -82,11 +92,18 @@ class AnimationController {
       // Start idle animation with blinking
       this._startIdleAnimation(userId);
 
-      // Wait for fade-in, then start speaking animation
-      const fadeInTimeout = setTimeout(() => {
-        this._startSpeakingAnimation(userId, audioDuration);
-      }, this.config.fadeInDuration || 300);
-      this._trackTimeout(fadeInTimeout);
+      if (animationState.externalLifecycle) {
+        // A renderer `playing` acknowledgement is the authority here. Do not
+        // delay the mouth state behind the old estimated-duration fade timer.
+        this._startSpeakingAnimation(userId, audioDuration, { externalLifecycle: true });
+      } else {
+        // Legacy tts:speaking / preview behavior intentionally keeps its
+        // duration-driven animation fallback.
+        const fadeInTimeout = setTimeout(() => {
+          this._startSpeakingAnimation(userId, audioDuration);
+        }, this.config.fadeInDuration || 300);
+        this._trackTimeout(fadeInTimeout);
+      }
 
     } catch (error) {
       this.logger.error(`TalkingHeads: Failed to start animation for ${username}`, error);
@@ -153,7 +170,7 @@ class AnimationController {
    * @param {number} duration - Audio duration in milliseconds
    * @private
    */
-  _startSpeakingAnimation(userId, duration) {
+  _startSpeakingAnimation(userId, duration, options = {}) {
     const animation = this.activeAnimations.get(userId);
     if (!animation) {
       this.logger.warn(`TalkingHeads: Cannot start speaking animation - no animation found for ${userId}`);
@@ -167,6 +184,12 @@ class AnimationController {
     if (animation.blinkTimer) {
       clearInterval(animation.blinkTimer);
       animation.blinkTimer = null;
+    }
+
+    if (options.externalLifecycle === true || animation.externalLifecycle) {
+      animation.externalLifecycle = true;
+      this._startExternalMouthFallback(animation);
+      return;
     }
 
     // Cycle through speaking frames with dynamic duration
@@ -201,6 +224,64 @@ class AnimationController {
     this._trackTimeout(animation.endTimer);
   }
 
+  _startExternalMouthFallback(animation) {
+    if (!animation || animation.fallbackMouthTimer) return;
+    const speakFrames = ['speak_closed', 'speak_mid', 'speak_open', 'speak_mid'];
+    let frameIndex = 0;
+    animation.fallbackMouthTimer = setInterval(() => {
+      if (animation.state !== this.STATES.SPEAKING || !animation.externalLifecycle) return;
+      this.io.emit('talkingheads:animation:frame', {
+        userId: animation.userId,
+        frame: speakFrames[frameIndex]
+      });
+      frameIndex = (frameIndex + 1) % speakFrames.length;
+    }, 140);
+  }
+
+  /**
+   * Apply analysed dashboard audio intensity with a small hysteresis band so
+   * speech frames do not visibly flicker around one threshold.
+   */
+  setMouthIntensity(userId, playbackId, level) {
+    const animation = this.activeAnimations.get(userId);
+    if (!animation || !animation.externalLifecycle || animation.playbackId !== playbackId) return false;
+
+    if (level === null || level === undefined || !Number.isFinite(Number(level))) {
+      this._startExternalMouthFallback(animation);
+      return true;
+    }
+
+    if (animation.fallbackMouthTimer) {
+      clearInterval(animation.fallbackMouthTimer);
+      animation.fallbackMouthTimer = null;
+    }
+
+    const intensity = Math.max(0, Math.min(1, Number(level)));
+    const lastFrame = animation.mouthFrame || 'speak_closed';
+    let frame = lastFrame;
+    if (lastFrame === 'speak_open') {
+      frame = intensity < 0.40 ? 'speak_mid' : 'speak_open';
+    } else if (lastFrame === 'speak_mid') {
+      frame = intensity >= 0.65 ? 'speak_open' : (intensity < 0.16 ? 'speak_closed' : 'speak_mid');
+    } else {
+      frame = intensity >= 0.65 ? 'speak_open' : (intensity >= 0.32 ? 'speak_mid' : 'speak_closed');
+    }
+    animation.mouthFrame = frame;
+    this.io.emit('talkingheads:animation:frame', { userId, frame });
+    return true;
+  }
+
+  /**
+   * End only the currently active external playback. Late terminal events for
+   * a prior message cannot stop a newer message from the same viewer.
+   */
+  endExternalAnimation(userId, playbackId) {
+    const animation = this.activeAnimations.get(userId);
+    if (!animation || !animation.externalLifecycle || animation.playbackId !== playbackId) return false;
+    this._endAnimation(userId);
+    return true;
+  }
+
   /**
    * End animation and fade out
    * @param {string} userId - User ID
@@ -221,6 +302,9 @@ class AnimationController {
     if (animation.speakTimer) {
       clearInterval(animation.speakTimer);
     }
+    if (animation.fallbackMouthTimer) {
+      clearInterval(animation.fallbackMouthTimer);
+    }
     if (animation.endTimer) {
       clearTimeout(animation.endTimer);
     }
@@ -233,6 +317,7 @@ class AnimationController {
 
     // Fade out after brief pause
     const fadeTimeout = setTimeout(() => {
+      if (this.activeAnimations.get(userId) !== animation) return;
       this.io.emit('talkingheads:animation:end', {
         userId,
         fadeOutDuration: this.config.fadeOutDuration || 300
@@ -245,6 +330,7 @@ class AnimationController {
 
       // Remove from active animations
       const cleanupTimeout = setTimeout(() => {
+        if (this.activeAnimations.get(userId) !== animation) return;
         this.activeAnimations.delete(userId);
         
         // Process next item in queue for this user
@@ -269,6 +355,7 @@ class AnimationController {
     // Clear all timers
     if (animation.blinkTimer) clearInterval(animation.blinkTimer);
     if (animation.speakTimer) clearInterval(animation.speakTimer);
+    if (animation.fallbackMouthTimer) clearInterval(animation.fallbackMouthTimer);
     if (animation.endTimer) clearTimeout(animation.endTimer);
 
     // Emit stop event
@@ -360,6 +447,8 @@ class AnimationController {
         userId,
         username: animation.username,
         state: animation.state,
+        playbackId: animation.playbackId || null,
+        externalLifecycle: animation.externalLifecycle === true,
         duration: Date.now() - animation.startTime
       });
     }
@@ -394,7 +483,8 @@ class AnimationController {
         nextAnimation.userId,
         nextAnimation.username,
         nextAnimation.sprites,
-        nextAnimation.audioDuration
+        nextAnimation.audioDuration,
+        nextAnimation.options || {}
       );
     }
   }

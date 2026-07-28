@@ -41,6 +41,9 @@ class TalkingHeadsPlugin {
 
     // Bridge handlers for TTS playback events
     this.ttsBridgeHandlers = null;
+    this.pendingAvatarSpins = new Map();
+    this.activePlaybackByUser = new Map();
+    this.pendingGiftRerolls = new Map();
 
     // Viewer presence tracker for Viewer Bar
     this.viewerPresence = new Map(); // userId → { username, sprites, lastSeen, joinedAt }
@@ -316,6 +319,118 @@ class TalkingHeadsPlugin {
     };
   }
 
+  async _emitAvatarSpin({ userId, username, playbackId, winnerSelection, reason = 'initial-assignment' } = {}) {
+    if (!userId || !winnerSelection || !this.assetSpriteLibrary) return null;
+    const candidates = this.assetSpriteLibrary.getLotteryCandidates(
+      3,
+      Math.random,
+      [winnerSelection]
+    );
+    const [winnerSpriteSet, candidateCards] = await Promise.all([
+      this.assetSpriteLibrary.getSpriteSet(winnerSelection),
+      Promise.all(candidates.map(async (selection) => {
+        const spriteSet = await this.assetSpriteLibrary.getSpriteSet(selection);
+        return {
+          selection,
+          spriteUrl: this._getRelativeSpritePaths(spriteSet.sprites).idle_neutral,
+          sprites: this._getRelativeSpritePaths(spriteSet.sprites)
+        };
+      }))
+    ]);
+    const duration = this.config.lotteryAnimationDuration;
+    const payload = {
+      playbackId: String(playbackId || ''),
+      userId,
+      username: username || userId,
+      reason,
+      duration,
+      candidates: candidateCards,
+      winner: {
+        selection: winnerSelection,
+        sprites: this._getRelativeSpritePaths(winnerSpriteSet.sprites)
+      }
+    };
+    this.io.emit('talkingheads:avatar:spin:start', payload);
+    return payload;
+  }
+
+  _waitForAvatarSpin(payload, preparation) {
+    const playbackId = String(payload?.playbackId || '').trim();
+    if (!playbackId) {
+      return Promise.resolve({ ...preparation, spinStatus: 'untracked' });
+    }
+
+    const existing = this.pendingAvatarSpins.get(playbackId);
+    if (existing) return existing.promise;
+
+    const timeoutMs = Math.max(0, Number(payload.duration) || 0) + 500;
+    let timer = null;
+    const pending = {
+      userId: payload.userId,
+      promise: null,
+      resolve: null,
+      timer: null
+    };
+    pending.promise = new Promise((resolve) => {
+      pending.resolve = resolve;
+      timer = setTimeout(() => {
+        if (this.pendingAvatarSpins.get(playbackId) !== pending) return;
+        this.pendingAvatarSpins.delete(playbackId);
+        resolve({ ...preparation, spinStatus: 'timeout' });
+      }, timeoutMs);
+      pending.timer = timer;
+    });
+    this.pendingAvatarSpins.set(playbackId, pending);
+    return pending.promise;
+  }
+
+  _completeAvatarSpin(data = {}) {
+    const playbackId = String(data.playbackId || '').trim();
+    const pending = this.pendingAvatarSpins.get(playbackId);
+    if (!pending) return false;
+    if (!data.userId || String(data.userId) !== String(pending.userId)) return false;
+    if (pending.timer) clearTimeout(pending.timer);
+    this.pendingAvatarSpins.delete(playbackId);
+    pending.resolve({ created: true, spinStatus: 'complete' });
+    return true;
+  }
+
+  _cancelPendingAvatarSpins() {
+    this.pendingAvatarSpins.forEach((pending) => {
+      if (pending.timer) clearTimeout(pending.timer);
+      pending.resolve?.({ created: false, spinStatus: 'cancelled' });
+    });
+    this.pendingAvatarSpins.clear();
+  }
+
+  /**
+   * TTS calls this before audio dispatch. The selection is persisted by the
+   * assignment primitive before the presentation spin starts, so an absent
+   * overlay can never lose the definitive avatar result.
+   */
+  async prepareAvatarForPlayback(meta = {}) {
+    if (!this.config.enabled) {
+      return { created: false, reason: 'disabled' };
+    }
+
+    const preparation = this.prepareAvatarAssignment({
+      userId: meta.userId,
+      username: meta.username || meta.userId,
+      hasAssignedVoice: meta.hasAssignedVoice === true
+    });
+    if (!preparation.created) return preparation;
+
+    const payload = await this._emitAvatarSpin({
+      userId: meta.userId,
+      username: meta.username || meta.userId,
+      playbackId: meta.playbackId || meta.id,
+      winnerSelection: preparation.selection,
+      reason: 'initial-assignment'
+    });
+    if (!payload) return { ...preparation, spinStatus: 'unavailable' };
+    return this._waitForAvatarSpin(payload, preparation);
+  }
+
   /**
    * Register the TikTok events used by the gift avatar lottery.
    * @private
@@ -382,6 +497,15 @@ class TalkingHeadsPlugin {
     const currentAssignment = this.avatarLotteryManager.getAssignment(user.userId);
     if (!currentAssignment?.selection) return false;
 
+    // A cosmetic reroll must never swap the portrait underneath an actively
+    // speaking avatar. Keep just the latest configured gift for this viewer
+    // and run it after the renderer terminal event.
+    if (this.activePlaybackByUser.has(user.userId)) {
+      this.pendingGiftRerolls.set(user.userId, data);
+      this._log(`Avatar reroll deferred until ${user.username} finishes speaking`, 'debug');
+      return true;
+    }
+
     if (!this.assetSpriteLibrary) {
       this.assetSpriteLibrary = new AssetSpriteLibrary({
         dataDir: this.api.getPluginDataDir(),
@@ -390,36 +514,16 @@ class TalkingHeadsPlugin {
     }
 
     const winnerSelection = this.assetSpriteLibrary.getRandomSelection(Math.random, currentAssignment.selection);
-    const candidateSelections = this.assetSpriteLibrary.getLotteryCandidates(
-      3,
-      Math.random,
-      [currentAssignment.selection, winnerSelection]
-    );
-    const [winnerSpriteSet, candidates] = await Promise.all([
-      this.assetSpriteLibrary.getSpriteSet(winnerSelection),
-      Promise.all(candidateSelections.map(async (selection) => {
-        const spriteSet = await this.assetSpriteLibrary.getSpriteSet(selection);
-        return {
-          selection,
-          spriteUrl: spriteSet.sprites.idle_neutral,
-          sprites: spriteSet.sprites
-        };
-      }))
-    ]);
-
     const assignment = this.avatarLotteryManager.reroll(user.userId, user.username, winnerSelection);
     if (!assignment) return false;
-    this.io.emit('talkingheads:avatar:lottery:start', {
+    const spin = await this._emitAvatarSpin({
       userId: user.userId,
       username: user.username,
-      candidates,
-      winner: {
-        selection: winnerSelection,
-        sprites: winnerSpriteSet.sprites
-      },
-      state: assignment.state,
-      duration: this.config.lotteryAnimationDuration
+      playbackId: `gift-reroll-${Date.now()}-${user.userId}`,
+      winnerSelection,
+      reason: 'gift-reroll'
     });
+    if (!spin) return false;
     this._log(`Avatar lottery: drew ${winnerSelection.packId}/${winnerSelection.characterId} for ${user.username}`, 'info');
     return true;
   }
@@ -1719,6 +1823,10 @@ class TalkingHeadsPlugin {
       }
     });
 
+    this.api.registerSocket('talkingheads:avatar:spin:complete', (socket, data) => {
+      this._completeAvatarSpin(data || {});
+    });
+
     this.logger.info('TalkingHeads: Socket events registered');
   }
 
@@ -1754,6 +1862,57 @@ class TalkingHeadsPlugin {
       this._log('PluginLoader not available for TTS bridge', 'debug');
       return;
     }
+
+    const rendererStartHandler = async (payload = {}) => {
+      const source = String(payload.source || '').toLowerCase();
+      const isPreview = source === 'talking-heads-preview';
+      if (!this.config.enabled && !isPreview) return;
+
+      const playbackId = String(payload.playbackId || '').trim();
+      const userId = String(payload.userId || payload.username || '').trim();
+      if (!playbackId || !userId) return;
+      this.activePlaybackByUser.set(userId, playbackId);
+
+      try {
+        await this._handleTTSEvent({
+          userId,
+          username: payload.username || userId,
+          text: '',
+          duration: this.config.animationDuration || 5000,
+          isPreview,
+          playbackId,
+          externalLifecycle: true,
+          userData: {
+            uniqueId: userId,
+            hasAssignedVoice: payload.hasAssignedVoice === true
+          }
+        });
+      } catch (error) {
+        this.logger.error('TalkingHeads: Failed to start renderer-synchronised avatar', error);
+      }
+    };
+
+    const rendererProgressHandler = (payload = {}) => {
+      const playbackId = String(payload.playbackId || '').trim();
+      const userId = String(payload.userId || payload.username || '').trim();
+      if (!playbackId || !userId || this.activePlaybackByUser.get(userId) !== playbackId) return;
+      this.animationController?.setMouthIntensity(userId, playbackId, payload.level ?? null);
+    };
+
+    const rendererTerminalHandler = (payload = {}) => {
+      const playbackId = String(payload.playbackId || '').trim();
+      const userId = String(payload.userId || payload.username || '').trim();
+      if (!playbackId || !userId || this.activePlaybackByUser.get(userId) !== playbackId) return;
+      this.activePlaybackByUser.delete(userId);
+      this.animationController?.endExternalAnimation(userId, playbackId);
+      const pendingGift = this.pendingGiftRerolls.get(userId);
+      if (pendingGift) {
+        this.pendingGiftRerolls.delete(userId);
+        this._handleLotteryGift(pendingGift).catch((error) => {
+          this.logger.error('TalkingHeads: Deferred avatar gift reroll failed', error);
+        });
+      }
+    };
 
     const startHandler = async (payload = {}) => {
       const source = String(payload.source || '').toLowerCase();
@@ -1794,9 +1953,19 @@ class TalkingHeadsPlugin {
       this.animationController.stopAnimation(userId);
     };
 
+    loader.on('tts:renderer:started', rendererStartHandler);
+    loader.on('tts:renderer:progress', rendererProgressHandler);
+    loader.on('tts:renderer:ended', rendererTerminalHandler);
+    loader.on('tts:renderer:failed', rendererTerminalHandler);
     loader.on('tts:playback:started', startHandler);
     loader.on('tts:playback:ended', endHandler);
-    this.ttsBridgeHandlers = { startHandler, endHandler };
+    this.ttsBridgeHandlers = {
+      rendererStartHandler,
+      rendererProgressHandler,
+      rendererTerminalHandler,
+      startHandler,
+      endHandler
+    };
     this._log('TTS playback bridge registered', 'debug');
   }
 
@@ -1806,7 +1975,16 @@ class TalkingHeadsPlugin {
    * @private
    */
   async _handleTTSEvent(data) {
-    const { userId, username, text, duration, userData, isPreview } = data;
+    const {
+      userId,
+      username,
+      text,
+      duration,
+      userData,
+      isPreview,
+      playbackId = null,
+      externalLifecycle = false
+    } = data;
 
     this._log(`TTS event received for user: ${username}`, 'debug', { userId, duration });
 
@@ -1927,12 +2105,22 @@ class TalkingHeadsPlugin {
     if (isNewAvatar && this.config.obsHudEnabled !== false) {
       this._emitSpawnAnimation(userId, username, avatarData.sprites);
     }
-    this.animationController.startAnimation(
-      userId,
-      username,
-      avatarData.sprites,
-      duration || 5000
-    );
+    if (externalLifecycle === true) {
+      this.animationController.startAnimation(
+        userId,
+        username,
+        avatarData.sprites,
+        duration || 5000,
+        { playbackId, externalLifecycle: true }
+      );
+    } else {
+      this.animationController.startAnimation(
+        userId,
+        username,
+        avatarData.sprites,
+        duration || 5000
+      );
+    }
   }
 
   /**
@@ -2194,10 +2382,18 @@ class TalkingHeadsPlugin {
 
       if (this.ttsBridgeHandlers && this.api.pluginLoader) {
         const loader = this.api.pluginLoader;
+        loader.removeListener('tts:renderer:started', this.ttsBridgeHandlers.rendererStartHandler);
+        loader.removeListener('tts:renderer:progress', this.ttsBridgeHandlers.rendererProgressHandler);
+        loader.removeListener('tts:renderer:ended', this.ttsBridgeHandlers.rendererTerminalHandler);
+        loader.removeListener('tts:renderer:failed', this.ttsBridgeHandlers.rendererTerminalHandler);
         loader.removeListener('tts:playback:started', this.ttsBridgeHandlers.startHandler);
         loader.removeListener('tts:playback:ended', this.ttsBridgeHandlers.endHandler);
         this.ttsBridgeHandlers = null;
       }
+
+      this._cancelPendingAvatarSpins();
+      this.activePlaybackByUser.clear();
+      this.pendingGiftRerolls.clear();
 
       // Clear cleanup interval
       if (this.cacheCleanupInterval) {

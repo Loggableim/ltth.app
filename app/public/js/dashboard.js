@@ -14,9 +14,11 @@ const LIVE_EVENT_LOG_STORAGE_KEY = 'show-live-event-log';
 let audioUnlocked = false;
 let pendingTTSQueue = [];
 const ANIMAZINGPAL_HOST_TTS_SOURCE = 'animazingpal-host-speech-output';
+let dashboardTTSRenderer = null;
 
 // TTS Streaming buffer management
 const streamingBuffers = new Map();
+const blockedStreamingPlaybackIds = new Set();
 
 // ========== STATS MENU NAVIGATION DATA ==========
 // Track event data for detail panels
@@ -673,6 +675,17 @@ async function routeDashboardAudio(audio, data = {}) {
     console.log('[Dashboard] Host TTS output routing:', routing);
     window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('[Dashboard] Host TTS monitoring failed:', err));
     return routing;
+}
+
+function getDashboardTTSRenderer(audio) {
+    if (!window.DashboardTTSRenderer || !audio) return null;
+    if (!dashboardTTSRenderer) {
+        dashboardTTSRenderer = new window.DashboardTTSRenderer({ audio, socket });
+    } else {
+        dashboardTTSRenderer.setAudio(audio);
+        dashboardTTSRenderer.setSocket(socket);
+    }
+    return dashboardTTSRenderer;
 }
 
 // ========== TIKTOK CONNECTION ==========
@@ -3503,16 +3516,29 @@ function showAudioEnablePrompt() {
  */
 async function playDashboardTTS(data) {
     console.log('🎤 [Dashboard] Playing TTS:', data.text);
+    const playbackId = data.playbackId || data.id;
 
     // Check if audio is unlocked
     if (!audioUnlocked) {
-        console.log('⚠️ [Dashboard] Audio not unlocked yet, adding to queue and showing prompt');
-        pendingTTSQueue.push(data);
+        console.log('⚠️ [Dashboard] Audio not unlocked yet, reporting renderer failure and showing prompt');
+        if (playbackId) {
+            socket?.emit('tts:renderer:failed', { playbackId, reason: 'audio-locked' });
+        }
         showAudioEnablePrompt();
         return;
     }
 
     const audio = document.getElementById('dashboard-tts-audio');
+
+    if (!audio || !playbackId) {
+        if (playbackId && socket) {
+            socket.emit('tts:renderer:failed', {
+                playbackId,
+                reason: audio ? 'missing-playback-id' : 'audio-element-missing'
+            });
+        }
+        return;
+    }
 
     try {
         // Base64-Audio zu Blob konvertieren
@@ -3524,31 +3550,24 @@ async function playDashboardTTS(data) {
         audio.volume = (data.volume || 80) / 100;
         audio.playbackRate = data.speed || 1.0;
 
-        await routeDashboardAudio(audio, data);
+        const renderer = getDashboardTTSRenderer(audio);
+        if (!renderer) {
+            socket?.emit('tts:renderer:failed', { playbackId, reason: 'renderer-unavailable' });
+            URL.revokeObjectURL(audioUrl);
+            return;
+        }
 
-        audio.play().then(() => {
-            console.log('✅ [Dashboard] TTS started playing');
-        }).catch(err => {
-            console.error('❌ [Dashboard] TTS playback error:', err);
-            // If playback fails due to autoplay policy, show prompt
-            if (err.name === 'NotAllowedError') {
-                console.log('⚠️ [Dashboard] Autoplay blocked, showing enable prompt');
-                audioUnlocked = false; // Reset unlock state
-                pendingTTSQueue.push(data);
-                showAudioEnablePrompt();
-            }
+        const played = await renderer.play({
+            playbackId,
+            source: data.source,
+            route: () => routeDashboardAudio(audio, data),
+            cleanup: () => URL.revokeObjectURL(audioUrl)
         });
-
-        // URL nach Abspielen freigeben
-        audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            console.log('✅ [Dashboard] TTS finished');
-        };
-
-        audio.onerror = (err) => {
-            console.error('❌ [Dashboard] TTS audio error:', err);
-            URL.revokeObjectURL(audioUrl);
-        };
+        if (!played) {
+            console.error('❌ [Dashboard] TTS playback was rejected by the browser');
+            audioUnlocked = false;
+            showAudioEnablePrompt();
+        }
 
     } catch (error) {
         console.error('❌ [Dashboard] Error in playDashboardTTS:', error);
@@ -3573,29 +3592,37 @@ function getAudioMimeType(format) {
  * Handle incoming TTS stream chunks
  */
 function handleStreamChunk(data) {
-    console.log(`🎵 [Dashboard] Stream chunk received for ${data.id}`, {
-        chunkNumber: streamingBuffers.has(data.id) ? streamingBuffers.get(data.id).chunks.length + 1 : 1,
+    const playbackId = data.playbackId || data.id;
+    if (!playbackId) return;
+    console.log(`🎵 [Dashboard] Stream chunk received for ${playbackId}`, {
+        chunkNumber: streamingBuffers.has(playbackId) ? streamingBuffers.get(playbackId).chunks.length + 1 : 1,
         isFirst: data.isFirst
     });
 
     // Check if audio is unlocked
     if (!audioUnlocked) {
         console.log('⚠️ [Dashboard] Audio not unlocked yet, ignoring stream chunk');
+        if (!blockedStreamingPlaybackIds.has(playbackId)) {
+            blockedStreamingPlaybackIds.add(playbackId);
+            socket?.emit('tts:renderer:failed', { playbackId, reason: 'audio-locked' });
+            showAudioEnablePrompt();
+        }
         return;
     }
 
     // Initialize buffer for this stream ID
-    if (!streamingBuffers.has(data.id)) {
-        streamingBuffers.set(data.id, {
+    if (!streamingBuffers.has(playbackId)) {
+        streamingBuffers.set(playbackId, {
             chunks: [],
             volume: null,
             speed: null,
             format: null,
-            playbackStarted: false
+            playbackStarted: false,
+            playbackId
         });
     }
 
-    const buffer = streamingBuffers.get(data.id);
+    const buffer = streamingBuffers.get(playbackId);
 
     // Decode Base64 chunk to Uint8Array
     const binaryString = atob(data.chunk);
@@ -3608,7 +3635,7 @@ function handleStreamChunk(data) {
         buffer.speed = data.speed;
         buffer.format = data.format || 'mp3';  // Store format
         buffer.source = data.source || null;
-        console.log(`🎵 [Dashboard] Stream started for ${data.id}`, {
+        console.log(`🎵 [Dashboard] Stream started for ${playbackId}`, {
             volume: buffer.volume,
             speed: buffer.speed,
             format: buffer.format,
@@ -3621,24 +3648,28 @@ function handleStreamChunk(data) {
  * Handle stream end event - combine chunks and play audio
  */
 function handleStreamEnd(data) {
-    console.log(`🎵 [Dashboard] Stream ended for ${data.id}`, {
+    const playbackId = data.playbackId || data.id;
+    if (!playbackId) return;
+    console.log(`🎵 [Dashboard] Stream ended for ${playbackId}`, {
         totalChunks: data.totalChunks,
         totalBytes: data.totalBytes
     });
 
-    const buffer = streamingBuffers.get(data.id);
+    const buffer = streamingBuffers.get(playbackId);
     if (!buffer) {
-        console.warn(`⚠️ [Dashboard] No buffer found for stream ${data.id}`);
+        if (blockedStreamingPlaybackIds.delete(playbackId)) return;
+        console.warn(`⚠️ [Dashboard] No buffer found for stream ${playbackId}`);
+        socket?.emit('tts:renderer:failed', { playbackId, reason: 'stream-buffer-missing' });
         return;
     }
 
     if (buffer.playbackStarted) {
-        console.log(`⚠️ [Dashboard] Playback already started for ${data.id}`);
+        console.log(`⚠️ [Dashboard] Playback already started for ${playbackId}`);
         return;
     }
 
     buffer.playbackStarted = true;
-    playStreamingAudio(data.id, data.source || buffer.source || null);
+    playStreamingAudio(playbackId, data.source || buffer.source || null);
 }
 
 /**
@@ -3649,6 +3680,7 @@ async function playStreamingAudio(id, source = null) {
     if (!buffer || buffer.chunks.length === 0) {
         console.warn(`⚠️ [Dashboard] No chunks to play for ${id}`);
         streamingBuffers.delete(id);
+        socket?.emit('tts:renderer:failed', { playbackId: id, reason: 'stream-empty' });
         return;
     }
 
@@ -3677,6 +3709,7 @@ async function playStreamingAudio(id, source = null) {
         if (!audio) {
             console.error('❌ [Dashboard] Audio element not found');
             streamingBuffers.delete(id);
+            socket?.emit('tts:renderer:failed', { playbackId: id, reason: 'audio-element-missing' });
             return;
         }
 
@@ -3685,29 +3718,28 @@ async function playStreamingAudio(id, source = null) {
         audio.playbackRate = buffer.speed || 1.0;
         audio.src = audioUrl;
 
-        await routeDashboardAudio(audio, { source: source || buffer.source });
-
-        // Start playback
-        audio.play().then(() => {
-            console.log(`✅ [Dashboard] Streaming TTS started playing for ${id}`);
-        }).catch(err => {
-            console.error(`❌ [Dashboard] Streaming TTS playback error for ${id}:`, err);
+        const renderer = getDashboardTTSRenderer(audio);
+        if (!renderer) {
+            socket?.emit('tts:renderer:failed', { playbackId: id, reason: 'renderer-unavailable' });
             URL.revokeObjectURL(audioUrl);
             streamingBuffers.delete(id);
+            return;
+        }
+
+        const played = await renderer.play({
+            playbackId: id,
+            source: source || buffer.source,
+            route: () => routeDashboardAudio(audio, { source: source || buffer.source }),
+            cleanup: () => {
+                URL.revokeObjectURL(audioUrl);
+                streamingBuffers.delete(id);
+            }
         });
-
-        // Clean up after playback
-        audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            streamingBuffers.delete(id);
-            console.log(`✅ [Dashboard] Streaming TTS finished for ${id}`);
-        };
-
-        audio.onerror = (err) => {
-            console.error(`❌ [Dashboard] Streaming TTS audio error for ${id}:`, err);
-            URL.revokeObjectURL(audioUrl);
-            streamingBuffers.delete(id);
-        };
+        if (!played) {
+            console.error(`❌ [Dashboard] Streaming TTS playback was rejected for ${id}`);
+            audioUnlocked = false;
+            showAudioEnablePrompt();
+        }
 
     } catch (error) {
         console.error(`❌ [Dashboard] Error in playStreamingAudio for ${id}:`, error);

@@ -46,13 +46,14 @@ describe('Talking Heads gift avatar lottery', () => {
     expect(api.registerTikTokEvent).toHaveBeenCalledTimes(1);
     expect(plugin.assetSpriteLibrary.getRandomSelection).toHaveBeenCalledWith(expect.any(Function), fox);
     expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer-1', 'ViewerOne', dog);
-    expect(io.emit).toHaveBeenCalledWith('talkingheads:avatar:lottery:start', expect.objectContaining({
+    expect(io.emit).toHaveBeenCalledWith('talkingheads:avatar:spin:start', expect.objectContaining({
       userId: 'viewer-1',
       username: 'ViewerOne',
-      candidates: expect.arrayContaining([expect.objectContaining({ spriteUrl: '/sprite/Bear.svg' })]),
-      winner: expect.objectContaining({ sprites: { idle_neutral: '/sprite/Dog.svg' } })
+      reason: 'gift-reroll',
+      candidates: expect.arrayContaining([expect.objectContaining({ spriteUrl: '/api/talkingheads/sprite/Bear.svg' })]),
+      winner: expect.objectContaining({ sprites: { idle_neutral: '/api/talkingheads/sprite/Dog.svg' } })
     }));
-    const payload = io.emit.mock.calls.find(([event]) => event === 'talkingheads:avatar:lottery:start')[1];
+    const payload = io.emit.mock.calls.find(([event]) => event === 'talkingheads:avatar:spin:start')[1];
     expect(payload).not.toHaveProperty('keepCommand');
     expect(payload).not.toHaveProperty('rerollCommand');
   });
@@ -73,5 +74,42 @@ describe('Talking Heads gift avatar lottery', () => {
     })).resolves.toBe(false);
     expect(plugin.assetSpriteLibrary.getRandomSelection).not.toHaveBeenCalled();
     expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+  });
+
+  test('defers a gift reroll until the viewer is no longer speaking', async () => {
+    const { plugin, api } = createPlugin();
+    plugin.activePlaybackByUser.set('viewer-1', 'active-playback');
+    plugin.assetSpriteLibrary = { getRandomSelection: jest.fn() };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => ({ userId: 'viewer-1', username: 'ViewerOne', selection: fox })),
+      reroll: jest.fn()
+    };
+
+    await expect(plugin._handleLotteryGift({
+      userId: 'viewer-1',
+      uniqueId: 'ViewerOne',
+      giftName: 'Heart Me'
+    })).resolves.toBe(true);
+
+    expect(plugin.assetSpriteLibrary.getRandomSelection).not.toHaveBeenCalled();
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+    expect(plugin.pendingGiftRerolls.get('viewer-1')).toEqual(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
+
+    plugin.animationController = { endExternalAnimation: jest.fn() };
+    plugin._handleLotteryGift = jest.fn().mockResolvedValue(true);
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    handlers.get('tts:renderer:ended')({
+      playbackId: 'active-playback',
+      userId: 'viewer-1'
+    });
+    await Promise.resolve();
+
+    expect(plugin.pendingGiftRerolls.has('viewer-1')).toBe(false);
+    expect(plugin._handleLotteryGift).toHaveBeenCalledWith(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
   });
 });
