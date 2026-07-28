@@ -372,7 +372,7 @@ class TalkingHeadsPlugin {
     }
     const selection = this.assetSpriteLibrary.getRandomSelection();
     const assignment = this.avatarLotteryManager.assign(userId, username || userId, selection);
-    this._log(`Assigned ${selection.characterId}/${selection.options.expression} to ${username || userId}`, 'info');
+    this._log(`Assigned ${selection.packId}/${selection.characterId} to ${username || userId}`, 'info');
     return {
       created: true,
       selection,
@@ -956,14 +956,14 @@ class TalkingHeadsPlugin {
         const winnerSelection = this.assetSpriteLibrary.getRandomSelection();
         const spin = await this._emitAvatarSpin({
           userId: 'talking-heads-preview',
-          username: 'Boba Character Lab',
+          username: 'Character Lab',
           playbackId,
           winnerSelection,
           reason: 'preview',
           preview: true
         });
         if (!spin) {
-          return res.status(503).json({ success: false, error: 'Boba preview is unavailable' });
+          return res.status(503).json({ success: false, error: 'Avatar preview is unavailable' });
         }
         return res.json({
           success: true,
