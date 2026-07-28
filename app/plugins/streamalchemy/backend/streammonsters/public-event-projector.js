@@ -93,6 +93,18 @@ function boundedText(value, maximum = 96) {
   return normalized ? normalized.slice(0, maximum) : null;
 }
 
+function publicViewerName(value) {
+  const candidate = boundedText(value, 64);
+  if (
+    !candidate ||
+    /^\d{8,}$/.test(candidate) ||
+    /^tiktok:\d+$/i.test(candidate)
+  ) {
+    return null;
+  }
+  return candidate;
+}
+
 function finiteNumber(value, fallback = null) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -444,17 +456,16 @@ class StreamMonstersPublicEventProjector {
   }
 
   displayName(payload = {}) {
-    const candidates = [
+    const direct = [
       payload.displayName,
       payload.username,
       payload.nickname,
       payload.egg?.displayName,
       payload.egg?.display_name
-    ].map(value => boundedText(value, 64)).filter(Boolean);
-    const direct = candidates.find(value => !/^\d{8,}$/.test(value));
+    ].map(publicViewerName).find(Boolean);
     if (direct) return direct;
     const userId = payload.userId ?? payload.user_id;
-    return boundedText(this.store?.getViewerDisplayName?.(userId), 64) || 'Viewer';
+    return publicViewerName(this.store?.getViewerDisplayName?.(userId)) || 'Viewer';
   }
 
   owner(payload = {}) {

@@ -1194,15 +1194,20 @@ class StreamMonstersDatabase {
       ORDER BY updated_at_ms DESC
       LIMIT 1
     `).get(value, value);
-    if (identity?.current_unique_id) return identity.current_unique_id;
-    const alias = this.db.prepare(`
+    const isPublicName = candidate => {
+      const name = String(candidate || '').trim();
+      return name &&
+        !/^\d{8,}$/.test(name) &&
+        !/^tiktok:\d+$/i.test(name);
+    };
+    if (isPublicName(identity?.current_unique_id)) return identity.current_unique_id;
+    const aliases = this.db.prepare(`
       SELECT alias_id
       FROM streammonsters_viewer_aliases
       WHERE canonical_user_id = ?
       ORDER BY updated_at_ms DESC
-      LIMIT 1
-    `).get(value);
-    return alias?.alias_id || null;
+    `).all(value);
+    return aliases.map(alias => alias.alias_id).find(isPublicName) || null;
   }
 
   viewerDataExists(userId) {

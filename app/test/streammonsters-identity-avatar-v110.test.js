@@ -59,6 +59,68 @@ describe('Stream Monsters 1.10 public owner identity and avatar security', () =>
     expect(JSON.stringify(payload)).not.toContain('7392847109283746102');
   });
 
+  test('never promotes a persisted numeric or platform-like identity to hatch owner text', () => {
+    const store = {
+      getViewerDisplayName: jest.fn()
+        .mockReturnValueOnce('7392847109283746102')
+        .mockReturnValueOnce('tiktok:7392847109283746102')
+    };
+    const projector = new StreamMonstersPublicEventProjector({ store });
+    const numeric = projector.project('streammonsters:egg_hatched', {
+      userId: 'tiktok:7392847109283746102',
+      displayName: '7392847109283746102',
+      egg: { display_name: '7392847109283746102', element: 'ember' },
+      monster: { name: 'Flare', element: 'ember' }
+    });
+    const platformLike = projector.project('streammonsters:egg_hatched', {
+      userId: 'tiktok:7392847109283746102',
+      egg: { element: 'ember' },
+      monster: { name: 'Flare', element: 'ember' }
+    });
+
+    expect(numeric.displayName).toBe('Viewer');
+    expect(numeric.owner.initials).toBe('V');
+    expect(platformLike.displayName).toBe('Viewer');
+    expect(JSON.stringify([numeric, platformLike])).not.toContain('7392847109283746102');
+  });
+
+  test('database display lookup rejects numeric current ids and aliases', () => {
+    const database = new Database(':memory:');
+    const store = new StreamMonstersDatabase(database);
+    store.initialize();
+    database.prepare(`
+      INSERT INTO streammonsters_viewer_identities (
+        platform_user_id, canonical_user_id, current_unique_id, updated_at_ms
+      ) VALUES (?, ?, ?, ?)
+    `).run(
+      '7392847109283746102',
+      'tiktok:7392847109283746102',
+      '7392847109283746102',
+      10
+    );
+    database.prepare(`
+      INSERT INTO streammonsters_viewer_aliases (
+        alias_id, canonical_user_id, updated_at_ms
+      ) VALUES (?, ?, ?)
+    `).run(
+      'known_viewer',
+      'tiktok:7392847109283746102',
+      10
+    );
+    database.prepare(`
+      INSERT INTO streammonsters_viewer_aliases (
+        alias_id, canonical_user_id, updated_at_ms
+      ) VALUES (?, ?, ?)
+    `).run(
+      '8392847109283746103',
+      'tiktok:7392847109283746102',
+      20
+    );
+
+    expect(store.getViewerDisplayName('tiktok:7392847109283746102'))
+      .toBe('known_viewer');
+  });
+
   test('normalizes the hatch owner for an avatar image or initials fallback', () => {
     const avatarUrl = avatarProxyReference(
       'https://p16-sign-va.tiktokcdn.com/a.webp'

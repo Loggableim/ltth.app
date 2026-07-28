@@ -2511,6 +2511,15 @@ class TTSPlugin {
                     return;
                 }
 
+                if (await this._isConsumedStreamMonstersChat(data)) {
+                    this._logDebug(
+                        'TIKTOK_EVENT',
+                        'Skipping successfully handled Stream Monsters command',
+                        { username }
+                    );
+                    return;
+                }
+
                 // Speak chat message
                 const result = await this.speak({
                     text: chatText,
@@ -2546,6 +2555,22 @@ class TTSPlugin {
 
         this._logDebug('INIT', 'TikTok events registered', { enabledForChat: this.config.enabledForChat });
         this.logger.debug?.(`TTS Plugin: TikTok events registered (enabledForChat: ${this.config.enabledForChat})`);
+    }
+
+    async _isConsumedStreamMonstersChat(data) {
+        const gcce = this.api.pluginLoader?.loadedPlugins?.get('gcce')?.instance;
+        if (
+            !gcce?.isPotentiallyConsumableChat?.(data) ||
+            typeof gcce.waitForChatConsumption !== 'function'
+        ) {
+            return false;
+        }
+        const decision = await gcce.waitForChatConsumption(data, {
+            timeoutMs: 2_000
+        });
+        return decision?.pluginId === 'streamalchemy' &&
+            decision?.success === true &&
+            decision?.consumed === true;
     }
 
     /**

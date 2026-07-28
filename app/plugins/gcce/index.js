@@ -27,6 +27,7 @@ const CommandParameterTypes = require('./utils/CommandParameterTypes');
 const DashboardWidgets = require('./utils/DashboardWidgets');
 const CommandHelpers = require('./utils/CommandHelpers');
 const HUDManager = require('./utils/HUDManager');
+const { ChatConsumptionRegistry } = require('./chat-consumption-registry');
 const config = require('./config');
 
 class GlobalChatCommandEngine {
@@ -94,6 +95,7 @@ class GlobalChatCommandEngine {
 
         // Plugin-owned raw response handlers for interactive, non-command input.
         this.rawResponseHandlers = new Map();
+        this.chatConsumptionRegistry = new ChatConsumptionRegistry();
     }
 
     /**
@@ -1463,7 +1465,7 @@ class GlobalChatCommandEngine {
 
             // Check if it's a command
             if (!this.parser.isCommand(message)) {
-                return await this.dispatchRawResponse(String(message), {
+                const rawResult = await this.dispatchRawResponse(String(message), {
                     userId: data.uniqueId || data.userId,
                     username: data.nickname || data.username || data.uniqueId,
                     uniqueId: data.uniqueId || data.userId,
@@ -1473,6 +1475,14 @@ class GlobalChatCommandEngine {
                     timestamp: Date.now(),
                     rawData: data
                 });
+                if (rawResult.handled || this.isPotentiallyConsumableChat(data)) {
+                    this.recordChatConsumption(data, {
+                        pluginId: rawResult.pluginId,
+                        success: rawResult.handled === true,
+                        handled: rawResult.handled
+                    });
+                }
+                return rawResult;
             }
 
             // Build enriched context with user data
@@ -1545,7 +1555,11 @@ class GlobalChatCommandEngine {
             const executionTime = Date.now() - startTime;
 
             // Handle result
-            if (result.isCommand === false) return;
+            if (result.isCommand === false) {
+                this.recordChatConsumption(data, { success: false });
+                return;
+            }
+            this.recordChatConsumption(data, result);
             this.broadcastCommandResult(result, context);
 
             // V4: Log to audit log
@@ -1595,8 +1609,27 @@ class GlobalChatCommandEngine {
             this.api.log(`[GCCE] Command executed: ${message} by ${context.username} - ${result.success ? 'SUCCESS' : 'FAILED'}`, 'debug');
 
         } catch (error) {
+            this.recordChatConsumption(data, { success: false });
             this.api.log(`[GCCE] Error handling chat message: ${error.message}`, 'error');
         }
+    }
+
+    recordChatConsumption(data, decision = {}) {
+        const record = this.chatConsumptionRegistry.resolve(data, decision);
+        this.api.emit('gcce:chat_consumed', record);
+        return record;
+    }
+
+    isPotentiallyConsumableChat(data) {
+        if (this.pluginConfig?.enabled === false) return false;
+        return this.chatConsumptionRegistry.isPotential(
+            data,
+            this.parser?.commandPrefix || this.pluginConfig?.commandPrefix || '/'
+        );
+    }
+
+    waitForChatConsumption(data, options = {}) {
+        return this.chatConsumptionRegistry.wait(data, options);
     }
 
     /**
@@ -2068,6 +2101,7 @@ class GlobalChatCommandEngine {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
         }
+        this.chatConsumptionRegistry.clear();
         this.rawResponseHandlers.clear();
 
         // Cleanup HUD Manager
