@@ -6,11 +6,12 @@ import { createTikTokLoginWorker } from '../src/index.js';
 
 const PRODUCTION_HOST = 'auth.ltth.app';
 const WORKERS_DEV_HOST = 'ltth-tiktok-login-worker.pixstash.workers.dev';
+const LTTH_APP_HOST = 'ltth.app';
 const CALLBACK_PATH = '/oauth/tiktok/callback';
 const TOKEN_ENDPOINT = 'https://open.tiktokapis.com/v2/oauth/token/';
 const VALID_STATE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ';
 
-function createEnv(host = PRODUCTION_HOST) {
+function createEnv(host = LTTH_APP_HOST) {
   return {
     TIKTOK_CLIENT_KEY: 'test-client-key',
     TIKTOK_CLIENT_SECRET: 'test-client-secret',
@@ -84,7 +85,25 @@ describe('TikTok Login Kit Worker request boundary', () => {
 });
 
 describe('GET /oauth/tiktok/start', () => {
-  it('accepts the deployed workers.dev callback host', async () => {
+  it('accepts the canonical ltth.app callback host', async () => {
+    const worker = createTikTokLoginWorker({
+      fetchImpl: vi.fn(),
+      cryptoImpl: webcrypto
+    });
+
+    const response = await worker.fetch(
+      new Request(`https://${LTTH_APP_HOST}/oauth/tiktok/start`),
+      createEnv(LTTH_APP_HOST)
+    );
+
+    expect(response.status).toBe(302);
+    const redirect = new URL(response.headers.get('Location'));
+    expect(redirect.searchParams.get('redirect_uri')).toBe(
+      `https://${LTTH_APP_HOST}${CALLBACK_PATH}`
+    );
+  });
+
+  it('accepts the worker service host while retaining ltth.app as the callback', async () => {
     const worker = createTikTokLoginWorker({
       fetchImpl: vi.fn(),
       cryptoImpl: webcrypto
@@ -92,13 +111,13 @@ describe('GET /oauth/tiktok/start', () => {
 
     const response = await worker.fetch(
       new Request(`https://${WORKERS_DEV_HOST}/oauth/tiktok/start`),
-      createEnv(WORKERS_DEV_HOST)
+      createEnv()
     );
 
     expect(response.status).toBe(302);
     const redirect = new URL(response.headers.get('Location'));
     expect(redirect.searchParams.get('redirect_uri')).toBe(
-      `https://${WORKERS_DEV_HOST}${CALLBACK_PATH}`
+      `https://${LTTH_APP_HOST}${CALLBACK_PATH}`
     );
   });
 
@@ -129,7 +148,7 @@ describe('GET /oauth/tiktok/start', () => {
     );
     expect(Object.fromEntries(redirect.searchParams)).toEqual({
       client_key: 'test-client-key',
-      redirect_uri: `https://${PRODUCTION_HOST}${CALLBACK_PATH}`,
+      redirect_uri: `https://${LTTH_APP_HOST}${CALLBACK_PATH}`,
       response_type: 'code',
       scope: 'user.info.basic',
       state: cookie.state
@@ -193,7 +212,7 @@ describe('GET /oauth/tiktok/callback', () => {
       client_secret: 'test-client-secret',
       code: 'authorization-code',
       grant_type: 'authorization_code',
-      redirect_uri: `https://${PRODUCTION_HOST}${CALLBACK_PATH}`
+      redirect_uri: `https://${LTTH_APP_HOST}${CALLBACK_PATH}`
     });
 
     const html = await response.text();

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Cache-Control" content="no-store">
+  <title>Completing TikTok sign-in | ltth.app</title>
+</head>
+<body>
+  <p>Completing TikTok sign-in…</p>
+  <script>
+    (() => {
+      const callback = new URL(
+        'https://ltth-tiktok-login-worker.pixstash.workers.dev/oauth/tiktok/callback'
+      );
+      callback.search = window.location.search;
+      window.location.replace(callback.href);
+    })();
+  </script>
+</body>
+</html>

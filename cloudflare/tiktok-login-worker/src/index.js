@@ -1,6 +1,7 @@
 const ALLOWED_HOSTS = new Set([
   'auth.ltth.app',
   'auth-staging.ltth.app',
+  'ltth.app',
   'ltth-tiktok-login-worker.pixstash.workers.dev'
 ]);
 const AUTHORIZE_ENDPOINT = 'https://www.tiktok.com/v2/auth/authorize/';
@@ -120,7 +121,6 @@ function readConfiguration(env, requestUrl) {
     }
   }
 
-  const expectedRedirectUri = `https://${requestUrl.host}${CALLBACK_PATH}`;
   let redirectUri;
   try {
     redirectUri = new URL(env.TIKTOK_REDIRECT_URI);
@@ -128,7 +128,13 @@ function readConfiguration(env, requestUrl) {
     return null;
   }
 
-  if (redirectUri.href !== expectedRedirectUri) {
+  if (
+    redirectUri.protocol !== 'https:' ||
+    redirectUri.host !== 'ltth.app' ||
+    redirectUri.pathname !== CALLBACK_PATH ||
+    redirectUri.search ||
+    redirectUri.hash
+  ) {
     return null;
   }
 
