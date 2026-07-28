@@ -9,6 +9,23 @@ const BOBA_ANIMALS = [
   'Monkey', 'Octopus', 'Otter', 'Parrot', 'Pig', 'Pinguin', 'Raccoon', 'Seal', 'Snake', 'Spider'
 ];
 const BOBA_EXPRESSIONS = ['Default', 'Angry', 'Annoyed', 'Cry', 'Happy', 'Scared'];
+const BOBA_MOUTH_PROFILES = {
+  Axolotl: ['Mouth_Default_Happy.png', 'Mouth_Sad_Angry_Annoyed_Scared.png'],
+  Bear: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Bunny: ['Mouth_Default_Angry_Annoyed.png', 'Mouth_Happy.png'],
+  Dog: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Fox: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Frog: ['Mouth_Default_Happy.png', 'Mouth_Angry_Sad.png'],
+  Giraffe: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Goat: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Monkey: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Octopus: ['Mouth_Default_Happy.png', 'Mouth_Annoyed.png'],
+  Otter: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Raccoon: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Seal: ['Mouth_Default.png', 'Mouth_Happy.png'],
+  Snake: ['Mouth_Default.png', 'Mouth_Angry_Annoyed.png'],
+  Spider: ['Mouth_Default.png', 'Mouth_Annoyed.png']
+};
 
 const KENNEY_BODIES = [
   'blueA', 'blueB', 'blueC', 'blueD', 'blueE', 'blueF',
@@ -87,11 +104,13 @@ class AssetSpriteLibrary {
   }
 
   _getLotterySelectionPool() {
-    return BOBA_ANIMALS.flatMap((characterId) => BOBA_EXPRESSIONS.map((expression) => ({
-      packId: 'boba',
-      characterId,
-      options: { expression }
-    })));
+    return BOBA_ANIMALS
+      .filter((characterId) => BOBA_MOUTH_PROFILES[characterId])
+      .flatMap((characterId) => BOBA_EXPRESSIONS.map((expression) => ({
+        packId: 'boba',
+        characterId,
+        options: { expression }
+      })));
   }
 
   _selectionKey(selection) {
@@ -226,23 +245,27 @@ class AssetSpriteLibrary {
       'EyesBrows_Default.png',
       'Brows_Default.png'
     ]);
-    const mouthClosed = await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', expression)
+    const mouthProfile = BOBA_MOUTH_PROFILES[characterId];
+    const expressionMouth = await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', expression);
+    const mouthClosed = await this._optionalFile(animalRoot, mouthProfile ? [mouthProfile[0]] : [])
+      || expressionMouth
       || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Default');
-    const mouthMid = await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Happy')
+    const mouthMid = await this._optionalFile(animalRoot, mouthProfile ? [mouthProfile[1]] : [])
+      || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Happy')
       || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Default')
       || mouthClosed;
-    const mouthOpen = await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Scared')
-      || await this._optionalFile(
+    const mouthOpen = await this._optionalFile(
       path.join(this.assetRoot, 'boba', 'extras'),
       ['Mouth_Shock.png']
       )
+      || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Scared')
       || mouthMid
       || mouthClosed;
     const facialLayers = [base, eyes, brows, nose];
 
     return {
-      idle_neutral: [...facialLayers, mouthClosed],
-      blink: [base, blink || eyes, brows, nose, mouthClosed],
+      idle_neutral: [...facialLayers, expressionMouth || mouthClosed],
+      blink: [base, blink || eyes, brows, nose, expressionMouth || mouthClosed],
       speak_closed: [...facialLayers, mouthClosed],
       speak_mid: [...facialLayers, mouthMid],
       speak_open: [...facialLayers, mouthOpen]

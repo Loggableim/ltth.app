@@ -64,7 +64,7 @@ describe('Talking Heads avatar lottery manager', () => {
     expect(manager.getAssignment('u1').selection).toEqual(bear);
   });
 
-  test('draws uniformly from unique Boba animal-expression assignments only', () => {
+  test('draws uniformly from unique mouth-animatable Boba animal-expression assignments only', () => {
     const library = new AssetSpriteLibrary({ dataDir: '/tmp/talking-heads-lottery-test' });
     const first = library.getRandomSelection(() => 0);
     const last = library.getRandomSelection(() => 0.999999);
@@ -81,9 +81,27 @@ describe('Talking Heads avatar lottery manager', () => {
       characterId: 'Spider',
       options: { expression: 'Scared' }
     });
-    expect(all).toHaveLength(120);
-    expect(new Set(all.map((selection) => JSON.stringify(selection))).size).toBe(120);
+    expect(all).toHaveLength(90);
+    expect(new Set(all.map((selection) => JSON.stringify(selection))).size).toBe(90);
     expect(all.every((selection) => selection.packId === 'boba')).toBe(true);
+    expect(new Set(all.map((selection) => selection.characterId))).toEqual(new Set([
+      'Axolotl', 'Bear', 'Bunny', 'Dog', 'Fox', 'Frog', 'Giraffe', 'Goat',
+      'Monkey', 'Octopus', 'Otter', 'Raccoon', 'Seal', 'Snake', 'Spider'
+    ]));
     expect(reroll).not.toEqual(first);
+  });
+
+  test('every automatic Boba selection resolves three materially distinct speaking states', async () => {
+    const library = new AssetSpriteLibrary();
+    const selections = library.getLotteryCandidates(200, () => 0);
+
+    for (const selection of selections) {
+      const frames = await library._getFrameLayers(selection);
+      const speakingSignatures = ['speak_closed', 'speak_mid', 'speak_open'].map((frameName) =>
+        frames[frameName].filter(Boolean).join('|')
+      );
+
+      expect(new Set(speakingSignatures).size).toBe(3);
+    }
   });
 });
