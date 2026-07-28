@@ -114,8 +114,15 @@ describe('Stream Monsters creator controls', () => {
       notificationDurationMs: 12_000,
       freeEggDropsEnabled: true,
       freeEggCooldownSeconds: 86_400,
+      autoHatchActiveViewers: true,
+      autoHatchActiveWindowSeconds: 300,
       tutorialHintsEnabled: true,
       tutorialHintIntervalSeconds: 90,
+      overlayLanguage: {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      },
       commandAliases: { eggs: { enabled: ['eier'], disabled: ['eggs'] } },
       audioChannels: { master: { enabled: true, volume: 0.8 } },
       giftMappingCustomized: true

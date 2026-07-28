@@ -62,6 +62,12 @@ const DEFAULT_AUDIO_CHANNELS = Object.freeze({
   battle: Object.freeze({ enabled: true, volume: 1 }),
   reward: Object.freeze({ enabled: true, volume: 0.9 })
 });
+const SUPPORTED_OVERLAY_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
+const DEFAULT_OVERLAY_LANGUAGE = Object.freeze({
+  primaryLocale: 'de',
+  locales: Object.freeze(['de', 'en']),
+  secondsPerLocale: 5
+});
 const DEFAULT_COMMAND_ALIASES = Object.freeze({
   eggs: Object.freeze({
     enabled: Object.freeze(['eier', 'eierliste', 'meineeier']),
@@ -161,6 +167,8 @@ class StreamAlchemyPlugin {
       getStreamKey: () => this.streamMonstersEngine?.streamKey || null,
       logger,
       seasonDurationDays: this.config.streamMonsters.seasonDurationDays,
+      localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
+      secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale,
       rulesVersion: STREAM_MONSTERS_RULES_VERSION
     });
     this.streamMonstersProgression.setMonsterProgressHandler(({
@@ -312,6 +320,7 @@ class StreamAlchemyPlugin {
         autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90,
+        overlayLanguage: this.normalizeOverlayLanguage(),
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
         rendererQuality: 'auto',
@@ -341,6 +350,9 @@ class StreamAlchemyPlugin {
         tutorialHintsEnabled: storedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           storedStreamMonsters.tutorialHintIntervalSeconds
+        ),
+        overlayLanguage: this.normalizeOverlayLanguage(
+          storedStreamMonsters.overlayLanguage
         ),
         commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
@@ -477,6 +489,47 @@ class StreamAlchemyPlugin {
       : 90;
   }
 
+  normalizeOverlayLanguage(input = {}) {
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requestedLocales = Array.isArray(candidate.locales)
+      ? candidate.locales
+      : [];
+    const locales = [...new Set(requestedLocales
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => SUPPORTED_OVERLAY_LOCALES.includes(locale)))]
+      .slice(0, 2);
+    const requestedPrimary = String(candidate.primaryLocale || '')
+      .trim()
+      .toLowerCase();
+    const hasExplicitSelection = Boolean(requestedPrimary || requestedLocales.length);
+    if (!hasExplicitSelection) {
+      return {
+        primaryLocale: DEFAULT_OVERLAY_LANGUAGE.primaryLocale,
+        locales: [...DEFAULT_OVERLAY_LANGUAGE.locales],
+        secondsPerLocale: DEFAULT_OVERLAY_LANGUAGE.secondsPerLocale
+      };
+    }
+    const primaryLocale = SUPPORTED_OVERLAY_LOCALES.includes(requestedPrimary)
+      ? requestedPrimary
+      : (locales[0] || DEFAULT_OVERLAY_LANGUAGE.primaryLocale);
+    const orderedLocales = [
+      primaryLocale,
+      ...locales.filter(locale => locale !== primaryLocale)
+    ].slice(0, 2);
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: orderedLocales.length
+        ? orderedLocales
+        : [...DEFAULT_OVERLAY_LANGUAGE.locales],
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : DEFAULT_OVERLAY_LANGUAGE.secondsPerLocale
+    };
+  }
+
   normalizeRendererQuality(value) {
     return ['auto', 'high', 'medium', 'low'].includes(value) ? value : 'auto';
   }
@@ -599,7 +652,17 @@ class StreamAlchemyPlugin {
       audioChannels: mergeNamedObjects(
         currentStreamMonsters.audioChannels,
         streamMonstersUpdates.audioChannels
-      )
+      ),
+      overlayLanguage: {
+        ...(currentStreamMonsters.overlayLanguage &&
+          typeof currentStreamMonsters.overlayLanguage === 'object'
+          ? currentStreamMonsters.overlayLanguage
+          : {}),
+        ...(streamMonstersUpdates.overlayLanguage &&
+          typeof streamMonstersUpdates.overlayLanguage === 'object'
+          ? streamMonstersUpdates.overlayLanguage
+          : {})
+      }
     };
 
     this.config = {
@@ -625,6 +688,9 @@ class StreamAlchemyPlugin {
         tutorialHintsEnabled: mergedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           mergedStreamMonsters.tutorialHintIntervalSeconds
+        ),
+        overlayLanguage: this.normalizeOverlayLanguage(
+          mergedStreamMonsters.overlayLanguage
         ),
         commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
@@ -660,6 +726,10 @@ class StreamAlchemyPlugin {
     this.streamMonstersBattleMatchService?.setSeasonDurationDays?.(
       this.config.streamMonsters.seasonDurationDays
     );
+    this.streamMonstersBattleMatchService?.setLanguageTiming?.({
+      localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
+      secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale
+    });
     if (
       this.streamMonstersCommandIngress &&
       (

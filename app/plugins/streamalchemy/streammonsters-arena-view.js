@@ -513,6 +513,11 @@
       renderSkillDecks();
     }
 
+    function setLocale() {
+      renderSkillDecks();
+      return true;
+    }
+
     function lockChoice(payload = {}) {
       const decision = payload.decision || payload;
       const slot = numeric(decision.slot);
@@ -586,14 +591,22 @@
       }[beat.type] || beat.type;
       switch (compatibleType) {
         case 'telegraph': {
-          setText('arena-feed', action.skill?.name || labels.skill);
+          const skillName = localizedSkillText(
+            action.skill?.nameKey,
+            action.skill?.name || labels.skill
+          );
+          const skillCopy = localizedSkillText(
+            action.skill?.shortTextKey,
+            action.skill?.shortText
+          );
+          setText('arena-feed', skillName);
           setText('arena-round', formatLabel('round', { round: action.round || 1 }));
           setText(
             'arena-skill-prompt',
             [
               action.skill?.icon,
-              action.choice ? `${action.choice} · ${action.skill?.name || ''}` : action.skill?.name,
-              labels[action.skill?.shortTextKey] || action.skill?.shortText
+              action.choice ? `${action.choice} · ${skillName}` : skillName,
+              skillCopy
             ].filter(Boolean).join(' — ')
           );
           actor?.classList.add('telegraphing');
@@ -1098,6 +1111,7 @@
       playEvent,
       playAction,
       renderCountdown,
+      setLocale,
       destroy: stopCountdown,
       state: () => ({
         matchId: activeMatchId,

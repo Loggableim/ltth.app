@@ -28,6 +28,28 @@
     'quests',
     'monstershelp'
   ]);
+  const COMMAND_GROUPS = Object.freeze([
+    Object.freeze({
+      id: 'eggs',
+      titleKey: 'commandGroupEggs',
+      commands: Object.freeze(['eggs', 'hatch', 'adopt'])
+    }),
+    Object.freeze({
+      id: 'collection',
+      titleKey: 'commandGroupCollection',
+      commands: Object.freeze(['inventory', 'monsters', 'monster', 'evolve'])
+    }),
+    Object.freeze({
+      id: 'arena',
+      titleKey: 'commandGroupArena',
+      commands: Object.freeze(['choose', 'battle', 'leavebattle'])
+    }),
+    Object.freeze({
+      id: 'progress',
+      titleKey: 'commandGroupProgress',
+      commands: Object.freeze(['rank', 'quests', 'monstershelp'])
+    })
+  ]);
   const DEMO_SCENES = Object.freeze([
     'spawn',
     'ready',
@@ -68,6 +90,38 @@
       confirmation: 'cancel_stale_matches'
     })
   });
+
+  function normalizeOverlayLanguage(input = {}) {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requested = Array.isArray(candidate.locales) ? candidate.locales : [];
+    const locales = [...new Set(requested
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => supported.includes(locale)))]
+      .slice(0, 2);
+    const rawPrimary = String(candidate.primaryLocale || '').trim().toLowerCase();
+    if (!rawPrimary && !requested.length) {
+      return {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      };
+    }
+    const primaryLocale = supported.includes(rawPrimary)
+      ? rawPrimary
+      : (locales[0] || 'de');
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: [primaryLocale, ...locales.filter(locale => locale !== primaryLocale)]
+        .slice(0, 2),
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : 5
+    };
+  }
 
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
@@ -120,6 +174,9 @@
         tutorialHintIntervalSeconds <= 300
         ? Math.round(tutorialHintIntervalSeconds)
         : 90,
+      overlayLanguage: normalizeOverlayLanguage(
+        values.overlayLanguage || currentConfig.overlayLanguage
+      ),
       commandAliases: values.commandAliases || currentConfig.commandAliases || {},
       audioChannels: values.audioChannels || currentConfig.audioChannels || {},
       giftMappingCustomized: Boolean(currentConfig.giftMappingCustomized)
@@ -226,6 +283,67 @@
         globalCooldownMs: Math.max(0, Number(policy.globalCooldownMs) || 0)
       };
     });
+  }
+
+  function buildCommandGroups({ gcce = {}, commandAliases = {} } = {}) {
+    const prefix = typeof gcce.commandPrefix === 'string' && gcce.commandPrefix
+      ? gcce.commandPrefix
+      : '!';
+    const policies = new Map(
+      buildCommandDiagnostics(gcce).map(policy => [policy.command, policy])
+    );
+    const conflicts = Array.isArray(gcce.registrationConflicts)
+      ? gcce.registrationConflicts
+      : [];
+    const tiktokFilter = gcce.tiktokFilter && typeof gcce.tiktokFilter === 'object'
+      ? gcce.tiktokFilter
+      : {};
+    const conflictsWith = (command, aliases) => conflicts.some(conflict => {
+      const serialized = typeof conflict === 'string'
+        ? conflict.toLowerCase()
+        : JSON.stringify(conflict || {}).toLowerCase();
+      return serialized.includes(command.toLowerCase()) ||
+        aliases.some(alias => serialized.includes(alias.toLowerCase()));
+    });
+    return COMMAND_GROUPS.map(group => ({
+      id: group.id,
+      titleKey: group.titleKey,
+      commands: group.commands.map(command => {
+        const policy = policies.get(command) || {
+          command,
+          reference: '',
+          enabled: false,
+          enabledAliases: [],
+          registeredAliases: [],
+          userCooldownMs: 0,
+          globalCooldownMs: 0
+        };
+        const configured = commandAliases?.[command] || {};
+        const enabledAliases = policy.enabledAliases.length
+          ? [...policy.enabledAliases]
+          : (Array.isArray(configured.enabled) ? [...configured.enabled] : []);
+        const disabledAliases = Array.isArray(configured.disabled)
+          ? [...configured.disabled]
+          : [];
+        const primaryAlias = String(policy.reference || '').startsWith(prefix)
+          ? String(policy.reference).slice(prefix.length).split(/\s+/)[0]
+          : (enabledAliases[0] || '');
+        return {
+          ...policy,
+          prefix,
+          primaryAlias,
+          enabledAliases,
+          disabledAliases,
+          gcceConflict: conflictsWith(command, [...enabledAliases, ...disabledAliases]),
+          tiktokFilterStatus: String(tiktokFilter.status || 'unavailable'),
+          tiktokFilterProbeable: Boolean(tiktokFilter.probeable),
+          tiktokFilterRecommendation: String(
+            tiktokFilter.recommendation || 'use_custom_aliases'
+          ),
+          outcomeKey: `commandOutcome${command.charAt(0).toUpperCase()}${command.slice(1)}`
+        };
+      })
+    }));
   }
 
   const LIVE_STATUS_TRANSLATIONS = Object.freeze({
@@ -511,6 +629,7 @@
 
   return {
     COMMAND_ACTIONS,
+    COMMAND_GROUPS,
     CREATOR_SECTIONS,
     DEMO_SCENES,
     HATCH_PRESETS,
@@ -522,6 +641,7 @@
     buildAliasDiagnostics,
     buildAssetStageEntries,
     buildCommandDiagnostics,
+    buildCommandGroups,
     buildConfigPayload,
     buildCreatorLiveView,
     buildEggShelfDiagnostics,
@@ -532,6 +652,7 @@
     leaderboardDisplayName,
     liveStatusTranslationKey,
     normalizeDemoRequest,
+    normalizeOverlayLanguage,
     previewGeometry,
     resolveCommandReference,
     summarizeRepairResult,

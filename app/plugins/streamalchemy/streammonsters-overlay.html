@@ -1073,11 +1073,21 @@
 
   const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
-  const text = (key, fallback, params = {}) => {
-    const fullKey = `plugins.streamalchemy.ui.monsters.${key}`;
-    const translated = window.i18n?.t?.(fullKey, params);
-    if (translated && translated !== fullKey) return translated;
-    return fallback.replace(/\{(\w+)\}/g, (match, name) => name in params ? params[name] : match);
+  const overlayLocaleResolver = window.StreamMonstersOverlayRuntime
+    .createOverlayLocaleResolver({
+      config:{},
+      loadLocale:async locale => {
+        const response = await fetch(
+          `/plugins/streamalchemy/locales/${encodeURIComponent(locale)}.json`,
+          { cache:'force-cache' }
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }
+    });
+  await overlayLocaleResolver.ready();
+  const text = (key, _fallback, params = {}) => {
+    return overlayLocaleResolver.translate(key, params);
   };
   const elementName = element => text(
     window.StreamMonstersOverlayRuntime.elementKey(element),
@@ -1299,6 +1309,8 @@
   let rendererQuality = 'auto';
   let battleIds = [null, null];
   let battleMonsters = [null, null];
+  let overlayLanguage = overlayLocaleResolver.config();
+  const battleLocaleSequences = new Map();
   let battleReplaySynchronizer = null;
   let currentCommandPrefix = '!';
   const acceptStatPrompt = (type, data = {}) => {
@@ -1325,6 +1337,54 @@
   );
   let currentCommandReferences = safeFallbackCommandReferences(currentCommandPrefix);
   const commandReference = command => currentCommandReferences[command] || `${currentCommandPrefix}${command}`;
+  const applyPresentationLocale = locale => {
+    const selected = overlayLocaleResolver.setLocale(locale);
+    arenaView?.setLocale?.(selected);
+    document.documentElement.lang = selected;
+    return selected;
+  };
+  const clearBattleLocaleSequence = matchId => {
+    const key = value(matchId, '').trim();
+    const state = battleLocaleSequences.get(key);
+    if (state?.timer != null) window.clearTimeout(state.timer);
+    if (key) battleLocaleSequences.delete(key);
+  };
+  const startBattleLocaleSequence = data => {
+    const matchId = value(data?.matchId || data?.battleId, '').trim();
+    if (!matchId) return;
+    clearBattleLocaleSequence(matchId);
+    const pages = window.StreamMonstersOverlayRuntime.criticalLocalePages(
+      overlayLanguage
+    );
+    const first = pages[0];
+    if (!first) return;
+    const state = { shown:[first.locale], timer:null };
+    battleLocaleSequences.set(matchId, state);
+    applyPresentationLocale(first.locale);
+    if (pages[1]) {
+      state.timer = window.setTimeout(() => {
+        if (battleLocaleSequences.get(matchId) !== state) return;
+        state.shown.push(pages[1].locale);
+        state.timer = null;
+        applyPresentationLocale(pages[1].locale);
+      }, first.durationMs);
+    }
+  };
+  const prepareBattleActionLocale = data => {
+    const matchId = value(
+      data?.matchId || data?.battleId || data?.action?.matchId,
+      ''
+    ).trim();
+    const state = battleLocaleSequences.get(matchId);
+    if (!state) return;
+    if (state.timer != null) window.clearTimeout(state.timer);
+    const pending = window.StreamMonstersOverlayRuntime.pendingCriticalLocales(
+      overlayLanguage,
+      state.shown
+    );
+    applyPresentationLocale(pending[0] || overlayLanguage.primaryLocale);
+    battleLocaleSequences.delete(matchId);
+  };
   const commandParams = () => ({
     eggs: commandReference('eggs'),
     hatch: commandReference('hatch'),
@@ -1395,15 +1455,16 @@
     CHAT_VIEW_FALLBACKS[key] || CHAT_VIEW_FALLBACKS.commandUnavailable,
     params
   );
-  const publicDisplayName = data => (
-    window.StreamMonstersChatView?.displayName?.(
-      data,
-      chatViewTranslate('viewer')
-    ) || value(
-      data?.displayName || data?.username || data?.nickname,
-      chatViewTranslate('viewer')
-    )
-  );
+  const publicDisplayName = data => {
+    const fallback = chatViewTranslate('viewer');
+    const identity = {
+      ...(data && typeof data === 'object' ? data : {}),
+      displayName:data?.displayName || data?.playerName ||
+        data?.username || data?.nickname
+    };
+    return window.StreamMonstersChatView?.displayName?.(identity, fallback) ||
+      value(identity.displayName, fallback);
+  };
   const chatView = window.StreamMonstersChatView?.createChatView?.({
     document,
     detailElement:node('chat-detail'),
@@ -1775,6 +1836,10 @@
   };
   const present = async ({ type, data }) => {
     if (type === 'state_snapshot') {
+      overlayLanguage = await overlayLocaleResolver.configure(
+        data?.config?.overlayLanguage
+      );
+      applyPresentationLocale(overlayLanguage.primaryLocale);
       try {
         await battleReplaySynchronizer?.sync(data?.battle || { matches:[] });
       } catch (_) {}
@@ -1804,6 +1869,14 @@
         );
       }
       return;
+    }
+    if (!window.StreamMonstersOverlayRuntime.isCritical(type)) {
+      applyPresentationLocale(
+        window.StreamMonstersOverlayRuntime.localeForStableEvent(
+          data?.eventId || data?.correlationId,
+          overlayLanguage
+        )
+      );
     }
     if ([
       'egg_landed',
@@ -1976,13 +2049,19 @@
       presentation:'hatch',
       duration:8_000
     }));
-    if (type === 'battle_match_found') return arenaView.applyMatch({
-      matchId:data?.matchId,
-      state:'roster',
-      rosterDeadlineMs:data?.deadlineMs,
-      fighters:Array.isArray(data?.fighters) ? data.fighters : []
-    });
-    if (type === 'battle_choice_opened') return arenaView.openChoice(data);
+    if (type === 'battle_match_found') {
+      startBattleLocaleSequence(data);
+      return arenaView.applyMatch({
+        matchId:data?.matchId,
+        state:'roster',
+        rosterDeadlineMs:data?.deadlineMs,
+        fighters:Array.isArray(data?.fighters) ? data.fighters : []
+      });
+    }
+    if (type === 'battle_choice_opened') {
+      startBattleLocaleSequence(data);
+      return arenaView.openChoice(data);
+    }
     if (type === 'battle_choice_locked') return playArcadeEvent(type, data);
     if (type === 'battle_choices_revealed') return playArcadeEvent(type, data);
     if (type === 'tutorial_hint') {
@@ -2026,6 +2105,7 @@
       });
     }
     if (type === 'battle_skill_used') {
+      prepareBattleActionLocale(data);
       if (data?.action && data?.matchId) {
         return playArcadeEvent(type, data);
       }
@@ -2124,12 +2204,16 @@
       });
     }
     if (type === 'battle_completed') {
+      clearBattleLocaleSequence(data?.matchId || data?.battleId);
       const winnerId = itemMonsterId(data?.winner) ||
         data?.battle?.winnerMonsterId || data?.battle?.winner_monster_id;
       const winnerSlot = Number(data?.winnerSlot) || (winnerId === battleIds[1] ? 2 : 1);
       return playArcadeEvent(type, { ...data, winnerSlot });
     }
-    if (type === 'battle_cancelled') return arenaView.cancel(data);
+    if (type === 'battle_cancelled') {
+      clearBattleLocaleSequence(data?.matchId || data?.battleId);
+      return arenaView.cancel(data);
+    }
     if (type === 'monster_xp_awarded') return presentArcadeScene(type, data, showCard({
       kicker:text('monsterXpKicker', 'Monster-XP'),
       title:text('monsterXpTitle', '{name} erhält +{amount} XP', {
@@ -2164,11 +2248,20 @@
       if (!acceptStatPrompt(type, data)) return;
       return showCard({
         kicker:text('monsterStatKicker', 'Statpunkt'),
-        title:text('monsterStatTitle', 'Wähle jetzt 1, 2, 3 oder 4'),
+        title:text(
+          'monsterStatTitle',
+          '{player}: Werte für {monster} verbessern',
+          {
+            player:publicDisplayName(data),
+            monster:itemName(data?.monster)
+          }
+        ),
         subtitle:text(
           'monsterStatCopy',
           '1 Vitalität · 2 Stärke · 3 Verteidigung · 4 Agilität'
         ),
+        imageUrl:itemImageUrl(data?.monster),
+        element:data?.monster?.element,
         progress:100,
         hint:text('monsterStatHint', 'Nur der berechtigte Viewer kann antworten.')
       });

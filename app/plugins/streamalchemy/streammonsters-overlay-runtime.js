@@ -248,6 +248,169 @@
     [600_000, 'duration10Minutes'],
     [1_800_000, 'duration30Minutes']
   ]);
+  const SUPPORTED_OVERLAY_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
+
+  function normalizeOverlayLanguage(input = {}) {
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requested = Array.isArray(candidate.locales) ? candidate.locales : [];
+    const locales = [...new Set(requested
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => SUPPORTED_OVERLAY_LOCALES.includes(locale)))]
+      .slice(0, 2);
+    const rawPrimary = String(candidate.primaryLocale || '').trim().toLowerCase();
+    if (!rawPrimary && !requested.length) {
+      return {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      };
+    }
+    const primaryLocale = SUPPORTED_OVERLAY_LOCALES.includes(rawPrimary)
+      ? rawPrimary
+      : (locales[0] || 'de');
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: [primaryLocale, ...locales.filter(locale => locale !== primaryLocale)]
+        .slice(0, 2),
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : 5
+    };
+  }
+
+  function interpolateOverlayText(template, params = {}) {
+    return String(template || '').replace(
+      /\{\{?(\w+)\}?\}/g,
+      (match, name) => Object.prototype.hasOwnProperty.call(params, name)
+        ? String(params[name])
+        : match
+    );
+  }
+
+  function overlayCatalog(catalog = {}) {
+    return catalog?.plugins?.streamalchemy?.ui?.monsters &&
+      typeof catalog.plugins.streamalchemy.ui.monsters === 'object'
+      ? catalog.plugins.streamalchemy.ui.monsters
+      : (catalog && typeof catalog === 'object' ? catalog : {});
+  }
+
+  function createOverlayLocaleResolver({
+    config = {},
+    loadLocale = async () => ({})
+  } = {}) {
+    let language = normalizeOverlayLanguage(config);
+    let activeLocale = language.primaryLocale;
+    const catalogs = new Map();
+    const loading = new Map();
+
+    function ensureLocale(locale) {
+      const normalized = String(locale || '').trim().toLowerCase();
+      if (!SUPPORTED_OVERLAY_LOCALES.includes(normalized)) {
+        return Promise.resolve({});
+      }
+      if (catalogs.has(normalized)) return Promise.resolve(catalogs.get(normalized));
+      if (!loading.has(normalized)) {
+        loading.set(normalized, Promise.resolve()
+          .then(() => loadLocale(normalized))
+          .then(catalog => {
+            const normalizedCatalog = overlayCatalog(catalog);
+            catalogs.set(normalized, normalizedCatalog);
+            loading.delete(normalized);
+            return normalizedCatalog;
+          })
+          .catch(() => {
+            catalogs.set(normalized, {});
+            loading.delete(normalized);
+            return {};
+          }));
+      }
+      return loading.get(normalized);
+    }
+
+    async function ready() {
+      await Promise.all(language.locales.map(ensureLocale));
+      await ensureLocale(language.primaryLocale);
+      return language;
+    }
+
+    function translate(key, params = {}, locale = activeLocale) {
+      const normalizedKey = String(key || '').trim();
+      if (!normalizedKey) return '';
+      const requestedLocale = SUPPORTED_OVERLAY_LOCALES.includes(locale)
+        ? locale
+        : language.primaryLocale;
+      const candidates = [
+        requestedLocale,
+        language.primaryLocale,
+        ...language.locales
+      ];
+      for (const candidate of [...new Set(candidates)]) {
+        const translated = catalogs.get(candidate)?.[normalizedKey];
+        if (typeof translated === 'string' && translated.trim()) {
+          return interpolateOverlayText(translated, params);
+        }
+      }
+      return '';
+    }
+
+    async function configure(nextConfig = {}) {
+      language = normalizeOverlayLanguage(nextConfig);
+      if (!language.locales.includes(activeLocale)) {
+        activeLocale = language.primaryLocale;
+      }
+      await ready();
+      return language;
+    }
+
+    return {
+      configure,
+      ready,
+      translate,
+      setLocale(locale) {
+        const normalized = String(locale || '').trim().toLowerCase();
+        activeLocale = language.locales.includes(normalized)
+          ? normalized
+          : language.primaryLocale;
+        return activeLocale;
+      },
+      locale: () => activeLocale,
+      config: () => ({
+        ...language,
+        locales: [...language.locales]
+      })
+    };
+  }
+
+  function criticalLocalePages(config = {}) {
+    const normalized = normalizeOverlayLanguage(config);
+    return normalized.locales.map(locale => ({
+      locale,
+      durationMs: normalized.secondsPerLocale * 1_000
+    }));
+  }
+
+  function pendingCriticalLocales(config = {}, shownLocales = []) {
+    const shown = new Set(
+      Array.isArray(shownLocales)
+        ? shownLocales.map(locale => String(locale || '').trim().toLowerCase())
+        : []
+    );
+    return normalizeOverlayLanguage(config).locales.filter(locale => !shown.has(locale));
+  }
+
+  function localeForStableEvent(eventId, config = {}) {
+    const locales = normalizeOverlayLanguage(config).locales;
+    const fingerprint = String(eventId || '');
+    if (!fingerprint || locales.length < 2) return locales[0];
+    let hash = 0;
+    for (let index = 0; index < fingerprint.length; index += 1) {
+      hash = (hash + fingerprint.charCodeAt(index)) >>> 0;
+    }
+    return locales[hash % locales.length];
+  }
 
   function normalizeVolume(storedValue) {
     const numeric = Number(storedValue);
@@ -1130,6 +1293,7 @@
     apiErrorKey,
     anchorPlacement,
     createBattleReplaySynchronizer,
+    createOverlayLocaleResolver,
     createLayoutController,
     createPriorityQueue,
     createReconnectController,
@@ -1139,12 +1303,16 @@
     elementKey: value => enumKey(ELEMENT_KEYS, value),
     hypeMilestonePoints,
     hatchDurationSpec,
+    criticalLocalePages,
     isCritical: type => CRITICAL_TYPES.has(type),
     localizedPayloadField,
+    localeForStableEvent,
     normalizeVolume,
     normalizeBattleEventType,
+    normalizeOverlayLanguage,
     notificationShelfLayout,
     overlayHeartbeatPayload,
+    pendingCriticalLocales,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
     replayableRecentEvents,
     rectanglesOverlap,

@@ -135,6 +135,9 @@
     .status-tile strong { margin-top:7px; color:var(--cyan); font-size:17px; }
     .warning-stack { display:grid; gap:7px; min-height:48px; padding:11px; border:1px solid #55496e; border-radius:12px; background:#0d1424; }
     .alias-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .alias-command-group { display:grid; align-content:start; gap:10px; padding:12px; border:1px solid #46567d; border-radius:16px; background:#0a1120a8; }
+    .alias-command-group h4 { margin:0; color:var(--cyan); font-size:15px; letter-spacing:.04em; }
+    .command-policy-meta { display:grid; gap:3px; margin-top:5px; color:var(--muted); font-size:12px; white-space:normal; }
     .alias-row { padding:12px; border:1px solid #344568; border-radius:13px; background:#0c1425; }
     .alias-row header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .alias-row header code { margin:0; padding:4px 7px; }
@@ -346,6 +349,28 @@
         <div id="heartChainStatus" class="badge">Heart Chain · 0</div>
         <div id="streamMissionStatus" class="badge">Mission · —</div>
       </article>
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Overlay languages</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayPrimaryLocale">Primary language</span><select id="overlayPrimaryLocale">
+          <option value="de">Deutsch</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+        </select></label>
+        <span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayActiveLocales">Active overlay languages</span>
+        <div class="language-toggles">
+          <label><input id="overlayLocaleDe" type="checkbox" value="de" checked>DE</label>
+          <label><input id="overlayLocaleEn" type="checkbox" value="en" checked>EN</label>
+          <label><input id="overlayLocaleEs" type="checkbox" value="es">ES</label>
+          <label><input id="overlayLocaleFr" type="checkbox" value="fr">FR</label>
+        </div>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlaySecondsPerLocale">Seconds per language</span><select id="overlaySecondsPerLocale">
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+          <option value="6">6</option>
+        </select></label>
+      </article>
     </div>
   </section>
 
@@ -375,7 +400,7 @@
         <div><h3 data-i18n="plugins.streamalchemy.ui.monsters.aliasTitle">Command aliases &amp; language variants</h3><p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.aliasCopy">Comma-separated active and disabled aliases are persisted per action. Locale switches move their suggested alias between the lists.</p></div>
         <span id="aliasConflictStatus" class="badge" role="status" aria-live="polite">Checking conflicts…</span>
       </div>
-      <div class="alias-grid">
+      <div id="aliasGrid" class="alias-grid">
         <article class="alias-row" data-command-alias="eggs">
           <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandEggs">Egg list</strong><code data-command="eggs">!eier</code></header>
           <div class="alias-fields"><label id="alias-eggs-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsEnabled">Active egg aliases</span><input id="aliasEggsEnabled" data-alias-command="eggs" data-alias-mode="enabled" value="eier, eierliste, meineeier"></label><label id="alias-eggs-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsDisabled">Optional egg aliases</span><input id="aliasEggsDisabled" data-alias-command="eggs" data-alias-mode="disabled" value="eggs, huevos, oeufs"></label></div>
@@ -904,6 +929,30 @@
     .split(',')
     .map(alias => alias.trim().toLocaleLowerCase())
     .filter(Boolean))];
+  const collectOverlayLanguage = () => {
+    const primaryLocale = byId('overlayPrimaryLocale').value;
+    const selected = ['de', 'en', 'es', 'fr'].filter(locale => (
+      byId(`overlayLocale${locale.charAt(0).toUpperCase()}${locale.slice(1)}`).checked
+    ));
+    const locales = [
+      primaryLocale,
+      ...selected.filter(locale => locale !== primaryLocale)
+    ].slice(0, 2);
+    return creatorRuntime.normalizeOverlayLanguage({
+      primaryLocale,
+      locales,
+      secondsPerLocale:Number(byId('overlaySecondsPerLocale').value)
+    });
+  };
+  const applyOverlayLanguage = languageInput => {
+    const language = creatorRuntime.normalizeOverlayLanguage(languageInput);
+    byId('overlayPrimaryLocale').value = language.primaryLocale;
+    byId('overlaySecondsPerLocale').value = String(language.secondsPerLocale);
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      byId(`overlayLocale${locale.charAt(0).toUpperCase()}${locale.slice(1)}`).checked =
+        language.locales.includes(locale);
+    }
+  };
   const aliasInput = (command, mode) => document.querySelector(
     `[data-alias-command="${command}"][data-alias-mode="${mode}"]`
   );
@@ -939,6 +988,28 @@
     root.className = 'badge';
     return result;
   };
+  const organizeAliasGroups = () => {
+    const root = byId('aliasGrid');
+    if (!root || root.dataset.grouped === 'true') return;
+    const rows = new Map(
+      [...root.querySelectorAll('[data-command-alias]')]
+        .map(row => [row.dataset.commandAlias, row])
+    );
+    for (const group of creatorRuntime.COMMAND_GROUPS) {
+      const section = document.createElement('section');
+      section.className = 'alias-command-group';
+      section.dataset.commandGroup = group.id;
+      const title = document.createElement('h4');
+      title.textContent = text(group.titleKey, group.id);
+      section.append(title);
+      for (const command of group.commands) {
+        const row = rows.get(command);
+        if (row) section.append(row);
+      }
+      root.append(section);
+    }
+    root.dataset.grouped = 'true';
+  };
   const renderCommandDiagnostics = gcce => {
     const filter = gcce?.tiktokFilter || {};
     byId('tiktokFilterStatus').textContent = filter.status === 'not_probeable'
@@ -966,26 +1037,63 @@
     };
     const root = byId('commandPolicyList');
     root.replaceChildren();
-    creatorRuntime.buildCommandDiagnostics(gcce).forEach(policy => {
-      const row = document.createElement('div');
-      row.className = 'gift-row';
-      const copy = document.createElement('div');
-      copy.className = 'grow';
-      const title = document.createElement('strong');
-      title.textContent = policy.reference || text(
-        commandLabelKeys[policy.command],
-        policy.command
-      );
-      const meta = document.createElement('small');
-      meta.textContent = policy.enabled
-        ? text('cooldownPolicyLine', 'Viewer {user} · Global {global}', {
-          user:formatCooldown(policy.userCooldownMs),
-          global:formatCooldown(policy.globalCooldownMs)
-        })
-        : text('commandDisabled', 'Command disabled');
-      copy.append(title, meta);
-      row.append(copy);
-      root.append(row);
+    creatorRuntime.buildCommandGroups({
+      gcce,
+      commandAliases:collectCommandAliases()
+    }).forEach(group => {
+      const section = document.createElement('section');
+      section.className = 'alias-command-group';
+      section.dataset.policyGroup = group.id;
+      const heading = document.createElement('h4');
+      heading.textContent = text(group.titleKey, group.id);
+      section.append(heading);
+      group.commands.forEach(policy => {
+        const row = document.createElement('div');
+        row.className = 'gift-row';
+        const copy = document.createElement('div');
+        copy.className = 'grow';
+        const title = document.createElement('strong');
+        title.textContent = policy.reference || text(
+          commandLabelKeys[policy.command],
+          policy.command
+        );
+        const meta = document.createElement('div');
+        meta.className = 'command-policy-meta';
+        const lines = [
+          text('commandPrimaryAlias', 'Primary: {command}', {
+            command:policy.reference || `${policy.prefix}${policy.primaryAlias}`
+          }),
+          text('commandAliasesLabel', 'Aliases: {aliases}', {
+            aliases:policy.enabledAliases.join(', ') || '—'
+          }),
+          text('commandGcceConflict', 'GCCE conflict: {status}', {
+            status:policy.gcceConflict
+              ? text('statusConflict', 'conflict')
+              : text('statusClear', 'clear')
+          }),
+          text('commandTikTokFilter', 'TikTok filter: {status}', {
+            status:policy.tiktokFilterStatus === 'not_probeable'
+              ? text('tiktokFilterNotProbeableStatus', 'Not probeable')
+              : text('statusUnavailable', 'Unavailable')
+          }),
+          text('commandCooldowns', 'Cooldown: viewer {user} · global {global}', {
+            user:formatCooldown(policy.userCooldownMs),
+            global:formatCooldown(policy.globalCooldownMs)
+          }),
+          text('commandOutcome', 'Result: {outcome}', {
+            outcome:text(policy.outcomeKey, policy.command)
+          })
+        ];
+        lines.forEach(line => {
+          const item = document.createElement('span');
+          item.textContent = line;
+          meta.append(item);
+        });
+        copy.append(title, meta);
+        row.append(copy);
+        section.append(row);
+      });
+      root.append(section);
     });
   };
   const syncLocaleAlias = control => {
@@ -1331,6 +1439,7 @@
         autoHatchActiveWindowSeconds:byId('autoHatchActiveWindowSeconds').value,
         tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
         tutorialHintIntervalSeconds:byId('tutorialHintIntervalSeconds').value,
+        overlayLanguage:collectOverlayLanguage(),
         commandAliases:collectCommandAliases(),
         audioChannels:{
           master:audioChannel('Master'),
@@ -1427,6 +1536,7 @@
     byId('tutorialHintIntervalSeconds').value = String(
       state.config?.tutorialHintIntervalSeconds || 90
     );
+    applyOverlayLanguage(state.config?.overlayLanguage);
     currentGcceState = state.gcce || {};
     applyAliasState(state.config?.commandAliases || {});
     renderCommandDiagnostics(currentGcceState);
@@ -1597,6 +1707,7 @@
         loadAssetIntegrity()
       ]);
       byId('creatorName').value = state.config?.creatorName || status.username || '';
+      organizeAliasGroups();
       byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
       applyPresentationState(state);
@@ -1695,6 +1806,18 @@
   document.querySelectorAll('[data-alias-locale]').forEach(control => {
     control.addEventListener('change', () => syncLocaleAlias(control));
   });
+  for (const id of [
+    'overlayPrimaryLocale',
+    'overlayLocaleDe',
+    'overlayLocaleEn',
+    'overlayLocaleEs',
+    'overlayLocaleFr',
+    'overlaySecondsPerLocale'
+  ]) {
+    byId(id).addEventListener('change', () => {
+      applyOverlayLanguage(collectOverlayLanguage());
+    });
+  }
   byId('giftSearch').addEventListener('input', event => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => loadCatalog(event.target.value).catch(error => notice(apiErrorText(error), 'error')), 180);

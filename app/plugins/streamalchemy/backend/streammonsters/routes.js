@@ -1235,6 +1235,38 @@ class StreamMonstersRoutes {
       : 90;
   }
 
+  normalizeOverlayLanguage(input = {}) {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requested = Array.isArray(candidate.locales) ? candidate.locales : [];
+    const locales = [...new Set(requested
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => supported.includes(locale)))]
+      .slice(0, 2);
+    const rawPrimary = String(candidate.primaryLocale || '').trim().toLowerCase();
+    if (!rawPrimary && !requested.length) {
+      return {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      };
+    }
+    const primaryLocale = supported.includes(rawPrimary)
+      ? rawPrimary
+      : (locales[0] || 'de');
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: [primaryLocale, ...locales.filter(locale => locale !== primaryLocale)]
+        .slice(0, 2),
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : 5
+    };
+  }
+
   validateRetentionConfigUpdate(input = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) return;
     if (
@@ -1271,6 +1303,31 @@ class StreamMonstersRoutes {
       const seconds = Number(input.tutorialHintIntervalSeconds);
       if (!Number.isFinite(seconds) || seconds < 60 || seconds > 300) {
         throw new Error('STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID');
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'overlayLanguage')) {
+      const language = input.overlayLanguage;
+      if (!language || typeof language !== 'object' || Array.isArray(language)) {
+        throw new Error('STREAM_MONSTERS_OVERLAY_LANGUAGE_INVALID');
+      }
+      const supported = new Set(['de', 'en', 'es', 'fr']);
+      const primary = String(language.primaryLocale || '').trim().toLowerCase();
+      const locales = Array.isArray(language.locales) ? language.locales : [];
+      const normalizedLocales = locales
+        .map(locale => String(locale || '').trim().toLowerCase());
+      const seconds = Number(language.secondsPerLocale);
+      if (
+        !supported.has(primary) ||
+        normalizedLocales.length < 1 ||
+        normalizedLocales.length > 2 ||
+        new Set(normalizedLocales).size !== normalizedLocales.length ||
+        normalizedLocales.some(locale => !supported.has(locale)) ||
+        !normalizedLocales.includes(primary) ||
+        !Number.isFinite(seconds) ||
+        seconds < 4 ||
+        seconds > 6
+      ) {
+        throw new Error('STREAM_MONSTERS_OVERLAY_LANGUAGE_INVALID');
       }
     }
   }
@@ -1562,6 +1619,9 @@ class StreamMonstersRoutes {
         input.tutorialHintIntervalSeconds
       );
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'overlayLanguage')) {
+      safe.overlayLanguage = this.normalizeOverlayLanguage(input.overlayLanguage);
+    }
     const allowedHatchDurations = new Set([30_000, 60_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
     )));
@@ -1736,6 +1796,7 @@ class StreamMonstersRoutes {
       elementRules: config.elementRules || 'deterministic',
       giftMappingCustomized: Boolean(config.giftMappingCustomized),
       visualPack: 'furry',
+      overlayLanguage: this.normalizeOverlayLanguage(config.overlayLanguage),
       commandAliases: config.commandAliases || {},
       layouts: config.layouts || {
         portrait: { anchor: 'top-center', scale: 100 },

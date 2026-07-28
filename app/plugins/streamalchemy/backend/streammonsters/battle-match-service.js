@@ -133,6 +133,21 @@ class BattleMatchService {
     }
   }
 
+  setLanguageTiming({ localeCount, secondsPerLocale } = {}) {
+    this.localeCount = Math.max(
+      1,
+      Math.min(2, Math.round(Number(localeCount) || 1))
+    );
+    this.secondsPerLocale = Math.max(
+      4,
+      Math.min(6, Math.round(Number(secondsPerLocale) || 5))
+    );
+    return {
+      localeCount: this.localeCount,
+      secondsPerLocale: this.secondsPerLocale
+    };
+  }
+
   setSeasonDurationDays(value) {
     const normalized = Number(value);
     this.seasonDurationDays = ARENA_DURATION_PRESETS.includes(normalized)
