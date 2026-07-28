@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { URL } = require('url');
 
 const LOCAL_PREFIX = '/api/stable-overlay-routing';
@@ -14,6 +15,7 @@ const DOMAIN_ERROR_CODES = new Set([
   'claim_unavailable',
   'claim_conflict',
   'device_unavailable',
+  'device_enrollment_conflict',
   'active_device_limit_reached',
   'lease_conflict',
   'rate_limited'
@@ -319,6 +321,14 @@ function shuttingDown() {
   );
 }
 
+function reconciliationRequired() {
+  return new LocalRouteError(
+    503,
+    'STABLE_ROUTING_RECONCILIATION_REQUIRED',
+    'Refresh stable overlay routing account state before making another change.'
+  );
+}
+
 function initiateCancellation(target) {
   if (!target || typeof target.cancel !== 'function') {
     return;
@@ -359,6 +369,7 @@ function createRequestDeadline({
 }) {
   const controller = validateAbortController(abortControllerFactory());
   let expired = false;
+  let timeoutErrorFactory = upstreamUnavailable;
   let rejectDeadline;
   const deadline = new Promise((_, reject) => {
     rejectDeadline = reject;
@@ -368,11 +379,17 @@ function createRequestDeadline({
     try {
       controller.abort();
     } catch (_) {}
-    rejectDeadline(upstreamUnavailable());
+    rejectDeadline(timeoutErrorFactory());
   }, timeoutMs);
 
   return {
     signal: controller.signal,
+    setTimeoutErrorFactory(factory) {
+      if (typeof factory !== 'function') {
+        throw new TypeError('A timeout error factory is required');
+      }
+      timeoutErrorFactory = factory;
+    },
     race(value) {
       return Promise.race([Promise.resolve(value), deadline]);
     },
@@ -628,7 +645,7 @@ function registerStableOverlayRoutingRoutes({
   },
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   abortControllerFactory = () => new AbortController(),
-  getAuthorizedParties,
+  getClerkAuthorizedParties,
   lifecycle
 } = {}) {
   if (!app || typeof app.get !== 'function' || typeof app.post !== 'function') {
@@ -659,7 +676,7 @@ function registerStableOverlayRoutingRoutes({
   if (typeof abortControllerFactory !== 'function') {
     throw new TypeError('An AbortController factory is required');
   }
-  if (typeof getAuthorizedParties !== 'function') {
+  if (typeof getClerkAuthorizedParties !== 'function') {
     throw new TypeError('A local authorized-party resolver is required');
   }
   if (
@@ -672,6 +689,9 @@ function registerStableOverlayRoutingRoutes({
   if (
     !credentialStore ||
     typeof credentialStore.load !== 'function' ||
+    typeof credentialStore.loadPendingEnrollment !== 'function' ||
+    typeof credentialStore.stageEnrollment !== 'function' ||
+    typeof credentialStore.commitPendingEnrollment !== 'function' ||
     typeof credentialStore.save !== 'function' ||
     typeof credentialStore.setDefaultUsername !== 'function' ||
     typeof credentialStore.remove !== 'function'
@@ -695,6 +715,7 @@ function registerStableOverlayRoutingRoutes({
     )
     : null;
   let enrollmentInProgress = false;
+  let accountReconciliationRequired = false;
   let localMutationTail = Promise.resolve();
 
   function send(res, status, body) {
@@ -732,7 +753,7 @@ function registerStableOverlayRoutingRoutes({
     const token = match[1];
     let authorizedParties;
     try {
-      const candidates = getAuthorizedParties(req);
+      const candidates = getClerkAuthorizedParties();
       authorizedParties = [...new Set(
         (Array.isArray(candidates) ? candidates : [])
           .map(value => {
@@ -908,7 +929,10 @@ function registerStableOverlayRoutingRoutes({
     }
   }
 
-  function handler(operation, { stateChanging = false } = {}) {
+  function handler(operation, {
+    stateChanging = false,
+    allowDuringReconciliation = false
+  } = {}) {
     return async (req, res) => {
       const deadline = createRequestDeadline({
         timers,
@@ -922,6 +946,15 @@ function registerStableOverlayRoutingRoutes({
         return await deadline.race((async () => {
           assertEnabled();
           mutationFence?.assert();
+          if (
+            stateChanging &&
+            accountReconciliationRequired &&
+            !allowDuringReconciliation
+          ) {
+            const error = reconciliationRequired();
+            error.status = 409;
+            throw error;
+          }
           const token = await authorize(req);
           deadline.assertActive();
           mutationFence?.assert();
@@ -935,6 +968,12 @@ function registerStableOverlayRoutingRoutes({
           );
         })());
       } catch (error) {
+        if (
+          error?.code ===
+          'STABLE_ROUTING_RECONCILIATION_REQUIRED'
+        ) {
+          accountReconciliationRequired = true;
+        }
         return sendError(res, error);
       } finally {
         deadline.dispose();
@@ -971,23 +1010,56 @@ function registerStableOverlayRoutingRoutes({
   app.get(
     `${LOCAL_PREFIX}/account`,
     apiLimiter,
-    handler(async (_req, res, token, deadline) => {
-      const account = await accountForToken(token, deadline);
+    handler(async (_req, res, token, deadline, mutationFence) => {
+      const account = await accountForToken(
+        token,
+        deadline,
+        mutationFence
+      );
       let stored;
-      try {
-        stored = credentialStore.load();
-      } catch (_) {
-        throw new LocalRouteError(
-          503,
-          'STABLE_ROUTING_UNAVAILABLE',
-          'Stable overlay routing is temporarily unavailable.'
-        );
-      }
+      let pending = null;
+      await withLocalMutationGate(
+        deadline,
+        mutationFence,
+        async () => {
+          try {
+            pending = credentialStore.loadPendingEnrollment();
+            if (pending) {
+              const committedDevice = account.devices.find(
+                device =>
+                  device.deviceId === pending.deviceId &&
+                  device.label === pending.label &&
+                  device.revokedAt === null
+              );
+              if (committedDevice) {
+                await deadline.race(client.stop());
+                mutationFence.assert();
+                credentialStore.commitPendingEnrollment(
+                  committedDevice
+                );
+                mutationFence.assert();
+                await deadline.race(client.start());
+                mutationFence.assert();
+              }
+            }
+            stored = credentialStore.load();
+            accountReconciliationRequired = false;
+          } catch (_) {
+            if (pending) {
+              accountReconciliationRequired = true;
+            }
+            throw upstreamUnavailable();
+          }
+        }
+      );
       return send(res, 200, {
         success: true,
         account,
         defaultUsername: stored?.defaultUsername || null
       });
+    }, {
+      stateChanging: true,
+      allowDuringReconciliation: true
     })
   );
 
@@ -1003,41 +1075,61 @@ function registerStableOverlayRoutingRoutes({
         );
       }
       enrollmentInProgress = true;
+      let dispatched = false;
       try {
         const body = requireExactBody(req, ['label']);
-        const label = normalizeLabel(body.label);
+        const requestedLabel = normalizeLabel(body.label);
+        let enrollment;
+        try {
+          enrollment = credentialStore.loadPendingEnrollment();
+          if (!enrollment) {
+            enrollment = {
+              deviceId: `d-${crypto.randomBytes(16).toString('hex')}`,
+              credential: crypto.randomBytes(32).toString('hex'),
+              enrolledAt: new Date(Math.trunc(now())).toISOString(),
+              label: requestedLabel,
+              defaultUsername: null
+            };
+            credentialStore.stageEnrollment(enrollment);
+          }
+        } catch (_) {
+          throw upstreamUnavailable();
+        }
+        mutationFence.assert();
+        deadline.setTimeoutErrorFactory(reconciliationRequired);
+        dispatched = true;
         const response = await forward(
           token,
           '/devices/enroll',
           'POST',
-          { label },
+          {
+            deviceId: enrollment.deviceId,
+            credential: enrollment.credential,
+            label: enrollment.label
+          },
           201,
           deadline,
           mutationFence
         );
         const payload = await readBoundedJson(response, deadline);
         mutationFence.assert();
-        const device = sanitizeDevice(payload?.device);
         if (
-          typeof payload?.credential !== 'string' ||
-          !/^[a-f0-9]{64}$/.test(payload.credential)
+          !payload ||
+          typeof payload !== 'object' ||
+          Array.isArray(payload) ||
+          Object.keys(payload).length !== 1 ||
+          !Object.hasOwn(payload, 'device')
         ) {
           throw upstreamUnavailable();
         }
-        return withLocalMutationGate(
+        const device = sanitizeDevice(payload?.device);
+        const result = await withLocalMutationGate(
           deadline,
           mutationFence,
           async () => {
             await deadline.race(client.stop());
             mutationFence.assert();
-            credentialStore.save({
-              deviceId: device.deviceId,
-              credential: payload.credential,
-              enrolledAt: device.createdAt ||
-                new Date(Math.trunc(now())).toISOString(),
-              label: device.label,
-              defaultUsername: null
-            });
+            credentialStore.commitPendingEnrollment(device);
             mutationFence.assert();
             await deadline.race(client.start());
             mutationFence.assert();
@@ -1048,6 +1140,25 @@ function registerStableOverlayRoutingRoutes({
             });
           }
         );
+        accountReconciliationRequired = false;
+        return result;
+      } catch (error) {
+        if (dispatched) {
+          if (error?.code === 'STABLE_ROUTING_SHUTTING_DOWN') {
+            accountReconciliationRequired = true;
+          } else if (![
+            'AUTH_REQUIRED',
+            'active_device_limit_reached',
+            'device_enrollment_conflict',
+            'rate_limited'
+          ].includes(error?.code)) {
+            accountReconciliationRequired = true;
+            throw reconciliationRequired();
+          } else {
+            accountReconciliationRequired = false;
+          }
+        }
+        throw error;
       } finally {
         enrollmentInProgress = false;
       }

@@ -247,19 +247,18 @@ describe('Clerk store auth', () => {
     })).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
   });
 
-  it('enforces configured Clerk session audience', async () => {
+  it('uses azp when present and falls back to aud only when azp is absent', async () => {
     const { verifyClerkSessionToken } = require('../modules/clerk-store-auth');
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048
     });
     const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
     const privatePem = privateKey.export({ type: 'pkcs8', format: 'pem' });
-    const sign = audience => jwt.sign({
+    const sign = claims => jwt.sign({
       sub: 'user_123',
       sid: 'sess_123',
       iss: 'https://clerk.ltth.app',
-      azp: 'http://127.0.0.1:3000',
-      aud: audience
+      ...claims
     }, privatePem, {
       algorithm: 'RS256',
       expiresIn: '1h'
@@ -276,16 +275,55 @@ describe('Clerk store auth', () => {
     };
 
     await expect(verifyClerkSessionToken(
-      sign('another-app'),
-      options
-    )).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
-    await expect(verifyClerkSessionToken(
-      sign('ltth-desktop'),
+      sign({
+        azp: 'http://127.0.0.1:3000',
+        aud: 'another-app'
+      }),
       options
     )).resolves.toMatchObject({
       sub: 'user_123',
-      aud: 'ltth-desktop'
+      azp: 'http://127.0.0.1:3000',
+      aud: 'another-app'
     });
+    await expect(verifyClerkSessionToken(
+      sign({ aud: ['another-app', 'ltth-desktop'] }),
+      options
+    )).resolves.toMatchObject({ sub: 'user_123' });
+    await expect(verifyClerkSessionToken(
+      sign({
+        azp: 'http://evil.example',
+        aud: 'ltth-desktop'
+      }),
+      options
+    )).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
+    await expect(verifyClerkSessionToken(
+      sign({ aud: 'another-app' }),
+      options
+    )).rejects.toMatchObject({ code: 'CLERK_TOKEN_INVALID' });
+  });
+
+  it('builds stable-routing token parties from Clerk bridge configuration and fixed local development origins only', () => {
+    const {
+      buildStableOverlayClerkAuthorizedParties,
+      buildStoreAuthConfig
+    } = require('../modules/clerk-store-auth');
+    const env = {
+      LTTH_AUTH_BRIDGE_URL: 'https://ltth.app/auth/',
+      LTTH_ACCOUNT_PORTAL_URL: 'https://accounts.ltth.app/auth/',
+      CLERK_AUTHORIZED_PARTIES: 'https://explicit-token-party.example'
+    };
+    const parties = buildStableOverlayClerkAuthorizedParties(
+      buildStoreAuthConfig(env)
+    );
+
+    expect(parties).toEqual([
+      'https://explicit-token-party.example',
+      'https://ltth.app',
+      'https://accounts.ltth.app',
+      'http://127.0.0.1:3000',
+      'http://localhost:3000'
+    ]);
+    expect(parties).not.toContain('https://user-cors.example');
   });
 
   it('allows an absent azp only when no authorized party is expected', async () => {

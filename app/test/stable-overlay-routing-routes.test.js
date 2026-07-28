@@ -1,7 +1,14 @@
 'use strict';
 
+const crypto = require('crypto');
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const request = require('supertest');
+const {
+  buildStableOverlayClerkAuthorizedParties,
+  buildStoreAuthConfig,
+  verifyClerkSessionToken: verifyRealClerkSessionToken
+} = require('../modules/clerk-store-auth');
 const {
   createStableOverlayRoutingLifecycle,
   registerStableOverlayRoutingRoutes
@@ -96,7 +103,7 @@ function activeClaim(username = 'pup.cid') {
 
 function enrolledDevice() {
   return {
-    deviceId: 'd-0123456789abcdef',
+    deviceId: 'd-0123456789abcdef0123456789abcdef',
     label: 'Studio PC',
     createdAt: '2026-07-27T10:00:00.000Z',
     lastSeenAt: null,
@@ -126,6 +133,9 @@ function createHarness(overrides = {}) {
       label: 'Studio PC',
       defaultUsername: null
     }),
+    loadPendingEnrollment: jest.fn().mockReturnValue(null),
+    stageEnrollment: jest.fn(),
+    commitPendingEnrollment: jest.fn(),
     save: jest.fn(value => value),
     setDefaultUsername: jest.fn(username => ({
       defaultUsername: username
@@ -183,7 +193,7 @@ function createHarness(overrides = {}) {
     timers: overrides.timers,
     requestTimeoutMs: overrides.requestTimeoutMs,
     abortControllerFactory: overrides.abortControllerFactory,
-    getAuthorizedParties: overrides.getAuthorizedParties ||
+    getClerkAuthorizedParties: overrides.getClerkAuthorizedParties ||
       (() => ['http://127.0.0.1:3000']),
     lifecycle
   });
@@ -304,6 +314,58 @@ describe('stable overlay routing local routes', () => {
     });
     expect(JSON.stringify(response.body)).not.toContain('sensitive');
     expect(harness.fetch).not.toHaveBeenCalled();
+  });
+
+  test('accepts a real hosted-bridge token and rejects an arbitrary CORS origin token', async () => {
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const privatePem = privateKey.export({
+      type: 'pkcs8',
+      format: 'pem'
+    });
+    const env = {
+      CLERK_JWT_KEY: publicPem,
+      CLERK_ISSUER: 'https://clerk.ltth.app',
+      LTTH_AUTH_BRIDGE_URL: 'https://ltth.app/auth/',
+      LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/'
+    };
+    const sign = azp => jwt.sign({
+      sub: 'user_123',
+      sid: 'session_123',
+      iss: env.CLERK_ISSUER,
+      azp
+    }, privatePem, {
+      algorithm: 'RS256',
+      expiresIn: '1h'
+    });
+    const harness = createHarness({
+      verifyClerkSessionToken: (token, options) =>
+        verifyRealClerkSessionToken(token, {
+          ...options,
+          env
+        }),
+      getClerkAuthorizedParties: () =>
+        buildStableOverlayClerkAuthorizedParties(
+          buildStoreAuthConfig(env)
+        )
+    });
+
+    const hosted = await authorized(
+      request(harness.app)
+        .get('/api/stable-overlay-routing/account'),
+      sign('https://ltth.app')
+    );
+    const corsExtra = await authorized(
+      request(harness.app)
+        .get('/api/stable-overlay-routing/account'),
+      sign('https://user-cors.example')
+    );
+
+    expect(hosted.status).toBe(200);
+    expect(corsExtra.status).toBe(401);
+    expect(harness.fetch).toHaveBeenCalledTimes(1);
   });
 
   test('authenticates before revealing request-schema decisions', async () => {
@@ -441,22 +503,25 @@ describe('stable overlay routing local routes', () => {
     expect(response.headers['set-cookie']).toBeUndefined();
   });
 
-  test('consumes enrollment credentials locally and never returns or logs them', async () => {
-    const credential = 'c'.repeat(64);
-    const fetch = jest.fn().mockResolvedValue(jsonResponse({
-      device: {
-        ...enrolledDevice(),
-        credential: 'hostile nested value'
-      },
-      credential
-    }, 201, {
-      'Set-Cookie': 'worker-secret=bad',
-      'X-Upstream-Secret': 'bad'
-    }));
+  test('stages desktop-generated enrollment material before dispatch and returns metadata only', async () => {
+    const fetch = jest.fn().mockImplementation((_url, options) => {
+      const enrollment = JSON.parse(options.body);
+      return Promise.resolve(jsonResponse({
+        device: {
+          ...enrolledDevice(),
+          deviceId: enrollment.deviceId,
+          label: enrollment.label
+        }
+      }, 201, {
+        'Set-Cookie': 'worker-secret=bad',
+        'X-Upstream-Secret': 'bad'
+      }));
+    });
     const harness = createHarness({
       fetch,
       credentialStore: {
-        load: jest.fn().mockReturnValue(null)
+        load: jest.fn().mockReturnValue(null),
+        loadPendingEnrollment: jest.fn().mockReturnValue(null)
       }
     });
 
@@ -466,44 +531,177 @@ describe('stable overlay routing local routes', () => {
         .send({ label: '  Studio PC  ' })
     );
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${WORKER_PREFIX}/devices/enroll`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ label: 'Studio PC' }),
-        cache: 'no-store',
-        credentials: 'omit',
-        redirect: 'error',
-        referrerPolicy: 'no-referrer',
-        signal: expect.any(AbortSignal)
-      }
-    );
-    expect(harness.credentialStore.save).toHaveBeenCalledWith({
-      deviceId: 'd-0123456789abcdef',
-      credential,
-      enrolledAt: '2026-07-27T10:00:00.000Z',
+    const staged = harness.credentialStore.stageEnrollment.mock.calls[0][0];
+    expect(staged).toEqual({
+      deviceId: expect.stringMatching(/^d-[a-f0-9]{32}$/),
+      credential: expect.stringMatching(/^[a-f0-9]{64}$/),
+      enrolledAt: '2026-07-27T10:01:00.000Z',
       label: 'Studio PC',
       defaultUsername: null
     });
+    expect(
+      harness.credentialStore.stageEnrollment.mock.invocationCallOrder[0]
+    ).toBeLessThan(fetch.mock.invocationCallOrder[0]);
+    expect(fetch).toHaveBeenCalledWith(
+      `${WORKER_PREFIX}/devices/enroll`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          deviceId: staged.deviceId,
+          credential: staged.credential,
+          label: staged.label
+        })
+      })
+    );
+    expect(harness.credentialStore.commitPendingEnrollment)
+      .toHaveBeenCalledWith(expect.objectContaining({
+        deviceId: staged.deviceId,
+        label: staged.label
+      }));
+    expect(harness.credentialStore.save).not.toHaveBeenCalled();
     expect(harness.client.start).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
       success: true,
-      device: enrolledDevice(),
+      device: {
+        ...enrolledDevice(),
+        deviceId: staged.deviceId
+      },
       status: {
         state: 'active',
         revision: 3,
         lastSuccessfulHeartbeat: '2026-07-27T10:00:30.000Z'
       }
     });
-    expect(JSON.stringify(response.body)).not.toContain(credential);
+    expect(JSON.stringify(response.body)).not.toContain(staged.credential);
     expect(response.headers['set-cookie']).toBeUndefined();
     expect(response.headers['x-upstream-secret']).toBeUndefined();
-    expect(JSON.stringify(harness.logger)).not.toContain(credential);
+    expect(JSON.stringify(harness.logger)).not.toContain(staged.credential);
+  });
+
+  test('reuses pending enrollment material after account reconciliation shows no committed device', async () => {
+    let pending = null;
+    const requestBodies = [];
+    const credentialStore = {
+      load: jest.fn().mockReturnValue(null),
+      loadPendingEnrollment: jest.fn(() => pending),
+      stageEnrollment: jest.fn(value => {
+        pending = value;
+      }),
+      commitPendingEnrollment: jest.fn(() => {
+        pending = null;
+      }),
+      save: jest.fn(),
+      setDefaultUsername: jest.fn(),
+      remove: jest.fn()
+    };
+    const fetch = jest.fn((url, options) => {
+      if (url.endsWith('/devices/enroll')) {
+        const body = JSON.parse(options.body);
+        requestBodies.push(body);
+        if (requestBodies.length === 1) {
+          return Promise.reject(new Error('response lost'));
+        }
+        return Promise.resolve(jsonResponse({
+          device: {
+            ...enrolledDevice(),
+            deviceId: body.deviceId,
+            label: body.label
+          }
+        }, 201));
+      }
+      return Promise.resolve(jsonResponse({
+        claims: [],
+        devices: [],
+        lease: { active: false }
+      }));
+    });
+    const harness = createHarness({ credentialStore, fetch });
+
+    const first = await authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Retry PC' })
+    );
+    expect(first.status).toBe(503);
+    expect(first.body.code).toBe(
+      'STABLE_ROUTING_RECONCILIATION_REQUIRED'
+    );
+    expect(pending).not.toBeNull();
+
+    const fenced = await authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/claims')
+        .send({ username: 'blocked.claim' })
+    );
+    expect(fenced.status).toBe(409);
+    expect(fenced.body.code).toBe(
+      'STABLE_ROUTING_RECONCILIATION_REQUIRED'
+    );
+
+    const account = await authorized(
+      request(harness.app)
+        .get('/api/stable-overlay-routing/account')
+    );
+    expect(account.status).toBe(200);
+    expect(pending).not.toBeNull();
+
+    const retry = await authorized(
+      request(harness.app)
+        .post('/api/stable-overlay-routing/devices/enroll')
+        .send({ label: 'Changed label is ignored' })
+    );
+    expect(retry.status).toBe(201);
+    expect(requestBodies).toHaveLength(2);
+    expect(requestBodies[1]).toEqual(requestBodies[0]);
+    expect(credentialStore.stageEnrollment).toHaveBeenCalledTimes(1);
+    expect(credentialStore.commitPendingEnrollment)
+      .toHaveBeenCalledTimes(1);
+    expect(pending).toBeNull();
+  });
+
+  test('promotes a pending enrollment when account reconciliation finds its committed device', async () => {
+    const pending = {
+      deviceId: 'd-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      credential: 'b'.repeat(64),
+      enrolledAt: '2026-07-27T10:00:00.000Z',
+      label: 'Recovered PC',
+      defaultUsername: null
+    };
+    const credentialStore = {
+      load: jest.fn().mockReturnValue(null),
+      loadPendingEnrollment: jest.fn().mockReturnValue(pending),
+      stageEnrollment: jest.fn(),
+      commitPendingEnrollment: jest.fn(),
+      save: jest.fn(),
+      setDefaultUsername: jest.fn(),
+      remove: jest.fn()
+    };
+    const fetch = jest.fn().mockResolvedValue(jsonResponse({
+      claims: [],
+      devices: [{
+        ...enrolledDevice(),
+        deviceId: pending.deviceId,
+        label: pending.label
+      }],
+      lease: { active: false }
+    }));
+    const harness = createHarness({ credentialStore, fetch });
+
+    const response = await authorized(
+      request(harness.app)
+        .get('/api/stable-overlay-routing/account')
+    );
+
+    expect(response.status).toBe(200);
+    expect(harness.client.stop).toHaveBeenCalledTimes(1);
+    expect(credentialStore.commitPendingEnrollment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deviceId: pending.deviceId,
+        label: pending.label
+      })
+    );
+    expect(harness.client.start).toHaveBeenCalledTimes(1);
   });
 
   test.each([
@@ -686,6 +884,13 @@ describe('stable overlay routing local routes', () => {
 
     expect(settledAtDeadline).toBe(true);
     expect(response.status).toBe(503);
+    expect(response.body.code).toBe(
+      'STABLE_ROUTING_RECONCILIATION_REQUIRED'
+    );
+    expect(harness.credentialStore.stageEnrollment)
+      .toHaveBeenCalledTimes(1);
+    expect(harness.credentialStore.commitPendingEnrollment)
+      .not.toHaveBeenCalled();
     expect(harness.credentialStore.save).not.toHaveBeenCalled();
     expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
     expect(lateCancel).toHaveBeenCalledTimes(1);
@@ -751,6 +956,13 @@ describe('stable overlay routing local routes', () => {
 
     expect(settledAtDeadline).toBe(true);
     expect(result.status).toBe(503);
+    expect(result.body.code).toBe(
+      'STABLE_ROUTING_RECONCILIATION_REQUIRED'
+    );
+    expect(harness.credentialStore.stageEnrollment)
+      .toHaveBeenCalledTimes(1);
+    expect(harness.credentialStore.commitPendingEnrollment)
+      .not.toHaveBeenCalled();
     expect(harness.credentialStore.save).not.toHaveBeenCalled();
     expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
   });
@@ -764,15 +976,25 @@ describe('stable overlay routing local routes', () => {
       defaultUsername: 'pup.cid'
     };
     let stored = oldRecord;
+    let pending = null;
     let activeDeviceId = oldRecord.deviceId;
     const events = [];
     const credentialStore = {
       load: jest.fn(() => stored),
-      save: jest.fn(record => {
-        events.push(`save:${record.deviceId}`);
-        stored = record;
-        return record;
+      loadPendingEnrollment: jest.fn(() => pending),
+      stageEnrollment: jest.fn(record => {
+        pending = record;
       }),
+      commitPendingEnrollment: jest.fn(device => {
+        stored = {
+          ...pending,
+          enrolledAt: device.createdAt,
+          label: device.label
+        };
+        pending = null;
+        events.push(`commit:${stored.deviceId}`);
+      }),
+      save: jest.fn(),
       setDefaultUsername: jest.fn(),
       remove: jest.fn()
     };
@@ -794,13 +1016,16 @@ describe('stable overlay routing local routes', () => {
     const harness = createHarness({
       credentialStore,
       client,
-      fetch: jest.fn().mockResolvedValue(jsonResponse({
-        device: {
-          ...enrolledDevice(),
-          deviceId: 'd-new'
-        },
-        credential: 'f'.repeat(64)
-      }, 201))
+      fetch: jest.fn().mockImplementation((_url, options) => {
+        const enrollment = JSON.parse(options.body);
+        return Promise.resolve(jsonResponse({
+          device: {
+            ...enrolledDevice(),
+            deviceId: enrollment.deviceId,
+            label: enrollment.label
+          }
+        }, 201));
+      })
     });
 
     const response = await authorized(
@@ -812,24 +1037,21 @@ describe('stable overlay routing local routes', () => {
     expect(response.status).toBe(201);
     expect(events).toEqual([
       'stop:d-old',
-      'save:d-new',
-      'start:d-new'
+      `commit:${stored.deviceId}`,
+      `start:${stored.deviceId}`
     ]);
-    expect(stored.deviceId).toBe('d-new');
+    expect(stored.deviceId).toMatch(/^d-[a-f0-9]{32}$/);
     expect(activeDeviceId).toBe(stored.deviceId);
   });
 
   test('rejects a concurrent enrollment before creating a second Worker device', async () => {
     const firstUpstream = deferred();
+    let firstEnrollment;
     const fetch = jest.fn()
-      .mockImplementationOnce(() => firstUpstream.promise)
-      .mockResolvedValue(jsonResponse({
-        device: {
-          ...enrolledDevice(),
-          deviceId: 'd-second'
-        },
-        credential: '2'.repeat(64)
-      }, 201));
+      .mockImplementationOnce((_url, options) => {
+        firstEnrollment = JSON.parse(options.body);
+        return firstUpstream.promise;
+      });
     const harness = createHarness({ fetch });
 
     const first = authorized(
@@ -852,9 +1074,9 @@ describe('stable overlay routing local routes', () => {
     firstUpstream.resolve(jsonResponse({
       device: {
         ...enrolledDevice(),
-        deviceId: 'd-first'
-      },
-      credential: '1'.repeat(64)
+        deviceId: firstEnrollment.deviceId,
+        label: firstEnrollment.label
+      }
     }, 201));
     const responses = await Promise.all([first, second]);
 
@@ -863,7 +1085,8 @@ describe('stable overlay routing local routes', () => {
       409
     ]);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(harness.credentialStore.save).toHaveBeenCalledTimes(1);
+    expect(harness.credentialStore.commitPendingEnrollment)
+      .toHaveBeenCalledTimes(1);
     expect(JSON.stringify(responses)).not.toMatch(/"credential"/);
   });
 
@@ -978,15 +1201,25 @@ describe('stable overlay routing local routes', () => {
       label: 'Old PC',
       defaultUsername: null
     };
+    let pending = null;
     let activeDeviceId = stored.deviceId;
     const events = [];
     const credentialStore = {
       load: jest.fn(() => stored),
-      save: jest.fn(record => {
-        stored = record;
-        events.push(`save:${record.deviceId}`);
-        return record;
+      loadPendingEnrollment: jest.fn(() => pending),
+      stageEnrollment: jest.fn(record => {
+        pending = record;
       }),
+      commitPendingEnrollment: jest.fn(device => {
+        stored = {
+          ...pending,
+          enrolledAt: device.createdAt,
+          label: device.label
+        };
+        pending = null;
+        events.push(`commit:${stored.deviceId}`);
+      }),
+      save: jest.fn(),
       setDefaultUsername: jest.fn(),
       remove: jest.fn(() => {
         events.push(`remove:${stored?.deviceId}`);
@@ -1009,14 +1242,15 @@ describe('stable overlay routing local routes', () => {
         events.push(`start:${activeDeviceId}`);
       })
     };
-    const fetch = jest.fn((url) => {
+    const fetch = jest.fn((url, options) => {
       if (url.endsWith('/devices/enroll')) {
+        const enrollment = JSON.parse(options.body);
         return Promise.resolve(jsonResponse({
           device: {
             ...enrolledDevice(),
-            deviceId: 'd-new'
-          },
-          credential: 'b'.repeat(64)
+            deviceId: enrollment.deviceId,
+            label: enrollment.label
+          }
         }, 201));
       }
       return Promise.resolve(new Response(null, { status: 204 }));
@@ -1047,12 +1281,12 @@ describe('stable overlay routing local routes', () => {
     ]);
 
     expect([enrollResponse.status, revokeResponse.status]).toEqual([201, 200]);
-    expect(stored.deviceId).toBe('d-new');
-    expect(activeDeviceId).toBe('d-new');
+    expect(stored.deviceId).toMatch(/^d-[a-f0-9]{32}$/);
+    expect(activeDeviceId).toBe(stored.deviceId);
     expect(events).toEqual([
       'stop:d-old',
-      'save:d-new',
-      'start:d-new'
+      `commit:${stored.deviceId}`,
+      `start:${stored.deviceId}`
     ]);
     expect(credentialStore.remove).not.toHaveBeenCalled();
     expect(events).not.toContain('start:d-old');
@@ -1067,14 +1301,15 @@ describe('stable overlay routing local routes', () => {
       stop: jest.fn(() => stopOld.promise),
       start: jest.fn()
     };
-    const fetch = jest.fn(url => {
+    const fetch = jest.fn((url, options) => {
       if (url.endsWith('/devices/enroll')) {
+        const enrollment = JSON.parse(options.body);
         return Promise.resolve(jsonResponse({
           device: {
             ...enrolledDevice(),
-            deviceId: 'd-new'
-          },
-          credential: 'c'.repeat(64)
+            deviceId: enrollment.deviceId,
+            label: enrollment.label
+          }
         }, 201));
       }
       return Promise.resolve(new Response(null, { status: 204 }));

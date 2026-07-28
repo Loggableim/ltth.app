@@ -412,6 +412,45 @@ describe('Stable overlay routing Network Settings UI', () => {
     expect(deps.get('[data-stable-routing-release="pup.cid"]')).toBeNull();
   });
 
+  test('fences every mutation when enrollment dispatch has an unknown outcome until refresh', async () => {
+    const deps = harness();
+    await deps.ui.init();
+    await deps.click('[data-stable-routing-refresh]');
+    deps.failMutation(
+      '/api/stable-overlay-routing/devices/enroll',
+      {
+        success: false,
+        code: 'STABLE_ROUTING_RECONCILIATION_REQUIRED',
+        error: 'Refresh stable overlay routing account state before making another change.'
+      },
+      503
+    );
+
+    await deps.click('[data-stable-routing-reenroll]');
+
+    expect(deps.ui.state.reconciliationRequired).toBe(true);
+    expect(deps.ui.state.accountLoaded).toBe(false);
+    expect(deps.get('[data-stable-routing-reenroll]').disabled).toBe(true);
+    expect(deps.get('[data-stable-routing-claim]').disabled).toBe(true);
+    expect(deps.get('[data-stable-routing-message]').textContent)
+      .toContain('Refresh account state before another change');
+    const enrollmentCount = deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/devices/enroll'
+    ).length;
+
+    await deps.click('[data-stable-routing-reenroll]');
+
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/devices/enroll'
+    )).toHaveLength(enrollmentCount);
+
+    await deps.click('[data-stable-routing-refresh]');
+
+    expect(deps.ui.state.reconciliationRequired).toBe(false);
+    expect(deps.ui.state.accountLoaded).toBe(true);
+    expect(deps.get('[data-stable-routing-reenroll]').disabled).toBe(false);
+  });
+
   test('does not rehydrate stale actions when a delayed account read outlives a failed sibling read', async () => {
     const deps = harness();
     const emptyAccount = accountPayload({

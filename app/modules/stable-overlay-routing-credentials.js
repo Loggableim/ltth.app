@@ -7,6 +7,7 @@ const path = require('path');
 const STORAGE_DIRECTORY = '.stable-overlay-routing';
 const PROFILE_DIRECTORY = 'profiles';
 const CREDENTIAL_FILE = 'credentials.json';
+const PENDING_ENROLLMENT_FILE = 'pending-enrollment.json';
 const MAX_CREDENTIAL_FILE_BYTES = 16 * 1024;
 const CREDENTIAL_ERROR_CODE = 'STABLE_OVERLAY_CREDENTIAL_INVALID';
 const ALLOWED_FIELDS = Object.freeze([
@@ -254,7 +255,14 @@ class StableOverlayRoutingCredentials {
       boundaries
     );
     this.filePath = path.resolve(this.profileDataDir, CREDENTIAL_FILE);
-    if (!isInside(this.profileDataDir, this.filePath)) {
+    this.pendingFilePath = path.resolve(
+      this.profileDataDir,
+      PENDING_ENROLLMENT_FILE
+    );
+    if (
+      !isInside(this.profileDataDir, this.filePath) ||
+      !isInside(this.profileDataDir, this.pendingFilePath)
+    ) {
       throw credentialError('Credential storage escaped profile application data');
     }
   }
@@ -265,6 +273,10 @@ class StableOverlayRoutingCredentials {
 
   getFilePath() {
     return this.filePath;
+  }
+
+  getPendingFilePath() {
+    return this.pendingFilePath;
   }
 
   _verifyRuntimePath() {
@@ -281,43 +293,53 @@ class StableOverlayRoutingCredentials {
     if (path.relative(this.profileDataDir, resolvedProfileDir) !== '') {
       throw credentialError('The credential storage path is invalid');
     }
-    if (!fs.existsSync(this.filePath)) {
-      return;
-    }
-    const fileEntry = fs.lstatSync(this.filePath);
-    if (fileEntry.isSymbolicLink() || !fileEntry.isFile()) {
-      throw credentialError('The credential file path is invalid');
-    }
-    const resolvedFile = fs.realpathSync(this.filePath);
-    if (!isInside(resolvedProfileDir, resolvedFile)) {
-      throw credentialError('The credential file path is invalid');
+    for (const filePath of [this.filePath, this.pendingFilePath]) {
+      if (!fs.existsSync(filePath)) {
+        continue;
+      }
+      const fileEntry = fs.lstatSync(filePath);
+      if (fileEntry.isSymbolicLink() || !fileEntry.isFile()) {
+        throw credentialError('The credential file path is invalid');
+      }
+      const resolvedFile = fs.realpathSync(filePath);
+      if (!isInside(resolvedProfileDir, resolvedFile)) {
+        throw credentialError('The credential file path is invalid');
+      }
     }
   }
 
-  load() {
+  _loadFile(filePath) {
     this._verifyRuntimePath();
-    if (!fs.existsSync(this.filePath)) {
+    if (!fs.existsSync(filePath)) {
       return null;
     }
-    const stats = fs.statSync(this.filePath);
+    const stats = fs.statSync(filePath);
     if (!stats.isFile() || stats.size > MAX_CREDENTIAL_FILE_BYTES) {
       throw credentialError('The credential file is invalid');
     }
     let value;
     try {
-      value = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+      value = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     } catch (_) {
       throw credentialError('The credential file is invalid');
     }
     return normalizeRecord(value, { rejectUnknown: true });
   }
 
-  save(value) {
+  load() {
+    return this._loadFile(this.filePath);
+  }
+
+  loadPendingEnrollment() {
+    return this._loadFile(this.pendingFilePath);
+  }
+
+  _writeFile(filePath, tempLabel, value) {
     this._verifyRuntimePath();
     const record = normalizeRecord(value);
     const tempPath = path.join(
       this.profileDataDir,
-      `.credentials-${crypto.randomBytes(12).toString('hex')}.tmp`
+      `.${tempLabel}-${crypto.randomBytes(12).toString('hex')}.tmp`
     );
     let descriptor = null;
     try {
@@ -331,8 +353,8 @@ class StableOverlayRoutingCredentials {
       fs.closeSync(descriptor);
       descriptor = null;
       applyMode(tempPath, 0o600);
-      fs.renameSync(tempPath, this.filePath);
-      applyMode(this.filePath, 0o600);
+      fs.renameSync(tempPath, filePath);
+      applyMode(filePath, 0o600);
       return { ...record };
     } catch (error) {
       if (descriptor !== null) {
@@ -347,6 +369,55 @@ class StableOverlayRoutingCredentials {
     }
   }
 
+  save(value) {
+    return this._writeFile(this.filePath, 'credentials', value);
+  }
+
+  stageEnrollment(value) {
+    const record = normalizeRecord({
+      ...value,
+      defaultUsername: null
+    });
+    if (!/^d-[0-9a-f]{32}$/.test(record.deviceId)) {
+      throw credentialError('The pending enrollment identity is invalid');
+    }
+    this._writeFile(
+      this.pendingFilePath,
+      'pending-enrollment',
+      record
+    );
+  }
+
+  commitPendingEnrollment(device) {
+    const pending = this.loadPendingEnrollment();
+    if (!pending) {
+      throw credentialError('No pending device enrollment is stored');
+    }
+    if (!device || typeof device !== 'object' || Array.isArray(device)) {
+      throw credentialError('The pending enrollment response is invalid');
+    }
+    let active;
+    try {
+      active = normalizeRecord({
+        deviceId: device.deviceId,
+        credential: pending.credential,
+        enrolledAt: device.createdAt,
+        label: device.label,
+        defaultUsername: null
+      });
+    } catch (_) {
+      throw credentialError('The pending enrollment response is invalid');
+    }
+    if (
+      active.deviceId !== pending.deviceId ||
+      active.label !== pending.label
+    ) {
+      throw credentialError('The pending enrollment response is invalid');
+    }
+    this._writeFile(this.filePath, 'credentials', active);
+    this._removeFile(this.pendingFilePath);
+  }
+
   setDefaultUsername(username) {
     const current = this.load();
     if (!current) {
@@ -359,9 +430,17 @@ class StableOverlayRoutingCredentials {
   }
 
   remove() {
+    return this._removeFile(this.filePath);
+  }
+
+  removePendingEnrollment() {
+    return this._removeFile(this.pendingFilePath);
+  }
+
+  _removeFile(filePath) {
     this._verifyRuntimePath();
     try {
-      fs.unlinkSync(this.filePath);
+      fs.unlinkSync(filePath);
       return true;
     } catch (error) {
       if (error.code === 'ENOENT') {

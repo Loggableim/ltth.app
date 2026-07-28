@@ -40,6 +40,17 @@ function enrollment(overrides = {}) {
   };
 }
 
+function pendingEnrollment(overrides = {}) {
+  return enrollment({
+    deviceId: 'd-0123456789abcdef0123456789abcdef',
+    credential: 'b'.repeat(64),
+    enrolledAt: '2026-07-27T11:00:00.000Z',
+    label: 'Pending desktop',
+    defaultUsername: null,
+    ...overrides
+  });
+}
+
 describe('StableOverlayRoutingCredentials', () => {
   const roots = [];
 
@@ -69,6 +80,10 @@ describe('StableOverlayRoutingCredentials', () => {
 
     expect(path.relative(first.getProfileDataDir(), first.getFilePath()))
       .toBe('credentials.json');
+    expect(path.relative(
+      first.getProfileDataDir(),
+      first.getPendingFilePath()
+    )).toBe('pending-enrollment.json');
     expect(path.relative(fixture.userDataDir, first.getFilePath()))
       .toMatch(/^\.stable-overlay-routing[\\/]+profiles[\\/]+[a-f0-9]{64}[\\/]credentials\.json$/);
     expect(path.relative(fixture.pluginsDir, first.getFilePath())).toMatch(/^\.\./);
@@ -252,6 +267,81 @@ describe('StableOverlayRoutingCredentials', () => {
     expect(fs.readFileSync(store.getFilePath(), 'utf8')).toBe(previous);
     expect(fs.readdirSync(store.getProfileDataDir()))
       .toEqual(['credentials.json']);
+  });
+
+  test('persists a pending enrollment separately before dispatch and excludes both secrets from backup', () => {
+    const fixture = makeTempConfig();
+    roots.push(fixture.configDir);
+    const sourceRoot = path.join(fixture.configDir, 'source');
+    const store = new StableOverlayRoutingCredentials({
+      configPathManager: fixture.manager,
+      profileId: 'creator',
+      sourceRoot
+    });
+    const active = enrollment();
+    const pending = pendingEnrollment();
+
+    store.save(active);
+    expect(store.stageEnrollment(pending)).toBeUndefined();
+
+    expect(store.load()).toEqual(active);
+    expect(store.loadPendingEnrollment()).toEqual(pending);
+    expect(JSON.parse(
+      fs.readFileSync(store.getPendingFilePath(), 'utf8')
+    )).toEqual(pending);
+    expect(fs.readdirSync(store.getProfileDataDir()).sort()).toEqual([
+      'credentials.json',
+      'pending-enrollment.json'
+    ]);
+    if (process.platform !== 'win32') {
+      expect(
+        fs.statSync(store.getPendingFilePath()).mode & 0o777
+      ).toBe(0o600);
+    }
+    expect(
+      collectFiles(fixture.userDataDir, fixture.userDataDir).files
+    ).toEqual([]);
+
+    const reopened = new StableOverlayRoutingCredentials({
+      configPathManager: fixture.manager,
+      profileId: 'creator',
+      sourceRoot
+    });
+    expect(reopened.load()).toEqual(active);
+    expect(reopened.loadPendingEnrollment()).toEqual(pending);
+  });
+
+  test('promotes only matching Worker metadata and removes the pending secret after the active write', () => {
+    const fixture = makeTempConfig();
+    roots.push(fixture.configDir);
+    const store = new StableOverlayRoutingCredentials({
+      configPathManager: fixture.manager,
+      profileId: 'creator',
+      sourceRoot: path.join(fixture.configDir, 'source')
+    });
+    const pending = pendingEnrollment();
+    store.save(enrollment());
+    store.stageEnrollment(pending);
+
+    expect(() => store.commitPendingEnrollment({
+      deviceId: 'd-ffffffffffffffffffffffffffffffff',
+      label: pending.label,
+      createdAt: pending.enrolledAt
+    })).toThrow(
+      expect.objectContaining({
+        code: 'STABLE_OVERLAY_CREDENTIAL_INVALID'
+      })
+    );
+    expect(store.loadPendingEnrollment()).toEqual(pending);
+
+    expect(store.commitPendingEnrollment({
+      deviceId: pending.deviceId,
+      label: pending.label,
+      createdAt: pending.enrolledAt
+    })).toBeUndefined();
+    expect(store.load()).toEqual(pending);
+    expect(store.loadPendingEnrollment()).toBeNull();
+    expect(fs.existsSync(store.getPendingFilePath())).toBe(false);
   });
 
   test('updates only the selected default username and retains enrollment material', () => {

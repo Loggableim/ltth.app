@@ -157,6 +157,9 @@ const {
 const {
     StableOverlayRoutingClient
 } = require('./modules/stable-overlay-routing-client');
+const {
+    createServerRestartCoordinator
+} = require('./modules/server-restart-coordinator');
 const debugLogger = require('./modules/debug-logger');
 const { apiLimiter, authLimiter, uploadLimiter, pluginLimiter, iftttLimiter } = require('./modules/rate-limiter');
 const OBSWebSocket = require('./modules/obs-websocket');
@@ -189,6 +192,8 @@ const CloudSyncEngine = require('./modules/cloud-sync');
 const { createAdminAuth } = require('./modules/admin-auth');
 const { obsCacheControl } = require('./modules/obs-cache-control');
 const {
+    buildStableOverlayClerkAuthorizedParties,
+    buildStoreAuthConfig,
     createClerkFrontendProxy,
     createClerkMiddleware,
     verifyClerkSessionToken
@@ -604,24 +609,9 @@ const stableOverlayRoutingLifecycle = createStableOverlayRoutingLifecycle({
     enabled: stableOverlayRoutingConfig.enabled,
     logger
 });
-const getStableOverlayAuthorizedParties = () => networkManager
-    .getAllowedOrigins(PORT || 3000)
-    .reduce((origins, value) => {
-        try {
-            const parsed = new URL(String(value || ''));
-            if (
-                ['http:', 'https:'].includes(parsed.protocol) &&
-                !parsed.username &&
-                !parsed.password &&
-                parsed.pathname === '/' &&
-                !parsed.search &&
-                !parsed.hash
-            ) {
-                origins.push(parsed.origin);
-            }
-        } catch (_) {}
-        return origins;
-    }, []);
+const stableOverlayClerkConfig = buildStoreAuthConfig(process.env);
+const getStableOverlayClerkAuthorizedParties = () =>
+    buildStableOverlayClerkAuthorizedParties(stableOverlayClerkConfig);
 registerStableOverlayRoutingRoutes({
     app,
     apiLimiter,
@@ -631,7 +621,7 @@ registerStableOverlayRoutingRoutes({
     client: stableOverlayRoutingClient,
     config: stableOverlayRoutingConfig,
     logger,
-    getAuthorizedParties: getStableOverlayAuthorizedParties,
+    getClerkAuthorizedParties: getStableOverlayClerkAuthorizedParties,
     lifecycle: stableOverlayRoutingLifecycle
 });
 
@@ -1236,37 +1226,25 @@ app.post('/api/cloud-sync/validate-path', authLimiter, (req, res) => {
 // ========== ROUTES ==========
 
 let serverRestartScheduled = false;
+const serverRestartCoordinator = createServerRestartCoordinator({
+    stableLifecycle: stableOverlayRoutingLifecycle,
+    io,
+    db,
+    server,
+    logger,
+    processExit: code => process.exit(code),
+    timers: {
+        setTimeout,
+        clearTimeout
+    }
+});
 
 function scheduleServerRestart(reason = 'api request') {
-    if (serverRestartScheduled) {
-        logger.warn(`♻️  Server restart already scheduled, ignoring duplicate request (${reason})`);
-        return false;
+    const scheduled = serverRestartCoordinator.schedule(reason);
+    if (scheduled) {
+        serverRestartScheduled = true;
     }
-
-    serverRestartScheduled = true;
-    logger.info(`♻️  Server restart scheduled (${reason})`);
-
-    setTimeout(() => {
-        logger.info(`♻️  Server restart starting (${reason})`);
-
-        try { db.flushEventBatch(); } catch (err) { logger.debug(`flushEventBatch skipped: ${err.message}`); }
-        try { io.emit('server:restarting', { reason }); } catch (err) { logger.debug(`server:restarting emit skipped: ${err.message}`); }
-        try { io.disconnectSockets(true); } catch (err) { logger.debug(`socket disconnect skipped: ${err.message}`); }
-        try { db.close(); } catch (err) { logger.debug(`db.close skipped: ${err.message}`); }
-
-        server.close(() => {
-            logger.info('♻️  Exiting with restart code 75...');
-            process.exit(75);
-        });
-
-        const forceTimer = setTimeout(() => {
-            logger.warn('♻️  Force exiting with restart code 75...');
-            process.exit(75);
-        }, 3000);
-        forceTimer.unref();
-    }, 250);
-
-    return true;
+    return scheduled;
 }
 
 function scheduleServerRestartAfterResponse(res, reason) {

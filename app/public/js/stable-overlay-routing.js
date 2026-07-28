@@ -691,7 +691,19 @@
 
         try {
           if (operationError) {
-            if (operationError?.code === 'AUTH_REQUIRED') {
+            const outcomeUnknown =
+              operationError?.code ===
+              'STABLE_ROUTING_RECONCILIATION_REQUIRED';
+            if (outcomeUnknown) {
+              invalidateAccountState();
+              state.message = `${t(
+                'request_error',
+                'The stable overlay routing request could not be completed.'
+              )} ${t(
+                'refresh_required',
+                'Refresh account state before another change.'
+              )}`;
+            } else if (operationError?.code === 'AUTH_REQUIRED') {
               state.message = t(
                 'auth_error',
                 'Sign in again to manage stable URLs.'
@@ -710,7 +722,7 @@
                 'The stable overlay routing request could not be completed.'
               );
             }
-            if (mutationSucceeded) {
+            if (mutationSucceeded && !outcomeUnknown) {
               state.message = `${state.message} ${t(
                 'refresh_required',
                 'Refresh account state before another change.'

@@ -191,12 +191,13 @@ describe('public overlay Express middleware', () => {
 });
 
 describe('public overlay socket protection', () => {
-  function createSocket(host, forwardedHost) {
+  function createSocket(host, forwardedHost, origin) {
     const socket = {
       handshake: {
         headers: {
           host,
-          ...(forwardedHost ? { 'x-forwarded-host': forwardedHost } : {})
+          ...(forwardedHost ? { 'x-forwarded-host': forwardedHost } : {}),
+          ...(origin ? { origin } : {})
         }
       },
       data: {},
@@ -213,7 +214,8 @@ describe('public overlay socket protection', () => {
     const logger = { warn: jest.fn() };
     const socket = createSocket(
       'quiet-river.trycloudflare.com',
-      'overlay.ltth.app'
+      'overlay.ltth.app',
+      'https://quiet-river.trycloudflare.com'
     );
     const originalEmit = socket.emit;
 
@@ -235,6 +237,13 @@ describe('public overlay socket protection', () => {
     expect(socket.emit('weather:trigger', { intensity: 1 })).toBe(true);
     expect(socket.emit('admin:settings-updated', secretPayload)).toBe(false);
     expect(originalEmit).toHaveBeenCalledTimes(1);
+    const warningText = logger.warn.mock.calls.flat().join(' ');
+    expect(warningText).not.toContain('quiet-river.trycloudflare.com');
+    expect(warningText).not.toContain(
+      'https://quiet-river.trycloudflare.com'
+    );
+    expect(warningText).not.toContain('admin:reload');
+    expect(warningText).not.toContain('admin:settings-updated');
   });
 
   test.each([

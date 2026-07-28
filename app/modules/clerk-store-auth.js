@@ -293,6 +293,57 @@ function buildStoreAuthConfig(env = process.env) {
   };
 }
 
+function buildStableOverlayClerkAuthorizedParties(
+  config = buildStoreAuthConfig()
+) {
+  const candidates = [
+    ...(Array.isArray(config.storeAuthorizedParties)
+      ? config.storeAuthorizedParties
+      : []),
+    config.authBridgeUrl
+      ? new URL(config.authBridgeUrl).origin
+      : '',
+    config.accountPortalBaseUrl
+      ? new URL(config.accountPortalBaseUrl).origin
+      : '',
+    'http://127.0.0.1:3000',
+    'http://localhost:3000'
+  ];
+  const parties = [];
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+    let parsed;
+    try {
+      parsed = new URL(candidate);
+    } catch (_) {
+      throw new TypeError(
+        'Stable overlay Clerk authorized-party configuration is invalid'
+      );
+    }
+    if (
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      throw new TypeError(
+        'Stable overlay Clerk authorized-party configuration is invalid'
+      );
+    }
+    const origin = parsed.origin.toLowerCase();
+    if (!seen.has(origin)) {
+      seen.add(origin);
+      parties.push(origin);
+    }
+  }
+  return parties;
+}
+
 async function fetchClerkJwks(jwksUrl, logger) {
   const cacheKey = String(jwksUrl || '').trim() || CLERK_JWKS_URL;
   const cached = jwksCache.get(cacheKey);
@@ -392,9 +443,6 @@ async function verifyClerkSessionToken(token, options = {}) {
     clockTolerance: 5
   };
   verification.issuer = issuer;
-  if (audience.length > 0) {
-    verification.audience = audience;
-  }
 
   let payload;
   try {
@@ -411,15 +459,37 @@ async function verifyClerkSessionToken(token, options = {}) {
       ? []
       : buildAuthorizedParties(options.req || {}, config, env))
   ]));
-  const tokenOrigin = cleanEnvValue(payload.azp).toLowerCase();
   const requiresAuthorizedParty =
     options.requireAuthorizedParty === true ||
-    authorizedParties.length > 0;
-  if (
-    requiresAuthorizedParty &&
-    (!tokenOrigin || !authorizedParties.includes(tokenOrigin))
-  ) {
-    const error = new Error(`Clerk session token was issued for an unexpected origin: ${payload.azp}`);
+    authorizedParties.length > 0 ||
+    audience.length > 0;
+  let claimAllowed = true;
+  if (Object.prototype.hasOwnProperty.call(payload, 'azp')) {
+    const tokenOrigin = typeof payload.azp === 'string'
+      ? payload.azp.trim().toLowerCase()
+      : '';
+    claimAllowed =
+      Boolean(tokenOrigin) &&
+      authorizedParties.includes(tokenOrigin);
+  } else if (requiresAuthorizedParty) {
+    const tokenAudiences = Array.isArray(payload.aud)
+      ? payload.aud
+      : typeof payload.aud === 'string'
+        ? [payload.aud]
+        : [];
+    const allowedAudiences = new Set([
+      ...authorizedParties,
+      ...audience
+    ]);
+    claimAllowed = tokenAudiences.some(value =>
+      typeof value === 'string' &&
+      allowedAudiences.has(value)
+    );
+  }
+  if (requiresAuthorizedParty && !claimAllowed) {
+    const error = new Error(
+      'Clerk session token was issued for an unexpected party'
+    );
     error.code = 'CLERK_TOKEN_INVALID';
     throw error;
   }
@@ -1060,6 +1130,7 @@ module.exports = {
   buildBetaLicense,
   buildStoreAccountResponse,
   buildStoreAuthConfig,
+  buildStableOverlayClerkAuthorizedParties,
   claimBetaLicenseForStoreAccount,
   clearStoreSessionCookie,
   createClerkFrontendProxy,
