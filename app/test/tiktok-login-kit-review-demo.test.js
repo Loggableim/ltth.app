@@ -16,5 +16,9 @@ describe('TikTok Login Kit review demo assets', () => {
     const storyboard = fs.readFileSync(storyboardPath, 'utf8');
     expect(storyboard).toContain('TikTok Login Kit');
     expect(storyboard).toContain('return to LTTH');
+    expect(storyboard).toContain('test-version mockup');
+    expect(storyboard).toContain('Sandbox test account');
+    expect(storyboard).toContain('not a production integration');
+    expect(storyboard).not.toContain('Production integration is available');
   });
 });
