@@ -436,6 +436,9 @@
     .egg-shelf-item {
       position:relative; display:grid; place-items:end center; width:clamp(48px,6.1vw,82px);
       height:clamp(64px,8.2vw,106px); transform-origin:50% 100%;
+      transform:rotate(var(--egg-settle-rotation));
+    }
+    .egg-shelf-item.landing {
       animation:egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18)
         var(--egg-motion-delay,0ms) both;
     }
@@ -450,6 +453,9 @@
       box-shadow:0 0 22px #ffd76fa8,inset 0 0 15px #fff2a84d;
     }
     .egg-shelf-item.public-free {
+      animation:none;
+    }
+    .egg-shelf-item.public-free.landing {
       animation:
         egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18)
           var(--egg-motion-delay,0ms) both,
@@ -1262,6 +1268,7 @@
   const safeFallbackCommandNames = {
     eggs: 'eier',
     hatch: 'hatch',
+    adopt: 'adopt',
     inventory: 'inventory',
     monster: 'monster',
     battle: 'battle'
@@ -1755,12 +1762,36 @@
     }
     if ([
       'egg_landed',
+      'free_egg_reserved',
       'free_egg_public',
       'free_egg_claimed',
       'egg_stage_removed'
     ].includes(type)) {
       eggStageView.applyEvent(type, data);
-      if (type === 'egg_landed' || type === 'free_egg_public') {
+      const adoptionNotice = window.StreamMonstersEggStageView
+        ?.buildAdoptionNotice(type, data);
+      if (adoptionNotice?.kind === 'reserved') {
+        const title = text('tutorialHintFreeOfferTitle', 'Gratis-Ei reserviert');
+        const body = text(
+          'tutorialHintFreeOfferBody',
+          'Hole dein reserviertes Ei mit {command} ab, bevor es freigegeben wird.',
+          { command:commandReference('adopt') }
+        );
+        return showToast(
+          `${adoptionNotice.viewer}: ${title} · ${body}`,
+          adoptionNotice.durationMs
+        );
+      }
+      if (adoptionNotice?.kind === 'public') {
+        const title = text('tutorialHintFreeReleaseTitle', 'Gratis-Ei freigegeben');
+        const body = text(
+          'tutorialHintFreeReleaseBody',
+          'Das Ei ist jetzt öffentlich. Wer zuerst {command} schreibt, bekommt es.',
+          { command:commandReference('adopt') }
+        );
+        return showToast(`${title} · ${body}`, adoptionNotice.durationMs);
+      }
+      if (type === 'egg_landed') {
         return effectsRenderer.play('spawn', {
           element:data?.eggStage?.element,
           vfxKey:`egg-shelf:${data?.eggStage?.visualId || 'arrival'}`,
@@ -1903,7 +1934,9 @@
     if (type === 'battle_choice_opened') return arenaView.openChoice(data);
     if (type === 'battle_choice_locked') return playArcadeEvent(type, data);
     if (type === 'battle_choices_revealed') return playArcadeEvent(type, data);
-    if (type === 'tutorial_hint') return showCard({
+    if (type === 'tutorial_hint') {
+      if (data?.kind === 'adopt') return;
+      return showCard({
       kicker:'Stream Monsters',
       title:safeHint(window.StreamMonstersOverlayRuntime.localizedPayloadField(
         data,
@@ -1918,7 +1951,8 @@
       )),
       hint:safeHint(data?.command),
       duration:6_000
-    });
+      });
+    }
     if (type === 'battle_special_charged') {
       const monster = data?.monster || battleMonsters.find(entry => (
         itemMonsterId(entry) === data?.monsterId
@@ -2326,6 +2360,7 @@
     'streammonsters:stance_revealed':'stance_revealed',
     'streammonsters:egg_spawned':'egg_spawned',
     'streammonsters:egg_landed':'egg_landed',
+    'streammonsters:free_egg_reserved':'free_egg_reserved',
     'streammonsters:free_egg_public':'free_egg_public',
     'streammonsters:free_egg_claimed':'free_egg_claimed',
     'streammonsters:egg_stage_removed':'egg_stage_removed',

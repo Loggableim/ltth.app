@@ -22,6 +22,7 @@
     'egg_ready',
     'hatch_started',
     'egg_hatched',
+    'free_egg_reserved',
     'free_egg_public',
     'free_egg_claimed',
     'egg_stage_removed',
@@ -384,6 +385,7 @@
         'egg_ready',
         'hatch_started',
         'egg_hatched',
+        'free_egg_reserved',
         'free_egg_public',
         'free_egg_claimed',
         'egg_stage_removed'

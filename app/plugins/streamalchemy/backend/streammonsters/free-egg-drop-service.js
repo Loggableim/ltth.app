@@ -86,6 +86,14 @@ class FreeEggDropService {
         offerId: offer.offer_id,
         reservedUntilMs: offer.reserved_until_ms
       });
+      const eggStage = this.engine.eggStageProjector.projectOffer(offer);
+      this.emitAfterCommit('streammonsters:free_egg_reserved', {
+        eggStage,
+        ...this.engine.eggStageProjector.eventIdentity(
+          'streammonsters:free_egg_reserved',
+          eggStage
+        )
+      });
       return result;
     });
     this.rearmReleaseTimer();

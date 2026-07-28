@@ -123,6 +123,68 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(dom.window.document.querySelector('[data-egg-id="free-public"]')).toBeNull();
   });
 
+  test('plays the shelf landing animation only once per egg id', () => {
+    const Shelf = loadShelf();
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
+    `);
+    const view = Shelf.createEggStageView({
+      document: dom.window.document
+    });
+
+    view.applySnapshot([egg('existing-egg')]);
+    expect(dom.window.document.querySelector('[data-egg-id="existing-egg"]')
+      .classList.contains('landing')).toBe(false);
+
+    view.applyEvent('egg_landed', {
+      eggStage: egg('stable-egg')
+    });
+    expect(dom.window.document.querySelector('[data-egg-id="stable-egg"]')
+      .classList.contains('landing')).toBe(true);
+
+    view.applyEvent('egg_landed', {
+      eggStage: egg('stable-egg', { state: 'ready' })
+    });
+    expect(dom.window.document.querySelector('[data-egg-id="stable-egg"]')
+      .classList.contains('landing')).toBe(false);
+
+    view.rotateOverflow();
+    expect(dom.window.document.querySelector('[data-egg-id="stable-egg"]')
+      .classList.contains('landing')).toBe(false);
+    view.destroy();
+  });
+
+  test('builds compact adoption notices only for reserved and public free eggs', () => {
+    const Shelf = loadShelf();
+    expect(Shelf.buildAdoptionNotice('free_egg_reserved', {
+      eggStage: egg('reserved-free', {
+        provenance: 'free',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        displayName: '@viewer_one'
+      })
+    })).toEqual({
+      kind: 'reserved',
+      viewer: '@viewer_one',
+      durationMs: 5_000
+    });
+    expect(Shelf.buildAdoptionNotice('free_egg_public', {
+      eggStage: egg('public-free', {
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true
+      })
+    })).toEqual({
+      kind: 'public',
+      viewer: 'Viewer',
+      durationMs: 5_000
+    });
+    expect(Shelf.buildAdoptionNotice('egg_landed', {
+      eggStage: egg('gift-owned')
+    })).toBeNull();
+  });
+
   test('keeps deterministic fly, bounce, collision and settle metadata under reduced motion', () => {
     const Shelf = loadShelf();
     const motion = Shelf.deterministicEggMotion('egg-abc', 4);
@@ -198,6 +260,11 @@ describe('Stream Monsters 1.10 overlay and creator surfaces', () => {
     expect(shelf.querySelector('[data-egg-slots]')).not.toBeNull();
     expect(shelf.querySelector('[data-egg-overflow]')).not.toBeNull();
     expect(overlayHtml).toContain('streammonsters-egg-stage-view.js');
+    expect(overlayHtml).toContain(
+      "'streammonsters:free_egg_reserved':'free_egg_reserved'"
+    );
+    expect(overlayHtml).toContain('buildAdoptionNotice(type, data)');
+    expect(overlayHtml).toContain("if (data?.kind === 'adopt') return;");
   });
 
   test('exposes Jackpot combo and element-lighting surfaces beside full-monster HUDs', () => {

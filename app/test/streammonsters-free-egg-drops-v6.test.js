@@ -210,7 +210,7 @@ describe('Stream Monsters recurring free egg drops', () => {
       userId: 'viewer-a',
       streamKey: 'creator:stream-1',
       eventId: 'chat:tiktok:chat-1',
-      displayName: 'Viewer A'
+      displayName: 'viewer-a'
     })]);
   });
 
@@ -230,6 +230,7 @@ describe('Stream Monsters recurring free egg drops', () => {
     expect(subject.store.getStreamHype('creator:stream-1')).toEqual(expect.objectContaining({ points: 0 }));
     expect(subject.emitted.map(entry => entry.event)).toEqual([
       'streammonsters:free_egg_offered',
+      'streammonsters:free_egg_reserved',
       'streammonsters:free_egg_claimed'
     ]);
   });

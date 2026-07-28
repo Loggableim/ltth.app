@@ -22,6 +22,30 @@
       egg.adoptable === true;
   }
 
+  function buildAdoptionNotice(type, payload = {}) {
+    const egg = normalizeEgg(payload.eggStage || payload.egg_stage || payload.egg);
+    if (!egg || egg.provenance !== 'free') return null;
+    if (
+      type === 'free_egg_reserved' &&
+      egg.state === 'reserved' &&
+      egg.adoptionStatus === 'reserved'
+    ) {
+      return {
+        kind: 'reserved',
+        viewer: egg.displayName,
+        durationMs: 5_000
+      };
+    }
+    if (type === 'free_egg_public' && isPublicFreeEgg(egg)) {
+      return {
+        kind: 'public',
+        viewer: egg.displayName,
+        durationMs: 5_000
+      };
+    }
+    return null;
+  }
+
   function priority(egg = {}) {
     if (isPublicFreeEgg(egg)) return 0;
     if (egg.state === 'ready') return 1;
@@ -122,6 +146,7 @@
     const calloutDeadlineById = new Map();
     const calloutTimers = new Map();
     const eggsById = new Map();
+    const pendingLandingIds = new Set();
     let rotationIndex = 0;
     let rotationTimer = null;
 
@@ -146,6 +171,9 @@
     function createEggNode(egg, index) {
       const item = documentLike.createElement('article');
       item.className = 'egg-shelf-item';
+      if (pendingLandingIds.has(egg.visualId) && !reducedMotion) {
+        item.classList.add('landing');
+      }
       item.dataset.eggId = egg.visualId;
       item.dataset.state = boundedText(egg.state, 24);
       item.dataset.provenance = boundedText(egg.provenance, 24);
@@ -227,11 +255,13 @@
       root.dataset.adoptable = String(model.adoptable);
       root.dataset.ready = String(model.ready);
       root.dataset.incubating = String(model.incubating);
+      pendingLandingIds.clear();
       return model;
     }
 
     function applySnapshot(eggStage = []) {
       eggsById.clear();
+      pendingLandingIds.clear();
       for (const egg of Array.isArray(eggStage) ? eggStage : []) {
         const visualId = boundedText(egg?.visualId, 64);
         if (visualId) eggsById.set(visualId, egg);
@@ -243,6 +273,7 @@
       const egg = payload.eggStage || payload.egg_stage || payload.egg;
       const visualId = boundedText(egg?.visualId || payload.visualId, 64);
       if (!visualId) return false;
+      const isNewLanding = type === 'egg_landed' && !eggsById.has(visualId);
       if (
         type === 'egg_stage_removed' ||
         egg?.state === 'claimed' ||
@@ -253,6 +284,7 @@
         removeCallout(visualId);
       } else {
         eggsById.set(visualId, { ...egg, visualId });
+        if (isNewLanding) pendingLandingIds.add(visualId);
       }
       render();
       return true;
@@ -290,6 +322,7 @@
   return {
     ADOPT_CALLOUT_MS,
     MAX_VISIBLE_EGGS,
+    buildAdoptionNotice,
     buildShelfModel,
     createEggStageView,
     deterministicEggMotion,

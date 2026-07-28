@@ -161,6 +161,9 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
       now: subject.now
     });
     const reserved = projector.snapshot('creator:stream-1');
+    const reservedEvent = subject.emitted.find(entry => (
+      entry.event === 'streammonsters:free_egg_reserved'
+    ));
 
     expect(reserved).toEqual([
       expect.objectContaining({
@@ -176,6 +179,14 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
         })
       })
     ]);
+    expect(reservedEvent.payload.eggStage).toEqual(expect.objectContaining({
+      visualId: reserved[0].visualId,
+      provenance: 'free',
+      state: 'reserved',
+      displayName: 'Viewer A',
+      adoptionStatus: 'reserved',
+      adoptable: false
+    }));
 
     subject.setNow(61_000);
     subject.freeEggs.sweepAndRearm();
