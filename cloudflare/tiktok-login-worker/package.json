@@ -1,0 +1,17 @@
+{
+  "name": "@ltth/tiktok-login-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "wrangler dev",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production"
+  },
+  "devDependencies": {
+    "vitest": "4.1.10",
+    "wrangler": "4.114.0"
+  }
+}
