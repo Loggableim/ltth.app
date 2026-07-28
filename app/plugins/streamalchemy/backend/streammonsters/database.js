@@ -195,7 +195,7 @@ class StreamMonstersDatabase {
         offer_event_id TEXT NOT NULL UNIQUE,
         offered_at_ms INTEGER NOT NULL,
         reserved_until_ms INTEGER NOT NULL,
-        status TEXT NOT NULL CHECK (status IN ('reserved', 'public', 'claimed')),
+        status TEXT NOT NULL CHECK (status IN ('reserved', 'public', 'claimed', 'expired')),
         claimed_by_user_id TEXT,
         claimed_at_ms INTEGER,
         element TEXT,
@@ -607,6 +607,7 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_free_egg_offers', 'image_url', 'TEXT');
     this.ensureColumn('streammonsters_free_egg_offers', 'source_avatar_ref', 'TEXT');
     this.ensureColumn('streammonsters_free_egg_offers', 'stage_state', "TEXT NOT NULL DEFAULT 'reserved'");
+    this.migrateFreeEggOfferStatusConstraint();
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
@@ -778,6 +779,80 @@ class StreamMonstersDatabase {
       const monster = this.getMonster(row.monster_id);
       if (monster) update.run(effectiveCombatPower(monster), row.user_id);
     });
+  }
+
+  migrateFreeEggOfferStatusConstraint() {
+    const table = this.db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'table' AND name = 'streammonsters_free_egg_offers'
+    `).get();
+    if (String(table?.sql || '').includes("'expired'")) return;
+    this.db.exec(`
+      CREATE TABLE streammonsters_free_egg_offers_v110 (
+        offer_id TEXT PRIMARY KEY,
+        stream_key TEXT NOT NULL,
+        source_user_id TEXT NOT NULL,
+        source_display_name TEXT,
+        offer_event_id TEXT NOT NULL UNIQUE,
+        offered_at_ms INTEGER NOT NULL,
+        reserved_until_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK (
+          status IN ('reserved', 'public', 'claimed', 'expired')
+        ),
+        claimed_by_user_id TEXT,
+        claimed_at_ms INTEGER,
+        element TEXT,
+        variant TEXT NOT NULL DEFAULT 'standard',
+        image_url TEXT,
+        source_avatar_ref TEXT,
+        stage_state TEXT NOT NULL DEFAULT 'reserved',
+        UNIQUE (stream_key, source_user_id)
+      );
+      INSERT INTO streammonsters_free_egg_offers_v110 (
+        offer_id, stream_key, source_user_id, source_display_name,
+        offer_event_id, offered_at_ms, reserved_until_ms, status,
+        claimed_by_user_id, claimed_at_ms, element, variant, image_url,
+        source_avatar_ref, stage_state
+      )
+      SELECT
+        offer_id, stream_key, source_user_id, source_display_name,
+        offer_event_id, offered_at_ms, reserved_until_ms, status,
+        claimed_by_user_id, claimed_at_ms, element, variant, image_url,
+        source_avatar_ref, stage_state
+      FROM streammonsters_free_egg_offers;
+
+      CREATE TABLE streammonsters_free_egg_claims_v110 (
+        claim_id TEXT PRIMARY KEY,
+        offer_id TEXT NOT NULL UNIQUE,
+        stream_key TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        claim_event_id TEXT NOT NULL UNIQUE,
+        claimed_at_ms INTEGER NOT NULL,
+        FOREIGN KEY (offer_id)
+          REFERENCES streammonsters_free_egg_offers_v110(offer_id)
+      );
+      INSERT INTO streammonsters_free_egg_claims_v110 (
+        claim_id, offer_id, stream_key, user_id, claim_event_id, claimed_at_ms
+      )
+      SELECT
+        claim_id, offer_id, stream_key, user_id, claim_event_id, claimed_at_ms
+      FROM streammonsters_free_egg_claims;
+
+      DROP TABLE streammonsters_free_egg_claims;
+      DROP TABLE streammonsters_free_egg_offers;
+      ALTER TABLE streammonsters_free_egg_offers_v110
+        RENAME TO streammonsters_free_egg_offers;
+      ALTER TABLE streammonsters_free_egg_claims_v110
+        RENAME TO streammonsters_free_egg_claims;
+
+      CREATE INDEX streammonsters_free_egg_offers_public_fifo
+        ON streammonsters_free_egg_offers(
+          stream_key, status, offered_at_ms, offer_id
+        );
+      CREATE INDEX streammonsters_free_egg_claims_cooldown
+        ON streammonsters_free_egg_claims(user_id, claimed_at_ms DESC);
+    `);
   }
 
   ensureColumn(table, column, definition) {
@@ -1244,13 +1319,18 @@ class StreamMonstersDatabase {
     ));
   }
 
-  getNextFreeEggReservationDeadline() {
+  getNextFreeEggReservationDeadline(nowMs = Date.now()) {
     const row = this.db.prepare(`
       SELECT MIN(reserved_until_ms) AS reserved_until_ms
       FROM streammonsters_free_egg_offers
       WHERE status = 'reserved'
-    `).get();
-    return Number.isFinite(Number(row?.reserved_until_ms))
+        AND stage_state = 'reserved'
+        AND reserved_until_ms > ?
+    `).get(Number(nowMs) || 0);
+    if (row?.reserved_until_ms === null || row?.reserved_until_ms === undefined) {
+      return null;
+    }
+    return Number.isFinite(Number(row.reserved_until_ms))
       ? Number(row.reserved_until_ms)
       : null;
   }
@@ -1304,8 +1384,10 @@ class StreamMonstersDatabase {
   cleanupFreeEggStream(streamKey) {
     const offersRemoved = this.db.prepare(`
       UPDATE streammonsters_free_egg_offers
-      SET stage_state = 'expired'
-      WHERE stream_key = ? AND stage_state IN ('reserved', 'public')
+      SET status = 'expired', stage_state = 'expired'
+      WHERE stream_key = ?
+        AND status IN ('reserved', 'public')
+        AND stage_state IN ('reserved', 'public')
     `).run(streamKey).changes;
     const eventsRemoved = this.db.prepare(`
       DELETE FROM streammonsters_free_egg_events

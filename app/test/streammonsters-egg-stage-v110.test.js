@@ -11,9 +11,14 @@ const FreeEggDropService = require(
 const EggStageProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/egg-stage-projector'
 );
+const { safeAssetReference } = EggStageProjector;
 const StreamMonstersRoutes = require(
   '../plugins/streamalchemy/backend/streammonsters/routes'
 );
+const StreamMonstersPublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
+const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 function createSubject({
   now = 1_000,
@@ -252,8 +257,13 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
 
     expect(subject.freeEggs.cleanupStream({ streamKey: 'creator:stream-1' }))
       .toEqual({ offersRemoved: 1, eventsRemoved: 1 });
-    expect(subject.store.getFreeEggOffers('creator:stream-1')[0].stage_state)
-      .toBe('expired');
+    expect(subject.store.getFreeEggOffers('creator:stream-1')[0])
+      .toEqual(expect.objectContaining({
+        status: 'expired',
+        stage_state: 'expired'
+      }));
+    expect(subject.store.getNextFreeEggReservationDeadline()).toBeNull();
+    expect(subject.freeEggs.releaseTimer).toBeNull();
     expect(subject.emitted).toContainEqual({
       event: 'streammonsters:egg_stage_removed',
       payload: expect.objectContaining({
@@ -265,6 +275,62 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
         })
       })
     });
+  });
+
+  test('deduplicates stage-only critical events with stable public identities', () => {
+    const subject = createSubject({ hatchDurationMs: 100, eggExpiryMs: 100 });
+    gift(subject, 'gift-event-1');
+    subject.freeEggs.onFirstChat({
+      userId: 'viewer-b',
+      streamKey: 'creator:stream-1',
+      eventId: 'chat-1',
+      displayName: 'Viewer B',
+      nowMs: 1_000
+    });
+    subject.setNow(61_000);
+    subject.freeEggs.sweepAndRearm();
+    subject.freeEggs.cleanupStream({ streamKey: 'creator:stream-1' });
+    const stageEvents = [
+      'streammonsters:egg_landed',
+      'streammonsters:free_egg_public',
+      'streammonsters:egg_stage_removed'
+    ].map(eventType => ({
+      eventType,
+      payload: subject.emitted.find(entry => entry.event === eventType).payload
+    }));
+    const api = { emit: jest.fn(), log: jest.fn() };
+    const plugin = new StreamAlchemyPlugin(api);
+    plugin.streamMonstersStore = subject.store;
+    plugin.streamMonstersEngine = { streamKey: 'creator:stream-1' };
+    plugin.streamMonstersPublicEventProjector =
+      new StreamMonstersPublicEventProjector({ store: subject.store });
+
+    stageEvents.forEach(({ eventType, payload }) => {
+      expect(payload).toEqual(expect.objectContaining({
+        eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
+        correlationId: expect.stringMatching(/^sm-[a-f0-9]{32}$/)
+      }));
+      const first = plugin.emitStreamMonsters(eventType, payload);
+      const replay = plugin.emitStreamMonsters(eventType, payload);
+      expect(replay.eventId).toBe(first.eventId);
+      expect(replay.correlationId).toBe(first.correlationId);
+    });
+
+    expect(api.emit).toHaveBeenCalledTimes(3);
+    expect(subject.store.getRecentPublicEvents('creator:stream-1')).toHaveLength(3);
+  });
+
+  test('accepts exact packaged assets but rejects traversal-shaped avatar references', () => {
+    expect(safeAssetReference(
+      '/plugins/streamalchemy/assets/eggs/ember-standard.png'
+    )).toBe('/plugins/streamalchemy/assets/eggs/ember-standard.png');
+    [
+      '/plugins/streamalchemy/assets/../private.txt',
+      '/plugins/streamalchemy/assets/%2e%2e/private.txt',
+      '/plugins/streamalchemy/assets/eggs/../../private.txt',
+      '/plugins/streamalchemy/assets//eggs/ember-standard.png',
+      '/plugins/streamalchemy/assets\\..\\private.txt'
+    ].forEach(reference => expect(safeAssetReference(reference)).toBeNull());
   });
 
   test('migrates unknown egg provenance to owned legacy and never makes it adoptable', () => {
@@ -290,6 +356,47 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
           adoptable: false
         })
       ]);
+  });
+
+  test('migrates legacy free-offer status constraints without losing persisted rows', () => {
+    const sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE streammonsters_free_egg_offers (
+        offer_id TEXT PRIMARY KEY,
+        stream_key TEXT NOT NULL,
+        source_user_id TEXT NOT NULL,
+        source_display_name TEXT,
+        offer_event_id TEXT NOT NULL UNIQUE,
+        offered_at_ms INTEGER NOT NULL,
+        reserved_until_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('reserved', 'public', 'claimed')),
+        claimed_by_user_id TEXT,
+        claimed_at_ms INTEGER,
+        UNIQUE (stream_key, source_user_id)
+      );
+      INSERT INTO streammonsters_free_egg_offers (
+        offer_id, stream_key, source_user_id, source_display_name,
+        offer_event_id, offered_at_ms, reserved_until_ms, status
+      ) VALUES (
+        'legacy-offer', 'creator:legacy', 'viewer-a', 'Viewer A',
+        'legacy-chat', 1000, 61000, 'reserved'
+      );
+    `);
+    sqlite.pragma('foreign_keys = ON');
+    const store = new StreamMonstersDatabase(sqlite);
+
+    store.initialize();
+    store.cleanupFreeEggStream('creator:legacy');
+
+    expect(store.getFreeEggOffer('legacy-offer')).toEqual(expect.objectContaining({
+      status: 'expired',
+      stage_state: 'expired'
+    }));
+    expect(sqlite.prepare(`
+      SELECT sql FROM sqlite_master
+      WHERE type = 'table' AND name = 'streammonsters_free_egg_offers'
+    `).get().sql).toContain("'expired'");
+    expect(sqlite.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   });
 
   test('includes the sanitized eggStage in the reconnect-safe public state route', () => {

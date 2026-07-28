@@ -195,8 +195,10 @@ class StreamMonstersEngine {
       event,
       hint: this.getCommandReference('inventory')
     });
+    const eggStage = this.eggStageProjector.projectEgg(egg);
     this.emitAfterCommit('streammonsters:egg_landed', {
-      eggStage: this.eggStageProjector.projectEgg(egg)
+      eggStage,
+      ...this.eggStageProjector.eventIdentity('streammonsters:egg_landed', eggStage)
     });
     return { type: 'spawned', egg, gift };
   }
@@ -275,8 +277,13 @@ class StreamMonstersEngine {
           userId: egg.user_id,
           egg
         });
+        const eggStage = this.eggStageProjector.projectEgg(egg);
         this.emitAfterCommit('streammonsters:egg_stage_removed', {
-          eggStage: this.eggStageProjector.projectEgg(egg)
+          eggStage,
+          ...this.eggStageProjector.eventIdentity(
+            'streammonsters:egg_stage_removed',
+            eggStage
+          )
         });
       });
       this.store.promoteQueuedEggs(

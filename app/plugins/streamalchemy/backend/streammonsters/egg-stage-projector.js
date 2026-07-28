@@ -16,10 +16,28 @@ function finiteNumber(value) {
 function safeAssetReference(value) {
   const reference = boundedText(value, 512);
   if (!reference) return null;
-  return (
-    reference.startsWith('/plugins/streamalchemy/assets/') ||
-    /^\/api\/streammonsters\/avatar\/[a-f0-9]{16,64}$/i.test(reference)
-  ) ? reference : null;
+  const assetPrefix = '/plugins/streamalchemy/assets/';
+  if (reference.startsWith(assetPrefix)) {
+    const relative = reference.slice(assetPrefix.length);
+    const segments = relative.split('/');
+    if (
+      !relative ||
+      reference.includes('\\') ||
+      reference.includes('%') ||
+      segments.some(segment => (
+        !segment ||
+        segment === '.' ||
+        segment === '..' ||
+        !/^[a-z0-9._-]+$/i.test(segment)
+      ))
+    ) {
+      return null;
+    }
+    return reference;
+  }
+  return /^\/api\/streammonsters\/avatar\/[a-f0-9]{16,64}$/i.test(reference)
+    ? reference
+    : null;
 }
 
 class EggStageProjector {
@@ -34,6 +52,22 @@ class EggStageProjector {
       .digest('hex')
       .slice(0, 24);
     return `egg-${opaque}`;
+  }
+
+  eventIdentity(eventType, eggStage) {
+    const visualId = boundedText(eggStage?.visualId, 64);
+    const state = boundedText(eggStage?.state, 24) || 'unknown';
+    if (!visualId || !/^egg-[a-f0-9]{24}$/i.test(visualId)) {
+      throw new Error('STREAM_MONSTERS_EGG_STAGE_VISUAL_ID_REQUIRED');
+    }
+    const opaque = value => createHash('sha256')
+      .update(String(value))
+      .digest('hex')
+      .slice(0, 32);
+    return {
+      eventId: `sm-${opaque(`${eventType}:${visualId}:${state}`)}`,
+      correlationId: `sm-${opaque(`egg-stage:${visualId}`)}`
+    };
   }
 
   projectEgg(egg = null) {

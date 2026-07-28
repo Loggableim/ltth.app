@@ -167,8 +167,13 @@ class FreeEggDropService {
       const cleanup = this.store.cleanupFreeEggStream(normalizedStreamKey);
       outstanding.forEach(offer => {
         const expired = this.store.getFreeEggOffer(offer.offer_id);
+        const eggStage = this.engine.eggStageProjector.projectOffer(expired);
         this.emitAfterCommit('streammonsters:egg_stage_removed', {
-          eggStage: this.engine.eggStageProjector.projectOffer(expired)
+          eggStage,
+          ...this.engine.eggStageProjector.eventIdentity(
+            'streammonsters:egg_stage_removed',
+            eggStage
+          )
         });
       });
       return cleanup;
@@ -185,8 +190,13 @@ class FreeEggDropService {
         offerId: offer.offer_id,
         sourceUserId: offer.source_user_id
       });
+      const eggStage = this.engine.eggStageProjector.projectOffer(offer);
       this.emitAfterCommit('streammonsters:free_egg_public', {
-        eggStage: this.engine.eggStageProjector.projectOffer(offer)
+        eggStage,
+        ...this.engine.eggStageProjector.eventIdentity(
+          'streammonsters:free_egg_public',
+          eggStage
+        )
       });
     });
     return released;
@@ -207,7 +217,7 @@ class FreeEggDropService {
       this.releaseTimer = null;
     }
     if (this.destroyed) return;
-    const deadlineMs = this.store.getNextFreeEggReservationDeadline();
+    const deadlineMs = this.store.getNextFreeEggReservationDeadline(Number(this.now()));
     if (deadlineMs === null) return;
     const delayMs = Math.max(0, deadlineMs - Number(this.now()));
     this.releaseTimer = setTimeout(() => {
