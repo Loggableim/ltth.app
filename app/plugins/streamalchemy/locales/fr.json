@@ -4,7 +4,7 @@
       "ui": {
         "monsters": {
           "title": "Stream Monsters · League World Hybrid",
-          "version": "Retention Competitive Arcade · Version 1.8",
+          "version": "Rules v7 Evolution Combat · Version 1.9",
           "heroTitle": "Un cadeau. Un œuf. Un monstre pour toujours.",
           "heroCopy": "Le jeu de collection live équitable et pensé pour le portrait : les cadeaux accélèrent le spectacle, jamais la force. Les 72 formes furry sont prêtes à diffuser.",
           "navLiveCenter": "1 · Centre live",
@@ -78,7 +78,7 @@
           "assetEmergencyTitle": "Secours d’urgence Kenney",
           "assetEmergencyCopy": "Utilisé uniquement si une ressource furry incluse manque ou est endommagée.",
           "evolutionIntegrityTitle": "Bibliothèque d’évolutions",
-          "evolutionIntegrityCopy": "Les stades I, II et III restent cosmétiques et ne changent aucune statistique.",
+          "evolutionIntegrityCopy": "Les stades II et III ajoutent des statistiques élémentaires fixes et des améliorations de compétence liées au rôle.",
           "assetStageGalleryTitle": "72 formes",
           "area6": "Zone 6",
           "communitySeasonsTitle": "Communauté et saisons",
@@ -280,7 +280,7 @@
           "monsterCardHint": "{monster} [slot] affiche la carte",
           "evolution": "Évolution cosmétique",
           "evolvedTitle": "{name} rayonne autrement",
-          "evolvedCopy": "Le stade d'évolution {stage} est débloqué. Les valeurs et la propriété restent inchangées.",
+          "evolvedCopy": "Le stade d'évolution {stage} est débloqué. Ses nouvelles statistiques et compétences sont actives.",
           "monsterXpKicker": "XP de monstre",
           "monsterXpTitle": "{name} gagne +{amount} XP",
           "monsterXpCopy": "Chaque combat légitime renforce le monstre engagé.",

@@ -1,8 +1,8 @@
-# Stream Monsters 1.8 – Retention Competitive Arcade
+# Stream Monsters 1.9 – Rules v7 Evolution Combat
 
 Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installations, routes, player data, and legacy battle replays remain compatible. The public product name is exclusively **Stream Monsters**.
 
-Version 1.8 is a bundled-only Open Beta. Creator-selected TikTok gifts and the optional recurring free-egg loop create eggs. The release ships 72 verified Furry forms, sealed A/B/C PvP, permanent monster progression, separate Collector Score and Arena Rating leaderboards, and a portrait-first arcade OBS arena. It does not ship Art Lab, ComfyUI, model installation, provider routing, generation pools, or any live image-generation path.
+Version 1.9 is a bundled-only Open Beta. Creator-selected TikTok gifts and the optional recurring free-egg loop create eggs. The release ships 72 verified Furry forms, sealed Rules-v7 A/B/C PvP, passive Special charge, combat-relevant evolution stages, permanent monster progression, separate Collector Score and Arena Rating leaderboards, and a portrait-first arcade OBS arena. It does not ship Art Lab, ComfyUI, model installation, provider routing, generation pools, or any live image-generation path.
 
 ## Creator flow
 
@@ -35,14 +35,14 @@ The Creator Live Center contains exactly six areas: Live Center, Gameplay, Gifts
 - The bundled Monsterdex contains 24 templates, four per element.
 - Every template includes three verified 1024×1024 transparent forms: Evolution I, Evolution II, and Evolution III.
 - Evolution II requires mastery 25 and 3 total spent element essence. Evolution III requires mastery 50 and 8 total spent essence.
-- Evolution is cosmetic. It never changes combat stats, XP, level, owner, or paid odds.
+- Evolution II and III add fixed, element-themed combat stats and role-specific skill upgrades. Evolution never changes XP, level, owner, or paid odds, and gifts cannot buy evolution power.
 - Every legitimate completed battle gives both monsters 10 XP and the winner 5 additional XP.
 - Levels 2–20 grant one stat point for vitality, might, guard, or agility. Authorized viewers answer the post-battle prompt with `1`, `2`, `3`, or `4`.
 - Collector Score and Arena Rating are separate. Seasons can last 7, 14, 28, 60, or 90 days; collection, evolution, level, and allocated stats remain permanent.
 - Daily and weekly quests do not require gifts or wins. Streak, rivalry, upset, rank, and season events are idempotent presentation/reward records.
 - Only the first 10 legitimate battles per viewer and day alter Arena Rating and season rewards. Every legitimate completion still grants monster XP.
 
-## Sealed Rules-v6 A/B/C Arena
+## Sealed Rules-v7 A/B/C Arena
 
 `!battle` joins the public queue. Matchmaking starts within ±2 levels, prefers the nearest Arena Rating, widens after 30 seconds, and avoids a recent opponent when another valid viewer is waiting.
 
@@ -53,16 +53,16 @@ The Creator Live Center contains exactly six areas: Live Center, Gameplay, Gifts
 - `C` requires and consumes a full special charge.
 - Agility determines order; shields resolve before HP; multi-hit attacks remain sequential and stop on knockout.
 - Missing choices use deterministic timeout decisions.
-- Battles finish in at most three rounds and persist ordered Rules-v6 replay data, including skills, effects, rolls, hit order, shields, healing, status, charge, knockouts, XP, rating, and season outcomes.
+- Battles finish in at most three rounds and persist ordered Rules-v7 replay data, including passive charge, skills, effects, rolls, hit order, shields, healing, status, charge, knockouts, XP, rating, and season outcomes.
 - Post-level-up stat prompts last 15 seconds and never block another viewer's match or the OBS queue.
 - Reload recovery resumes durable matches without duplicating rewards.
 - Public battle state and replay pages omit private viewer and provider identifiers.
 
-Rules-v5 and old three-round v3 replays remain readable. They are compatibility history, not the current sealed Rules-v6 mode.
+Rules-v5, Rules-v6, and old three-round v3 replays remain readable. They are compatibility history, not the current sealed Rules-v7 mode.
 
 ## Element matchups and template roles
 
-Every template has one stable role: Striker, Guardian, Trickster, or Sustain. Roles redistribute a declared effect budget; they never alter stored permanent stats.
+Every template has one stable role: Striker, Guardian, Trickster, or Sustain. Roles redistribute a declared effect budget. Evolution adds only the fixed, simulator-checked stat grants and skill upgrades declared for that template and stage.
 
 - Ember has an advantage over Grove and Gale.
 - Tide has an advantage over Ember and Lunar.
@@ -85,7 +85,7 @@ Core actions cover:
 - battle queue entry and exit
 - Collector/Arena rank views
 - quests and help
-- cosmetic evolution
+- combat evolution
 
 When GCCE is available it is the sole command ingress. The fallback TikTok parser is mutually exclusive, and raw `A|B|C|1|2|3|4` responses are consumed only inside the authorized viewer's active decision window.
 

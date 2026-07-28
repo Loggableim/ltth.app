@@ -4,7 +4,7 @@
       "ui": {
         "monsters": {
           "title": "Stream Monsters · League World Hybrid",
-          "version": "Retention Competitive Arcade · Versión 1.8",
+          "version": "Rules v7 Evolution Combat · Versión 1.9",
           "heroTitle": "Un regalo. Un huevo. Un monstruo para siempre.",
           "heroCopy": "El juego de colección en directo justo y pensado para vertical: los regalos aceleran el espectáculo, nunca la fuerza. Las 72 formas furry vienen listas para emitir.",
           "navLiveCenter": "1 · Centro en directo",
@@ -78,7 +78,7 @@
           "assetEmergencyTitle": "Respaldo de emergencia Kenney",
           "assetEmergencyCopy": "Solo se usa si falta o está dañado un recurso furry incluido.",
           "evolutionIntegrityTitle": "Biblioteca de evoluciones",
-          "evolutionIntegrityCopy": "Las etapas I, II y III son cosméticas y no cambian los atributos de combate.",
+          "evolutionIntegrityCopy": "Las etapas II y III añaden atributos elementales fijos y mejoras de habilidades según el rol.",
           "assetStageGalleryTitle": "72 formas",
           "area6": "Área 6",
           "communitySeasonsTitle": "Comunidad y temporadas",
@@ -280,7 +280,7 @@
           "monsterCardHint": "{monster} [slot] muestra la tarjeta",
           "evolution": "Evolución cosmética",
           "evolvedTitle": "{name} luce de una forma nueva",
-          "evolvedCopy": "La etapa de evolución {stage} está desbloqueada. Los valores y la propiedad no cambian.",
+          "evolvedCopy": "La etapa de evolución {stage} está desbloqueada. Sus nuevos atributos y habilidades ya están activos.",
           "monsterXpKicker": "XP de monstruo",
           "monsterXpTitle": "{name} obtiene +{amount} XP",
           "monsterXpCopy": "Cada combate legítimo fortalece al monstruo que luchó.",

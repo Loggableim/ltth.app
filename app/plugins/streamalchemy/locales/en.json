@@ -4,7 +4,7 @@
       "ui": {
         "monsters": {
           "title": "Stream Monsters · League World Hybrid",
-          "version": "Retention Competitive Arcade · Version 1.8",
+          "version": "Rules v7 Evolution Combat · Version 1.9",
           "heroTitle": "One gift. One egg. One monster forever.",
           "heroCopy": "The fair portrait-first live collecting game: gifts speed up the show, never combat strength. All 72 furry forms are bundled and broadcast-ready.",
           "navLiveCenter": "1 · Live Center",
@@ -78,7 +78,7 @@
           "assetEmergencyTitle": "Kenney emergency fallback",
           "assetEmergencyCopy": "Used only when a bundled furry asset is missing or damaged.",
           "evolutionIntegrityTitle": "Evolution library",
-          "evolutionIntegrityCopy": "Stages I, II and III remain cosmetic and never change combat stats.",
+          "evolutionIntegrityCopy": "Stages II and III add fixed elemental stats and unlock role-specific skill upgrades.",
           "assetStageGalleryTitle": "72 forms",
           "area6": "Area 6",
           "communitySeasonsTitle": "Community & Seasons",
@@ -280,7 +280,7 @@
           "monsterCardHint": "{monster} [slot] shows the card",
           "evolution": "Cosmetic evolution",
           "evolvedTitle": "{name} has a new glow",
-          "evolvedCopy": "Evolution stage {stage} is unlocked. Stats and ownership stay unchanged.",
+          "evolvedCopy": "Evolution stage {stage} is unlocked. Its new combat stats and skills are now active.",
           "monsterXpKicker": "Monster XP",
           "monsterXpTitle": "{name} gains +{amount} XP",
           "monsterXpCopy": "Every legitimate battle strengthens the monster that fought.",

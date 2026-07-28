@@ -4,7 +4,7 @@
       "ui": {
         "monsters": {
           "title": "Stream Monsters · League World Hybrid",
-          "version": "Retention Competitive Arcade · Version 1.8",
+          "version": "Rules v7 Evolution Combat · Version 1.9",
           "heroTitle": "Ein Geschenk. Ein Ei. Ein Monster für immer.",
           "heroCopy": "Das faire, portrait-first Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. Alle 72 Furry-Formen sind sendefertig gebündelt.",
           "navLiveCenter": "1 · Live Center",
@@ -78,7 +78,7 @@
           "assetEmergencyTitle": "Kenney-Notfallfallback",
           "assetEmergencyCopy": "Wird nur verwendet, wenn ein gebündeltes Furry-Asset fehlt oder beschädigt ist.",
           "evolutionIntegrityTitle": "Entwicklungsbibliothek",
-          "evolutionIntegrityCopy": "Stufe I, II und III bleiben kosmetisch und verändern keine Kampfwerte.",
+          "evolutionIntegrityCopy": "Stufe II und III erhöhen feste Elementwerte und schalten rollenspezifische Skill-Upgrades frei.",
           "assetStageGalleryTitle": "72 Formen",
           "area6": "Bereich 6",
           "communitySeasonsTitle": "Community & Saisons",
@@ -280,7 +280,7 @@
           "monsterCardHint": "{monster} [slot] zeigt die Karte",
           "evolution": "Kosmetische Evolution",
           "evolvedTitle": "{name} strahlt neu",
-          "evolvedCopy": "Entwicklungsstufe {stage} ist freigeschaltet. Werte und Besitz bleiben unverändert.",
+          "evolvedCopy": "Entwicklungsstufe {stage} ist freigeschaltet. Die neuen Kampfwerte und Skills werden jetzt aktiviert.",
           "monsterXpKicker": "Monster-XP",
           "monsterXpTitle": "{name} erhält +{amount} XP",
           "monsterXpCopy": "Jeder legitime Kampf stärkt das eingesetzte Monster.",

@@ -173,17 +173,17 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Status:** 🟡 Working / Open Beta
-**Version:** 1.8.0
+**Version:** 1.9.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
-Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier speisen dieselbe faire Brut-Warteschlange. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster kosmetisch weiter und kämpfen mit verdeckten A-, B- oder C-Entscheidungen.
+Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier speisen dieselbe faire Brut-Warteschlange. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster mit festen Elementwerten und neuen Skills weiter und kämpfen mit verdeckten A-, B- oder C-Entscheidungen.
 
 **Features:**
 - 🎁 Geschenk-Eier und optionale Gratis-Eier teilen drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
 - 🥚 Optionales Gratis-Ei: 60 Sekunden reserviert, danach öffentlich per `!adopt`; Cooldown 60–31.536.000 Sekunden, Standard 24 Stunden
 - 🐾 24 Monster-Vorlagen mit Evolution I, II und III – insgesamt 72 gebündelte Formen
-- ⚔️ Verdeckte Rules-v6-Duelle: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C, 15 Sekunden Statwahl und vollständiges Replay
+- ⚔️ Verdeckte Rules-v7-Duelle: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C, 15 Sekunden Statwahl und vollständiges Replay
 - ⚖️ Sechs Elementfamilien sowie Striker, Guardian, Trickster und Sustain mit simulatorisch geprüften Vor- und Nachteilen
 - 🏆 Getrennte Collector-Score- und Arena-Rating-Ranglisten
 - 📋 Gift-/siegunabhängige Daily-/Weekly-Quests; nur 10 Tagesduelle ändern Rating, jedes legitime Duell gibt Monster-XP

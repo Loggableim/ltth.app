@@ -173,17 +173,17 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Statut :** 🟡 Working / Open Beta
-**Version :** 1.8.0
+**Version :** 1.9.0
 **Auteur :** Pup Cid
 
 **Description :**
-Les cadeaux TikTok activés par le Creator et les œufs gratuits récurrents facultatifs partagent la même file d’incubation équitable. Les spectateurs collectionnent 72 formes Furry, évoluent de façon cosmétique et combattent avec des choix A, B ou C scellés.
+Les cadeaux TikTok activés par le Creator et les œufs gratuits récurrents facultatifs partagent la même file d’incubation équitable. Les spectateurs collectionnent 72 formes Furry, évoluent avec des statistiques élémentaires fixes et de nouvelles compétences, et combattent avec des choix A, B ou C scellés.
 
 **Fonctionnalités :**
 - 🎁 Les œufs-cadeaux et les œufs gratuits facultatifs partagent trois incubateurs, une file FIFO et une expiration après 24 heures
 - 🥚 Œuf gratuit facultatif : réservé 60 secondes puis public via `!adopt` ; délai de 60–31 536 000 secondes, 24 heures par défaut
 - 🐾 24 modèles en Évolution I, II et III – 72 formes intégrées
-- ⚔️ Combats Rules-v6 scellés : 10 secondes pour le monstre, 6 pour A/B/C, 15 pour les statistiques et replay complet
+- ⚔️ Combats Rules-v7 scellés : 10 secondes pour le monstre, 6 pour A/B/C, 15 pour les statistiques et replay complet
 - ⚖️ Six familles élémentaires et rôles Striker, Guardian, Trickster et Sustain aux avantages et faiblesses simulés
 - 🏆 Classements distincts Collector Score et Arena Rating
 - 📋 Quêtes quotidiennes et hebdomadaires sans cadeau ni victoire ; seuls 10 duels quotidiens modifient le classement, tous les combats légitimes donnent de l’XP
