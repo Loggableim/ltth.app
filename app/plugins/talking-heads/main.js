@@ -269,6 +269,29 @@ class TalkingHeadsPlugin {
   }
 
   /**
+   * Return an avatar already owned by this viewer that the normal renderer can
+   * use without creating a first-voice assignment. Manual assignments only
+   * participate in manual or hybrid mode, matching _handleTTSEvent.
+   * @param {string} userId
+   * @returns {object|null}
+   * @private
+   */
+  _getExistingCachedAvatar(userId) {
+    if (!userId || typeof this.cacheManager?.getAvatar !== 'function') return null;
+
+    const spriteMode = this.config.spriteMode || 'auto';
+    if (spriteMode === 'manual' || spriteMode === 'hybrid') {
+      const manualStyleKey = this._getManualStyleKeyForUser(userId);
+      if (manualStyleKey) {
+        const manualAvatar = this.cacheManager.getAvatar(userId, manualStyleKey);
+        if (manualAvatar) return manualAvatar;
+      }
+    }
+
+    return this.cacheManager.getAvatar(userId, 'asset-library');
+  }
+
+  /**
    * Resolve the configured local selection into a shared five-frame sprite set.
    * The files are materialized once per selection in the plugin data directory.
    * @private
@@ -515,6 +538,13 @@ class TalkingHeadsPlugin {
   async prepareAvatarForPlayback(meta = {}) {
     if (!this.config.enabled) {
       return { created: false, reason: 'disabled' };
+    }
+
+    // The TTS gate runs before renderer:start. Existing manual and legacy
+    // cache avatars therefore have to be recognized here, otherwise this
+    // first-voice path would persist and reveal a replacement Boba avatar.
+    if (this._getExistingCachedAvatar(meta.userId)) {
+      return { created: false, reason: 'existing-cache-avatar' };
     }
 
     const preparation = this.prepareAvatarAssignment({

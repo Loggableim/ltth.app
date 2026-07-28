@@ -129,4 +129,74 @@ describe('Talking Heads persistent avatar assignment', () => {
     });
     expect(plugin.animationController.startAnimation).toHaveBeenCalled();
   });
+
+  test('keeps an existing manual cache avatar out of the first-voice spin and uses it at renderer start', async () => {
+    const { plugin, api } = createPlugin();
+    const manualAvatar = {
+      userId: 'manual-user',
+      username: 'Manual User',
+      styleKey: 'manual:portrait-set',
+      sprites: {
+        idle_neutral: '/manual/idle.png',
+        blink: '/manual/blink.png',
+        speak_closed: '/manual/closed.png',
+        speak_mid: '/manual/mid.png',
+        speak_open: '/manual/open.png'
+      }
+    };
+    plugin.config.spriteMode = 'hybrid';
+    plugin.cacheManager = {
+      getAvatar: jest.fn((_userId, styleKey) => (
+        styleKey === 'manual:portrait-set' ? manualAvatar : null
+      )),
+      getManualSet: jest.fn(() => null)
+    };
+    plugin._getManualStyleKeyForUser = jest.fn(() => 'manual:portrait-set');
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => null),
+      assign: jest.fn()
+    };
+    plugin.assetSpriteLibrary.getLotteryCandidates = jest.fn(() => [fox]);
+
+    try {
+      await expect(plugin.prepareAvatarForPlayback({
+        playbackId: 'manual-cache-playback',
+        userId: 'manual-user',
+        username: 'Manual User',
+        hasAssignedVoice: true
+      })).resolves.toEqual(expect.objectContaining({
+        created: false,
+        reason: 'existing-cache-avatar'
+      }));
+
+      expect(plugin.avatarLotteryManager.assign).not.toHaveBeenCalled();
+      expect(plugin.io.emit).not.toHaveBeenCalledWith(
+        'talkingheads:avatar:spin:start',
+        expect.anything()
+      );
+
+      plugin._registerPlaybackBridge();
+      const handlers = new Map(api.pluginLoader.on.mock.calls);
+      await handlers.get('tts:renderer:started')({
+        playbackId: 'manual-cache-playback',
+        userId: 'manual-user',
+        username: 'Manual User',
+        hasAssignedVoice: true,
+        source: 'chat'
+      });
+
+      expect(plugin.animationController.startAnimation).toHaveBeenCalledWith(
+        'manual-user',
+        'Manual User',
+        manualAvatar.sprites,
+        expect.any(Number),
+        expect.objectContaining({
+          playbackId: 'manual-cache-playback',
+          externalLifecycle: true
+        })
+      );
+    } finally {
+      plugin._cancelPendingAvatarSpins();
+    }
+  });
 });
