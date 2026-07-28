@@ -19,6 +19,8 @@ describe('TikTok Login Kit review demo assets', () => {
     expect(storyboard).toContain('test-version mockup');
     expect(storyboard).toContain('Sandbox test account');
     expect(storyboard).toContain('not a production integration');
+    expect(storyboard).toContain('.browser_screenshots/nightmode-1680x1050/01-dashboard.png');
+    expect(storyboard).toContain('actual LTTH user-facing dashboard and connection UI');
     expect(storyboard).not.toContain('Production integration is available');
   });
 });
