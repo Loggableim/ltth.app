@@ -40,6 +40,7 @@ ROOT_DIRS = [
     "install",
     "js",
     "locales",
+    "oauth",
     "plugin-store/packages",
     "screenshots",
 ]

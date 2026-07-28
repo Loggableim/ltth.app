@@ -21,6 +21,7 @@ on:
       - 'install/**'
       - 'js/**'
       - 'locales/**'
+      - 'oauth/**'
       - 'manifest.json'
       - 'plugin-store.json'
       - 'plugin-store/packages/**'
