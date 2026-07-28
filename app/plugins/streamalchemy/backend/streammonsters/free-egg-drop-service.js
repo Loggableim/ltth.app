@@ -31,7 +31,14 @@ class FreeEggDropService {
     this.store.afterCommit(() => this.emit(event, payload));
   }
 
-  onFirstChat({ userId, streamKey, eventId, displayName = null, nowMs = this.now() } = {}) {
+  onFirstChat({
+    userId,
+    streamKey,
+    eventId,
+    displayName = null,
+    avatarRef = null,
+    nowMs = this.now()
+  } = {}) {
     const result = this.store.runInImmediateTransaction(() => {
       const input = this.normalizeInput({ userId, streamKey, eventId, nowMs });
       const duplicate = this.store.getFreeEggEvent(input.eventId);
@@ -52,6 +59,7 @@ class FreeEggDropService {
           offerId: existing.offer_id
         });
       }
+      const element = this.engine.selectRandomElement({ giftId: 0 });
       const offer = this.store.createFreeEggOffer({
         offerId: randomUUID(),
         streamKey: input.streamKey,
@@ -59,7 +67,12 @@ class FreeEggDropService {
         sourceDisplayName: displayName,
         offerEventId: input.eventId,
         offeredAtMs: input.nowMs,
-        reservedUntilMs: input.nowMs + RESERVATION_MS
+        reservedUntilMs: input.nowMs + RESERVATION_MS,
+        element,
+        variant: 'standard',
+        imageUrl: this.engine.createDefaultEggImage({ element }, 'standard'),
+        sourceAvatarRef: this.engine.eggStageProjector
+          ?.constructor.safeAssetReference?.(avatarRef) || null
       });
       const result = this.recordEvent(input, 'first_chat', {
         success: true,
@@ -110,7 +123,14 @@ class FreeEggDropService {
         claimedAtMs: input.nowMs
       });
       if (!claimedOffer) return this.recordEvent(input, 'adopt', { success: false, status: 'no_offer' });
-      const egg = this.engine.createFreeEgg({ userId: input.userId, createdAtMs: input.nowMs });
+      const egg = this.engine.createFreeEgg({
+        userId: input.userId,
+        createdAtMs: input.nowMs,
+        offerId: claimedOffer.offer_id,
+        element: claimedOffer.element,
+        displayName: this.store.getViewerDisplayName?.(input.userId) || null,
+        avatarRef: null
+      });
       this.store.createFreeEggClaim({
         claimId: randomUUID(),
         offerId: claimedOffer.offer_id,
@@ -131,7 +151,8 @@ class FreeEggDropService {
         offerId: claimedOffer.offer_id,
         sourceUserId: claimedOffer.source_user_id,
         userId: input.userId,
-        egg
+        egg,
+        eggStage: this.engine.eggStageProjector.projectEgg(egg)
       });
       return result;
     });
@@ -141,20 +162,33 @@ class FreeEggDropService {
 
   cleanupStream({ streamKey } = {}) {
     const normalizedStreamKey = this.normalizeStreamKey(streamKey);
-    const result = this.store.runInImmediateTransaction(() => (
-      this.store.cleanupFreeEggStream(normalizedStreamKey)
-    ));
+    const result = this.store.runInImmediateTransaction(() => {
+      const outstanding = this.store.getEggStageOffers(normalizedStreamKey);
+      const cleanup = this.store.cleanupFreeEggStream(normalizedStreamKey);
+      outstanding.forEach(offer => {
+        const expired = this.store.getFreeEggOffer(offer.offer_id);
+        this.emitAfterCommit('streammonsters:egg_stage_removed', {
+          eggStage: this.engine.eggStageProjector.projectOffer(expired)
+        });
+      });
+      return cleanup;
+    });
     this.rearmReleaseTimer();
     return result;
   }
 
   releaseExpiredOffers(streamKey = null, nowMs = this.now()) {
     const released = this.store.releaseExpiredFreeEggOffers(streamKey, nowMs);
-    released.forEach(offer => this.emitAfterCommit('streammonsters:free_egg_released', {
-      streamKey: offer.stream_key,
-      offerId: offer.offer_id,
-      sourceUserId: offer.source_user_id
-    }));
+    released.forEach(offer => {
+      this.emitAfterCommit('streammonsters:free_egg_released', {
+        streamKey: offer.stream_key,
+        offerId: offer.offer_id,
+        sourceUserId: offer.source_user_id
+      });
+      this.emitAfterCommit('streammonsters:free_egg_public', {
+        eggStage: this.engine.eggStageProjector.projectOffer(offer)
+      });
+    });
     return released;
   }
 

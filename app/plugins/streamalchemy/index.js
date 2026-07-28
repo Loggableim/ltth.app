@@ -1318,6 +1318,8 @@ class StreamAlchemyPlugin {
     for (let index = 0; index < repeatCount; index += 1) {
       const result = this.streamMonstersEngine.processGift({
         userId,
+        displayName: data.nickname || data.username || data.uniqueId || userId,
+        avatarRef: data.avatarRef || data.profilePictureUrl || null,
         giftId,
         giftName,
         coinValue,
@@ -1406,7 +1408,8 @@ class StreamAlchemyPlugin {
         userId,
         streamKey,
         eventId,
-        displayName: data.nickname || data.username || data.uniqueId || userId
+        displayName: data.nickname || data.username || data.uniqueId || userId,
+        avatarRef: data.avatarRef || data.profilePictureUrl || null
       });
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] Free egg observation failed: ${error.message}`, 'warn');

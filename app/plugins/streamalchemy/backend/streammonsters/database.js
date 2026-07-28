@@ -87,7 +87,12 @@ class StreamMonstersDatabase {
         expires_at_ms INTEGER,
         expired_at_ms INTEGER,
         visual_source TEXT NOT NULL DEFAULT 'egg_asset',
-        visual_key TEXT
+        visual_key TEXT,
+        provenance TEXT NOT NULL DEFAULT 'legacy',
+        ownership_state TEXT NOT NULL DEFAULT 'owned',
+        free_offer_id TEXT,
+        display_name TEXT,
+        avatar_ref TEXT
       );
       CREATE INDEX IF NOT EXISTS streammonsters_eggs_user_state
         ON streammonsters_eggs(user_id, state, created_at_ms);
@@ -193,6 +198,11 @@ class StreamMonstersDatabase {
         status TEXT NOT NULL CHECK (status IN ('reserved', 'public', 'claimed')),
         claimed_by_user_id TEXT,
         claimed_at_ms INTEGER,
+        element TEXT,
+        variant TEXT NOT NULL DEFAULT 'standard',
+        image_url TEXT,
+        source_avatar_ref TEXT,
+        stage_state TEXT NOT NULL DEFAULT 'reserved',
         UNIQUE (stream_key, source_user_id)
       );
       CREATE INDEX IF NOT EXISTS streammonsters_free_egg_offers_public_fifo
@@ -587,6 +597,16 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_eggs', 'expired_at_ms', 'INTEGER');
     this.ensureColumn('streammonsters_eggs', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_eggs', 'visual_key', 'TEXT');
+    this.ensureColumn('streammonsters_eggs', 'provenance', "TEXT NOT NULL DEFAULT 'legacy'");
+    this.ensureColumn('streammonsters_eggs', 'ownership_state', "TEXT NOT NULL DEFAULT 'owned'");
+    this.ensureColumn('streammonsters_eggs', 'free_offer_id', 'TEXT');
+    this.ensureColumn('streammonsters_eggs', 'display_name', 'TEXT');
+    this.ensureColumn('streammonsters_eggs', 'avatar_ref', 'TEXT');
+    this.ensureColumn('streammonsters_free_egg_offers', 'element', 'TEXT');
+    this.ensureColumn('streammonsters_free_egg_offers', 'variant', "TEXT NOT NULL DEFAULT 'standard'");
+    this.ensureColumn('streammonsters_free_egg_offers', 'image_url', 'TEXT');
+    this.ensureColumn('streammonsters_free_egg_offers', 'source_avatar_ref', 'TEXT');
+    this.ensureColumn('streammonsters_free_egg_offers', 'stage_state', "TEXT NOT NULL DEFAULT 'reserved'");
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
@@ -631,6 +651,18 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'best_battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.db.prepare(`
+      UPDATE streammonsters_eggs
+      SET provenance = CASE
+          WHEN provenance IN ('gift', 'free', 'legacy') THEN provenance
+          ELSE 'legacy'
+        END,
+        ownership_state = 'owned'
+      WHERE provenance IS NULL
+        OR provenance NOT IN ('gift', 'free', 'legacy')
+        OR ownership_state IS NULL
+        OR ownership_state != 'owned'
+    `).run();
     this.db.prepare(`
       UPDATE streammonsters_monsters
       SET evolution_essence_spent = CASE
@@ -977,8 +1009,9 @@ class StreamMonstersDatabase {
       INSERT INTO streammonsters_eggs (
         egg_id, user_id, gift_id, gift_name, element, egg_color, seed, state,
         created_at_ms, hatch_duration_ms, boost_ms, image_url, variant, ready_at_ms,
-        queued_at_ms, incubating_at_ms, expires_at_ms, expired_at_ms, visual_source, visual_key
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        queued_at_ms, incubating_at_ms, expires_at_ms, expired_at_ms, visual_source, visual_key,
+        provenance, ownership_state, free_offer_id, display_name, avatar_ref
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eggId, input.userId, input.giftId, input.giftName, input.element, input.eggColor,
       input.seed, input.state || 'incubating', input.createdAtMs, input.hatchDurationMs,
@@ -992,7 +1025,12 @@ class StreamMonstersDatabase {
       input.expiresAtMs ?? null,
       input.expiredAtMs ?? null,
       input.visualSource || 'egg_asset',
-      input.visualKey || null
+      input.visualKey || null,
+      ['gift', 'free', 'legacy'].includes(input.provenance) ? input.provenance : 'legacy',
+      'owned',
+      input.freeOfferId || null,
+      input.displayName || null,
+      input.avatarRef || null
     );
     return this.getEgg(eggId);
   }
@@ -1151,8 +1189,9 @@ class StreamMonstersDatabase {
     this.db.prepare(`
       INSERT INTO streammonsters_free_egg_offers (
         offer_id, stream_key, source_user_id, source_display_name, offer_event_id,
-        offered_at_ms, reserved_until_ms, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'reserved')
+        offered_at_ms, reserved_until_ms, status, element, variant, image_url,
+        source_avatar_ref, stage_state
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'reserved', ?, ?, ?, ?, 'reserved')
     `).run(
       input.offerId,
       input.streamKey,
@@ -1160,7 +1199,11 @@ class StreamMonstersDatabase {
       input.sourceDisplayName || null,
       input.offerEventId,
       input.offeredAtMs,
-      input.reservedUntilMs
+      input.reservedUntilMs,
+      input.element || null,
+      input.variant || 'standard',
+      input.imageUrl || null,
+      input.sourceAvatarRef || null
     );
     return this.getFreeEggOffer(input.offerId);
   }
@@ -1190,9 +1233,9 @@ class StreamMonstersDatabase {
     const hasStreamKey = streamKey !== undefined && streamKey !== null;
     const released = this.db.prepare(`
       UPDATE streammonsters_free_egg_offers
-      SET status = 'public'
+      SET status = 'public', stage_state = 'public'
       WHERE ${hasStreamKey ? 'stream_key = ? AND ' : ''}
-        status = 'reserved' AND reserved_until_ms <= ?
+        status = 'reserved' AND stage_state = 'reserved' AND reserved_until_ms <= ?
       RETURNING *
     `).all(...(hasStreamKey ? [streamKey, nowMs] : [nowMs]));
     return released.sort((left, right) => (
@@ -1216,7 +1259,7 @@ class StreamMonstersDatabase {
     return this.db.prepare(`
       SELECT * FROM streammonsters_free_egg_offers
       WHERE stream_key = ? AND source_user_id = ?
-        AND status = 'reserved' AND reserved_until_ms > ?
+        AND status = 'reserved' AND stage_state = 'reserved' AND reserved_until_ms > ?
       ORDER BY offered_at_ms ASC, offer_id ASC
       LIMIT 1
     `).get(streamKey, userId, nowMs) || null;
@@ -1225,7 +1268,7 @@ class StreamMonstersDatabase {
   getOldestPublicFreeEggOffer(streamKey) {
     return this.db.prepare(`
       SELECT * FROM streammonsters_free_egg_offers
-      WHERE stream_key = ? AND status = 'public'
+      WHERE stream_key = ? AND status = 'public' AND stage_state = 'public'
       ORDER BY offered_at_ms ASC, offer_id ASC
       LIMIT 1
     `).get(streamKey) || null;
@@ -1234,8 +1277,9 @@ class StreamMonstersDatabase {
   claimFreeEggOffer({ offerId, userId, claimedAtMs }) {
     const result = this.db.prepare(`
       UPDATE streammonsters_free_egg_offers
-      SET status = 'claimed', claimed_by_user_id = ?, claimed_at_ms = ?
-      WHERE offer_id = ? AND status IN ('reserved', 'public')
+      SET status = 'claimed', stage_state = 'claimed',
+        claimed_by_user_id = ?, claimed_at_ms = ?
+      WHERE offer_id = ? AND stage_state IN ('reserved', 'public')
     `).run(userId, claimedAtMs, offerId);
     return result.changes === 1 ? this.getFreeEggOffer(offerId) : null;
   }
@@ -1259,8 +1303,9 @@ class StreamMonstersDatabase {
 
   cleanupFreeEggStream(streamKey) {
     const offersRemoved = this.db.prepare(`
-      DELETE FROM streammonsters_free_egg_offers
-      WHERE stream_key = ? AND status != 'claimed'
+      UPDATE streammonsters_free_egg_offers
+      SET stage_state = 'expired'
+      WHERE stream_key = ? AND stage_state IN ('reserved', 'public')
     `).run(streamKey).changes;
     const eventsRemoved = this.db.prepare(`
       DELETE FROM streammonsters_free_egg_events
@@ -1276,6 +1321,36 @@ class StreamMonstersDatabase {
         )
     `).run(streamKey, streamKey, streamKey).changes;
     return { offersRemoved, eventsRemoved };
+  }
+
+  getEggStageEggs() {
+    return this.db.prepare(`
+      SELECT eggs.*,
+        CASE WHEN eggs.state = 'queued' THEN (
+          SELECT COUNT(*) + 1
+          FROM streammonsters_eggs earlier
+          WHERE earlier.user_id = eggs.user_id
+            AND earlier.state = 'queued'
+            AND (
+              earlier.queued_at_ms < eggs.queued_at_ms
+              OR (
+                earlier.queued_at_ms = eggs.queued_at_ms
+                AND earlier.egg_id < eggs.egg_id
+              )
+            )
+        ) ELSE NULL END AS queue_position
+      FROM streammonsters_eggs eggs
+      WHERE eggs.state IN ('queued', 'incubating', 'ready')
+      ORDER BY eggs.created_at_ms ASC, eggs.egg_id ASC
+    `).all();
+  }
+
+  getEggStageOffers(streamKey) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND stage_state IN ('reserved', 'public')
+      ORDER BY offered_at_ms ASC, offer_id ASC
+    `).all(streamKey || 'offline');
   }
 
   getEgg(eggId) {

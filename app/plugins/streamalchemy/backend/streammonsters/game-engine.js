@@ -1,5 +1,7 @@
 const { getTemplate, deterministicTemplateId } = require('./catalog');
 const { isHeartMeGift } = require('./gift-name');
+const EggStageProjector = require('./egg-stage-projector');
+const { safeAssetReference } = EggStageProjector;
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
@@ -35,6 +37,7 @@ class StreamMonstersEngine {
     this.emit = emit;
     this.now = now;
     this.getCommandReference = getCommandReference;
+    this.eggStageProjector = new EggStageProjector({ store, now });
     this.config = {
       hatchDurationMs: 2 * 60 * 1000,
       eggExpiryMs: 24 * 60 * 60 * 1000,
@@ -92,7 +95,15 @@ class StreamMonstersEngine {
     return this.store.runInTransaction(() => this.processGiftAtomic(input));
   }
 
-  processGiftAtomic({ userId, giftId, giftName, coinValue = 0, eventKey = null }) {
+  processGiftAtomic({
+    userId,
+    displayName = null,
+    avatarRef = null,
+    giftId,
+    giftName,
+    coinValue = 0,
+    eventKey = null
+  }) {
     if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
     const createdAtMs = this.now();
     const normalizedEventKey = eventKey ? String(eventKey) : null;
@@ -161,7 +172,10 @@ class StreamMonstersEngine {
       imageUrl: this.createDefaultEggImage(gift, variant),
       variant,
       visualSource: 'egg_asset',
-      visualKey: `egg:${gift.element.toLowerCase()}:${variant}`
+      visualKey: `egg:${gift.element.toLowerCase()}:${variant}`,
+      provenance: 'gift',
+      displayName,
+      avatarRef: safeAssetReference(avatarRef)
     });
     this.store.incrementViewer(userId, 'gifts_sent');
     this.progression?.recordGift(userId, this.streamKey);
@@ -181,13 +195,23 @@ class StreamMonstersEngine {
       event,
       hint: this.getCommandReference('inventory')
     });
+    this.emitAfterCommit('streammonsters:egg_landed', {
+      eggStage: this.eggStageProjector.projectEgg(egg)
+    });
     return { type: 'spawned', egg, gift };
   }
 
-  createFreeEgg({ userId, createdAtMs = this.now() }) {
+  createFreeEgg({
+    userId,
+    createdAtMs = this.now(),
+    offerId = null,
+    element: offeredElement = null,
+    displayName = null,
+    avatarRef = null
+  }) {
     if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
     const giftId = 0;
-    const element = this.selectRandomElement({ giftId });
+    const element = offeredElement || this.selectRandomElement({ giftId });
     const elementIndex = ELEMENTS.indexOf(element);
     const eggs = this.store.getViewerEggs(userId, 'incubating');
     const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
@@ -212,7 +236,11 @@ class StreamMonstersEngine {
       imageUrl: this.createDefaultEggImage({ element }, 'standard'),
       variant: 'standard',
       visualSource: 'egg_asset',
-      visualKey: `egg:${element.toLowerCase()}:standard`
+      visualKey: `egg:${element.toLowerCase()}:standard`,
+      provenance: 'free',
+      freeOfferId: offerId,
+      displayName,
+      avatarRef: safeAssetReference(avatarRef)
     });
     this.store.incrementStreamMetric(this.streamKey, 'eggs_spawned');
     return egg;
@@ -246,6 +274,9 @@ class StreamMonstersEngine {
         this.emitAfterCommit('streammonsters:egg_expired', {
           userId: egg.user_id,
           egg
+        });
+        this.emitAfterCommit('streammonsters:egg_stage_removed', {
+          eggStage: this.eggStageProjector.projectEgg(egg)
         });
       });
       this.store.promoteQueuedEggs(

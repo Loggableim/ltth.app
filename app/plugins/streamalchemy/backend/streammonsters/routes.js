@@ -10,6 +10,7 @@ const {
   resolveStageSkill
 } = require('./catalog');
 const { V7_RULES_VERSION } = require('./battle-rules-v5');
+const EggStageProjector = require('./egg-stage-projector');
 const {
   evolutionStatGrant,
   applyEvolutionGrant
@@ -67,6 +68,8 @@ class StreamMonstersRoutes {
     this.dataDir = dataDir || pluginDir;
     this.store = store;
     this.engine = engine;
+    this.eggStageProjector = engine?.eggStageProjector ||
+      new EggStageProjector({ store, now });
     this.progression = progression;
     this.collection = collection;
     this.battleMatchService = battleMatchService;
@@ -141,6 +144,7 @@ class StreamMonstersRoutes {
           queued: 0,
           ready: 0
         },
+        eggStage: this.eggStageProjector.snapshot(this.engine.streamKey || 'offline'),
         hype: this.publicHype(this.store.getStreamHype(this.engine.streamKey)),
         heartChain: this.publicHeartChain(
           this.collection?.getHeartChain(this.engine.streamKey || 'offline')

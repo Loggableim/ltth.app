@@ -448,7 +448,10 @@ describe('Stream Monsters recurring free egg drops', () => {
       expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
         .toBe('public');
       expect(subject.emitted.map(entry => entry.event))
-        .toEqual(['streammonsters:free_egg_released']);
+        .toEqual([
+          'streammonsters:free_egg_released',
+          'streammonsters:free_egg_public'
+        ]);
       reloaded.destroy();
     });
 

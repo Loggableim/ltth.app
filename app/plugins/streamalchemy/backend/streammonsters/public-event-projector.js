@@ -2,7 +2,11 @@ const { createHash } = require('crypto');
 
 const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:egg_spawned',
+  'streammonsters:egg_landed',
   'streammonsters:egg_ready',
+  'streammonsters:free_egg_public',
+  'streammonsters:free_egg_claimed',
+  'streammonsters:egg_stage_removed',
   'streammonsters:hatch_started',
   'streammonsters:egg_hatched',
   'streammonsters:monster_discovered',
