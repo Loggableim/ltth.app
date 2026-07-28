@@ -424,7 +424,103 @@
       position:absolute; left:0; right:0; bottom:0; z-index:1; height:var(--arena-safe-zone-height);
       visibility:hidden; pointer-events:none;
     }
+    #egg-shelf {
+      position:absolute; right:3%; bottom:26%; left:3%; z-index:18; height:112px;
+      display:flex; align-items:flex-end; justify-content:center; gap:10px; overflow:visible;
+      pointer-events:none;
+    }
+    #egg-shelf [data-egg-slots] {
+      display:flex; align-items:flex-end; justify-content:center; gap:clamp(5px,.8vw,11px);
+      min-width:0;
+    }
+    .egg-shelf-item {
+      position:relative; display:grid; place-items:end center; width:clamp(48px,6.1vw,82px);
+      height:clamp(64px,8.2vw,106px); transform-origin:50% 100%;
+      animation:egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18)
+        var(--egg-motion-delay,0ms) both;
+    }
+    .egg-shelf-art {
+      display:grid; place-items:center; width:100%; height:100%; border-radius:50%;
+      filter:drop-shadow(0 12px 9px #000b);
+    }
+    .egg-shelf-art img { width:100%; height:100%; object-fit:contain; }
+    .egg-shelf-art[data-fallback="true"] { font-size:clamp(38px,5vw,68px); }
+    .egg-shelf-item.gold-ring .egg-shelf-art {
+      outline:3px solid #ffd76f; outline-offset:2px;
+      box-shadow:0 0 22px #ffd76fa8,inset 0 0 15px #fff2a84d;
+    }
+    .egg-shelf-item.public-free {
+      animation:
+        egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18)
+          var(--egg-motion-delay,0ms) both,
+        egg-free-jump 1.2s ease-in-out calc(var(--egg-motion-delay,0ms) + 900ms) 3,
+        egg-free-shake .34s ease-in-out calc(var(--egg-motion-delay,0ms) + 4.5s) 3;
+    }
+    [data-adopt-callout] {
+      position:absolute; top:-18px; left:50%; padding:5px 9px; border:2px solid #fff2ad;
+      border-radius:999px; color:#17101f; background:#ffd76f; box-shadow:0 4px 18px #0009;
+      transform:translateX(-50%); font-size:clamp(11px,1.15vw,16px); font-weight:1000;
+      letter-spacing:.04em; white-space:nowrap;
+    }
+    #egg-shelf [data-egg-overflow] {
+      position:relative; display:grid; place-items:end center; width:clamp(54px,6.5vw,88px);
+      height:clamp(68px,8.5vw,110px);
+    }
+    #egg-shelf [data-egg-overflow][hidden] { display:none; }
+    #egg-shelf [data-egg-overflow] .egg-overflow-preview {
+      position:absolute; inset:0; opacity:.72; transform:translate(7px,-5px) scale(.88);
+      animation:egg-overflow-rotate .46s ease both;
+    }
+    #egg-shelf [data-egg-overflow] strong {
+      position:relative; z-index:2; margin:0 2px 5px auto; padding:6px 9px; border-radius:999px;
+      color:#151122; background:#f8f7ff; box-shadow:0 5px 18px #000b; font-size:15px;
+    }
+    #arena-element-light {
+      position:absolute; inset:0; z-index:1; opacity:0; transition:opacity .2s;
+      background:radial-gradient(circle at 50% 72%,var(--arena-element-color,#a984ff) 0,transparent 54%);
+      mix-blend-mode:screen;
+    }
+    #arena-element-light.visible { opacity:.34; }
+    #arena-element-light[data-element="ember"] { --arena-element-color:#ff7043; }
+    #arena-element-light[data-element="tide"] { --arena-element-color:#45c8ff; }
+    #arena-element-light[data-element="grove"] { --arena-element-color:#68d391; }
+    #arena-element-light[data-element="gale"] { --arena-element-color:#a7f3d0; }
+    #arena-element-light[data-element="volt"] { --arena-element-color:#ffe066; }
+    #arena-element-light[data-element="lunar"] { --arena-element-color:#c7a4ff; }
+    #arena-combo {
+      position:absolute; top:28%; left:50%; z-index:20; opacity:0;
+      transform:translate(-50%,-8px) scale(.8); color:#fff4a8;
+      font-size:clamp(24px,4.6vw,64px); font-weight:1000; font-style:italic;
+      letter-spacing:.06em; text-shadow:0 0 22px #ff7b58,0 6px 3px #000d;
+    }
+    #arena-combo.visible { opacity:1; animation:arena-combo-pop .34s cubic-bezier(.12,.82,.2,1.2); }
+    .arena-fighter.shielding .arena-sprite-wrap {
+      filter:drop-shadow(0 0 30px #55dcff) brightness(1.14);
+    }
     @keyframes arena-drift { to { background-position:90px -70px,-120px 80px,150px -100px; } }
+    @keyframes egg-shelf-land {
+      0% { opacity:0; transform:translate(var(--egg-fly-x),-45vh) rotate(24deg) scale(.42); }
+      62% { opacity:1; transform:translate(0,calc(-1 * var(--egg-bounce))) rotate(-5deg) scale(1.04); }
+      78% { transform:translate(calc((var(--egg-lane) - 1.5) * 2px),4px) rotate(3deg) scale(1.08,.91); }
+      100% { opacity:1; transform:rotate(var(--egg-settle-rotation)); }
+    }
+    @keyframes egg-free-jump {
+      0%,100% { transform:rotate(var(--egg-settle-rotation)); }
+      48% { transform:translateY(-18px) rotate(calc(var(--egg-settle-rotation) * -1)); }
+    }
+    @keyframes egg-free-shake {
+      0%,100% { transform:rotate(var(--egg-settle-rotation)); }
+      30% { transform:rotate(-10deg); }
+      70% { transform:rotate(10deg); }
+    }
+    @keyframes egg-overflow-rotate {
+      from { opacity:0; transform:translate(16px,-8px) scale(.72) rotate(10deg); }
+    }
+    @keyframes arena-combo-pop {
+      0% { opacity:0; transform:translate(-50%,12px) scale(.55) rotate(-5deg); }
+      70% { opacity:1; transform:translate(-50%,-6px) scale(1.12) rotate(2deg); }
+      100% { opacity:1; transform:translate(-50%,0) scale(1); }
+    }
     @keyframes arena-skill-ready {
       to { filter:brightness(1.12); box-shadow:0 0 30px #ffc95266,inset 0 0 22px #ffdf6b22; }
     }
@@ -827,7 +923,12 @@
     </div>
   </section>
   </div>
+  <section id="egg-shelf" data-gameplay-boundary="74" aria-label="Living egg shelf">
+    <div data-egg-slots></div>
+    <div data-egg-overflow hidden></div>
+  </section>
   <section id="battle" aria-label="Stream Monsters Arena" aria-live="polite">
+    <div id="arena-element-light" aria-hidden="true"></div>
     <div id="arena-topline">
       <span id="arena-round">Monsterwahl</span>
       <span id="arena-countdown"></span>
@@ -907,6 +1008,7 @@
     </article>
     <div id="arena-special" aria-hidden="true"></div>
     <div id="arena-impact" aria-hidden="true"></div>
+    <div id="arena-combo" aria-hidden="true"></div>
     <div id="arena-feed">Die Arena wird vorbereitet …</div>
   </section>
   <div id="arena-chat-safe-zone" aria-hidden="true"></div>
@@ -918,6 +1020,7 @@
 <script src="/js/i18n-client.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-effects-renderer.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-egg-stage-view.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-arena-director.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-audio-engine.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-arena-view.js"></script>
@@ -1117,6 +1220,18 @@
     battle: node('battle'),
     config: layoutConfig
   });
+  const eggStageView = window.StreamMonstersEggStageView?.createEggStageView?.({
+    document,
+    reducedMotion:Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches),
+    setTimeout:window.setTimeout.bind(window),
+    clearTimeout:window.clearTimeout.bind(window),
+    setInterval:window.setInterval.bind(window),
+    clearInterval:window.clearInterval.bind(window)
+  }) || {
+    applyEvent:() => false,
+    applySnapshot:() => ({ total:0, visible:[], overflow:null }),
+    destroy:() => {}
+  };
   window.addEventListener('resize', () => effectsRenderer.resize());
   const eventQueue = window.StreamMonstersOverlayRuntime.createPriorityQueue({
     maxSize: 30,
@@ -1547,6 +1662,7 @@
     });
     audioEngine.configure(data?.config?.audioChannels || {});
     layoutController.apply();
+    eggStageView.applySnapshot(data?.eggStage || []);
     arenaView.applySnapshot(data?.battle || { matches:[] });
   };
   const legacyFighter = (monster, slot) => {
@@ -1634,6 +1750,23 @@
           Number(data?.eventCursor) || 0,
           ...recentEvents.map(event => Number(event?.sequence) || 0)
         );
+      }
+      return;
+    }
+    if ([
+      'egg_landed',
+      'free_egg_public',
+      'free_egg_claimed',
+      'egg_stage_removed'
+    ].includes(type)) {
+      eggStageView.applyEvent(type, data);
+      if (type === 'egg_landed' || type === 'free_egg_public') {
+        return effectsRenderer.play('spawn', {
+          element:data?.eggStage?.element,
+          vfxKey:`egg-shelf:${data?.eggStage?.visualId || 'arrival'}`,
+          origin:{ x:.5, y:.7 },
+          scale:.8
+        });
       }
       return;
     }
@@ -2166,6 +2299,7 @@
       queueWakeDeadline = 0;
     }
     arenaView.destroy?.();
+    eggStageView.destroy?.();
   };
   window.addEventListener('pagehide', stopOverlayLifecycle, { once:true });
   window.addEventListener('beforeunload', stopOverlayLifecycle, { once:true });
@@ -2191,6 +2325,10 @@
     'streammonsters:stream_started':'stream_started',
     'streammonsters:stance_revealed':'stance_revealed',
     'streammonsters:egg_spawned':'egg_spawned',
+    'streammonsters:egg_landed':'egg_landed',
+    'streammonsters:free_egg_public':'free_egg_public',
+    'streammonsters:free_egg_claimed':'free_egg_claimed',
+    'streammonsters:egg_stage_removed':'egg_stage_removed',
     'streammonsters:egg_boosted':'egg_boosted',
     'streammonsters:gift_combo':'gift_combo',
     'streammonsters:hype_changed':'hype_changed',

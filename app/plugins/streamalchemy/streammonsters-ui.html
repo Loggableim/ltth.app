@@ -158,6 +158,22 @@
     .stage-monster.left { left:4%; }
     .stage-monster.right { right:4%; transform:scaleX(-1); }
     .stage-callout { position:absolute; left:50%; top:14%; transform:translateX(-50%); width:max-content; max-width:80%; padding:7px 10px; border:1px solid #bca9ff; border-radius:12px; background:#1c1740e8; text-align:center; font-size:11px; font-weight:900; }
+    .creator-egg-shelf-preview {
+      display:flex; align-items:flex-end; justify-content:center; gap:7px; min-height:84px;
+      margin-top:12px; padding:10px 12px 8px; border:1px solid #6b5fa1;
+      border-radius:15px; background:linear-gradient(180deg,#171e38,#0b1020);
+    }
+    .creator-egg-shelf-preview span {
+      display:grid; place-items:center; width:46px; height:58px; border-radius:50%;
+      background:radial-gradient(circle at 45% 35%,#fff8,#a984ff 45%,#352766 80%);
+      box-shadow:0 8px 13px #0009; font-size:28px;
+    }
+    .creator-egg-shelf-preview .free {
+      outline:3px solid #ffd76f; box-shadow:0 0 18px #ffd76f99,0 8px 13px #0009;
+    }
+    .creator-egg-shelf-preview strong {
+      align-self:center; padding:6px 9px; border-radius:999px; color:#161022; background:#fff;
+    }
     .asset-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
     .asset-stat { padding:13px; border:1px solid #3a4b70; border-radius:13px; background:#0d1424; }
     .asset-stat strong,.asset-stat span { display:block; }
@@ -240,6 +256,7 @@
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveObsLabel">OBS</span><strong id="liveObs">configured</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.livePluginLabel">Plugin</span><strong id="livePlugin">enabled</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveQueueLabel">Egg queue</span><strong id="liveQueue">0</strong></div>
+      <div class="status-tile"><span>Living egg shelf</span><strong id="liveEggShelf">0 / 8 · +0</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveHypeLabel">Hype</span><strong id="liveHype">0%</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveBattleLabel">Battle phase</span><strong id="liveBattlePhase">idle</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveCountdownLabel">Countdown</span><strong id="liveCountdown">—</strong></div>
@@ -469,6 +486,11 @@
             <div class="stage-chat-safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
           </div>
         </div>
+        <div id="creatorEggShelfPreview" class="creator-egg-shelf-preview" aria-label="Living egg shelf preview">
+          <span class="free" title="Public free egg">🥚</span><span>🥚</span><span>🥚</span>
+          <span>🥚</span><span>🥚</span><span>🥚</span><span>🥚</span><span>🥚</span><strong>+3</strong>
+        </div>
+        <p id="elementalHourExplanation" class="muted">Elemental Hour shortens matching egg hatch time by 30 seconds and grants +10 Hype. It never changes combat stats or hatch quality.</p>
         <div id="safeZonePreview" class="safe-zone portrait" role="img" aria-label="Anchor collision preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeZonePreviewLabel">
           <div id="safeLogo" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLogo">Logo</div>
           <div id="safeHype" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneHype">Hype</div>
@@ -1465,6 +1487,10 @@
       liveObs:localizedStatus(view.obs),
       livePlugin:localizedStatus(view.plugin),
       liveQueue:String(view.queue),
+      liveEggShelf:(() => {
+        const shelf = creatorRuntime.buildEggShelfDiagnostics(liveState.eggStage);
+        return `${shelf.visible} / 8 · +${shelf.overflow} · ${shelf.publicFree} public`;
+      })(),
       liveHype:`${view.hype}%`,
       liveBattlePhase:localizedStatus(view.battlePhase),
       liveCountdown:view.countdownMs > 0 ? formatDuration(view.countdownMs) : '—',

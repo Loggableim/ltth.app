@@ -481,7 +481,13 @@
         durationMs: 280,
         actorSlot,
         targetSlot,
-        element: action.skill?.element || null
+        element: action.skill?.element || null,
+        audioCue: `element.${String(action.skill?.element || '').toLowerCase()}`,
+        effect: {
+          scene: 'attack',
+          element: action.skill?.element || null,
+          vfxKey: action.skill?.vfxKey || null
+        }
       });
       cursor += 280;
     }
@@ -490,7 +496,13 @@
         type: 'shield',
         atMs: cursor,
         durationMs: 180,
-        targetSlot
+        targetSlot,
+        audioCue: 'arena.shield',
+        effect: {
+          scene: 'defense',
+          element: action.targetState?.element || action.skill?.element || null,
+          vfxKey: `${action.skill?.vfxKey || 'jackpot'}:shield`
+        }
       });
       cursor += 180;
     }

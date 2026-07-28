@@ -586,6 +586,12 @@
             ].filter(Boolean).join(' — ')
           );
           actor?.classList.add('telegraphing');
+          const elementLight = node('arena-element-light');
+          if (elementLight) {
+            elementLight.dataset.element = String(action.skill?.element || '').toLowerCase();
+            elementLight.classList.add('visible');
+          }
+          if (arena) arena.dataset.element = String(action.skill?.element || '').toLowerCase();
           const scene = String(action.skill?.type || '').toLowerCase();
           if (scene && scene !== 'special') {
             fire(effects, scene === 'defense' ? 'defense' : 'attack', {
@@ -612,6 +618,10 @@
         case 'element_trail':
           fireTimelineOutputs(beat, action);
           break;
+        case 'shield':
+          target?.classList.add('shielding');
+          fireTimelineOutputs(beat, action);
+          break;
         case 'impact': {
           const hit = action.hits?.find(candidate => (
             numeric(candidate.index) === beat.hitIndex
@@ -626,6 +636,13 @@
           );
           const impact = node('arena-impact');
           impact?.classList.add('visible');
+          const combo = node('arena-combo');
+          if (combo) {
+            const hitIndex = Math.max(1, numeric(beat.hitIndex, 1));
+            combo.textContent = hitIndex > 1 ? `${hitIndex} HIT COMBO` : 'HIT';
+            combo.dataset.hits = String(hitIndex);
+            combo.classList.add('visible');
+          }
           fire(audio, 'arena.hit', {
             eventId: beat.beatId
               ? `${beat.beatId}:hit:${beat.hitIndex}`
@@ -743,9 +760,11 @@
           break;
         case 'recover':
           actor?.classList.remove('telegraphing', 'advancing');
-          target?.classList.remove('hit', 'evaded', 'status-hit', 'retaliation-hit');
+          target?.classList.remove('hit', 'evaded', 'status-hit', 'retaliation-hit', 'shielding');
           arena?.classList.remove('hit-stop', 'camera-impulse');
           node('arena-special')?.classList.remove('visible');
+          node('arena-combo')?.classList.remove('visible');
+          node('arena-element-light')?.classList.remove('visible');
           break;
         case 'winner':
           actor?.classList.add('winner');

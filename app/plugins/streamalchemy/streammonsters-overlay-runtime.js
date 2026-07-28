@@ -18,9 +18,13 @@
     'battle_choices_revealed',
     'battle_cancelled',
     'egg_spawned',
+    'egg_landed',
     'egg_ready',
     'hatch_started',
     'egg_hatched',
+    'free_egg_public',
+    'free_egg_claimed',
+    'egg_stage_removed',
     'monster_discovered',
     'monster_evolved',
     'monster_visual_evolved'
@@ -343,7 +347,12 @@
       ).trim();
       if (correlationId) return `critical:${correlationId}`;
       if (type.startsWith('egg_') || type === 'hatch_started') {
-        const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId;
+        const eggId = data.eggStage?.visualId || data.egg_stage?.visualId ||
+          data.egg?.egg_id || data.egg?.id || data.eggId || data.userId;
+        return eggId ? `hatch:${eggId}` : null;
+      }
+      if (type.startsWith('free_egg_')) {
+        const eggId = data.eggStage?.visualId || data.egg_stage?.visualId;
         return eggId ? `hatch:${eggId}` : null;
       }
       if (type === 'monster_evolved' || type === 'monster_visual_evolved') {
@@ -371,9 +380,13 @@
         'battle_started',
         'battle_completed',
         'egg_spawned',
+        'egg_landed',
         'egg_ready',
         'hatch_started',
-        'egg_hatched'
+        'egg_hatched',
+        'free_egg_public',
+        'free_egg_claimed',
+        'egg_stage_removed'
       ].includes(type)) {
         return `${targetGroupKey}:${type}`;
       }

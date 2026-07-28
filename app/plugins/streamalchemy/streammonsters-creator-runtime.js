@@ -307,6 +307,27 @@
     };
   }
 
+  function buildEggShelfDiagnostics(eggStage = []) {
+    const eggs = Array.isArray(eggStage) ? eggStage : [];
+    const publicFree = eggs.filter(egg => (
+      egg?.provenance === 'free' &&
+      egg?.state === 'public' &&
+      egg?.adoptable === true
+    )).length;
+    const ready = eggs.filter(egg => egg?.state === 'ready').length;
+    const incubating = eggs.filter(egg => (
+      egg?.state === 'incubating' || egg?.state === 'queued'
+    )).length;
+    return {
+      total: eggs.length,
+      visible: Math.min(8, eggs.length),
+      overflow: Math.max(0, eggs.length - 8),
+      publicFree,
+      ready,
+      incubating
+    };
+  }
+
   function buildAssetStageEntries({ assets = [] } = {}) {
     const seen = new Set();
     return assets.flatMap(asset => {
@@ -496,6 +517,7 @@
     buildCommandDiagnostics,
     buildConfigPayload,
     buildCreatorLiveView,
+    buildEggShelfDiagnostics,
     buildDexSlots,
     buildRepairRequest,
     demoTranslationKey,
