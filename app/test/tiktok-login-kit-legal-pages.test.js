@@ -17,6 +17,8 @@ describe('TikTok Login Kit legal pages', () => {
     expect(terms).toContain('TikTok Login Kit');
     expect(privacy).toContain('ltth.app');
     expect(privacy).toContain('TikTok Login Kit');
+    expect(terms).toContain('LTTHLayout.init()');
+    expect(privacy).toContain('LTTHLayout.init()');
     expect(footer).toContain('href="/terms-of-service.html"');
     expect(footer).toContain('href="/privacy-policy.html"');
   });
