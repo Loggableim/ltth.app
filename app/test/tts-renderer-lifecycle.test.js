@@ -258,6 +258,53 @@ describe('TTS renderer lifecycle', () => {
     expect(lifecycleEvents(plugin.api, 'tts:renderer:ended')).toHaveLength(1);
   });
 
+  test('settles queued normal playback immediately once Dashboard reports an initialization failure', async () => {
+    const plugin = createPlugin();
+    plugin._prepareAvatarForPlayback = jest.fn().mockResolvedValue({ state: 'existing', created: false });
+    plugin._resolvePlaybackDuration = jest.fn(() => ({ durationMs: 10, source: 'test', format: 'wav' }));
+    const playback = plugin._playAudio({
+      id: 'dashboard-init-failed',
+      userId: 'viewer-init-failed',
+      username: 'Viewer Init Failed',
+      text: 'This message must not wait for a watchdog.',
+      voice: 'voice-init-failed',
+      engine: 'tiktok',
+      hasAssignedVoice: true,
+      source: 'chat',
+      audioData: 'base64-audio',
+      volume: 75,
+      speed: 1,
+      isStreaming: false
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(lifecycleEvents(plugin.api, 'tts:play')).toEqual([
+      expect.objectContaining({ playbackId: 'dashboard-init-failed' })
+    ]);
+    expect(plugin._handleRendererLifecycle('tts:renderer:failed', {
+      playbackId: 'dashboard-init-failed',
+      reason: 'InvalidCharacterError'
+    })).toBe(true);
+    expect(plugin._handleRendererLifecycle('tts:renderer:failed', {
+      playbackId: 'dashboard-init-failed',
+      reason: 'InvalidCharacterError'
+    })).toBe(false);
+
+    await expect(playback).resolves.toBeUndefined();
+    expect(plugin._activeRendererPlaybacks.has('dashboard-init-failed')).toBe(false);
+    const failures = lifecycleEvents(plugin.api, 'tts:renderer:failed');
+    expect(failures).toEqual([
+      expect.objectContaining({
+        playbackId: 'dashboard-init-failed',
+        reason: 'InvalidCharacterError'
+      })
+    ]);
+    expect(failures[0]).not.toHaveProperty('audioData');
+    expect(failures[0]).not.toHaveProperty('text');
+  });
+
   test('uses the same renderer contract for buffered streaming audio', async () => {
     const plugin = createPlugin();
     const stream = new PassThrough();

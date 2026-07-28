@@ -3571,6 +3571,10 @@ async function playDashboardTTS(data) {
 
     } catch (error) {
         console.error('❌ [Dashboard] Error in playDashboardTTS:', error);
+        socket?.emit('tts:renderer:failed', {
+            playbackId,
+            reason: error?.name || 'renderer-initialization-failed'
+        });
     }
 }
 
@@ -3744,6 +3748,10 @@ async function playStreamingAudio(id, source = null) {
     } catch (error) {
         console.error(`❌ [Dashboard] Error in playStreamingAudio for ${id}:`, error);
         streamingBuffers.delete(id);
+        socket?.emit('tts:renderer:failed', {
+            playbackId: id,
+            reason: error?.name || 'renderer-initialization-failed'
+        });
     }
 }
 

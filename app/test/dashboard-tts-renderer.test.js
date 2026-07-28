@@ -70,4 +70,29 @@ describe('Dashboard TTS renderer acknowledgement', () => {
       reason: 'NotAllowedError'
     }));
   });
+
+  test('reports one terminal failure when output routing rejects before native playback', async () => {
+    const audio = new FakeAudio();
+    const socket = { emit: jest.fn() };
+    const routingError = Object.assign(new Error('routing unavailable'), { name: 'OutputRoutingError' });
+    const renderer = new DashboardTTSRenderer({ audio, socket });
+
+    await expect(renderer.play({
+      playbackId: 'routing-init-failed',
+      source: 'chat',
+      route: () => Promise.reject(routingError)
+    })).resolves.toBe(false);
+
+    const failures = socket.emit.mock.calls.filter(([event]) => event === 'tts:renderer:failed');
+    expect(audio.play).not.toHaveBeenCalled();
+    expect(failures).toEqual([
+      ['tts:renderer:failed', {
+        playbackId: 'routing-init-failed',
+        currentTimeMs: 0,
+        reason: 'OutputRoutingError'
+      }]
+    ]);
+    expect(failures[0][1]).not.toHaveProperty('audioData');
+    expect(failures[0][1]).not.toHaveProperty('text');
+  });
 });
