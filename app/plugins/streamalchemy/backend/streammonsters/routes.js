@@ -1221,6 +1221,13 @@ class StreamMonstersRoutes {
       : 86_400;
   }
 
+  normalizeAutoHatchActiveWindowSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
+      ? Math.round(seconds)
+      : 300;
+  }
+
   normalizeTutorialHintIntervalSeconds(value) {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 300
@@ -1240,6 +1247,18 @@ class StreamMonstersRoutes {
       const seconds = Number(input.freeEggCooldownSeconds);
       if (!Number.isFinite(seconds) || seconds < 60 || seconds > 31_536_000) {
         throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'autoHatchActiveViewers') &&
+      typeof input.autoHatchActiveViewers !== 'boolean'
+    ) {
+      throw new Error('STREAM_MONSTERS_AUTO_HATCH_ENABLED_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'autoHatchActiveWindowSeconds')) {
+      const seconds = Number(input.autoHatchActiveWindowSeconds);
+      if (!Number.isFinite(seconds) || seconds < 30 || seconds > 900) {
+        throw new Error('STREAM_MONSTERS_AUTO_HATCH_WINDOW_INVALID');
       }
     }
     if (
@@ -1527,6 +1546,14 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (typeof input.autoHatchActiveViewers === 'boolean') {
+      safe.autoHatchActiveViewers = input.autoHatchActiveViewers;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'autoHatchActiveWindowSeconds')) {
+      safe.autoHatchActiveWindowSeconds = this.normalizeAutoHatchActiveWindowSeconds(
+        input.autoHatchActiveWindowSeconds
+      );
+    }
     if (typeof input.tutorialHintsEnabled === 'boolean') {
       safe.tutorialHintsEnabled = input.tutorialHintsEnabled;
     }
@@ -1725,6 +1752,10 @@ class StreamMonstersRoutes {
       result.freeEggDropsEnabled = config.freeEggDropsEnabled !== false;
       result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
         config.freeEggCooldownSeconds
+      );
+      result.autoHatchActiveViewers = config.autoHatchActiveViewers !== false;
+      result.autoHatchActiveWindowSeconds = this.normalizeAutoHatchActiveWindowSeconds(
+        config.autoHatchActiveWindowSeconds
       );
       result.tutorialHintsEnabled = config.tutorialHintsEnabled !== false;
       result.tutorialHintIntervalSeconds = this.normalizeTutorialHintIntervalSeconds(

@@ -99,6 +99,7 @@ function publicViewerName(value) {
   const normalized = candidate?.replace(/^@+/, '');
   if (
     !normalized ||
+    /^unknown$/i.test(normalized) ||
     /^\d{8,}$/.test(normalized) ||
     /^tiktok:\d+$/i.test(normalized)
   ) {

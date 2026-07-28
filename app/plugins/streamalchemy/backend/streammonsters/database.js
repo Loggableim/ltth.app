@@ -1438,6 +1438,7 @@ class StreamMonstersDatabase {
         ) ELSE NULL END AS queue_position
       FROM streammonsters_eggs eggs
       WHERE eggs.state IN ('queued', 'incubating', 'ready')
+        AND COALESCE(eggs.provenance, 'legacy') <> 'free'
       ORDER BY eggs.created_at_ms ASC, eggs.egg_id ASC
     `).all();
   }
@@ -1459,6 +1460,14 @@ class StreamMonstersDatabase {
       ? 'SELECT * FROM streammonsters_eggs WHERE user_id = ? AND state = ? ORDER BY created_at_ms ASC, egg_id ASC'
       : 'SELECT * FROM streammonsters_eggs WHERE user_id = ? ORDER BY created_at_ms ASC, egg_id ASC';
     return state ? this.db.prepare(sql).all(userId, state) : this.db.prepare(sql).all(userId);
+  }
+
+  getReadyEggs() {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_eggs
+      WHERE state = 'ready'
+      ORDER BY ready_at_ms ASC, created_at_ms ASC, egg_id ASC
+    `).all();
   }
 
   getQueuedEggs(userId = null) {

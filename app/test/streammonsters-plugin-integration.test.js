@@ -95,17 +95,17 @@ function expectPublicChatPrivacy(entries) {
 }
 
 describe('Stream Monsters plugin integration', () => {
-  test('starts the real match service on Rules v7 for new matches', async () => {
+  test('starts the real match service on Rules v8 for new matches', async () => {
     const { api } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
 
     await plugin.init();
 
-    expect(plugin.config.streamMonsters.rulesVersion).toBe(7);
-    expect(plugin.streamMonstersBattleMatchService.rulesVersion).toBe(7);
+    expect(plugin.config.streamMonsters.rulesVersion).toBe(8);
+    expect(plugin.streamMonstersBattleMatchService.rulesVersion).toBe(8);
     expect(plugin.streamMonstersBattleMatchService.getPublicSnapshot())
       .toEqual(expect.objectContaining({
-        rulesVersion: 7,
+        rulesVersion: 8,
         matches: []
       }));
     await plugin.destroy();
@@ -273,6 +273,55 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersReadyTimer).toBeNull();
     expect(plugin.streamMonstersEngine.recentGifts.size).toBe(0);
     expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
+  });
+
+  test('uses recent same-stream chat or gift activity for timer-driven auto hatch', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersEngine.setStreamKey('creator:active-egg-stream');
+
+    expect(plugin.streamMonstersViewerActivity).toBeDefined();
+    expect(typeof plugin.markStreamMonstersViewerActive).toBe('function');
+    expect(typeof plugin.runStreamMonstersReadyTimer).toBe('function');
+    if (
+      !plugin.streamMonstersViewerActivity ||
+      typeof plugin.markStreamMonstersViewerActive !== 'function' ||
+      typeof plugin.runStreamMonstersReadyTimer !== 'function'
+    ) {
+      await plugin.destroy();
+      return;
+    }
+
+    const activeViewer = plugin.resolveStreamMonstersViewerId({
+      platformUserId: 'platform-active-viewer',
+      legacyUserId: 'active-viewer'
+    });
+    expect(plugin.markStreamMonstersViewerActive(activeViewer, 'chat')).toBe(true);
+    expect(plugin.markStreamMonstersViewerActive('follow-only-viewer', 'follow')).toBe(false);
+
+    const autoHatch = jest.spyOn(plugin.streamMonstersEngine, 'autoHatchReadyEggs')
+      .mockImplementation(({ isViewerActive }) => {
+        expect(isViewerActive(activeViewer)).toBe(true);
+        expect(isViewerActive('idle-viewer')).toBe(false);
+        return [];
+      });
+    plugin.runStreamMonstersReadyTimer();
+    expect(autoHatch).toHaveBeenCalledTimes(1);
+
+    plugin.updateConfig({
+      streamMonsters: {
+        autoHatchActiveViewers: false,
+        autoHatchActiveWindowSeconds: 30
+      }
+    });
+    expect(plugin.streamMonstersEngine.config).toEqual(expect.objectContaining({
+      autoHatchActiveViewers: false,
+      autoHatchActiveWindowSeconds: 30
+    }));
+    expect(plugin.streamMonstersViewerActivity.activeWindowMs).toBe(30_000);
+    await plugin.destroy();
+    expect(plugin.streamMonstersViewerActivity).toBeNull();
   });
 
   test('deduplicates retried provider gifts while processing each repeat in the event once', async () => {

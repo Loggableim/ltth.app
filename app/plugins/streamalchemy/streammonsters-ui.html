@@ -322,10 +322,13 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack"><option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry · bundled</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveViewers">Auto-hatch active viewers</span><input id="autoHatchActiveViewers" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveWindowSeconds">Auto-hatch active window (seconds)</span><input id="autoHatchActiveWindowSeconds" type="number" min="30" max="900" step="1" value="300"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveHelp">Ready owned eggs hatch only after the viewer has recently interacted in this stream.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
         <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
         <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">No stream data yet</div>
@@ -1324,6 +1327,8 @@
         notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
         freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
         freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
+        autoHatchActiveViewers:byId('autoHatchActiveViewers').checked,
+        autoHatchActiveWindowSeconds:byId('autoHatchActiveWindowSeconds').value,
         tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
         tutorialHintIntervalSeconds:byId('tutorialHintIntervalSeconds').value,
         commandAliases:collectCommandAliases(),
@@ -1411,6 +1416,11 @@
       state.config?.freeEggDropsEnabled !== false;
     byId('freeEggCooldownSeconds').value = String(
       state.config?.freeEggCooldownSeconds || 86400
+    );
+    byId('autoHatchActiveViewers').checked =
+      state.config?.autoHatchActiveViewers !== false;
+    byId('autoHatchActiveWindowSeconds').value = String(
+      state.config?.autoHatchActiveWindowSeconds || 300
     );
     byId('tutorialHintsEnabled').checked =
       state.config?.tutorialHintsEnabled !== false;
@@ -1541,11 +1551,15 @@
   };
   const renderRetentionTimerWarning = () => {
     const cooldown = Number(byId('freeEggCooldownSeconds').value);
+    const activeWindow = Number(byId('autoHatchActiveWindowSeconds').value);
     const interval = Number(byId('tutorialHintIntervalSeconds').value);
     const warning = byId('retentionTimerWarning');
     const invalid = !Number.isFinite(cooldown) ||
       cooldown < 60 ||
       cooldown > 31536000 ||
+      !Number.isFinite(activeWindow) ||
+      activeWindow < 30 ||
+      activeWindow > 900 ||
       !Number.isFinite(interval) ||
       interval < 60 ||
       interval > 300;
@@ -1560,7 +1574,7 @@
     const duration = formatDuration(hatchDurationMs);
     byId('activePrefix').textContent = prefix;
     byId('activeHatchDuration').textContent = duration;
-    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v7 skill arena.', { duration, prefix });
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v8 skill arena.', { duration, prefix });
     document.querySelectorAll('[data-command]').forEach(command => {
       const name = command.dataset.command;
       const alias = creatorRuntime.resolveCommandReference(name, {
@@ -1660,6 +1674,8 @@
   for (const id of [
     'freeEggDropsEnabled',
     'freeEggCooldownSeconds',
+    'autoHatchActiveViewers',
+    'autoHatchActiveWindowSeconds',
     'tutorialHintsEnabled',
     'tutorialHintIntervalSeconds'
   ]) {

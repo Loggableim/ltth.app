@@ -7,6 +7,7 @@
 
   const MAX_VISIBLE_EGGS = 8;
   const ADOPT_CALLOUT_MS = 8_000;
+  const COUNTDOWN_INTERVAL_MS = 1_000;
 
   function boundedText(value, maximum = 96) {
     return String(value ?? '')
@@ -22,6 +23,59 @@
       egg.adoptable === true;
   }
 
+  function isClaimedFreeInventoryEgg(egg = {}) {
+    return egg.provenance === 'free' &&
+      egg.ownershipState === 'owned' &&
+      !['reserved', 'public'].includes(egg.state);
+  }
+
+  function formatCountdown(milliseconds) {
+    const totalSeconds = Math.max(0, Math.ceil((Number(milliseconds) || 0) / 1_000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function replaceTokens(template, tokens = {}) {
+    return Object.entries(tokens).reduce(
+      (value, [key, token]) => value.replaceAll(`{${key}}`, String(token)),
+      String(template || '')
+    );
+  }
+
+  function shelfTiming(egg = {}, {
+    nowMs = Date.now(),
+    labels = {},
+    hatchReference = '!hatch',
+    adoptReference = '!adopt'
+  } = {}) {
+    const timing = egg.timing || {};
+    if (egg.state === 'ready') {
+      return replaceTokens(labels.ready || 'Ready · {command}', {
+        command: hatchReference
+      });
+    }
+    if (egg.state === 'expired') return labels.expired || 'Rotten';
+    if (egg.state === 'queued') {
+      return replaceTokens(labels.queued || 'Queue #{position}', {
+        position: Number(egg.queuePosition) || 1
+      });
+    }
+    if (egg.state === 'reserved') {
+      return replaceTokens(labels.reserved || 'Reserved · {time}', {
+        time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(nowMs)))
+      });
+    }
+    if (isPublicFreeEgg(egg)) {
+      return replaceTokens(labels.public || 'Free · {command}', {
+        command: adoptReference
+      });
+    }
+    return replaceTokens(labels.incubating || 'Hatches in {time}', {
+      time: formatCountdown(Math.max(0, Number(timing.readyAtMs) - Number(nowMs)))
+    });
+  }
+
   function buildAdoptionNotice(type, payload = {}) {
     const egg = normalizeEgg(payload.eggStage || payload.egg_stage || payload.egg);
     if (!egg || egg.provenance !== 'free') return null;
@@ -33,6 +87,8 @@
       return {
         kind: 'reserved',
         viewer: egg.displayName,
+        placement: 'upper-third',
+        size: 'compact',
         durationMs: 5_000
       };
     }
@@ -40,6 +96,8 @@
       return {
         kind: 'public',
         viewer: egg.displayName,
+        placement: 'upper-third',
+        size: 'compact',
         durationMs: 5_000
       };
     }
@@ -94,7 +152,7 @@
   } = {}) {
     const normalized = (Array.isArray(eggStage) ? eggStage : [])
       .map(egg => normalizeEgg(egg))
-      .filter(Boolean)
+      .filter(egg => egg && !isClaimedFreeInventoryEgg(egg))
       .sort((left, right) => (
         priority(left) - priority(right) ||
         (Number(left.queuePosition) || Number.MAX_SAFE_INTEGER) -
@@ -142,6 +200,9 @@
     const now = options.now || (() => Date.now());
     const schedule = options.setTimeout || setTimeout;
     const cancel = options.clearTimeout || clearTimeout;
+    const labels = options.labels || {};
+    const getHatchReference = options.getHatchReference || (() => '!hatch');
+    const getAdoptReference = options.getAdoptReference || (() => '!adopt');
     const reducedMotion = Boolean(options.reducedMotion);
     const calloutDeadlineById = new Map();
     const calloutTimers = new Map();
@@ -149,6 +210,7 @@
     const pendingLandingIds = new Set();
     let rotationIndex = 0;
     let rotationTimer = null;
+    let countdownTimer = null;
 
     function safeImageUrl(value) {
       const url = boundedText(value, 512);
@@ -200,6 +262,16 @@
         art.dataset.fallback = 'true';
       }
       item.appendChild(art);
+
+      const timing = documentLike.createElement('span');
+      timing.dataset.eggTiming = '';
+      timing.textContent = shelfTiming(egg, {
+        nowMs: now(),
+        labels,
+        hatchReference: getHatchReference(),
+        adoptReference: getAdoptReference()
+      });
+      item.appendChild(timing);
 
       if (isPublicFreeEgg(egg)) {
         item.classList.add('gold-ring', 'public-free');
@@ -264,14 +336,19 @@
       pendingLandingIds.clear();
       for (const egg of Array.isArray(eggStage) ? eggStage : []) {
         const visualId = boundedText(egg?.visualId, 64);
-        if (visualId) eggsById.set(visualId, egg);
+        if (visualId && !isClaimedFreeInventoryEgg(egg)) eggsById.set(visualId, egg);
       }
       return render();
     }
 
     function applyEvent(type, payload = {}) {
-      if (type === 'free_egg_claimed' && payload.removedEggStage) {
-        const removedId = boundedText(payload.removedEggStage.visualId, 64);
+      if (type === 'free_egg_claimed') {
+        const removedId = boundedText(
+          payload.removedEggStage?.visualId ||
+          payload.eggStage?.visualId ||
+          payload.visualId,
+          64
+        );
         if (!removedId) return false;
         eggsById.delete(removedId);
         calloutDeadlineById.delete(removedId);
@@ -306,6 +383,7 @@
 
     if (typeof options.setInterval === 'function') {
       rotationTimer = options.setInterval(rotateOverflow, 3_000);
+      countdownTimer = options.setInterval(render, COUNTDOWN_INTERVAL_MS);
     }
 
     return {
@@ -324,17 +402,25 @@
           options.clearInterval(rotationTimer);
         }
         rotationTimer = null;
+        if (countdownTimer != null && typeof options.clearInterval === 'function') {
+          options.clearInterval(countdownTimer);
+        }
+        countdownTimer = null;
       }
     };
   }
 
   return {
     ADOPT_CALLOUT_MS,
+    COUNTDOWN_INTERVAL_MS,
     MAX_VISIBLE_EGGS,
     buildAdoptionNotice,
     buildShelfModel,
     createEggStageView,
     deterministicEggMotion,
-    isPublicFreeEgg
+    formatCountdown,
+    isClaimedFreeInventoryEgg,
+    isPublicFreeEgg,
+    shelfTiming
   };
 }));

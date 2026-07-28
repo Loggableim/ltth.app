@@ -575,8 +575,37 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
     expect(director.nextHint({ eventType: 'streammonsters:free_egg_offered' }, 1_000))
       .toEqual(expect.objectContaining({
         kind: 'adopt',
-        command: '$adoptieren'
+        label: 'NEXT',
+        command: '$adoptieren',
+        commands: ['$adoptieren']
       }));
+  });
+
+  test('emits one contextual NEXT card with at most two live command references', () => {
+    const TutorialHintDirector = require(
+      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+    );
+    const director = new TutorialHintDirector({
+      getCommandReference: command => ({
+        hatch: '/schlupf',
+        eggs: '/eier',
+        battle: ''
+      })[command] || ''
+    });
+
+    const hint = director.nextHint({
+      eventType: 'streammonsters:egg_ready'
+    }, 1_000);
+
+    expect(hint).toEqual(expect.objectContaining({
+      kind: 'hatch',
+      label: 'NEXT',
+      commands: ['/schlupf']
+    }));
+    expect(hint.commands).toHaveLength(1);
+    expect(new Set(hint.commands).size).toBe(hint.commands.length);
+    expect(hint.commands.length).toBeLessThanOrEqual(2);
+    expect(director.nextHint({}, 1_001)).toBeNull();
   });
 
   test('defaults to 90 seconds, validates 60–300 seconds, suppresses critical sequences and coalesces bursts', () => {

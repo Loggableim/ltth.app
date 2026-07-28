@@ -73,6 +73,7 @@
     const notificationDurationMs = Number(values.notificationDurationMs);
     const freeEggCooldownSeconds = Number(values.freeEggCooldownSeconds);
     const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
+    const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
     return {
       creatorName: String(values.creatorName || '').trim(),
       hatchDurationMs: HATCH_PRESETS.includes(Number(values.hatchDurationMs))
@@ -107,6 +108,12 @@
         freeEggCooldownSeconds <= 31_536_000
         ? Math.round(freeEggCooldownSeconds)
         : 86_400,
+      autoHatchActiveViewers: values.autoHatchActiveViewers !== false,
+      autoHatchActiveWindowSeconds: Number.isFinite(autoHatchActiveWindowSeconds) &&
+        autoHatchActiveWindowSeconds >= 30 &&
+        autoHatchActiveWindowSeconds <= 900
+        ? Math.round(autoHatchActiveWindowSeconds)
+        : 300,
       tutorialHintsEnabled: values.tutorialHintsEnabled !== false,
       tutorialHintIntervalSeconds: Number.isFinite(tutorialHintIntervalSeconds) &&
         tutorialHintIntervalSeconds >= 60 &&

@@ -1085,6 +1085,38 @@
       a.y + a.height > b.y;
   }
 
+  function notificationShelfLayout({
+    width,
+    height,
+    shelfHeight = 112,
+    gap = 12
+  } = {}) {
+    const safeWidth = Math.max(0, Number(width) || 0);
+    const safeHeight = Math.max(0, Number(height) || 0);
+    const safeShelfHeight = Math.min(
+      safeHeight,
+      Math.max(0, Number(shelfHeight) || 0)
+    );
+    const safeGap = Math.max(0, Number(gap) || 0);
+    const gameplayBottomY = safeHeight * 0.74;
+    const shelfY = Math.max(0, gameplayBottomY - safeShelfHeight);
+    return {
+      gap: safeGap,
+      shelf: {
+        x: 0,
+        y: shelfY,
+        width: safeWidth,
+        height: safeShelfHeight
+      },
+      notification: {
+        x: 0,
+        y: 0,
+        width: safeWidth,
+        height: Math.max(0, shelfY - safeGap)
+      }
+    };
+  }
+
   function safeZoneCollisions({ reveal, reserved = {} } = {}) {
     return Object.entries(reserved)
       .filter(([, rectangle]) => rectanglesOverlap(reveal, rectangle))
@@ -1109,6 +1141,7 @@
     localizedPayloadField,
     normalizeVolume,
     normalizeBattleEventType,
+    notificationShelfLayout,
     overlayHeartbeatPayload,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
     replayableRecentEvents,

@@ -9,6 +9,9 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const StreamMonstersViewerActivityTracker = require(
+  './backend/streammonsters/viewer-activity-tracker'
+);
 const { normalizeIngressEventId } = require('./backend/streammonsters/ingress-event-id');
 const TutorialHintDirector = require('./backend/streammonsters/tutorial-hint-director');
 const StreamMonstersPublicEventProjector = require(
@@ -136,6 +139,9 @@ class StreamAlchemyPlugin {
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       getCommandReference: command => this.getStreamMonstersCommandReference(command),
       config: this.config.streamMonsters
+    });
+    this.streamMonstersViewerActivity = new StreamMonstersViewerActivityTracker({
+      activeWindowMs: this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
     });
     this.streamMonstersFreeEggDrops = new FreeEggDropService({
       store: this.streamMonstersStore,
@@ -270,8 +276,7 @@ class StreamAlchemyPlugin {
     });
     this.streamMonstersReadyTimer = setInterval(() => {
       try {
-        if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
-        this.streamMonstersEngine.markReadyEggs();
+        this.runStreamMonstersReadyTimer();
       } catch (error) {
         this.api.log(`[STREAM MONSTERS] Ready timer failed: ${error.message}`, 'warn');
       }
@@ -303,6 +308,8 @@ class StreamAlchemyPlugin {
         seasonDurationDays: 28,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        autoHatchActiveViewers: true,
+        autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90,
         commandAliases: this.normalizeCommandAliases(),
@@ -326,6 +333,10 @@ class StreamAlchemyPlugin {
         freeEggDropsEnabled: storedStreamMonsters.freeEggDropsEnabled !== false,
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
+        ),
+        autoHatchActiveViewers: storedStreamMonsters.autoHatchActiveViewers !== false,
+        autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
+          storedStreamMonsters.autoHatchActiveWindowSeconds
         ),
         tutorialHintsEnabled: storedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
@@ -450,6 +461,13 @@ class StreamAlchemyPlugin {
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
       ? Math.round(seconds)
       : 86_400;
+  }
+
+  normalizeAutoHatchActiveWindowSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
+      ? Math.round(seconds)
+      : 300;
   }
 
   normalizeTutorialHintIntervalSeconds(value) {
@@ -600,6 +618,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
         ),
+        autoHatchActiveViewers: mergedStreamMonsters.autoHatchActiveViewers !== false,
+        autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
+          mergedStreamMonsters.autoHatchActiveWindowSeconds
+        ),
         tutorialHintsEnabled: mergedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           mergedStreamMonsters.tutorialHintIntervalSeconds
@@ -629,6 +651,9 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
       };
     }
+    this.streamMonstersViewerActivity?.setActiveWindowMs?.(
+      this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
+    );
     this.streamMonstersProgression?.setSeasonDurationDays?.(
       this.config.streamMonsters.seasonDurationDays
     );
@@ -658,6 +683,8 @@ class StreamAlchemyPlugin {
       this.streamMonstersTutorialHintFlushTimer = null;
     }
     this.streamMonstersFreeEggDrops?.destroy();
+    this.streamMonstersViewerActivity?.destroy?.();
+    this.streamMonstersViewerActivity = null;
     this.streamMonstersBattleMatchService?.destroy();
     this.removeStreamMonstersGCCELifecycle();
     this.deactivateStreamMonstersGCCE();
@@ -665,6 +692,35 @@ class StreamAlchemyPlugin {
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
     this.api.log('[STREAM MONSTERS] League World Hybrid runtime stopped', 'info');
+  }
+
+  markStreamMonstersViewerActive(userId, source) {
+    const streamKey = this.streamMonstersEngine?.streamKey;
+    if (!userId || !streamKey || streamKey === 'offline') return false;
+    return Boolean(this.streamMonstersViewerActivity?.observe?.({
+      userId,
+      streamKey,
+      source
+    }));
+  }
+
+  runStreamMonstersReadyTimer() {
+    if (!this.config?.enabled || !this.config?.streamMonsters?.enabled) return [];
+    if (!this.streamMonstersEngine) return [];
+    this.streamMonstersEngine.markReadyEggs();
+    const streamKey = this.streamMonstersEngine.streamKey;
+    const hatched = this.streamMonstersEngine.autoHatchReadyEggs({
+      isViewerActive: userId => Boolean(
+        this.streamMonstersViewerActivity?.isActive?.({ userId, streamKey })
+      )
+    });
+    if (hatched.length) {
+      this.logStructured('auto_hatch_completed', {
+        count: hatched.length,
+        status: 'ready_active_viewer'
+      });
+    }
+    return hatched;
   }
 
   getStreamMonstersGiftCatalog(locale = null) {
@@ -741,23 +797,27 @@ class StreamAlchemyPlugin {
       category: 'Stream Monsters',
       cooldownKey: `streamalchemy:${command}`,
       cooldown: { user: command === 'battle' ? 2000 : 1000, global: command === 'battle' ? 0 : 250 },
-      handler: async (args, context = {}) => this.streamMonstersCommandIngress.executeCommand(
-        command,
-        Array.isArray(args) ? args : [],
-        {
-          ...context,
-          userId: this.resolveStreamMonstersViewerId({
-            platformUserId: context.rawData?.userId,
-            legacyUserId: context.rawData?.uniqueId ||
-              context.uniqueId ||
-              context.userId ||
-              context.username
-          }),
-          username: context.username || context.nickname || context.uniqueId || context.userId
-        },
-        'gcce',
-        name
-      )
+      handler: async (args, context = {}) => {
+        const userId = this.resolveStreamMonstersViewerId({
+          platformUserId: context.rawData?.userId,
+          legacyUserId: context.rawData?.uniqueId ||
+            context.uniqueId ||
+            context.userId ||
+            context.username
+        });
+        this.markStreamMonstersViewerActive(userId, 'chat');
+        return this.streamMonstersCommandIngress.executeCommand(
+          command,
+          Array.isArray(args) ? args : [],
+          {
+            ...context,
+            userId,
+            username: context.username || context.nickname || context.uniqueId || context.userId
+          },
+          'gcce',
+          name
+        );
+      }
     })));
   }
 
@@ -1051,6 +1111,7 @@ class StreamAlchemyPlugin {
         context.username
     });
     if (!userId) return { handled: false };
+    this.markStreamMonstersViewerActive(userId, 'chat');
     const providerEventId = context.rawData?.eventId ??
       context.rawData?.event_id ??
       context.rawData?.msgId ??
@@ -1310,6 +1371,7 @@ class StreamAlchemyPlugin {
       }, 'warn');
       return;
     }
+    this.markStreamMonstersViewerActive(userId, 'gift');
     if (!this.streamMonstersStore.getGiftMapping(giftId) && !this.config.streamMonsters.giftMappingCustomized) {
       this.ensureDefaultStreamMonstersGiftMapping({
         id: giftId,
@@ -1404,12 +1466,13 @@ class StreamAlchemyPlugin {
   }
 
   observeStreamMonstersFirstChat(data = {}) {
-    if (!this.streamMonstersFreeEggDrops || !this.streamMonstersEngine) return null;
     const userId = this.resolveStreamMonstersViewerId({
       platformUserId: data.userId,
       legacyUserId: data.uniqueId || data.username
     });
     if (!userId) return null;
+    this.markStreamMonstersViewerActive(userId, 'chat');
+    if (!this.streamMonstersFreeEggDrops || !this.streamMonstersEngine) return null;
     const streamKey = this.streamMonstersEngine.streamKey || 'offline';
     const eventId = normalizeIngressEventId({
       namespace: 'chat',
@@ -1448,6 +1511,7 @@ class StreamAlchemyPlugin {
     }
     const event = this.streamMonstersProgression.startStreamSession({ streamKey });
     this.streamMonstersEngine.setStreamKey(streamKey);
+    this.streamMonstersViewerActivity?.clear?.();
     this.emitStreamMonsters('streammonsters:stream_started', {
       creatorName: this.config.streamMonsters.creatorName || 'Creator',
       event

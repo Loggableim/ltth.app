@@ -59,11 +59,13 @@ class TutorialHintDirector {
     this.nextAllowedAtMs = nowMs + this.intervalMs;
     return Object.freeze({
       kind: nextKind,
+      label: 'NEXT',
       titleKey: definition.titleKey,
       bodyKey: definition.bodyKey,
       title: definition.title,
       body: definition.body,
       command,
+      commands: Object.freeze([command]),
       params: Object.freeze({ command })
     });
   }

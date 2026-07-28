@@ -9,6 +9,7 @@ const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammon
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 const chatViewRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
+const eggStageView = require('../plugins/streamalchemy/streammonsters-egg-stage-view');
 
 const activeDoms = new Set();
 const activeGcceInstances = new Set();
@@ -143,9 +144,14 @@ function createEggEvents(plugin) {
   const earlyHatch = commands.hatch('viewer-a', 1);
   now = 1_100;
   engine.markReadyEggs();
+  engine.hatchEgg('viewer-a', 1);
   return {
     spawned: emitted.find(entry => entry.event === 'streammonsters:egg_spawned').payload,
+    landed: emitted.find(entry => entry.event === 'streammonsters:egg_landed').payload,
     ready: emitted.find(entry => entry.event === 'streammonsters:egg_ready').payload,
+    hatchStarted: emitted.find(entry => entry.event === 'streammonsters:hatch_started').payload,
+    hatched: emitted.find(entry => entry.event === 'streammonsters:egg_hatched').payload,
+    stageRemoved: emitted.find(entry => entry.event === 'streammonsters:egg_stage_removed')?.payload,
     earlyHatch
   };
 }
@@ -193,6 +199,7 @@ async function createLiveOverlay(snapshot) {
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersEggStageView = eggStageView;
       window.StreamMonstersChatView = {
         ...chatViewRuntime,
         createChatView: options => chatViewRuntime.createChatView({
@@ -287,7 +294,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
         messageKey: 'chatResultEggNotReady'
       }
     });
-    expect(overlay.detail().dataset.placement).toBe('upper');
+    expect(overlay.detail().dataset.placement).toBe('upper-third');
     expect(overlay.detail().dataset.kind).toBe('egg-wait');
     expect(overlay.detail().textContent).toContain('Public Hatcher');
     expect(overlay.detail().textContent).toContain('The egg is still incubating');
@@ -299,6 +306,57 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     await overlay.emit('streammonsters:egg_ready', events.ready);
     expect(overlay.hint().textContent).toBe('/schlupf [slot]');
     expect(overlay.hint().textContent).not.toContain('/hatch');
+
+    overlay.close();
+    await gcce.destroy();
+  });
+
+  test('updates and clears the connected shelf through ready and hatch socket events', async () => {
+    const { gcce, plugin } = await createCollisionRuntime();
+    const events = createEggEvents(plugin);
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      config: {
+        hatchDurationMs: 120_000,
+        commandAliases: plugin.config.streamMonsters.commandAliases
+      },
+      gcce: plugin.getStreamMonstersGCCEState(),
+      eggStage: []
+    });
+    const shelfItem = visualId => overlay.dom.window.document.querySelector(
+      `[data-egg-id="${visualId}"]`
+    );
+    const timing = visualId => shelfItem(visualId)?.querySelector(
+      '[data-egg-timing]'
+    )?.textContent;
+    const visualId = events.landed.eggStage.visualId;
+    const neighbour = {
+      ...events.landed,
+      eventId: 'neighbour-landed',
+      correlationId: 'neighbour',
+      eggStage: {
+        ...events.landed.eggStage,
+        visualId: 'egg-neighbour-stays',
+        element: 'Tide'
+      }
+    };
+
+    await overlay.emit('streammonsters:egg_landed', events.landed);
+    await overlay.emit('streammonsters:egg_landed', neighbour);
+    expect(shelfItem(visualId)).not.toBeNull();
+    expect(shelfItem('egg-neighbour-stays')).not.toBeNull();
+
+    await overlay.emit('streammonsters:egg_ready', events.ready);
+    expect(timing(visualId)).toBe('Ready · /schlupf');
+
+    await overlay.emit('streammonsters:hatch_started', events.hatchStarted);
+    await overlay.emit('streammonsters:egg_hatched', events.hatched);
+    expect(events.stageRemoved).toEqual(expect.objectContaining({
+      eggStage: expect.objectContaining({ visualId })
+    }));
+    await overlay.emit('streammonsters:egg_stage_removed', events.stageRemoved);
+    expect(shelfItem(visualId)).toBeNull();
+    expect(shelfItem('egg-neighbour-stays')).not.toBeNull();
 
     overlay.close();
     await gcce.destroy();
