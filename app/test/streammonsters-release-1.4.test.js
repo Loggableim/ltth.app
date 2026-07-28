@@ -547,18 +547,18 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     expect(overlaySource).not.toContain('data?.quest?.title');
   });
 
-  test('keeps the stable ID and publishes the complete 1.9 product description', () => {
+  test('keeps the stable ID and publishes the complete 1.10 product description', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storeEntry = registry.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(manifest.id).toBe('streamalchemy');
-    expect(manifest.version).toBe('1.9.0');
+    expect(manifest.version).toBe('1.10.0');
     expect(manifest.devStatus).toBe('working-beta');
-    expect(storeEntry.version).toBe('1.9.0');
+    expect(storeEntry.version).toBe('1.10.0');
     expect(storeEntry.channel).toBe('open-beta');
     expect(storeEntry.badges).toContain('working-beta');
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.9.0.zip');
+    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip');
 
     const expectedTerms = {
       en: [/gift/i, /free-egg adoption/i, /sealed A\/B\/C PvP/i, /elemental roles/i, /progression/i, /portrait/i],
@@ -579,7 +579,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const localeSource = fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8');
       const translations = JSON.parse(localeSource).plugins.streamalchemy;
-      expect(translations.ui.monsters.version).toMatch(/1\.9/);
+      expect(translations.ui.monsters.version).toMatch(/1\.10/);
       expect(translations.ui.monsters.rulesDynamic).toMatch(/skill|Skill|habilidad|compétence/);
       expect(translations.ui.monsters.skillAttack).toEqual(expect.any(String));
       expect(localeSource).not.toMatch(/Stream[\s-]+Alchemy/i);
@@ -593,7 +593,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
       expect(fs.readFileSync(path.join(pluginDir, visibleFile), 'utf8')).not.toMatch(/Stream[\s-]+Alchemy/i);
     }
     const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
-    expect(uiSource).toContain('Rules v7 Evolution Combat · Version 1.9');
+    expect(uiSource).toContain('Jackpot Arena &amp; Living Egg Shelf · Version 1.10');
     expect(uiSource).not.toMatch(/Version 1\.[34]/);
   });
 

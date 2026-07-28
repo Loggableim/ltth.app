@@ -48,6 +48,13 @@
       "manifestVersion": "1.9.0",
       "package": "plugin-store/packages/streamalchemy-1.9.0.zip",
       "sha256": "958424d0731f344d37bcd7ec40ebdb6709408f491e0c88dbe28108324ad28d0c"
+    },
+    "1.10.0": {
+      "sourceCommit": "8c79edb14306fd460858896f690f8b4114b74854",
+      "sourceTree": "e69621ac309756572826a6beaa79d010530e76b2",
+      "manifestVersion": "1.10.0",
+      "package": "plugin-store/packages/streamalchemy-1.10.0.zip",
+      "sha256": "232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626"
     }
   }
 }

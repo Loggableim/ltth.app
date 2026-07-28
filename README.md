@@ -84,8 +84,8 @@ npm run lint
 ## Status
 
 - Current LTTH release: `1.4.1`
-- Current Stream Monsters release: `1.9.0` (Open Beta, stable plugin ID `streamalchemy`)
-- Stream Monsters 1.9.0 adds passive Special charge, explained and localized Rules-v7 skills, combat evolution with animated stat growth, simultaneous sealed A/B/C reveals, and deterministic recovery while retaining the 1.8 retention and competitive arcade loop.
+- Current Stream Monsters release: `1.10.0` (Open Beta, stable plugin ID `streamalchemy`)
+- Stream Monsters 1.10.0 adds the chat-safe Living Egg Shelf, immediately owned gift eggs, Jackpot Clash presentation, eight-second sealed A/B/C windows, command-aware TTS, safe owner identity, and deterministic reconnect recovery while preserving the fair competitive loop.
 - Current WebGPU Fireworks plugin release: `3.1.1`
 - Fireworks 3.1.1 keeps star, ring, standard, and special rockets inside one shared visible envelope so each burst opens at the exact rendered rocket endpoint without top-edge clipping.
 - Current changelog: [CHANGELOG.md](CHANGELOG.md)

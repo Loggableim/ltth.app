@@ -68,30 +68,15 @@ describe('Stream Monsters 1.9 Rules-v7 release contract', () => {
     expect(typeof genericBuilder.main).toBe('function');
   });
 
-  test('publishes Rules-v7 as the current 1.9.0 Open Beta plugin', () => {
-    const manifest = readJson('app/plugins/streamalchemy/plugin.json');
-    const store = readJson('plugin-store.json');
-    const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
+  test('records Rules-v7 as the immutable 1.9.0 Open Beta release', () => {
     const release = loadReleaseMap().releases['1.9.0'];
 
-    expect(manifest).toEqual(expect.objectContaining({
-      id: 'streamalchemy',
-      name: 'Stream Monsters',
-      version: '1.9.0',
-      devStatus: 'working-beta'
-    }));
     expect(release).toEqual(expect.objectContaining({
       sourceCommit: expect.stringMatching(/^[a-f0-9]{40}$/),
       sourceTree: expect.stringMatching(/^[a-f0-9]{40}$/),
       manifestVersion: '1.9.0',
       package: 'plugin-store/packages/streamalchemy-1.9.0.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
-    }));
-    expect(storeEntry).toEqual(expect.objectContaining({
-      version: '1.9.0',
-      channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.9.0.zip',
-      sha256: release.sha256
     }));
   });
 

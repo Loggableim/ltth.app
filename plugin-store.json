@@ -623,12 +623,12 @@
         "fr": "Stream Monsters"
       },
       "description": {
-        "en": "Portrait-first Rules-v7 collector arena with creator-selected Gift eggs, recurring free-egg adoption, passive Special charge, sealed A/B/C PvP, balanced elemental roles, combat evolution, 72 bundled Furry forms, permanent progression, and seasonal competition.",
-        "de": "Portrait-first Rules-v7-Sammelarena mit vom Creator gewählten Geschenk-Eiern, wiederkehrender Gratis-Ei-Adoption, passiver Spezialaufladung, verdecktem A/B/C-PvP, balancierten Elementrollen, Kampfentwicklung, permanentem Fortschritt, 72 gebündelten Furry-Formen und Saisonwettbewerb.",
-        "es": "Arena de colección Rules-v7 vertical con huevos por regalos elegidos por el creador, adopción periódica de huevos gratis, carga pasiva de Especial, PvP A/B/C sellado, roles elementales equilibrados, evolución de combate, 72 formas Furry y progreso permanente.",
-        "fr": "Arène de collection Rules-v7 portrait avec des œufs issus des cadeaux choisis par le Creator, adoption récurrente d’œufs gratuits, charge passive du Spécial, PvP A/B/C scellé, rôles élémentaires équilibrés, évolution de combat, 72 formes Furry et progression permanente."
+        "en": "Portrait-first Jackpot Arena with an animated Living Egg Shelf, creator-selected gift eggs, recurring free-egg adoption, passive Special charge, sealed A/B/C PvP, balanced elemental roles, 72 bundled Furry forms, permanent progression, and seasonal competition.",
+        "de": "Portrait-first Jackpot-Arena mit animiertem Living Egg Shelf, vom Creator gewählten Geschenk-Eiern, wiederkehrender Gratis-Ei-Adoption, passiver Spezialaufladung, verdecktem A/B/C-PvP, balancierten Elementrollen, 72 gebündelten Furry-Formen, permanentem Fortschritt und Saisonwettbewerb.",
+        "es": "Jackpot Arena vertical con Living Egg Shelf animado, huevos por regalos elegidos por el creador, adopción periódica de huevos gratis, carga pasiva de Especial, PvP A/B/C sellado, roles elementales equilibrados, 72 formas Furry y progreso permanente.",
+        "fr": "Jackpot Arena portrait avec Living Egg Shelf animé, œufs issus des cadeaux choisis par le Creator, adoption récurrente d’œufs gratuits, charge passive du Spécial, PvP A/B/C scellé, rôles élémentaires équilibrés, 72 formes Furry et progression permanente."
       },
-      "version": "1.9.0",
+      "version": "1.10.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
@@ -642,8 +642,8 @@
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.9.0.zip",
-      "sha256": "958424d0731f344d37bcd7ec40ebdb6709408f491e0c88dbe28108324ad28d0c",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip",
+      "sha256": "232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626",
       "pricing": {
         "type": "free",
         "amount": 0,
