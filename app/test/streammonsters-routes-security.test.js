@@ -135,6 +135,46 @@ describe('Stream Monsters Rules v5 route security', () => {
     expect(creatorState.payload.gcce).toBe(gcce);
   });
 
+  test('includes only projected eggStage fields in the creator diagnostics state', async () => {
+    const { find, store } = createSubject();
+    const created = store.createEgg({
+      userId: 'private-viewer-id',
+      giftId: 7,
+      giftName: 'Private Gift',
+      element: 'Ember',
+      eggColor: '#ef6b45',
+      seed: 'creator-stage-seed',
+      createdAtMs: 1_000,
+      hatchDurationMs: 120_000,
+      readyAtMs: 121_000,
+      expiresAtMs: 86_521_000,
+      state: 'incubating',
+      provenance: 'gift',
+      displayName: 'Public Viewer'
+    });
+    const creatorState = response();
+
+    await find('GET', '/api/streammonsters/creator-state')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, creatorState);
+
+    expect(creatorState.payload.eggStage).toEqual([
+      expect.objectContaining({
+        visualId: expect.stringMatching(/^egg-[a-f0-9]{24}$/),
+        provenance: 'gift',
+        state: 'incubating',
+        displayName: 'Public Viewer',
+        adoptable: false
+      })
+    ]);
+    expect(JSON.stringify(creatorState.payload.eggStage)).not.toMatch(
+      new RegExp(`${created.egg_id}|private-viewer-id|user_id|gift_id`, 'i')
+    );
+  });
+
   test('accepts a bounded overlay heartbeat but exposes diagnostics only to the creator route', async () => {
     let nowMs = 10_000;
     const { find } = createSubject({ now: () => nowMs });

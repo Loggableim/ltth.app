@@ -133,8 +133,11 @@
     }
 
     function removeCallout(visualId) {
-      const item = slots?.querySelector(`[data-egg-id="${visualId}"]`);
-      item?.querySelector('[data-adopt-callout]')?.remove();
+      root.querySelectorAll('[data-egg-id]').forEach(item => {
+        if (item.dataset.eggId === visualId) {
+          item.querySelector('[data-adopt-callout]')?.remove();
+        }
+      });
       const handle = calloutTimers.get(visualId);
       if (handle != null) cancel(handle);
       calloutTimers.delete(visualId);

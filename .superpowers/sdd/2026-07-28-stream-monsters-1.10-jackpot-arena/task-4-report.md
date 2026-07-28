@@ -74,3 +74,33 @@ Additional gates:
 ## Known concern
 
 This task used DOM/controller, contract and existing real-overlay harness tests. It did not start a live LTTH server or perform an OBS/browser-source screenshot because the brief explicitly prohibited using live port 3000.
+
+## Fix round 1
+
+Review findings addressed:
+
+- `GET /api/streammonsters/creator-state` now includes the same sanitized `EggStageProjector.snapshot()` used by the public reconnect route. The creator shelf diagnostic therefore receives real projected eggs without database IDs, viewer IDs, gift IDs, or raw rows.
+- `!adopt` expiry now searches all shelf items with the matching opaque visual ID, including the rotating overflow preview. The ninth public egg loses its callout after eight seconds while retaining its gold ring.
+
+RED command:
+
+```text
+runtime\node\node.exe node_modules/jest/bin/jest.js \
+  test/streammonsters-jackpot-overlay-v110.test.js \
+  test/streammonsters-routes-security.test.js --runInBand
+```
+
+Result: 2 suites failed with exactly 2 failing tests. `creatorState.payload.eggStage` was `undefined`; one overflow `data-adopt-callout` remained after the timer.
+
+GREEN command:
+
+```text
+runtime\node\node.exe node_modules/jest/bin/jest.js \
+  test/streammonsters-jackpot-overlay-v110.test.js \
+  test/streammonsters-routes-security.test.js \
+  test/streammonsters-egg-stage-v110.test.js \
+  test/streammonsters-creator-runtime.test.js \
+  test/streammonsters-creator-ui-v15.test.js --runInBand
+```
+
+Result: 5 suites passed, 61 tests passed, 0 failed.

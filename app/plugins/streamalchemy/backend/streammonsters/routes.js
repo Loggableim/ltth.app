@@ -227,6 +227,7 @@ class StreamMonstersRoutes {
           queued: 0,
           ready: 0
         },
+        eggStage: this.eggStageProjector.snapshot(this.engine.streamKey || 'offline'),
         viewer: userId ? this.viewerState(userId) : null,
         giftMappings: this.store.getGiftMappings(),
         hype: this.store.getStreamHype(this.engine.streamKey),

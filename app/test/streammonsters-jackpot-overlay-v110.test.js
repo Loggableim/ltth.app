@@ -142,6 +142,41 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(reduced.visible[0].motion.durationMs).toBe(0);
     expect(reduced.visible[0].motion.phase).toBe('settled');
   });
+
+  test('expires the ninth public egg callout in the rotating overflow without removing its ring', () => {
+    const Shelf = loadShelf();
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
+    `);
+    let now = 20_000;
+    const scheduled = [];
+    const view = Shelf.createEggStageView({
+      document: dom.window.document,
+      now: () => now,
+      setTimeout: callback => {
+        scheduled.push(callback);
+        return scheduled.length;
+      },
+      clearTimeout: () => {}
+    });
+    view.applySnapshot(Array.from({ length: 9 }, (_, index) => egg(`public-${index}`, {
+      provenance: 'free',
+      state: 'public',
+      adoptionStatus: 'public',
+      adoptable: true
+    })));
+    const overflow = dom.window.document.querySelector('[data-egg-overflow]');
+
+    expect(overflow.querySelector('[data-adopt-callout]')).not.toBeNull();
+    expect(overflow.querySelector('.gold-ring')).not.toBeNull();
+
+    now += 8_001;
+    scheduled.forEach(callback => callback());
+
+    expect(dom.window.document.querySelectorAll('[data-adopt-callout]')).toHaveLength(0);
+    expect(overflow.querySelector('.gold-ring')).not.toBeNull();
+    view.destroy();
+  });
 });
 
 describe('Stream Monsters 1.10 overlay and creator surfaces', () => {
