@@ -57,6 +57,10 @@ running LTTH instance during implementation.
   reduces either monster below 1 HP and therefore never creates the K.-o.
 - Persist collapse, charge ticks, actions, K.-o., XP, level-up, and rating
   results deterministically.
+- Every `1–4` stat-choice prompt and result must identify the sanitized player
+  display name, monster name, current level, and remaining unspent points.
+  Exactly one monster is active in a choice window; numeric platform IDs must
+  never be rendered as its owner.
 - Extend `battle_completed` compatibly with knockout round, terminal reason,
   sanitized winner player/monster, remaining HP, and complete before/after/delta
   rating changes. Daily rating limits report unchanged rating explicitly.
@@ -70,6 +74,10 @@ running LTTH instance during implementation.
   never enter adoption states.
 - Show up to eight eggs plus `+N`, with exact countdown, ready, queue, and
   rotten status. Snapshot/timer refreshes must not replay landing animation.
+- The egg shelf and generic gift/event notification rail are mutually
+  exclusive layout lanes. A notification must render above the shelf or wait
+  in the noncritical queue; it may never run behind, through, or underneath
+  egg icons.
 - Free eggs are private for 60 seconds, then public. Show compact upper-third
   cards for reservation/public availability. Claim removes the public stage
   entry immediately and moves the egg into inventory.
@@ -106,11 +114,16 @@ running LTTH instance during implementation.
 - During battle, render an opaque/semi-opaque arena in the upper 74% and keep
   the lower 26% empty. Pause and queue noncritical shelf, XP, Likes, music, and
   notification cards; restore current state after battle.
+- Outside battle, reserve separate collision-tested regions for the egg shelf,
+  gift/event cards, Likes bar, and XP card at both 477×829 and 1080×1920.
 - Render both full monsters, large sanitized player names, HP, shield, element
   advantage, special charge, and a nonpredictive visible lead from HP+shield.
 - Render large `A/B/C` cards with localized skill name, exact short effect,
   availability, and result numbers. Portrait breakpoints may not hide or
   truncate skill copy.
+- Render level-up/stat allocation as a large upper-gameplay card containing the
+  player, monster, level, remaining points, and all four `1–4` choices with
+  their exact stat gain. The confirmation repeats player and monster.
 - Use a 2–3 second action timeline: telegraph, movement, projectile/shield,
   sequential hit numbers, HUD update, knockback, recovery. Add readable
   specials, K.-o., winner, combo, trail, hit-stop, and camera effects.
