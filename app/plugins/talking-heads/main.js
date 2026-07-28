@@ -622,10 +622,18 @@ class TalkingHeadsPlugin {
    * @private
    */
   _getLotteryUser(data = {}) {
-    const userId = this._sanitizeInput(data.userId || data.user_id || data.uniqueId, 'userId');
+    const rawUserId = String(data.userId || data.user_id || '').trim();
+    const rawUniqueId = String(data.uniqueId || data.unique_id || '').trim();
+    // Event TTS keys voice assignments by TikTok handle when the transport
+    // includes both its numeric account ID and uniqueId. Use the same key so
+    // a gift rerolls the avatar that TTS actually renders.
+    const lotteryKey = rawUniqueId && /^\d+$/.test(rawUserId)
+      ? rawUniqueId
+      : (rawUserId || rawUniqueId);
+    const userId = this._sanitizeInput(lotteryKey, 'userId');
     if (!userId) return null;
     const username = this._sanitizeInput(
-      data.uniqueId || data.username || data.nickname || userId,
+      rawUniqueId || data.username || data.nickname || userId,
       'username'
     ) || userId;
     return { userId, username };
@@ -970,6 +978,52 @@ class TalkingHeadsPlugin {
       } catch (error) {
         this.logger.error('TalkingHeads: Test spin failed', error);
         return res.status(500).json({ success: false, error: 'Test spin failed' });
+      }
+    });
+
+    // Local dashboard recovery action. It deliberately reuses the configured
+    // gift path so persistence, no-repeat selection, speaking deferral, and
+    // the OBS spin stay identical to a real TikTok reroll.
+    this.api.registerRoute('post', '/api/talkingheads/avatar-reroll', async (req, res) => {
+      try {
+        const requestedUserId = this._sanitizeInput(req.body?.userId, 'userId');
+        const username = this._sanitizeInput(
+          req.body?.username || req.body?.uniqueId || requestedUserId,
+          'username'
+        );
+        if (!requestedUserId || !username) {
+          return res.status(400).json({ success: false, error: 'Missing or invalid userId and username' });
+        }
+
+        const configuredGiftId = String(
+          this.config.rerollGiftId || this.config.lotteryGiftId || ''
+        ).trim();
+        const configuredGiftName = !configuredGiftId
+          ? (this.config.rerollGiftNames || this.config.lotteryGiftNames || [])
+            .map((name) => String(name || '').trim())
+            .find(Boolean)
+          : '';
+        if (!configuredGiftId && !configuredGiftName) {
+          return res.status(409).json({ success: false, error: 'No avatar reroll gift is configured' });
+        }
+
+        const rerolled = await this._handleLotteryGift({
+          userId: requestedUserId,
+          uniqueId: username,
+          username,
+          ...(configuredGiftId ? { giftId: configuredGiftId } : { giftName: configuredGiftName })
+        });
+        if (!rerolled) {
+          return res.status(409).json({
+            success: false,
+            error: 'No eligible persistent avatar assignment is available for this viewer'
+          });
+        }
+
+        return res.json({ success: true, userId: requestedUserId, username });
+      } catch (error) {
+        this.logger.error('TalkingHeads: Manual avatar reroll failed', error);
+        return res.status(500).json({ success: false, error: 'Manual avatar reroll failed' });
       }
     });
 
