@@ -95,18 +95,37 @@ describe('Talking Heads speaker-stage slot overlay', () => {
     });
   });
 
-  test('labels Kenney and RGS reel winners with their full pack options', () => {
+  test.each([
+    [
+      'Boba',
+      { packId: 'boba', characterId: 'Fox', options: { expression: 'Happy' } },
+      '/api/talkingheads/sprite/boba-Fox.png',
+      'Fox · Happy'
+    ],
+    [
+      'Kenney',
+      { packId: 'kenney', characterId: 'body_blue', options: { eye: 'eye_human' } },
+      '/api/talkingheads/sprite/kenney-body_blue.png',
+      'Kenney · body_blue · eye_human'
+    ],
+    [
+      'RGS',
+      { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } },
+      '/api/talkingheads/sprite/rgs-head1.png',
+      'RGS · head1 · hair1 · eyes1 · mouth1'
+    ]
+  ])('labels a %s reel winner with its full pack options', (_packName, selection, spriteUrl, expectedLabel) => {
     const { dom, handlers } = bootOverlay();
     const startSpin = handlers.get('talkingheads:avatar:spin:start');
     startSpin(spinPayload({
       winner: {
-        selection: { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } },
-        sprites: { idle_neutral: '/api/talkingheads/sprite/rgs-head1.png' }
+        selection,
+        sprites: { idle_neutral: spriteUrl }
       }
     }));
     jest.advanceTimersByTime(240);
     expect(dom.window.document.getElementById('slotWinnerName').textContent)
-      .toBe('RGS · head1 · hair1 · eyes1 · mouth1');
+      .toBe(expectedLabel);
   });
 
   test('queues a preview behind a real spin so the real acknowledgement still arrives once', () => {
