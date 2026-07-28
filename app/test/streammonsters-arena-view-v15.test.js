@@ -171,6 +171,34 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-fighter-2').dataset.choice).toBe('C');
   });
 
+  test('does not open A/B/C from a reconnect snapshot while cinematic has no deadline', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    view.applySnapshot({
+      battle: {
+        matches: [{
+          matchId: 'match-cinematic',
+          state: 'action',
+          roundNumber: 2,
+          actionDeadlineMs: null,
+          chargeWindow: {
+            openedAtMs: 0,
+            deadlineMs: 0,
+            passivePerSecond: 5,
+            pauseReason: 'cinematic'
+          },
+          fighters: [
+            { slot: 1, name: 'Ashfang', templateId: 'ashfang', element: 'Ember' },
+            { slot: 2, name: 'Ripple', templateId: 'ripple', element: 'Tide' }
+          ]
+        }]
+      }
+    });
+
+    expect(document.querySelector('#arena-skill-prompt').textContent).toBe('');
+    expect(view.state().deadlineMs).toBe(0);
+  });
+
   test.each([
     ['one choice', [{ slot: 1, choice: 'A', source: 'viewer' }]],
     ['duplicate slots', [

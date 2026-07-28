@@ -305,6 +305,60 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(service.projectParticipantCharge(resumed.participants[1], resumed, 17_000)).toBe(85);
   });
 
+  test('Rules v7 opens a fresh full eight-second choice window only after cinematic', () => {
+    const { service, matchId, advance } = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+    service.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'cinematic-a' });
+    service.submitChoice({ userId: 'viewer-b', choice: 'A', eventId: 'cinematic-b' });
+
+    const cinematic = service.getMatch(matchId);
+    expect(cinematic).toEqual(expect.objectContaining({
+      state: 'action',
+      roundNumber: 2,
+      actionOpenedAtMs: null,
+      actionDeadlineMs: null,
+      chargePauseReason: 'cinematic',
+      chargePauseUntilMs: expect.any(Number)
+    }));
+    expect(service.submitChoice({ userId: 'viewer-a', choice: 'A' }))
+      .toEqual(expect.objectContaining({ handled: false, reason: 'no_active_window' }));
+
+    advance(cinematic.chargePauseUntilMs - 10_000);
+    service.sweep();
+    const opened = service.getMatch(matchId);
+    expect(opened.actionOpenedAtMs).toBe(cinematic.chargePauseUntilMs);
+    expect(opened.actionDeadlineMs - opened.actionOpenedAtMs).toBe(8_000);
+    expect(opened.chargePauseReason).toBeNull();
+  });
+
+  test('reconnect restoration closes its pause before returning the resumed snapshot', () => {
+    const original = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 30_000
+    });
+    original.advance(1_000);
+    const recovered = createMatchService({
+      store: original.service.store,
+      now: () => 31_000,
+      rulesVersion: 7
+    });
+
+    const snapshot = recovered.getPublicSnapshot({ restoreReconnect: true });
+    const restored = snapshot.matches.find(match => match.matchId === original.matchId);
+    expect(restored.actionDeadlineMs).toBe(39_000);
+    expect(restored.chargeWindow).toEqual(expect.objectContaining({
+      openedAtMs: 30_000,
+      deadlineMs: 39_000,
+      pausedMs: 1_000
+    }));
+    expect(restored.chargeWindow).not.toHaveProperty('pauseStartedAtMs');
+    expect(restored.chargeWindow).not.toHaveProperty('pauseReason');
+  });
+
   test('Rules v7 timeout charge uses the persisted action deadline', () => {
     const { service, advance, decisions } = createReservedRulesV7Match({
       chargeA: 70,

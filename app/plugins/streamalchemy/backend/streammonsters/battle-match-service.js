@@ -240,12 +240,17 @@ class BattleMatchService {
     return this.db.prepare(`
       UPDATE streammonsters_matches
       SET charge_paused_ms = charge_paused_ms + ?,
+          action_deadline_ms = CASE
+            WHEN action_deadline_ms IS NULL THEN NULL
+            ELSE action_deadline_ms + ?
+          END,
           charge_pause_started_at_ms = NULL,
           charge_pause_until_ms = NULL,
           charge_pause_reason = NULL,
           updated_at_ms = ?
       WHERE match_id = ? AND charge_pause_started_at_ms IS NOT NULL
     `).run(
+      endedAtMs - Number(match.chargePauseStartedAtMs),
       endedAtMs - Number(match.chargePauseStartedAtMs),
       endedAtMs,
       matchId
@@ -1355,8 +1360,8 @@ class BattleMatchService {
       UPDATE streammonsters_matches
       SET phase_version = phase_version + 1,
           round_number = round_number + 1,
-          action_opened_at_ms = ?,
-          action_deadline_ms = ?,
+          action_opened_at_ms = NULL,
+          action_deadline_ms = NULL,
           charge_paused_ms = 0,
           charge_pause_started_at_ms = ?,
           charge_pause_until_ms = ?,
@@ -1365,31 +1370,11 @@ class BattleMatchService {
       WHERE match_id = ? AND state = 'action' AND phase_version = ?
     `).run(
       nowMs,
-      nowMs + this.actionWindowMs(match),
-      nowMs,
       nowMs + cinematicPauseMs,
       nowMs,
       matchId,
       expectedVersion
     );
-    if (changed.changes) {
-      const next = this.getMatch(matchId);
-      const chargeWindow = this.chargeWindow(next);
-      this.appendEvent(matchId, 'streammonsters:battle_choice_opened', {
-        matchId,
-        round: next.roundNumber,
-        deadlineMs: next.actionDeadlineMs,
-        choices: ['A', 'B', 'C'],
-        ...(chargeWindow ? { chargeWindow } : {})
-      }, {
-        matchId,
-        round: next.roundNumber,
-        deadlineMs: next.actionDeadlineMs,
-        choices: ['A', 'B', 'C'],
-        ...(chargeWindow ? { chargeWindow } : {}),
-        fighters: this.projectPublicFighters(next)
-      });
-    }
     return this.getMatch(matchId);
   }
 
@@ -2476,6 +2461,14 @@ class BattleMatchService {
       WHERE state IN ('roster', 'action', 'finalizing')
       ORDER BY created_at_ms, match_id
     `).all();
+    if (restoreReconnect) {
+      matchIds.forEach(({ match_id: matchId }) => {
+        const match = this.getMatch(matchId);
+        if (match?.chargePauseReason === 'reconnect') {
+          this.resumeChargeClock(matchId, this.now());
+        }
+      });
+    }
     const snapshot = {
       rulesVersion: this.rulesVersion,
       matches: matchIds.map(({ match_id: matchId }) => {
@@ -2498,14 +2491,6 @@ class BattleMatchService {
         };
       })
     };
-    if (restoreReconnect) {
-      matchIds.forEach(({ match_id: matchId }) => {
-        const match = this.getMatch(matchId);
-        if (match?.chargePauseReason === 'reconnect') {
-          this.resumeChargeClock(matchId, this.now());
-        }
-      });
-    }
     return snapshot;
   }
 
@@ -2943,6 +2928,55 @@ class BattleMatchService {
     });
   }
 
+  resumeCinematicChoiceWindow(matchId, nowMs = this.now()) {
+    return this.store.runInImmediateTransaction(() => {
+      const match = this.getMatch(matchId);
+      if (
+        !this.isRulesV7(match) ||
+        match?.state !== 'action' ||
+        match.actionDeadlineMs != null ||
+        match.chargePauseReason !== 'cinematic' ||
+        Number(match.chargePauseUntilMs) > nowMs
+      ) {
+        return false;
+      }
+      const deadlineMs = nowMs + this.actionWindowMs(match);
+      const changed = this.db.prepare(`
+        UPDATE streammonsters_matches
+        SET action_opened_at_ms = ?,
+            action_deadline_ms = ?,
+            charge_paused_ms = 0,
+            charge_pause_started_at_ms = NULL,
+            charge_pause_until_ms = NULL,
+            charge_pause_reason = NULL,
+            updated_at_ms = ?
+        WHERE match_id = ? AND state = 'action'
+          AND action_deadline_ms IS NULL
+          AND charge_pause_reason = 'cinematic'
+      `).run(nowMs, deadlineMs, nowMs, matchId);
+      if (!changed.changes) return false;
+      const opened = this.getMatch(matchId);
+      const chargeWindow = this.chargeWindow(opened);
+      const payload = {
+        matchId,
+        round: opened.roundNumber,
+        deadlineMs,
+        choices: ['A', 'B', 'C'],
+        ...(chargeWindow ? { chargeWindow } : {})
+      };
+      this.appendEvent(
+        matchId,
+        'streammonsters:battle_choice_opened',
+        payload,
+        {
+          ...payload,
+          fighters: this.projectPublicFighters(opened)
+        }
+      );
+      return true;
+    });
+  }
+
   recoverStatPrompt(promptId, nowMs = this.now()) {
     return this.store.runInImmediateTransaction(() => {
       const prompt = this.db.prepare(`
@@ -3076,6 +3110,7 @@ class BattleMatchService {
       statsExpired: 0,
       allocationsExpired: 0,
       allocationsOpened: 0,
+      cinematicsResumed: 0,
       specialReady: 0,
       errors: 0
     };
@@ -3097,6 +3132,20 @@ class BattleMatchService {
       ORDER BY roster_deadline_ms, match_id
     `).all(nowMs).forEach(({ match_id: matchId }) => {
       recover('rosterExpired', matchId, () => this.recoverRosterMatch(matchId, nowMs));
+    });
+    this.db.prepare(`
+      SELECT match_id FROM streammonsters_matches
+      WHERE state = 'action'
+        AND action_deadline_ms IS NULL
+        AND charge_pause_reason = 'cinematic'
+        AND charge_pause_until_ms <= ?
+      ORDER BY charge_pause_until_ms, match_id
+    `).all(nowMs).forEach(({ match_id: matchId }) => {
+      recover(
+        'cinematicsResumed',
+        matchId,
+        () => this.resumeCinematicChoiceWindow(matchId, nowMs)
+      );
     });
     this.db.prepare(`
       SELECT match_id FROM streammonsters_matches

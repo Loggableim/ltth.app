@@ -1016,7 +1016,11 @@
       ));
       if (!match) return null;
       applyMatch(match);
-      if (match.state === 'action') {
+      if (
+        match.state === 'action' &&
+        Number.isFinite(Number(match.actionDeadlineMs)) &&
+        Number(match.actionDeadlineMs) > 0
+      ) {
         openChoice({
           ...match,
           round: match.roundNumber,
