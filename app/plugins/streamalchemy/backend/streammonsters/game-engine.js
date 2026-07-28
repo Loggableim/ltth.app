@@ -56,6 +56,32 @@ class StreamMonstersEngine {
     this.store.afterCommit(() => this.emit(event, payload));
   }
 
+  projectEggStage(egg) {
+    if (!egg || typeof egg !== 'object') return null;
+    const projectedEgg = egg.state === 'queued' && egg.queue_position == null
+      ? {
+          ...egg,
+          queue_position: this.store.getQueuedEggs(egg.user_id)
+            .find(candidate => candidate.egg_id === egg.egg_id)?.queue_position ?? null
+        }
+      : egg;
+    return this.eggStageProjector.projectEgg(projectedEgg);
+  }
+
+  emitEggStageUpdated(egg, reason) {
+    const eggStage = this.projectEggStage(egg);
+    this.emitAfterCommit('streammonsters:egg_stage_updated', {
+      userId: egg.user_id,
+      reason,
+      eggStage,
+      ...this.eggStageProjector.eventIdentity(
+        'streammonsters:egg_stage_updated',
+        eggStage
+      )
+    });
+    return eggStage;
+  }
+
   describeGift({ giftId, giftName, coinValue = 0, userId = '', eventTimeMs = 0 }) {
     const normalizedGiftId = Number.parseInt(giftId, 10);
     const mapping = this.store.getGiftMapping(normalizedGiftId);
@@ -133,9 +159,11 @@ class StreamMonstersEngine {
       this.store.incrementStreamMetric(this.streamKey, 'egg_boosts');
       if (combo) this.addHype(20, { userId, gift, combo });
       this.recordHeartMeGift(userId, gift, createdAtMs);
+      const eggStage = this.projectEggStage(egg);
       this.emitAfterCommit('streammonsters:egg_boosted', {
         userId,
         egg,
+        eggStage,
         gift,
         event,
         hint: this.getCommandReference('inventory')
@@ -196,7 +224,7 @@ class StreamMonstersEngine {
       event,
       hint: this.getCommandReference('inventory')
     });
-    const eggStage = this.eggStageProjector.projectEgg(egg);
+    const eggStage = this.projectEggStage(egg);
     this.emitAfterCommit('streammonsters:egg_landed', {
       eggStage,
       ...this.eggStageProjector.eventIdentity('streammonsters:egg_landed', eggStage)
@@ -298,7 +326,7 @@ class StreamMonstersEngine {
     this.store.runInImmediateTransaction(() => {
       ready = this.store.markReadyEggs(nowMs);
       ready.forEach(egg => {
-        const eggStage = this.eggStageProjector.projectEgg(egg);
+        const eggStage = this.projectEggStage(egg);
         this.emitAfterCommit('streammonsters:egg_ready', {
           userId: egg.user_id,
           egg,
@@ -313,20 +341,14 @@ class StreamMonstersEngine {
           userId: egg.user_id,
           egg
         });
-        const eggStage = this.eggStageProjector.projectEgg(egg);
-        this.emitAfterCommit('streammonsters:egg_stage_removed', {
-          eggStage,
-          ...this.eggStageProjector.eventIdentity(
-            'streammonsters:egg_stage_removed',
-            eggStage
-          )
-        });
+        this.emitEggStageUpdated(egg, 'expired');
       });
-      this.store.promoteQueuedEggs(
+      const promoted = this.store.promoteQueuedEggs(
         nowMs,
         this.config.maxUnhatchedEggs,
         this.config.eggExpiryMs
       );
+      promoted.forEach(egg => this.emitEggStageUpdated(egg, 'promoted'));
     });
     return ready;
   }

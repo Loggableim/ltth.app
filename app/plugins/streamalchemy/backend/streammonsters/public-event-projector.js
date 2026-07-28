@@ -4,6 +4,7 @@ const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:egg_spawned',
   'streammonsters:egg_landed',
   'streammonsters:egg_ready',
+  'streammonsters:egg_stage_updated',
   'streammonsters:free_egg_reserved',
   'streammonsters:free_egg_public',
   'streammonsters:free_egg_claimed',
@@ -100,7 +101,7 @@ function publicViewerName(value) {
   if (
     !normalized ||
     /^unknown$/i.test(normalized) ||
-    /^\d{8,}$/.test(normalized) ||
+    /^\d+$/.test(normalized) ||
     /^tiktok:\d+$/i.test(normalized)
   ) {
     return null;

@@ -19,7 +19,7 @@ function publicViewerName(value) {
   if (
     !normalized ||
     /^unknown$/i.test(normalized) ||
-    /^\d{8,}$/.test(normalized) ||
+    /^\d+$/.test(normalized) ||
     /^tiktok:\d+$/i.test(normalized)
   ) {
     return null;

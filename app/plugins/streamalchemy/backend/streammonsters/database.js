@@ -1437,7 +1437,7 @@ class StreamMonstersDatabase {
             )
         ) ELSE NULL END AS queue_position
       FROM streammonsters_eggs eggs
-      WHERE eggs.state IN ('queued', 'incubating', 'ready')
+      WHERE eggs.state IN ('queued', 'incubating', 'ready', 'expired')
         AND COALESCE(eggs.provenance, 'legacy') <> 'free'
       ORDER BY eggs.created_at_ms ASC, eggs.egg_id ASC
     `).all();

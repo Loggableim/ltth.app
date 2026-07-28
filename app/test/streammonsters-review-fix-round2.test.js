@@ -242,6 +242,9 @@ async function createLiveOverlay(snapshot) {
     failFetch(error = new Error('state unavailable')) {
       fetchFailure = error;
     },
+    hasSocketHandler(event) {
+      return socketHandlers.has(event);
+    },
     async reconnect() {
       await socketHandlers.get('connect')();
       await flush();
@@ -360,6 +363,54 @@ describe('Stream Monsters review fix round 2 guidance', () => {
 
     overlay.close();
     await gcce.destroy();
+  });
+
+  test('applies promotion and boost stage refreshes through live socket handlers', async () => {
+    const readyAtMs = Date.now() + 120_000;
+    const queued = {
+      visualId: 'egg-live-refresh',
+      provenance: 'gift',
+      state: 'queued',
+      element: 'Ember',
+      variant: 'standard',
+      timing: { landedAtMs: Date.now(), readyAtMs: null },
+      queuePosition: 1,
+      adoptionStatus: 'owned',
+      adoptable: false
+    };
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 120_000 },
+      eggStage: [queued]
+    });
+    const timing = () => overlay.dom.window.document.querySelector(
+      '[data-egg-id="egg-live-refresh"] [data-egg-timing]'
+    )?.textContent;
+
+    expect(timing()).toBe('Queue #1');
+    expect(overlay.hasSocketHandler('streammonsters:egg_stage_updated')).toBe(true);
+    expect(overlay.hasSocketHandler('streammonsters:egg_boosted')).toBe(true);
+
+    await overlay.emit('streammonsters:egg_stage_updated', {
+      eggStage: {
+        ...queued,
+        state: 'incubating',
+        timing: { ...queued.timing, readyAtMs },
+        queuePosition: null
+      }
+    });
+    expect(timing()).toMatch(/^Hatches in 0[12]:\d{2}$/);
+
+    await overlay.emit('streammonsters:egg_boosted', {
+      eggStage: {
+        ...queued,
+        state: 'incubating',
+        timing: { ...queued.timing, readyAtMs: Date.now() + 30_000 },
+        queuePosition: null
+      }
+    });
+    expect(timing()).toMatch(/^Hatches in 00:30$/);
+    overlay.close();
   });
 
   test('uses effective alias fallback when an event hint is absent and never injects hint HTML', async () => {

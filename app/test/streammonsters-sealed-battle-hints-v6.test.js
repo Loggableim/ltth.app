@@ -608,6 +608,34 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
     expect(director.nextHint({}, 1_001)).toBeNull();
   });
 
+  test.each([
+    ['streammonsters:battle_choice_opened', 'skills', 'A / B / C'],
+    ['streammonsters:stat_choice_opened', 'stats', '1 / 2 / 3 / 4']
+  ])('uses only raw valid responses for %s NEXT actions', (eventType, kind, action) => {
+    const TutorialHintDirector = require(
+      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+    );
+    const resolvedCommands = [];
+    const director = new TutorialHintDirector({
+      getCommandReference: command => {
+        resolvedCommands.push(command);
+        return `!${command}`;
+      }
+    });
+
+    const hint = director.nextHint({ eventType }, 1_000);
+
+    expect(hint).toEqual(expect.objectContaining({
+      kind,
+      label: 'NEXT',
+      command: action,
+      commands: [action],
+      params: { command: action }
+    }));
+    expect(hint.commands.length).toBeLessThanOrEqual(2);
+    expect(resolvedCommands).toEqual([]);
+  });
+
   test('defaults to 90 seconds, validates 60–300 seconds, suppresses critical sequences and coalesces bursts', () => {
     const TutorialHintDirector = require(
       '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'

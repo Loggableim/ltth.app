@@ -933,7 +933,7 @@ class BattleMatchService {
     if (
       !candidate ||
       /^viewer$/i.test(candidate) ||
-      /^\d{8,}$/.test(candidate) ||
+      /^\d+$/.test(candidate) ||
       /^tiktok:\d+$/i.test(candidate)
     ) {
       return 'Viewer';

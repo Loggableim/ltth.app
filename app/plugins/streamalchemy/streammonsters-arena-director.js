@@ -771,21 +771,6 @@
           audioCue: 'ui.navigate'
         },
         {
-          type: 'egg_flight',
-          atMs: 1420,
-          durationMs: 620,
-          element
-        },
-        {
-          type: 'egg_impact',
-          atMs: 2040,
-          durationMs: 420,
-          element,
-          peak: true,
-          audioCue: 'arena.hit',
-          effect: { scene: 'spawn', element, vfxKey: `${element}:egg-impact` }
-        },
-        {
           type: 'reward_peak',
           atMs: 2380,
           durationMs: 520,

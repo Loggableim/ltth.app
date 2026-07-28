@@ -221,6 +221,28 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     view.destroy();
   });
 
+  test('turns a live ready egg rotten without removing its shelf entry', () => {
+    const Shelf = loadShelf();
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
+    `);
+    const view = Shelf.createEggStageView({
+      document: dom.window.document,
+      labels: { expired: 'Rotten' }
+    });
+    view.applySnapshot([egg('rotten-live', { state: 'ready' })]);
+
+    view.applyEvent('egg_stage_updated', {
+      eggStage: egg('rotten-live', { state: 'expired' })
+    });
+
+    const item = dom.window.document.querySelector('[data-egg-id="rotten-live"]');
+    expect(item).not.toBeNull();
+    expect(item.dataset.state).toBe('expired');
+    expect(item.querySelector('[data-egg-timing]').textContent).toBe('Rotten');
+    view.destroy();
+  });
+
   test('builds compact adoption notices only for reserved and public free eggs', () => {
     const Shelf = loadShelf();
     expect(Shelf.buildAdoptionNotice('free_egg_reserved', {

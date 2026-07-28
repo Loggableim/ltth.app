@@ -362,8 +362,7 @@
       const isNewLanding = type === 'egg_landed' && !eggsById.has(visualId);
       if (
         type === 'egg_stage_removed' ||
-        egg?.state === 'claimed' ||
-        egg?.state === 'expired'
+        egg?.state === 'claimed'
       ) {
         eggsById.delete(visualId);
         calloutDeadlineById.delete(visualId);

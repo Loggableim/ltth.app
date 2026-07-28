@@ -17,6 +17,9 @@ const EggStageProjector = require(
 const StreamMonstersPublicEventProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
 );
+const StreamMonstersBattleMatchService = require(
+  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+);
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 function loadViewerActivityTracker() {
@@ -180,6 +183,61 @@ describe('Stream Monsters 1.11 living egg shelf and active-owner loop', () => {
       .not.toMatch(new RegExp(`${spawned.egg.egg_id}|viewer-active|egg_id|user_id`));
   });
 
+  test('emits exact stage refreshes when FIFO eggs are promoted or boosted', () => {
+    const subject = createSubject();
+    Array.from({ length: 4 }, (_, index) => (
+      gift(subject, 'viewer-active', `gift-stage-${index}`)
+    ));
+    const queued = subject.emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_landed'
+    ))[3].payload.eggStage;
+    expect(queued).toEqual(expect.objectContaining({
+      state: 'queued',
+      queuePosition: 1,
+      timing: expect.objectContaining({ readyAtMs: null })
+    }));
+
+    subject.setNow(1_100);
+    subject.engine.markReadyEggs();
+    const promoted = subject.emitted.find(entry => (
+      entry.event === 'streammonsters:egg_stage_updated' &&
+      entry.payload.eggStage.visualId === queued.visualId
+    ));
+    expect(promoted?.payload).toEqual(expect.objectContaining({
+      eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
+      correlationId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
+      reason: 'promoted',
+      eggStage: expect.objectContaining({
+        state: 'incubating',
+        queuePosition: null,
+        timing: expect.objectContaining({ readyAtMs: 1_200 })
+      })
+    }));
+
+    subject.store.upsertGiftMapping({
+      giftId: 88,
+      giftName: 'Rose',
+      element: 'Ember',
+      effect: 'boost',
+      enabled: true
+    });
+    subject.engine.processGift({
+      userId: 'viewer-active',
+      displayName: 'Active Viewer',
+      giftId: 88,
+      giftName: 'Rose',
+      eventKey: 'boost-stage'
+    });
+    const boosted = subject.emitted.find(entry => (
+      entry.event === 'streammonsters:egg_boosted'
+    ));
+    expect(boosted?.payload.eggStage).toEqual(expect.objectContaining({
+      visualId: queued.visualId,
+      state: 'incubating',
+      timing: expect.objectContaining({ readyAtMs: 1_000 })
+    }));
+  });
+
   test('removes a claimed offer from the public shelf while retaining its private inventory egg', () => {
     const subject = createSubject({ hatchDurationMs: 120_000 });
     const freeEggs = new FreeEggDropService({
@@ -244,7 +302,13 @@ describe('Stream Monsters 1.11 living egg shelf and active-owner loop', () => {
       store: { getViewerDisplayName: () => 'Unknown' }
     });
 
-    for (const sourceDisplayName of ['', 'Unknown', '@7392847109283746102']) {
+    for (const sourceDisplayName of [
+      '',
+      'Unknown',
+      '1234567',
+      '@42',
+      '@7392847109283746102'
+    ]) {
       expect(eggStage.projectOffer({
         offer_id: `offer-${sourceDisplayName || 'empty'}`,
         source_display_name: sourceDisplayName,
@@ -254,13 +318,16 @@ describe('Stream Monsters 1.11 living egg shelf and active-owner loop', () => {
     }
     expect(publicEvents.project('streammonsters:egg_hatched', {
       userId: 'tiktok:7392847109283746102',
-      displayName: 'Unknown',
+      displayName: '1234567',
       egg: { element: 'Grove' },
       monster: { name: 'Sprig', element: 'Grove' }
     })).toEqual(expect.objectContaining({
       displayName: 'Viewer',
       owner: expect.objectContaining({ displayName: 'Viewer', initials: 'V' })
     }));
+    expect(StreamMonstersBattleMatchService.prototype.publicViewerName.call({
+      store: { getViewerDisplayName: () => '42' }
+    }, 'viewer-short-numeric')).toBe('Viewer');
   });
 
   test.each([

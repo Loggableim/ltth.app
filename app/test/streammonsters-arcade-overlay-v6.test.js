@@ -5,6 +5,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 const ArenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
 const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
+const EggStageView = require('../plugins/streamalchemy/streammonsters-egg-stage-view');
 const AudioEngine = require('../plugins/streamalchemy/streammonsters-audio-engine');
 const OverlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 const PublicEventProjector = require(
@@ -57,7 +58,43 @@ function beatTypes(timeline) {
 }
 
 describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
-  test('choreographs egg roulette, impact, hatch cracks and discovery reveal', () => {
+  test('uses the shelf landing as the gift egg single flight', () => {
+    const spawn = ArenaDirector.buildArcadeTimeline('egg_spawned', {
+      eventId: 'egg-single-flight',
+      correlationId: 'egg-single-flow',
+      egg: { element: 'Grove', variant: 'standard' }
+    });
+    const dom = new JSDOM(`
+      <section id="egg-shelf">
+        <div data-egg-slots></div><div data-egg-overflow></div>
+      </section>
+    `);
+    const shelf = EggStageView.createEggStageView({
+      document: dom.window.document
+    });
+
+    shelf.applyEvent('egg_landed', {
+      eggStage: {
+        visualId: 'egg-single-flight',
+        provenance: 'gift',
+        state: 'incubating',
+        element: 'Grove',
+        variant: 'standard',
+        timing: { readyAtMs: 121_000 },
+        adoptionStatus: 'owned',
+        adoptable: false
+      }
+    });
+
+    expect(beatTypes(spawn)).not.toContain('egg_flight');
+    expect(beatTypes(spawn)).not.toContain('egg_impact');
+    expect(dom.window.document.querySelector('[data-egg-id="egg-single-flight"]')
+      .classList.contains('landing')).toBe(true);
+    shelf.destroy();
+    dom.window.close();
+  });
+
+  test('choreographs egg roulette, shelf delivery, hatch cracks and discovery reveal', () => {
     const spawn = ArenaDirector.buildArcadeTimeline('egg_spawned', {
       eventId: 'egg-event-1',
       correlationId: 'egg-flow-1',
@@ -85,8 +122,6 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       'element_roulette',
       'element_roulette',
       'roulette_lock',
-      'egg_flight',
-      'egg_impact',
       'reward_peak'
     ]);
     expect(spawn.beats.filter(beat => beat.type === 'element_roulette')
@@ -633,7 +668,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
       .toBe(true);
   });
 
-  test('shows roulette, egg flight, hatch pulse, cracks and energy on a visible stage then cleans up', async () => {
+  test('shows roulette, hatch pulse, cracks and energy on a visible stage then cleans up', async () => {
     const dom = mountArena();
     const observed = [];
     const stage = dom.window.document.querySelector('#arcade-choreography');
@@ -661,7 +696,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     });
     expect(observed.some(state => state.visible && state.phase === 'roulette' && state.roulette))
       .toBe(true);
-    expect(observed.some(state => state.classes.includes('egg-flight'))).toBe(true);
+    expect(observed.some(state => state.classes.includes('egg-flight'))).toBe(false);
     expect(stage.classList.contains('visible')).toBe(false);
 
     observed.length = 0;

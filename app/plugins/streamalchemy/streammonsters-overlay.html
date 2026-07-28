@@ -1811,6 +1811,8 @@
       'free_egg_public',
       'free_egg_claimed',
       'egg_ready',
+      'egg_stage_updated',
+      'egg_boosted',
       'egg_stage_removed'
     ].includes(type)) {
       eggStageView.applyEvent(type, data);
@@ -1856,7 +1858,7 @@
           scale:.8
         });
       }
-      if (type !== 'egg_ready') return;
+      if (!['egg_ready', 'egg_boosted'].includes(type)) return;
     }
     const hour = type === 'stream_started' || type === 'elemental_hour'
       ? window.StreamMonstersArenaDirector.buildElementalHourEventPresentation(type, data)
@@ -2427,6 +2429,7 @@
     'streammonsters:hype_milestone':'hype_milestone',
     'streammonsters:elemental_hour':'elemental_hour',
     'streammonsters:egg_ready':'egg_ready',
+    'streammonsters:egg_stage_updated':'egg_stage_updated',
     'streammonsters:hatch_started':'hatch_started',
     'streammonsters:egg_hatched':'egg_hatched',
     'streammonsters:monster_discovered':'monster_discovered',
