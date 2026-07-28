@@ -1,43 +1,32 @@
 # Talking Heads
 
-Lokale, modulare 2D-Figuren mit synchroner TTS-Mundanimation fuer TikTok und OBS. Das Plugin verwendet ausschliesslich mitgelieferte Asset-Pakete und fuehrt keine Bildgenerierung oder externe Bild-API-Aufrufe aus.
+Talking Heads ist eine lokale Boba-Sprecherbuehne fuer TikTok und OBS. Das Overlay zeigt Avatare, macht den ersten Avatar mit einem Slot-Reveal sichtbar und bewegt den Mund anhand des echten TTS-Audios im Dashboard. Es werden ausschliesslich gebuendelte Asset-Pakete verwendet; Bildgenerierung und externe Avatar-APIs sind nicht beteiligt.
 
-## Enthaltene Figurenbibliotheken
+## Ablauf fuer Zuschauer
 
-- **Boba Animals**: tierische Charaktere als fertige Figuren.
-- **Kenney Monster Builder**: kombinierbare Monster-Koerper und Augen.
-- **Vector Character Builder**: Kopf, Haare, Augen und Mund als frei kombinierbare Ebenen.
+Wenn ein Zuschauer bereits eine TTS-Stimme hat, aber noch keinen Avatar besitzt, wird beim ersten TTS-Satz einmalig ein dreiteiliger Boba-Slot gestartet. Der mittlere Reel-Gewinn wird sofort lokal gespeichert. Erst nach dem Reveal beginnt die Audioausgabe; ein nicht verbundenes Overlay kann die TTS-Queue dabei nicht dauerhaft blockieren.
 
-Jede Auswahl wird lokal als fuenf SVG-Sprites materialisiert: Leerlauf, Blinzeln sowie drei Mundpositionen fuer TTS.
+Ein konfiguriertes Geschenk loest ausschliesslich fuer Zuschauer mit einem vorhandenen Avatar einen kosmetischen Reroll aus. Der neue Gewinn ist garantiert anders als die bisherige gueltige Auswahl. Es gibt keine Chat-Befehle, keine Raritaeten und keine spielrelevanten Vorteile.
+
+Alte Avatar-Zuweisungen bleiben gueltig. Die historisch benannte lokale Tabelle `talking_heads_avatar_lottery` wird aus Kompatibilitaetsgruenden weiterverwendet; es werden keine Avatar-Bilder an externe Dienste gesendet.
 
 ## Einrichtung
 
-1. Oeffne `/plugins/talking-heads/ui.html`.
-2. Waehle Bibliothek, Basisfigur und gegebenenfalls Augen, Haare oder Mund.
-3. Aktiviere Talking Heads und speichere die Auswahl.
-4. Fuege `/plugins/talking-heads/overlay.html` als Browserquelle in OBS hinzu.
-5. Nutze **Frames erzeugen & pruefen** oder **Animation testen**, um die Ausgabe vor dem Stream zu pruefen.
+1. Oeffne `/plugins/talking-heads/ui.html` und aktiviere Talking Heads.
+2. Pruefe im Bereich **Boba Character Lab** die Vorschau und starte bei Bedarf einen rein kosmetischen Test-Spin.
+3. Konfiguriere optional das Geschenk fuer Avatar-Rerolls. Eine stabile Geschenk-ID hat Vorrang vor dem Namen.
+4. Nutze fuer lokale OBS-Browserquellen `/overlay/talking-heads`; `/plugins/talking-heads/obs-hud.html` bleibt als kompatible HUD-Adresse verfuegbar.
+5. Kopiere fuer TikTok Studio oder Cloudflare die oeffentliche Overlay-Adresse aus **Overlay & Viewer Bar Setup**. Diese oeffentliche Oberflaeche enthaelt nur das Talking-Heads-Overlay, freigegebene Sprite-Assets und die dafuer noetigen Socket-Ereignisse.
 
-## Geschenk-Avatar-Lotterie
+## Synchronisation und Betrieb
 
-Die Lotterie ist standardmaessig aktiv. Als Namen fuer das ausloesende Geschenk sind `Heart Me`, `Team Heart` und `Team Herz` hinterlegt. Alternativ kann eine konkrete Geschenk-ID gesetzt werden; diese hat Vorrang vor den Namen.
+- Das Dashboard meldet TTS-Start erst beim nativen Audio-Ereignis `playing`, den Abschluss bei `ended` und waehrenddessen Audio-Pegel.
+- Talking Heads ordnet alle Renderereignisse ueber eine `playbackId` zu. Verspaetete Ereignisse eines frueheren Satzes koennen dadurch keinen aktuellen Sprecher beenden.
+- Der Mund reagiert mit Hysterese auf den Audio-Pegel. Falls kein Analyser verfuegbar ist, bleibt zwischen echtem Start und Ende ein zeitbasierter Fallback aktiv.
+- Erweiterte Bereiche der Stream-Director-Oberflaeche enthalten weiterhin manuelle Sprite-Sets, Cache-Verwaltung und Viewer-Bar-Konfiguration.
 
-Bei einem passenden Geschenk:
+## Asset-Bibliotheken
 
-1. Das Overlay zeigt eine kurze Slot-Animation.
-2. Eine zufaellige lokale Figur wird dem Zuschauer zugeordnet.
-3. Die Infobox erklaert die Chat-Befehle.
-
-| Zuschaueraktion | Ergebnis |
-| --- | --- |
-| Kein Befehl | Das naechste passende Geschenk lost erneut aus. |
-| `!keep` | Die aktuelle Figur bleibt fuer kuenftige TTS-Animationen erhalten. |
-| `!reroll` | Hebt `!keep` auf; das naechste passende Geschenk lost wieder aus. |
-
-Die Auswahl wird in der lokalen Tabelle `talking_heads_avatar_lottery` gespeichert. Es werden keine Avatar-Bilder an externe Dienste gesendet.
-
-## Betriebshinweise
-
-- Die Asset-Pakete bleiben im Plugin gebuendelt, die daraus erzeugten SVG-Sprites liegen im Plugin-Datenverzeichnis.
-- Die Gewinnfigur hat fuer die TTS-Animation des Zuschauers Vorrang vor der allgemeinen Standardfigur.
-- Eine Geschenk-ID ist am stabilsten, falls TikTok die sichtbare Geschenkbezeichnung lokalisiert oder aendert.
+- **Boba Animals** ist der Standardpool fuer die Avatar-Zuweisung.
+- **Kenney Monster Builder** und **Vector Character Builder** bleiben fuer manuelle bzw. allgemeine Figuren-Auswahl verfuegbar.
+- Jede Auswahl wird lokal als fuenf Sprites materialisiert: Leerlauf, Blinzeln sowie drei Mundformen fuer TTS.

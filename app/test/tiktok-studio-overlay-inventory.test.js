@@ -71,6 +71,12 @@ const STRAIGHTFORWARD_SURFACES = [
     existingCopyToken: 'id="btn-copy-overlay-url"'
   },
   {
+    html: 'plugins/talking-heads/ui.html',
+    sources: ['plugins/talking-heads/assets/ui.js'],
+    selectors: ['#publicOverlayUrl'],
+    existingCopyToken: 'id="copyLocalOverlayUrl"'
+  },
+  {
     html: 'plugins/toptier/ui.html',
     selectors: ['self', 'self'],
     existingCopyToken: 'data-copy-url='

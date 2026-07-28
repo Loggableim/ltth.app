@@ -25,6 +25,13 @@ const fox = { packId: 'boba', characterId: 'Fox', options: {} };
 const bear = { packId: 'boba', characterId: 'Bear', options: {} };
 const dog = { packId: 'boba', characterId: 'Dog', options: {} };
 
+function spinIdFor(io, playbackId) {
+  const event = io.emit.mock.calls.find(([eventName, payload]) => (
+    eventName === 'talkingheads:avatar:spin:start' && payload.playbackId === playbackId
+  ));
+  return event?.[1]?.spinId;
+}
+
 describe('Talking Heads gift avatar lottery', () => {
   test('registers only the configured gift behavior and rerolls an existing avatar', async () => {
     const { plugin, api, io } = createPlugin();
@@ -114,7 +121,7 @@ describe('Talking Heads gift avatar lottery', () => {
   });
 
   test('defers a gift that arrives during an initial avatar spin until renderer terminal', async () => {
-    const { plugin, api } = createPlugin();
+    const { plugin, api, io } = createPlugin();
     let currentAssignment = null;
     plugin.config.avatarLotteryEnabled = true;
     plugin.config.lotteryGiftNames = ['Heart Me'];
@@ -158,7 +165,8 @@ describe('Talking Heads gift avatar lottery', () => {
 
     expect(plugin._completeAvatarSpin({
       playbackId: 'initial-spin',
-      userId: 'viewer-1'
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'initial-spin')
     })).toBe(true);
     await expect(preparation).resolves.toEqual(expect.objectContaining({ spinStatus: 'complete' }));
 
@@ -183,7 +191,7 @@ describe('Talking Heads gift avatar lottery', () => {
   });
 
   test('keeps a first-spin reservation after acknowledgement until renderer failure terminal', async () => {
-    const { plugin, api } = createPlugin();
+    const { plugin, api, io } = createPlugin();
     let currentAssignment = null;
     plugin.config.avatarLotteryEnabled = true;
     plugin.config.lotteryGiftNames = ['Heart Me'];
@@ -216,7 +224,8 @@ describe('Talking Heads gift avatar lottery', () => {
     await new Promise((resolve) => setImmediate(resolve));
     expect(plugin._completeAvatarSpin({
       playbackId: 'post-reveal-gap',
-      userId: 'viewer-1'
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'post-reveal-gap')
     })).toBe(true);
     await expect(preparation).resolves.toEqual(expect.objectContaining({ spinStatus: 'complete' }));
 

@@ -61,12 +61,27 @@ describe('Talking Heads renderer lifecycle', () => {
       playbackId: 'playback-spin',
       userId: 'viewer-spin',
       duration: 10,
+      spinId: expect.any(String),
       winner: expect.objectContaining({ selection: expect.objectContaining({ characterId: 'Fox' }) })
     }));
     expect(plugin.avatarLotteryManager.assign.mock.invocationCallOrder[0])
       .toBeLessThan(io.emit.mock.invocationCallOrder[0]);
 
-    expect(plugin._completeAvatarSpin({ playbackId: 'playback-spin', userId: 'viewer-spin' })).toBe(true);
+    const spin = io.emit.mock.calls.find(([event]) => event === 'talkingheads:avatar:spin:start')[1];
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'playback-spin',
+      userId: 'viewer-spin'
+    })).toBe(false);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'playback-spin',
+      userId: 'viewer-spin',
+      spinId: 'untrusted-spin-id'
+    })).toBe(false);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'playback-spin',
+      userId: 'viewer-spin',
+      spinId: spin.spinId
+    })).toBe(true);
     await expect(preparation).resolves.toEqual(expect.objectContaining({
       created: true,
       spinStatus: 'complete'
@@ -195,7 +210,8 @@ describe('Talking Heads renderer lifecycle', () => {
     controller.setMouthIntensity('viewer', 'renderer-one', 0.9);
     expect(io.emit).toHaveBeenCalledWith('talkingheads:animation:frame', {
       userId: 'viewer',
-      frame: 'speak_open'
+      frame: 'speak_open',
+      playbackId: 'renderer-one'
     });
 
     expect(controller.endExternalAnimation('viewer', 'stale')).toBe(false);

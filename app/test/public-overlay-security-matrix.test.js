@@ -51,6 +51,7 @@ const entrypointFixtures = new Map([
   ['/overlay/spotlight/gifter', 'plugins/spotlight/overlays/gifter.html'],
   ['/streammonsters/overlay', 'plugins/streamalchemy/streammonsters-overlay.html'],
   ['/overlay/stt-ticker', 'plugins/stt-ticker/overlay/ticker.html'],
+  ['/overlay/talking-heads', 'plugins/talking-heads/overlay.html'],
   ['/plugins/toptier/overlay.html', 'plugins/toptier/overlay.html'],
   ['/visual-fx-frame-webgpu/overlay', 'plugins/visual-fx-frame-webgpu/renderer/index.html'],
   ['/weather-control/overlay', 'plugins/weather-control/overlay.html'],

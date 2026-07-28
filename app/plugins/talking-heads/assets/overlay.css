@@ -1,258 +1,319 @@
-/**
- * Talking Heads OBS Overlay Styles
- */
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
+* { box-sizing: border-box; }
+
+html,
 body {
-  background-color: transparent;
-  overflow: hidden;
-  width: 100vw;
-  height: 100vh;
-}
-
-#avatarContainer {
-  position: relative;
   width: 100%;
   height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.speaker-stage {
+  position: fixed;
+  right: clamp(18px, 3vw, 60px);
+  bottom: clamp(18px, 4vh, 52px);
+  width: min(31vw, 440px);
+  min-width: 240px;
+  min-height: 300px;
+  display: grid;
+  place-items: end center;
+  isolation: isolate;
+  opacity: .68;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.speaker-stage.is-speaking {
+  opacity: 1;
+  transform: translateY(-4px);
+}
+
+.stage-chrome {
+  position: absolute;
+  inset: auto 18px 12px;
+  z-index: 3;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid rgba(152, 223, 255, .34);
+  border-radius: 999px;
+  color: #dff5ff;
+  background: rgba(5, 13, 27, .74);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .32);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+}
+
+.stage-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #73f6b7;
+  box-shadow: 0 0 12px #73f6b7;
+}
+
+.avatar-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 300px;
+  display: grid;
+  place-items: end center;
 }
 
 .avatar {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 400px;
-  height: 400px;
+  bottom: 8px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 100%;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+  transform: translateY(24px) scale(.92);
+  transition: opacity 210ms ease, transform 210ms cubic-bezier(.2, .9, .3, 1.25);
 }
 
-.avatar.active {
+.avatar.is-visible {
   opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
-.avatar.fading-out {
+.avatar.is-leaving {
   opacity: 0;
+  transform: translateY(16px) scale(.94);
 }
 
 .avatar img {
-  width: 100%;
-  height: 100%;
+  width: min(30vw, 400px);
+  height: min(30vw, 400px);
+  min-width: 220px;
+  min-height: 220px;
   object-fit: contain;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .58));
 }
 
-/* Multiple avatar support - stack them */
-.avatar:nth-child(2) {
-  bottom: 20px;
-  left: 20px;
-  right: auto;
+.avatar-name,
+.stage-idle {
+  z-index: 4;
+  margin: 0;
+  padding: 7px 11px;
+  border-radius: 9px;
+  color: #f4fbff;
+  background: rgba(6, 12, 28, .74);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .26);
+  font-size: 13px;
+  font-weight: 800;
 }
 
-.avatar:nth-child(3) {
-  top: 20px;
-  right: 20px;
-  bottom: auto;
+.stage-idle {
+  position: absolute;
+  bottom: 52px;
+  color: #adc6d8;
+  font-size: 11px;
+  font-weight: 650;
 }
 
-.avatar:nth-child(4) {
-  top: 20px;
-  left: 20px;
-  bottom: auto;
-  right: auto;
-}
-
-/* Animation effects */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.8) translateY(20px);
-  }
-}
-
-.avatar.animating-in {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.avatar.animating-out {
-  animation: fadeOut 0.3s ease-out forwards;
-}
-
-#spawnCanvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+.spawn-pulse {
+  position: absolute;
+  inset: 8% 8% 10%;
+  z-index: 1;
+  border-radius: 50%;
   opacity: 0;
-  transition: opacity 0.25s ease;
-  z-index: 5;
-}
-
-#spawnCanvas.active {
-  opacity: 1;
-}
-
-#spawnMediaLayer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: radial-gradient(circle, rgba(101, 225, 255, .75), rgba(139, 92, 246, .16) 45%, transparent 68%);
+  transform: scale(.6);
   pointer-events: none;
-  z-index: 6;
 }
 
-.spawn-media {
-  max-width: 50vw;
-  max-height: 50vh;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.25);
+.spawn-pulse.is-active { animation: spawn-pulse 900ms ease-out both; }
+
+@keyframes spawn-pulse {
+  0% { opacity: 0; transform: scale(.58); }
+  25% { opacity: .9; }
+  100% { opacity: 0; transform: scale(1.25); }
 }
 
-.lottery-overlay {
+.avatar-spin-overlay {
   position: fixed;
   inset: 0;
   z-index: 20;
   display: grid;
   place-items: center;
-  padding: 5vh 5vw;
+  padding: 4vh 4vw;
+  background: radial-gradient(circle at center, rgba(29, 78, 216, .35), rgba(7, 12, 27, .12) 52%, transparent 74%);
   pointer-events: none;
-  background: radial-gradient(circle at center, rgba(239, 68, 68, 0.22), rgba(15, 23, 42, 0.08) 48%, transparent 72%);
 }
 
-.lottery-overlay[hidden] {
-  display: none;
-}
+.avatar-spin-overlay[hidden] { display: none; }
 
-.lottery-card {
-  width: min(520px, 90vw);
-  display: grid;
-  grid-template-columns: minmax(150px, 210px) 1fr;
-  gap: 20px;
-  align-items: center;
-  padding: 24px;
-  color: #f8fafc;
-  border: 2px solid rgba(253, 224, 71, 0.88);
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(127, 29, 29, 0.96), rgba(76, 5, 25, 0.96));
-  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.65), inset 0 0 32px rgba(253, 224, 71, 0.18);
-  transform: scale(0.92) translateY(14px);
+.slot-machine {
+  width: min(820px, 94vw);
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid rgba(153, 229, 255, .56);
+  border-radius: 28px;
+  color: #effaff;
+  background:
+    linear-gradient(145deg, rgba(12, 25, 55, .98), rgba(23, 12, 54, .98)),
+    #10152e;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .7), inset 0 1px rgba(255, 255, 255, .12);
   opacity: 0;
+  transform: translateY(22px) scale(.94);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
-.lottery-overlay.is-visible .lottery-card {
+.avatar-spin-overlay.is-visible .slot-machine {
   opacity: 1;
-  transform: scale(1) translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-.lottery-kicker {
-  grid-column: 1 / -1;
-  margin: 0 0 -8px;
-  color: #fde047;
-  font-weight: 800;
-  font-size: 0.78rem;
-  letter-spacing: 0.16em;
-}
-
-.lottery-card h1 {
-  grid-column: 1 / -1;
+.slot-kicker,
+.slot-reveal-label {
   margin: 0;
-  font-size: clamp(1.35rem, 3vw, 2rem);
-  line-height: 1.05;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  color: #86e8ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
 }
 
-.lottery-slot-window {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1;
-  overflow: hidden;
-  border: 4px solid rgba(255, 255, 255, 0.82);
-  border-radius: 18px;
-  background: radial-gradient(circle, #fef3c7, #f59e0b 72%, #92400e);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.38);
+.slot-machine h1 {
+  margin: 7px 0 4px;
+  font-size: clamp(24px, 4vw, 46px);
+  letter-spacing: -.045em;
 }
 
-.lottery-slot-window img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.38));
-}
-
-.lottery-overlay.is-spinning .lottery-slot-window img {
-  animation: lottery-slot-bounce 120ms linear infinite;
-}
-
-.lottery-info strong {
-  display: block;
-  margin-bottom: 8px;
-  color: #fde68a;
-  font-size: 1.2rem;
-}
-
-.lottery-info p {
-  margin: 0;
-  line-height: 1.35;
-}
-
-.lottery-commands {
-  margin-top: 14px !important;
-  padding: 9px 11px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.52);
+.slot-username {
+  min-height: 20px;
+  margin: 0 0 20px;
+  color: #bbcee4;
+  font-size: 15px;
   font-weight: 700;
-  font-size: 0.94rem;
 }
 
-.lottery-overlay.is-result .lottery-slot-window {
-  animation: lottery-result-pop 560ms cubic-bezier(.2, 1.5, .45, 1) both;
+.slot-reels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 1.6vw, 18px);
+  padding: clamp(10px, 2vw, 18px);
+  border: 1px solid rgba(180, 232, 255, .16);
+  border-radius: 20px;
+  background: rgba(2, 7, 21, .58);
 }
 
-@keyframes lottery-slot-bounce {
-  0% { transform: translateY(-5px) scale(1.02); }
-  100% { transform: translateY(5px) scale(0.98); }
+.slot-reel {
+  position: relative;
+  height: clamp(128px, 19vw, 210px);
+  overflow: hidden;
+  border: 1px solid rgba(194, 232, 255, .23);
+  border-radius: 15px;
+  background: linear-gradient(180deg, #0d1733, #050916);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .46);
 }
 
-@keyframes lottery-result-pop {
-  0% { transform: scale(0.76) rotate(-5deg); filter: brightness(1.8); }
-  60% { transform: scale(1.1) rotate(3deg); }
-  100% { transform: scale(1) rotate(0); }
+.slot-reel::before,
+.slot-reel::after {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 28%;
+  content: '';
+  pointer-events: none;
 }
 
-@media (max-width: 520px) {
-  .lottery-card { grid-template-columns: 1fr; gap: 14px; padding: 18px; }
-  .lottery-slot-window { width: min(190px, 52vw); justify-self: center; }
+.slot-reel::before { top: 0; background: linear-gradient(#0b1126, transparent); }
+.slot-reel::after { bottom: 0; background: linear-gradient(transparent, #0b1126); }
+
+.slot-reel--winner {
+  border-color: rgba(250, 229, 120, .94);
+  box-shadow: 0 0 28px rgba(250, 213, 93, .22), inset 0 0 26px rgba(0, 0, 0, .42);
+}
+
+.reel-track {
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+}
+
+.reel-track.is-spinning { animation: reel-scroll var(--reel-duration, 2600ms) linear infinite; }
+.reel-track.is-stopped { animation: reel-stop 260ms cubic-bezier(.18, 1.32, .4, 1) both; }
+
+.reel-card {
+  display: grid;
+  min-height: 95px;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 6px;
+  border-radius: 10px;
+  color: #dcecff;
+  background: rgba(255, 255, 255, .055);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.reel-card img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 7px rgba(0, 0, 0, .48));
+}
+
+@keyframes reel-scroll {
+  from { transform: translateY(0); }
+  to { transform: translateY(-72%); }
+}
+
+@keyframes reel-stop {
+  0% { transform: translateY(-18px) scale(.94); }
+  72% { transform: translateY(4px) scale(1.04); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.slot-reveal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 220ms ease, opacity 220ms ease, margin-top 220ms ease;
+}
+
+.avatar-spin-overlay.is-revealed .slot-reveal {
+  max-height: 160px;
+  margin-top: 18px;
+  opacity: 1;
+}
+
+.slot-reveal img {
+  width: 102px;
+  height: 102px;
+  object-fit: contain;
+  filter: drop-shadow(0 9px 12px rgba(0, 0, 0, .52));
+}
+
+.slot-reveal strong {
+  display: block;
+  margin-top: 3px;
+  color: #fff6ca;
+  font-size: clamp(20px, 3vw, 32px);
+}
+
+@media (max-width: 620px) {
+  .speaker-stage { width: min(52vw, 300px); min-width: 180px; min-height: 230px; }
+  .avatar-container { min-height: 230px; }
+  .avatar img { width: min(52vw, 300px); height: min(52vw, 300px); min-width: 170px; min-height: 170px; }
+  .slot-machine { padding: 18px; }
+  .slot-reel { height: 126px; }
+  .reel-card { min-height: 82px; }
+  .reel-card img { width: 58px; height: 58px; }
 }

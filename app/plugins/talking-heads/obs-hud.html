@@ -1,41 +1,43 @@
-<!DOCTYPE html>
-<html lang="de">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="plugins.talking-heads.labels.talking_heads_obs_hud">Talking Heads OBS HUD</title>
-    <link rel="stylesheet" href="assets/overlay.css">
-    <style>
-        html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background: transparent;
-            overflow: hidden;
-        }
-        .hud-frame {
-            position: relative;
-            width: 1920px;
-            height: 1080px;
-            margin: 0 auto;
-        }
-        @media (max-width: 1920px) {
-            .hud-frame {
-                width: 100vw;
-                height: calc(100vw * 9 / 16);
-            }
-        }
-    </style>
-    <script src="/js/i18n-client.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.obs_title">Talking Heads - OBS Speaker Stage</title>
+  <link rel="stylesheet" href="/overlay/talking-heads/assets/overlay.css">
 </head>
-<body>
-    <div class="hud-frame">
-        <div id="avatarContainer"></div>
+<body class="obs-hud-body">
+  <main id="speakerStage" class="speaker-stage speaker-stage--hud" aria-live="polite">
+    <div class="stage-chrome" aria-hidden="true">
+      <span class="stage-live-dot"></span>
+      <span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.live_speaker">LIVE SPEAKER</span>
     </div>
+    <div id="avatarContainer" class="avatar-container"></div>
+    <p id="stageIdle" class="stage-idle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.waiting">Waiting for the next voice</p>
+    <div id="spawnPulse" class="spawn-pulse" aria-hidden="true"></div>
+  </main>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="assets/overlay.js"></script>
+  <section id="avatarSpinOverlay" class="avatar-spin-overlay" aria-live="polite" aria-atomic="true" hidden>
+    <div class="slot-machine" role="status">
+      <p class="slot-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.lab">BOBA CHARACTER LAB</p>
+      <h1 id="slotTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigning">Assigning a new avatar</h1>
+      <p id="slotUsername" class="slot-username"></p>
+      <div class="slot-reels" aria-label="Three avatar reels" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.overlay.three_reels">
+        <div class="slot-reel" data-slot-reel="0"><div class="reel-track"></div></div>
+        <div class="slot-reel slot-reel--winner" data-slot-reel="1"><div class="reel-track"></div></div>
+        <div class="slot-reel" data-slot-reel="2"><div class="reel-track"></div></div>
+      </div>
+      <div class="slot-reveal" aria-live="polite">
+        <img id="slotWinnerAvatar" alt="Assigned Boba avatar" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigned_avatar">
+        <div>
+          <span class="slot-reveal-label" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.your_boba">YOUR BOBA</span>
+          <strong id="slotWinnerName" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.overlay.boba_avatar">Boba avatar</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/overlay/talking-heads/assets/overlay.js"></script>
 </body>
 </html>

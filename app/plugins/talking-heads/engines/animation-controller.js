@@ -76,7 +76,8 @@ class AnimationController {
         userId,
         username,
         sprites: relativeSprites,
-        fadeInDuration: this.config.fadeInDuration || 300
+        fadeInDuration: this.config.fadeInDuration || 300,
+        playbackId: animationState.playbackId
       });
       
       this.logger.info(`TalkingHeads: Emitting animation:start for ${username}`, { 
@@ -125,7 +126,8 @@ class AnimationController {
     // Emit idle frame
     this.io.emit('talkingheads:animation:frame', {
       userId,
-      frame: 'idle_neutral'
+      frame: 'idle_neutral',
+      playbackId: animation.playbackId
     });
 
     // Setup periodic blinking
@@ -149,7 +151,8 @@ class AnimationController {
     // Show blink frame
     this.io.emit('talkingheads:animation:frame', {
       userId,
-      frame: 'blink'
+      frame: 'blink',
+      playbackId: animation.playbackId
     });
 
     // Return to idle after 150ms
@@ -157,7 +160,8 @@ class AnimationController {
       if (this.activeAnimations.has(userId)) {
         this.io.emit('talkingheads:animation:frame', {
           userId,
-          frame: 'idle_neutral'
+          frame: 'idle_neutral',
+          playbackId: animation.playbackId
         });
       }
     }, 150);
@@ -210,7 +214,8 @@ class AnimationController {
       if (animation.state === this.STATES.SPEAKING) {
         this.io.emit('talkingheads:animation:frame', {
           userId,
-          frame: speakFrames[frameIndex]
+          frame: speakFrames[frameIndex],
+          playbackId: animation.playbackId
         });
 
         frameIndex = (frameIndex + 1) % speakFrames.length;
@@ -232,7 +237,8 @@ class AnimationController {
       if (animation.state !== this.STATES.SPEAKING || !animation.externalLifecycle) return;
       this.io.emit('talkingheads:animation:frame', {
         userId: animation.userId,
-        frame: speakFrames[frameIndex]
+        frame: speakFrames[frameIndex],
+        playbackId: animation.playbackId
       });
       frameIndex = (frameIndex + 1) % speakFrames.length;
     }, 140);
@@ -267,7 +273,11 @@ class AnimationController {
       frame = intensity >= 0.65 ? 'speak_open' : (intensity >= 0.32 ? 'speak_mid' : 'speak_closed');
     }
     animation.mouthFrame = frame;
-    this.io.emit('talkingheads:animation:frame', { userId, frame });
+    this.io.emit('talkingheads:animation:frame', {
+      userId,
+      frame,
+      playbackId: animation.playbackId
+    });
     return true;
   }
 
@@ -312,7 +322,8 @@ class AnimationController {
     // Return to idle before fading out
     this.io.emit('talkingheads:animation:frame', {
       userId,
-      frame: 'idle_neutral'
+      frame: 'idle_neutral',
+      playbackId: animation.playbackId
     });
 
     // Fade out after brief pause
@@ -320,7 +331,8 @@ class AnimationController {
       if (this.activeAnimations.get(userId) !== animation) return;
       this.io.emit('talkingheads:animation:end', {
         userId,
-        fadeOutDuration: this.config.fadeOutDuration || 300
+        fadeOutDuration: this.config.fadeOutDuration || 300,
+        playbackId: animation.playbackId
       });
 
       // Cleanup OBS scene
@@ -359,7 +371,10 @@ class AnimationController {
     if (animation.endTimer) clearTimeout(animation.endTimer);
 
     // Emit stop event
-    this.io.emit('talkingheads:animation:stop', { userId });
+    this.io.emit('talkingheads:animation:stop', {
+      userId,
+      playbackId: animation.playbackId
+    });
 
     // Cleanup
     this.activeAnimations.delete(userId);

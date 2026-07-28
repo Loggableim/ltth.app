@@ -178,7 +178,7 @@
     {
       "label": "plugin:talking-heads",
       "directory": "app/plugins/talking-heads/locales",
-      "keys": 50
+      "keys": 131
     },
     {
       "label": "plugin:thermal-printer",

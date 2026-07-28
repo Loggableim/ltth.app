@@ -5,6 +5,7 @@
 
 const path = require('path');
 const fs = require('fs').promises;
+const crypto = require('crypto');
 
 // Import engines and utilities
 const AnimationController = require('./engines/animation-controller');
@@ -62,10 +63,11 @@ class TalkingHeadsPlugin {
       assetPack: 'boba',
       assetCharacter: 'Fox',
       assetOptions: {},
-      avatarLotteryEnabled: true,
-      lotteryGiftId: '',
-      lotteryGiftNames: ['Heart Me', 'Team Heart', 'Team Herz'],
-      lotteryAnimationDuration: 2600,
+      firstAssignmentEnabled: true,
+      rerollGiftEnabled: true,
+      rerollGiftId: '',
+      rerollGiftNames: ['Heart Me', 'Team Heart', 'Team Herz'],
+      spinDurationMs: 2600,
       cacheEnabled: true,
       cacheDuration: 2592000000, // 30 days in milliseconds
       obsEnabled: true,
@@ -115,31 +117,55 @@ class TalkingHeadsPlugin {
     const mergedConfig = savedConfig ? { ...defaultConfig, ...savedConfig } : defaultConfig;
     // Deep-merge viewerBar so partial saved configs don't lose defaults
     mergedConfig.viewerBar = { ...defaultConfig.viewerBar, ...(mergedConfig.viewerBar || {}) };
-    return this._normalizeLotteryConfig(mergedConfig);
+    return this._normalizeAvatarConfig(mergedConfig);
   }
 
   /**
-   * Keep the avatar-lottery configuration valid when loaded or saved.
+   * Normalize the current first-assignment and cosmetic reroll configuration.
+   * Legacy lottery keys are read once so existing persisted viewer avatars and
+   * settings survive the release migration without carrying old UI language.
    * @param {object} config
    * @returns {object}
    * @private
    */
-  _normalizeLotteryConfig(config) {
+  _normalizeAvatarConfig(config) {
     const defaultGiftNames = ['Heart Me', 'Team Heart', 'Team Herz'];
-    const rawGiftNames = Array.isArray(config.lotteryGiftNames)
+    const hasLegacyEnabled = Object.hasOwn(config, 'avatarLotteryEnabled');
+    const hasLegacyGiftId = Object.hasOwn(config, 'lotteryGiftId');
+    const hasLegacyGiftNames = Object.hasOwn(config, 'lotteryGiftNames');
+    const hasLegacyDuration = Object.hasOwn(config, 'lotteryAnimationDuration');
+    const rawGiftNames = hasLegacyGiftNames
       ? config.lotteryGiftNames
-      : String(config.lotteryGiftNames || '').split(',');
-    const lotteryGiftNames = rawGiftNames
+      : config.rerollGiftNames;
+    const rerollGiftNames = (Array.isArray(rawGiftNames)
+      ? rawGiftNames
+      : String(rawGiftNames || '').split(','))
       .map((name) => String(name || '').trim().slice(0, 80))
       .filter(Boolean);
-    const requestedDuration = Number(config.lotteryAnimationDuration);
+    const requestedDuration = Number(hasLegacyDuration
+      ? config.lotteryAnimationDuration
+      : config.spinDurationMs);
+    const {
+      avatarLotteryEnabled: _legacyEnabled,
+      lotteryGiftId: _legacyGiftId,
+      lotteryGiftNames: _legacyGiftNames,
+      lotteryAnimationDuration: _legacyDuration,
+      ...normalizedConfig
+    } = config;
 
     return {
-      ...config,
-      avatarLotteryEnabled: config.avatarLotteryEnabled !== false,
-      lotteryGiftId: String(config.lotteryGiftId || '').trim().slice(0, 80),
-      lotteryGiftNames: lotteryGiftNames.length ? lotteryGiftNames : defaultGiftNames,
-      lotteryAnimationDuration: Number.isFinite(requestedDuration)
+      ...normalizedConfig,
+      firstAssignmentEnabled: hasLegacyEnabled
+        ? config.avatarLotteryEnabled !== false
+        : config.firstAssignmentEnabled !== false,
+      rerollGiftEnabled: hasLegacyEnabled
+        ? config.avatarLotteryEnabled !== false
+        : config.rerollGiftEnabled !== false,
+      rerollGiftId: String((hasLegacyGiftId ? config.lotteryGiftId : config.rerollGiftId) || '')
+        .trim()
+        .slice(0, 80),
+      rerollGiftNames: rerollGiftNames.length ? rerollGiftNames : defaultGiftNames,
+      spinDurationMs: Number.isFinite(requestedDuration)
         ? Math.min(10000, Math.max(800, Math.round(requestedDuration)))
         : 2600
     };
@@ -303,6 +329,10 @@ class TalkingHeadsPlugin {
       return { created: false, selection: null, reason: 'voice-not-assigned' };
     }
 
+    if (this.config.firstAssignmentEnabled === false || this.config.avatarLotteryEnabled === false) {
+      return { created: false, selection: null, reason: 'first-assignment-disabled' };
+    }
+
     if (!this.assetSpriteLibrary) {
       this.assetSpriteLibrary = new AssetSpriteLibrary({
         dataDir: this.api.getPluginDataDir(),
@@ -320,7 +350,19 @@ class TalkingHeadsPlugin {
     };
   }
 
-  async _emitAvatarSpin({ userId, username, playbackId, winnerSelection, reason = 'initial-assignment' } = {}) {
+  _createSpinId() {
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return crypto.randomBytes(16).toString('hex');
+  }
+
+  async _emitAvatarSpin({
+    userId,
+    username,
+    playbackId,
+    winnerSelection,
+    reason = 'initial-assignment',
+    preview = false
+  } = {}) {
     if (!userId || !winnerSelection || !this.assetSpriteLibrary) return null;
     const candidates = this.assetSpriteLibrary.getLotteryCandidates(
       3,
@@ -338,13 +380,18 @@ class TalkingHeadsPlugin {
         };
       }))
     ]);
-    const duration = this.config.lotteryAnimationDuration;
+    const legacyDuration = Number(this.config.lotteryAnimationDuration);
+    const duration = Number.isFinite(legacyDuration)
+      ? legacyDuration
+      : this.config.spinDurationMs || 2600;
     const payload = {
+      spinId: this._createSpinId(),
       playbackId: String(playbackId || ''),
       userId,
       username: username || userId,
       reason,
       duration,
+      preview: preview === true,
       candidates: candidateCards,
       winner: {
         selection: winnerSelection,
@@ -368,6 +415,10 @@ class TalkingHeadsPlugin {
     let timer = null;
     const pending = {
       userId: payload.userId,
+      spinId: payload.spinId,
+      reason: payload.reason,
+      duration: payload.duration,
+      createdAt: Date.now(),
       promise: null,
       resolve: null,
       timer: null
@@ -411,6 +462,7 @@ class TalkingHeadsPlugin {
     const pending = this.pendingAvatarSpins.get(playbackId);
     if (!pending) return false;
     if (!data.userId || String(data.userId) !== String(pending.userId)) return false;
+    if (!data.spinId || String(data.spinId) !== String(pending.spinId)) return false;
     if (pending.timer) clearTimeout(pending.timer);
     this.pendingAvatarSpins.delete(playbackId);
     pending.resolve({ created: true, spinStatus: 'complete' });
@@ -423,6 +475,33 @@ class TalkingHeadsPlugin {
       pending.resolve?.({ created: false, spinStatus: 'cancelled' });
     });
     this.pendingAvatarSpins.clear();
+  }
+
+  _getStreamDirectorStatus() {
+    const activeSpeaker = Array.from(this.activePlaybackByUser.entries())
+      .map(([userId, playbackId]) => ({ userId, playbackId }))
+      .at(0) || null;
+    const [spinPlaybackId, pendingSpin] = Array.from(this.pendingAvatarSpins.entries()).at(0) || [];
+
+    return {
+      enabled: this.config.enabled === true,
+      assetPack: this.config.assetPack || 'boba',
+      activeSpeaker,
+      activeSpin: pendingSpin ? {
+        playbackId: spinPlaybackId,
+        userId: pendingSpin.userId,
+        spinId: pendingSpin.spinId,
+        reason: pendingSpin.reason || null,
+        duration: pendingSpin.duration || null
+      } : null,
+      rendererBridge: {
+        available: Boolean(this.ttsBridgeHandlers),
+        activePlaybackCount: this.activePlaybackByUser.size,
+        state: this.activePlaybackByUser.size > 0
+          ? 'playing'
+          : this.ttsBridgeHandlers ? 'ready' : 'unavailable'
+      }
+    };
   }
 
   /**
@@ -478,9 +557,11 @@ class TalkingHeadsPlugin {
    * @private
    */
   _isLotteryGift(data = {}) {
-    if (this.config.avatarLotteryEnabled === false) return false;
+    if (this.config.rerollGiftEnabled === false || this.config.avatarLotteryEnabled === false) return false;
 
-    const configuredGiftId = String(this.config.lotteryGiftId || '').trim();
+    const configuredGiftId = String(
+      this.config.rerollGiftId || this.config.lotteryGiftId || ''
+    ).trim();
     if (configuredGiftId) {
       const receivedGiftId = String(data.giftId || data.gift_id || data.id || '').trim();
       return receivedGiftId === configuredGiftId;
@@ -489,7 +570,8 @@ class TalkingHeadsPlugin {
     const normalizeName = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
     const receivedName = normalizeName(data.giftName || data.gift_name || data.name);
     if (!receivedName) return false;
-    return (this.config.lotteryGiftNames || []).some((giftName) => normalizeName(giftName) === receivedName);
+    const configuredNames = this.config.rerollGiftNames || this.config.lotteryGiftNames || [];
+    return configuredNames.some((giftName) => normalizeName(giftName) === receivedName);
   }
 
   /**
@@ -554,7 +636,7 @@ class TalkingHeadsPlugin {
       reason: 'gift-reroll'
     });
     if (!spin) return false;
-    this._log(`Avatar lottery: drew ${winnerSelection.packId}/${winnerSelection.characterId} for ${user.username}`, 'info');
+    this._log(`Avatar reroll: drew ${winnerSelection.packId}/${winnerSelection.characterId} for ${user.username}`, 'info');
     return true;
   }
 
@@ -650,7 +732,7 @@ class TalkingHeadsPlugin {
   _saveConfig(newConfig) {
     try {
       const oldDebugLogging = this.config ? this.config.debugLogging : false;
-      this.config = this._normalizeLotteryConfig({ ...this.config, ...newConfig });
+      this.config = this._normalizeAvatarConfig({ ...this.config, ...newConfig });
       this.config.spawnAnimationMode = this.config.spawnAnimationMode || 'standard';
       this.config.spawnAnimationUrl = this.config.spawnAnimationUrl || '';
       if (typeof this.config.spawnAnimationVolume === 'number') {
@@ -802,6 +884,52 @@ class TalkingHeadsPlugin {
     this.api.registerRoute('get', '/overlay/talking-heads/assets/:filename', (req, res) => {
       const safeFilename = path.basename(req.params.filename || '');
       res.sendFile(path.join(assetsDir, safeFilename));
+    });
+
+    // Stream Director health is intentionally local-only. It omits message
+    // text and audio data, exposing only the render bridge state needed by
+    // the dashboard surface.
+    this.api.registerRoute('get', '/api/talkingheads/status', (req, res) => {
+      res.json({ success: true, status: this._getStreamDirectorStatus() });
+    });
+
+    // This preview never creates an assignment, triggers TTS, or imitates a
+    // gift. It exists solely to check the Broadcast Arcade overlay pipeline.
+    this.api.registerRoute('post', '/api/talkingheads/test-spin', async (req, res) => {
+      try {
+        if (!this.assetSpriteLibrary) {
+          this.assetSpriteLibrary = new AssetSpriteLibrary({
+            dataDir: this.api.getPluginDataDir(),
+            logger: this.logger
+          });
+        }
+        const playbackId = `preview-spin-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        const winnerSelection = this.assetSpriteLibrary.getRandomSelection();
+        const spin = await this._emitAvatarSpin({
+          userId: 'talking-heads-preview',
+          username: 'Boba Character Lab',
+          playbackId,
+          winnerSelection,
+          reason: 'preview',
+          preview: true
+        });
+        if (!spin) {
+          return res.status(503).json({ success: false, error: 'Boba preview is unavailable' });
+        }
+        return res.json({
+          success: true,
+          preview: true,
+          spin: {
+            preview: true,
+            playbackId: spin.playbackId,
+            spinId: spin.spinId,
+            duration: spin.duration
+          }
+        });
+      } catch (error) {
+        this.logger.error('TalkingHeads: Test spin failed', error);
+        return res.status(500).json({ success: false, error: 'Test spin failed' });
+      }
     });
 
     // Get configuration

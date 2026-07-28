@@ -13,9 +13,14 @@ const uiKeys = [
   'plugins.talking-heads.labels.talking_heads_obs_overlay',
   'plugins.talking-heads.labels.talking_heads_obs_hud',
   'plugins.talking-heads.labels.talking_heads_viewer_bar',
+  'plugins.talking-heads.talking_heads_ui.stream_director.title',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.first_assignment',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.reroll_gift',
+  'plugins.talking-heads.talking_heads_ui.stream_director.actions.test_spin',
+  'plugins.talking-heads.talking_heads_ui.stream_director.sections.viewer_bar',
+  'plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigning',
   'plugins.talking-heads.talking_heads_ui.local_assets.title',
-  'plugins.talking-heads.talking_heads_ui.local_assets.lottery_title',
-  'plugins.talking-heads.talking_heads_ui.lottery_overlay.drawing'
+  'plugins.talking-heads.talking_heads_ui.local_assets.messages.configSaved'
 ];
 
 describe('Talking Heads UI i18n', () => {
