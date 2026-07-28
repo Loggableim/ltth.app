@@ -553,12 +553,12 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     const storeEntry = registry.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(manifest.id).toBe('streamalchemy');
-    expect(manifest.version).toBe('1.8.0');
+    expect(manifest.version).toBe('1.9.0');
     expect(manifest.devStatus).toBe('working-beta');
-    expect(storeEntry.version).toBe('1.8.0');
+    expect(storeEntry.version).toBe('1.9.0');
     expect(storeEntry.channel).toBe('open-beta');
     expect(storeEntry.badges).toContain('working-beta');
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.8.0.zip');
+    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.9.0.zip');
 
     const expectedTerms = {
       en: [/gift/i, /free-egg adoption/i, /sealed A\/B\/C PvP/i, /elemental roles/i, /progression/i, /portrait/i],
@@ -593,7 +593,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
       expect(fs.readFileSync(path.join(pluginDir, visibleFile), 'utf8')).not.toMatch(/Stream[\s-]+Alchemy/i);
     }
     const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
-    expect(uiSource).toContain('Retention Competitive Arcade · Version 1.8');
+    expect(uiSource).toContain('Rules v7 Evolution Combat · Version 1.9');
     expect(uiSource).not.toMatch(/Version 1\.[34]/);
   });
 

@@ -34,7 +34,7 @@
       }
     },
     "1.8.0": {
-      "sourceCommit": "ecedf7d19adcb12bd56db883620a2b963d7a8cf7",
+      "sourceCommit": "b2e267b205622287e9738c4cf9f629c9f5b0d391",
       "sourceTree": "74cf3c07658ccb5186c7aea043cd9c54740863e6",
       "manifestVersion": "1.8.0",
       "package": "plugin-store/packages/streamalchemy-1.8.0.zip",

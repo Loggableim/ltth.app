@@ -211,7 +211,7 @@
   <header class="hero">
     <div>
       <img class="hero-logo" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
-      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Retention Competitive Arcade · Version 1.8</div>
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Rules v7 Evolution Combat · Version 1.9</div>
       <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
       <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Portrait-first PvP, permanente Sammlung und 72 fertig gebündelte Furry-Formen. Geschenke kaufen Tempo und Show, niemals Kampfstärke.</p>
     </div>
@@ -281,7 +281,7 @@
   </section>
 
   <section id="gameplay" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v6</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v7</span></div>
     <div class="grid">
       <article class="card wide">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTiming">Eggs &amp; seasons</h3>
@@ -523,7 +523,7 @@
   </section>
 
   <section id="asset-library" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent cosmetic stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
     <div class="asset-summary">
       <div class="asset-stat"><strong>24</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetTemplates">Templates</span></div>
       <div class="asset-stat"><strong>3</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetStages">Stages each</span></div>
@@ -1534,7 +1534,7 @@
     const duration = formatDuration(hatchDurationMs);
     byId('activePrefix').textContent = prefix;
     byId('activeHatchDuration').textContent = duration;
-    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v6 skill arena.', { duration, prefix });
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v7 skill arena.', { duration, prefix });
     document.querySelectorAll('[data-command]').forEach(command => {
       const name = command.dataset.command;
       const alias = creatorRuntime.resolveCommandReference(name, {

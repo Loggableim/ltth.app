@@ -489,7 +489,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
     expect(document.getElementById('tutorialHintIntervalSeconds').min).toBe('60');
     expect(document.getElementById('tutorialHintIntervalSeconds').max).toBe('300');
     expect(document.querySelector('[data-command-alias="adopt"]')).not.toBeNull();
-    expect(document.body.textContent).toContain('Rules v6');
+    expect(document.body.textContent).toContain('Rules v7');
   });
 
   test('ships creator copy for all new controls and live diagnostics in four locales', () => {
