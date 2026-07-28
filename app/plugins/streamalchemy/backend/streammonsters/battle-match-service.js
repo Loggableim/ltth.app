@@ -821,15 +821,25 @@ class BattleMatchService {
         : 0;
       const passivePerSecond = Number(chargeWindow?.passivePerSecond) || 0;
       const openedAtMs = Number(chargeWindow?.openedAtMs) || 0;
-      const readyAtMs = choice === 'C'
-        ? (
-            baseCharge >= chargeRequired || passivePerSecond <= 0
-              ? openedAtMs
-              : openedAtMs + Math.ceil(
-                ((chargeRequired - baseCharge) / passivePerSecond) * 1_000
-              )
-          )
-        : null;
+      const persistedPauseMs = Math.max(0, Number(chargeWindow?.pausedMs) || 0);
+      let readyAtMs;
+      if (choice === 'C' && baseCharge >= chargeRequired) {
+        readyAtMs = openedAtMs;
+      } else if (choice === 'C' && passivePerSecond > 0) {
+        readyAtMs = openedAtMs + persistedPauseMs +
+          (Math.ceil((chargeRequired - baseCharge) / passivePerSecond) * 1_000);
+        const pauseStartedAtMs = chargeWindow?.pauseStartedAtMs == null
+          ? NaN
+          : Number(chargeWindow.pauseStartedAtMs);
+        if (Number.isFinite(pauseStartedAtMs) && pauseStartedAtMs < readyAtMs) {
+          const pauseUntilMs = chargeWindow?.pauseUntilMs == null
+            ? NaN
+            : Number(chargeWindow.pauseUntilMs);
+          readyAtMs = Number.isFinite(pauseUntilMs)
+            ? readyAtMs + Math.max(0, pauseUntilMs - pauseStartedAtMs)
+            : undefined;
+        }
+      }
       const specialAvailability = choice === 'C'
         ? projectSpecialAvailability({ charge: baseCharge })
         : null;
@@ -844,7 +854,7 @@ class BattleMatchService {
         available: choice !== 'C' || specialAvailability.available,
         ...(choice === 'C' ? {
           chargeRequired,
-          readyAtMs,
+          ...(Number.isFinite(readyAtMs) ? { readyAtMs } : {}),
           unavailableReason: specialAvailability.unavailableReason
         } : {})
       };

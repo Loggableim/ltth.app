@@ -305,6 +305,41 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(service.projectParticipantCharge(resumed.participants[1], resumed, 17_000)).toBe(85);
   });
 
+  test('Rules v7 snapshot Special readiness includes accumulated and open pause time', () => {
+    const accumulated = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+    accumulated.advance(2_000);
+    accumulated.service.pauseChargeClock(accumulated.matchId, 'pause', 12_000);
+    accumulated.advance(4_000);
+    accumulated.service.resumeChargeClock(accumulated.matchId, 16_000);
+
+    const resumed = accumulated.service.getMatch(accumulated.matchId);
+    const resumedSnapshot = accumulated.service.getPublicSnapshot().matches[0];
+    const resumedSpecial = resumedSnapshot.fighters
+      .find(fighter => fighter.name === 'alpha-v7')
+      .skills.find(skill => skill.choice === 'C');
+    expect(resumedSnapshot.chargeWindow.pausedMs).toBe(4_000);
+    expect(resumedSpecial.readyAtMs).toBe(20_000);
+    const alpha = resumed.participants.find(participant => participant.viewerId === 'viewer-a');
+    expect(accumulated.service.projectParticipantCharge(alpha, resumed, 19_000)).toBe(95);
+    expect(accumulated.service.projectParticipantCharge(alpha, resumed, 20_000)).toBe(100);
+
+    const open = createReservedRulesV7Match({
+      chargeA: 90,
+      chargeB: 70,
+      openedAtMs: 30_000
+    });
+    open.advance(1_000);
+    open.service.pauseChargeClock(open.matchId, 'reconnect', 31_000);
+    const openSpecial = open.service.getPublicSnapshot().matches[0].fighters
+      .find(fighter => fighter.name === 'alpha-v7')
+      .skills.find(skill => skill.choice === 'C');
+    expect(openSpecial).not.toHaveProperty('readyAtMs');
+  });
+
   test('Rules v7 opens a fresh full eight-second choice window only after cinematic', () => {
     const { service, matchId, advance } = createReservedRulesV7Match({
       chargeA: 70,
