@@ -12,13 +12,13 @@
   };
   const messages = {
     configSaved: 'Director settings saved.',
-    framesPrepared: 'Boba frame preview prepared.',
+    framesPrepared: 'Avatar frame preview prepared.',
     previewStarted: 'TTS preview started.',
     animationStarted: 'Speaker stage test started.',
-    testSpinStarted: 'Safe Boba test spin sent to the overlay.',
+    testSpinStarted: 'Safe avatar test spin sent to the overlay.',
     statusUnavailable: 'Bridge health is currently unavailable.',
     expression: 'Expression',
-    bobaAnimals: 'Boba Animals',
+    avatarLibrary: 'Avatar library',
     idle: 'Idle',
     audioLive: 'Audio live',
     bridgeReady: 'Bridge ready',
@@ -27,9 +27,9 @@
     enabled: 'Enabled',
     disabled: 'Disabled',
     healthUpdated: 'Live bridge health updated.',
-    directorReady: 'Boba library and director settings are ready.',
+    directorReady: 'Avatar library and director settings are ready.',
     requestFailed: 'Request failed: {message}',
-    framePreviewUnavailable: 'The selected Boba frame preview is unavailable.',
+    framePreviewUnavailable: 'The selected avatar frame preview is unavailable.',
     chooseManualZip: 'Choose a set name and ZIP first.',
     manualSetUploaded: 'Manual set {setName} uploaded.',
     manualSetDeleted: 'Manual set deleted.',
@@ -230,8 +230,11 @@
   function renderBobaThumbnails() {
     const grid = el('bobaThumbnailGrid');
     const boba = state.catalog.packs.find(pack => pack.id === 'boba');
-    if (!grid || !boba) return;
+    if (!grid) return;
+    const selectedPackId = el('assetPack')?.value || 'boba';
     grid.replaceChildren();
+    grid.hidden = selectedPackId !== 'boba';
+    if (selectedPackId !== 'boba' || !boba) return;
     (boba.characters || []).forEach(character => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -264,7 +267,7 @@
     const summary = [pack?.name, selection.assetCharacter, ...Object.values(selection.assetOptions)]
       .filter(Boolean)
       .join(' · ');
-    if (el('assetSelectionSummary')) el('assetSelectionSummary').textContent = summary || directorText('bobaAnimals');
+    if (el('assetSelectionSummary')) el('assetSelectionSummary').textContent = summary || directorText('avatarLibrary');
     renderBobaThumbnails();
     void materializeSelectedFrame().catch(showError);
   }

@@ -262,7 +262,10 @@ describe('Talking Heads Broadcast Arcade Stream Director', () => {
     await flush();
 
     const preview = dom.window.document.getElementById('assetPreview');
+    const grid = dom.window.document.getElementById('bobaThumbnailGrid');
     expect(preview.getAttribute('src')).toBe('/api/talkingheads/sprite/kenney-blueA.svg');
+    expect(grid.hidden).toBe(true);
+    expect(grid.querySelectorAll('.boba-thumbnail')).toHaveLength(0);
     expect(fetchImpl).toHaveBeenCalledWith('/api/talkingheads/test-generate', expect.objectContaining({
       body: expect.stringContaining('"assetPack":"kenney"')
     }));
