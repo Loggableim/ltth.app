@@ -359,6 +359,6 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
       'utf8'
     );
     expect(html).toMatch(/#card\.no-art #art-wrap\s*\{\s*display:none/);
-    expect(html).toContain("card.classList.toggle('no-art', !imageUrl)");
+    expect(html).toContain("card.classList.toggle('no-art', !page.imageUrl)");
   });
 });

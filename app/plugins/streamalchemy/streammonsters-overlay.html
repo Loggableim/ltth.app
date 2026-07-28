@@ -1193,46 +1193,29 @@
     document,
     audio:audioEngine,
     effects:effectsRenderer,
-    localize:text,
-    choiceLabels:{
-      A:text('skillAttack', 'Angriff'),
-      B:text('skillDefense', 'Verteidigung'),
-      C:text('skillSpecial', 'Spezial')
+    localize:(key, params = {}, locale = null) => (
+      overlayLocaleResolver.translate(key, params, locale || undefined)
+    ),
+    choiceKeys:{
+      A:'skillAttack',
+      B:'skillDefense',
+      C:'skillSpecial'
     },
-    labels:{
-      monster:text('arenaMonsterLabel', 'Monster {slot}'),
-      round:text('arenaRoundLabel', 'Runde {round}'),
-      roster:text('arenaRosterChoice', 'Monsterwahl'),
-      skill:text('arenaSkillFallback', 'Skill'),
-      evaded:text('arenaEvaded', 'AUSGEWICHEN'),
-      knockout:text('arenaKnockout', 'K. O.'),
-      winner:text('battleWinner', '{name} gewinnt!'),
-      battleEnded:text('arenaBattleEnded', 'Kampf beendet'),
-      cancelledRoster:text(
-        'arenaCancelledRoster',
-        'Kampf abgebrochen · Monsterwahl unvollständig'
-      ),
-      cancelled:text('arenaCancelled', 'Kampf abgebrochen'),
-      shield:text('arenaShieldLabel', 'Schild'),
-      special:text('arenaSpecialLabel', 'Special'),
-      skillCopyEmberAttack:text('skillCopyEmberAttack', 'A fierce strike that leaves a brief burn.'),
-      skillCopyEmberDefense:text('skillCopyEmberDefense', 'Raises a fiery shield that retaliates once.'),
-      skillCopyEmberSpecial:text('skillCopyEmberSpecial', 'Unleashes a heavy blaze and restores resolve.'),
-      skillCopyTideAttack:text('skillCopyTideAttack', 'A flowing hit that weakens the next attack.'),
-      skillCopyTideDefense:text('skillCopyTideDefense', 'Wraps the fighter in mist, shield and healing.'),
-      skillCopyTideSpecial:text('skillCopyTideSpecial', 'A restorative wave that damages and heals.'),
-      skillCopyGroveAttack:text('skillCopyGroveAttack', 'A thorny strike that punishes one counter-hit.'),
-      skillCopyGroveDefense:text('skillCopyGroveDefense', 'Builds the strongest pure shield in the arena.'),
-      skillCopyGroveSpecial:text('skillCopyGroveSpecial', 'Combines damage, protection and steady healing.'),
-      skillCopyGaleAttack:text('skillCopyGaleAttack', 'Dashes through the target with two visible hits.'),
-      skillCopyGaleDefense:text('skillCopyGaleDefense', 'Creates a light shield and a chance to evade.'),
-      skillCopyGaleSpecial:text('skillCopyGaleSpecial', 'Crosses the arena in a cinematic three-hit rush.'),
-      skillCopyVoltAttack:text('skillCopyVoltAttack', 'Cuts through part of the target shield.'),
-      skillCopyVoltDefense:text('skillCopyVoltDefense', 'Stores charge in a shield that reflects once.'),
-      skillCopyVoltSpecial:text('skillCopyVoltSpecial', 'Detonates a powerful shield-piercing discharge.'),
-      skillCopyLunarAttack:text('skillCopyLunarAttack', 'A measured strike that restores a little health.'),
-      skillCopyLunarDefense:text('skillCopyLunarDefense', 'Raises a veil and dims the next enemy attack.'),
-      skillCopyLunarSpecial:text('skillCopyLunarSpecial', 'Drains life from the target in a lunar burst.')
+    labelKeys:{
+      monster:'arenaMonsterLabel',
+      level:'arenaLevelLabel',
+      round:'arenaRoundLabel',
+      roster:'arenaRosterChoice',
+      skill:'arenaSkillFallback',
+      evaded:'arenaEvaded',
+      knockout:'arenaKnockout',
+      winner:'arenaWinnerLabel',
+      viewer:'arenaViewerLabel',
+      battleEnded:'arenaBattleEnded',
+      cancelledRoster:'arenaCancelledRoster',
+      cancelled:'arenaCancelled',
+      shield:'arenaShieldLabel',
+      special:'arenaSpecialLabel'
     }
   }) || {
     applyMatch:() => {},
@@ -1343,6 +1326,14 @@
     document.documentElement.lang = selected;
     return selected;
   };
+  const criticalLocaleSequencer = window.StreamMonstersOverlayRuntime
+    .createCriticalLocaleSequencer({
+      getConfig:() => overlayLanguage,
+      applyLocale:applyPresentationLocale,
+      now:() => Date.now(),
+      setTimeout:window.setTimeout.bind(window),
+      clearTimeout:window.clearTimeout.bind(window)
+    });
   const clearBattleLocaleSequence = matchId => {
     const key = value(matchId, '').trim();
     const state = battleLocaleSequences.get(key);
@@ -1661,48 +1652,77 @@
     presentation = null,
     evolution = null,
     owner = null,
-    duration = notificationDurationMs
+    duration = notificationDurationMs,
+    localized = null
   }) => {
     const card = node('card');
     if (presentation === 'hatch') card.dataset.presentation = 'hatch';
     else if (presentation === 'elemental-hour') card.dataset.presentation = 'elemental-hour';
+    else if (presentation === 'egg-offer') card.dataset.presentation = 'egg-offer';
     else card.removeAttribute('data-presentation');
     const evolutionTimers = prepareEvolutionPanel(evolution);
-    try {
-      if (cue) playCue(cue);
-      node('kicker').textContent = kicker;
-      node('title').textContent = title;
-      node('subtitle').textContent = subtitle;
-      renderOwner(owner);
-      card.classList.toggle('no-art', !imageUrl);
+    let opened = false;
+    const renderPage = content => {
+      const page = { kicker, title, subtitle, imageUrl, hint, ...content };
+      node('kicker').textContent = page.kicker || '';
+      node('title').textContent = page.title || '';
+      node('subtitle').textContent = page.subtitle || '';
+      renderOwner(page.owner ?? owner);
+      card.classList.toggle('no-art', !page.imageUrl);
       node('art-wrap').classList.remove('image-fallback');
       node('art-wrap').removeAttribute('data-element');
-      node('art').alt = title;
-      node('art').onerror = () => imageErrorFallback(element);
-      if (imageUrl) node('art').src = imageUrl;
+      node('art').alt = page.title || '';
+      node('art').onerror = () => imageErrorFallback(page.element || element);
+      if (page.imageUrl) node('art').src = page.imageUrl;
       else node('art').removeAttribute('src');
       node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
-      node('hint').textContent = hint || commandHint();
+      node('hint').textContent = page.hint || commandHint();
       card.classList.toggle('charged', Boolean(charged));
-      card.classList.add('visible');
-      if (effectScene) {
-        effectsRenderer.play(effectScene, {
-          ...effectPayload,
-          element,
-          ...effectPlacementForScene(effectScene)
-        }).catch(() => {});
+      if (!opened) {
+        opened = true;
+        if (cue) playCue(cue);
+        card.classList.add('visible');
+        if (effectScene) {
+          effectsRenderer.play(effectScene, {
+            ...effectPayload,
+            element:page.element || element,
+            ...effectPlacementForScene(effectScene)
+          }).catch(() => {});
+        }
       }
-      await wait(Math.max(800, Number(duration) || notificationDurationMs));
+    };
+    try {
+      if (localized?.build) {
+        await criticalLocaleSequencer.run({
+          key:localized.key,
+          deadlineMs:localized.deadlineMs,
+          renderPage:page => renderPage(localized.build(page.locale))
+        });
+      } else {
+        renderPage({});
+        await wait(Math.max(800, Number(duration) || notificationDurationMs));
+      }
     } finally {
       evolutionTimers.forEach(timer => window.clearTimeout(timer));
       card.classList.remove('visible');
       card.classList.remove('no-art');
       renderOwner(null);
-      await wait(350);
+      if (opened && !localized?.deadlineMs) await wait(350);
       card.removeAttribute('data-presentation');
       resetEvolutionPanel();
     }
   };
+  const showCriticalCard = (type, data, build, stable = {}) => showCard({
+    ...stable,
+    localized:{
+      key:window.StreamMonstersOverlayRuntime.statSequenceKey(data) ||
+        `${type}:${data?.eventId || data?.correlationId || 'event'}`,
+      deadlineMs:type === 'monster_stat_prompt' || type === 'stat_choice_opened'
+        ? data?.deadlineMs
+        : null,
+      build
+    }
+  });
   const showHype = async data => {
     const points = Number(data?.hype?.points) || 0;
     node('hype').style.setProperty('--hype', `${points}%`);
@@ -1892,33 +1912,34 @@
       const adoptionNotice = window.StreamMonstersEggStageView
         ?.buildAdoptionNotice(type, data);
       if (adoptionNotice?.kind === 'reserved') {
-        const title = text('tutorialHintFreeOfferTitle', 'Gratis-Ei reserviert');
-        const body = text(
-          'tutorialHintFreeOfferBody',
-          'Hole dein reserviertes Ei mit {command} ab, bevor es freigegeben wird.',
-          { command:commandReference('adopt') }
-        );
-        return showCard({
+        return showCriticalCard(type, data, () => ({
           kicker:'NEXT',
-          title:`${adoptionNotice.viewer}: ${title}`,
-          subtitle:body,
-          hint:commandReference('adopt'),
+          title:`${adoptionNotice.viewer}: ${text(
+            'tutorialHintFreeOfferTitle',
+            'Gratis-Ei reserviert'
+          )}`,
+          subtitle:text(
+            'tutorialHintFreeOfferBody',
+            'Hole dein reserviertes Ei mit {command} ab, bevor es freigegeben wird.',
+            { command:commandReference('adopt') }
+          ),
+          hint:commandReference('adopt')
+        }), {
           presentation:'egg-offer',
           duration:adoptionNotice.durationMs
         });
       }
       if (adoptionNotice?.kind === 'public') {
-        const title = text('tutorialHintFreeReleaseTitle', 'Gratis-Ei freigegeben');
-        const body = text(
-          'tutorialHintFreeReleaseBody',
-          'Das Ei ist jetzt öffentlich. Wer zuerst {command} schreibt, bekommt es.',
-          { command:commandReference('adopt') }
-        );
-        return showCard({
+        return showCriticalCard(type, data, () => ({
           kicker:'NEXT',
-          title,
-          subtitle:body,
-          hint:commandReference('adopt'),
+          title:text('tutorialHintFreeReleaseTitle', 'Gratis-Ei freigegeben'),
+          subtitle:text(
+            'tutorialHintFreeReleaseBody',
+            'Das Ei ist jetzt öffentlich. Wer zuerst {command} schreibt, bekommt es.',
+            { command:commandReference('adopt') }
+          ),
+          hint:commandReference('adopt')
+        }), {
           presentation:'egg-offer',
           duration:adoptionNotice.durationMs
         });
@@ -1951,22 +1972,27 @@
       '{element} Hour ist aktiv',
       { element: elementName(data?.event?.element || data?.element) }
     ));
-    if (type === 'egg_spawned') return presentArcadeScene(type, data, showCard({
-      kicker: text('eggKicker', '{element} · {variant}', {
-        element: elementName(data?.egg?.element),
-        variant: variantName(data?.egg?.variant)
-      }),
-      title: text('newEgg', 'Ein neues Ei!'),
-      subtitle: text('eggSpawned', '{viewer} hat einen Brutplatz gefüllt.', {
-        viewer: publicDisplayName(data)
-      }),
+    if (type === 'egg_spawned') return presentArcadeScene(
+      type,
+      data,
+      showCriticalCard(type, data, () => ({
+        kicker:text('eggKicker', '{element} · {variant}', {
+          element:elementName(data?.egg?.element),
+          variant:variantName(data?.egg?.variant)
+        }),
+        title:text('newEgg', 'Ein neues Ei!'),
+        subtitle:text('eggSpawned', '{viewer} hat einen Brutplatz gefüllt.', {
+          viewer:publicDisplayName(data)
+        }),
+        hint:safeHint(data?.hint, commandHint('eggsTimer', '{eggs} shows the timer'))
+      }), {
       imageUrl:itemImageUrl(data?.egg),
       element:data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: safeHint(data?.hint, commandHint('eggsTimer', '{eggs} shows the timer')),
       progress:4,
       duration:5_200
-    }));
+      })
+    );
     if (type === 'egg_boosted') return showCard({
       kicker: text('speedBoost', 'Tempo-Boost'),
       title: text('eggGlows', 'Das Ei leuchtet!'),
@@ -1993,18 +2019,19 @@
       cue: 'ready'
       });
     }
-    if (type === 'egg_ready') return showCard({
-      kicker: text('ready', 'Bereit!'),
-      title: text('eggReadyTitle', '{element}-Ei kann schlüpfen', {
-        element: elementName(data?.egg?.element)
+    if (type === 'egg_ready') return showCriticalCard(type, data, () => ({
+      kicker:text('ready', 'Bereit!'),
+      title:text('eggReadyTitle', '{element}-Ei kann schlüpfen', {
+        element:elementName(data?.egg?.element)
       }),
-      subtitle: text('hatchMoment', '{viewer}, dein Moment gehört dir.', {
-        viewer: publicDisplayName(data)
+      subtitle:text('hatchMoment', '{viewer}, dein Moment gehört dir.', {
+        viewer:publicDisplayName(data)
       }),
+      hint:safeHint(data?.hint, commandHint('hatchNow', 'Write {hatch} [slot] now'))
+    }), {
       imageUrl:itemImageUrl(data?.egg),
       progress:100,
       charged:data?.egg?.variant === 'charged',
-      hint: safeHint(data?.hint, commandHint('hatchNow', 'Write {hatch} [slot] now')),
       cue:'ready',
       duration:8_000
     });
@@ -2015,40 +2042,56 @@
       }),
       2_800
     ));
-    if (type === 'egg_hatched') return presentArcadeScene(type, data, showCard({
-      kicker: text('monsterKicker', '{element} · {personality}', {
-        element: elementName(data?.monster?.element || data?.egg?.element),
-        personality: personalityName(data?.monster?.personality)
-      }),
-      title: text('hatchedTitle', '{name} ist da!', { name: itemName(data?.monster) }),
-      subtitle: text('hatchedCopy', '28 faire Startpunkte · gehört {viewer} dauerhaft.', {
-        viewer: publicDisplayName(data)
-      }),
+    if (type === 'egg_hatched') return presentArcadeScene(
+      type,
+      data,
+      showCriticalCard(type, data, () => ({
+        kicker:text('monsterKicker', '{element} · {personality}', {
+          element:elementName(data?.monster?.element || data?.egg?.element),
+          personality:personalityName(data?.monster?.personality)
+        }),
+        title:text('hatchedTitle', '{name} ist da!', {
+          name:itemName(data?.monster)
+        }),
+        subtitle:text(
+          'hatchedCopy',
+          '28 faire Startpunkte · gehört {viewer} dauerhaft.',
+          { viewer:publicDisplayName(data) }
+        ),
+        hint:commandHint('monsterCardHint', '{monster} [slot] shows the card')
+      }), {
       imageUrl:itemImageUrl(data?.monster) || itemImageUrl(data?.egg),
       element:data?.monster?.element || data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: commandHint('monsterCardHint', '{monster} [slot] shows the card'),
       progress:100,
       presentation:'hatch',
       owner:data?.owner,
       duration:7_000
-    }));
-    if (type === 'monster_discovered') return presentArcadeScene(type, data, showCard({
-      kicker:text('monsterDiscoveredKicker', 'NEU IM MONSTERDEX'),
-      title:text('monsterDiscoveredTitle', '{name} entdeckt!', {
-        name:itemName(data?.monster)
-      }),
-      subtitle:text('monsterDiscoveredCopy', '{viewer} hat erstmals dieses Template gefunden.', {
-        viewer:publicDisplayName(data)
-      }),
+      })
+    );
+    if (type === 'monster_discovered') return presentArcadeScene(
+      type,
+      data,
+      showCriticalCard(type, data, () => ({
+        kicker:text('monsterDiscoveredKicker', 'NEU IM MONSTERDEX'),
+        title:text('monsterDiscoveredTitle', '{name} entdeckt!', {
+          name:itemName(data?.monster)
+        }),
+        subtitle:text(
+          'monsterDiscoveredCopy',
+          '{viewer} hat erstmals dieses Template gefunden.',
+          { viewer:publicDisplayName(data) }
+        ),
+        hint:commandHint('monsterCardHint', '{monster} [slot] shows the card')
+      }), {
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
       charged:true,
-      hint:commandHint('monsterCardHint', '{monster} [slot] shows the card'),
       progress:100,
       presentation:'hatch',
       duration:8_000
-    }));
+      })
+    );
     if (type === 'battle_match_found') {
       startBattleLocaleSequence(data);
       return arenaView.applyMatch({
@@ -2140,14 +2183,15 @@
         data?.monster?.evolutionStage ??
         data?.monster?.evolution_stage
       ) || 2;
-      return presentArcadeScene(type, data, showCard({
-      kicker: text('evolution', 'Evolution'),
-      title: text(
+      return presentArcadeScene(type, data, showCriticalCard(type, data, () => ({
+      kicker:text('evolution', 'Evolution'),
+      title:text(
         'evolutionStageTitle',
         '{monster} reaches Stage {stage}',
         { monster:itemName(data?.monster), stage }
       ),
-      subtitle: text('evolutionStatsTitle', 'Combat stats increased'),
+      subtitle:text('evolutionStatsTitle', 'Combat stats increased')
+      }), {
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
       charged:true,
@@ -2246,43 +2290,71 @@
     }));
     if (type === 'stat_choice_opened' || type === 'monster_stat_prompt') {
       if (!acceptStatPrompt(type, data)) return;
-      return showCard({
+      const statContext = {
+        player:publicDisplayName(data),
+        monster:itemName(data?.monster),
+        level:Number(data?.level ?? data?.monster?.level) || 1,
+        remaining:Math.max(
+          0,
+          Number(
+            data?.remainingUnspentPoints ??
+            data?.monster?.unspentStatPoints ??
+            data?.monster?.unspent_stat_points
+          ) || 0
+        )
+      };
+      return showCriticalCard(type, data, () => ({
         kicker:text('monsterStatKicker', 'Statpunkt'),
-        title:text(
-          'monsterStatTitle',
-          '{player}: Werte für {monster} verbessern',
-          {
-            player:publicDisplayName(data),
-            monster:itemName(data?.monster)
-          }
-        ),
+        title:text('monsterStatTitle', '{player}: {monster} · Level {level}', statContext),
         subtitle:text(
           'monsterStatCopy',
-          '1 Vitalität · 2 Stärke · 3 Verteidigung · 4 Agilität'
+          '{remaining} Statpunkte übrig · 1 Vitalität +1 · 2 Stärke +1 · ' +
+            '3 Verteidigung +1 · 4 Agilität +1',
+          statContext
         ),
+        hint:text('monsterStatHint', 'Nur der berechtigte Viewer kann antworten.')
+      }), {
         imageUrl:itemImageUrl(data?.monster),
         element:data?.monster?.element,
-        progress:100,
-        hint:text('monsterStatHint', 'Nur der berechtigte Viewer kann antworten.')
+        progress:100
       });
     }
     if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {
       const automaticallyAssigned = type === 'monster_stat_auto_assigned' ||
         String(data?.source || '').toLowerCase() === 'timeout';
+      const statContext = {
+        player:publicDisplayName(data),
+        monster:itemName(data?.monster),
+        stat:statName(data?.stat),
+        level:Number(data?.level ?? data?.monster?.level) || 1,
+        remaining:Math.max(
+          0,
+          Number(
+            data?.remainingUnspentPoints ??
+            data?.monster?.unspentStatPoints ??
+            data?.monster?.unspent_stat_points
+          ) || 0
+        )
+      };
       return showCard({
         kicker:text(
           automaticallyAssigned ? 'monsterStatAutoKicker' : 'monsterStatChosenKicker',
           automaticallyAssigned ? 'Automatische Statwahl' : 'Stat gewählt'
         ),
-        title:text('monsterStatChosenTitle', '{stat} +1', {
-          stat:statName(data?.stat)
-        }),
+        title:text(
+          'monsterStatChosenTitle',
+          '{player}: {monster} · {stat} +1',
+          statContext
+        ),
         subtitle:text(
           automaticallyAssigned ? 'monsterStatAutoCopy' : 'monsterStatChosenCopy',
           automaticallyAssigned
-            ? 'Das Zeitfenster endete. Der Level-up-Punkt wurde fair und deterministisch verteilt.'
-            : 'Der Level-up-Punkt wurde dauerhaft verteilt.'
+            ? 'Automatisch verteilt · Level {level} · noch {remaining} Statpunkte übrig.'
+            : 'Level {level} · noch {remaining} Statpunkte übrig.',
+          statContext
         ),
+        imageUrl:itemImageUrl(data?.monster),
+        element:data?.monster?.element,
         progress:100,
         charged:true,
         cue:'progress.level'
@@ -2434,6 +2506,11 @@
     scheduleQueueWake();
   };
   const enqueue = (type, data) => {
+    if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {
+      criticalLocaleSequencer.cancel(
+        window.StreamMonstersOverlayRuntime.statSequenceKey(data)
+      );
+    }
     const eventId = value(data?.eventId, '').trim();
     if (eventId) {
       seenPublicEventIds.add(eventId);

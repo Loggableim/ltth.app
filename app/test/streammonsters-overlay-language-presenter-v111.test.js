@@ -1,0 +1,457 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { JSDOM } = require('jsdom');
+const OverlayRuntime = require(
+  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+);
+const ArenaDirector = require(
+  '../plugins/streamalchemy/streammonsters-arena-director'
+);
+
+const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const overlayHtml = fs.readFileSync(
+  path.join(pluginDir, 'streammonsters-overlay.html'),
+  'utf8'
+);
+const localeCatalogs = Object.fromEntries(['de', 'en', 'es', 'fr'].map(locale => [
+  locale,
+  JSON.parse(fs.readFileSync(
+    path.join(pluginDir, 'locales', `${locale}.json`),
+    'utf8'
+  ))
+]));
+
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+async function createPresenterHarness({
+  primaryLocale = 'de',
+  locales = [primaryLocale],
+  secondsPerLocale = 5
+} = {}) {
+  const socketHandlers = new Map();
+  const timers = new Map();
+  let timerId = 0;
+  const arenaLocales = [];
+  const arenaEvents = [];
+  const eggEvents = [];
+  const schedule = (callback, milliseconds = 0) => {
+    const id = ++timerId;
+    timers.set(id, { callback, milliseconds:Number(milliseconds) || 0 });
+    return id;
+  };
+  const dom = new JSDOM(overlayHtml, {
+    url:'http://localhost:3000/plugins/streamalchemy/streammonsters-overlay.html',
+    runScripts:'dangerously',
+    beforeParse(window) {
+      window.Date.now = () => 1_000;
+      window.setTimeout = schedule;
+      window.clearTimeout = id => timers.delete(id);
+      window.setInterval = () => ++timerId;
+      window.clearInterval = () => {};
+      window.matchMedia = () => ({
+        matches:false,
+        addEventListener:() => {},
+        removeEventListener:() => {}
+      });
+      window.i18n = {
+        init:async () => {},
+        updateDOM:() => {}
+      };
+      window.io = () => ({
+        on:(event, handler) => socketHandlers.set(event, handler)
+      });
+      window.fetch = jest.fn(async input => {
+        const url = String(input);
+        const localeMatch = /\/locales\/(de|en|es|fr)\.json/.exec(url);
+        if (localeMatch) {
+          return {
+            ok:true,
+            status:200,
+            json:async () => localeCatalogs[localeMatch[1]]
+          };
+        }
+        if (url.includes('/assets/audio/manifest.json')) {
+          return { ok:false, status:404, json:async () => ({}) };
+        }
+        if (url.includes('/battles/')) {
+          return {
+            ok:true,
+            status:200,
+            json:async () => ({ cursor:0, hasMore:false, events:[] })
+          };
+        }
+        if (url.includes('/overlay/heartbeat')) {
+          return { ok:true, status:200, json:async () => ({ success:true }) };
+        }
+        return {
+          ok:true,
+          status:200,
+          json:async () => ({
+            hype:{ points:0 },
+            config:{
+              hatchDurationMs:90_000,
+              overlayLanguage:{ primaryLocale, locales, secondsPerLocale }
+            },
+            gcce:{
+              commandPrefix:'!',
+              registeredCommands:[],
+              commandReferences:{
+                adopt:'!adopt',
+                hatch:'!hatch',
+                eggs:'!eier'
+              }
+            },
+            battle:{ matches:[] },
+            eggStage:[]
+          })
+        };
+      });
+      window.StreamMonstersOverlayRuntime = OverlayRuntime;
+      window.StreamMonstersArenaDirector = ArenaDirector;
+      window.StreamMonstersEffectsRenderer = {
+        createEffectsRenderer:() => ({
+          init:async () => true,
+          resize:() => {},
+          play:async () => true,
+          status:() => ({ backend:'canvas2d' })
+        })
+      };
+      window.StreamMonstersAudioEngine = {
+        normalizeChannelConfig:value => value
+      };
+      window.StreamMonstersArenaView = {
+        createArenaView:() => ({
+          applyMatch:() => {},
+          applySnapshot:() => {},
+          openChoice:() => {},
+          lockChoice:() => {},
+          revealChoices:() => {},
+          playEvent:async (type, payload) => {
+            arenaEvents.push([type, payload?.eventId]);
+            return true;
+          },
+          playAction:async () => true,
+          complete:async () => {},
+          cancel:async () => {},
+          destroy:() => {},
+          setLocale:locale => arenaLocales.push(locale)
+        })
+      };
+      window.StreamMonstersEggStageView = {
+        createEggStageView:() => ({
+          applyEvent:(type, payload) => {
+            eggEvents.push([type, payload?.eventId]);
+            return true;
+          },
+          applySnapshot:() => ({ total:0, visible:[], overflow:null }),
+          destroy:() => {}
+        }),
+        buildAdoptionNotice:(type, payload) => (
+          type === 'free_egg_public'
+            ? {
+              kind:'public',
+              viewer:payload.playerName || '@viewer',
+              durationMs:8_000
+            }
+            : null
+        )
+      };
+      window.StreamMonstersChatView = {
+        createChatView:() => ({ show:async () => {} }),
+        displayName:(payload, fallback) => (
+          payload?.displayName || payload?.playerName ||
+          payload?.username || payload?.nickname || fallback
+        )
+      };
+    }
+  });
+
+  for (let attempt = 0; attempt < 30 && !socketHandlers.has('connect'); attempt += 1) {
+    await flush();
+  }
+  expect(socketHandlers.has('connect')).toBe(true);
+  await socketHandlers.get('connect')();
+  for (let attempt = 0; attempt < 10; attempt += 1) await flush();
+
+  const card = () => ({
+    visible:dom.window.document.getElementById('card').classList.contains('visible'),
+    title:dom.window.document.getElementById('title').textContent,
+    subtitle:dom.window.document.getElementById('subtitle').textContent,
+    hint:dom.window.document.getElementById('hint').textContent,
+    imageUrl:dom.window.document.getElementById('art').getAttribute('src') || '',
+    locale:dom.window.document.documentElement.lang
+  });
+  const runNextTimer = async () => {
+    const next = timers.entries().next().value;
+    if (!next) return false;
+    const [id, timer] = next;
+    timers.delete(id);
+    timer.callback();
+    for (let attempt = 0; attempt < 5; attempt += 1) await flush();
+    return true;
+  };
+  const advanceUntil = async (predicate, maximum = 30) => {
+    for (let attempt = 0; attempt < maximum; attempt += 1) {
+      if (predicate(card())) return true;
+      if (!await runNextTimer()) break;
+    }
+    return predicate(card());
+  };
+  const emit = async (eventName, payload) => {
+    expect(socketHandlers.has(eventName)).toBe(true);
+    socketHandlers.get(eventName)(payload);
+    for (let attempt = 0; attempt < 8; attempt += 1) await flush();
+    return card();
+  };
+
+  return {
+    arenaLocales,
+    arenaEvents,
+    eggEvents,
+    card,
+    emit,
+    advanceUntil,
+    runNextTimer,
+    close:() => dom.window.close()
+  };
+}
+
+describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
+  test('budgets both configured stat pages inside the active deadline', () => {
+    const pages = OverlayRuntime.criticalLocalePages({
+      primaryLocale:'de',
+      locales:['de', 'en'],
+      secondsPerLocale:5
+    }, {
+      nowMs:1_000,
+      deadlineMs:11_000,
+      settleMs:350
+    });
+
+    expect(OverlayRuntime.isCritical('monster_stat_prompt')).toBe(true);
+    expect(OverlayRuntime.isCritical('stat_choice_opened')).toBe(true);
+    expect(pages.reduce((total, page) => total + page.durationMs, 0))
+      .toBeLessThanOrEqual(10_000);
+  });
+
+  test.each([
+    {
+      event:'streammonsters:egg_ready',
+      payload:{
+        eventId:'ready-locales',
+        criticalFinal:true,
+        playerName:'@alpha',
+        egg:{ element:'Ember' }
+      },
+      german:/kann schlüpfen/,
+      english:/ready to hatch/
+    },
+    {
+      event:'streammonsters:free_egg_public',
+      payload:{
+        eventId:'public-locales',
+        criticalFinal:true,
+        playerName:'@alpha',
+        eggStage:{ visualId:'public-egg', adoptionStatus:'public' }
+      },
+      german:/Gratis-Ei freigegeben/,
+      english:/Free egg available/
+    },
+    {
+      event:'streammonsters:egg_hatched',
+      payload:{
+        eventId:'hatch-locales',
+        criticalFinal:true,
+        playerName:'@alpha',
+        egg:{ element:'Ember' },
+        monster:{ name:'Ashfang', element:'Ember' }
+      },
+      german:/Ashfang ist da/,
+      english:/Ashfang is here/
+    }
+  ])('presents $event in German and English without inheriting a stale locale', async ({
+    event,
+    payload,
+    german,
+    english
+  }) => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'de',
+      locales:['de', 'en'],
+      secondsPerLocale:5
+    });
+    try {
+      let first = await harness.emit(event, payload);
+      if (!first.visible) {
+        expect(await harness.advanceUntil(state => (
+          state.visible && state.locale === 'de' && german.test(state.title)
+        ))).toBe(true);
+        first = harness.card();
+      }
+      expect(first.visible).toBe(true);
+      expect(first.locale).toBe('de');
+      expect(first.title).toMatch(german);
+
+      expect(await harness.advanceUntil(state => (
+        state.visible && state.locale === 'en' && english.test(state.title)
+      ))).toBe(true);
+      if (event !== 'streammonsters:egg_hatched') {
+        expect(harness.eggEvents.filter(([type]) => (
+          type === event.replace(/^streammonsters:/, '')
+        ))).toHaveLength(1);
+      }
+      if (event === 'streammonsters:egg_hatched') {
+        expect(harness.arenaEvents.filter(([type]) => type === 'egg_hatched'))
+          .toHaveLength(1);
+      }
+    } finally {
+      harness.close();
+    }
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])(
+    'shows complete stat prompt, manual result, and timeout context in %s',
+    async locale => {
+      const harness = await createPresenterHarness({
+        primaryLocale:locale,
+        locales:[locale],
+        secondsPerLocale:5
+      });
+      const imageUrl =
+        '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png';
+      const base = {
+        playerName:'@alpha',
+        userId:'1234567890123456789',
+        monster:{
+          name:'Ashfang',
+          element:'Ember',
+          level:7,
+          unspentStatPoints:2,
+          imageUrl
+        },
+        level:7,
+        remainingUnspentPoints:2
+      };
+      try {
+        const prompt = await harness.emit(
+          'streammonsters:monster_stat_prompt',
+          {
+            ...base,
+            eventId:`prompt-${locale}`,
+            promptId:`prompt-${locale}`,
+            criticalFinal:true,
+            deadlineMs:11_000,
+            choices:['1', '2', '3', '4']
+          }
+        );
+        expect(prompt.visible).toBe(true);
+        expect(`${prompt.title} ${prompt.subtitle}`).toContain('@alpha');
+        expect(`${prompt.title} ${prompt.subtitle}`).toContain('Ashfang');
+        expect(`${prompt.title} ${prompt.subtitle}`).toContain('7');
+        expect(`${prompt.title} ${prompt.subtitle}`).toContain('2');
+        for (const choice of ['1', '2', '3', '4']) {
+          expect(prompt.subtitle).toContain(choice);
+        }
+        expect(prompt.subtitle.match(/\+1/g)).toHaveLength(4);
+        expect(prompt.imageUrl).toBe(imageUrl);
+        expect(`${prompt.title} ${prompt.subtitle}`).not.toContain(base.userId);
+
+        expect(await harness.advanceUntil(state => !state.visible)).toBe(true);
+        const manual = await harness.emit(
+          'streammonsters:monster_stat_chosen',
+          {
+            ...base,
+            eventId:`manual-${locale}`,
+            stat:'might',
+            remainingUnspentPoints:1,
+            monster:{ ...base.monster, unspentStatPoints:1 }
+          }
+        );
+        expect(`${manual.title} ${manual.subtitle}`).toEqual(
+          expect.stringContaining('@alpha')
+        );
+        expect(`${manual.title} ${manual.subtitle}`).toEqual(
+          expect.stringContaining('Ashfang')
+        );
+        expect(`${manual.title} ${manual.subtitle}`).toContain('7');
+        expect(`${manual.title} ${manual.subtitle}`).toContain('1');
+        expect(manual.title).toContain('+1');
+        expect(manual.imageUrl).toBe(imageUrl);
+        expect(`${manual.title} ${manual.subtitle}`).not.toContain(base.userId);
+
+        expect(await harness.advanceUntil(state => !state.visible)).toBe(true);
+        const timeout = await harness.emit(
+          'streammonsters:monster_stat_auto_assigned',
+          {
+            ...base,
+            eventId:`timeout-${locale}`,
+            stat:'guard',
+            source:'timeout',
+            remainingUnspentPoints:1,
+            monster:{ ...base.monster, unspentStatPoints:1 }
+          }
+        );
+        expect(`${timeout.title} ${timeout.subtitle}`).toEqual(
+          expect.stringContaining('@alpha')
+        );
+        expect(`${timeout.title} ${timeout.subtitle}`).toEqual(
+          expect.stringContaining('Ashfang')
+        );
+        expect(`${timeout.title} ${timeout.subtitle}`).toContain('7');
+        expect(`${timeout.title} ${timeout.subtitle}`).toContain('1');
+        expect(timeout.title).toContain('+1');
+        expect(timeout.imageUrl).toBe(imageUrl);
+        expect(`${timeout.title} ${timeout.subtitle}`).not.toContain(base.userId);
+      } finally {
+        harness.close();
+      }
+    }
+  );
+
+  test('cancels an active bilingual stat prompt when its result arrives early', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'de',
+      locales:['de', 'en'],
+      secondsPerLocale:5
+    });
+    const monster = {
+      name:'Ashfang',
+      element:'Ember',
+      level:7,
+      unspentStatPoints:2,
+      imageUrl:'/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+    };
+    try {
+      const prompt = await harness.emit('streammonsters:monster_stat_prompt', {
+        eventId:'prompt-early',
+        promptId:'allocation-early',
+        playerName:'@alpha',
+        monster,
+        level:7,
+        remainingUnspentPoints:2,
+        deadlineMs:11_000,
+        choices:['1', '2', '3', '4']
+      });
+      expect(prompt.title).toContain('@alpha');
+      expect(prompt.subtitle.match(/\+1/g)).toHaveLength(4);
+
+      const result = await harness.emit('streammonsters:monster_stat_chosen', {
+        eventId:'result-early',
+        promptId:'allocation-early',
+        playerName:'@alpha',
+        monster:{ ...monster, unspentStatPoints:1 },
+        level:7,
+        remainingUnspentPoints:1,
+        stat:'might'
+      });
+      expect(result.visible).toBe(true);
+      expect(result.title).toContain('@alpha');
+      expect(result.title).toContain('Ashfang');
+      expect(result.title).toContain('+1');
+    } finally {
+      harness.close();
+    }
+  });
+});

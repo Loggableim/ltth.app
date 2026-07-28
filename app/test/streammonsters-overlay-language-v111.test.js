@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 const StreamMonstersRoutes = require(
   '../plugins/streamalchemy/backend/streammonsters/routes'
@@ -14,6 +15,9 @@ const overlayRuntime = require(
 );
 const creatorRuntime = require(
   '../plugins/streamalchemy/streammonsters-creator-runtime'
+);
+const ArenaView = require(
+  '../plugins/streamalchemy/streammonsters-arena-view'
 );
 
 const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
@@ -365,4 +369,109 @@ describe('Stream Monsters 1.11 creator command usability', () => {
       );
     }
   );
+});
+
+describe('Stream Monsters 1.11 live arena locale transitions', () => {
+  test('rerenders the complete visible choice page from German to English', () => {
+    const html = fs.readFileSync(
+      path.join(pluginDir, 'streammonsters-overlay.html'),
+      'utf8'
+    );
+    const dom = new JSDOM(html);
+    let locale = 'de';
+    const catalogs = Object.fromEntries(['de', 'en'].map(language => [
+      language,
+      JSON.parse(fs.readFileSync(
+        path.join(pluginDir, 'locales', `${language}.json`),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters
+    ]));
+    const localize = (key, params = {}) => String(
+      catalogs[locale][key] || ''
+    ).replace(/\{(\w+)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name)
+        ? String(params[name])
+        : match
+    ));
+    const view = ArenaView.createArenaView({
+      document:dom.window.document,
+      clock:{ now:() => 1_000 },
+      localize,
+      choiceKeys:{
+        A:'skillAttack',
+        B:'skillDefense',
+        C:'skillSpecial'
+      },
+      labelKeys:{
+        monster:'arenaMonsterLabel',
+        level:'arenaLevelLabel',
+        round:'arenaRoundLabel',
+        roster:'arenaRosterChoice',
+        skill:'arenaSkillFallback',
+        evaded:'arenaEvaded',
+        knockout:'arenaKnockout',
+        winner:'arenaWinnerLabel',
+        viewer:'arenaViewerLabel',
+        battleEnded:'arenaBattleEnded',
+        cancelledRoster:'arenaCancelledRoster',
+        cancelled:'arenaCancelled',
+        shield:'arenaShieldLabel',
+        special:'arenaSpecialLabel'
+      }
+    });
+    const fighters = [1, 2].map(slot => ({
+      slot,
+      name:slot === 1 ? 'Ashfang' : 'Ripple',
+      viewerName:slot === 1 ? '@alpha' : '@beta',
+      level:5,
+      hp:48,
+      maxHp:52,
+      shield:4,
+      charge:50,
+      skills:[{
+        choice:'A',
+        icon:'🔥',
+        name:'RAW BACKEND ATTACK',
+        nameKey:'skillNameAshfangAStage1',
+        shortText:'RAW BACKEND EFFECT',
+        shortTextKey:'skillEffectAshfangAStage1',
+        available:true
+      }]
+    }));
+
+    view.applyMatch({
+      matchId:'locale-match',
+      state:'action',
+      roundNumber:2,
+      fighters
+    });
+    view.openChoice({
+      matchId:'locale-match',
+      round:2,
+      choices:['A', 'B', 'C'],
+      fighters
+    });
+
+    const text = selector => dom.window.document.querySelector(selector).textContent;
+    expect(text('#arena-round')).toBe('Runde 2');
+    expect(text('#arena-skill-prompt')).toContain('A Angriff');
+    expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-name'))
+      .toBe('Ashfang: Flammenzahn');
+    expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-copy'))
+      .toBe('Verursacht Schaden und hinterlässt Brand für die nächste Runde.');
+    expect(text('#arena-shield-label-1')).toBe('Schild');
+
+    locale = 'en';
+    view.setLocale('en');
+
+    expect(text('#arena-round')).toBe('Round 2');
+    expect(text('#arena-skill-prompt')).toContain('A Attack');
+    expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-name'))
+      .toBe('Ashfang: Flamefang');
+    expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-copy'))
+      .toBe('Deals damage and leaves Burn for the next round.');
+    expect(text('#arena-shield-label-1')).toBe('Shield');
+    expect(dom.window.document.body.textContent).not.toContain('RAW BACKEND');
+    dom.window.close();
+  });
 });

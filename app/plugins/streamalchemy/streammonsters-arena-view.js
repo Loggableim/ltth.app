@@ -42,7 +42,9 @@
     effects = SILENT_OUTPUT,
     clock = {},
     choiceLabels = {},
+    choiceKeys = {},
     labels: arenaLabels = {},
+    labelKeys = {},
     localize = null
   } = {}) {
     if (!documentLike) throw new Error('STREAM_MONSTERS_ARENA_DOCUMENT_REQUIRED');
@@ -76,6 +78,8 @@
     let lastEventSequence = 0;
     let countdownHandle = null;
     let surfaceVersion = 0;
+    let activeLocale = null;
+    let renderVisibleComposite = null;
     const acceptedEventIds = new Set();
     const acceptedTimelineEventIds = new Set();
     const choicesByKey = {
@@ -83,6 +87,12 @@
       B: 'Defense',
       C: 'Special',
       ...choiceLabels
+    };
+    const choiceCatalogKeys = {
+      A: 'skillAttack',
+      B: 'skillDefense',
+      C: 'skillSpecial',
+      ...choiceKeys
     };
     const labels = {
       monster: 'Monster {slot}',
@@ -101,35 +111,94 @@
       special: 'Special',
       ...arenaLabels
     };
+    const catalogKeys = {
+      monster: 'arenaMonsterLabel',
+      level: 'arenaLevelLabel',
+      round: 'arenaRoundLabel',
+      roster: 'arenaRosterChoice',
+      skill: 'arenaSkillFallback',
+      evaded: 'arenaEvaded',
+      knockout: 'arenaKnockout',
+      winner: 'arenaWinnerLabel',
+      viewer: 'arenaViewerLabel',
+      battleEnded: 'arenaBattleEnded',
+      cancelledRoster: 'arenaCancelledRoster',
+      cancelled: 'arenaCancelled',
+      shield: 'arenaShieldLabel',
+      special: 'arenaSpecialLabel',
+      ...labelKeys
+    };
 
     const node = id => documentLike.getElementById(id);
     const fighterNode = slot => node(`arena-fighter-${slot}`);
     const skillDeckNode = slot => documentLike.querySelector(
       `[data-skill-deck="${slot}"]`
     );
-    const formatLabel = (key, params = {}) => String(labels[key] || '').replace(
+    const interpolate = (template, params = {}) => String(template || '').replace(
       /\{(\w+)\}/g,
       (match, name) => Object.prototype.hasOwnProperty.call(params, name)
         ? String(params[name])
         : match
     );
+    const translate = (catalogKey, params = {}, fallback = '') => {
+      const normalizedKey = String(catalogKey || '').trim();
+      if (typeof localize === 'function' && normalizedKey) {
+        try {
+          return String(localize(normalizedKey, params, activeLocale) || '');
+        } catch (_) {
+          return '';
+        }
+      }
+      return interpolate(fallback, params);
+    };
+    const formatLabel = (key, params = {}) => translate(
+      catalogKeys[key],
+      params,
+      labels[key]
+    );
+    const choiceLabel = choice => translate(
+      choiceCatalogKeys[choice],
+      {},
+      choicesByKey[choice]
+    );
     const localizedSkillText = (key, fallback = '') => {
       const normalizedKey = String(key || '').trim();
-      if (!normalizedKey) return String(fallback || '');
-      if (Object.prototype.hasOwnProperty.call(labels, normalizedKey)) {
+      if (!normalizedKey) {
+        return typeof localize === 'function' ? '' : String(fallback || '');
+      }
+      if (
+        typeof localize !== 'function' &&
+        Object.prototype.hasOwnProperty.call(labels, normalizedKey)
+      ) {
         return String(labels[normalizedKey] || fallback || '');
       }
-      if (typeof localize === 'function') {
-        try {
-          return String(localize(normalizedKey, String(fallback || '')) || fallback || '');
-        } catch (_) {}
-      }
-      return String(fallback || '');
+      return translate(normalizedKey, {}, fallback);
     };
 
     function setText(id, text) {
       const target = node(id);
-      if (target) target.textContent = String(text ?? '');
+      if (!target) return;
+      delete target.dataset.arenaLabelKey;
+      delete target.dataset.arenaLabelParams;
+      target.textContent = String(text ?? '');
+    }
+
+    function setLabelText(id, key, params = {}) {
+      const target = node(id);
+      if (!target) return;
+      target.dataset.arenaLabelKey = String(key || '');
+      target.dataset.arenaLabelParams = JSON.stringify(params);
+      target.textContent = formatLabel(key, params);
+    }
+
+    function refreshLocalizedText() {
+      documentLike.querySelectorAll('[data-arena-label-key]').forEach(target => {
+        let params = {};
+        try {
+          params = JSON.parse(target.dataset.arenaLabelParams || '{}');
+        } catch (_) {}
+        target.textContent = formatLabel(target.dataset.arenaLabelKey, params);
+      });
     }
 
     function setMeter(id, value) {
@@ -199,7 +268,11 @@
         setSkillText('skill-choice', choice);
         setSkillText(
           'skill-name',
-          localizedSkillText(skill.nameKey, skill.name || choicesByKey[choice] || labels.skill)
+          skill.nameKey
+            ? localizedSkillText(skill.nameKey, skill.name)
+            : (typeof localize === 'function'
+                ? formatLabel('skill')
+                : (skill.name || choiceLabel(choice) || labels.skill))
         );
         setSkillText(
           'skill-copy',
@@ -308,13 +381,14 @@
       stateBySlot.set(slot, state);
       const fallbackName = formatLabel('monster', { slot });
       setText(`arena-name-${slot}`, state.name || fallbackName);
-      setText(`arena-owner-${slot}`, state.viewerName || labels.viewer);
-      setText(`arena-level-${slot}`, formatLabel('level', {
+      if (state.viewerName) setText(`arena-owner-${slot}`, state.viewerName);
+      else setLabelText(`arena-owner-${slot}`, 'viewer');
+      setLabelText(`arena-level-${slot}`, 'level', {
         level: Math.max(1, numeric(state.level, 1))
-      }));
+      });
       setText(`arena-hp-text-${slot}`, `${state.hp} / ${state.maxHp}`);
-      setText(`arena-shield-label-${slot}`, labels.shield);
-      setText(`arena-special-label-${slot}`, labels.special);
+      setLabelText(`arena-shield-label-${slot}`, 'shield');
+      setLabelText(`arena-special-label-${slot}`, 'special');
       setMeter(`arena-hp-${slot}`, (state.hp / state.maxHp) * 100);
       setMeter(`arena-shield-${slot}`, Math.min(100, state.shield * 10));
       setMeter(`arena-charge-${slot}`, state.charge);
@@ -341,6 +415,7 @@
     function resetFighters() {
       stateBySlot.clear();
       activeChargeWindow = null;
+      renderVisibleComposite = null;
       acceptedEventIds.clear();
       lastEventSequence = 0;
       for (const slot of [1, 2]) {
@@ -472,9 +547,14 @@
         arena.dataset.phase = String(match.state || 'roster');
         arena.removeAttribute('data-terminal');
       }
-      setText('arena-round', match.roundNumber || match.round
-        ? formatLabel('round', { round: numeric(match.roundNumber ?? match.round, 1) })
-        : labels.roster);
+      if (match.roundNumber || match.round) {
+        setLabelText('arena-round', 'round', {
+          round:numeric(match.roundNumber ?? match.round, 1)
+        });
+      } else {
+        setLabelText('arena-round', 'roster');
+      }
+      renderVisibleComposite = null;
       startCountdown(match.actionDeadlineMs || match.rosterDeadlineMs || 0);
       return match;
     }
@@ -487,11 +567,15 @@
       const choices = Array.isArray(payload.choices) && payload.choices.length
         ? payload.choices
         : ['A', 'B', 'C'];
-      setText('arena-round', formatLabel('round', { round }));
-      setText(
-        'arena-skill-prompt',
-        choices.map(choice => `${choice} ${choicesByKey[choice] || ''}`.trim()).join('  ·  ')
-      );
+      const renderChoiceCopy = () => {
+        setLabelText('arena-round', 'round', { round });
+        setText(
+          'arena-skill-prompt',
+          choices.map(choice => `${choice} ${choiceLabel(choice)}`.trim()).join('  ·  ')
+        );
+      };
+      renderVisibleComposite = renderChoiceCopy;
+      renderChoiceCopy();
       startCountdown(payload.deadlineMs || payload.actionDeadlineMs || 0);
       if (arena) {
         arena.classList.add('visible');
@@ -513,9 +597,12 @@
       renderSkillDecks();
     }
 
-    function setLocale() {
+    function setLocale(locale) {
+      activeLocale = String(locale || '').trim().toLowerCase() || activeLocale;
+      refreshLocalizedText();
       renderSkillDecks();
-      return true;
+      renderVisibleComposite?.();
+      return activeLocale;
     }
 
     function lockChoice(payload = {}) {
@@ -591,24 +678,28 @@
       }[beat.type] || beat.type;
       switch (compatibleType) {
         case 'telegraph': {
-          const skillName = localizedSkillText(
-            action.skill?.nameKey,
-            action.skill?.name || labels.skill
-          );
-          const skillCopy = localizedSkillText(
-            action.skill?.shortTextKey,
-            action.skill?.shortText
-          );
-          setText('arena-feed', skillName);
-          setText('arena-round', formatLabel('round', { round: action.round || 1 }));
-          setText(
-            'arena-skill-prompt',
-            [
-              action.skill?.icon,
-              action.choice ? `${action.choice} · ${skillName}` : skillName,
-              skillCopy
-            ].filter(Boolean).join(' — ')
-          );
+          const renderTelegraphCopy = () => {
+            const skillName = action.skill?.nameKey
+              ? localizedSkillText(action.skill.nameKey, action.skill?.name)
+              : (typeof localize === 'function'
+                  ? formatLabel('skill')
+                  : (action.skill?.name || labels.skill));
+            const skillCopy = action.skill?.shortTextKey
+              ? localizedSkillText(action.skill.shortTextKey, action.skill?.shortText)
+              : (typeof localize === 'function' ? '' : (action.skill?.shortText || ''));
+            setText('arena-feed', skillName);
+            setLabelText('arena-round', 'round', { round:action.round || 1 });
+            setText(
+              'arena-skill-prompt',
+              [
+                action.skill?.icon,
+                action.choice ? `${action.choice} · ${skillName}` : skillName,
+                skillCopy
+              ].filter(Boolean).join(' — ')
+            );
+          };
+          renderVisibleComposite = renderTelegraphCopy;
+          renderTelegraphCopy();
           actor?.classList.add('telegraphing');
           const elementLight = node('arena-element-light');
           if (elementLight) {
@@ -652,11 +743,10 @@
           )) || action.hits?.[beat.hitIndex - 1] || {};
           target?.classList.remove('hit', 'evaded');
           target?.classList.add(beat.evaded ? 'evaded' : 'hit');
-          setText(
+          if (beat.evaded) setLabelText('arena-impact', 'evaded');
+          else setText(
             'arena-impact',
-            beat.evaded
-              ? labels.evaded
-              : `-${Math.max(0, numeric(beat.hpDamage))}${beat.shieldAbsorbed ? ' 🛡' : ''}`
+            `-${Math.max(0, numeric(beat.hpDamage))}${beat.shieldAbsorbed ? ' 🛡' : ''}`
           );
           const impact = node('arena-impact');
           impact?.classList.add('visible');
@@ -776,7 +866,8 @@
               : numeric(beat.targetSlot)
           )?.classList.add('knockout');
           if (arena) arena.dataset.phase = 'knockout';
-          setText('arena-feed', labels.knockout);
+          setLabelText('arena-feed', 'knockout');
+          renderVisibleComposite = () => setLabelText('arena-feed', 'knockout');
           fire(audio, 'arena.ko', {
             eventId: beat.beatId || `${action.eventId || action.eventSequence}:ko`,
             duck: beat.audioDucking || false
@@ -943,10 +1034,14 @@
           }
           if (arena) arena.dataset.phase = 'winner';
           if (beat.winnerSlot) {
-            setText('arena-feed', formatLabel('winner', {
+            setLabelText('arena-feed', 'winner', {
               name: stateBySlot.get(beat.winnerSlot)?.name ||
                 formatLabel('monster', { slot: beat.winnerSlot })
-            }));
+            });
+            renderVisibleComposite = () => setLabelText('arena-feed', 'winner', {
+              name:stateBySlot.get(beat.winnerSlot)?.name ||
+                formatLabel('monster', { slot:beat.winnerSlot })
+            });
           }
           break;
         case 'xp_reward':
@@ -1039,15 +1134,23 @@
         }).join('   ');
       const result = node('arena-result');
       if (result) result.classList.add('visible');
-      setText('arena-result-winner', winnerSlot
-        ? formatLabel('winner', { name: winnerName })
-        : labels.battleEnded);
+      if (winnerSlot) {
+        setLabelText('arena-result-winner', 'winner', { name:winnerName });
+      } else {
+        setLabelText('arena-result-winner', 'battleEnded');
+      }
       setText('arena-result-rating', ratingText);
-      setText('arena-feed', winnerSlot
-        ? formatLabel('winner', {
-            name: winnerName
-          })
-        : labels.battleEnded);
+      if (winnerSlot) setLabelText('arena-feed', 'winner', { name:winnerName });
+      else setLabelText('arena-feed', 'battleEnded');
+      renderVisibleComposite = () => {
+        if (winnerSlot) {
+          setLabelText('arena-result-winner', 'winner', { name:winnerName });
+          setLabelText('arena-feed', 'winner', { name:winnerName });
+        } else {
+          setLabelText('arena-result-winner', 'battleEnded');
+          setLabelText('arena-feed', 'battleEnded');
+        }
+      };
       fire(audio, 'arena.victory', {
         eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
       });
@@ -1069,9 +1172,11 @@
       }
       setText('arena-skill-prompt', '');
       setText('arena-countdown', '');
-      setText('arena-feed', payload.reason === 'roster_unavailable'
-        ? labels.cancelledRoster
-        : labels.cancelled);
+      const cancellationLabel = payload.reason === 'roster_unavailable'
+        ? 'cancelledRoster'
+        : 'cancelled';
+      setLabelText('arena-feed', cancellationLabel);
+      renderVisibleComposite = () => setLabelText('arena-feed', cancellationLabel);
       await wait(3_000);
       if (terminalVersion === surfaceVersion) arena?.classList.remove('visible');
       return true;

@@ -27,6 +27,8 @@
     'free_egg_public',
     'free_egg_claimed',
     'egg_stage_removed',
+    'stat_choice_opened',
+    'monster_stat_prompt',
     'monster_discovered',
     'monster_evolved',
     'monster_visual_evolved'
@@ -41,7 +43,6 @@
     'rank_card',
     'monster_xp_awarded',
     'monster_level_up',
-    'monster_stat_prompt',
     'monster_stat_chosen',
     'monster_stat_auto_assigned',
     'arena_rating_changed',
@@ -384,12 +385,110 @@
     };
   }
 
-  function criticalLocalePages(config = {}) {
+  function criticalLocalePages(config = {}, {
+    nowMs = Date.now(),
+    deadlineMs = null
+  } = {}) {
     const normalized = normalizeOverlayLanguage(config);
-    return normalized.locales.map(locale => ({
-      locale,
-      durationMs: normalized.secondsPerLocale * 1_000
-    }));
+    const configuredDurationMs = normalized.secondsPerLocale * 1_000;
+    const hasDeadline = deadlineMs !== null &&
+      deadlineMs !== undefined &&
+      deadlineMs !== '';
+    const deadline = Number(deadlineMs);
+    const remainingMs = hasDeadline && Number.isFinite(deadline)
+      ? Math.max(0, deadline - (Number(nowMs) || 0))
+      : null;
+    if (remainingMs === 0) return [];
+    const durationMs = remainingMs == null
+      ? configuredDurationMs
+      : Math.min(
+          configuredDurationMs,
+          Math.floor(remainingMs / normalized.locales.length)
+        );
+    if (durationMs < 1) return [];
+    return normalized.locales.map(locale => ({ locale, durationMs }));
+  }
+
+  function statSequenceKey(data = {}) {
+    const promptId = String(data.promptId || '').trim();
+    if (promptId) return `stat:${promptId}`;
+    const matchId = String(data.matchId || '').trim();
+    const slot = Number(data.slot);
+    if (matchId && Number.isInteger(slot) && slot > 0) {
+      return `stat:${matchId}:${slot}`;
+    }
+    return null;
+  }
+
+  function createCriticalLocaleSequencer({
+    getConfig = () => ({}),
+    applyLocale = () => {},
+    now = () => Date.now(),
+    setTimeout: schedule = globalThis.setTimeout,
+    clearTimeout: cancelSchedule = globalThis.clearTimeout
+  } = {}) {
+    const active = new Map();
+
+    function cancel(key) {
+      const normalized = String(key || '').trim();
+      const token = active.get(normalized);
+      if (!token) return false;
+      token.cancelled = true;
+      if (token.timer != null && typeof cancelSchedule === 'function') {
+        cancelSchedule(token.timer);
+      }
+      token.resolve?.(false);
+      active.delete(normalized);
+      return true;
+    }
+
+    function waitForPage(token, durationMs) {
+      return new Promise(resolve => {
+        token.resolve = resolve;
+        token.timer = schedule(() => {
+          token.timer = null;
+          token.resolve = null;
+          resolve(!token.cancelled);
+        }, Math.max(0, Number(durationMs) || 0));
+      });
+    }
+
+    async function run({
+      key,
+      deadlineMs = null,
+      renderPage
+    } = {}) {
+      const normalizedKey = String(key || '').trim() ||
+        `critical:${Math.max(0, Number(now()) || 0)}`;
+      cancel(normalizedKey);
+      const token = { cancelled:false, timer:null, resolve:null };
+      active.set(normalizedKey, token);
+      const config = normalizeOverlayLanguage(getConfig());
+      const pages = criticalLocalePages(config, {
+        nowMs:now(),
+        deadlineMs
+      });
+      try {
+        for (let index = 0; index < pages.length; index += 1) {
+          if (token.cancelled) break;
+          const page = pages[index];
+          applyLocale(page.locale);
+          await renderPage?.({ ...page, index, total:pages.length });
+          if (token.cancelled) break;
+          if (!await waitForPage(token, page.durationMs)) break;
+        }
+      } finally {
+        if (active.get(normalizedKey) === token) active.delete(normalizedKey);
+        applyLocale(config.primaryLocale);
+      }
+      return !token.cancelled && pages.length > 0;
+    }
+
+    return {
+      cancel,
+      run,
+      isActive:key => active.has(String(key || '').trim())
+    };
   }
 
   function pendingCriticalLocales(config = {}, shownLocales = []) {
@@ -1293,6 +1392,7 @@
     apiErrorKey,
     anchorPlacement,
     createBattleReplaySynchronizer,
+    createCriticalLocaleSequencer,
     createOverlayLocaleResolver,
     createLayoutController,
     createPriorityQueue,
@@ -1319,6 +1419,7 @@
     resolveLayoutSettings,
     safeZoneCollisions,
     statPromptKey,
+    statSequenceKey,
     variantKey: value => enumKey(VARIANT_KEYS, value)
   };
 }));
