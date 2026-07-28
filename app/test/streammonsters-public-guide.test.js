@@ -12,6 +12,7 @@ describe('Stream Monsters public guide', () => {
     const page = read('streammonsters/index.html');
     const guide = read('js/streammonsters-guide.js');
     const pagesBuilder = read('scripts/build_pages_bundle.py');
+    const sitemap = read('sitemap.xml');
 
     expect(page).toContain('https://ltth.app/streammonsters');
     expect(page).toContain('/js/streammonsters-guide.js');
@@ -30,12 +31,13 @@ describe('Stream Monsters public guide', () => {
     expect(guide).toContain('/assets/streammonsters/furry/');
     expect(pagesBuilder).toContain('"streammonsters"');
     expect(pagesBuilder).toContain('assets/streammonsters/furry');
+    expect(sitemap).toContain('https://ltth.app/streammonsters/');
   });
 
   test('documents the implemented default aliases and fair battle controls', () => {
     const guide = read('js/streammonsters-guide.js');
 
-    ['eier', 'eierliste', 'meineeier', 'hatch', 'monsters', 'monster', 'choose',
+    ['eier', 'eierliste', 'meineeier', 'eggs', 'hatch', 'monsters', 'monster', 'choose',
       'evolve', 'battle', 'leavebattle', 'rank', 'quests', 'adopt', 'adoptieren',
       'monstershelp', 'A', 'B', 'C'].forEach(token => expect(guide).toContain(token));
     expect(guide).toContain('86400');
