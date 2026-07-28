@@ -215,6 +215,7 @@ describe('Talking Heads renderer lifecycle', () => {
         { playbackId: 'short-audio', externalLifecycle: true }
       );
       plugin.activePlaybackByUser.set('same-user', 'short-audio');
+      plugin.activePlaybackByUser.set('newer-user', 'newer-audio');
 
       plugin._registerPlaybackBridge();
       const handlers = new Map(api.pluginLoader.on.mock.calls);
@@ -223,6 +224,7 @@ describe('Talking Heads renderer lifecycle', () => {
         userId: 'same-user'
       });
       await cacheManager.generatedAssetLock;
+      await cacheManager.clearAllCache(plugin._getActiveGeneratedAssetOwnerIds());
 
       expect(plugin.activePlaybackByUser.has('same-user')).toBe(false);
       expect(plugin.animationController.activeAnimations.get('same-user').state).toBe('fading_out');
@@ -249,8 +251,61 @@ describe('Talking Heads renderer lifecycle', () => {
       await cacheManager.releaseGeneratedAssetOwner('playback:newer-audio');
       await expect(fs.access(sharedSprite)).rejects.toMatchObject({ code: 'ENOENT' });
     } finally {
-      plugin.animationController?.stopAllAnimations();
-      plugin.animationController?.clearAllTimeouts();
+      await plugin.destroy();
+      db.close();
+      await fs.rm(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('destroy drains a pending renderer sprite release instead of orphaning its owner', async () => {
+    const { plugin, api } = createTalkingHeads();
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'talking-heads-destroy-'));
+    const db = new Database(':memory:');
+    const cacheManager = new CacheManager(dataDir, db, api.logger, {
+      cacheEnabled: true,
+      cacheDuration: 60 * 60 * 1000
+    });
+    await cacheManager.init();
+    const spritePath = path.join(
+      dataDir,
+      'avatars',
+      'asset_boba_333333333333_idle_neutral.svg'
+    );
+
+    try {
+      await cacheManager.materializeGeneratedAssets(
+        'playback:reload-audio',
+        [spritePath],
+        Date.now() + 60 * 60 * 1000,
+        async () => {
+          await fs.mkdir(path.dirname(spritePath), { recursive: true });
+          await fs.writeFile(spritePath, '<svg></svg>');
+        }
+      );
+
+      jest.useFakeTimers();
+      plugin.cacheManager = cacheManager;
+      plugin.animationController = {
+        endExternalAnimation: jest.fn(),
+        stopAllAnimations: jest.fn(),
+        clearAllTimeouts: jest.fn()
+      };
+      plugin.activePlaybackByUser.set('reload-user', 'reload-audio');
+      plugin._registerPlaybackBridge();
+      const handlers = new Map(api.pluginLoader.on.mock.calls);
+      handlers.get('tts:renderer:ended')({
+        playbackId: 'reload-audio',
+        userId: 'reload-user'
+      });
+
+      await plugin.destroy();
+      await cacheManager.generatedAssetLock;
+
+      await expect(fs.access(spritePath)).rejects.toMatchObject({ code: 'ENOENT' });
+      expect(db.prepare(
+        'SELECT owner_id FROM talking_heads_generated_assets WHERE asset_path = ?'
+      ).all(spritePath)).toEqual([]);
+    } finally {
       db.close();
       await fs.rm(dataDir, { recursive: true, force: true });
     }
