@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const BOOT_CRITICAL_DEPENDENCIES = [
   'dotenv',
@@ -24,6 +25,24 @@ function getDeclaredProductionDependencies(projectRoot) {
   }
 }
 
+function isPackageDirectory(packagePath) {
+  try {
+    return fs.statSync(packagePath).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function smokeLoadDependency(projectRoot, dependency) {
+  const entryPath = require.resolve(dependency, { paths: [projectRoot] });
+  const result = spawnSync(process.execPath, ['-e', 'require(process.argv[1])', entryPath], {
+    cwd: projectRoot,
+    stdio: 'ignore',
+    windowsHide: true
+  });
+  return !result.error && result.status === 0;
+}
+
 function verifyProductionDependencies(projectRoot) {
   const declaredDependencies = getDeclaredProductionDependencies(projectRoot);
   if (!declaredDependencies) {
@@ -32,23 +51,27 @@ function verifyProductionDependencies(projectRoot) {
 
   const missing = [];
   const errors = [];
+  const dependenciesToVerify = [...new Set([
+    ...declaredDependencies,
+    ...BOOT_CRITICAL_DEPENDENCIES
+  ])];
 
-  for (const dependency of declaredDependencies) {
+  for (const dependency of dependenciesToVerify) {
     const dependencyPath = path.join(projectRoot, 'node_modules', dependency);
-    if (!fs.existsSync(dependencyPath)) {
+    if (!isPackageDirectory(dependencyPath)) {
       missing.push(dependency);
     }
   }
 
   for (const dependency of BOOT_CRITICAL_DEPENDENCIES) {
-    if (!declaredDependencies.includes(dependency) || missing.includes(dependency)) {
+    if (missing.includes(dependency)) {
       continue;
     }
 
     try {
-      const entryPath = require.resolve(dependency, { paths: [projectRoot] });
-      delete require.cache[entryPath];
-      require(entryPath);
+      if (!smokeLoadDependency(projectRoot, dependency)) {
+        errors.push(dependency);
+      }
     } catch {
       errors.push(dependency);
     }
