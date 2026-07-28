@@ -309,7 +309,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     }
   });
 
-  test('shows an exact incubating wait time in a large upper card', async () => {
+  test('shows an exact incubating wait time in a compact upper-third card', async () => {
     const { view, snapshots } = fixture();
 
     await view.show({
@@ -327,7 +327,8 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
 
     expect(snapshots[0].kind).toBe('egg-wait');
     expect(snapshots[0].detailText).toContain('01:35');
-    expect(snapshots[0].detailHtml).toContain('data-placement="upper"');
+    expect(snapshots[0].detailHtml).toContain('data-placement="upper-third"');
+    expect(snapshots[0].detailHtml).toContain('data-size="compact"');
   });
 
   test('shows queued position without inventing a hatch countdown', async () => {
@@ -350,5 +351,14 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(snapshots[0].detailText).toContain('Queue position 3');
     expect(snapshots[0].detailText).toContain('Incubation starts when a slot opens');
     expect(snapshots[0].detailText).not.toMatch(/\b00:00\b/);
+  });
+
+  test('hides the art frame entirely for generic cards without an image', () => {
+    const html = fs.readFileSync(
+      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
+      'utf8'
+    );
+    expect(html).toMatch(/#card\.no-art #art-wrap\s*\{\s*display:none/);
+    expect(html).toContain("card.classList.toggle('no-art', !imageUrl)");
   });
 });

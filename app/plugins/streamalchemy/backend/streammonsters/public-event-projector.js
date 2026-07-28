@@ -103,7 +103,8 @@ function safeImageUrl(value) {
   if (!url) return null;
   return (
     url.startsWith('/plugins/streamalchemy/assets/') ||
-    /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i.test(url)
+    /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i.test(url) ||
+    /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(url)
   ) ? url : null;
 }
 
@@ -334,8 +335,8 @@ function projectCard(card = null) {
   if (type === 'egg_wait') {
     return {
       type,
-      size: 'large',
-      placement: 'upper',
+      size: 'compact',
+      placement: 'upper-third',
       ...projectWait(card)
     };
   }
@@ -443,16 +444,52 @@ class StreamMonstersPublicEventProjector {
   }
 
   displayName(payload = {}) {
-    const direct = boundedText(
-      payload.displayName ?? payload.username ?? payload.nickname,
-      64
-    );
+    const candidates = [
+      payload.displayName,
+      payload.username,
+      payload.nickname,
+      payload.egg?.displayName,
+      payload.egg?.display_name
+    ].map(value => boundedText(value, 64)).filter(Boolean);
+    const direct = candidates.find(value => !/^\d{8,}$/.test(value));
     if (direct) return direct;
     const userId = payload.userId ?? payload.user_id;
     return boundedText(this.store?.getViewerDisplayName?.(userId), 64) || 'Viewer';
   }
 
+  owner(payload = {}) {
+    const rawName = this.displayName(payload).replace(/^@+/, '');
+    const displayName = rawName === 'Viewer' ? rawName : `@${rawName}`;
+    const avatarUrl = safeImageUrl(
+      payload.avatarRef ??
+      payload.avatar_ref ??
+      payload.egg?.avatarRef ??
+      payload.egg?.avatar_ref
+    );
+    const initials = rawName
+      .split(/[\s._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0])
+      .join('')
+      .toUpperCase() || '?';
+    return {
+      displayName,
+      avatarUrl,
+      initials
+    };
+  }
+
   project(eventType, payload = {}) {
+    if (eventType === 'streammonsters:egg_hatched') {
+      const owner = this.owner(payload);
+      return {
+        displayName: owner.displayName,
+        owner,
+        egg: projectEgg(payload.egg),
+        monster: projectMonster(payload.monster)
+      };
+    }
     if (eventType === 'streammonsters:monster_discovered') {
       return {
         displayName: this.displayName(payload),

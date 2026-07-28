@@ -194,7 +194,7 @@ describe('Stream Monsters 1.5 durable gift and egg loop', () => {
     }
   );
 
-  test('returns exact early-hatch wait data and an upper large egg card', () => {
+  test('returns exact early-hatch wait data and a compact upper-third egg card', () => {
     const { commands } = createLoop({ now: 50_000, hatchDurationMs: 120_000 });
     commands.engine.processGift({
       userId: 'viewer-a',
@@ -216,8 +216,8 @@ describe('Stream Monsters 1.5 durable gift and egg loop', () => {
       },
       card: expect.objectContaining({
         type: 'egg_wait',
-        size: 'large',
-        placement: 'upper',
+        size: 'compact',
+        placement: 'upper-third',
         slot: 1,
         readyAtMs: 170_000,
         remainingMs: 120_000

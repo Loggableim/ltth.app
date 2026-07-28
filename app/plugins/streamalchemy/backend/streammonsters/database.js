@@ -1114,9 +1114,10 @@ class StreamMonstersDatabase {
     const platformId = platformUserId === null || platformUserId === undefined
       ? ''
       : String(platformUserId).trim();
-    const legacyId = legacyUserId === null || legacyUserId === undefined
+    const rawLegacyId = legacyUserId === null || legacyUserId === undefined
       ? ''
       : String(legacyUserId).trim();
+    const legacyId = /^\d{8,}$/.test(rawLegacyId) ? '' : rawLegacyId;
     if (!platformId) return legacyId || null;
     const transaction = this.db.transaction(() => {
       const existing = this.db.prepare(`

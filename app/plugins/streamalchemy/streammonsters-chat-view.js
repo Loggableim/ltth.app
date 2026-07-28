@@ -8,6 +8,7 @@
   const ELEMENTS = new Set(['ember', 'tide', 'grove', 'gale', 'volt', 'lunar']);
   const SAFE_ASSET_URL = /^\/plugins\/streamalchemy\/assets\/[a-z0-9/_\-.]+$/i;
   const SAFE_KENNEY_URL = /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i;
+  const SAFE_AVATAR_URL = /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i;
 
   function boundedText(input, fallback = '', maximum = 96) {
     const value = String(input ?? '')
@@ -32,7 +33,31 @@
 
   function safeImageUrl(input) {
     const url = boundedText(input, '', 512);
-    return SAFE_ASSET_URL.test(url) || SAFE_KENNEY_URL.test(url) ? url : '';
+    return SAFE_ASSET_URL.test(url) ||
+      SAFE_KENNEY_URL.test(url) ||
+      SAFE_AVATAR_URL.test(url)
+      ? url
+      : '';
+  }
+
+  function normalizeOwner(input = {}) {
+    const rawName = boundedText(input.displayName, 'Viewer', 64);
+    const displayName = rawName === 'Viewer'
+      ? rawName
+      : `@${rawName.replace(/^@+/, '')}`;
+    const fallbackInitials = displayName
+      .replace(/^@/, '')
+      .split(/[\s._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0])
+      .join('')
+      .toUpperCase() || '?';
+    return {
+      displayName,
+      avatarUrl: safeImageUrl(input.avatarUrl),
+      initials: boundedText(input.initials, fallbackInitials, 2).toUpperCase()
+    };
   }
 
   function templateAsset(monster = {}) {
@@ -117,13 +142,17 @@
       detailElement.classList.remove('visible');
       detailElement.removeAttribute('data-kind');
       detailElement.removeAttribute('data-page');
+      detailElement.removeAttribute('data-size');
+      detailElement.dataset.placement = 'upper';
       clear(detailElement);
     };
-    const openDetail = kind => {
+    const openDetail = (kind, { size = null, placement = 'upper' } = {}) => {
       hideCompact();
       clear(detailElement);
       detailElement.dataset.kind = kind;
-      detailElement.dataset.placement = 'upper';
+      detailElement.dataset.placement = placement;
+      if (size) detailElement.dataset.size = size;
+      else detailElement.removeAttribute('data-size');
       detailElement.classList.add('visible');
     };
     const appendImage = (parent, monster, className) => {
@@ -240,7 +269,10 @@
         0,
         Math.trunc(safeNumber(waitState.queuePosition ?? waitState.queue_position, 0))
       );
-      openDetail('egg-wait');
+      openDetail('egg-wait', {
+        size: 'compact',
+        placement: 'upper-third'
+      });
       appendHeader({
         kicker: displayName(payload, translate('viewer')),
         title: queued ? translate('eggQueued') : translate('eggWait'),
@@ -348,6 +380,7 @@
     displayName,
     formatRemaining,
     normalizeMonster,
+    normalizeOwner,
     safeImageUrl
   };
 }));

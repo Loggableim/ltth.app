@@ -182,8 +182,8 @@ class ChatCommands {
           wait,
           card: {
             type: 'egg_wait',
-            size: 'large',
-            placement: 'upper',
+            size: 'compact',
+            placement: 'upper-third',
             ...wait
           }
         } : {})

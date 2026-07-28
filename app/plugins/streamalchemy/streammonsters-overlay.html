@@ -124,6 +124,19 @@
     }
     #card.visible { opacity:1; transform:scale(var(--reveal-scale,1)); }
     #card.charged { border-color:#d5b4ff; box-shadow:0 0 50px #9d72ff69,0 28px 80px #000b; }
+    #card.no-art { grid-template-columns:minmax(250px,1fr); }
+    #card.no-art #art-wrap { display:none; }
+    #owner-chip {
+      display:flex; align-items:center; gap:10px; width:max-content; max-width:100%; margin-top:12px;
+      padding:7px 12px 7px 7px; border:1px solid #7deaff55; border-radius:999px;
+      color:#eaffff; background:#0b1b30cc; font-size:15px; font-weight:900;
+    }
+    #owner-chip[hidden] { display:none; }
+    #owner-avatar,#owner-initials {
+      display:grid; place-items:center; width:36px; height:36px; border-radius:50%;
+      background:#39466b; object-fit:cover;
+    }
+    #owner-initials { color:white; background:linear-gradient(135deg,var(--cyan),var(--violet)); }
     #card[data-presentation="hatch"] {
       position:absolute; top:7%; bottom:7%; left:50%; grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);
       align-items:center; width:min(960px,calc(100vw - 64px)); min-height:0; overflow:hidden; padding:clamp(18px,2vw,30px);
@@ -515,6 +528,21 @@
       opacity:1; visibility:visible; transform:none;
       transition:opacity .3s ease,transform .42s cubic-bezier(.2,.85,.25,1);
     }
+    #chat-detail[data-size="compact"] {
+      top:8%; right:12%; bottom:auto; left:12%; min-height:0; padding:18px 22px;
+    }
+    #chat-detail[data-size="compact"] .sm-chat-detail-header { margin-bottom:10px; }
+    #chat-detail[data-size="compact"] .sm-chat-detail-title { font-size:clamp(24px,3vw,42px); }
+    #chat-detail[data-size="compact"] .sm-egg-wait {
+      grid-template-columns:auto minmax(0,1fr); gap:14px 22px; height:auto;
+    }
+    #chat-detail[data-size="compact"] .sm-egg-countdown,
+    #chat-detail[data-size="compact"] .sm-egg-queue-position {
+      font-size:clamp(46px,8vw,92px);
+    }
+    #chat-detail[data-size="compact"] .sm-egg-wait-copy {
+      font-size:clamp(18px,2.4vw,32px);
+    }
     .sm-chat-detail-header { display:grid; gap:4px; margin-bottom:clamp(13px,1.7vw,25px); text-align:center; }
     .sm-chat-detail-kicker {
       color:#70e8ff; font-size:clamp(13px,1.4vw,20px); font-weight:950; letter-spacing:.13em;
@@ -735,6 +763,11 @@
       <div id="kicker" data-i18n="plugins.streamalchemy.ui.monsters.overlayBrand">Stream Monsters</div>
       <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">League World Hybrid</h1>
       <div id="subtitle" data-i18n="plugins.streamalchemy.ui.monsters.overlayWaiting">Das nächste Monster wartet.</div>
+      <div id="owner-chip" hidden>
+        <img id="owner-avatar" alt="">
+        <span id="owner-initials"></span>
+        <span id="owner-name"></span>
+      </div>
       <div id="progress"><div id="bar"></div></div>
       <section id="evolution-panel" hidden>
         <div id="evolution-stats-title"></div>
@@ -1289,6 +1322,29 @@
     node('art-wrap').dataset.element = elementName(element);
     node('art').removeAttribute('src');
   };
+  const renderOwner = ownerInput => {
+    const chip = node('owner-chip');
+    if (!ownerInput) {
+      chip.hidden = true;
+      node('owner-avatar').removeAttribute('src');
+      return;
+    }
+    const owner = window.StreamMonstersChatView.normalizeOwner(ownerInput);
+    const avatar = node('owner-avatar');
+    const initials = node('owner-initials');
+    node('owner-name').textContent = owner.displayName;
+    initials.textContent = owner.initials;
+    avatar.hidden = !owner.avatarUrl;
+    initials.hidden = Boolean(owner.avatarUrl);
+    avatar.onerror = () => {
+      avatar.hidden = true;
+      avatar.removeAttribute('src');
+      initials.hidden = false;
+    };
+    if (owner.avatarUrl) avatar.src = owner.avatarUrl;
+    else avatar.removeAttribute('src');
+    chip.hidden = false;
+  };
   const resetEvolutionPanel = () => {
     const panel = node('evolution-panel');
     panel.hidden = true;
@@ -1376,6 +1432,7 @@
     effectPayload = {},
     presentation = null,
     evolution = null,
+    owner = null,
     duration = notificationDurationMs
   }) => {
     const card = node('card');
@@ -1388,12 +1445,14 @@
       node('kicker').textContent = kicker;
       node('title').textContent = title;
       node('subtitle').textContent = subtitle;
+      renderOwner(owner);
+      card.classList.toggle('no-art', !imageUrl);
       node('art-wrap').classList.remove('image-fallback');
       node('art-wrap').removeAttribute('data-element');
       node('art').alt = title;
       node('art').onerror = () => imageErrorFallback(element);
       if (imageUrl) node('art').src = imageUrl;
-      else imageErrorFallback(element);
+      else node('art').removeAttribute('src');
       node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
       node('hint').textContent = hint || commandHint();
       card.classList.toggle('charged', Boolean(charged));
@@ -1409,6 +1468,8 @@
     } finally {
       evolutionTimers.forEach(timer => window.clearTimeout(timer));
       card.classList.remove('visible');
+      card.classList.remove('no-art');
+      renderOwner(null);
       await wait(350);
       card.removeAttribute('data-presentation');
       resetEvolutionPanel();
@@ -1681,6 +1742,7 @@
       hint: commandHint('monsterCardHint', '{monster} [slot] shows the card'),
       progress:100,
       presentation:'hatch',
+      owner:data?.owner,
       duration:7_000
     }));
     if (type === 'monster_discovered') return presentArcadeScene(type, data, showCard({

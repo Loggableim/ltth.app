@@ -19,6 +19,7 @@ const KenneyMonsterBuilder = require('./backend/streammonsters/kenney-monster-bu
 const StreamMonstersAssetRegistry = require('./backend/streammonsters/asset-registry');
 const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
 const { normalizeGiftName, isHeartMeGift } = require('./backend/streammonsters/gift-name');
+const { avatarProxyReference } = require('./backend/streammonsters/avatar-proxy');
 
 const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
@@ -1019,6 +1020,24 @@ class StreamAlchemyPlugin {
     }) || legacyUserId || platformUserId;
   }
 
+  streamMonstersViewerDisplayName(data = {}, userId = null) {
+    const candidates = [
+      data.uniqueId,
+      data.username,
+      this.streamMonstersStore?.getViewerDisplayName?.(userId),
+      data.nickname
+    ].map(value => String(value || '').trim()).filter(Boolean);
+    return candidates.find(value => !/^\d{8,}$/.test(value)) || 'Viewer';
+  }
+
+  streamMonstersViewerAvatarRef(data = {}) {
+    const value = data.avatarRef || data.profilePictureUrl || '';
+    if (/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(value)) {
+      return value;
+    }
+    return avatarProxyReference(value);
+  }
+
   handleStreamMonstersRawResponse(message, context = {}) {
     const choice = String(message || '').trim().toUpperCase();
     if (!/^[ABC1-4]$/.test(choice) || !this.streamMonstersBattleMatchService) {
@@ -1318,8 +1337,8 @@ class StreamAlchemyPlugin {
     for (let index = 0; index < repeatCount; index += 1) {
       const result = this.streamMonstersEngine.processGift({
         userId,
-        displayName: data.nickname || data.username || data.uniqueId || userId,
-        avatarRef: data.avatarRef || data.profilePictureUrl || null,
+        displayName: this.streamMonstersViewerDisplayName(data, userId),
+        avatarRef: this.streamMonstersViewerAvatarRef(data),
         giftId,
         giftName,
         coinValue,
@@ -1408,8 +1427,8 @@ class StreamAlchemyPlugin {
         userId,
         streamKey,
         eventId,
-        displayName: data.nickname || data.username || data.uniqueId || userId,
-        avatarRef: data.avatarRef || data.profilePictureUrl || null
+        displayName: this.streamMonstersViewerDisplayName(data, userId),
+        avatarRef: this.streamMonstersViewerAvatarRef(data)
       });
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] Free egg observation failed: ${error.message}`, 'warn');

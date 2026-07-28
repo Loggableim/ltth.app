@@ -12,6 +12,10 @@ const {
 const { V7_RULES_VERSION } = require('./battle-rules-v5');
 const EggStageProjector = require('./egg-stage-projector');
 const {
+  avatarUrlFromToken,
+  fetchAvatar
+} = require('./avatar-proxy');
+const {
   evolutionStatGrant,
   applyEvolutionGrant
 } = require('./evolution-rules');
@@ -123,6 +127,19 @@ class StreamMonstersRoutes {
         return res.status(404).json({ error: 'kenney_art_not_found' });
       }
       return res.sendFile(absolutePath);
+    });
+    this.api.registerRoute('GET', '/api/streammonsters/avatar/:token', async (req, res) => {
+      const url = avatarUrlFromToken(req.params?.token);
+      if (!url) return res.status(400).json({ error: 'avatar_url_rejected' });
+      try {
+        const avatar = await fetchAvatar(url.href);
+        res.set('Content-Type', avatar.contentType);
+        res.set('Cache-Control', 'public, max-age=300');
+        return res.send(avatar.body);
+      } catch (error) {
+        this.api.log?.(`[STREAM MONSTERS] Avatar proxy rejected: ${error.message}`, 'warn');
+        return res.status(502).json({ error: 'avatar_unavailable' });
+      }
     });
     this.api.registerRoute('POST', '/api/streammonsters/overlay/heartbeat', (req, res) => {
       const heartbeat = this.recordOverlayHeartbeat(req.body);
