@@ -253,8 +253,13 @@ the user.
 | `last_seen_at` | Last valid device request |
 | `revoked_at` | Nullable revocation timestamp |
 
-The plaintext bearer credential is returned exactly once during enrollment and
-is never logged or stored in D1.
+The desktop generates the random device ID and 256-bit bearer credential and
+stages them in its profile data before enrollment. The Worker receives the
+credential only to hash it, stores only that hash in D1, and returns device
+metadata without plaintext secret material. An exact same-owner, same-ID,
+same-hash, same-label replay is an atomic no-op and does not consume the
+enrollment rate or active-device limit. A conflicting hash, label, owner,
+revoked device, or reused ID fails closed.
 
 ### `account_leases`
 
@@ -314,10 +319,14 @@ The Worker validates:
 - supported signing algorithms;
 - issuer;
 - expiry and not-before time;
-- authorized party or audience;
+- a present `azp` claim against the fixed configured authorized-party list,
+  otherwise an `aud` string/array against that same list;
 - subject presence.
 
 The Worker's Clerk configuration must match LTTH's existing Clerk application.
+The desktop uses the same fixed trust source: configured Clerk parties plus
+the known LTTH auth/account origins and fixed local development origins. CORS
+and the request `Origin` are not JWT trust inputs.
 
 ### Device-authenticated operations
 
@@ -359,9 +368,10 @@ opening the dashboard.
 3. Network Settings offers that canonical username.
 4. The user explicitly selects **Claim TikTok username**.
 5. LTTH displays the First-Claim limitation and requires confirmation.
-6. If this installation is not enrolled yet, the browser sends the fresh Clerk
-   JWT to the enrollment endpoint and LTTH stores the returned one-time device
-   credential.
+6. If this installation is not enrolled yet, LTTH generates and atomically
+   stages a device ID and credential before the browser-authorized enrollment
+   call. The Worker returns metadata only; LTTH promotes the matching pending
+   credential after confirmation.
 7. The browser sends the fresh Clerk JWT and canonical username directly to the
    claim endpoint.
 8. D1 creates the claim only when the username is not active or reserved.
@@ -649,6 +659,11 @@ Bodies have explicit size limits and strict schemas. Unknown fields are rejected
 for authenticated mutation endpoints.
 
 Public routing requests never share handlers with management endpoints.
+If the desktop cannot distinguish a post-dispatch enrollment failure from a
+committed Worker mutation, it fences further local mutations and reconciles
+through `GET /account`. A matching active device promotes the staged
+credential; a confirmed absence permits an exact retry with the same staged
+material.
 
 ## Abuse controls
 
@@ -762,7 +777,9 @@ Before changing nameservers:
 6. compare source and destination record-by-record;
 7. keep GitHub Pages records DNS-only for the initial migration;
 8. verify mail and third-party verification records;
-9. deploy and test the Worker on its `workers.dev` staging hostname;
+9. deploy and test the Worker on the exact
+   `overlay-staging.ltth.app` Custom Domain and its
+   `*.overlay-staging.ltth.app/*` opaque route;
 10. prepare the Worker Custom Domain and D1 migrations;
 11. change Porkbun nameservers only after the comparison passes;
 12. replace or disable stale DNSSEC DS data as required by the Cloudflare
@@ -784,6 +801,17 @@ Adding a new non-routing first-level subdomain later requires adding a
 more-specific route exclusion before enabling that hostname.
 
 The apex `ltth.app` is not part of the wildcard Worker route.
+
+Staging is a separate immutable authority set:
+
+- entry Custom Domain `overlay-staging.ltth.app`;
+- opaque hosts `r-<route-key>.overlay-staging.ltth.app`;
+- Worker route `*.overlay-staging.ltth.app/*`.
+
+Production and staging both disable `workers.dev` and preview URLs. Unknown
+environment labels, authority overrides, and `workers.dev` hosts fail closed.
+The zone raw-path transform uses separate production and staging
+remove-then-restore rule pairs and distinct 64-character tokens.
 
 ### Secrets
 
@@ -811,9 +839,15 @@ The Worker records aggregate metrics for:
 - lease expiry;
 - device revocation.
 
-Routine public request logs use the opaque route key or a one-way identifier.
-They do not record overlay query strings because those may contain plugin or
-scene identifiers.
+Any separately approved aggregate instrumentation uses only bounded status
+classes and one-way or short-lived identifiers. It never records overlay query
+strings because those may contain plugin or scene identifiers.
+
+The checked-in Worker configuration disables invocation logs, logpush, tail
+consumers, streaming tails, and traces in root, staging, and production
+environments. Operational evidence is limited to sanitized aggregate metrics
+and the bounded audit schema above; operators must not enable raw request
+logging as a shortcut.
 
 LTTH logs:
 
@@ -848,6 +882,13 @@ Tests cover:
 - SSRF and redirect rejection;
 - method filtering;
 - request and response header stripping;
+- absent/exact/rejected `Origin` transport matrices for polling, preflight,
+  HTTP POST, and WebSocket upgrades; accepted present origins are rewritten to
+  the validated tunnel target for the desktop hop, absent origins remain
+  absent, and every proxy response carries `Vary: Origin`;
+- exact POST-only exceptions for `/socket.io/` and
+  `/api/streammonsters/overlay/heartbeat`, with adjacent/private paths denied
+  at Worker and desktop boundaries;
 - neutral error responses;
 - transparent offline page and online probe;
 - HTTP proxy path/query preservation;
@@ -873,6 +914,9 @@ Tests cover:
 - Network Settings state and actions;
 - localization coverage;
 - existing public-overlay inventory and security matrix.
+- manifest-fed Stream Monsters audio and furry inventories, including
+  containment, symlink, format, and SHA-256 checks before all generated public
+  URLs are tested against the HTTP allowlist.
 
 ### Staging end-to-end test
 
@@ -921,8 +965,10 @@ continues to work.
 
 ### Phase 2: Worker staging
 
-Run the full Worker and LTTH staging tests through `workers.dev`. No DNS change
-is required for this phase.
+Run the full Worker and LTTH staging tests through the exact
+`overlay-staging.ltth.app` Custom Domain and opaque wildcard route.
+`workers.dev` and preview URLs remain disabled; the staging DNS/zone route and
+its separate raw-path transform token are prerequisites.
 
 ### Phase 3: DNS migration
 

@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 const { isHttpAllowed } = require('../modules/public-overlay-registry');
+const {
+  collectStreamMonstersManifestDependencies
+} = require('./helpers/public-overlay-dependency-crawler');
 
 const appRoot = path.resolve(__dirname, '..');
 const surfaceSources = [
@@ -183,5 +186,17 @@ describe('registered overlay dependency crawl', () => {
         pathname: '/api/streammonsters/overlay/heartbeat'
       }
     ]);
+  });
+
+  test('allows every integrity-checked Stream Monsters manifest asset', () => {
+    const dependencies = collectStreamMonstersManifestDependencies({ appRoot });
+    const audio = dependencies.filter(dependency => dependency.kind === 'audio');
+    const furry = dependencies.filter(dependency => dependency.kind === 'furry');
+
+    expect(audio).toHaveLength(28);
+    expect(furry).toHaveLength(72);
+    expect(dependencies).toHaveLength(100);
+    expect(dependencies.every(isHttpAllowed)).toBe(true);
+    expect(new Set(dependencies.map(dependency => dependency.pathname)).size).toBe(100);
   });
 });

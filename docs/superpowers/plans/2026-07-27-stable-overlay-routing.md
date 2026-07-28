@@ -4,7 +4,7 @@
 
 **Goal:** Give each claimed TikTok username a stable, Clerk-owned LTTH overlay URL at https://overlay.ltth.app/<username>/<registered-overlay-path>, while the current Quick Tunnel remains the only route to the desktop process.
 
-**Architecture:** A Cloudflare Worker and D1 database own username claims, device credentials, and short account leases. The Worker redirects the human-readable entry host to an opaque r-<route-key>.ltth.app host, then proxies that request to the account's current strictly validated Quick Tunnel. LTTH automatically renews the lease with a locally stored device credential. The existing public-surface register remains the final HTTP and Socket.IO deny-by-default boundary.
+**Architecture:** A Cloudflare Worker and D1 database own username claims, device credential hashes, and short account leases. The desktop generates and stages each device ID and 256-bit credential before enrollment; the Worker atomically records only the hash and returns device metadata. The Worker redirects the human-readable entry host to an opaque r-<route-key>.ltth.app host, then proxies that request to the account's current strictly validated Quick Tunnel. LTTH automatically renews the lease with the locally stored device credential. The existing public-surface register remains the final HTTP and Socket.IO deny-by-default boundary.
 
 **Tech Stack:** Cloudflare Workers ES modules, D1, Wrangler, Vitest with @cloudflare/vitest-pool-workers, Node/CommonJS, Express, Socket.IO, existing Clerk JWT verification, config-path-manager, Jest, jsdom, and Playwright staging smoke tests.
 
@@ -17,6 +17,21 @@
 - Keep stable routing disabled unless LTTH_STABLE_OVERLAY_ROUTING_ENABLED is exactly true. No production DNS, Worker, D1, Clerk, Porkbun, or Cloudflare secret change is part of the code implementation.
 - Retain the existing temporary Quick Tunnel copier as an explicit alternate action. Stable-copy failure must never silently copy a random URL.
 - Use the bundled LTTH Node runtime for native Jest when system Node has a mismatched better-sqlite3 ABI.
+- Treat production and staging as immutable, disjoint authority sets:
+  `overlay.ltth.app` plus `r-<32hex>.ltth.app`, and
+  `overlay-staging.ltth.app` plus
+  `r-<32hex>.overlay-staging.ltth.app`. Disable `workers.dev` and preview URLs.
+- Never derive Clerk JWT trust from CORS or request `Origin`. Validate a present
+  `azp` first against the fixed Clerk party configuration; only when `azp` is
+  absent may `aud` satisfy that same fixed list.
+- For proxy requests, accept an absent `Origin` or the exact active
+  entry/opaque origin only. Rewrite an accepted present `Origin` to the
+  validated Quick Tunnel origin for the desktop hop, preserve absence, reject
+  every other value before upstream I/O, and emit proxy-neutral
+  `Vary: Origin`.
+- Keep `POST /socket.io/` and
+  `POST /api/streammonsters/overlay/heartbeat` as separate exact-path
+  exceptions; adjacent paths and other methods remain denied.
 
 ---
 
@@ -63,7 +78,7 @@ The only desktop configuration is LTTH_STABLE_OVERLAY_ROUTING_ENABLED and LTTH_S
 - Create: cloudflare/overlay-router/test/worker-smoke.test.js
 
 - [ ] Add pinned development dependencies for Wrangler, Vitest, and @cloudflare/vitest-pool-workers. Define test, test:watch, dev, deploy:staging, deploy:production, and d1:migrate:local scripts.
-- [ ] Configure an ES module Worker, D1 binding named OVERLAY_ROUTING_DB, migrations directory, compatibility date, and separate staging/production environments. Do not commit account IDs, database IDs, zone IDs, secrets, or tokens.
+- [ ] Configure an ES module Worker, D1 binding named OVERLAY_ROUTING_DB, migrations directory, compatibility date, and separate staging/production environments. Use the exact custom entry domains and wildcard opaque routes above; set workers.dev, previews, invocation logs, logpush, tails, and traces off in the root and both environments. Do not commit account IDs, database IDs, zone IDs, secrets, or tokens.
 - [ ] Start with a neutral 404 fetch handler and a Worker-pool test which proves the package runs against the local D1 binding.
 - [ ] Run npm install and npm test in cloudflare/overlay-router. Commit only its package lock and source, never Wrangler state.
 
@@ -120,7 +135,7 @@ The only desktop configuration is LTTH_STABLE_OVERLAY_ROUTING_ENABLED and LTTH_S
 
 - [ ] Route only overlay.ltth.app/_ltth/v1/* to management. Reject those paths on opaque hosts.
 - [ ] Implement POST /devices/enroll, GET /account, POST /claims, POST /claims/:username/restore, DELETE /claims/:username, DELETE /devices/:deviceId, PUT /lease, DELETE /lease, GET /device/status, and POST /admin/claims/:username/release.
-- [ ] Enrollment creates a random device ID and 256-bit credential, persists only its hash, returns plaintext once, and enforces a bounded per-account active-device count.
+- [ ] Enrollment accepts the desktop-generated random device ID and 256-bit credential, persists only its hash, returns metadata only, and enforces a bounded per-account active-device count. Exact same-owner/same-ID/same-hash/same-label retries are atomic no-op replays which do not consume enrollment rate or device limits; every conflicting replay fails closed.
 - [ ] Claim creation atomically enforces first claimant ownership, active/cooldown conflicts, five account attempts/hour, twenty source-IP attempts/hour, and a new random route key. One account may have many claims.
 - [ ] Release requires exact normalized username confirmation, immediately stops routing, applies a seven-day cooldown, and permits restore only to the same owner during cooldown.
 - [ ] Takeover after cooldown atomically replaces ownership and produces a new route key so old opaque hosts cannot route to the new owner.
@@ -141,7 +156,7 @@ The only desktop configuration is LTTH_STABLE_OVERLAY_ROUTING_ENABLED and LTTH_S
 - [ ] Dispatch exact hosts: overlay.ltth.app serves entry and management routes; only r-<route-key>.ltth.app reaches proxying; every other ltth.app subdomain gets neutral 404.
 - [ ] For an entry URL, normalize the first segment, reserve _ltth, resolve active claim plus unexpired account lease, preserve remaining path/query, and issue 307 no-store to the opaque host.
 - [ ] The reserved probe parameter returns 204 only online and 503 Retry-After offline. Browser navigations without a lease get the transparent recovery page; assets/API/WebSockets get neutral unavailable responses.
-- [ ] On opaque hosts allow GET, HEAD, OPTIONS, and POST exactly at /socket.io/. Reject method overrides and every other method.
+- [ ] On opaque hosts allow GET, HEAD, OPTIONS, POST exactly at /socket.io/, and POST exactly at /api/streammonsters/overlay/heartbeat. Reject method overrides, adjacent paths, and every other method.
 - [ ] Resolve a current claim and lease for every proxy request; build its target only from the validated stored origin plus original path/query.
 - [ ] Fetch with redirect manual, stream request/response bodies, preserve only safe response headers, turn upstream redirects into neutral gateway failure, and pass WebSocket upgrades without inspecting Socket.IO events.
 - [ ] Test 307 path/query preservation, no permanent caching, stale lease behavior, transparent offline navigation/probe, method filter, allowed Socket.IO POST, SSRF/redirect rejection, header stripping, cookie stripping, and WebSocket proxying.

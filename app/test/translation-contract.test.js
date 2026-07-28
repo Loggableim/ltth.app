@@ -43,6 +43,26 @@ describe('translation contract', () => {
     const report = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'validation-report.json'), 'utf8'));
     expect(report.ok).toBe(true);
     expect(report.findings).toEqual([]);
+    expect(report).not.toHaveProperty('generatedAt');
+    expect(report.sets.find(set => set.label === 'app')).toMatchObject({
+      directory: 'app/locales',
+      keys: expect.any(Number)
+    });
+    for (const set of report.sets) {
+      if (!set.directory) continue;
+      expect(path.isAbsolute(set.directory)).toBe(false);
+      expect(set.directory).not.toContain('\\');
+      expect(set.directory).not.toMatch(/^[A-Za-z]:/);
+    }
+  });
+
+  test('the legacy validator cannot overwrite the canonical inventory', () => {
+    const legacyValidator = fs.readFileSync(
+      path.join(__dirname, '..', 'scripts', 'validate-i18n.js'),
+      'utf8'
+    );
+
+    expect(legacyValidator).not.toContain('validation-report.json');
   });
 
   test('the standalone home-page locale maps keep the same FAQ coverage', () => {

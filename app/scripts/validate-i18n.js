@@ -149,26 +149,9 @@ function validateTranslations() {
         console.log(`⚠️  Found ${missingInEn.length + missingInDe.length} missing translations`);
     }
     
-    // Save reports
-    const reports = {
-        missing: {
-            en: missingInEn,
-            de: missingInDe
-        },
-        unused: unusedInEn,
-        stats: {
-            totalEnKeys: enKeys.length,
-            totalDeKeys: deKeys.length,
-            usedKeys: usedKeys.length,
-            missingEnKeys: missingInEn.length,
-            missingDeKeys: missingInDe.length,
-            unusedKeys: unusedInEn.length
-        }
-    };
-    
-    const reportPath = path.join(localesDir, 'validation-report.json');
-    fs.writeFileSync(reportPath, JSON.stringify(reports, null, 2));
-    console.log(`\n💾 Full report saved to: ${path.relative(process.cwd(), reportPath)}`);
+    console.log(
+        '\nRun `npm run i18n:check` for the canonical deterministic inventory.'
+    );
 }
 
 // Run validation

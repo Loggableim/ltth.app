@@ -295,6 +295,20 @@ describe('public overlay HTTP security matrix', () => {
     expect(isHttpAllowed({ method: 'PUT', pathname: '/socket.io/' })).toBe(false);
     expect(isHttpAllowed({ method: 'POST', pathname: '/socket.io/admin' })).toBe(false);
   });
+
+  test('keeps the exact Stream Monsters heartbeat exception narrow', () => {
+    const heartbeat = '/api/streammonsters/overlay/heartbeat';
+
+    expect(isHttpAllowed({ method: 'POST', pathname: heartbeat })).toBe(true);
+    expect(isHttpAllowed({ method: 'GET', pathname: heartbeat })).toBe(false);
+    expect(isHttpAllowed({ method: 'PUT', pathname: heartbeat })).toBe(false);
+    expect(isHttpAllowed({ method: 'POST', pathname: `${heartbeat}/` })).toBe(false);
+    expect(isHttpAllowed({ method: 'POST', pathname: `${heartbeat}-private` })).toBe(false);
+    expect(isHttpAllowed({
+      method: 'POST',
+      pathname: '/api/streammonsters/private'
+    })).toBe(false);
+  });
 });
 
 describe('public overlay JSON privacy matrix', () => {

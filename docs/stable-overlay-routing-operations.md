@@ -20,6 +20,13 @@ desktop continues to expose only the exact one-label `*.trycloudflare.com`
 Quick Tunnel hop; stable hosts, generic public hosts, nested tunnel labels, and
 forwarded-host headers do not widen the desktop public surface.
 
+Staging is deliberately not a `workers.dev` preview. Its exact entry authority
+is `overlay-staging.ltth.app`, and its opaque authorities have the form
+`r-<32-lowercase-hex>.overlay-staging.ltth.app`. Root, staging, and production
+Wrangler configuration disable `workers.dev`, preview URLs, invocation logs,
+logpush, tail consumers, streaming tails, and traces. Unknown environment
+labels, runtime authority overrides, and `workers.dev` hosts fail closed.
+
 ## Safety and ownership boundaries
 
 - Keep the registrar at Porkbun. Moving authoritative DNS to Cloudflare does
@@ -37,6 +44,9 @@ forwarded-host headers do not widen the desktop public surface.
   file between machines or into a support ticket.
 - Never paste Clerk JWTs, device credentials, raw Worker responses, or tunnel
   origins into logs, incident tickets, shell history, or this repository.
+- Never reuse a raw-path guard token between staging and production. Each
+  environment has its own ordered marker-removal/marker-restore rule pair and
+  its own 64-character token.
 
 ## Local Worker and D1 gate
 
@@ -49,6 +59,7 @@ npm run d1:migrate:local
 npm test
 npm run test:raw-path-ruleset
 npm run validate:raw-path-ruleset
+npm run test:configuration
 npm run dev
 ```
 
@@ -73,12 +84,19 @@ These are commands to run only after an authorized operator has created the
 staging D1 database and privately configured the `OVERLAY_ROUTING_DB` binding.
 They are not evidence that any migration or deployment has occurred.
 
+Before running them, Cloudflare must already be authoritative for the staging
+host, `overlay-staging.ltth.app` must be configured as the Worker Custom
+Domain, `*.overlay-staging.ltth.app/*` must be the proxied opaque Worker route,
+and the staging-specific raw-path Transform Rules/token must be installed.
+There is no `workers.dev` fallback.
+
 ```powershell
 Set-Location cloudflare/overlay-router
 npm ci
 npm test
 npm run test:raw-path-ruleset
 npm run validate:raw-path-ruleset
+npm run test:configuration
 npx wrangler d1 migrations apply OVERLAY_ROUTING_DB --env staging --remote
 npm run deploy:staging
 ```
@@ -107,15 +125,17 @@ environment, never in Git or a committed Wrangler file:
 | Name | Required behavior |
 | --- | --- |
 | `CLERK_ISSUER` | Exact issuer of the existing LTTH Clerk application. |
-| `CLERK_AUTHORIZED_PARTIES` | Comma-separated approved local origins/audiences. |
+| `CLERK_AUTHORIZED_PARTIES` | Fixed comma-separated Clerk trust parties. A present JWT `azp` must match exactly; only when `azp` is absent may `aud` match. Never populate this from CORS or a request `Origin`. |
 | `CLERK_JWKS_URL` | Optional HTTPS JWKS override; otherwise it is derived from the issuer. |
 | `OVERLAY_ADMIN_CLERK_USER_IDS` | Comma-separated admin allowlist; use least privilege. |
 | `OVERLAY_DEVICE_TOKEN_PEPPER` | Private server-side pepper for device-credential hashing. |
 | `OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT` | Optional integer from 1 through 20; absent/invalid uses the code default of 5. |
-| `OVERLAY_RAW_PATH_GUARD_TOKEN` | A unique 64-character URL-safe token shared only with the ordered Cloudflare Transform Rules. |
+| `OVERLAY_RAW_PATH_GUARD_TOKEN` | A unique per-environment 64-character URL-safe token shared only with that environment's ordered Cloudflare Transform Rules. Staging and production values must differ. |
 
 The raw-path token must be installed only after the Ruleset API accepts the
-two-rule transform. Follow the guarded API/Trace procedure in
+four-rule transform: production remove/restore and staging remove/restore,
+with a distinct replacement token for each restoration rule. Follow the
+guarded API/Trace procedure in
 [`rulesets/README.md`](../cloudflare/overlay-router/rulesets/README.md): it
 removes caller-supplied markers first, restores a marker only for a safe raw
 path, and requires real Trace plus staging evidence. If Trace cannot
@@ -145,9 +165,11 @@ fail validation.
 3. Keep the GitHub Pages apex and `www` records DNS-only for the initial move;
    verify `ltth.app`, `www.ltth.app`, HTTPS, MX/TXT, CAA, and verification
    records from independent resolvers.
-4. Complete the Worker staging end-to-end gate on the `workers.dev` staging
-   hostname, including the raw-path Trace acceptance evidence. Do not treat
-   successful local tests as edge acceptance.
+4. Complete the Worker staging end-to-end gate on the exact
+   `overlay-staging.ltth.app` Custom Domain and
+   `*.overlay-staging.ltth.app/*` opaque route, including staging-token
+   raw-path Trace acceptance evidence. Do not treat successful local tests as
+   edge acceptance, and do not enable `workers.dev`.
 5. After staging is accepted, migrate/deploy the production Worker and D1
    binding while the LTTH feature flag remains disabled. Prepare the Custom
    Domain, raw-path transform, and routing configuration, but do not treat
@@ -185,6 +207,13 @@ exclusion before adding any future non-routing first-level hostname. A neutral
 Worker response for a nonconforming host is not a safe substitute for an
 exclusion that preserves another service's route.
 
+The equivalent staging scope is intentionally narrower:
+`overlay-staging.ltth.app` is the exact Custom Domain and
+`*.overlay-staging.ltth.app/*` is the opaque wildcard route. Code accepts only
+`r-<32-lowercase-hex>.overlay-staging.ltth.app` on that wildcard. A staging
+opaque host, production opaque host, or entry host is never valid in the other
+environment.
+
 Post-change DNS/edge acceptance requires all of the following:
 
 - `overlay.ltth.app` has a valid certificate and reaches the Worker;
@@ -208,7 +237,9 @@ stable entry URL:
 
 1. enrolls a test device and explicitly claims a test username;
 2. serves a registered overlay, required static assets, a read-only API, and
-   permitted Socket.IO/WebSocket traffic;
+   permitted Socket.IO/WebSocket traffic; the only public POST exceptions are
+   exact `/socket.io/` transport and exact
+   `/api/streammonsters/overlay/heartbeat`;
 3. blocks dashboard/Network Settings, unregistered paths, non-Socket.IO
    writes, disallowed methods, and unregistered Socket.IO events;
 4. becomes the transparent offline page after stopping the Quick Tunnel, while
@@ -236,10 +267,28 @@ details.
 
 Use the existing LTTH Clerk application; do not create an unrelated issuer or
 accept arbitrary audiences. The Worker verifies RS256 signatures against JWKS,
-issuer, expiry/not-before, a configured authorized party or audience, and a
-non-empty subject. Test sign-in, account management, claim creation, and
-revocation with fresh tokens in staging. Do not store a long-lived Clerk JWT:
-desktop startup uses only the scoped device credential.
+issuer, expiry/not-before, and a non-empty subject. If `azp` is present it must
+exactly match the fixed authorized-party list; `aud` is considered only when
+`azp` is absent. The desktop verifier uses fixed Clerk/account origins and
+fixed local-development origins, never a CORS allowlist or the current request
+`Origin`. Test sign-in, account management, claim creation, and revocation
+with fresh tokens in staging. Do not store a long-lived Clerk JWT: desktop
+startup uses only the scoped device credential.
+
+### Enrollment retry and reconciliation
+
+LTTH generates a `d-` plus 32-lowercase-hex device ID and a 256-bit credential,
+then atomically stages both in the active profile before dispatch. The Worker
+stores only the credential hash and returns device metadata. An exact
+same-owner, same-ID, same-hash, same-label replay is an atomic no-op that does
+not consume the enrollment rate or active-device limit; any conflicting replay
+fails closed.
+
+If a timeout or transport failure occurs after dispatch, do not generate a new
+credential and do not continue account mutations. LTTH fences mutations and
+uses `GET /account` to reconcile: a matching active device promotes the
+pending credential, while a confirmed absence permits an exact retry with the
+same pending material.
 
 ### Admin claim dispute
 
@@ -268,6 +317,23 @@ atomic; the Worker opportunistically prunes rows older than 90 days through
 `waitUntil`. Review retention with a private, access-controlled query/process,
 and export only sanitized aggregates. A failed or delayed prune is an
 operational alert, not permission to disable auditing or dump raw data.
+
+Worker invocation logs, logpush, tails, and traces are disabled in every
+checked-in environment. Use only sanitized aggregate counters and the bounded
+audit rows above. Never enable raw request logging to diagnose an overlay
+because requests can contain origins, route keys, cookies, or sensitive query
+values.
+
+### Proxy Origin and cache behavior
+
+Polling, preflight, ordinary HTTP POST, and WebSocket upgrades share one Origin
+contract. An absent `Origin` is accepted and remains absent on the desktop
+subrequest. A present Origin is accepted only when it exactly equals the active
+entry or opaque authority for that environment; the Worker rewrites that
+accepted value to the validated Quick Tunnel origin only for the desktop hop.
+Every other Origin is rejected before D1 target lookup or upstream fetch.
+Responses preserve the original accepted Origin for CORS and include
+`Vary: Origin` on success and neutral error paths so caches cannot mix variants.
 
 ### Suspected device-credential compromise
 
@@ -303,3 +369,11 @@ authorized, access-controlled, and sanitized in the incident record.
 Before re-enabling the feature, repeat the staging/raw-path gate, one-account
 canary, offline recovery, and three-distinct-tunnel rotation evidence. A
 rollback is not a completed verification and must not be represented as one.
+
+## Cloudflare references
+
+- [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
+- [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/)
+- [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+- [Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/)
+- [`workers.dev`](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)
