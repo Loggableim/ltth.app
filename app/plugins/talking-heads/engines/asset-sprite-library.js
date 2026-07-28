@@ -79,10 +79,11 @@ class AssetSpriteLibrary {
   }
 
   getRandomSelection(random = Math.random, excludedSelection = null) {
-    const excludedKey = excludedSelection ? this._selectionKey(this.normalizeSelection(excludedSelection)) : null;
-    const selections = this._getLotterySelectionPool()
-      .filter((selection) => this._selectionKey(selection) !== excludedKey);
-    return selections[Math.min(selections.length - 1, Math.floor(this._randomUnit(random) * selections.length))];
+    const exclusions = new Set();
+    if (excludedSelection) {
+      exclusions.add(this._selectionKey(this.normalizeSelection(excludedSelection)));
+    }
+    return this._drawLotterySelection(this._getEligibleLotterySelectionPools(exclusions), random);
   }
 
   getLotteryCandidates(count = 3, random = Math.random, excludedSelections = []) {
@@ -91,26 +92,57 @@ class AssetSpriteLibrary {
         .filter(Boolean)
         .map((selection) => this._selectionKey(this.normalizeSelection(selection)))
     );
-    const pool = this._getLotterySelectionPool()
-      .filter((selection) => !exclusions.has(this._selectionKey(selection)));
+    const pools = this._getEligibleLotterySelectionPools(exclusions);
     const candidates = [];
-    const requestedCount = Math.max(1, Math.min(Number(count) || 3, pool.length));
+    const poolSize = Object.values(pools).reduce((total, selections) => total + selections.length, 0);
+    const requestedCount = Math.max(1, Math.min(Number(count) || 3, poolSize));
 
     while (candidates.length < requestedCount) {
-      const index = Math.min(pool.length - 1, Math.floor(this._randomUnit(random) * pool.length));
-      candidates.push(pool.splice(index, 1)[0]);
+      const selection = this._drawLotterySelection(pools, random);
+      if (!selection) break;
+      candidates.push(selection);
     }
     return candidates;
   }
 
-  _getLotterySelectionPool() {
-    return BOBA_ANIMALS
+  getLotterySelectionPools() {
+    return {
+      boba: BOBA_ANIMALS
       .filter((characterId) => BOBA_MOUTH_PROFILES[characterId])
       .flatMap((characterId) => BOBA_EXPRESSIONS.map((expression) => ({
         packId: 'boba',
         characterId,
         options: { expression }
-      })));
+      }))),
+      kenney: KENNEY_BODIES.flatMap((characterId) => KENNEY_EYES.map((eye) => ({
+        packId: 'kenney',
+        characterId,
+        options: { eye }
+      }))),
+      rgs: RGS_HEADS.flatMap((characterId) => RGS_HAIRS.flatMap((hair) =>
+        RGS_EYES.flatMap((eyes) => RGS_MOUTHS.map((mouth) => ({
+          packId: 'rgs',
+          characterId,
+          options: { hair, eyes, mouth }
+        }))))
+      )
+    };
+  }
+
+  _getEligibleLotterySelectionPools(exclusions) {
+    return Object.fromEntries(Object.entries(this.getLotterySelectionPools()).map(([packId, selections]) => [
+      packId,
+      selections.filter((selection) => !exclusions.has(this._selectionKey(selection)))
+    ]));
+  }
+
+  _drawLotterySelection(pools, random) {
+    const packIds = Object.keys(pools).filter((packId) => pools[packId].length > 0);
+    if (!packIds.length) return undefined;
+    const packId = packIds[Math.min(packIds.length - 1, Math.floor(this._randomUnit(random) * packIds.length))];
+    const selections = pools[packId];
+    const index = Math.min(selections.length - 1, Math.floor(this._randomUnit(random) * selections.length));
+    return selections.splice(index, 1)[0];
   }
 
   _selectionKey(selection) {
