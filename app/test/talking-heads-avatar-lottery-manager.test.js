@@ -95,16 +95,17 @@ describe('Talking Heads avatar lottery manager', () => {
     expect(reroll).not.toEqual(current);
   });
 
-  test('every automatic Boba selection resolves three materially distinct speaking states', async () => {
+  test('every three-pack automatic selection resolves usable idle, blink, and speaking frames', async () => {
     const library = new AssetSpriteLibrary();
-    const selections = library.getLotteryCandidates(200, () => 0);
+    const selections = Object.values(library.getLotterySelectionPools()).flat();
 
+    expect(selections).toHaveLength(1134);
     for (const selection of selections) {
       const frames = await library._getFrameLayers(selection);
-      const speakingSignatures = ['speak_closed', 'speak_mid', 'speak_open'].map((frameName) =>
-        frames[frameName].filter(Boolean).join('|')
-      );
-
+      expect(['idle_neutral', 'blink', 'speak_closed', 'speak_mid', 'speak_open']
+        .every(frameName => Array.isArray(frames[frameName]) && frames[frameName].length > 0)).toBe(true);
+      const speakingSignatures = ['speak_closed', 'speak_mid', 'speak_open']
+        .map(frameName => frames[frameName].filter(Boolean).join('|'));
       expect(new Set(speakingSignatures).size).toBe(3);
     }
   });
