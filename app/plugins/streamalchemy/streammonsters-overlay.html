@@ -1850,14 +1850,6 @@
           duration:adoptionNotice.durationMs
         });
       }
-      if (type === 'egg_landed') {
-        return effectsRenderer.play('spawn', {
-          element:data?.eggStage?.element,
-          vfxKey:`egg-shelf:${data?.eggStage?.visualId || 'arrival'}`,
-          origin:{ x:.5, y:.7 },
-          scale:.8
-        });
-      }
       if (!['egg_ready', 'egg_boosted'].includes(type)) return;
     }
     const hour = type === 'stream_started' || type === 'elemental_hour'

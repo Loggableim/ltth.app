@@ -6,6 +6,7 @@
   'use strict';
 
   const SCENE_DURATIONS = Object.freeze({
+    portal: 650,
     spawn: 2200,
     hatch: 2800,
     attack: 1600,
@@ -21,6 +22,7 @@
     lunar: '#c7a4ff'
   });
   const SCENE_CODES = Object.freeze({
+    portal: 1,
     spawn: 1,
     hatch: 2,
     attack: 3,
@@ -28,6 +30,7 @@
     special: 5
   });
   const CHOREOGRAPHY = Object.freeze({
+    portal: Object.freeze(['element-portal', 'particle-swirl']),
     spawn: Object.freeze(['element-portal', 'particle-swirl', 'egg-fly-in', 'spring-landing']),
     hatch: Object.freeze(['pulse', 'cracks', 'energy-build', 'flash', 'monster-reveal']),
     attack: Object.freeze(['vfx-trail']),
@@ -496,9 +499,9 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       canvas2d.lineWidth = Math.max(3, Math.min(width, height) * 0.012);
       canvas2d.setLineDash?.([]);
       canvas2d.beginPath();
-      if (scene.scene === 'spawn' && phase.name === 'element-portal') {
+      if (['portal', 'spawn'].includes(scene.scene) && phase.name === 'element-portal') {
         canvas2d.arc(0, 0, radius * 0.85, 0, Math.PI * 2);
-      } else if (scene.scene === 'spawn' && phase.name === 'particle-swirl') {
+      } else if (['portal', 'spawn'].includes(scene.scene) && phase.name === 'particle-swirl') {
         for (let particle = 0; particle < 5 + scene.vfx.variant; particle += 1) {
           const angle = (particle / (5 + scene.vfx.variant)) * Math.PI * 2 + phase.progress * 4;
           canvas2d.moveTo(Math.cos(angle) * radius * 0.4, Math.sin(angle) * radius * 0.4);
@@ -537,7 +540,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         canvas2d.arc(0, 0, radius, 0, Math.PI * 2);
       }
       canvas2d.stroke();
-      if (scene.scene === 'special' || scene.scene === 'spawn') {
+      if (['portal', 'special', 'spawn'].includes(scene.scene)) {
         canvas2d.globalAlpha *= 0.18;
         canvas2d.beginPath();
         canvas2d.arc(0, 0, radius * 0.78, 0, Math.PI * 2);

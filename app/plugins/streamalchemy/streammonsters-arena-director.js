@@ -752,7 +752,7 @@
           atMs: 0,
           durationMs: 650,
           element,
-          effect: { scene: 'spawn', element, vfxKey: `${element}:egg-portal` },
+          effect: { scene: 'portal', element, vfxKey: `${element}:egg-portal` },
           audioCue: 'egg.spawn'
         },
         ...roulette.map((candidate, index) => ({

@@ -545,7 +545,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
       correlationId: 'egg-render-flow',
       egg: { element: 'Grove' }
     })).toBe(false);
-    expect(effects.play).toHaveBeenCalledWith('spawn', expect.objectContaining({
+    expect(effects.play).toHaveBeenCalledWith('portal', expect.objectContaining({
       eventId: 'egg-render-1',
       beatId: expect.stringMatching(/^egg-render-1:beat:/),
       element: 'Grove'

@@ -10,6 +10,8 @@ const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/ch
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 const chatViewRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
 const eggStageView = require('../plugins/streamalchemy/streammonsters-egg-stage-view');
+const arenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
+const effectsRenderer = require('../plugins/streamalchemy/streammonsters-effects-renderer');
 
 const activeDoms = new Set();
 const activeGcceInstances = new Set();
@@ -146,6 +148,10 @@ function createEggEvents(plugin) {
   engine.markReadyEggs();
   engine.hatchEgg('viewer-a', 1);
   return {
+    giftEvents: emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_spawned' ||
+      entry.event === 'streammonsters:egg_landed'
+    )),
     spawned: emitted.find(entry => entry.event === 'streammonsters:egg_spawned').payload,
     landed: emitted.find(entry => entry.event === 'streammonsters:egg_landed').payload,
     ready: emitted.find(entry => entry.event === 'streammonsters:egg_ready').payload,
@@ -169,6 +175,8 @@ async function createLiveOverlay(snapshot) {
   )).plugins.streamalchemy.ui.monsters;
   const socketHandlers = new Map();
   const chatWaitResolvers = [];
+  const playedEffects = [];
+  let currentSnapshot = snapshot;
   let fetchFailure = null;
   const interpolate = (template, params = {}) => String(template).replace(
     /\{(\w+)\}/g,
@@ -195,7 +203,7 @@ async function createLiveOverlay(snapshot) {
         if (fetchFailure) throw fetchFailure;
         return {
           ok: true,
-          json: async () => snapshot
+          json: async () => currentSnapshot
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
@@ -211,7 +219,9 @@ async function createLiveOverlay(snapshot) {
         createEffectsRenderer: () => ({
           init: () => {},
           resize: () => {},
-          play: async () => {}
+          play: async (scene, payload) => {
+            playedEffects.push({ scene, payload });
+          }
         })
       };
       window.StreamMonstersAudioCues = {};
@@ -230,6 +240,7 @@ async function createLiveOverlay(snapshot) {
   await flush();
   return {
     dom,
+    playedEffects,
     hint: () => dom.window.document.getElementById('hint'),
     chat: () => dom.window.document.getElementById('chat-card'),
     detail: () => dom.window.document.getElementById('chat-detail'),
@@ -241,6 +252,9 @@ async function createLiveOverlay(snapshot) {
     },
     failFetch(error = new Error('state unavailable')) {
       fetchFailure = error;
+    },
+    setSnapshot(nextSnapshot) {
+      currentSnapshot = nextSnapshot;
     },
     hasSocketHandler(event) {
       return socketHandlers.has(event);
@@ -360,6 +374,75 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     await overlay.emit('streammonsters:egg_stage_removed', events.stageRemoved);
     expect(shelfItem(visualId)).toBeNull();
     expect(shelfItem('egg-neighbour-stays')).not.toBeNull();
+
+    overlay.close();
+    await gcce.destroy();
+  });
+
+  test('uses exactly one spatial flight and landing for a complete gift transaction', async () => {
+    const { gcce, plugin } = await createCollisionRuntime();
+    const events = createEggEvents(plugin);
+    const timeline = arenaDirector.buildArcadeTimeline('egg_spawned', events.spawned);
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 120_000 },
+      gcce: plugin.getStreamMonstersGCCEState(),
+      eggStage: []
+    });
+    const spatialSteps = new Set(['egg-fly-in', 'spring-landing']);
+
+    await overlay.emit('streammonsters:egg_spawned', events.spawned);
+    await overlay.emit('streammonsters:egg_landed', events.landed);
+
+    const directorSpatialBeats = timeline.beats.filter(beat => (
+      beat.type === 'egg_flight' || beat.type === 'egg_impact'
+    ));
+    const effectInputs = [
+      ...timeline.beats
+        .filter(beat => beat.effect?.scene)
+        .map(beat => ({ scene: beat.effect.scene, payload: beat.effect })),
+      ...overlay.playedEffects
+    ];
+    const spatialEffectScenes = effectInputs.filter(input => (
+      effectsRenderer.sceneChoreography(input.scene, input.payload).steps
+        .some(step => spatialSteps.has(step))
+    ));
+    const shelfLandingCount = overlay.dom.window.document
+      .querySelectorAll('.egg-shelf-item.landing').length;
+
+    expect(events.giftEvents.map(entry => entry.event)).toEqual([
+      'streammonsters:egg_spawned',
+      'streammonsters:egg_landed'
+    ]);
+    expect(timeline.beats.filter(beat => beat.effect?.scene).map(beat => (
+      effectsRenderer.sceneChoreography(beat.effect.scene, beat.effect).steps
+    ))).toEqual([['element-portal', 'particle-swirl']]);
+    expect({
+      directorSpatialBeats: directorSpatialBeats.length,
+      spatialEffectScenes: spatialEffectScenes.length,
+      shelfLandingCount,
+      totalSpatialChoreographies:
+        directorSpatialBeats.length + spatialEffectScenes.length + shelfLandingCount
+    }).toEqual({
+      directorSpatialBeats: 0,
+      spatialEffectScenes: 0,
+      shelfLandingCount: 1,
+      totalSpatialChoreographies: 1
+    });
+
+    const effectCountBeforeReconnect = overlay.playedEffects.length;
+    overlay.setSnapshot({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 120_000 },
+      gcce: plugin.getStreamMonstersGCCEState(),
+      eggStage: [events.landed.eggStage]
+    });
+    await overlay.reconnect();
+
+    expect(overlay.playedEffects).toHaveLength(effectCountBeforeReconnect);
+    expect(overlay.dom.window.document.querySelector(
+      `[data-egg-id="${events.landed.eggStage.visualId}"]`
+    ).classList.contains('landing')).toBe(false);
 
     overlay.close();
     await gcce.destroy();
