@@ -239,6 +239,131 @@ describe('Stream Monsters rules-v5 battle routes', () => {
     }
   });
 
+  test('projects stored legacy v7 actions with their v7 public fields', () => {
+    const { sqlite, battleMatchService } = createRealRoutes(8);
+    try {
+      battleMatchService.store.createBattle({
+        battleId: 'legacy-v7-action',
+        seed: 'private-legacy-seed',
+        monsterAId: 'legacy-private-alpha',
+        monsterBId: 'legacy-private-beta',
+        userAId: 'private-viewer-a',
+        userBId: 'private-viewer-b',
+        winnerMonsterId: 'legacy-private-beta',
+        rulesVersion: 7,
+        createdAtMs: 1,
+        result: {
+          winnerId: 'legacy-private-beta',
+          rounds: [{
+            round: 1,
+            actions: [{
+              round: 1,
+              sequence: 1,
+              actorId: 'legacy-private-alpha',
+              targetId: 'legacy-private-beta',
+              requestedChoice: 'A',
+              choice: 'A',
+              choiceFallback: null,
+              skill: {
+                id: 'ashfang:A',
+                name: 'Ashfang: Flamefang',
+                icon: '🔥',
+                shortText: 'A fierce strike that leaves a brief burn.',
+                shortTextKey: 'skillEffectAshfangAStage1',
+                type: 'attack',
+                element: 'Ember',
+                vfxKey: 'ashfang:attack',
+                role: 'striker',
+                effects: [
+                  { type: 'damage', power: 4 },
+                  { type: 'burn', power: 1 }
+                ]
+              },
+              hits: [{
+                index: 1,
+                requestedDamage: 9,
+                shieldPenetrated: 0,
+                shieldAbsorbed: 0,
+                hpDamage: 9,
+                evaded: false
+              }],
+              outcomes: [{ type: 'burn', amount: 1, pending: 1 }],
+              retaliations: [],
+              statusEffects: [],
+              rolls: [{
+                purpose: 'evade',
+                hitIndex: 1,
+                chance: 0,
+                value: 42
+              }],
+              after: {
+                actor: {
+                  hp: 30,
+                  maxHp: 30,
+                  shield: 0,
+                  charge: 25
+                },
+                target: {
+                  hp: 0,
+                  maxHp: 30,
+                  shield: 0,
+                  charge: 0
+                }
+              },
+              terminal: true,
+              knockouts: [{
+                monsterId: 'legacy-private-beta',
+                cause: 'skill'
+              }],
+              knockout: {
+                monsterId: 'legacy-private-beta',
+                cause: 'skill'
+              }
+            }]
+          }]
+        }
+      });
+
+      const replay = battleMatchService.getPublicNormalizedReplay(
+        'legacy-v7-action',
+        0,
+        50
+      );
+
+      expect(replay).toEqual(expect.objectContaining({
+        rulesVersion: 7,
+        replayVersion: 7
+      }));
+      expect(replay.actions).toEqual([
+        expect.objectContaining({
+          rulesVersion: 7,
+          actorSlot: 1,
+          targetSlot: 2,
+          skill: expect.objectContaining({
+            role: 'striker',
+            effects: [
+              { type: 'damage', power: 4 },
+              { type: 'burn', power: 1 }
+            ]
+          }),
+          rolls: [{
+            purpose: 'evade',
+            hitIndex: 1,
+            chance: 0,
+            value: 42
+          }],
+          knockouts: [{ slot: 2, cause: 'skill' }],
+          knockout: { slot: 2, cause: 'skill' }
+        })
+      ]);
+      expect(JSON.stringify(replay)).not.toMatch(
+        /legacy-private|private-viewer|private-legacy-seed/
+      );
+    } finally {
+      sqlite.close();
+    }
+  });
+
   test('serves a redacted public battle snapshot', () => {
     const { registered, battleMatchService } = createRoutes();
     const route = registered.find(entry => (

@@ -2795,15 +2795,19 @@ class BattleMatchService {
 
   getPublicLegacyReplay(battle) {
     let sequence = 0;
-    const participants = [
-      { lockedMonsterId: battle.monster_a_id, slot: 1 },
-      { lockedMonsterId: battle.monster_b_id, slot: 2 }
-    ];
-    const match = { matchId: null, participants };
     const replayVersion = this.normalizeReplayRulesVersion(
       battle.rulesVersion,
       3
     );
+    const participants = [
+      { lockedMonsterId: battle.monster_a_id, slot: 1 },
+      { lockedMonsterId: battle.monster_b_id, slot: 2 }
+    ];
+    const match = {
+      matchId: null,
+      rulesVersion: replayVersion,
+      participants
+    };
     const actions = (battle.rounds || []).flatMap(round => (
       Array.isArray(round.actions) ? round.actions.map(action => {
         sequence += 1;
