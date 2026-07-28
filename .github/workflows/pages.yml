@@ -29,6 +29,7 @@ on:
       - 'sitemap.xml'
       - 'scripts/build_pages_bundle.py'
       - 'sw.js'
+      - 'streammonsters/**'
       - 'uninstall.ps1'
       - 'uninstall.sh'
       - 'version.json'
