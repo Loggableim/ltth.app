@@ -26,7 +26,7 @@ const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 7;
+const STREAM_MONSTERS_RULES_VERSION = 8;
 const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
 const DEFAULT_HATCH_DURATION_MS = 2 * 60 * 1000;
 const INCUBATION_PRESETS_MS = Object.freeze([
