@@ -1,8 +1,8 @@
-# Stream Monsters 1.9 – Rules v7 Evolution Combat
+# Stream Monsters 1.10 – Jackpot Arena & Living Egg Shelf
 
 Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installations, routes, player data, and legacy battle replays remain compatible. The public product name is exclusively **Stream Monsters**.
 
-Version 1.9 is a bundled-only Open Beta. Creator-selected TikTok gifts and the optional recurring free-egg loop create eggs. The release ships 72 verified Furry forms, sealed Rules-v7 A/B/C PvP, passive Special charge, combat-relevant evolution stages, permanent monster progression, separate Collector Score and Arena Rating leaderboards, and a portrait-first arcade OBS arena. It does not ship Art Lab, ComfyUI, model installation, provider routing, generation pools, or any live image-generation path.
+Version 1.10 is a bundled-only Open Beta. Creator-selected TikTok gifts create immediately owned eggs, while only optional recurring free-egg offers use `!adopt`. The portrait Living Egg Shelf animates up to eight eggs plus prioritized overflow without entering the lower 26 percent reserved for TikTok chat. Jackpot Clash keeps sealed Rules-v7 A/B/C PvP, eight-second action windows, deterministic passive Special charge, permanent progression, and synchronized WebGPU or Canvas2D/CSS presentation. It does not ship Art Lab, ComfyUI, model installation, provider routing, generation pools, or any live image-generation path.
 
 ## Creator flow
 
@@ -17,6 +17,8 @@ The Creator Live Center contains exactly six areas: Live Center, Gameplay, Gifts
 
 ## Gift eggs and recurring free-egg adoption
 
+- Gift-spawned eggs are owned immediately and never show or accept an adoption affordance.
+- The Living Egg Shelf projects reconnect-safe public egg state, prioritizes public offers and ready eggs, and displays eight full-size eggs plus rotating overflow.
 - Recurring free eggs are optional and do not depend on gifts. The default cooldown is 86,400 seconds (24 hours); creators can choose any whole-second value from 60 through 31,536,000.
 - A viewer's first chat contact creates one reserved offer when eligible. The viewer has 60 seconds to claim it with the active `adopt` alias (`!adopt` or `!adoptieren` by default).
 - After 60 seconds an unclaimed offer becomes public. Adoption takes the viewer's own reservation first, then the oldest public offer in FIFO order. Claims, events, cooldowns, and reload recovery are transactional.
@@ -47,7 +49,7 @@ The Creator Live Center contains exactly six areas: Live Center, Gameplay, Gifts
 `!battle` joins the public queue. Matchmaking starts within ±2 levels, prefers the nearest Arena Rating, widens after 30 seconds, and avoids a recent opponent when another valid viewer is waiting.
 
 - The roster choice window lasts 10 seconds.
-- Each action window lasts 6 seconds.
+- Each action window lasts 8 seconds.
 - The first valid A/B/C answer is locked privately. Neither the public event nor the DOM reveals it until both choices exist or deterministic timeout resolution has completed; both choices are then revealed together in stable slot order.
 - `A` and `B` use the monster's regular skills and build special charge.
 - `C` requires and consumes a full special charge.
@@ -91,6 +93,7 @@ When GCCE is available it is the sole command ingress. The fallback TikTok parse
 
 ## OBS arena, effects, and audio
 
+- Jackpot Clash presents full monsters, readable skill cards, HP/shield/Special HUD, combo feedback, element lighting, and deterministic camera impulse.
 - Portrait 1080×1920 is primary and reserves the lower 26 percent for TikTok chat. Important content stays in the upper 74 percent.
 - Landscape 1920×1080 uses the same durable fighters and gameplay timing.
 - One deterministic Arena Timeline drives WebGPU and Canvas2D/CSS rendering.
