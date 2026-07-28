@@ -46,6 +46,7 @@ class TalkingHeadsPlugin {
     this.initialAvatarPlaybackReservations = new Map();
     this.activePlaybackByUser = new Map();
     this.pendingGiftRerolls = new Map();
+    this.generatedAssetCleanupTimers = new Set();
 
     // Viewer presence tracker for Viewer Bar
     this.viewerPresence = new Map(); // userId → { username, sprites, lastSeen, joinedAt }
@@ -66,7 +67,7 @@ class TalkingHeadsPlugin {
       firstAssignmentEnabled: true,
       rerollGiftEnabled: true,
       rerollGiftId: '',
-      rerollGiftNames: ['Heart Me', 'Team Heart', 'Team Herz'],
+      rerollGiftNames: ['Go Popular', 'Heart Me', 'Team Heart', 'Team Herz'],
       spinDurationMs: 2600,
       cacheEnabled: true,
       cacheDuration: 2592000000, // 30 days in milliseconds
@@ -129,7 +130,7 @@ class TalkingHeadsPlugin {
    * @private
    */
   _normalizeAvatarConfig(config) {
-    const defaultGiftNames = ['Heart Me', 'Team Heart', 'Team Herz'];
+    const defaultGiftNames = ['Go Popular', 'Heart Me', 'Team Heart', 'Team Herz'];
     const hasLegacyEnabled = Object.hasOwn(config, 'avatarLotteryEnabled');
     const hasLegacyGiftId = Object.hasOwn(config, 'lotteryGiftId');
     const hasLegacyGiftNames = Object.hasOwn(config, 'lotteryGiftNames');
@@ -299,26 +300,78 @@ class TalkingHeadsPlugin {
       : null;
   }
 
+  _ensureAssetSpriteLibrary() {
+    if (!this.assetSpriteLibrary) {
+      this.assetSpriteLibrary = new AssetSpriteLibrary({
+        dataDir: this.api.getPluginDataDir(),
+        logger: this.logger,
+        generatedAssetRegistry: this.cacheManager
+      });
+    }
+    return this.assetSpriteLibrary;
+  }
+
+  _resolveViewerIdentity(data = {}) {
+    const rawUserId = String(data.userId || data.user_id || '').trim();
+    const rawUniqueId = String(data.uniqueId || data.unique_id || '').trim();
+    const rawUsername = String(data.username || '').trim();
+    const rawNickname = String(data.nickname || '').trim();
+    const handle = rawUserId && !/^\d+$/.test(rawUserId)
+      ? rawUserId
+      : (rawUniqueId || rawUsername || rawUserId);
+    if (!handle) return null;
+    return {
+      userId: handle.slice(0, 128),
+      username: (rawUniqueId || rawUsername || rawNickname || handle).slice(0, 128)
+    };
+  }
+
+  _playbackAssetOwnerId(playbackId) {
+    const normalizedPlaybackId = String(playbackId || '').trim();
+    return normalizedPlaybackId ? `playback:${normalizedPlaybackId}` : null;
+  }
+
+  _getActiveGeneratedAssetOwnerIds() {
+    return [...new Set([
+      ...this.activePlaybackByUser.values(),
+      ...this.initialAvatarPlaybackReservations.values()
+    ].map(playbackId => this._playbackAssetOwnerId(playbackId)).filter(Boolean))];
+  }
+
+  _scheduleGeneratedAssetRelease(ownerId, delayMs) {
+    if (!ownerId || !this.cacheManager?.releaseGeneratedAssetOwner) return;
+    const timer = setTimeout(() => {
+      this.generatedAssetCleanupTimers.delete(timer);
+      this.cacheManager.releaseGeneratedAssetOwner(ownerId).catch((error) => {
+        this.logger.warn(`TalkingHeads: Generated asset cleanup failed for ${ownerId}`, error);
+      });
+    }, Math.max(0, Number(delayMs) || 0));
+    timer.unref?.();
+    this.generatedAssetCleanupTimers.add(timer);
+  }
+
   /**
    * Resolve the configured local selection into a shared five-frame sprite set.
    * The files are materialized once per selection in the plugin data directory.
    * @private
    */
-  async _getConfiguredAssetAvatar(userId, username, selection = {}) {
-    if (!this.assetSpriteLibrary) {
-      this.assetSpriteLibrary = new AssetSpriteLibrary({
-        dataDir: this.api.getPluginDataDir(),
-        logger: this.logger
-      });
-    }
-
-    const spriteSet = await this.assetSpriteLibrary.getSpriteSet({
+  async _getConfiguredAssetAvatar(userId, username, selection = {}, assetUse = {}) {
+    const assetSpriteLibrary = this._ensureAssetSpriteLibrary();
+    const ownerId = assetUse.ownerId || `ephemeral:${this._createSpinId()}`;
+    const expiresAt = Number.isFinite(Number(assetUse.expiresAt))
+      ? Number(assetUse.expiresAt)
+      : Date.now() + 10 * 60 * 1000;
+    const spriteSet = await assetSpriteLibrary.getSpriteSet({
       packId: selection.assetPack || selection.packId || this.config.assetPack,
       characterId: selection.assetCharacter || selection.characterId || this.config.assetCharacter,
       options: {
         ...(this.config.assetOptions || {}),
         ...(selection.assetOptions || selection.options || {})
       }
+    }, {
+      ownerId,
+      expiresAt,
+      frameNames: assetUse.frameNames
     });
 
     return {
@@ -342,11 +395,12 @@ class TalkingHeadsPlugin {
    * @returns {{created: boolean, selection: object|null, reason: string, assignment?: object}}
    */
   prepareAvatarAssignment({ userId, username, hasAssignedVoice } = {}) {
-    if (!userId || !this.avatarLotteryManager) {
+    const identity = this._resolveViewerIdentity({ userId, username });
+    if (!identity || !this.avatarLotteryManager) {
       return { created: false, selection: null, reason: 'unavailable' };
     }
 
-    const existing = this.avatarLotteryManager.getAssignment(userId);
+    const existing = this.avatarLotteryManager.getAssignment(identity.userId);
     if (existing?.selection) {
       return {
         created: false,
@@ -364,15 +418,9 @@ class TalkingHeadsPlugin {
       return { created: false, selection: null, reason: 'first-assignment-disabled' };
     }
 
-    if (!this.assetSpriteLibrary) {
-      this.assetSpriteLibrary = new AssetSpriteLibrary({
-        dataDir: this.api.getPluginDataDir(),
-        logger: this.logger
-      });
-    }
-    const selection = this.assetSpriteLibrary.getRandomSelection();
-    const assignment = this.avatarLotteryManager.assign(userId, username || userId, selection);
-    this._log(`Assigned ${selection.packId}/${selection.characterId} to ${username || userId}`, 'info');
+    const selection = this._ensureAssetSpriteLibrary().getRandomSelection();
+    const assignment = this.avatarLotteryManager.assign(identity.userId, identity.username, selection);
+    this._log(`Assigned ${selection.packId}/${selection.characterId} to ${identity.username}`, 'info');
     return {
       created: true,
       selection,
@@ -395,28 +443,56 @@ class TalkingHeadsPlugin {
     preview = false
   } = {}) {
     if (!userId || !winnerSelection || !this.assetSpriteLibrary) return null;
+    const legacyDuration = Number(this.config.lotteryAnimationDuration);
+    const duration = Number.isFinite(legacyDuration)
+      ? legacyDuration
+      : this.config.spinDurationMs || 2600;
+    const spinId = this._createSpinId();
+    const revealLifetimeMs = Math.max(1, Number(duration) || 2600) + 5500;
+    const candidateOwnerId = `spin:${spinId}:candidates`;
+    const winnerOwnerId = reason === 'initial-assignment' && playbackId
+      ? this._playbackAssetOwnerId(playbackId)
+      : `spin:${spinId}:winner`;
+    const candidateExpiresAt = Date.now() + revealLifetimeMs;
+    const winnerExpiresAt = reason === 'initial-assignment'
+      ? Date.now() + 60 * 60 * 1000
+      : candidateExpiresAt;
     const candidates = this.assetSpriteLibrary.getLotteryCandidates(
       3,
       Math.random,
       [winnerSelection]
     );
-    const [winnerSpriteSet, candidateCards] = await Promise.all([
-      this.assetSpriteLibrary.getSpriteSet(winnerSelection),
-      Promise.all(candidates.map(async (selection) => {
-        const spriteSet = await this.assetSpriteLibrary.getSpriteSet(selection);
-        return {
-          selection,
-          spriteUrl: this._getRelativeSpritePaths(spriteSet.sprites).idle_neutral,
-          sprites: this._getRelativeSpritePaths(spriteSet.sprites)
-        };
-      }))
-    ]);
-    const legacyDuration = Number(this.config.lotteryAnimationDuration);
-    const duration = Number.isFinite(legacyDuration)
-      ? legacyDuration
-      : this.config.spinDurationMs || 2600;
+    let winnerSpriteSet;
+    let candidateCards;
+    try {
+      [winnerSpriteSet, candidateCards] = await Promise.all([
+        this.assetSpriteLibrary.getSpriteSet(winnerSelection, {
+          ownerId: winnerOwnerId,
+          expiresAt: winnerExpiresAt
+        }),
+        Promise.all(candidates.map(async (selection) => {
+          const spriteSet = await this.assetSpriteLibrary.getSpriteSet(selection, {
+            ownerId: candidateOwnerId,
+            expiresAt: candidateExpiresAt,
+            frameNames: ['idle_neutral']
+          });
+          const sprites = this._getRelativeSpritePaths(spriteSet.sprites);
+          return {
+            selection,
+            spriteUrl: sprites.idle_neutral,
+            sprites
+          };
+        }))
+      ]);
+    } catch (error) {
+      await Promise.allSettled([
+        this.cacheManager?.releaseGeneratedAssetOwner?.(candidateOwnerId),
+        this.cacheManager?.releaseGeneratedAssetOwner?.(winnerOwnerId)
+      ].filter(Boolean));
+      throw error;
+    }
     const payload = {
-      spinId: this._createSpinId(),
+      spinId,
       playbackId: String(playbackId || ''),
       userId,
       username: username || userId,
@@ -430,6 +506,10 @@ class TalkingHeadsPlugin {
       }
     };
     this.io.emit('talkingheads:avatar:spin:start', payload);
+    this._scheduleGeneratedAssetRelease(candidateOwnerId, revealLifetimeMs);
+    if (reason !== 'initial-assignment') {
+      this._scheduleGeneratedAssetRelease(winnerOwnerId, revealLifetimeMs);
+    }
     return payload;
   }
 
@@ -550,24 +630,29 @@ class TalkingHeadsPlugin {
 
     // The TTS gate runs before renderer:start. Existing manual and legacy
     // cache avatars therefore have to be recognized here, otherwise this
-    // first-voice path would persist and reveal a replacement Boba avatar.
-    if (this._getExistingCachedAvatar(meta.userId)) {
+    // first-voice path would persist and reveal a replacement automatic avatar.
+    const identity = this._resolveViewerIdentity(meta);
+    if (!identity) {
+      return { created: false, reason: 'unavailable' };
+    }
+
+    if (this._getExistingCachedAvatar(identity.userId)) {
       return { created: false, reason: 'existing-cache-avatar' };
     }
 
     const preparation = this.prepareAvatarAssignment({
-      userId: meta.userId,
-      username: meta.username || meta.userId,
+      userId: identity.userId,
+      username: identity.username,
       hasAssignedVoice: meta.hasAssignedVoice === true
     });
     if (!preparation.created) return preparation;
 
     const playbackId = String(meta.playbackId || meta.id || '').trim();
-    this._reserveInitialAvatarPlayback(meta.userId, playbackId);
+    this._reserveInitialAvatarPlayback(identity.userId, playbackId);
 
     const payload = await this._emitAvatarSpin({
-      userId: meta.userId,
-      username: meta.username || meta.userId,
+      userId: identity.userId,
+      username: identity.username,
       playbackId,
       winnerSelection: preparation.selection,
       reason: 'initial-assignment'
@@ -622,21 +707,7 @@ class TalkingHeadsPlugin {
    * @private
    */
   _getLotteryUser(data = {}) {
-    const rawUserId = String(data.userId || data.user_id || '').trim();
-    const rawUniqueId = String(data.uniqueId || data.unique_id || '').trim();
-    // Event TTS keys voice assignments by TikTok handle when the transport
-    // includes both its numeric account ID and uniqueId. Use the same key so
-    // a gift rerolls the avatar that TTS actually renders.
-    const lotteryKey = rawUniqueId && /^\d+$/.test(rawUserId)
-      ? rawUniqueId
-      : (rawUserId || rawUniqueId);
-    const userId = this._sanitizeInput(lotteryKey, 'userId');
-    if (!userId) return null;
-    const username = this._sanitizeInput(
-      rawUniqueId || data.username || data.nickname || userId,
-      'username'
-    ) || userId;
-    return { userId, username };
+    return this._resolveViewerIdentity(data);
   }
 
   /**
@@ -667,12 +738,7 @@ class TalkingHeadsPlugin {
       return true;
     }
 
-    if (!this.assetSpriteLibrary) {
-      this.assetSpriteLibrary = new AssetSpriteLibrary({
-        dataDir: this.api.getPluginDataDir(),
-        logger: this.logger
-      });
-    }
+    this._ensureAssetSpriteLibrary();
 
     const winnerSelection = this.assetSpriteLibrary.getRandomSelection(Math.random, currentAssignment.selection);
     const assignment = this.avatarLotteryManager.reroll(user.userId, user.username, winnerSelection);
@@ -836,6 +902,7 @@ class TalkingHeadsPlugin {
       this._log('Initializing cache manager...', 'debug');
       this.cacheManager = new CacheManager(pluginDataDir, this.db, this.logger, this.config);
       await this.cacheManager.init();
+      await this.cacheManager.cleanupGeneratedAssets();
       this._log('Cache manager initialized', 'debug');
 
       // Initialize role manager
@@ -848,10 +915,7 @@ class TalkingHeadsPlugin {
       this._log('Avatar lottery manager initialized', 'debug');
 
       // Local packs are composed on demand into the plugin data directory.
-      this.assetSpriteLibrary = new AssetSpriteLibrary({
-        dataDir: pluginDataDir,
-        logger: this.logger
-      });
+      this._ensureAssetSpriteLibrary();
       this._log('Local asset sprite library initialized', 'debug');
 
       // Initialize animation controller
@@ -935,6 +999,14 @@ class TalkingHeadsPlugin {
       res.sendFile(path.join(assetsDir, safeFilename));
     });
 
+    this.api.registerRoute('get', '/api/talkingheads/overlay/translations/:locale', (req, res) => {
+      const locale = String(req.params.locale || '').trim().toLowerCase();
+      if (!['de', 'en', 'es', 'fr'].includes(locale)) {
+        return res.status(404).json({ success: false, error: 'Locale not found' });
+      }
+      return res.json(require(path.join(__dirname, 'locales', `${locale}.json`)));
+    });
+
     // Stream Director health is intentionally local-only. It omits message
     // text and audio data, exposing only the render bridge state needed by
     // the dashboard surface.
@@ -946,12 +1018,7 @@ class TalkingHeadsPlugin {
     // gift. It exists solely to check the Broadcast Arcade overlay pipeline.
     this.api.registerRoute('post', '/api/talkingheads/test-spin', async (req, res) => {
       try {
-        if (!this.assetSpriteLibrary) {
-          this.assetSpriteLibrary = new AssetSpriteLibrary({
-            dataDir: this.api.getPluginDataDir(),
-            logger: this.logger
-          });
-        }
+        this._ensureAssetSpriteLibrary();
         const playbackId = `preview-spin-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
         const winnerSelection = this.assetSpriteLibrary.getRandomSelection();
         const spin = await this._emitAvatarSpin({
@@ -986,14 +1053,12 @@ class TalkingHeadsPlugin {
     // the OBS spin stay identical to a real TikTok reroll.
     this.api.registerRoute('post', '/api/talkingheads/avatar-reroll', async (req, res) => {
       try {
-        const requestedUserId = this._sanitizeInput(req.body?.userId, 'userId');
-        const username = this._sanitizeInput(
-          req.body?.username || req.body?.uniqueId || requestedUserId,
-          'username'
-        );
-        if (!requestedUserId || !username) {
+        const identity = this._resolveViewerIdentity(req.body || {});
+        if (!identity) {
           return res.status(400).json({ success: false, error: 'Missing or invalid userId and username' });
         }
+        const requestedUserId = identity.userId;
+        const username = identity.username;
 
         const configuredGiftId = String(
           this.config.rerollGiftId || this.config.lotteryGiftId || ''
@@ -1102,7 +1167,9 @@ class TalkingHeadsPlugin {
     // Clear cache
     this.api.registerRoute('post', '/api/talkingheads/cache/clear', async (req, res) => {
       try {
-        const deleted = await this.cacheManager.clearAllCache();
+        const deleted = await this.cacheManager.clearAllCache(
+          this._getActiveGeneratedAssetOwnerIds()
+        );
         res.json({ success: true, deleted });
       } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -2167,6 +2234,12 @@ class TalkingHeadsPlugin {
       if (isInitialReservation) {
         this.initialAvatarPlaybackReservations.delete(userId);
       }
+      const generatedOwnerId = this._playbackAssetOwnerId(playbackId);
+      if (generatedOwnerId && this.cacheManager?.releaseGeneratedAssetOwner) {
+        this.cacheManager.releaseGeneratedAssetOwner(generatedOwnerId).catch((error) => {
+          this.logger.warn(`TalkingHeads: Playback asset cleanup failed for ${playbackId}`, error);
+        });
+      }
       const pendingGift = this.pendingGiftRerolls.get(userId);
       if (pendingGift) {
         this.pendingGiftRerolls.delete(userId);
@@ -2260,6 +2333,15 @@ class TalkingHeadsPlugin {
       this._log('Invalid TTS event data - missing userId or username', 'warn');
       return;
     }
+    const generatedOwnerId = this._playbackAssetOwnerId(playbackId)
+      || `legacy:${userId}:${this._createSpinId()}`;
+    const generatedLifetimeMs = externalLifecycle === true
+      ? 60 * 60 * 1000
+      : Math.max(1000, Number(duration) || 5000) + 2000;
+    const generatedAssetUse = {
+      ownerId: generatedOwnerId,
+      expiresAt: Date.now() + generatedLifetimeMs
+    };
 
     const enrichedUserData = {
       ...(userData || {}),
@@ -2294,7 +2376,12 @@ class TalkingHeadsPlugin {
     const existingAssignment = this.avatarLotteryManager?.getAssignment(userId);
     if (existingAssignment?.selection) {
       try {
-        avatarData = await this._getConfiguredAssetAvatar(userId, username, existingAssignment.selection);
+        avatarData = await this._getConfiguredAssetAvatar(
+          userId,
+          username,
+          existingAssignment.selection,
+          generatedAssetUse
+        );
         wasCached = true;
         this._log(`Using assigned avatar for ${username}`, 'debug', existingAssignment.selection);
       } catch (error) {
@@ -2345,7 +2432,12 @@ class TalkingHeadsPlugin {
       });
       if (prepared.selection) {
         try {
-          avatarData = await this._getConfiguredAssetAvatar(userId, username, prepared.selection);
+          avatarData = await this._getConfiguredAssetAvatar(
+            userId,
+            username,
+            prepared.selection,
+            generatedAssetUse
+          );
           wasCached = !prepared.created;
         } catch (error) {
           this._log(`Failed to prepare automatic avatar for ${username}: ${error.message}`, 'warn');
@@ -2355,7 +2447,7 @@ class TalkingHeadsPlugin {
 
     if (!avatarData) {
       try {
-        avatarData = await this._getConfiguredAssetAvatar(userId, username);
+        avatarData = await this._getConfiguredAssetAvatar(userId, username, {}, generatedAssetUse);
         wasCached = true;
         this._log(`Using local asset selection for ${username}`, 'debug', avatarData.assetSelection);
       } catch (error) {
@@ -2388,6 +2480,7 @@ class TalkingHeadsPlugin {
         avatarData.sprites,
         duration || 5000
       );
+      this._scheduleGeneratedAssetRelease(generatedOwnerId, generatedLifetimeMs);
     }
   }
 
@@ -2600,8 +2693,6 @@ class TalkingHeadsPlugin {
    * @private
    */
   _startCacheCleanup() {
-    if (!this.config.cacheEnabled) return;
-
     // Run cleanup once per day
     this.cacheCleanupInterval = setInterval(async () => {
       try {
@@ -2610,7 +2701,10 @@ class TalkingHeadsPlugin {
           ? Array.from(this.animationController.activeAnimations.keys()) 
           : [];
         
-        await this.cacheManager.cleanupOldCache(activeUserIds);
+        await this.cacheManager.cleanupOldCache(
+          activeUserIds,
+          this._getActiveGeneratedAssetOwnerIds()
+        );
       } catch (error) {
         this.logger.error('TalkingHeads: Cache cleanup failed', error);
       }
@@ -2663,6 +2757,8 @@ class TalkingHeadsPlugin {
       this.initialAvatarPlaybackReservations.clear();
       this.activePlaybackByUser.clear();
       this.pendingGiftRerolls.clear();
+      this.generatedAssetCleanupTimers.forEach(timer => clearTimeout(timer));
+      this.generatedAssetCleanupTimers.clear();
 
       // Clear cleanup interval
       if (this.cacheCleanupInterval) {

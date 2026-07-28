@@ -1,8 +1,10 @@
 const fs = require('fs').promises;
 const os = require('os');
 const path = require('path');
+const Database = require('better-sqlite3');
 
 const AssetSpriteLibrary = require('../plugins/talking-heads/engines/asset-sprite-library');
+const CacheManager = require('../plugins/talking-heads/utils/cache-manager');
 
 const TRANSPARENT_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLffwAAAABJRU5ErkJggg==',
@@ -140,6 +142,217 @@ describe('Talking Heads local asset library', () => {
       const svg = await fs.readFile(path.join(dataDir, 'avatars', spriteUrl.split('/').pop()), 'utf8');
       expect(svg).toContain(Buffer.from('pinguin-base').toString('base64'));
       expect(svg).toContain(Buffer.from('pinguin-happy').toString('base64'));
+    }
+  });
+
+  test('materializes only one tracked reel frame and reclaims it through generated-asset cleanup', async () => {
+    const db = new Database(':memory:');
+    const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    const cacheManager = new CacheManager(dataDir, db, logger, {
+      cacheEnabled: true,
+      cacheDuration: 1000
+    });
+    await cacheManager.init();
+    const managedLibrary = new AssetSpriteLibrary({
+      assetRoot,
+      dataDir,
+      generatedAssetRegistry: cacheManager
+    });
+
+    try {
+      const candidate = await managedLibrary.getSpriteSet(
+        { packId: 'boba', characterId: 'Fox', options: { expression: 'Default' } },
+        {
+          frameNames: ['idle_neutral'],
+          ownerId: 'spin:slot-one:candidates',
+          expiresAt: 100
+        }
+      );
+
+      expect(Object.keys(candidate.sprites)).toEqual(['idle_neutral']);
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(1);
+
+      await cacheManager.cleanupGeneratedAssets(101);
+
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(0);
+    } finally {
+      db.close();
+    }
+  });
+
+  test('keeps shared winner frames for a newer playback and clears only tracked generated SVGs', async () => {
+    const db = new Database(':memory:');
+    const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    const cacheManager = new CacheManager(dataDir, db, logger, {
+      cacheEnabled: true,
+      cacheDuration: 1000
+    });
+    await cacheManager.init();
+    const managedLibrary = new AssetSpriteLibrary({
+      assetRoot,
+      dataDir,
+      generatedAssetRegistry: cacheManager
+    });
+    const selection = {
+      packId: 'kenney',
+      characterId: 'blueA',
+      options: { eye: 'human' }
+    };
+    const manualFile = path.join(dataDir, 'manual', 'owned-by-user.png');
+    await fs.mkdir(path.dirname(manualFile), { recursive: true });
+    await fs.writeFile(manualFile, TRANSPARENT_PNG);
+    const manualSprites = {
+      idle_neutral: manualFile,
+      blink: manualFile,
+      speak_closed: manualFile,
+      speak_mid: manualFile,
+      speak_open: manualFile
+    };
+    cacheManager.cacheManualSprites('owned-set', 'Owned Set', manualSprites);
+    cacheManager.assignManualSetToUser('manual-viewer', 'Manual Viewer', 'owned-set');
+    db.prepare('UPDATE talking_heads_cache SET last_used = 0 WHERE user_id = ?')
+      .run('manual-viewer');
+    await cacheManager.cleanupOldCache();
+    await expect(fs.access(manualFile)).resolves.toBeUndefined();
+    cacheManager.assignManualSetToUser('manual-viewer', 'Manual Viewer', 'owned-set');
+
+    try {
+      await managedLibrary.getSpriteSet(selection, {
+        ownerId: 'playback:old',
+        expiresAt: Date.now() + 1000
+      });
+      await managedLibrary.getSpriteSet(selection, {
+        ownerId: 'playback:new',
+        expiresAt: Date.now() + 1000
+      });
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(5);
+
+      await cacheManager.releaseGeneratedAssetOwner('playback:old');
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(5);
+
+      await cacheManager.releaseGeneratedAssetOwner('playback:new');
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(0);
+
+      await managedLibrary.getSpriteSet(selection, {
+        ownerId: 'preview:clear-cache',
+        expiresAt: Date.now() + 1000
+      });
+      await cacheManager.clearAllCache();
+      await expect(fs.access(manualFile)).resolves.toBeUndefined();
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(0);
+    } finally {
+      db.close();
+    }
+  });
+
+  test('serializes clear-cache against in-flight generated asset materialization', async () => {
+    const db = new Database(':memory:');
+    const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    const cacheManager = new CacheManager(dataDir, db, logger, {
+      cacheEnabled: true,
+      cacheDuration: 1000
+    });
+    await cacheManager.init();
+    const managedLibrary = new AssetSpriteLibrary({
+      assetRoot,
+      dataDir,
+      generatedAssetRegistry: cacheManager
+    });
+    let releaseComposition;
+    let compositionStarted;
+    const started = new Promise(resolve => {
+      compositionStarted = resolve;
+    });
+    const compositionGate = new Promise(resolve => {
+      releaseComposition = resolve;
+    });
+    managedLibrary._composeSvg = jest.fn(async () => {
+      compositionStarted();
+      await compositionGate;
+      return '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
+    });
+
+    try {
+      const generation = managedLibrary.getSpriteSet(
+        { packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } },
+        {
+          frameNames: ['idle_neutral'],
+          ownerId: 'preview:in-flight',
+          expiresAt: Date.now() + 1000
+        }
+      );
+      await started;
+      const clear = cacheManager.clearAllCache();
+      await new Promise(resolve => setImmediate(resolve));
+      releaseComposition();
+      await Promise.all([generation, clear]);
+
+      expect(await fs.readdir(path.join(dataDir, 'avatars'))).toHaveLength(0);
+    } finally {
+      db.close();
+    }
+  });
+
+  test('preserves active playback frames during periodic cleanup and clear-cache', async () => {
+    const db = new Database(':memory:');
+    const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    const cacheManager = new CacheManager(dataDir, db, logger, {
+      cacheEnabled: true,
+      cacheDuration: 1000
+    });
+    await cacheManager.init();
+    const managedLibrary = new AssetSpriteLibrary({
+      assetRoot,
+      dataDir,
+      generatedAssetRegistry: cacheManager
+    });
+    const activeSelection = {
+      packId: 'kenney',
+      characterId: 'blueA',
+      options: { eye: 'human' }
+    };
+    const staleSelection = {
+      packId: 'boba',
+      characterId: 'Fox',
+      options: { expression: 'Default' }
+    };
+
+    try {
+      const active = await managedLibrary.getSpriteSet(activeSelection, {
+        ownerId: 'playback:active',
+        expiresAt: 10
+      });
+      const stale = await managedLibrary.getSpriteSet(staleSelection, {
+        ownerId: 'preview:stale',
+        expiresAt: 10
+      });
+      const activeIdlePath = path.join(
+        dataDir,
+        'avatars',
+        active.sprites.idle_neutral.split('/').pop()
+      );
+      const staleIdlePath = path.join(
+        dataDir,
+        'avatars',
+        stale.sprites.idle_neutral.split('/').pop()
+      );
+
+      await cacheManager.cleanupGeneratedAssets(11, ['playback:active']);
+      await expect(fs.access(activeIdlePath)).resolves.toBeUndefined();
+      await expect(fs.access(staleIdlePath)).rejects.toMatchObject({ code: 'ENOENT' });
+
+      await managedLibrary.getSpriteSet(staleSelection, {
+        ownerId: 'preview:clear',
+        expiresAt: 20
+      });
+      await cacheManager.clearAllCache(['playback:active']);
+      await expect(fs.access(activeIdlePath)).resolves.toBeUndefined();
+      await expect(fs.access(staleIdlePath)).rejects.toMatchObject({ code: 'ENOENT' });
+
+      await cacheManager.releaseGeneratedAssetOwner('playback:active');
+      await expect(fs.access(activeIdlePath)).rejects.toMatchObject({ code: 'ENOENT' });
+    } finally {
+      db.close();
     }
   });
 });

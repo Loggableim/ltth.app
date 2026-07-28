@@ -58,7 +58,13 @@ class I18nClient {
     async loadTranslations(locale) {
         locale = this.normalizeLocale(locale);
         try {
-            const response = await fetch(`/api/i18n/translations/${locale}`);
+            const configuredBase = document.querySelector('meta[name="ltth-i18n-base"]')
+                ?.getAttribute('content')
+                ?.trim();
+            const translationBase = /^\/api\/[a-z0-9/_-]+$/i.test(configuredBase || '')
+                ? configuredBase.replace(/\/+$/, '')
+                : '/api/i18n/translations';
+            const response = await fetch(`${translationBase}/${locale}`);
             if (!response.ok) {
                 throw new Error(`Failed to load translations: ${response.statusText}`);
             }

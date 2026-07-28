@@ -175,6 +175,7 @@ const HTTP_RULES = Object.freeze([
 
   rule(['GET', 'HEAD'], exact('/overlay/talking-heads/assets/overlay.css')),
   rule(['GET', 'HEAD'], exact('/overlay/talking-heads/assets/overlay.js')),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/talkingheads\/overlay\/translations\/(?:de|en|es|fr)$/)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/talkingheads\/sprite\/[A-Za-z0-9_.-]+\.(?:png|svg)$/i)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/talkingheads\/manual-sprite\/[a-z0-9-]{1,64}\/[A-Za-z0-9_.-]+\.png$/i)),
 

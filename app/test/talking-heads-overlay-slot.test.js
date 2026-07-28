@@ -7,11 +7,14 @@ const { JSDOM } = require('jsdom');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'talking-heads');
 
-function bootOverlay({ i18n } = {}) {
+function bootOverlay({ i18n, productionTranslations } = {}) {
   const html = fs.readFileSync(path.join(pluginRoot, 'overlay.html'), 'utf8');
   const source = fs.readFileSync(path.join(pluginRoot, 'assets', 'overlay.js'), 'utf8');
+  const i18nSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'i18n-client.js'), 'utf8');
   const dom = new JSDOM(html, {
-    url: 'http://127.0.0.1:3000/overlay/talking-heads',
+    url: productionTranslations
+      ? 'http://127.0.0.1:3000/overlay/talking-heads?lang=de'
+      : 'http://127.0.0.1:3000/overlay/talking-heads',
     pretendToBeVisual: true
   });
   const handlers = new Map();
@@ -20,13 +23,19 @@ function bootOverlay({ i18n } = {}) {
     on: jest.fn((eventName, handler) => handlers.set(eventName, handler)),
     emit: jest.fn()
   };
-  if (i18n) dom.window.i18n = i18n;
   dom.window.HTMLCanvasElement.prototype.getContext = jest.fn(() => null);
   const context = {
     window: dom.window,
     document: dom.window.document,
-    io: jest.fn(() => socket),
     console: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    fetch: jest.fn(async url => ({
+      ok: url === '/api/talkingheads/overlay/translations/de',
+      statusText: 'Not Found',
+      json: async () => productionTranslations || {}
+    })),
+    localStorage: dom.window.localStorage,
+    URL: dom.window.URL,
+    URLSearchParams: dom.window.URLSearchParams,
     setTimeout,
     clearTimeout,
     setInterval,
@@ -35,8 +44,21 @@ function bootOverlay({ i18n } = {}) {
     performance: { now: () => 0 },
     Float32Array
   };
+  if (productionTranslations) {
+    vm.runInNewContext(i18nSource, context, { filename: 'i18n-client.js' });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+  } else if (i18n) {
+    dom.window.i18n = i18n;
+  }
+  context.io = jest.fn(() => socket);
   vm.runInNewContext(source, context, { filename: 'talking-heads-overlay.js' });
-  return { dom, handlers, socket };
+  return {
+    dom,
+    fetchImpl: context.fetch,
+    handlers,
+    socket,
+    i18nReady: dom.window.i18n?.ready || Promise.resolve()
+  };
 }
 
 function spinPayload(overrides = {}) {
@@ -178,18 +200,41 @@ describe('Talking Heads speaker-stage slot overlay', () => {
     expect(document.getElementById('slotWinnerName').textContent).toBe('Avatar');
   });
 
-  test('uses translated slot copy when an i18n runtime is present', () => {
+  test('boots the supported i18n client from each real overlay entrypoint before dynamic slot copy', async () => {
     const translations = {
-      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigning': 'Neuer Avatar wird zugewiesen',
-      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.new_voice': 'Neue Stimme',
-      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.reels_spinning': 'Rollen drehen sich',
-      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.avatar': 'Avatar'
-    };
-    const { dom, handlers } = bootOverlay({
-      i18n: {
-        t: key => translations[key] || key
+      plugins: {
+        'talking-heads': {
+          talking_heads_ui: {
+            stream_director: {
+              overlay: {
+                assigning: 'Neuer Avatar wird zugewiesen',
+                new_voice: 'Neue Stimme',
+                reels_spinning: 'Rollen drehen sich',
+                avatar: 'Avatar'
+              }
+            }
+          }
+        }
       }
+    };
+    for (const entrypoint of ['overlay.html', 'obs-hud.html']) {
+      const html = fs.readFileSync(path.join(pluginRoot, entrypoint), 'utf8');
+      const entrypointDocument = new JSDOM(html).window.document;
+      const scripts = [...entrypointDocument.querySelectorAll('script[src]')]
+        .map(script => script.getAttribute('src'));
+      expect(entrypointDocument.querySelector('meta[name="ltth-i18n-base"]')?.getAttribute('content'))
+        .toBe('/api/talkingheads/overlay/translations');
+      expect(scripts.indexOf('/js/i18n-client.js')).toBeGreaterThanOrEqual(0);
+      expect(scripts.indexOf('/js/i18n-client.js'))
+        .toBeLessThan(scripts.indexOf('/overlay/talking-heads/assets/overlay.js'));
+    }
+
+    const { dom, fetchImpl, handlers, i18nReady } = bootOverlay({
+      productionTranslations: translations
     });
+    await i18nReady;
+    expect(fetchImpl).toHaveBeenCalledWith('/api/talkingheads/overlay/translations/de');
+    expect(fetchImpl).not.toHaveBeenCalledWith('/api/i18n/translations/de');
     const startSpin = handlers.get('talkingheads:avatar:spin:start');
 
     expect(startSpin).toEqual(expect.any(Function));

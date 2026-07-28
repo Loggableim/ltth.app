@@ -15,6 +15,7 @@ class CacheManager {
     this.cacheDir = path.join(pluginDataDir, 'avatars');
     this.manualDir = path.join(pluginDataDir, 'manual');
     this.initialized = false;
+    this.generatedAssetLock = Promise.resolve();
   }
 
   /**
@@ -58,12 +59,186 @@ class CacheManager {
         )
       `).run();
 
+      this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS talking_heads_generated_assets (
+          asset_path TEXT NOT NULL,
+          owner_id TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL,
+          PRIMARY KEY (asset_path, owner_id)
+        )
+      `).run();
+      this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_talking_heads_generated_assets_expiry
+        ON talking_heads_generated_assets (expires_at)
+      `).run();
+
       this.initialized = true;
       this.logger.info('TalkingHeads: Cache manager initialized');
     } catch (error) {
       this.logger.error('TalkingHeads: Failed to initialize cache manager', error);
       throw error;
     }
+  }
+
+  _withGeneratedAssetLock(operation) {
+    const run = this.generatedAssetLock.then(operation, operation);
+    this.generatedAssetLock = run.catch(() => {});
+    return run;
+  }
+
+  _isOwnedGeneratedAsset(filePath) {
+    if (!filePath) return false;
+    const resolved = path.resolve(String(filePath));
+    const cacheRoot = path.resolve(this.cacheDir);
+    const filename = path.basename(resolved);
+    return path.dirname(resolved) === cacheRoot
+      && /^asset_[a-z0-9-]+_[a-f0-9]{12}_(?:idle_neutral|blink|speak_closed|speak_mid|speak_open)\.svg$/i
+        .test(filename);
+  }
+
+  async registerGeneratedAssets(ownerId, assetPaths, expiresAt = null) {
+    if (!this.initialized) {
+      throw new Error('Cache manager not initialized');
+    }
+    const normalizedOwnerId = String(ownerId || '').trim().slice(0, 240);
+    const safePaths = [...new Set((Array.isArray(assetPaths) ? assetPaths : [assetPaths])
+      .filter(filePath => this._isOwnedGeneratedAsset(filePath))
+      .map(filePath => path.resolve(String(filePath))))];
+    if (!normalizedOwnerId || !safePaths.length) return 0;
+
+    const now = Date.now();
+    const requestedExpiry = Number(expiresAt);
+    const normalizedExpiry = Number.isFinite(requestedExpiry)
+      ? Math.max(0, Math.round(requestedExpiry))
+      : now + Math.max(60000, Number(this.config.cacheDuration) || 2592000000);
+
+    return this._withGeneratedAssetLock(async () => (
+      this._registerGeneratedAssetsLocked(normalizedOwnerId, safePaths, now, normalizedExpiry)
+    ));
+  }
+
+  _registerGeneratedAssetsLocked(ownerId, safePaths, createdAt, expiresAt) {
+    const statement = this.db.prepare(`
+      INSERT INTO talking_heads_generated_assets (
+        asset_path, owner_id, created_at, expires_at
+      ) VALUES (?, ?, ?, ?)
+      ON CONFLICT(asset_path, owner_id) DO UPDATE SET
+        expires_at = excluded.expires_at
+    `);
+    safePaths.forEach(filePath => {
+      statement.run(filePath, ownerId, createdAt, expiresAt);
+    });
+    return safePaths.length;
+  }
+
+  async materializeGeneratedAssets(ownerId, assetPaths, expiresAt, materialize) {
+    if (!this.initialized) {
+      throw new Error('Cache manager not initialized');
+    }
+    if (typeof materialize !== 'function') {
+      throw new TypeError('Generated asset materialization callback is required');
+    }
+    const normalizedOwnerId = String(ownerId || '').trim().slice(0, 240);
+    const safePaths = [...new Set((Array.isArray(assetPaths) ? assetPaths : [assetPaths])
+      .filter(filePath => this._isOwnedGeneratedAsset(filePath))
+      .map(filePath => path.resolve(String(filePath))))];
+    if (!normalizedOwnerId || !safePaths.length) {
+      return materialize();
+    }
+    const now = Date.now();
+    const requestedExpiry = Number(expiresAt);
+    const normalizedExpiry = Number.isFinite(requestedExpiry)
+      ? Math.max(0, Math.round(requestedExpiry))
+      : now + Math.max(60000, Number(this.config.cacheDuration) || 2592000000);
+
+    return this._withGeneratedAssetLock(async () => {
+      this._registerGeneratedAssetsLocked(
+        normalizedOwnerId,
+        safePaths,
+        now,
+        normalizedExpiry
+      );
+      return materialize();
+    });
+  }
+
+  async _releaseGeneratedAssetOwnerLocked(ownerId) {
+    const rows = this.db.prepare(
+      'SELECT asset_path FROM talking_heads_generated_assets WHERE owner_id = ?'
+    ).all(ownerId) || [];
+    if (!rows.length) return 0;
+
+    this.db.prepare(
+      'DELETE FROM talking_heads_generated_assets WHERE owner_id = ?'
+    ).run(ownerId);
+
+    let deletedFiles = 0;
+    for (const { asset_path: assetPath } of rows) {
+      const remaining = this.db.prepare(
+        'SELECT COUNT(*) AS count FROM talking_heads_generated_assets WHERE asset_path = ?'
+      ).get(assetPath);
+      if (Number(remaining?.count) > 0 || !this._isOwnedGeneratedAsset(assetPath)) continue;
+      try {
+        await fs.unlink(assetPath);
+        deletedFiles++;
+      } catch (error) {
+        if (error?.code !== 'ENOENT') {
+          this.logger.warn(`TalkingHeads: Could not remove generated asset ${path.basename(assetPath)}`, error);
+        }
+      }
+    }
+    return deletedFiles;
+  }
+
+  async releaseGeneratedAssetOwner(ownerId) {
+    if (!this.initialized) return 0;
+    const normalizedOwnerId = String(ownerId || '').trim().slice(0, 240);
+    if (!normalizedOwnerId) return 0;
+    return this._withGeneratedAssetLock(
+      () => this._releaseGeneratedAssetOwnerLocked(normalizedOwnerId)
+    );
+  }
+
+  async cleanupGeneratedAssets(now = Date.now(), preserveOwnerIds = []) {
+    if (!this.initialized) return 0;
+    const cutoff = Number.isFinite(Number(now)) ? Math.round(Number(now)) : Date.now();
+    const preservedOwners = new Set(
+      (Array.isArray(preserveOwnerIds) ? preserveOwnerIds : [preserveOwnerIds])
+        .map(ownerId => String(ownerId || '').trim())
+        .filter(Boolean)
+    );
+    return this._withGeneratedAssetLock(async () => {
+      const owners = this.db.prepare(
+        'SELECT DISTINCT owner_id FROM talking_heads_generated_assets WHERE expires_at <= ?'
+      ).all(cutoff) || [];
+      let deletedFiles = 0;
+      for (const { owner_id: ownerId } of owners) {
+        if (preservedOwners.has(ownerId)) continue;
+        deletedFiles += await this._releaseGeneratedAssetOwnerLocked(ownerId);
+      }
+      return deletedFiles;
+    });
+  }
+
+  async clearGeneratedAssets(preserveOwnerIds = []) {
+    if (!this.initialized) return 0;
+    const preservedOwners = new Set(
+      (Array.isArray(preserveOwnerIds) ? preserveOwnerIds : [preserveOwnerIds])
+        .map(ownerId => String(ownerId || '').trim())
+        .filter(Boolean)
+    );
+    return this._withGeneratedAssetLock(async () => {
+      const owners = this.db.prepare(
+        'SELECT DISTINCT owner_id FROM talking_heads_generated_assets'
+      ).all() || [];
+      let deletedFiles = 0;
+      for (const { owner_id: ownerId } of owners) {
+        if (preservedOwners.has(ownerId)) continue;
+        deletedFiles += await this._releaseGeneratedAssetOwnerLocked(ownerId);
+      }
+      return deletedFiles;
+    });
   }
 
   /**
@@ -183,26 +358,31 @@ class CacheManager {
    * @param {Array<string>} activeUserIds - Array of currently active user IDs to skip
    * @returns {number} Number of deleted entries
    */
-  async cleanupOldCache(activeUserIds = []) {
-    if (!this.initialized || !this.config.cacheEnabled) return 0;
+  async cleanupOldCache(activeUserIds = [], preserveGeneratedOwnerIds = []) {
+    if (!this.initialized) return 0;
 
     try {
+      const generatedDeleted = await this.cleanupGeneratedAssets(
+        Date.now(),
+        preserveGeneratedOwnerIds
+      );
+      if (!this.config.cacheEnabled) return generatedDeleted;
       const cacheDuration = this.config.cacheDuration || 2592000000; // 30 days default
       const expiryTime = Date.now() - cacheDuration;
 
       // Get expired entries
       const expiredEntries = this.db.prepare(
-        'SELECT user_id, username, avatar_path, sprite_idle_neutral, sprite_blink, sprite_speak_closed, sprite_speak_mid, sprite_speak_open FROM talking_heads_cache WHERE last_used < ?'
+        'SELECT user_id, username, style_key, avatar_path, sprite_idle_neutral, sprite_blink, sprite_speak_closed, sprite_speak_mid, sprite_speak_open FROM talking_heads_cache WHERE last_used < ?'
       ).all(expiryTime);
 
-      if (expiredEntries.length === 0) return 0;
+      if (expiredEntries.length === 0) return generatedDeleted;
 
       // Filter out active animations
       const toDelete = expiredEntries.filter(entry => !activeUserIds.includes(entry.user_id));
 
       if (toDelete.length === 0) {
         this.logger.info('TalkingHeads: All expired cache entries are currently active, skipping cleanup');
-        return 0;
+        return generatedDeleted;
       }
 
       this.logger.info(`TalkingHeads: Cleaning ${toDelete.length} expired cache entries (${expiredEntries.length - toDelete.length} skipped due to active animations)`);
@@ -210,14 +390,16 @@ class CacheManager {
       // Delete files
       for (const entry of toDelete) {
         try {
-          const files = [
-            entry.avatar_path,
-            entry.sprite_idle_neutral,
-            entry.sprite_blink,
-            entry.sprite_speak_closed,
-            entry.sprite_speak_mid,
-            entry.sprite_speak_open
-          ];
+          const files = String(entry.style_key || '').startsWith('manual:')
+            ? []
+            : [
+              entry.avatar_path,
+              entry.sprite_idle_neutral,
+              entry.sprite_blink,
+              entry.sprite_speak_closed,
+              entry.sprite_speak_mid,
+              entry.sprite_speak_open
+            ];
 
           for (const file of files) {
             if (file) {
@@ -242,10 +424,10 @@ class CacheManager {
         ).run(...userIdsToDelete, expiryTime);
 
         this.logger.info(`TalkingHeads: Cleaned up ${result.changes} old cached avatars`);
-        return result.changes;
+        return result.changes + generatedDeleted;
       }
 
-      return 0;
+      return generatedDeleted;
     } catch (error) {
       this.logger.error('TalkingHeads: Error during cache cleanup', error);
       return 0;
@@ -265,9 +447,13 @@ class CacheManager {
       const result = this.db.prepare(
         'SELECT COUNT(*) as count FROM talking_heads_cache'
       ).get();
+      const generated = this.db.prepare(
+        'SELECT COUNT(DISTINCT asset_path) as count FROM talking_heads_generated_assets'
+      ).get();
 
       return {
         totalAvatars: result.count,
+        generatedAssets: Number(generated?.count) || 0,
         cacheEnabled: this.config.cacheEnabled,
         cacheDuration: this.config.cacheDuration,
         cacheDir: this.cacheDir
@@ -282,25 +468,28 @@ class CacheManager {
    * Clear all cached avatars
    * @returns {number} Number of deleted entries
    */
-  async clearAllCache() {
+  async clearAllCache(preserveGeneratedOwnerIds = []) {
     if (!this.initialized) return 0;
 
     try {
+      const generatedDeleted = await this.clearGeneratedAssets(preserveGeneratedOwnerIds);
       // Get all entries
       const allEntries = this.db.prepare(
-        'SELECT avatar_path, sprite_idle_neutral, sprite_blink, sprite_speak_closed, sprite_speak_mid, sprite_speak_open FROM talking_heads_cache'
+        'SELECT style_key, avatar_path, sprite_idle_neutral, sprite_blink, sprite_speak_closed, sprite_speak_mid, sprite_speak_open FROM talking_heads_cache'
       ).all();
 
       // Delete all files
       for (const entry of allEntries) {
-        const files = [
-          entry.avatar_path,
-          entry.sprite_idle_neutral,
-          entry.sprite_blink,
-          entry.sprite_speak_closed,
-          entry.sprite_speak_mid,
-          entry.sprite_speak_open
-        ];
+        const files = String(entry.style_key || '').startsWith('manual:')
+          ? []
+          : [
+            entry.avatar_path,
+            entry.sprite_idle_neutral,
+            entry.sprite_blink,
+            entry.sprite_speak_closed,
+            entry.sprite_speak_mid,
+            entry.sprite_speak_open
+          ];
 
         for (const file of files) {
           if (file) {
@@ -316,8 +505,9 @@ class CacheManager {
       // Clear database
       const result = this.db.prepare('DELETE FROM talking_heads_cache').run();
 
-      this.logger.info(`TalkingHeads: Cleared all cache (${result.changes} entries)`);
-      return result.changes;
+      const totalDeleted = result.changes + generatedDeleted;
+      this.logger.info(`TalkingHeads: Cleared all cache (${result.changes} entries, ${generatedDeleted} generated assets)`);
+      return totalDeleted;
     } catch (error) {
       this.logger.error('TalkingHeads: Error clearing cache', error);
       return 0;

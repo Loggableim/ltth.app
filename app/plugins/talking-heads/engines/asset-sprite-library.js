@@ -47,10 +47,11 @@ const RGS_EYES = ['eyes1', 'eyes2', 'eyes3', 'eyes4', 'eyes5', 'eyes6', 'eyes7']
 const RGS_MOUTHS = ['mouth1', 'mouth2', 'mouth3', 'mouth4', 'mouth5', 'mouth6', 'mouth7', 'mouth8'];
 
 class AssetSpriteLibrary {
-  constructor({ assetRoot, dataDir, logger } = {}) {
+  constructor({ assetRoot, dataDir, logger, generatedAssetRegistry } = {}) {
     this.assetRoot = assetRoot || path.join(__dirname, '..', 'assets', 'asset-packs');
     this.dataDir = dataDir;
     this.logger = logger;
+    this.generatedAssetRegistry = generatedAssetRegistry || null;
   }
 
   getCatalog() {
@@ -196,7 +197,7 @@ class AssetSpriteLibrary {
     };
   }
 
-  async getSpriteSet(selection) {
+  async getSpriteSet(selection, { frameNames = FRAME_NAMES, ownerId = null, expiresAt = null } = {}) {
     if (!this.dataDir) {
       throw new Error('A plugin data directory is required for local sprite output');
     }
@@ -209,18 +210,45 @@ class AssetSpriteLibrary {
       .slice(0, 12);
     const outputDir = path.join(this.dataDir, 'avatars');
     await fs.mkdir(outputDir, { recursive: true });
-
+    const requestedFrames = [...new Set(
+      (Array.isArray(frameNames) ? frameNames : FRAME_NAMES)
+        .filter(frameName => FRAME_NAMES.includes(frameName))
+    )];
+    if (!requestedFrames.length) {
+      throw new Error('At least one supported Talking Heads frame is required');
+    }
+    const outputPaths = requestedFrames.map(frameName => (
+      path.join(outputDir, `asset_${normalized.packId}_${signature}_${frameName}.svg`)
+    ));
     const sprites = {};
-    for (const frameName of FRAME_NAMES) {
-      const filename = `asset_${normalized.packId}_${signature}_${frameName}.svg`;
-      const outputPath = path.join(outputDir, filename);
-      try {
-        await fs.access(outputPath);
-      } catch {
-        const svg = await this._composeSvg(frameLayers[frameName]);
-        await fs.writeFile(outputPath, svg, 'utf8');
+    const materialize = async () => {
+      for (const frameName of requestedFrames) {
+        const filename = `asset_${normalized.packId}_${signature}_${frameName}.svg`;
+        const outputPath = path.join(outputDir, filename);
+        try {
+          await fs.access(outputPath);
+        } catch {
+          const svg = await this._composeSvg(frameLayers[frameName]);
+          await fs.writeFile(outputPath, svg, 'utf8');
+        }
+        sprites[frameName] = `/api/talkingheads/sprite/${filename}`;
       }
-      sprites[frameName] = `/api/talkingheads/sprite/${filename}`;
+    };
+    if (ownerId && this.generatedAssetRegistry?.materializeGeneratedAssets) {
+      // Registration and writes share the registry's release lock. An
+      // operator clear or stale playback terminal cannot interleave between
+      // ownership acquisition and the final SVG write.
+      await this.generatedAssetRegistry.materializeGeneratedAssets(
+        ownerId,
+        outputPaths,
+        expiresAt,
+        materialize
+      );
+    } else {
+      if (ownerId && this.generatedAssetRegistry?.registerGeneratedAssets) {
+        await this.generatedAssetRegistry.registerGeneratedAssets(ownerId, outputPaths, expiresAt);
+      }
+      await materialize();
     }
 
     return { ...normalized, sprites };

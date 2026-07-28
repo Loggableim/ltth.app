@@ -432,7 +432,7 @@
       await postJson('/api/talkingheads/test-animation', {
         ...readSelection(),
         userId: 'talkingheads_local_stage_test',
-        username: 'Boba Stage Test',
+        username: 'Character Lab Stage Test',
         duration: Number(el('animationDuration')?.value) || 5000
       });
       setStatus(directorText('animationStarted'));

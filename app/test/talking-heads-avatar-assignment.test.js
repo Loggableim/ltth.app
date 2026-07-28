@@ -102,7 +102,13 @@ describe('Talking Heads persistent avatar assignment', () => {
 
     expect(plugin.assetSpriteLibrary.getRandomSelection).not.toHaveBeenCalled();
     expect(plugin.avatarLotteryManager.assign).not.toHaveBeenCalled();
-    expect(plugin.assetSpriteLibrary.getSpriteSet).toHaveBeenCalledWith(bear);
+    expect(plugin.assetSpriteLibrary.getSpriteSet).toHaveBeenCalledWith(
+      bear,
+      expect.objectContaining({
+        ownerId: expect.stringMatching(/^legacy:legacy-user:/),
+        expiresAt: expect.any(Number)
+      })
+    );
   });
 
   test('does not automatically persist an avatar without an assigned voice', async () => {

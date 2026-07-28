@@ -198,10 +198,14 @@ describe('Talking Heads Broadcast Arcade Stream Director', () => {
   test('materializes a generic frame before confirming a non-Boba Character Lab selection', async () => {
     const html = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
     const source = fs.readFileSync(path.join(pluginRoot, 'assets', 'ui.js'), 'utf8');
+    const styles = fs.readFileSync(path.join(pluginRoot, 'assets', 'ui.css'), 'utf8');
     const dom = new JSDOM(html, {
       url: 'http://127.0.0.1:3000/plugins/talking-heads/ui.html',
       pretendToBeVisual: true
     });
+    const style = dom.window.document.createElement('style');
+    style.textContent = styles;
+    dom.window.document.head.appendChild(style);
     const fetchImpl = jest.fn(async (url, options = {}) => {
       if (url === '/api/talkingheads/config') {
         return response({
@@ -265,9 +269,20 @@ describe('Talking Heads Broadcast Arcade Stream Director', () => {
     const grid = dom.window.document.getElementById('bobaThumbnailGrid');
     expect(preview.getAttribute('src')).toBe('/api/talkingheads/sprite/kenney-blueA.svg');
     expect(grid.hidden).toBe(true);
+    expect(dom.window.getComputedStyle(grid).display).toBe('none');
+    expect(grid.getClientRects()).toHaveLength(0);
     expect(grid.querySelectorAll('.boba-thumbnail')).toHaveLength(0);
     expect(fetchImpl).toHaveBeenCalledWith('/api/talkingheads/test-generate', expect.objectContaining({
       body: expect.stringContaining('"assetPack":"kenney"')
     }));
+
+    pack.value = 'boba';
+    pack.dispatchEvent(new dom.window.Event('change'));
+    await flush();
+    await flush();
+
+    expect(grid.hidden).toBe(false);
+    expect(dom.window.getComputedStyle(grid).display).toBe('grid');
+    expect(grid.querySelectorAll('.boba-thumbnail')).toHaveLength(1);
   });
 });

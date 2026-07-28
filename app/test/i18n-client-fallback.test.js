@@ -104,4 +104,26 @@ describe('i18n client fallback rendering', () => {
     expect(i18n.currentLocale).toBe('en');
     expect(window.fetch).toHaveBeenCalledTimes(1);
   });
+
+  test('uses an entrypoint-scoped read endpoint when the page declares one', async () => {
+    const dom = new JSDOM(
+      '<!doctype html><html><head><meta name="ltth-i18n-base" content="/api/talkingheads/overlay/translations"></head><body></body></html>',
+      {
+        url: 'https://ltth.app/overlay/talking-heads?lang=de',
+        runScripts: 'outside-only'
+      }
+    );
+    const { window } = dom;
+    loadI18nClient(window);
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ plugins: {} })
+    });
+
+    const i18n = new window.__I18nClient();
+    await expect(i18n.loadTranslations('de')).resolves.toBe(true);
+
+    expect(window.fetch)
+      .toHaveBeenCalledWith('/api/talkingheads/overlay/translations/de');
+  });
 });
