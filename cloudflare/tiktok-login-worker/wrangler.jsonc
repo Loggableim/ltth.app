@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ltth-tiktok-login-worker-local",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-28",
+  "workers_dev": false,
+  "preview_urls": false,
+  "logpush": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "TIKTOK_REDIRECT_URI": "https://auth-staging.ltth.app/oauth/tiktok/callback"
+  },
+  "env": {
+    "staging": {
+      "name": "ltth-tiktok-login-worker-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "logpush": false,
+      "observability": {
+        "enabled": false
+      },
+      "vars": {
+        "TIKTOK_REDIRECT_URI": "https://auth-staging.ltth.app/oauth/tiktok/callback"
+      },
+      "routes": [
+        {
+          "pattern": "auth-staging.ltth.app",
+          "custom_domain": true
+        }
+      ]
+    },
+    "production": {
+      "name": "ltth-tiktok-login-worker",
+      "workers_dev": false,
+      "preview_urls": false,
+      "logpush": false,
+      "observability": {
+        "enabled": false
+      },
+      "vars": {
+        "TIKTOK_REDIRECT_URI": "https://auth.ltth.app/oauth/tiktok/callback"
+      },
+      "routes": [
+        {
+          "pattern": "auth.ltth.app",
+          "custom_domain": true
+        }
+      ]
+    }
+  }
+}
