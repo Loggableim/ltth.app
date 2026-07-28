@@ -8,6 +8,13 @@
   const avatarContainer = document.getElementById('avatarContainer');
   const stageIdle = document.getElementById('stageIdle');
   const spawnPulse = document.getElementById('spawnPulse');
+  const OVERLAY_FALLBACK_COPY = Object.freeze({
+    boba_avatar: 'Boba avatar',
+    test_spin: 'Boba test spin',
+    assigning: 'Assigning a new avatar',
+    new_voice: 'New voice',
+    reels_spinning: 'Reels are spinning'
+  });
 
   function playbackKey(data = {}) {
     const userId = String(data.userId || '').trim();
@@ -33,7 +40,7 @@
     return expression ? `${character} · ${expression}` : character;
   }
 
-  function overlayText(key, fallback) {
+  function overlayText(key, fallback = OVERLAY_FALLBACK_COPY[key]) {
     const fullKey = `plugins.talking-heads.talking_heads_ui.stream_director.overlay.${key}`;
     const value = window.i18n?.t?.(fullKey);
     return value && value !== fullKey ? value : fallback || key;

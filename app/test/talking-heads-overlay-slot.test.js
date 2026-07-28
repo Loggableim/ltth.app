@@ -7,7 +7,7 @@ const { JSDOM } = require('jsdom');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'talking-heads');
 
-function bootOverlay() {
+function bootOverlay({ i18n } = {}) {
   const html = fs.readFileSync(path.join(pluginRoot, 'overlay.html'), 'utf8');
   const source = fs.readFileSync(path.join(pluginRoot, 'assets', 'overlay.js'), 'utf8');
   const dom = new JSDOM(html, {
@@ -20,6 +20,7 @@ function bootOverlay() {
     on: jest.fn((eventName, handler) => handlers.set(eventName, handler)),
     emit: jest.fn()
   };
+  if (i18n) dom.window.i18n = i18n;
   dom.window.HTMLCanvasElement.prototype.getContext = jest.fn(() => null);
   const context = {
     window: dom.window,
@@ -118,6 +119,64 @@ describe('Talking Heads speaker-stage slot overlay', () => {
       userId: 'viewer-slot-1',
       spinId: 'opaque-spin-1'
     });
+  });
+
+  test('uses human-readable fallback copy when the public overlay has no i18n runtime', () => {
+    const { dom, handlers } = bootOverlay();
+    const startSpin = handlers.get('talkingheads:avatar:spin:start');
+
+    expect(startSpin).toEqual(expect.any(Function));
+    if (!startSpin) return;
+    startSpin(spinPayload({
+      username: '',
+      winner: {
+        selection: {},
+        sprites: { idle_neutral: '/api/talkingheads/sprite/Otter.png' }
+      }
+    }));
+
+    const document = dom.window.document;
+    expect(document.getElementById('slotTitle').textContent).toBe('Assigning a new avatar');
+    expect(document.getElementById('slotUsername').textContent).toBe('New voice');
+    expect(document.getElementById('slotWinnerName').textContent).toBe('Reels are spinning');
+
+    jest.advanceTimersByTime(240);
+
+    expect(document.getElementById('slotWinnerName').textContent).toBe('Boba avatar');
+  });
+
+  test('uses translated slot copy when an i18n runtime is present', () => {
+    const translations = {
+      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigning': 'Neuer Avatar wird zugewiesen',
+      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.new_voice': 'Neue Stimme',
+      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.reels_spinning': 'Rollen drehen sich',
+      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.boba_avatar': 'Boba-Avatar'
+    };
+    const { dom, handlers } = bootOverlay({
+      i18n: {
+        t: key => translations[key] || key
+      }
+    });
+    const startSpin = handlers.get('talkingheads:avatar:spin:start');
+
+    expect(startSpin).toEqual(expect.any(Function));
+    if (!startSpin) return;
+    startSpin(spinPayload({
+      username: '',
+      winner: {
+        selection: {},
+        sprites: { idle_neutral: '/api/talkingheads/sprite/Otter.png' }
+      }
+    }));
+
+    const document = dom.window.document;
+    expect(document.getElementById('slotTitle').textContent).toBe('Neuer Avatar wird zugewiesen');
+    expect(document.getElementById('slotUsername').textContent).toBe('Neue Stimme');
+    expect(document.getElementById('slotWinnerName').textContent).toBe('Rollen drehen sich');
+
+    jest.advanceTimersByTime(240);
+
+    expect(document.getElementById('slotWinnerName').textContent).toBe('Boba-Avatar');
   });
 
   test('does not let a stale playback end remove a newer speaker stage for the same viewer', () => {
