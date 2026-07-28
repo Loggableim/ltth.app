@@ -234,7 +234,7 @@ describe('stable overlay management HTTP contract', () => {
     expect(JSON.stringify(payload)).not.toContain(stored.tokenHash);
   });
 
-  it('replays a committed enrollment after a lost response without allocating another device', async () => {
+  it('replays a committed enrollment beyond device and rate limits without allocating another device', async () => {
     handler = createManagementHandler({
       repository,
       env: {
@@ -271,6 +271,12 @@ describe('stable overlay management HTTP contract', () => {
     });
     expect(JSON.stringify(replayPayload)).not.toContain(material.credential);
     expect(await repository.countActiveDevicesByOwner('retry-owner')).toBe(1);
+    expect(await env.OVERLAY_ROUTING_DB.prepare(`
+      SELECT counter
+      FROM rate_limit_buckets
+      WHERE scope = 'account'
+        AND action = 'enroll'
+    `).first()).toEqual({ counter: 1 });
 
     const wrongCredential = await call('/devices/enroll', {
       method: 'POST',
@@ -294,6 +300,73 @@ describe('stable overlay management HTTP contract', () => {
     expect(await wrongOwner.json()).toEqual({
       error: 'device_enrollment_conflict'
     });
+  });
+
+  it('returns a conflict when revocation commits before enrollment replay', async () => {
+    const material = enrollmentBody('Revocation race PC');
+    const first = await call('/devices/enroll', {
+      method: 'POST',
+      user: 'replay-revocation-owner',
+      body: material
+    });
+    expect(first.status).toBe(201);
+    advance(1);
+
+    let revocationCommitted = false;
+    const racingRepository = proxyRepository(repository, {
+      async findDeviceById(deviceId) {
+        const device = await repository.findDeviceById(deviceId);
+        if (!revocationCommitted && deviceId === material.deviceId) {
+          revocationCommitted = await repository.revokeDevice({
+            deviceId,
+            clerkUserId: 'replay-revocation-owner',
+            now: new Date(nowMs).toISOString()
+          });
+        }
+        return device;
+      },
+      async replayDeviceEnrollment(parameters) {
+        if (!revocationCommitted) {
+          revocationCommitted = await repository.revokeDevice({
+            deviceId: parameters.deviceId,
+            clerkUserId: parameters.clerkUserId,
+            now: new Date(nowMs).toISOString()
+          });
+        }
+        return repository.replayDeviceEnrollment(parameters);
+      }
+    });
+    handler = createManagementHandler({
+      repository: racingRepository,
+      env: {
+        OVERLAY_DEVICE_TOKEN_PEPPER: PEPPER,
+        OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT: '1'
+      },
+      now: () => nowMs,
+      authenticateClerk: clerkAuthenticator,
+      authenticateAdmin: adminAuthenticator
+    });
+
+    const replay = await call('/devices/enroll', {
+      method: 'POST',
+      user: 'replay-revocation-owner',
+      body: material
+    });
+
+    expect(replay.status).toBe(409);
+    expect(await replay.json()).toEqual({
+      error: 'device_enrollment_conflict'
+    });
+    const persisted = await repository.findDeviceById(material.deviceId);
+    expect(persisted).toMatchObject({
+      deviceId: material.deviceId,
+      clerkUserId: 'replay-revocation-owner',
+      label: material.label,
+      revokedAt: new Date(nowMs).toISOString()
+    });
+    expect(await repository.countActiveDevicesByOwner(
+      'replay-revocation-owner'
+    )).toBe(0);
   });
 
   it('bounds active devices and limits enrollment to ten attempts per account per day', async () => {

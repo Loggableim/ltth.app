@@ -336,6 +336,48 @@ describe('overlay routing repository', () => {
     })).toBeNull();
   });
 
+  it('atomically replays only an exact unrevoked enrollment', async () => {
+    const enrollment = {
+      deviceId: 'device-atomic-replay',
+      clerkUserId: 'user-atomic-replay',
+      tokenHash: HASH_A,
+      label: 'Atomic replay PC',
+      now: T0,
+      activeDeviceLimit: 1
+    };
+    const created = await repository.createOrReplayDeviceEnrollment(
+      enrollment
+    );
+
+    expect(await repository.replayDeviceEnrollment(enrollment))
+      .toEqual(created);
+    expect(await repository.replayDeviceEnrollment({
+      ...enrollment,
+      clerkUserId: 'another-owner'
+    })).toBeNull();
+    expect(await repository.replayDeviceEnrollment({
+      ...enrollment,
+      tokenHash: HASH_B
+    })).toBeNull();
+    expect(await repository.replayDeviceEnrollment({
+      ...enrollment,
+      label: 'Another label'
+    })).toBeNull();
+
+    expect(await repository.revokeDevice({
+      deviceId: enrollment.deviceId,
+      clerkUserId: enrollment.clerkUserId,
+      now: T1
+    })).toBe(true);
+    expect(await repository.replayDeviceEnrollment(enrollment)).toBeNull();
+    expect(await repository.findDeviceById(enrollment.deviceId))
+      .toMatchObject({
+        deviceId: enrollment.deviceId,
+        clerkUserId: enrollment.clerkUserId,
+        revokedAt: T1
+      });
+  });
+
   it('atomically admits only one of two different enrollment identities at the device limit', async () => {
     const admissions = await Promise.all([
       repository.createOrReplayDeviceEnrollment({

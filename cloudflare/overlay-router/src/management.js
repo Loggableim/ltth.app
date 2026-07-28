@@ -306,19 +306,20 @@ export function createManagementHandler(options = {}) {
       body.credential,
       workerEnv.OVERLAY_DEVICE_TOKEN_PEPPER || ''
     );
+    const replayed = await repository.replayDeviceEnrollment({
+      deviceId: body.deviceId,
+      clerkUserId: auth.clerkUserId,
+      tokenHash,
+      label: body.label
+    });
+    if (replayed) {
+      return jsonResponse({
+        device: sanitizeDevice(replayed)
+      }, 201);
+    }
     const existing = await repository.findDeviceById(body.deviceId);
     if (existing) {
-      if (
-        existing.clerkUserId !== auth.clerkUserId ||
-        existing.tokenHash !== tokenHash ||
-        existing.label !== body.label ||
-        existing.revokedAt !== null
-      ) {
-        domainError('device_enrollment_conflict', 409);
-      }
-      return jsonResponse({
-        device: sanitizeDevice(existing)
-      }, 201);
+      domainError('device_enrollment_conflict', 409);
     }
     const rate = await consumeRateLimit(
       repository,

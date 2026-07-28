@@ -2,7 +2,10 @@
 
 const crypto = require('crypto');
 const express = require('express');
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
+const os = require('os');
+const path = require('path');
 const request = require('supertest');
 const {
   buildStableOverlayClerkAuthorizedParties,
@@ -13,6 +16,9 @@ const {
   createStableOverlayRoutingLifecycle,
   registerStableOverlayRoutingRoutes
 } = require('../modules/stable-overlay-routing-routes');
+const {
+  StableOverlayRoutingCredentials
+} = require('../modules/stable-overlay-routing-credentials');
 
 const API_ORIGIN = 'http://127.0.0.1:8787';
 const WORKER_PREFIX = `${API_ORIGIN}/_ltth/v1`;
@@ -125,7 +131,7 @@ function createHarness(overrides = {}) {
       sid: 'session_123',
       exp: 1785148800
     });
-  const credentialStore = {
+  const defaultCredentialStore = {
     load: jest.fn().mockReturnValue({
       deviceId: 'd-0123456789abcdef',
       credential: 'a'.repeat(64),
@@ -143,6 +149,10 @@ function createHarness(overrides = {}) {
     remove: jest.fn().mockReturnValue(true),
     ...overrides.credentialStore
   };
+  const credentialStore =
+    overrides.credentialStore instanceof StableOverlayRoutingCredentials
+      ? overrides.credentialStore
+      : defaultCredentialStore;
   const client = {
     getStatus: jest.fn().mockReturnValue({
       state: 'active',
@@ -291,6 +301,113 @@ describe('stable overlay routing local routes', () => {
       .not.toContain(TOKEN);
     expect(JSON.stringify(harness.credentialStore.save.mock.calls))
       .not.toContain(OTHER_TOKEN);
+  });
+
+  test('fences persisted pending enrollment after restart until account reconciliation succeeds', async () => {
+    const configDir = fs.mkdtempSync(path.join(
+      os.tmpdir(),
+      'ltth-stable-routing-restart-'
+    ));
+    const pluginsDir = path.join(configDir, 'plugins');
+    fs.mkdirSync(pluginsDir);
+    const configPathManager = {
+      getDefaultConfigDir: () => configDir,
+      getPluginsDir: () => pluginsDir
+    };
+    const profileId = 'restart-profile';
+    const sourceRoot = path.join(configDir, 'source');
+    const active = {
+      deviceId: 'd-active-device',
+      credential: 'a'.repeat(64),
+      enrolledAt: '2026-07-27T09:00:00.000Z',
+      label: 'Active PC',
+      defaultUsername: 'active.creator'
+    };
+    const pending = {
+      deviceId: 'd-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      credential: 'b'.repeat(64),
+      enrolledAt: '2026-07-27T10:00:00.000Z',
+      label: 'Pending PC',
+      defaultUsername: null
+    };
+
+    try {
+      const initialStore = new StableOverlayRoutingCredentials({
+        configPathManager,
+        profileId,
+        sourceRoot
+      });
+      initialStore.save(active);
+      initialStore.stageEnrollment(pending);
+      const restartedStore = new StableOverlayRoutingCredentials({
+        configPathManager,
+        profileId,
+        sourceRoot
+      });
+      const fetch = jest.fn((url) => {
+        if (url.endsWith('/account')) {
+          return Promise.resolve(jsonResponse({
+            claims: [],
+            devices: [],
+            lease: { active: false }
+          }));
+        }
+        return Promise.resolve(jsonResponse({
+          claim: activeClaim('after.refresh')
+        }, 201));
+      });
+      const harness = createHarness({
+        credentialStore: restartedStore,
+        fetch
+      });
+
+      const fenced = await authorized(
+        request(harness.app)
+          .post('/api/stable-overlay-routing/claims')
+          .send({ username: 'before.refresh' })
+      );
+
+      expect(fenced.status).toBe(409);
+      expect(fenced.body).toEqual({
+        success: false,
+        code: 'STABLE_ROUTING_RECONCILIATION_REQUIRED',
+        error: 'Refresh stable overlay routing account state before making another change.'
+      });
+      expect(harness.verifyClerkSessionToken).not.toHaveBeenCalled();
+      expect(fetch).not.toHaveBeenCalled();
+      expect(restartedStore.load()).toEqual(active);
+      expect(restartedStore.loadPendingEnrollment()).toEqual(pending);
+
+      const account = await authorized(
+        request(harness.app)
+          .get('/api/stable-overlay-routing/account')
+      );
+      const permitted = await authorized(
+        request(harness.app)
+          .post('/api/stable-overlay-routing/claims')
+          .send({ username: 'after.refresh' })
+      );
+
+      expect(account.status).toBe(200);
+      expect(permitted.status).toBe(201);
+      expect(restartedStore.load()).toEqual(active);
+      expect(restartedStore.loadPendingEnrollment()).toEqual(pending);
+      expect(harness.verifyClerkSessionToken).toHaveBeenCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      const browserVisible = JSON.stringify([
+        fenced.body,
+        account.body,
+        permitted.body
+      ]);
+      expect(browserVisible).not.toContain(active.credential);
+      expect(browserVisible).not.toContain(pending.credential);
+      expect(browserVisible).not.toContain(TOKEN);
+      expect(JSON.stringify(harness.logger)).not.toContain(
+        pending.credential
+      );
+    } finally {
+      fs.rmSync(configDir, { recursive: true, force: true });
+    }
   });
 
   test('rejects a locally invalid Clerk token without forwarding it', async () => {

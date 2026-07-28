@@ -715,7 +715,11 @@ function registerStableOverlayRoutingRoutes({
     )
     : null;
   let enrollmentInProgress = false;
-  let accountReconciliationRequired = false;
+  let accountReconciliationRequired = true;
+  try {
+    accountReconciliationRequired =
+      credentialStore.loadPendingEnrollment() !== null;
+  } catch (_) {}
   let localMutationTail = Promise.resolve();
 
   function send(res, status, body) {

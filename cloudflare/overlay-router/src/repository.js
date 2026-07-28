@@ -574,6 +574,35 @@ export class OverlayRepository {
     return mapDevice(row);
   }
 
+  async replayDeviceEnrollment({
+    deviceId,
+    clerkUserId,
+    tokenHash,
+    label
+  }) {
+    requireString(deviceId, 'deviceId');
+    requireString(clerkUserId, 'clerkUserId');
+    requireTokenHash(tokenHash);
+    requireString(label, 'label');
+
+    const row = await this.database.prepare(`
+      UPDATE devices
+      SET device_id = device_id
+      WHERE device_id = ?
+        AND clerk_user_id = ?
+        AND token_hash = ?
+        AND label = ?
+        AND revoked_at IS NULL
+      RETURNING *
+    `).bind(
+      deviceId,
+      clerkUserId,
+      tokenHash,
+      label
+    ).first();
+    return mapDevice(row);
+  }
+
   async findDeviceById(deviceId) {
     requireString(deviceId, 'deviceId');
     const row = await this.database.prepare(`
