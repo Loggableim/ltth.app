@@ -114,6 +114,7 @@ function createReservedRulesV7Match({
 } = {}) {
   let nowMs = openedAtMs;
   const { sqlite, store } = createStore();
+  const emit = jest.fn();
   insertMonster(sqlite, { id: 'alpha-v7', userId: 'viewer-a' });
   insertMonster(sqlite, {
     id: 'beta-v7',
@@ -125,6 +126,7 @@ function createReservedRulesV7Match({
   const service = createMatchService({
     store,
     now: () => nowMs,
+    emit,
     rulesVersion: 7
   });
   service.join({ userId: 'viewer-a' });
@@ -144,6 +146,7 @@ function createReservedRulesV7Match({
   `).run(JSON.stringify({ charge: chargeB }), match.matchId, 'viewer-b');
   return {
     sqlite,
+    emit,
     service,
     matchId: match.matchId,
     advance: milliseconds => { nowMs += milliseconds; },
@@ -244,6 +247,32 @@ describe('Stream Monsters durable BattleMatchService', () => {
     `).all(matchId).map(row => JSON.parse(row.action_json));
     expect(Object.fromEntries(actions.map(action => [action.actorId, action.before.actor.charge])))
       .toEqual({ 'alpha-v7': 100, 'beta-v7': 75 });
+  });
+
+  test('Rules v7 emits the Special-ready edge once when passive active time reaches 100', () => {
+    const { emit, service, matchId, advance } = createReservedRulesV7Match({
+      chargeA: 95,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+    advance(1_000);
+
+    service.emitSpecialReadyTransitions(service.getMatch(matchId), 11_000);
+    service.emitSpecialReadyTransitions(service.getMatch(matchId), 12_000);
+
+    const ready = emit.mock.calls.filter(([event]) => (
+      event === 'streammonsters:battle_special_charged'
+    ));
+    expect(ready).toEqual([[
+      'streammonsters:battle_special_charged',
+      expect.objectContaining({
+        matchId,
+        round: 1,
+        slot: 2,
+        charge: 100
+      })
+    ]]);
+    expect(JSON.stringify(ready)).not.toMatch(/viewer-a|alpha-v7/);
   });
 
   test('Rules v7 timeout charge uses the persisted action deadline', () => {
@@ -1834,7 +1863,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
       if (rulesVersion === 7) {
         expect(live.chargeWindow).toEqual({
           openedAtMs: 1_000,
-          deadlineMs: 7_000,
+          deadlineMs: 9_000,
           passivePerSecond: 5
         });
         expect(replay.chargeWindow).toEqual(live.chargeWindow);

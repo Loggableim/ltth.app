@@ -199,12 +199,18 @@ function projectBattleSkill(skill = null) {
     nameKey,
     shortText: boundedText(skill.shortText, 240),
     shortTextKey,
+    elementRelation: ['advantage', 'disadvantage', 'neutral'].includes(
+      skill.elementRelation
+    ) ? skill.elementRelation : 'neutral',
     available: skill.available !== false
   };
   if (choice === 'C') {
     projected.chargeRequired = Math.max(1, finiteNumber(skill.chargeRequired, 100));
     const readyAtMs = finiteNumber(skill.readyAtMs);
     if (readyAtMs !== null) projected.readyAtMs = Math.max(0, readyAtMs);
+    projected.unavailableReason = projected.available
+      ? null
+      : boundedText(skill.unavailableReason, 64) || 'special_requires_full_charge';
   }
   return projected;
 }

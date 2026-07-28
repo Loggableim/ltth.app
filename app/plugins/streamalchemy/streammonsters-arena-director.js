@@ -456,6 +456,104 @@
     return beats;
   }
 
+  function buildJackpotActionTimeline(action = {}) {
+    const actorSlot = numeric(action.actorSlot);
+    const targetSlot = numeric(action.targetSlot);
+    const hits = Array.isArray(action.hits) ? action.hits : [];
+    const beats = [
+      { type: 'entrance', atMs: 0, durationMs: 320, actorSlot, targetSlot },
+      {
+        type: 'telegraph',
+        atMs: 320,
+        durationMs: 480,
+        actorSlot,
+        targetSlot,
+        skill: action.skill || null
+      },
+      { type: 'anticipation', atMs: 800, durationMs: 260, actorSlot, targetSlot },
+      { type: 'movement', atMs: 1060, durationMs: 300, actorSlot, targetSlot }
+    ];
+    let cursor = 1360;
+    if (action.skill?.projectile === true || action.skill?.type === 'attack') {
+      beats.push({
+        type: 'projectile',
+        atMs: cursor,
+        durationMs: 280,
+        actorSlot,
+        targetSlot,
+        element: action.skill?.element || null
+      });
+      cursor += 280;
+    }
+    if (hits.some(hit => numeric(hit?.shieldAbsorbed) > 0)) {
+      beats.push({
+        type: 'shield',
+        atMs: cursor,
+        durationMs: 180,
+        targetSlot
+      });
+      cursor += 180;
+    }
+    hits.forEach((hit, index) => {
+      const hitIndex = numeric(hit?.index) || index + 1;
+      beats.push(
+        {
+          type: 'hit',
+          atMs: cursor,
+          durationMs: 120,
+          actorSlot,
+          targetSlot,
+          hitIndex,
+          hpDamage: numeric(hit?.hpDamage),
+          shieldAbsorbed: numeric(hit?.shieldAbsorbed)
+        },
+        {
+          type: 'number_pop',
+          atMs: cursor + 40,
+          durationMs: 220,
+          targetSlot,
+          hitIndex,
+          amount: numeric(hit?.hpDamage)
+        },
+        {
+          type: 'hud_update',
+          atMs: cursor + 120,
+          durationMs: 140,
+          targetSlot,
+          hitIndex
+        },
+        {
+          type: 'recoil',
+          atMs: cursor + 260,
+          durationMs: 160,
+          targetSlot,
+          hitIndex
+        }
+      );
+      cursor += 420;
+    });
+    beats.push({
+      type: 'recovery',
+      atMs: cursor,
+      durationMs: 300,
+      actorSlot,
+      targetSlot
+    });
+    cursor += 300;
+    if (action.terminal) {
+      beats.push(
+        { type: 'knockout', atMs: cursor, durationMs: 700, targetSlot },
+        {
+          type: 'winner',
+          atMs: cursor + 700,
+          durationMs: 1200,
+          winnerSlot: actorSlot
+        }
+      );
+    }
+    return beats;
+  }
+
   function buildArcadeActionBeats(action = {}) {
     const base = buildActionTimeline(action);
     const expanded = [];
@@ -986,6 +1084,7 @@
     buildElementalHourEventPresentation,
     buildEvolutionPresentation,
     buildActionTimeline,
+    buildJackpotActionTimeline,
     buildArcadeTimeline,
     resolveQuality,
     resolveRenderer,

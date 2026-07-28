@@ -5,6 +5,7 @@ const {
   resolveStageSkill
 } = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
+const { elementAdvantage } = require('./battle-rules-v3');
 const { effectiveCombatPower } = require('./evolution-rules');
 const { selectBattleWinner } = require('./battle-tie-break');
 const {
@@ -22,6 +23,7 @@ const STAT_WINDOW_MS = 15_000;
 const RULES_V5_ROSTER_WINDOW_MS = 15_000;
 const RULES_V5_ACTION_WINDOW_MS = 8_000;
 const RULES_V5_STAT_WINDOW_MS = 30_000;
+const RULES_V7_ACTION_WINDOW_MS = 8_000;
 const REMATCH_AVOIDANCE_MS = 10 * 60 * 1000;
 const MATCH_WIDEN_INTERVAL_MS = 30_000;
 const DODGE_WINDOW_MS = 10 * 60 * 1000;
@@ -50,6 +52,15 @@ function parseJson(value, fallback = null) {
   } catch {
     return fallback;
   }
+}
+
+function projectSpecialAvailability({ charge, wasReady = false } = {}) {
+  const available = Math.max(0, Math.min(100, Number(charge) || 0)) >= 100;
+  return {
+    available,
+    unavailableReason: available ? null : 'special_requires_full_charge',
+    readyTransition: available && !wasReady
+  };
 }
 
 class BattleMatchService {
@@ -157,7 +168,9 @@ class BattleMatchService {
       baseCharge: participant?.combatState?.charge,
       openedAtMs: match?.actionOpenedAtMs,
       deadlineMs: match?.actionDeadlineMs,
-      asOfMs
+      asOfMs,
+      active: match?.state === 'action' &&
+        Number(match?.actionDeadlineMs) > Number(match?.actionOpenedAtMs)
     });
   }
 
@@ -175,11 +188,49 @@ class BattleMatchService {
     return this.getMatch(match.matchId);
   }
 
+  emitSpecialReadyTransitions(match, asOfMs = this.now()) {
+    if (!this.isRulesV7(match) || match?.state !== 'action') return 0;
+    const existing = this.db.prepare(`
+      SELECT public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ? AND event_type = 'streammonsters:battle_special_charged'
+    `).all(match.matchId).map(row => parseJson(row.public_payload_json, {}));
+    let emitted = 0;
+    match.participants.forEach(participant => {
+      const baseCharge = Math.max(
+        0,
+        Math.min(100, Number(participant.combatState?.charge) || 0)
+      );
+      if (baseCharge >= 100) return;
+      const charge = this.projectParticipantCharge(participant, match, asOfMs);
+      const wasReady = existing.some(event => (
+        Number(event.round) === match.roundNumber &&
+        Number(event.slot) === participant.slot
+      ));
+      const availability = projectSpecialAvailability({ charge, wasReady });
+      if (!availability.readyTransition) return;
+      this.appendEvent(
+        match.matchId,
+        'streammonsters:battle_special_charged',
+        {
+          matchId: match.matchId,
+          round: match.roundNumber,
+          slot: participant.slot,
+          charge: 100
+        }
+      );
+      existing.push({ round: match.roundNumber, slot: participant.slot });
+      emitted += 1;
+    });
+    return emitted;
+  }
+
   rosterWindowMs(match = null) {
     return this.isRulesV6(match) ? ROSTER_WINDOW_MS : RULES_V5_ROSTER_WINDOW_MS;
   }
 
   actionWindowMs(match = null) {
+    if (this.isRulesV7(match)) return RULES_V7_ACTION_WINDOW_MS;
     return this.isRulesV6(match) ? ACTION_WINDOW_MS : RULES_V5_ACTION_WINDOW_MS;
   }
 
@@ -637,6 +688,14 @@ class BattleMatchService {
   } = {}) {
     const roster = participant?.roster;
     if (!this.isRulesV7(match) || !roster) return [];
+    const opponentElement = match.participants.find(entry => (
+      entry.participantId !== participant.participantId
+    ))?.roster?.element;
+    const elementRelation = elementAdvantage(roster.element, opponentElement)
+      ? 'advantage'
+      : elementAdvantage(opponentElement, roster.element)
+        ? 'disadvantage'
+        : 'neutral';
     const baseCharge = Math.max(0, Math.min(100, Number(charge) || 0));
     return ['A', 'B', 'C'].map((choice, index) => {
       const skill = roster.skills?.find(entry => entry?.choice === choice) ||
@@ -661,6 +720,9 @@ class BattleMatchService {
               )
           )
         : null;
+      const specialAvailability = choice === 'C'
+        ? projectSpecialAvailability({ charge: baseCharge })
+        : null;
       return {
         choice,
         icon: skill.icon,
@@ -668,8 +730,13 @@ class BattleMatchService {
         nameKey: skill.nameKey,
         shortText: skill.shortText,
         shortTextKey: skill.shortTextKey,
-        available: choice !== 'C' || baseCharge >= chargeRequired,
-        ...(choice === 'C' ? { chargeRequired, readyAtMs } : {})
+        elementRelation,
+        available: choice !== 'C' || specialAvailability.available,
+        ...(choice === 'C' ? {
+          chargeRequired,
+          readyAtMs,
+          unavailableReason: specialAvailability.unavailableReason
+        } : {})
       };
     });
   }
@@ -2844,6 +2911,7 @@ class BattleMatchService {
       statsExpired: 0,
       allocationsExpired: 0,
       allocationsOpened: 0,
+      specialReady: 0,
       errors: 0
     };
     result.queuePurged = this.store.purgeBattleQueue(
@@ -2871,6 +2939,21 @@ class BattleMatchService {
       ORDER BY action_deadline_ms, match_id
     `).all(nowMs).forEach(({ match_id: matchId }) => {
       recover('actionsExpired', matchId, () => this.recoverActionMatch(matchId, nowMs));
+    });
+    this.db.prepare(`
+      SELECT match_id FROM streammonsters_matches
+      WHERE state = 'action' AND action_deadline_ms > ?
+      ORDER BY action_deadline_ms, match_id
+    `).all(nowMs).forEach(({ match_id: matchId }) => {
+      try {
+        result.specialReady += this.emitSpecialReadyTransitions(
+          this.getMatch(matchId),
+          nowMs
+        );
+      } catch (error) {
+        result.errors += 1;
+        this.reportError(`battle ready transition ${matchId}`, error);
+      }
     });
     this.db.prepare(`
       SELECT prompt_id FROM streammonsters_stat_prompts
@@ -2967,6 +3050,7 @@ class BattleMatchService {
 }
 
 module.exports = BattleMatchService;
+module.exports.projectSpecialAvailability = projectSpecialAvailability;
 module.exports.ROSTER_WINDOW_MS = ROSTER_WINDOW_MS;
 module.exports.ACTION_WINDOW_MS = ACTION_WINDOW_MS;
 module.exports.STAT_WINDOW_MS = STAT_WINDOW_MS;

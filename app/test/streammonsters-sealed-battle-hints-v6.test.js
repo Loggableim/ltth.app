@@ -58,7 +58,7 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
       matchId: reserved.match.matchId,
       chargeWindow: {
         openedAtMs: 1_000,
-        deadlineMs: 7_000,
+        deadlineMs: 9_000,
         passivePerSecond: 5
       },
       fighters: expect.arrayContaining([
