@@ -384,6 +384,14 @@ class TalkingHeadsPlugin {
     return pending.promise;
   }
 
+  _hasPendingAvatarSpinForUser(userId) {
+    const normalizedUserId = String(userId || '').trim();
+    if (!normalizedUserId) return false;
+    return Array.from(this.pendingAvatarSpins.values()).some((pending) => (
+      String(pending?.userId || '').trim() === normalizedUserId
+    ));
+  }
+
   _completeAvatarSpin(data = {}) {
     const playbackId = String(data.playbackId || '').trim();
     const pending = this.pendingAvatarSpins.get(playbackId);
@@ -498,11 +506,12 @@ class TalkingHeadsPlugin {
     if (!currentAssignment?.selection) return false;
 
     // A cosmetic reroll must never swap the portrait underneath an actively
-    // speaking avatar. Keep just the latest configured gift for this viewer
-    // and run it after the renderer terminal event.
-    if (this.activePlaybackByUser.has(user.userId)) {
+    // speaking avatar or while its first persisted assignment is revealing.
+    // Keep just the latest configured gift for this viewer and run it after
+    // the renderer terminal event.
+    if (this.activePlaybackByUser.has(user.userId) || this._hasPendingAvatarSpinForUser(user.userId)) {
       this.pendingGiftRerolls.set(user.userId, data);
-      this._log(`Avatar reroll deferred until ${user.username} finishes speaking`, 'debug');
+      this._log(`Avatar reroll deferred until ${user.username} finishes speaking or revealing`, 'debug');
       return true;
     }
 
@@ -1915,6 +1924,9 @@ class TalkingHeadsPlugin {
     };
 
     const startHandler = async (payload = {}) => {
+      // TTS retains this alias for legacy consumers. Renderer-authoritative
+      // playback has already been handled above and must not start twice.
+      if (payload.rendererAuthoritative === true) return;
       const source = String(payload.source || '').toLowerCase();
       const isPreview = source === 'talking-heads-preview';
 
@@ -1948,6 +1960,9 @@ class TalkingHeadsPlugin {
     };
 
     const endHandler = (payload = {}) => {
+      // See startHandler: legacy aliases are compatibility-only and must not
+      // stop the renderer-authoritative Talking Heads animation.
+      if (payload.rendererAuthoritative === true) return;
       const userId = payload.userId || payload.username;
       if (!userId || !this.animationController) return;
       this.animationController.stopAnimation(userId);

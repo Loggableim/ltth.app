@@ -782,18 +782,62 @@ class TTSPlugin {
     }
 
     _armRendererWatchdog(record) {
-        if (!record || record.settled) return;
+        if (!record || record.settled || record.watchdogsArmed !== true) return;
         if (record.watchdogTimer) clearTimeout(record.watchdogTimer);
         record.watchdogTimer = setTimeout(() => {
             this._settleRendererPlayback(record.playbackId, 'failed', { reason: 'renderer-watchdog' });
         }, record.watchdogMs);
     }
 
+    _activateRendererPlayback(playbackId, { durationMs } = {}) {
+        const record = this._ensureRendererPlaybackState().get(String(playbackId || ''));
+        if (!record || record.settled) return null;
+
+        if (Number.isFinite(Number(durationMs))) {
+            record.durationMs = Math.max(0, Math.round(Number(durationMs)));
+        }
+        record.watchdogsArmed = true;
+        this._armRendererWatchdog(record);
+        if (!record.maxTimer) {
+            record.maxTimer = setTimeout(() => {
+                this._settleRendererPlayback(record.playbackId, 'failed', { reason: 'renderer-max-watchdog' });
+            }, this._getRendererPlaybackMaxMs());
+        }
+        return record.completion;
+    }
+
+    _emitLegacyRendererAlias(record, phase, payload) {
+        const aliasPayload = {
+            ...payload,
+            duration: Math.max(0, Math.round(Number(record.durationMs) || 0)),
+            isStreaming: record.meta?.isStreaming === true,
+            rendererAuthoritative: true,
+            rendererPhase: phase === 'started' ? 'started' : 'ended'
+        };
+
+        if (phase === 'started') {
+            if (record.meta?.isStreaming === true) {
+                this.api.emit('tts:playback:started', {
+                    ...aliasPayload,
+                    isStreaming: true
+                });
+                return;
+            }
+            this.api.emit('tts:playback:started', aliasPayload);
+            return;
+        }
+
+        this.api.emit('tts:playback:ended', {
+            ...aliasPayload,
+            rendererOutcome: phase === 'ended' ? 'ended' : 'failed'
+        });
+    }
+
     /**
      * Create the server-side waiter before dispatching audio. Only renderer
      * acknowledgements can settle it, except its bounded watchdogs.
      */
-    _beginRendererPlayback(meta = {}, { durationMs = 0 } = {}) {
+    _beginRendererPlayback(meta = {}, { durationMs = 0, deferWatchdogs = false } = {}) {
         const playbackId = this._getRendererPlaybackId(meta);
         if (!playbackId) {
             return Promise.resolve({ playbackId: null, outcome: 'failed', reason: 'missing-playback-id' });
@@ -808,6 +852,8 @@ class TTSPlugin {
             meta: { ...meta, id: meta.id || playbackId, playbackId },
             started: false,
             settled: false,
+            durationMs: Math.max(0, Math.round(Number(durationMs) || 0)),
+            watchdogsArmed: deferWatchdogs !== true,
             watchdogMs: this._getRendererWatchdogMs(durationMs),
             watchdogTimer: null,
             maxTimer: null,
@@ -818,10 +864,9 @@ class TTSPlugin {
             record.resolve = resolve;
         });
         active.set(playbackId, record);
-        this._armRendererWatchdog(record);
-        record.maxTimer = setTimeout(() => {
-            this._settleRendererPlayback(playbackId, 'failed', { reason: 'renderer-max-watchdog' });
-        }, this._getRendererPlaybackMaxMs());
+        if (record.watchdogsArmed) {
+            this._activateRendererPlayback(playbackId, { durationMs });
+        }
         return record.completion;
     }
 
@@ -838,6 +883,7 @@ class TTSPlugin {
         const phase = outcome === 'ended' ? 'ended' : 'failed';
         const payload = this._rendererPayload(record, details);
         this.api.emit(`tts:renderer:${phase}`, payload);
+        this._emitLegacyRendererAlias(record, phase, payload);
         record.resolve({
             playbackId: record.playbackId,
             outcome: phase,
@@ -855,8 +901,10 @@ class TTSPlugin {
         if (event === 'tts:renderer:started') {
             if (record.started) return false;
             record.started = true;
-            this.api.emit('tts:renderer:started', this._rendererPayload(record, data));
-            this._armRendererWatchdog(record);
+            this._activateRendererPlayback(playbackId);
+            const payload = this._rendererPayload(record, data);
+            this.api.emit('tts:renderer:started', payload);
+            this._emitLegacyRendererAlias(record, 'started', payload);
             return true;
         }
 
@@ -3387,7 +3435,7 @@ class TTSPlugin {
 
             // Step 5: Generate TTS (no caching)
             // For Fish Audio (not in quality mode), use lazy queuing with streaming
-            const useLazyQueuing = selectedEngine === 'fishaudio' && requestOverrides.streaming;
+            const useLazyQueuing = selectedEngine === 'fishaudio' && this.config.performanceMode !== 'quality' && requestOverrides.streaming;
             
             this._logDebug('SPEAK_STEP5', 'Starting TTS synthesis', {
                 engine: selectedEngine,
@@ -3901,6 +3949,7 @@ class TTSPlugin {
         } catch (streamError) {
             this._recordEngineFailure(item.engine, streamError);
             if (!ttsEngine || typeof ttsEngine.synthesize !== 'function') throw streamError;
+            // fallback to regular synthesis when the streaming setup cannot start
             const fallbackAudio = await this._synthesizeWithCircuit(
                 item.engine,
                 item.text,
@@ -3923,50 +3972,81 @@ class TTSPlugin {
             throw new Error('Streaming response did not contain a readable stream');
         }
 
+        // Reserve a completion record before the first transport chunk reaches
+        // Dashboard. It deliberately has no playback watchdog until buffered
+        // audio is ready at EOF, yet can accept an early autoplay/renderer
+        // failure immediately.
+        const completion = this._beginRendererPlayback(playbackMeta, {
+            deferWatchdogs: true
+        });
         const chunks = [];
         let totalBytes = 0;
-        let completion = null;
-        try {
-            await new Promise((resolve, reject) => {
-                stream.on('data', (chunk) => {
-                    chunks.push(chunk);
-                    totalBytes += chunk.length;
-                    this.api.emit('tts:stream:chunk', {
-                        id: playbackMeta.id,
-                        playbackId: playbackMeta.playbackId,
-                        userId: playbackMeta.userId,
-                        chunk: chunk.toString('base64'),
-                        isFirst: chunks.length === 1,
-                        volume: item.volume,
-                        speed: item.speed,
-                        format: streamResult.format || 'mp3',
-                        source: playbackMeta.source,
-                        duckOther: item.duckOther ?? this.config.duckOtherAudio,
-                        duckVolume: this.config.duckVolume
-                    });
+        const playbackId = playbackMeta.playbackId;
+        const streamResultPromise = new Promise((resolve) => {
+            stream.on('data', (chunk) => {
+                // If Dashboard has already rejected this playback (for example
+                // due to autoplay lock), keep draining the source without
+                // retaining or broadcasting more chunks.
+                if (!this._ensureRendererPlaybackState().has(playbackId)) return;
+
+                chunks.push(chunk);
+                totalBytes += chunk.length;
+                const base64Chunk = chunk.toString('base64');
+                this.api.emit('tts:stream:chunk', {
+                    id: item.id,
+                    playbackId,
+                    userId: playbackMeta.userId,
+                    chunk: base64Chunk,
+                    isFirst: chunks.length === 1,
+                    volume: item.volume,
+                    speed: item.speed,
+                    format: streamResult.format || 'mp3',
+                    source: playbackMeta.source,
+                    duckOther: item.duckOther ?? this.config.duckOtherAudio,
+                    duckVolume: this.config.duckVolume
                 });
-                stream.once('end', () => {
+            });
+            stream.once('end', () => {
+                const record = this._ensureRendererPlaybackState().get(playbackId);
+                if (record && !record.settled) {
                     const streamedAudio = chunks.length > 0 ? Buffer.concat(chunks).toString('base64') : null;
                     const durationInfo = this._resolvePlaybackDuration(item, streamedAudio);
-                    completion = this._beginRendererPlayback(playbackMeta, {
+                    this._activateRendererPlayback(playbackId, {
                         durationMs: durationInfo.durationMs
                     });
                     this._emitPlaybackPrepared(playbackMeta, avatarGate, durationInfo.durationMs);
-                    this.api.emit('tts:stream:end', {
-                        id: playbackMeta.id,
-                        playbackId: playbackMeta.playbackId,
-                        totalChunks: chunks.length,
-                        totalBytes,
-                        format: streamResult.format || 'mp3',
-                        source: playbackMeta.source
-                    });
-                    resolve();
+                }
+
+                // This remains a transport EOF marker, not a playback terminal
+                // event. It lets Dashboard release a rejected stream buffer.
+                this.api.emit('tts:stream:end', {
+                    id: item.id,
+                    playbackId,
+                    totalChunks: chunks.length,
+                    totalBytes,
+                    format: streamResult.format || 'mp3',
+                    source: playbackMeta.source
                 });
-                stream.once('error', reject);
+                resolve({ type: 'stream-ended' });
             });
-        } catch (error) {
-            this._recordEngineFailure(item.engine, error);
-            throw error;
+            stream.once('error', (error) => {
+                const didSettle = this._settleRendererPlayback(playbackId, 'failed', {
+                    reason: 'stream-error'
+                });
+                resolve({ type: 'stream-error', error, didSettle });
+            });
+        });
+
+        const firstOutcome = await Promise.race([
+            streamResultPromise,
+            completion.then((result) => ({ type: 'renderer-terminal', result }))
+        ]);
+        if (firstOutcome.type === 'stream-error') {
+            this._recordEngineFailure(item.engine, firstOutcome.error);
+            throw firstOutcome.error;
+        }
+        if (firstOutcome.type === 'renderer-terminal') {
+            return firstOutcome.result;
         }
 
         return completion;

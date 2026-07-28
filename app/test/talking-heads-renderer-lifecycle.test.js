@@ -136,6 +136,42 @@ describe('Talking Heads renderer lifecycle', () => {
     expect(plugin.animationController.endExternalAnimation).not.toHaveBeenCalled();
   });
 
+  test('ignores renderer-authoritative legacy aliases so the avatar starts only once', async () => {
+    const { plugin, api } = createTalkingHeads();
+    plugin._handleTTSEvent = jest.fn().mockResolvedValue();
+    plugin.animationController = {
+      endExternalAnimation: jest.fn(),
+      setMouthIntensity: jest.fn(),
+      stopAnimation: jest.fn()
+    };
+
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    await handlers.get('tts:renderer:started')({
+      playbackId: 'renderer-authoritative',
+      userId: 'viewer-once',
+      username: 'Viewer Once',
+      source: 'chat'
+    });
+    await handlers.get('tts:playback:started')({
+      playbackId: 'renderer-authoritative',
+      userId: 'viewer-once',
+      username: 'Viewer Once',
+      rendererAuthoritative: true,
+      rendererPhase: 'started'
+    });
+    handlers.get('tts:playback:ended')({
+      playbackId: 'renderer-authoritative',
+      userId: 'viewer-once',
+      rendererAuthoritative: true,
+      rendererPhase: 'ended',
+      rendererOutcome: 'ended'
+    });
+
+    expect(plugin._handleTTSEvent).toHaveBeenCalledTimes(1);
+    expect(plugin.animationController.stopAnimation).not.toHaveBeenCalled();
+  });
+
   test('keeps external mouth motion alive only until a matching renderer terminal event', async () => {
     const io = { emit: jest.fn() };
     const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };

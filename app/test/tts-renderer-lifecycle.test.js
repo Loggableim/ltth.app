@@ -80,6 +80,21 @@ describe('TTS renderer lifecycle', () => {
     });
     expect(lifecycleEvents(plugin.api, 'tts:renderer:started')).toHaveLength(1);
     expect(lifecycleEvents(plugin.api, 'tts:renderer:ended')).toHaveLength(1);
+    expect(lifecycleEvents(plugin.api, 'tts:playback:started')).toEqual([
+      expect.objectContaining({
+        playbackId: 'playback-a',
+        rendererAuthoritative: true,
+        rendererPhase: 'started'
+      })
+    ]);
+    expect(lifecycleEvents(plugin.api, 'tts:playback:ended')).toEqual([
+      expect.objectContaining({
+        playbackId: 'playback-a',
+        rendererAuthoritative: true,
+        rendererPhase: 'ended',
+        rendererOutcome: 'ended'
+      })
+    ]);
     expect(lifecycleEvents(plugin.api, 'tts:renderer:started')[0]).toEqual(expect.objectContaining({
       playbackId: 'playback-a',
       id: 'playback-a',
@@ -123,6 +138,15 @@ describe('TTS renderer lifecycle', () => {
       reason: 'renderer-watchdog'
     });
     expect(lifecycleEvents(plugin.api, 'tts:renderer:failed')).toHaveLength(1);
+    expect(lifecycleEvents(plugin.api, 'tts:playback:ended')).toEqual([
+      expect.objectContaining({
+        playbackId: 'watchdog',
+        rendererAuthoritative: true,
+        rendererPhase: 'ended',
+        rendererOutcome: 'failed',
+        reason: 'renderer-watchdog'
+      })
+    ]);
   });
 
   test('uses the Talking Heads preparation gate when it is available', async () => {
@@ -247,8 +271,81 @@ describe('TTS renderer lifecycle', () => {
     }));
 
     plugin._handleRendererLifecycle('tts:renderer:started', { playbackId: 'stream-audio' });
+    expect(lifecycleEvents(plugin.api, 'tts:playback:started')).toEqual([
+      expect.objectContaining({
+        playbackId: 'stream-audio',
+        isStreaming: true,
+        rendererAuthoritative: true,
+        rendererPhase: 'started'
+      })
+    ]);
     plugin._handleRendererLifecycle('tts:renderer:ended', { playbackId: 'stream-audio' });
     await expect(playback).resolves.toBeUndefined();
+  });
+
+  test('settles a streaming playback promptly when Dashboard reports autoplay lock before EOF', async () => {
+    const plugin = createPlugin();
+    const stream = new PassThrough();
+    plugin._prepareAvatarForPlayback = jest.fn().mockResolvedValue({ state: 'existing', created: false });
+    plugin._assertEngineCircuitAllows = jest.fn();
+    plugin._recordEngineSuccess = jest.fn();
+    plugin._recordEngineFailure = jest.fn();
+    plugin._resolvePlaybackDuration = jest.fn(() => ({ durationMs: 10, source: 'test', format: 'mp3' }));
+    plugin.engines.tiktok = {
+      synthesizeStream: jest.fn().mockResolvedValue({ stream, format: 'mp3' })
+    };
+    const item = {
+      id: 'stream-autoplay-lock',
+      userId: 'viewer-stream',
+      username: 'Viewer Stream',
+      text: 'Streaming hello',
+      voice: 'voice-stream',
+      engine: 'tiktok',
+      hasAssignedVoice: true,
+      source: 'chat',
+      volume: 80,
+      speed: 1,
+      isStreaming: true
+    };
+
+    const playback = plugin._playAudio(item);
+    try {
+      await new Promise((resolve) => setImmediate(resolve));
+      stream.write(Buffer.from('first-chunk'));
+
+      expect(plugin._activeRendererPlaybacks.get('stream-autoplay-lock')).toEqual(expect.objectContaining({
+        watchdogTimer: null,
+        maxTimer: null
+      }));
+      expect(plugin._handleRendererLifecycle('tts:renderer:failed', {
+        playbackId: 'stream-autoplay-lock',
+        reason: 'audio-locked'
+      })).toBe(true);
+
+      await expect(playback).resolves.toBeUndefined();
+      expect(lifecycleEvents(plugin.api, 'tts:playback:prepared')).toHaveLength(0);
+      expect(lifecycleEvents(plugin.api, 'tts:renderer:failed')).toEqual([
+        expect.objectContaining({
+          playbackId: 'stream-autoplay-lock',
+          reason: 'audio-locked'
+        })
+      ]);
+
+      stream.end();
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(lifecycleEvents(plugin.api, 'tts:stream:end')).toEqual([
+        expect.objectContaining({ playbackId: 'stream-autoplay-lock' })
+      ]);
+      expect(lifecycleEvents(plugin.api, 'tts:playback:prepared')).toHaveLength(0);
+    } finally {
+      if (!stream.writableEnded) stream.end();
+      await new Promise((resolve) => setImmediate(resolve));
+      plugin._handleRendererLifecycle('tts:renderer:failed', {
+        playbackId: 'stream-autoplay-lock',
+        reason: 'test-cleanup'
+      });
+      await playback.catch(() => {});
+    }
   });
 
   test('registers renderer acknowledgements as local socket input only', async () => {
