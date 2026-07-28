@@ -276,6 +276,7 @@ function projectBattleChargeWindow(chargeWindow = null) {
   const openedAtMs = finiteNumber(chargeWindow.openedAtMs);
   const deadlineMs = finiteNumber(chargeWindow.deadlineMs);
   const passivePerSecond = finiteNumber(chargeWindow.passivePerSecond);
+  const maxGain = finiteNumber(chargeWindow.maxGain);
   if (
     openedAtMs === null ||
     deadlineMs === null ||
@@ -289,6 +290,9 @@ function projectBattleChargeWindow(chargeWindow = null) {
     openedAtMs: Math.max(0, openedAtMs),
     deadlineMs: Math.max(0, deadlineMs),
     passivePerSecond,
+    ...(maxGain !== null && maxGain >= 0
+      ? { maxGain: Math.min(100, maxGain) }
+      : {}),
     ...(finiteNumber(chargeWindow.pausedMs) > 0
       ? { pausedMs: finiteNumber(chargeWindow.pausedMs) }
       : {}),

@@ -356,6 +356,46 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('ready');
   });
 
+  test('keeps projected Special charge capped during a longer bilingual choice window', () => {
+    mountArena();
+    let currentTime = 8_000;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { now: () => currentTime }
+    });
+    const special = {
+      choice: 'C',
+      name: 'Inferno',
+      chargeRequired: 100,
+      available: false
+    };
+
+    view.openChoice({
+      matchId: 'match-bilingual-charge-cap',
+      round: 1,
+      deadlineMs: 11_000,
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 11_000,
+        passivePerSecond: 5,
+        maxGain: 30
+      },
+      fighters: [
+        { slot: 1, name: 'Ashfang', charge: 60, skills: [special] },
+        { slot: 2, name: 'Ripple', charge: 60, skills: [special] }
+      ]
+    });
+
+    for (const elapsedSeconds of [7, 8, 9, 10]) {
+      currentTime = 1_000 + (elapsedSeconds * 1_000);
+      view.renderCountdown();
+      const specialCard = document.querySelector('[data-slot="1"] [data-skill="C"]');
+      expect(specialCard.querySelector('.skill-charge').textContent).toBe('90%');
+      expect(specialCard.classList).toContain('charging');
+      expect(specialCard.classList).not.toContain('ready');
+    }
+  });
+
   test('shows a sealed lock without selecting a skill until both choices are revealed', () => {
     mountArena();
     const view = ArenaView.createArenaView({ document });

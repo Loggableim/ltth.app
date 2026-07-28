@@ -154,11 +154,13 @@
       const openedAtMs = numeric(source.openedAtMs, -1);
       const deadlineMs = numeric(source.deadlineMs, -1);
       const passivePerSecond = Math.max(0, numeric(source.passivePerSecond));
+      const maxGain = numeric(source.maxGain, -1);
       if (openedAtMs < 0 || deadlineMs < openedAtMs) return null;
       return {
         openedAtMs,
         deadlineMs,
         passivePerSecond,
+        ...(maxGain >= 0 ? { maxGain: Math.min(100, maxGain) } : {}),
         pausedMs: Math.max(0, numeric(source.pausedMs)),
         pauseStartedAtMs: numeric(source.pauseStartedAtMs, -1),
         pauseUntilMs: numeric(source.pauseUntilMs, -1)
@@ -222,20 +224,27 @@
               ) - Math.max(window.openedAtMs, window.pauseStartedAtMs)
             )
           : 0;
-        const projectedCharge = window
-          ? numeric(fighter.charge) + (
-            (
+        const baseCharge = numeric(fighter.charge);
+        const passiveGain = window
+          ? Math.max(0, (
               asOfMs -
               window.openedAtMs -
               window.pausedMs -
               currentPauseMs
-            ) / 1_000
-          ) * window.passivePerSecond
-          : numeric(fighter.charge);
+            ) / 1_000) * window.passivePerSecond
+          : 0;
+        const projectedCharge = window
+          ? baseCharge + Math.min(
+              passiveGain,
+              numeric(window.maxGain, Number.POSITIVE_INFINITY)
+            )
+          : baseCharge;
         const readyAtMs = numeric(skill.readyAtMs, Number.POSITIVE_INFINITY);
+        const canReachRequired = !window ||
+          numeric(window.maxGain, Number.POSITIVE_INFINITY) >= required - baseCharge;
         const ready = skill.available === true ||
           projectedCharge >= required ||
-          asOfMs >= readyAtMs;
+          (canReachRequired && asOfMs >= readyAtMs);
         const charge = ready ? required : Math.max(0, Math.min(required, projectedCharge));
         setSkillText('skill-charge', `${Math.round((charge / required) * 100)}%`);
         card.classList.toggle('charging', !ready);

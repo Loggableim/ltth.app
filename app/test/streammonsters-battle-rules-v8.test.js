@@ -12,6 +12,9 @@ const {
   MAX_PASSIVE_CHARGE_PER_ROUND,
   projectPassiveCharge
 } = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
+const PublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
 
 function createStore() {
   const sqlite = new Database(':memory:');
@@ -166,6 +169,32 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(special).not.toHaveProperty('readyAtMs');
   });
 
+  test('publishes the v8 passive charge cap through live and replay projections', () => {
+    const { emit, service, matchId } = createLockedMatch({
+      localeCount: 2,
+      secondsPerLocale: 5
+    });
+    const opened = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_choice_opened'
+    ))?.[1];
+    const projector = new PublicEventProjector();
+
+    expect(opened.chargeWindow).toEqual(expect.objectContaining({
+      openedAtMs: 1_000,
+      deadlineMs: 11_000,
+      passivePerSecond: 5,
+      maxGain: 30
+    }));
+    expect(projector.project(
+      'streammonsters:battle_choice_opened',
+      opened
+    ).chargeWindow).toEqual(opened.chargeWindow);
+
+    const replayOpened = service.getPublicNormalizedReplay(matchId, 0, 100)
+      .events.find(event => event.type === 'streammonsters:battle_choice_opened');
+    expect(replayOpened.payload.chargeWindow).toEqual(opened.chargeWindow);
+  });
+
   test('persists bounded charge ticks at the authoritative second lock', () => {
     const { sqlite, service, matchId, setNow } = createLockedMatch({
       localeCount: 2,
@@ -301,6 +330,51 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       terminalReason: 'knockout',
       knockout: { round: 4, remainingHp: 12, maxHp: 45 }
     }));
+  });
+
+  test('keeps the normalized replay winner at its battle-time public snapshot', () => {
+    const { sqlite, service, matchId } = createLockedMatch();
+    sqlite.prepare(`
+      INSERT INTO streammonsters_viewer_identities (
+        platform_user_id, canonical_user_id, current_unique_id, updated_at_ms
+      ) VALUES ('1234567890123456789', 'viewer-a', 'battle_name', 1)
+    `).run();
+    service.battleService.resolveInteractiveRound = jest.fn(() => ({
+      terminal: true,
+      winnerId: 'alpha-v8',
+      state: {
+        'alpha-v8': { hp: 12, maxHp: 30, shield: 0, charge: 30 },
+        'beta-v8': { hp: 0, maxHp: 30, shield: 0, charge: 20 }
+      },
+      actions: []
+    }));
+
+    submitRound(service, 1);
+
+    const completedReplay = service.getPublicNormalizedReplay(matchId, 0, 100);
+    const completedEvent = completedReplay.events.find(event => (
+      event.type === 'streammonsters:battle_completed'
+    ));
+    const battleTimeWinner = completedEvent.payload.winner;
+    expect(completedReplay.result.winner).toEqual(battleTimeWinner);
+
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters
+      SET name = 'Changed Later', level = 20, evolution_stage = 3
+      WHERE monster_id = 'alpha-v8'
+    `).run();
+    sqlite.prepare(`
+      UPDATE streammonsters_viewer_identities
+      SET current_unique_id = 'changed_later', updated_at_ms = 2
+      WHERE canonical_user_id = 'viewer-a'
+    `).run();
+
+    const replayAfterMutation = service.getPublicNormalizedReplay(matchId, 0, 100);
+    const persistedCompletedEvent = replayAfterMutation.events.find(event => (
+      event.type === 'streammonsters:battle_completed'
+    ));
+    expect(persistedCompletedEvent.payload.winner).toEqual(battleTimeWinner);
+    expect(replayAfterMutation.result.winner).toEqual(battleTimeWinner);
   });
 
   test('persists a simultaneous KO as a winnerless draw', () => {

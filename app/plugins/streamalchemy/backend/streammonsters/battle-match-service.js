@@ -190,6 +190,9 @@ class BattleMatchService {
       openedAtMs: Number(match.actionOpenedAtMs) || 0,
       deadlineMs: Number(match.actionDeadlineMs) || 0,
       passivePerSecond: PASSIVE_CHARGE_PER_SECOND,
+      ...(this.isRulesV8(match) ? {
+        maxGain: MAX_PASSIVE_CHARGE_PER_ROUND
+      } : {}),
       ...(pausedMs > 0 ? { pausedMs } : {}),
       ...(Number.isFinite(pauseStartedAtMs) ? { pauseStartedAtMs } : {}),
       ...(Number.isFinite(pauseUntilMs) ? { pauseUntilMs } : {}),
@@ -1864,6 +1867,7 @@ class BattleMatchService {
         rulesVersion: match.rulesVersion,
         seed: match.seed,
         winnerMonsterId: resolvedWinnerMonsterId,
+        winner: winnerPublic,
         completion,
         terminalReason,
         knockout,
@@ -2310,7 +2314,10 @@ class BattleMatchService {
         ? {
             openedAtMs,
             deadlineMs,
-            passivePerSecond: PASSIVE_CHARGE_PER_SECOND
+            passivePerSecond: PASSIVE_CHARGE_PER_SECOND,
+            ...(this.isRulesV8(match) ? {
+              maxGain: MAX_PASSIVE_CHARGE_PER_ROUND
+            } : {})
           }
         : null;
       return {
@@ -2696,6 +2703,10 @@ class BattleMatchService {
     const winner = match.participants.find(participant => (
       participant.lockedMonsterId === match.winnerMonsterId
     ));
+    const persistedWinner = match.result.winner &&
+      typeof match.result.winner === 'object'
+      ? this.sanitizePublicMonster(match.result.winner)
+      : null;
     const forfeited = match.result.forfeitedParticipantId
       ? match.participants.find(participant => (
           participant.participantId === match.result.forfeitedParticipantId
@@ -2720,12 +2731,12 @@ class BattleMatchService {
       : null;
     return {
       winnerSlot: winner?.slot || 0,
-      winner: winner
+      winner: persistedWinner || (winner
         ? this.projectPublicMonster(
             winner,
             this.store.getMonster(winner.lockedMonsterId)
           )
-        : null,
+        : null),
       completion: match.result.completion === 'forfeit' ? 'forfeit' : 'battle',
       forfeitedSlot: forfeited?.slot || null,
       ...(terminalReason ? { terminalReason, knockout } : {}),
