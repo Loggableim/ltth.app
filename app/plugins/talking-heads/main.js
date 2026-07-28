@@ -14,6 +14,9 @@ const CacheManager = require('./utils/cache-manager');
 const RoleManager = require('./utils/role-manager');
 const AvatarLotteryManager = require('./utils/avatar-lottery-manager');
 
+const ANIMATION_IDLE_BEFORE_FADE_MS = 200;
+const SPRITE_BROWSER_DELIVERY_GRACE_MS = 1000;
+
 class TalkingHeadsPlugin {
   constructor(api) {
     this.api = api;
@@ -2236,9 +2239,11 @@ class TalkingHeadsPlugin {
       }
       const generatedOwnerId = this._playbackAssetOwnerId(playbackId);
       if (generatedOwnerId && this.cacheManager?.releaseGeneratedAssetOwner) {
-        this.cacheManager.releaseGeneratedAssetOwner(generatedOwnerId).catch((error) => {
-          this.logger.warn(`TalkingHeads: Playback asset cleanup failed for ${playbackId}`, error);
-        });
+        const fadeOutDuration = Math.max(0, Number(this.config.fadeOutDuration) || 300);
+        this._scheduleGeneratedAssetRelease(
+          generatedOwnerId,
+          ANIMATION_IDLE_BEFORE_FADE_MS + fadeOutDuration + SPRITE_BROWSER_DELIVERY_GRACE_MS
+        );
       }
       const pendingGift = this.pendingGiftRerolls.get(userId);
       if (pendingGift) {

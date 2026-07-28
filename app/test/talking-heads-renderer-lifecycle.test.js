@@ -1,5 +1,11 @@
+const fs = require('fs').promises;
+const os = require('os');
+const path = require('path');
+const Database = require('better-sqlite3');
+
 const TalkingHeadsPlugin = require('../plugins/talking-heads/main');
 const AnimationController = require('../plugins/talking-heads/engines/animation-controller');
+const CacheManager = require('../plugins/talking-heads/utils/cache-manager');
 
 function createTalkingHeads() {
   const io = { emit: jest.fn() };
@@ -164,33 +170,90 @@ describe('Talking Heads renderer lifecycle', () => {
     expect(plugin.animationController.endExternalAnimation).not.toHaveBeenCalled();
   });
 
-  test('releases generated winner frames only for the matching renderer terminal playback', async () => {
-    const { plugin, api } = createTalkingHeads();
-    plugin.animationController = {
-      setMouthIntensity: jest.fn(),
-      endExternalAnimation: jest.fn()
-    };
-    plugin.cacheManager = {
-      releaseGeneratedAssetOwner: jest.fn().mockResolvedValue(5)
-    };
-    plugin.activePlaybackByUser.set('same-user', 'newer-playback');
-
-    plugin._registerPlaybackBridge();
-    const handlers = new Map(api.pluginLoader.on.mock.calls);
-    handlers.get('tts:renderer:ended')({
-      playbackId: 'stale-playback',
-      userId: 'same-user'
+  test('keeps renderer sprites through fade and delivery grace before releasing only the ended playback owner', async () => {
+    const { plugin, api, io } = createTalkingHeads();
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'talking-heads-lifecycle-'));
+    const db = new Database(':memory:');
+    const cacheManager = new CacheManager(dataDir, db, api.logger, {
+      cacheEnabled: true,
+      cacheDuration: 60 * 60 * 1000
     });
-    expect(plugin.cacheManager.releaseGeneratedAssetOwner).not.toHaveBeenCalled();
+    await cacheManager.init();
+    const avatarsDir = path.join(dataDir, 'avatars');
+    const endedOnlySprite = path.join(avatarsDir, 'asset_boba_111111111111_idle_neutral.svg');
+    const sharedSprite = path.join(avatarsDir, 'asset_boba_222222222222_idle_neutral.svg');
 
-    handlers.get('tts:renderer:ended')({
-      playbackId: 'newer-playback',
-      userId: 'same-user'
-    });
-    await Promise.resolve();
+    try {
+      await cacheManager.materializeGeneratedAssets(
+        'playback:short-audio',
+        [endedOnlySprite, sharedSprite],
+        Date.now() + 60 * 60 * 1000,
+        async () => {
+          await fs.mkdir(avatarsDir, { recursive: true });
+          await Promise.all([
+            fs.writeFile(endedOnlySprite, '<svg></svg>'),
+            fs.writeFile(sharedSprite, '<svg></svg>')
+          ]);
+        }
+      );
+      await cacheManager.registerGeneratedAssets(
+        'playback:newer-audio',
+        [sharedSprite],
+        Date.now() + 60 * 60 * 1000
+      );
 
-    expect(plugin.cacheManager.releaseGeneratedAssetOwner)
-      .toHaveBeenCalledWith('playback:newer-playback');
+      jest.useFakeTimers();
+      plugin.config.fadeOutDuration = 300;
+      plugin.config.obsEnabled = false;
+      plugin.cacheManager = cacheManager;
+      plugin.animationController = new AnimationController(io, api.logger, plugin.config, null);
+      plugin.animationController.startAnimation(
+        'same-user',
+        'Viewer',
+        { idle_neutral: '/api/talkingheads/sprite/asset_boba_111111111111_idle_neutral.svg' },
+        5000,
+        { playbackId: 'short-audio', externalLifecycle: true }
+      );
+      plugin.activePlaybackByUser.set('same-user', 'short-audio');
+
+      plugin._registerPlaybackBridge();
+      const handlers = new Map(api.pluginLoader.on.mock.calls);
+      handlers.get('tts:renderer:ended')({
+        playbackId: 'short-audio',
+        userId: 'same-user'
+      });
+      await cacheManager.generatedAssetLock;
+
+      expect(plugin.activePlaybackByUser.has('same-user')).toBe(false);
+      expect(plugin.animationController.activeAnimations.get('same-user').state).toBe('fading_out');
+      await expect(fs.access(endedOnlySprite)).resolves.toBeUndefined();
+      expect(db.prepare(
+        'SELECT owner_id FROM talking_heads_generated_assets WHERE asset_path = ? ORDER BY owner_id'
+      ).all(endedOnlySprite)).toEqual([{ owner_id: 'playback:short-audio' }]);
+
+      await jest.advanceTimersByTimeAsync(1499);
+      expect(io.emit).toHaveBeenCalledWith('talkingheads:animation:end', expect.objectContaining({
+        playbackId: 'short-audio',
+        fadeOutDuration: 300
+      }));
+      await expect(fs.access(endedOnlySprite)).resolves.toBeUndefined();
+
+      await jest.advanceTimersByTimeAsync(1);
+      await cacheManager.generatedAssetLock;
+      await expect(fs.access(endedOnlySprite)).rejects.toMatchObject({ code: 'ENOENT' });
+      await expect(fs.access(sharedSprite)).resolves.toBeUndefined();
+      expect(db.prepare(
+        'SELECT owner_id FROM talking_heads_generated_assets WHERE asset_path = ? ORDER BY owner_id'
+      ).all(sharedSprite)).toEqual([{ owner_id: 'playback:newer-audio' }]);
+
+      await cacheManager.releaseGeneratedAssetOwner('playback:newer-audio');
+      await expect(fs.access(sharedSprite)).rejects.toMatchObject({ code: 'ENOENT' });
+    } finally {
+      plugin.animationController?.stopAllAnimations();
+      plugin.animationController?.clearAllTimeouts();
+      db.close();
+      await fs.rm(dataDir, { recursive: true, force: true });
+    }
   });
 
   test('ignores renderer-authoritative legacy aliases so the avatar starts only once', async () => {
