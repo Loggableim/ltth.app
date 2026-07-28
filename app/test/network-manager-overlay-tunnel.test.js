@@ -186,6 +186,26 @@ describe('NetworkManager overlay Quick Tunnel', () => {
     expect(manualChild.kill).toHaveBeenCalledWith('SIGTERM');
   });
 
+  test('shutdown cancels an in-flight overlay start and rejects late publication', async () => {
+    const { manager, child } = createManager();
+    const resultPromise = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    manager.shutdown();
+    child.emit('exit', 0);
+
+    await expect(resultPromise).rejects.toMatchObject({
+      code: 'OVERLAY_TUNNEL_CANCELLED'
+    });
+    child.stderr.write('https://late-shutdown.trycloudflare.com\n');
+
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+    expect(manager.overlayTunnelStarting).toBeNull();
+    expect(manager.overlayTunnelProcess).toBeNull();
+    expect(manager.overlayTunnelURL).toBeNull();
+  });
+
   test('reports overlay status and only current Quick Tunnel hostnames', async () => {
     const { manager, child } = createManager();
     manager.tunnelURL = 'https://manual-quick.trycloudflare.com';

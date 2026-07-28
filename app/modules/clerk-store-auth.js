@@ -26,6 +26,22 @@ function normalizeList(value) {
   return items;
 }
 
+function normalizeExactList(value) {
+  const rawItems = Array.isArray(value) ? value : String(value || '').split(',');
+  const items = [];
+  const seen = new Set();
+
+  for (const rawItem of rawItems) {
+    const item = cleanEnvValue(rawItem);
+    if (item && !seen.has(item)) {
+      seen.add(item);
+      items.push(item);
+    }
+  }
+
+  return items;
+}
+
 function parseCookies(cookieHeader = '') {
   const cookies = {};
 
@@ -159,6 +175,33 @@ function deriveClerkFrontendDomain(publishableKey) {
   }
 }
 
+function normalizeClerkIssuer(value) {
+  const raw = cleanEnvValue(value);
+  if (!raw) {
+    return '';
+  }
+  let parsed;
+  try {
+    parsed = new URL(
+      raw.includes('://') ? raw : `https://${raw}`
+    );
+  } catch (_) {
+    throw new TypeError('Clerk issuer configuration is invalid');
+  }
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username ||
+    parsed.password ||
+    parsed.port ||
+    parsed.search ||
+    parsed.hash ||
+    (parsed.pathname !== '/' && parsed.pathname !== '')
+  ) {
+    throw new TypeError('Clerk issuer configuration is invalid');
+  }
+  return parsed.origin;
+}
+
 function buildStoreAuthConfig(env = process.env) {
   const publishableKey = cleanEnvValue(
     env.LTTH_STORE_CLERK_PUBLISHABLE_KEY ||
@@ -195,6 +238,24 @@ function buildStoreAuthConfig(env = process.env) {
     `${accountPortalBaseUrl}/?mode=sign-in&reason=unauthorized`
   );
   const frontendDomain = cleanEnvValue(env.CLERK_FRONTEND_API || deriveClerkFrontendDomain(publishableKey));
+  const configuredClerkIssuer = cleanEnvValue(
+    env.LTTH_STORE_CLERK_ISSUER ||
+    env.CLERK_ISSUER
+  );
+  let clerkIssuer = '';
+  if (configuredClerkIssuer) {
+    clerkIssuer = normalizeClerkIssuer(configuredClerkIssuer);
+  } else if (frontendDomain) {
+    try {
+      clerkIssuer = normalizeClerkIssuer(frontendDomain);
+    } catch (_) {
+      // Test or placeholder publishable keys may not encode a Clerk domain.
+    }
+  }
+  const clerkAudience = normalizeExactList(
+    env.LTTH_STORE_CLERK_AUDIENCE ||
+    env.CLERK_JWT_AUDIENCE
+  );
   const jwtKey = cleanEnvValue(
     env.LTTH_STORE_CLERK_JWT_KEY ||
     env.CLERK_JWT_KEY ||
@@ -214,6 +275,8 @@ function buildStoreAuthConfig(env = process.env) {
     clerkEnabled: Boolean(publishableKey),
     publishableKey,
     frontendDomain,
+    clerkIssuer,
+    clerkAudience,
     proxyUrl,
     authBridgeUrl,
     authCallbackPath,
@@ -228,6 +291,57 @@ function buildStoreAuthConfig(env = process.env) {
     billingEnabled: env.CLERK_BILLING_ENABLED !== 'false',
     loginMethods: ['email', 'passkey', 'google', 'apple', 'tiktok']
   };
+}
+
+function buildStableOverlayClerkAuthorizedParties(
+  config = buildStoreAuthConfig()
+) {
+  const candidates = [
+    ...(Array.isArray(config.storeAuthorizedParties)
+      ? config.storeAuthorizedParties
+      : []),
+    config.authBridgeUrl
+      ? new URL(config.authBridgeUrl).origin
+      : '',
+    config.accountPortalBaseUrl
+      ? new URL(config.accountPortalBaseUrl).origin
+      : '',
+    'http://127.0.0.1:3000',
+    'http://localhost:3000'
+  ];
+  const parties = [];
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+    let parsed;
+    try {
+      parsed = new URL(candidate);
+    } catch (_) {
+      throw new TypeError(
+        'Stable overlay Clerk authorized-party configuration is invalid'
+      );
+    }
+    if (
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      throw new TypeError(
+        'Stable overlay Clerk authorized-party configuration is invalid'
+      );
+    }
+    const origin = parsed.origin.toLowerCase();
+    if (!seen.has(origin)) {
+      seen.add(origin);
+      parties.push(origin);
+    }
+  }
+  return parties;
 }
 
 async function fetchClerkJwks(jwksUrl, logger) {
@@ -311,12 +425,28 @@ async function verifyClerkSessionToken(token, options = {}) {
     logger: options.logger
   });
 
+  const issuer = normalizeClerkIssuer(
+    options.issuer || config.clerkIssuer
+  );
+  if (!issuer) {
+    const error = new Error(
+      'Clerk session token verification requires an exact issuer'
+    );
+    error.code = 'CLERK_ISSUER_NOT_CONFIGURED';
+    throw error;
+  }
+  const audience = normalizeExactList(
+    options.audience || config.clerkAudience
+  );
+  const verification = {
+    algorithms: ['RS256'],
+    clockTolerance: 5
+  };
+  verification.issuer = issuer;
+
   let payload;
   try {
-    payload = jwt.verify(token, publicKey, {
-      algorithms: ['RS256'],
-      clockTolerance: 5
-    });
+    payload = jwt.verify(token, publicKey, verification);
   } catch (error) {
     const wrapped = new Error(`Clerk session token verification failed: ${error.message}`);
     wrapped.code = 'CLERK_TOKEN_INVALID';
@@ -325,11 +455,41 @@ async function verifyClerkSessionToken(token, options = {}) {
 
   const authorizedParties = Array.from(new Set([
     ...normalizeList(options.authorizedParties || ''),
-    ...buildAuthorizedParties(options.req || {}, config, env)
+    ...(options.includeRequestAuthorizedParties === false
+      ? []
+      : buildAuthorizedParties(options.req || {}, config, env))
   ]));
-  const tokenOrigin = cleanEnvValue(payload.azp).toLowerCase();
-  if (tokenOrigin && authorizedParties.length > 0 && !authorizedParties.includes(tokenOrigin)) {
-    const error = new Error(`Clerk session token was issued for an unexpected origin: ${payload.azp}`);
+  const requiresAuthorizedParty =
+    options.requireAuthorizedParty === true ||
+    authorizedParties.length > 0 ||
+    audience.length > 0;
+  let claimAllowed = true;
+  if (Object.prototype.hasOwnProperty.call(payload, 'azp')) {
+    const tokenOrigin = typeof payload.azp === 'string'
+      ? payload.azp.trim().toLowerCase()
+      : '';
+    claimAllowed =
+      Boolean(tokenOrigin) &&
+      authorizedParties.includes(tokenOrigin);
+  } else if (requiresAuthorizedParty) {
+    const tokenAudiences = Array.isArray(payload.aud)
+      ? payload.aud
+      : typeof payload.aud === 'string'
+        ? [payload.aud]
+        : [];
+    const allowedAudiences = new Set([
+      ...authorizedParties,
+      ...audience
+    ]);
+    claimAllowed = tokenAudiences.some(value =>
+      typeof value === 'string' &&
+      allowedAudiences.has(value)
+    );
+  }
+  if (requiresAuthorizedParty && !claimAllowed) {
+    const error = new Error(
+      'Clerk session token was issued for an unexpected party'
+    );
     error.code = 'CLERK_TOKEN_INVALID';
     throw error;
   }
@@ -970,6 +1130,7 @@ module.exports = {
   buildBetaLicense,
   buildStoreAccountResponse,
   buildStoreAuthConfig,
+  buildStableOverlayClerkAuthorizedParties,
   claimBetaLicenseForStoreAccount,
   clearStoreSessionCookie,
   createClerkFrontendProxy,

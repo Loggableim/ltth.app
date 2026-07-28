@@ -213,7 +213,7 @@ Created comprehensive translation glossary at `app/docs/TRANSLATION_GLOSSARY.md`
 ```bash
 cd app
 npm test  # Run locale validation tests
-node scripts/validate-i18n.js  # Check for missing keys
+npm run i18n:check  # Check all locale sets and refresh the deterministic inventory
 ```
 
 ### Visual Inspection
@@ -247,7 +247,7 @@ node scripts/validate-i18n.js  # Check for missing keys
 2. Maintain identical JSON structure across languages
 3. Preserve technical terms and placeholders
 4. Test in application before committing
-5. Run `validate-i18n.js` to verify completeness
+5. Run `npm run i18n:check` to verify completeness and refresh the canonical report
 
 ---
 

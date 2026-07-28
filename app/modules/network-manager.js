@@ -82,6 +82,7 @@ class NetworkManager {
     this.overlayTunnelProcess = null;
     this.overlayTunnelURL = null;
     this.overlayTunnelStarting = null;
+    this.overlayTunnelStartController = null;
     this.overlayTunnelLastError = null;
 
     // Loaded from DB on init()
@@ -338,7 +339,14 @@ class NetworkManager {
     logger.info('🚇 Tunnel stopped.');
   }
 
-  async ensureOverlayQuickTunnel(port) {
+  async ensureOverlayQuickTunnel(port, options = {}) {
+    const signal = options.signal;
+    if (signal?.aborted) {
+      throw createOverlayTunnelError(
+        'OVERLAY_TUNNEL_CANCELLED',
+        'Quick Tunnel start was cancelled'
+      );
+    }
     if (this.overlayTunnelProcess && this.overlayTunnelURL) {
       return {
         tunnelURL: this.overlayTunnelURL,
@@ -347,23 +355,58 @@ class NetworkManager {
     }
 
     if (this.overlayTunnelStarting) {
-      const tunnelURL = await this.overlayTunnelStarting;
+      const tunnelURL = await this._awaitOverlayStart(
+        this.overlayTunnelStarting,
+        signal
+      );
       return { tunnelURL, reused: true };
     }
 
-    const starting = this._startOverlayQuickTunnel(port);
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal?.addEventListener?.('abort', abort, { once: true });
+    const starting = this._startOverlayQuickTunnel(port, {
+      signal: controller.signal
+    });
     this.overlayTunnelStarting = starting;
+    this.overlayTunnelStartController = controller;
     try {
       const tunnelURL = await starting;
       return { tunnelURL, reused: false };
     } finally {
+      signal?.removeEventListener?.('abort', abort);
       if (this.overlayTunnelStarting === starting) {
         this.overlayTunnelStarting = null;
+      }
+      if (this.overlayTunnelStartController === controller) {
+        this.overlayTunnelStartController = null;
       }
     }
   }
 
-  async _startOverlayQuickTunnel(port) {
+  _awaitOverlayStart(starting, signal) {
+    if (!signal) {
+      return starting;
+    }
+    return new Promise((resolve, reject) => {
+      const abort = () => {
+        reject(createOverlayTunnelError(
+          'OVERLAY_TUNNEL_CANCELLED',
+          'Quick Tunnel start was cancelled'
+        ));
+      };
+      signal.addEventListener('abort', abort, { once: true });
+      Promise.resolve(starting).then(resolve, reject).finally(() => {
+        signal.removeEventListener?.('abort', abort);
+      });
+      if (signal.aborted) {
+        abort();
+      }
+    });
+  }
+
+  async _startOverlayQuickTunnel(port, options = {}) {
+    const signal = options.signal;
     if (!this.cloudflaredBinaryManager) {
       this.overlayTunnelLastError = 'Quick Tunnel installer is unavailable';
       throw createOverlayTunnelError(
@@ -374,8 +417,17 @@ class NetworkManager {
 
     let executablePath;
     try {
-      executablePath = await this.cloudflaredBinaryManager.ensureInstalled();
+      executablePath = await this._awaitOverlayStart(
+        this.cloudflaredBinaryManager.ensureInstalled(),
+        signal
+      );
     } catch (_) {
+      if (signal?.aborted) {
+        throw createOverlayTunnelError(
+          'OVERLAY_TUNNEL_CANCELLED',
+          'Quick Tunnel start was cancelled'
+        );
+      }
       this.overlayTunnelLastError = 'Quick Tunnel installation failed';
       throw createOverlayTunnelError(
         'OVERLAY_TUNNEL_INSTALL_FAILED',
@@ -392,6 +444,7 @@ class NetworkManager {
         if (completed) return;
         completed = true;
         clearTimeout(timer);
+        signal?.removeEventListener?.('abort', cancelStart);
         this.overlayTunnelLastError = message;
         if (child && !child.killed) {
           try {
@@ -409,6 +462,7 @@ class NetworkManager {
         if (completed) return;
         completed = true;
         clearTimeout(timer);
+        signal?.removeEventListener?.('abort', cancelStart);
         this.overlayTunnelURL = tunnelURL;
         this.overlayTunnelLastError = null;
         resolve(tunnelURL);
@@ -420,6 +474,17 @@ class NetworkManager {
           'Quick Tunnel start timed out'
         );
       }, this.overlayTunnelTimeoutMs);
+      const cancelStart = () => {
+        finishError(
+          'OVERLAY_TUNNEL_CANCELLED',
+          'Quick Tunnel start was cancelled'
+        );
+      };
+      signal?.addEventListener?.('abort', cancelStart, { once: true });
+      if (signal?.aborted) {
+        cancelStart();
+        return;
+      }
 
       try {
         child = this.spawnImpl(
@@ -483,6 +548,13 @@ class NetworkManager {
   }
 
   stopOverlayQuickTunnel() {
+    const startController = this.overlayTunnelStartController;
+    this.overlayTunnelStartController = null;
+    if (startController && !startController.signal.aborted) {
+      try {
+        startController.abort();
+      } catch (_) {}
+    }
     const child = this.overlayTunnelProcess;
     this.overlayTunnelProcess = null;
     this.overlayTunnelURL = null;

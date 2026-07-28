@@ -135,16 +135,35 @@
       }
 
       async function complete() {
+        const rawHash = window.location.hash;
         const hash = readHash();
         const token = hash.get('token');
         const state = hash.get('state');
         const callbackUtils = window.LTTHAccountCallbackUtils || {};
+        const isFreshTokenRelay =
+          new URLSearchParams(window.location.search)
+            .get('relay') === 'fresh-token';
         const next = typeof callbackUtils.getSafeNext === 'function'
           ? callbackUtils.getSafeNext(hash.get('next') || sessionStorage.getItem(NEXT_KEY), window.location.origin)
           : '/dashboard.html';
         const expectedState = sessionStorage.getItem(STATE_KEY);
 
         clearFragment();
+
+        if (isFreshTokenRelay) {
+          if (typeof callbackUtils.relayFreshToken !== 'function') {
+            throw new Error('Fresh-token relay is unavailable.');
+          }
+          setMessage('Signed in', 'Returning to Network Settings...');
+          callbackUtils.relayFreshToken({
+            hash: rawHash,
+            search: window.location.search,
+            origin: window.location.origin,
+            opener: window.opener,
+            close: () => window.close()
+          });
+          return;
+        }
 
         if (!token) {
           throw new Error(hash.get('error') || 'Missing Clerk session token.');

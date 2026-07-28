@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 const { isHttpAllowed } = require('../modules/public-overlay-registry');
+const {
+  collectStreamMonstersManifestDependencies
+} = require('./helpers/public-overlay-dependency-crawler');
 
 const appRoot = path.resolve(__dirname, '..');
 const surfaceSources = [
@@ -137,6 +140,7 @@ function describeDependency(source, dependency) {
 describe('registered overlay dependency crawl', () => {
   test('allows render dependencies and keeps game test-control writes local-only', () => {
     const blocked = [];
+    const allowedNonReads = [];
     for (const relativePath of surfaceSources) {
       const absolutePath = path.join(appRoot, relativePath);
       if (!fs.existsSync(absolutePath)) {
@@ -144,7 +148,11 @@ describe('registered overlay dependency crawl', () => {
       }
       const source = fs.readFileSync(absolutePath, 'utf8');
       for (const dependency of collectDependencies(source)) {
-        if (!isHttpAllowed(dependency)) {
+        if (isHttpAllowed(dependency)) {
+          if (!['GET', 'HEAD'].includes(dependency.method)) {
+            allowedNonReads.push(describeDependency(relativePath, dependency));
+          }
+        } else {
           blocked.push(describeDependency(relativePath, dependency));
         }
       }
@@ -171,5 +179,24 @@ describe('registered overlay dependency crawl', () => {
         pathname: '/api/game-engine/wheel/spin'
       }
     ]);
+    expect(allowedNonReads).toEqual([
+      {
+        source: 'plugins/streamalchemy/streammonsters-overlay.html',
+        method: 'POST',
+        pathname: '/api/streammonsters/overlay/heartbeat'
+      }
+    ]);
+  });
+
+  test('allows every integrity-checked Stream Monsters manifest asset', () => {
+    const dependencies = collectStreamMonstersManifestDependencies({ appRoot });
+    const audio = dependencies.filter(dependency => dependency.kind === 'audio');
+    const furry = dependencies.filter(dependency => dependency.kind === 'furry');
+
+    expect(audio).toHaveLength(28);
+    expect(furry).toHaveLength(72);
+    expect(dependencies).toHaveLength(100);
+    expect(dependencies.every(isHttpAllowed)).toBe(true);
+    expect(new Set(dependencies.map(dependency => dependency.pathname)).size).toBe(100);
   });
 });

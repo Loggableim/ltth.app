@@ -10,6 +10,7 @@
   if (!document.getElementById('network-bind-mode')) return;
 
   let networkConfig = null;
+  let stableRoutingUI = null;
 
   // ── DOM helpers ────────────────────────────────────────────────────────────
 
@@ -43,6 +44,41 @@
     if (!window.i18n) return fallback;
     const translated = window.i18n.t(key);
     return translated && translated !== key ? translated : fallback;
+  }
+
+  function initializeStableOverlayRouting() {
+    const api = window.LTTHStableOverlayRouting;
+    const root = document.querySelector('[data-stable-overlay-routing-root]');
+    if (!api || !root || stableRoutingUI) return stableRoutingUI;
+
+    api.configureAccountAccess({
+      getFreshToken: details => {
+        const auth = window.StoreAuth || window.ClerkStoreAuth;
+        if (typeof auth?.getFreshToken !== 'function') {
+          throw new Error('Fresh Clerk account access is unavailable.');
+        }
+        return auth.getFreshToken(details);
+      }
+    });
+    stableRoutingUI = window.LTTHStableOverlayRouting.createUI({
+      root,
+      fetchImpl: window.fetch.bind(window),
+      getFreshToken: details => api.accountAccess.getFreshToken(details),
+      signIn: () => {
+        const auth = window.StoreAuth || window.ClerkStoreAuth;
+        if (typeof auth?.beginBridgeAuth === 'function') {
+          auth.beginBridgeAuth('sign-in');
+        }
+      },
+      copyApi: window.LTTHTikTokStudioUrl,
+      translate,
+      notify: showNotification
+    });
+    stableRoutingUI.init().catch(() => {});
+    window.i18n?.onLanguageChange?.(() => {
+      stableRoutingUI?.render();
+    });
+    return stableRoutingUI;
   }
 
   // ── Data Loading ───────────────────────────────────────────────────────────
@@ -564,6 +600,15 @@
 
   // ── Initial Load ───────────────────────────────────────────────────────────
 
+  window.addEventListener(
+    'ltth:stable-overlay-routing-attention',
+    event => {
+      const ui = initializeStableOverlayRouting();
+      ui?.attention(event.detail || {});
+    }
+  );
+
+  initializeStableOverlayRouting();
   loadConfig();
 
 })();

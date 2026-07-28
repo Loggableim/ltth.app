@@ -15,6 +15,14 @@ const appRoot = path.join(repoRoot, 'app');
 const locales = ['en', 'de', 'es', 'fr'];
 const reportPath = path.join(appRoot, 'locales', 'validation-report.json');
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function repoRelative(filePath) {
+  return path.relative(repoRoot, filePath).replace(/\\/g, '/');
+}
+
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, ''));
 }
@@ -44,16 +52,24 @@ function localeSet(directory) {
 }
 
 function checkSet(label, directory, findings) {
+  const reportDirectory = repoRelative(directory);
   const values = localeSet(directory);
   const missingFiles = locales.filter(locale => !values[locale]);
   if (missingFiles.length) {
-    findings.push({ type: 'missing-locale-file', label, directory, locales: missingFiles });
-    return { label, directory, keys: 0 };
+    findings.push({
+      type: 'missing-locale-file',
+      label,
+      directory: reportDirectory,
+      locales: missingFiles
+    });
+    return { label, directory: reportDirectory, keys: 0 };
   }
 
   const flattened = Object.fromEntries(locales.map(locale => [locale, flatten(values[locale])]));
   const reference = [...flattened.en.keys()].sort();
-  const allKeys = new Set(locales.flatMap(locale => [...flattened[locale].keys()]));
+  const allKeys = [...new Set(
+    locales.flatMap(locale => [...flattened[locale].keys()])
+  )].sort(compareText);
   for (const locale of locales) {
     const keys = [...flattened[locale].keys()].sort();
     const missing = reference.filter(key => !flattened[locale].has(key));
@@ -69,12 +85,16 @@ function checkSet(label, directory, findings) {
       }
     }
   }
-  return { label, directory, keys: reference.length };
+  return { label, directory: reportDirectory, keys: reference.length };
 }
 
 function walkSource(directory, output = []) {
   if (!fs.existsSync(directory)) return output;
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+  const entries = fs.readdirSync(
+    directory,
+    { withFileTypes: true }
+  ).sort((left, right) => compareText(left.name, right.name));
+  for (const entry of entries) {
     if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'docs_archive') continue;
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) walkSource(full, output);
@@ -89,7 +109,7 @@ function collectReferencedKeys(source) {
   for (const match of source.matchAll(attrPattern)) keys.add(match[1]);
   const callPattern = /(?:window\.)?(?:i18n|I18n)\.t\(\s*["']([A-Za-z0-9_.-]+)["']/g;
   for (const match of source.matchAll(callPattern)) keys.add(match[1]);
-  return [...keys];
+  return [...keys].sort(compareText);
 }
 
 function referenceLocaleMap(sourceFile) {
@@ -124,7 +144,11 @@ function referenceLocaleMap(sourceFile) {
   const directories = [path.join(appRoot, 'locales')];
   if (relative.startsWith('app/plugins/')) directories.push(path.join(appRoot, 'plugins', relative.split('/')[2], 'locales'));
   if (relative.startsWith('app/public/')) {
-    for (const entry of fs.readdirSync(path.join(appRoot, 'plugins'), { withFileTypes: true })) {
+    const entries = fs.readdirSync(
+      path.join(appRoot, 'plugins'),
+      { withFileTypes: true }
+    ).sort((left, right) => compareText(left.name, right.name));
+    for (const entry of entries) {
       if (entry.isDirectory()) directories.push(path.join(appRoot, 'plugins', entry.name, 'locales'));
     }
   }
@@ -171,7 +195,7 @@ function listMarkdown(directory, baseDirectory = directory) {
     if (entry.isDirectory()) result.push(...listMarkdown(full, baseDirectory));
     else if (/\.md$/i.test(entry.name)) result.push(path.relative(baseDirectory, full).replace(/\\/g, '/'));
   }
-  return result.sort();
+  return result.sort(compareText);
 }
 
 for (const root of ['app/wiki', 'docs', 'infos']) {
@@ -191,7 +215,11 @@ for (const root of ['app/wiki', 'docs', 'infos']) {
 }
 
 const pluginsRoot = path.join(appRoot, 'plugins');
-for (const entry of fs.readdirSync(pluginsRoot, { withFileTypes: true })) {
+const appPluginEntries = fs.readdirSync(
+  pluginsRoot,
+  { withFileTypes: true }
+).sort((left, right) => compareText(left.name, right.name));
+for (const entry of appPluginEntries) {
   if (!entry.isDirectory() || entry.name === '_uploads') continue;
   const manifest = path.join(pluginsRoot, entry.name, 'plugin.json');
   if (!fs.existsSync(manifest)) continue;
@@ -200,7 +228,11 @@ for (const entry of fs.readdirSync(pluginsRoot, { withFileTypes: true })) {
 
 const rootPlugins = path.join(repoRoot, 'plugins');
 if (fs.existsSync(rootPlugins)) {
-  for (const entry of fs.readdirSync(rootPlugins, { withFileTypes: true })) {
+  const rootPluginEntries = fs.readdirSync(
+    rootPlugins,
+    { withFileTypes: true }
+  ).sort((left, right) => compareText(left.name, right.name));
+  for (const entry of rootPluginEntries) {
     if (!entry.isDirectory()) continue;
     const manifest = path.join(rootPlugins, entry.name, 'plugin.json');
     if (!fs.existsSync(manifest)) continue;
@@ -209,9 +241,11 @@ if (fs.existsSync(rootPlugins)) {
 }
 
 checkReferencedKeys(findings);
+findings.sort((left, right) =>
+  compareText(JSON.stringify(left), JSON.stringify(right))
+);
 
 const report = {
-  generatedAt: new Date().toISOString(),
   locales,
   sets,
   findings,

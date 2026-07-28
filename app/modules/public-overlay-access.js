@@ -94,7 +94,7 @@ function protectPublicSocket({ socket, logger = console }) {
     }
 
     logger.warn?.(
-      `Blocked public Quick Tunnel Socket.IO event "${String(eventName)}" from ${hostname}`
+      'Blocked one disallowed incoming public Quick Tunnel Socket.IO event.'
     );
     const error = new Error('Socket.IO event is not available on the public overlay surface');
     error.data = { code: 'PUBLIC_SOCKET_EVENT_NOT_ALLOWED' };
@@ -108,7 +108,7 @@ function protectPublicSocket({ socket, logger = console }) {
       !isOutgoingSocketEventAllowed(eventName)
     ) {
       logger.warn?.(
-        `Blocked direct public Quick Tunnel Socket.IO event "${eventName}" to ${hostname}`
+        'Blocked one disallowed outgoing public Quick Tunnel Socket.IO event.'
       );
       return false;
     }

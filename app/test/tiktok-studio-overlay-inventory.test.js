@@ -236,4 +236,12 @@ describe('TikTok Studio overlay action inventory', () => {
       }
     }
   );
+
+  test('keeps temporary and intentional external copy actions explicitly marked', () => {
+    const helper = read('public/js/tiktok-studio-url.js');
+    const vdoNinja = read('plugins/vdoninja/ui.html');
+
+    expect(helper).toContain('[data-copy-tiktok-studio-temporary-url]');
+    expect(vdoNinja).toContain('data-tiktok-studio-url-mode="external"');
+  });
 });

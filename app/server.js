@@ -147,6 +147,19 @@ const {
 const {
     registerOverlayTunnelRoutes
 } = require('./modules/overlay-tunnel-routes');
+const {
+    createStableOverlayRoutingLifecycle,
+    registerStableOverlayRoutingRoutes
+} = require('./modules/stable-overlay-routing-routes');
+const {
+    StableOverlayRoutingCredentials
+} = require('./modules/stable-overlay-routing-credentials');
+const {
+    StableOverlayRoutingClient
+} = require('./modules/stable-overlay-routing-client');
+const {
+    createServerRestartCoordinator
+} = require('./modules/server-restart-coordinator');
 const debugLogger = require('./modules/debug-logger');
 const { apiLimiter, authLimiter, uploadLimiter, pluginLimiter, iftttLimiter } = require('./modules/rate-limiter');
 const OBSWebSocket = require('./modules/obs-websocket');
@@ -179,8 +192,11 @@ const CloudSyncEngine = require('./modules/cloud-sync');
 const { createAdminAuth } = require('./modules/admin-auth');
 const { obsCacheControl } = require('./modules/obs-cache-control');
 const {
+    buildStableOverlayClerkAuthorizedParties,
+    buildStoreAuthConfig,
     createClerkFrontendProxy,
-    createClerkMiddleware
+    createClerkMiddleware,
+    verifyClerkSessionToken
 } = require('./modules/clerk-store-auth');
 const StoreSessionStore = require('./modules/store-session-store');
 const { getAnimationFilePath } = require('./modules/animation-files');
@@ -565,6 +581,49 @@ networkManager = new NetworkManager(db, {
     cloudflaredBinaryManager
 });
 const { bindAddress: BIND_ADDRESS } = networkManager.init();
+const stableOverlayRoutingConfig = {
+    enabled: process.env.LTTH_STABLE_OVERLAY_ROUTING_ENABLED,
+    apiOrigin: process.env.LTTH_STABLE_OVERLAY_ROUTING_API_ORIGIN
+};
+const stableOverlayRoutingCredentials = new StableOverlayRoutingCredentials({
+    configPathManager,
+    profileId: activeProfile
+});
+const stableOverlayRoutingFetch = (...args) => globalThis.fetch(...args);
+const stableOverlayRoutingClient = new StableOverlayRoutingClient({
+    networkManager,
+    fetch: stableOverlayRoutingFetch,
+    clock: Date.now,
+    timers: {
+        setTimeout,
+        clearTimeout
+    },
+    credentialStore: stableOverlayRoutingCredentials,
+    config: stableOverlayRoutingConfig,
+    logger,
+    getPort: () => PORT || 3000
+});
+const stableOverlayRoutingLifecycle = createStableOverlayRoutingLifecycle({
+    client: stableOverlayRoutingClient,
+    networkManager,
+    enabled: stableOverlayRoutingConfig.enabled,
+    logger
+});
+const stableOverlayClerkConfig = buildStoreAuthConfig(process.env);
+const getStableOverlayClerkAuthorizedParties = () =>
+    buildStableOverlayClerkAuthorizedParties(stableOverlayClerkConfig);
+registerStableOverlayRoutingRoutes({
+    app,
+    apiLimiter,
+    fetch: stableOverlayRoutingFetch,
+    verifyClerkSessionToken,
+    credentialStore: stableOverlayRoutingCredentials,
+    client: stableOverlayRoutingClient,
+    config: stableOverlayRoutingConfig,
+    logger,
+    getClerkAuthorizedParties: getStableOverlayClerkAuthorizedParties,
+    lifecycle: stableOverlayRoutingLifecycle
+});
 
 // Ensure soundboard_enabled has a default value so that alerts.js and the
 // soundboard plugin both agree on the initial state (prevents double audio
@@ -1167,37 +1226,25 @@ app.post('/api/cloud-sync/validate-path', authLimiter, (req, res) => {
 // ========== ROUTES ==========
 
 let serverRestartScheduled = false;
+const serverRestartCoordinator = createServerRestartCoordinator({
+    stableLifecycle: stableOverlayRoutingLifecycle,
+    io,
+    db,
+    server,
+    logger,
+    processExit: code => process.exit(code),
+    timers: {
+        setTimeout,
+        clearTimeout
+    }
+});
 
 function scheduleServerRestart(reason = 'api request') {
-    if (serverRestartScheduled) {
-        logger.warn(`♻️  Server restart already scheduled, ignoring duplicate request (${reason})`);
-        return false;
+    const scheduled = serverRestartCoordinator.schedule(reason);
+    if (scheduled) {
+        serverRestartScheduled = true;
     }
-
-    serverRestartScheduled = true;
-    logger.info(`♻️  Server restart scheduled (${reason})`);
-
-    setTimeout(() => {
-        logger.info(`♻️  Server restart starting (${reason})`);
-
-        try { db.flushEventBatch(); } catch (err) { logger.debug(`flushEventBatch skipped: ${err.message}`); }
-        try { io.emit('server:restarting', { reason }); } catch (err) { logger.debug(`server:restarting emit skipped: ${err.message}`); }
-        try { io.disconnectSockets(true); } catch (err) { logger.debug(`socket disconnect skipped: ${err.message}`); }
-        try { db.close(); } catch (err) { logger.debug(`db.close skipped: ${err.message}`); }
-
-        server.close(() => {
-            logger.info('♻️  Exiting with restart code 75...');
-            process.exit(75);
-        });
-
-        const forceTimer = setTimeout(() => {
-            logger.warn('♻️  Force exiting with restart code 75...');
-            process.exit(75);
-        }, 3000);
-        forceTimer.unref();
-    }, 250);
-
-    return true;
+    return scheduled;
 }
 
 function scheduleServerRestartAfterResponse(res, reason) {
@@ -4022,6 +4069,7 @@ function writeObsOverlayWrapper(resolvedPort) {
         initState.setServerStarted();
         ALLOWED_ORIGINS = networkManager.getAllowedOrigins(PORT);
         logger.info(`📋 CORS whitelist initialized for port ${PORT} (mode: ${networkManager.bindMode})`);
+        await stableOverlayRoutingLifecycle.afterServerListening();
 
         try {
             writeCurrentPortFile(PORT);
@@ -4501,6 +4549,10 @@ async function gracefulShutdown(signal) {
     }, 5000);
     forceExitTimer.unref();
 
+    // This shutdown path has its own 2s client bound. It must finish before
+    // slower plugin cleanup can consume the process-wide 5s force-exit budget.
+    await stableOverlayRoutingLifecycle.shutdown();
+
     // Plugins own routes, sockets, timers and optional servers. Release them
     // first and in reverse load order so dependants disappear before providers.
     const loadedPluginIds = Array.from(pluginLoader.plugins.keys()).reverse();
@@ -4528,13 +4580,6 @@ async function gracefulShutdown(signal) {
         await cloudSync.shutdown();
     } catch (error) {
         logger.error('Error shutting down cloud sync:', error);
-    }
-
-    // Network Manager beenden (stops any running tunnel)
-    try {
-        networkManager.shutdown();
-    } catch (error) {
-        logger.error('Error shutting down network manager:', error);
     }
 
     // Alle Socket.io-Verbindungen sofort trennen damit server.close() nicht endlos wartet

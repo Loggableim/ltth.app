@@ -29,6 +29,12 @@ describe('Game Engine TikTok Studio URL actions', () => {
     expect(helper).toContain(
       "button.setAttribute('data-overlay-url-attribute', target.attribute);"
     );
+    expect(helper).not.toContain(
+      "button.setAttribute('data-copy-tiktok-studio-temporary-url', '')"
+    );
+    expect(helper).not.toContain(
+      "button.setAttribute('data-tiktok-studio-url-mode', 'external')"
+    );
     expect(targets).toHaveLength(19);
     expect(targets.filter(target => target.attribute)).toHaveLength(6);
   });

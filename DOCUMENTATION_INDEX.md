@@ -38,6 +38,7 @@ These pages may still include older wording. When a user-facing feature changes,
 ## Technical Notes
 
 - [docs/ARCHIVE_POLICY.md](docs/ARCHIVE_POLICY.md): how to treat archived docs
+- [docs/stable-overlay-routing-operations.md](docs/stable-overlay-routing-operations.md): staged Worker, DNS, canary, incident, and rollback runbook for stable TikTok Studio overlay routing
 - [docs/BROWSER_CONSOLE_WARNINGS.md](docs/BROWSER_CONSOLE_WARNINGS.md)
 - [docs/PER_USER_GAIN_CONTROL_IMPLEMENTATION.md](docs/PER_USER_GAIN_CONTROL_IMPLEMENTATION.md)
 - [docs/SOUNDBOARD_ANIMATION_MEMORY_FIX.md](docs/SOUNDBOARD_ANIMATION_MEMORY_FIX.md)

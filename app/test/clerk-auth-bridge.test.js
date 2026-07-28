@@ -330,6 +330,257 @@ describe('Clerk auth bridge', () => {
     assert(!storeAuthScript.includes('return sessionStorage.getItem(TOKEN_KEY)'));
   });
 
+  it('relays a fresh Clerk token only to the same-origin opener', () => {
+    const callbackUtils = require('../public/auth/clerk/callback-utils');
+    const postMessage = jest.fn();
+    const close = jest.fn();
+    const opener = {
+      location: { origin: 'http://127.0.0.1:3000' },
+      postMessage
+    };
+
+    expect(callbackUtils.relayFreshToken({
+      hash: '#token=fresh-token&state=state-123456789012345678901234',
+      search: '?relay=fresh-token&relay_action=copy_stable',
+      origin: 'http://127.0.0.1:3000',
+      opener,
+      close
+    })).toBe(true);
+    expect(postMessage).toHaveBeenCalledWith({
+      type: 'ltth:clerk-fresh-token',
+      state: 'state-123456789012345678901234',
+      action: 'copy_stable',
+      token: 'fresh-token'
+    }, 'http://127.0.0.1:3000');
+    expect(close).toHaveBeenCalledTimes(1);
+
+    expect(() => callbackUtils.relayFreshToken({
+      hash: '#token=fresh-token&state=state-123456789012345678901234',
+      search: '?relay=fresh-token&relay_action=copy_stable',
+      origin: 'http://127.0.0.1:3000',
+      opener: {
+        location: { origin: 'https://hostile.example' },
+        postMessage: jest.fn()
+      }
+    })).toThrow('same-origin opener');
+  });
+
+  it('resolves a fresh token once for the matching action, state, origin, and popup', async () => {
+    const { window } = createStoreAuthDom();
+    let bridgeUrl;
+    const popup = { closed: false, close: jest.fn() };
+    window.fetch = async url => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+      return jsonResponse({ success: false }, 401);
+    };
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({
+      openWindow: url => {
+        bridgeUrl = new URL(url);
+        return popup;
+      }
+    });
+    await window.StoreAuth.init();
+
+    const pending = window.StoreAuth.getFreshToken({
+      action: 'copy_stable'
+    });
+    await Promise.resolve();
+    const state = bridgeUrl.searchParams.get('state');
+    const callback = new URL(bridgeUrl.searchParams.get('return_to'));
+    assert.strictEqual(callback.searchParams.get('relay'), 'fresh-token');
+    assert.strictEqual(callback.searchParams.get('relay_action'), 'copy_stable');
+    assert.strictEqual(window.sessionStorage.getItem('ltth_store_auth_token'), null);
+
+    function dispatchMessage(origin, data, source = popup) {
+      const event = new window.Event('message');
+      Object.defineProperties(event, {
+        origin: { value: origin },
+        source: { value: source },
+        data: { value: data }
+      });
+      window.dispatchEvent(event);
+    }
+
+    dispatchMessage('https://hostile.example', {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'copy_stable',
+        token: 'hostile-token'
+    });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state: `${state}x`,
+        action: 'copy_stable',
+        token: 'wrong-state-token'
+    });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'release',
+        token: 'wrong-action-token'
+    });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'copy_stable',
+        token: 'wrong-popup-token'
+    }, { close: jest.fn() });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'copy_stable',
+        token: 'fresh-action-token'
+    });
+
+    await assert.doesNotReject(async () => {
+      assert.strictEqual(await pending, 'fresh-action-token');
+    });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'copy_stable',
+        token: 'duplicate-token'
+    });
+    assert.strictEqual(popup.close.mock.calls.length, 1);
+    assert.strictEqual(window.sessionStorage.getItem('ltth_store_auth_token'), null);
+    assert.strictEqual(window.localStorage.getItem('ltth_store_auth_token'), null);
+  });
+
+  it('rejects and clears a fresh-token request after the bounded timeout', async () => {
+    const { window } = createStoreAuthDom();
+    const popup = { closed: false, close: jest.fn() };
+    window.fetch = async url => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+      return jsonResponse({ success: false }, 401);
+    };
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({
+      openWindow: () => popup
+    });
+    await window.StoreAuth.init();
+
+    jest.useFakeTimers();
+    try {
+      const pending = window.StoreAuth.getFreshToken({ action: 'account' });
+      await Promise.resolve();
+      const rejection = expect(pending).rejects.toThrow(
+        'The sign-in window timed out.'
+      );
+
+      jest.advanceTimersByTime(120_000);
+
+      await rejection;
+      expect(popup.close).toHaveBeenCalledTimes(1);
+      await expect(window.StoreAuth.signOut()).resolves.toBeUndefined();
+      expect(popup.close).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('cancels an in-memory fresh-token request when the user signs out', async () => {
+    const { window } = createStoreAuthDom();
+    const popup = { closed: false, close: jest.fn() };
+    window.fetch = async (url, options = {}) => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+      if (
+        url === '/api/plugin-store/session' &&
+        options.method === 'DELETE'
+      ) {
+        return jsonResponse({ success: true });
+      }
+      return jsonResponse({ success: false }, 401);
+    };
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({
+      openWindow: () => popup
+    });
+    await window.StoreAuth.init();
+
+    const pending = window.StoreAuth.getFreshToken({ action: 'account' });
+    await Promise.resolve();
+    const rejection = expect(pending).rejects.toThrow(
+      'Fresh account access was cancelled.'
+    );
+    await window.StoreAuth.signOut();
+
+    await rejection;
+    expect(popup.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps fallback relay state compatible with the remote bridge contract', async () => {
+    const { window } = createStoreAuthDom();
+    Object.defineProperty(window.crypto, 'randomUUID', {
+      configurable: true,
+      value: undefined
+    });
+    let bridgeUrl;
+    const popup = { close: jest.fn() };
+    window.fetch = async (url, options = {}) => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+      if (
+        url === '/api/plugin-store/session' &&
+        options.method === 'DELETE'
+      ) {
+        return jsonResponse({ success: true });
+      }
+      return jsonResponse({ success: false }, 401);
+    };
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({
+      openWindow: url => {
+        bridgeUrl = new URL(url);
+        return popup;
+      }
+    });
+    await window.StoreAuth.init();
+
+    const pending = window.StoreAuth.getFreshToken({ action: 'account' });
+    const rejection = expect(pending).rejects.toThrow(
+      'Fresh account access was cancelled.'
+    );
+    await Promise.resolve();
+    assert.match(
+      bridgeUrl.searchParams.get('state'),
+      /^[A-Za-z0-9._~-]{24,160}$/
+    );
+    await window.StoreAuth.signOut();
+    await rejection;
+  });
+
   it('persists explicit sign-out per profile instead of auto-restoring it after a restart', async () => {
     const { window } = createStoreAuthDom();
     window.fetch = async (url, options = {}) => {

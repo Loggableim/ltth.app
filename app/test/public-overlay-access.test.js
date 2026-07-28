@@ -5,6 +5,7 @@ const request = require('supertest');
 const {
   normalizeHostname,
   isQuickTunnelHost,
+  isQuickTunnelRequest,
   createPublicOverlayMiddleware,
   protectPublicSocket
 } = require('../modules/public-overlay-access');
@@ -24,6 +25,12 @@ function createApp() {
       apiKey: 'must-not-leak',
       nested: { accessToken: 'must-not-leak', intensity: 0.7 }
     });
+  });
+  app.get('/api/stable-overlay-routing/status', (_req, res) => {
+    res.json({ connected: true, routeKey: 'must-stay-local' });
+  });
+  app.get('/api/stable-overlay-routing/account', (_req, res) => {
+    res.json({ username: 'must-stay-local' });
   });
   app.post('/api/game-engine/manual/move', (req, res) => {
     res.json({ accepted: true, move: req.body.move });
@@ -50,10 +57,28 @@ describe('public overlay hostname classification', () => {
     'trycloudflare.com',
     'quiet-river.trycloudflare.com.evil.example',
     'nested.quiet-river.trycloudflare.com',
+    'overlay.ltth.app',
+    'r-4m7k9p2x.ltth.app',
+    'public.example.com',
     'localhost',
     ''
   ])('does not classify lookalike host %s', hostname => {
     expect(isQuickTunnelHost(hostname)).toBe(false);
+  });
+
+  test('classifies solely from the exact Host header', () => {
+    expect(isQuickTunnelRequest({
+      headers: {
+        host: 'quiet-river.trycloudflare.com',
+        'x-forwarded-host': 'overlay.ltth.app'
+      }
+    })).toBe(true);
+    expect(isQuickTunnelRequest({
+      headers: {
+        host: 'overlay.ltth.app',
+        'x-forwarded-host': 'quiet-river.trycloudflare.com'
+      }
+    })).toBe(false);
   });
 });
 
@@ -96,6 +121,23 @@ describe('public overlay Express middleware', () => {
   });
 
   test.each([
+    '/api/stable-overlay-routing/status',
+    '/api/stable-overlay-routing/account'
+  ])('keeps local stable-routing management path %s off the public surface', async pathname => {
+    const publicResponse = await request(createApp())
+      .get(pathname)
+      .set('Host', 'quiet-river.trycloudflare.com');
+    const localResponse = await request(createApp())
+      .get(pathname)
+      .set('Host', '127.0.0.1:3000');
+
+    expect(publicResponse.status).toBe(404);
+    expect(publicResponse.body).toEqual({ error: 'Not found' });
+    expect(localResponse.status).toBe(200);
+    expect(localResponse.body).not.toEqual({ error: 'Not found' });
+  });
+
+  test.each([
     '/dashboard.html',
     '/api/network/config',
     '/plugins/game-engine/ui.html',
@@ -107,6 +149,20 @@ describe('public overlay Express middleware', () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: 'Not found' });
+  });
+
+  test.each([
+    'overlay.ltth.app',
+    'r-4m7k9p2x.ltth.app',
+    'public.example.com'
+  ])('does not apply the local public-surface policy to non-Quick-Tunnel Host %s', async host => {
+    const response = await request(createApp())
+      .get('/dashboard.html')
+      .set('Host', host)
+      .set('X-Forwarded-Host', 'quiet-river.trycloudflare.com');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Dashboard');
   });
 
   test('rejects method override headers on a public host', async () => {
@@ -135,9 +191,15 @@ describe('public overlay Express middleware', () => {
 });
 
 describe('public overlay socket protection', () => {
-  function createSocket(host) {
+  function createSocket(host, forwardedHost, origin) {
     const socket = {
-      handshake: { headers: { host } },
+      handshake: {
+        headers: {
+          host,
+          ...(forwardedHost ? { 'x-forwarded-host': forwardedHost } : {}),
+          ...(origin ? { origin } : {})
+        }
+      },
       data: {},
       join: jest.fn(),
       use: jest.fn(handler => {
@@ -150,7 +212,11 @@ describe('public overlay socket protection', () => {
 
   test('limits incoming and direct outgoing events for a public socket', () => {
     const logger = { warn: jest.fn() };
-    const socket = createSocket('quiet-river.trycloudflare.com');
+    const socket = createSocket(
+      'quiet-river.trycloudflare.com',
+      'overlay.ltth.app',
+      'https://quiet-river.trycloudflare.com'
+    );
     const originalEmit = socket.emit;
 
     protectPublicSocket({ socket, logger });
@@ -171,10 +237,22 @@ describe('public overlay socket protection', () => {
     expect(socket.emit('weather:trigger', { intensity: 1 })).toBe(true);
     expect(socket.emit('admin:settings-updated', secretPayload)).toBe(false);
     expect(originalEmit).toHaveBeenCalledTimes(1);
+    const warningText = logger.warn.mock.calls.flat().join(' ');
+    expect(warningText).not.toContain('quiet-river.trycloudflare.com');
+    expect(warningText).not.toContain(
+      'https://quiet-river.trycloudflare.com'
+    );
+    expect(warningText).not.toContain('admin:reload');
+    expect(warningText).not.toContain('admin:settings-updated');
   });
 
-  test('does not restrict a localhost socket', () => {
-    const socket = createSocket('127.0.0.1:3000');
+  test.each([
+    '127.0.0.1:3000',
+    'overlay.ltth.app',
+    'r-4m7k9p2x.ltth.app',
+    'public.example.com'
+  ])('does not restrict non-Quick-Tunnel socket Host %s', host => {
+    const socket = createSocket(host, 'quiet-river.trycloudflare.com');
     const originalEmit = socket.emit;
 
     protectPublicSocket({ socket, logger: { warn: jest.fn() } });

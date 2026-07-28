@@ -3,6 +3,17 @@
   const NEXT_KEY = 'ltth_store_auth_next';
   const SIGNED_OUT_KEY = 'ltth_store_auth_signed_out';
   const DEFAULT_ACCOUNT_PORTAL_URL = 'https://ltth.app/auth/';
+  const FRESH_TOKEN_TIMEOUT_MS = 120_000;
+  const FRESH_TOKEN_ACTIONS = new Set([
+    'account',
+    'claim',
+    'restore',
+    'release',
+    'set_default',
+    'enroll',
+    'revoke_device',
+    'copy_stable'
+  ]);
 
   const state = {
     initialized: false,
@@ -15,7 +26,9 @@
     listeners: [],
     autoRestoreAttempted: false,
     signedOutExplicitly: false,
-    navigate: null
+    navigate: null,
+    openWindow: null,
+    freshTokenRequests: new Map()
   };
 
   function emitChange() {
@@ -78,8 +91,15 @@
     if (window.crypto?.randomUUID) {
       return window.crypto.randomUUID().replace(/-/g, '');
     }
-
-    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    if (window.crypto?.getRandomValues) {
+      const bytes = new Uint8Array(24);
+      window.crypto.getRandomValues(bytes);
+      return Array.from(
+        bytes,
+        value => value.toString(16).padStart(2, '0')
+      ).join('');
+    }
+    throw new Error('Secure authentication state is unavailable.');
   }
 
   function setSplashVisible(visible) {
@@ -96,6 +116,17 @@
     }
 
     return window.location.assign(url);
+  }
+
+  function openWindow(url) {
+    if (typeof state.openWindow === 'function') {
+      return state.openWindow(url);
+    }
+    return window.open(
+      url,
+      '_blank',
+      'popup,width=520,height=720'
+    );
   }
 
   function setStoreMode(mode) {
@@ -375,7 +406,115 @@
     return navigate(bridgeUrl.toString());
   }
 
+  function settleFreshTokenRequest(requestState, outcome, value) {
+    const pending = state.freshTokenRequests.get(requestState);
+    if (!pending) return;
+    state.freshTokenRequests.delete(requestState);
+    window.clearTimeout(pending.timeoutId);
+    if (outcome === 'resolve') {
+      pending.resolve(value);
+      return;
+    }
+    pending.reject(value);
+  }
+
+  function handleFreshTokenMessage(event) {
+    if (event.origin !== window.location.origin) return;
+    const message = event.data;
+    if (
+      !message ||
+      message.type !== 'ltth:clerk-fresh-token' ||
+      typeof message.state !== 'string'
+    ) {
+      return;
+    }
+    const pending = state.freshTokenRequests.get(message.state);
+    if (
+      !pending ||
+      event.source !== pending.popup ||
+      message.action !== pending.action ||
+      typeof message.token !== 'string' ||
+      !message.token ||
+      message.token.length > 16 * 1024 ||
+      /\s/.test(message.token)
+    ) {
+      return;
+    }
+    try {
+      pending.popup.close?.();
+    } catch (_) {}
+    settleFreshTokenRequest(
+      message.state,
+      'resolve',
+      message.token
+    );
+  }
+
+  function cancelFreshTokenRequests() {
+    for (const [requestState, pending] of [
+      ...state.freshTokenRequests.entries()
+    ]) {
+      try {
+        pending.popup.close?.();
+      } catch (_) {}
+      settleFreshTokenRequest(
+        requestState,
+        'reject',
+        new Error('Fresh account access was cancelled.')
+      );
+    }
+  }
+
+  async function getFreshToken({ action } = {}) {
+    if (!FRESH_TOKEN_ACTIONS.has(action)) {
+      throw new TypeError('A supported fresh-token action is required.');
+    }
+    await init();
+    if (
+      !state.config?.success ||
+      !state.config?.clerkEnabled ||
+      !state.config?.publishableKey
+    ) {
+      throw new Error('LTTH account sign-in is unavailable.');
+    }
+
+    const requestState = createBridgeState();
+    const callbackUrl = new URL(getCallbackUrl());
+    callbackUrl.searchParams.set('relay', 'fresh-token');
+    callbackUrl.searchParams.set('relay_action', action);
+    const bridgeUrl = new URL(getBridgeUrl());
+    bridgeUrl.searchParams.set('mode', 'sign-in');
+    bridgeUrl.searchParams.set('state', requestState);
+    bridgeUrl.searchParams.set('return_to', callbackUrl.toString());
+
+    const popup = openWindow(bridgeUrl.toString());
+    if (!popup) {
+      throw new Error('The sign-in window was blocked.');
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        try {
+          popup.close?.();
+        } catch (_) {}
+        settleFreshTokenRequest(
+          requestState,
+          'reject',
+          new Error('The sign-in window timed out.')
+        );
+      }, FRESH_TOKEN_TIMEOUT_MS);
+      state.freshTokenRequests.set(requestState, {
+        action,
+        popup,
+        resolve,
+        reject,
+        timeoutId
+      });
+    });
+  }
+
   async function clearBridgeSession(shouldRender = true) {
+    cancelFreshTokenRequests();
     state.signedOutExplicitly = true;
     localStorage.setItem(getSignedOutStorageKey(), '1');
     clearStoredBridgeToken();
@@ -493,6 +632,9 @@
 
   function configureForTest(options = {}) {
     state.navigate = typeof options.navigate === 'function' ? options.navigate : null;
+    state.openWindow = typeof options.openWindow === 'function'
+      ? options.openWindow
+      : null;
   }
 
   const api = {
@@ -510,6 +652,7 @@
       return state.signedIn;
     },
     getToken,
+    getFreshToken,
     init,
     mountSignIn,
     mountSignUp,
@@ -537,6 +680,7 @@
 
   window.StoreAuth = api;
   window.ClerkStoreAuth = api;
+  window.addEventListener('message', handleFreshTokenMessage);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

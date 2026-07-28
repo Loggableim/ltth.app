@@ -13,7 +13,9 @@ describe('Profile restart flow', () => {
     test('profile switching schedules a backend restart directly', () => {
         const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 
-        expect(serverSource).toContain('function scheduleServerRestart');
+        expect(serverSource).toContain(
+            'serverRestartCoordinator.schedule(reason)'
+        );
         expect(serverSource).toContain('scheduleServerRestartAfterResponse(res, `profile switch to ${username}`)');
         expect(serverSource).toContain('restartScheduled: true');
     });

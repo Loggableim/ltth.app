@@ -1,0 +1,22 @@
+{
+  "name": "@ltth/overlay-router",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:raw-path-ruleset": "node --test test/raw-path-ruleset-validator.node.mjs",
+    "test:configuration": "node --test test/configuration-validator.node.mjs",
+    "validate:raw-path-ruleset": "node scripts/validate-raw-path-ruleset.mjs",
+    "dev": "wrangler dev",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "d1:migrate:local": "wrangler d1 migrations apply OVERLAY_ROUTING_DB --local"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.18.8",
+    "vitest": "4.1.10",
+    "wrangler": "4.114.0"
+  }
+}

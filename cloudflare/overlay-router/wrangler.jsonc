@@ -1,0 +1,104 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ltth-overlay-router",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-27",
+  "workers_dev": false,
+  "preview_urls": false,
+  "logpush": false,
+  "tail_consumers": [],
+  "streaming_tail_consumers": [],
+  "observability": {
+    "enabled": false,
+    "logs": {
+      "invocation_logs": false
+    },
+    "traces": {
+      "enabled": false
+    }
+  },
+  "vars": {
+    "OVERLAY_ROUTING_ENVIRONMENT": "local"
+  },
+  // Production also requires OVERLAY_RAW_PATH_GUARD_TOKEN plus the ordered
+  // Cloudflare raw-path transform rules recorded in the Task 6 report.
+  "d1_databases": [
+    {
+      "binding": "OVERLAY_ROUTING_DB",
+      "database_name": "ltth-overlay-routing-local",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "env": {
+    "staging": {
+      "workers_dev": false,
+      "preview_urls": false,
+      "logpush": false,
+      "tail_consumers": [],
+      "streaming_tail_consumers": [],
+      "observability": {
+        "enabled": false,
+        "logs": {
+          "invocation_logs": false
+        },
+        "traces": {
+          "enabled": false
+        }
+      },
+      "vars": {
+        "OVERLAY_ROUTING_ENVIRONMENT": "staging"
+      },
+      "routes": [
+        {
+          "pattern": "overlay-staging.ltth.app",
+          "custom_domain": true
+        },
+        {
+          "pattern": "*.overlay-staging.ltth.app/*",
+          "zone_name": "ltth.app"
+        }
+      ],
+      "d1_databases": [
+        {
+          "binding": "OVERLAY_ROUTING_DB",
+          "database_name": "ltth-overlay-routing-staging"
+        }
+      ]
+    },
+    "production": {
+      "workers_dev": false,
+      "preview_urls": false,
+      "logpush": false,
+      "tail_consumers": [],
+      "streaming_tail_consumers": [],
+      "observability": {
+        "enabled": false,
+        "logs": {
+          "invocation_logs": false
+        },
+        "traces": {
+          "enabled": false
+        }
+      },
+      "vars": {
+        "OVERLAY_ROUTING_ENVIRONMENT": "production"
+      },
+      "routes": [
+        {
+          "pattern": "overlay.ltth.app",
+          "custom_domain": true
+        },
+        {
+          "pattern": "*.ltth.app/*",
+          "zone_name": "ltth.app"
+        }
+      ],
+      "d1_databases": [
+        {
+          "binding": "OVERLAY_ROUTING_DB",
+          "database_name": "ltth-overlay-routing-production"
+        }
+      ]
+    }
+  }
+}
