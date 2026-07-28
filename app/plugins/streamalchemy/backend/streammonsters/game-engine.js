@@ -43,6 +43,7 @@ class StreamMonstersEngine {
       eggExpiryMs: 24 * 60 * 60 * 1000,
       chargedHatchMultiplier: 0.75,
       maxUnhatchedEggs: 3,
+      autoHatchActiveViewers: true,
       comboWindowMs: 6_000,
       defaultCreatorName: 'Creator',
       ...config
@@ -259,6 +260,34 @@ class StreamMonstersEngine {
     return hatched;
   }
 
+  autoHatchReadyEggs({ isViewerActive } = {}) {
+    if (this.config.autoHatchActiveViewers === false || typeof isViewerActive !== 'function') {
+      return [];
+    }
+    const readyEggs = this.store.getReadyEggs?.() || [];
+    const activeViewerIds = [...new Set(readyEggs
+      .map(egg => egg.user_id)
+      .filter(userId => isViewerActive(userId))
+    )];
+    const hatched = [];
+    for (const userId of activeViewerIds) {
+      while (this.store.getViewerEggs(userId, 'ready').length) {
+        try {
+          hatched.push(this.hatchEgg(userId, null, { autoHatch: true }));
+        } catch (error) {
+          if (
+            error?.code === 'STREAM_MONSTERS_EGG_NOT_FOUND' ||
+            error?.code === 'STREAM_MONSTERS_EGG_NOT_READY'
+          ) {
+            break;
+          }
+          throw error;
+        }
+      }
+    }
+    return hatched;
+  }
+
   markReadyEggs() {
     const nowMs = this.now();
     let ready = [];
@@ -295,7 +324,7 @@ class StreamMonstersEngine {
     return ready;
   }
 
-  hatchEgg(userId, slot = null) {
+  hatchEgg(userId, slot = null, { autoHatch = false } = {}) {
     return this.store.runInTransaction(() => {
       const visibleEggs = this.store.getViewerEggs(userId)
         .filter(egg => ['incubating', 'queued', 'ready'].includes(egg.state));
@@ -339,7 +368,12 @@ class StreamMonstersEngine {
         };
         throw error;
       }
-      this.emitAfterCommit('streammonsters:hatch_started', { userId, egg, slot: index + 1 });
+      this.emitAfterCommit('streammonsters:hatch_started', {
+        userId,
+        egg,
+        slot: index + 1,
+        ...(autoHatch ? { autoHatch: true } : {})
+      });
       const currentMs = this.now();
       const reservation = this.collection?.reserveTemplateForEgg(egg);
       const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
@@ -352,7 +386,12 @@ class StreamMonstersEngine {
         new Set(this.store.getViewerMonsters(userId).map(item => item.element)).size,
         this.streamKey
       );
-      this.emitAfterCommit('streammonsters:egg_hatched', { userId, egg, monster });
+      this.emitAfterCommit('streammonsters:egg_hatched', {
+        userId,
+        egg,
+        monster,
+        ...(autoHatch ? { autoHatch: true } : {})
+      });
       return monster;
     });
   }

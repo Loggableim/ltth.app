@@ -118,6 +118,68 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(dom.window.document.querySelector('[data-egg-id="free-public"]')).toBeNull();
   });
 
+  test('renders and refreshes a readable shelf status for incubation, queue, ready, expired and free offers', () => {
+    const Shelf = loadShelf();
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
+    `);
+    let now = 1_000;
+    const intervals = [];
+    const view = Shelf.createEggStageView({
+      document: dom.window.document,
+      now: () => now,
+      setInterval: (callback, milliseconds) => {
+        intervals.push({ callback, milliseconds });
+        return intervals.length;
+      },
+      clearInterval: () => {},
+      labels: {
+        incubating: 'Schl\u00fcpft in {time}',
+        queued: 'Warteschlange #{position}',
+        ready: 'Bereit \u00b7 {command}',
+        expired: 'Verrottet',
+        reserved: 'Reserviert \u00b7 {time}',
+        public: 'Gratis \u00b7 {command}'
+      },
+      getHatchReference: () => '!schlupf',
+      getAdoptReference: () => '!adoptieren'
+    });
+
+    view.applySnapshot([
+      egg('owned-incubating'),
+      egg('owned-queued', { state: 'queued', queuePosition: 2, timing: { landedAtMs: 1_000 } }),
+      egg('owned-ready', { state: 'ready' }),
+      egg('owned-expired', { state: 'expired' }),
+      egg('free-reserved', {
+        provenance: 'free',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        timing: { landedAtMs: 1_000, publicAtMs: 61_000 }
+      }),
+      egg('free-public', {
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true
+      })
+    ]);
+
+    const label = id => dom.window.document.querySelector(
+      `[data-egg-id="${id}"] [data-egg-timing]`
+    )?.textContent;
+    expect(label('owned-incubating')).toBe('Schl\u00fcpft in 00:04');
+    expect(label('owned-queued')).toBe('Warteschlange #2');
+    expect(label('owned-ready')).toBe('Bereit \u00b7 !schlupf');
+    expect(label('owned-expired')).toBe('Verrottet');
+    expect(label('free-reserved')).toBe('Reserviert \u00b7 01:00');
+    expect(label('free-public')).toBe('Gratis \u00b7 !adoptieren');
+
+    now = 2_000;
+    intervals.find(entry => entry.milliseconds === 1_000).callback();
+    expect(label('owned-incubating')).toBe('Schl\u00fcpft in 00:03');
+    view.destroy();
+  });
+
   test('plays the shelf landing animation only once per egg id', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`

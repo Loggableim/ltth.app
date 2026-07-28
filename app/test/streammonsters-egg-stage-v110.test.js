@@ -224,6 +224,29 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
     }));
   });
 
+  test('does not restore a claimed free egg into the shared shelf on reconnect', () => {
+    const subject = createSubject();
+    subject.freeEggs.onFirstChat({
+      userId: 'viewer-a',
+      streamKey: 'creator:stream-1',
+      eventId: 'chat-1',
+      displayName: 'Viewer A',
+      nowMs: 1_000
+    });
+
+    const claimed = subject.freeEggs.adopt({
+      userId: 'viewer-a',
+      streamKey: 'creator:stream-1',
+      eventId: 'adopt-1',
+      nowMs: 1_001
+    });
+    const projector = new EggStageProjector({ store: subject.store, now: subject.now });
+
+    expect(claimed).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
+    expect(subject.store.getViewerEggs('viewer-a')).toHaveLength(1);
+    expect(projector.snapshot('creator:stream-1')).toEqual([]);
+  });
+
   test('projects queue, ready, and removal transitions without exposing internal egg ids', () => {
     const subject = createSubject({ hatchDurationMs: 100, eggExpiryMs: 200 });
     const eggs = Array.from({ length: 4 }, (_, index) => (

@@ -275,6 +275,41 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
   });
 
+  test('uses recent same-stream viewer activity for the ready-timer auto hatch path', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersEngine.setStreamKey('creator:active-egg-stream');
+    const activeViewer = plugin.resolveStreamMonstersViewerId({
+      platformUserId: 'platform-active-viewer',
+      legacyUserId: 'active-viewer'
+    });
+    expect(plugin.markStreamMonstersViewerActive(activeViewer)).toBe(true);
+
+    const autoHatch = jest.spyOn(plugin.streamMonstersEngine, 'autoHatchReadyEggs')
+      .mockImplementation(({ isViewerActive }) => {
+        expect(isViewerActive(activeViewer)).toBe(true);
+        expect(isViewerActive('idle-viewer')).toBe(false);
+        return [];
+      });
+    plugin.runStreamMonstersReadyTimer();
+    expect(autoHatch).toHaveBeenCalledTimes(1);
+
+    plugin.updateConfig({
+      streamMonsters: {
+        autoHatchActiveViewers: false,
+        autoHatchActiveWindowSeconds: 30
+      }
+    });
+    expect(plugin.streamMonstersEngine.config).toEqual(expect.objectContaining({
+      autoHatchActiveViewers: false,
+      autoHatchActiveWindowSeconds: 30
+    }));
+    expect(plugin.streamMonstersViewerActivity.activeWindowMs).toBe(30_000);
+    await plugin.destroy();
+    expect(plugin.streamMonstersViewerActivity).toBeNull();
+  });
+
   test('deduplicates retried provider gifts while processing each repeat in the event once', async () => {
     const { api, events } = createApi();
     const plugin = new StreamAlchemyPlugin(api);

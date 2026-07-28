@@ -479,6 +479,23 @@
       transform:translateX(-50%); font-size:clamp(11px,1.15vw,16px); font-weight:1000;
       letter-spacing:.04em; white-space:nowrap;
     }
+    #egg-shelf [data-egg-timing] {
+      position:absolute; z-index:3; bottom:-19px; left:50%; min-width:max-content;
+      max-width:clamp(82px,13vw,180px); padding:4px 7px; border:1px solid #adf5ff8c;
+      border-radius:999px; color:#f8fcff; background:#071325df; box-shadow:0 4px 12px #000b;
+      transform:translateX(-50%); font-size:clamp(9px,1.05vw,14px); font-weight:950;
+      letter-spacing:.025em; line-height:1.1; text-align:center; white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px #000;
+    }
+    #egg-shelf .egg-shelf-item[data-state="ready"] [data-egg-timing] {
+      border-color:#fff0a8; color:#fff7bf; background:#402d0ee8;
+    }
+    #egg-shelf .egg-shelf-item[data-state="queued"] [data-egg-timing] {
+      border-color:#d8bcff; color:#f0e8ff; background:#21173de8;
+    }
+    #egg-shelf .egg-shelf-item[data-provenance="free"] [data-egg-timing] {
+      border-color:#ffe18b; color:#fff3bb;
+    }
     #egg-shelf [data-egg-overflow] {
       position:relative; display:grid; place-items:end center; width:clamp(54px,6.5vw,88px);
       height:clamp(68px,8.5vw,110px);
@@ -1250,7 +1267,17 @@
     setTimeout:window.setTimeout.bind(window),
     clearTimeout:window.clearTimeout.bind(window),
     setInterval:window.setInterval.bind(window),
-    clearInterval:window.clearInterval.bind(window)
+    clearInterval:window.clearInterval.bind(window),
+    labels:{
+      incubating:text('eggShelfIncubating', 'Schlüpft in {time}'),
+      queued:text('eggShelfQueued', 'Warteschlange #{position}'),
+      ready:text('eggShelfReady', 'Bereit · {command}'),
+      expired:text('eggShelfExpired', 'Verrottet'),
+      reserved:text('eggShelfReserved', 'Reserviert · {time}'),
+      public:text('eggShelfPublic', 'Gratis · {command}')
+    },
+    getHatchReference:() => commandReference('hatch'),
+    getAdoptReference:() => commandReference('adopt')
   }) || {
     applyEvent:() => false,
     applySnapshot:() => ({ total:0, visible:[], overflow:null }),
