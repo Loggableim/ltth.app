@@ -94,6 +94,32 @@ describe('Talking Heads speaker-stage slot overlay', () => {
     });
   });
 
+  test('queues a preview behind a real spin so the real acknowledgement still arrives once', () => {
+    const { handlers, socket } = bootOverlay();
+    const startSpin = handlers.get('talkingheads:avatar:spin:start');
+
+    expect(startSpin).toEqual(expect.any(Function));
+    if (!startSpin) return;
+
+    startSpin(spinPayload({ duration: 240 }));
+    startSpin(spinPayload({
+      preview: true,
+      playbackId: 'preview-spin-1',
+      userId: 'talking-heads-preview',
+      spinId: 'preview-opaque-id',
+      duration: 80
+    }));
+
+    jest.advanceTimersByTime(240);
+
+    expect(socket.emit).toHaveBeenCalledTimes(1);
+    expect(socket.emit).toHaveBeenCalledWith('talkingheads:avatar:spin:complete', {
+      playbackId: 'playback-slot-1',
+      userId: 'viewer-slot-1',
+      spinId: 'opaque-spin-1'
+    });
+  });
+
   test('does not let a stale playback end remove a newer speaker stage for the same viewer', () => {
     const { dom, handlers } = bootOverlay();
     const start = handlers.get('talkingheads:animation:start');

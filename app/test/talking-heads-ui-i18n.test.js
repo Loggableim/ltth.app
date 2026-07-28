@@ -12,7 +12,20 @@ describe('Talking Heads runtime UI localization', () => {
     'previewStarted',
     'animationStarted',
     'testSpinStarted',
-    'statusUnavailable'
+    'statusUnavailable',
+    'enabled',
+    'disabled',
+    'healthUpdated',
+    'directorReady',
+    'requestFailed',
+    'framePreviewUnavailable',
+    'chooseManualZip',
+    'manualSetUploaded',
+    'manualSetDeleted',
+    'manualSetAssigned',
+    'cacheCleared',
+    'viewerBarSaved',
+    'copyUnavailable'
   ];
 
   test('uses a stable plugin-namespaced key prefix for dynamic dashboard text', () => {

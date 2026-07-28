@@ -242,6 +242,10 @@ input[type="file"] { padding: 7px; }
 }
 .boba-thumbnail {
   min-height: 58px;
+  display: grid;
+  grid-template-rows: 42px auto;
+  place-items: center;
+  gap: 2px;
   border: 1px solid rgba(170, 222, 255, .17);
   border-radius: 9px;
   color: #c6e7ff;
@@ -250,6 +254,8 @@ input[type="file"] { padding: 7px; }
   font-size: 10px;
   font-weight: 800;
 }
+.boba-thumbnail img { width: 42px; height: 42px; object-fit: contain; filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .35)); }
+.boba-thumbnail span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .boba-thumbnail.is-selected { border-color: #ffe686; color: #fff7d3; box-shadow: 0 0 0 2px rgba(255, 230, 134, .14); }
 
 .tts-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; margin-top: 12px; }

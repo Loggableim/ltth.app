@@ -34,6 +34,9 @@ class TTSPlugin {
     static MAX_GAIN = 3.0;    // Maximum gain multiplier (300%)
     static DEFAULT_GAIN = 1.0; // Default gain multiplier (100%)
 
+    // Talking Heads permits a 10 second slot reveal plus its 500ms local-overlay grace.
+    static MIN_AVATAR_PREPARATION_TIMEOUT_MS = 10500;
+
     // Config keys that should not be updated via regular config update mechanism
     // These keys have dedicated handling (e.g., stored in global settings, need engine reinitialization)
     static CONFIG_KEYS_EXCLUDED_FROM_UPDATE = new Set([
@@ -948,7 +951,10 @@ class TTSPlugin {
         }
 
         const configured = Number(this.config?.avatarPreparationTimeoutMs);
-        const timeoutMs = Math.max(1, Math.round(Number.isFinite(configured) ? configured : 8500));
+        const timeoutMs = Math.max(
+            TTSPlugin.MIN_AVATAR_PREPARATION_TIMEOUT_MS,
+            Math.max(1, Math.round(Number.isFinite(configured) ? configured : 8500))
+        );
         let timeoutId = null;
         try {
             const result = await Promise.race([
@@ -1180,7 +1186,7 @@ class TTSPlugin {
             playbackEstimateBufferMs: 2000, // Compatibility buffer when audio duration cannot be measured
             rendererPlaybackWatchdogMs: 15000, // Release queue when no dashboard renderer acknowledges playback
             rendererPlaybackMaxMs: 120000, // Hard cap remains bounded even if a renderer keeps reporting progress
-            avatarPreparationTimeoutMs: 8500, // Independent safety cap around a Talking Heads spin gate
+            avatarPreparationTimeoutMs: 10500, // Covers the 10s Talking Heads spin plus its 500ms grace
             enableEngineCircuitBreaker: true, // Temporarily skip engines with repeated failures
             engineCircuitBreakerFailureThreshold: 3,
             engineCircuitBreakerCooldownMs: 30000,

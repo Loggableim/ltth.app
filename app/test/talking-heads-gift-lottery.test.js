@@ -33,6 +33,10 @@ function spinIdFor(io, playbackId) {
 }
 
 describe('Talking Heads gift avatar lottery', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('registers only the configured gift behavior and rerolls an existing avatar', async () => {
     const { plugin, api, io } = createPlugin();
     plugin._registerAvatarLotteryEvents();
@@ -121,10 +125,12 @@ describe('Talking Heads gift avatar lottery', () => {
   });
 
   test('defers a gift that arrives during an initial avatar spin until renderer terminal', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     const { plugin, api, io } = createPlugin();
     let currentAssignment = null;
     plugin.config.avatarLotteryEnabled = true;
     plugin.config.lotteryGiftNames = ['Heart Me'];
+    plugin.config.spinDurationMs = 10;
     plugin.assetSpriteLibrary = {
       getRandomSelection: jest.fn((random, excludedSelection) => excludedSelection ? dog : fox),
       getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
@@ -167,6 +173,12 @@ describe('Talking Heads gift avatar lottery', () => {
       playbackId: 'initial-spin',
       userId: 'viewer-1',
       spinId: spinIdFor(io, 'initial-spin')
+    })).toBe(false);
+    await jest.advanceTimersByTimeAsync(10);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'initial-spin',
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'initial-spin')
     })).toBe(true);
     await expect(preparation).resolves.toEqual(expect.objectContaining({ spinStatus: 'complete' }));
 
@@ -191,10 +203,12 @@ describe('Talking Heads gift avatar lottery', () => {
   });
 
   test('keeps a first-spin reservation after acknowledgement until renderer failure terminal', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     const { plugin, api, io } = createPlugin();
     let currentAssignment = null;
     plugin.config.avatarLotteryEnabled = true;
     plugin.config.lotteryGiftNames = ['Heart Me'];
+    plugin.config.spinDurationMs = 10;
     plugin.assetSpriteLibrary = {
       getRandomSelection: jest.fn((random, excludedSelection) => excludedSelection ? dog : fox),
       getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
@@ -222,6 +236,12 @@ describe('Talking Heads gift avatar lottery', () => {
       hasAssignedVoice: true
     });
     await new Promise((resolve) => setImmediate(resolve));
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'post-reveal-gap')
+    })).toBe(false);
+    await jest.advanceTimersByTimeAsync(10);
     expect(plugin._completeAvatarSpin({
       playbackId: 'post-reveal-gap',
       userId: 'viewer-1',

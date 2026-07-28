@@ -45,7 +45,8 @@ describe('Talking Heads renderer lifecycle', () => {
     jest.useRealTimers();
   });
 
-  test('persists an assigned-voice avatar before emitting and awaiting its spin', async () => {
+  test('persists an assigned-voice avatar before emitting and only completes its spin at reveal', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     const { plugin, io } = createTalkingHeads();
 
     const preparation = plugin.prepareAvatarForPlayback({
@@ -77,6 +78,18 @@ describe('Talking Heads renderer lifecycle', () => {
       userId: 'viewer-spin',
       spinId: 'untrusted-spin-id'
     })).toBe(false);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'playback-spin',
+      userId: 'viewer-spin',
+      spinId: spin.spinId
+    })).toBe(false);
+    await jest.advanceTimersByTimeAsync(9);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'playback-spin',
+      userId: 'viewer-spin',
+      spinId: spin.spinId
+    })).toBe(false);
+    await jest.advanceTimersByTimeAsync(1);
     expect(plugin._completeAvatarSpin({
       playbackId: 'playback-spin',
       userId: 'viewer-spin',

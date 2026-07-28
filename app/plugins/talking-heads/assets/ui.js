@@ -6,7 +6,9 @@
     catalog: { packs: [] },
     status: null,
     manualSets: [],
-    viewerBar: null
+    viewerBar: null,
+    framePreviewKey: '',
+    framePreviewRequest: null
   };
   const messages = {
     configSaved: 'Director settings saved.',
@@ -22,6 +24,19 @@
     bridgeReady: 'Bridge ready',
     bridgeWaiting: 'Bridge waiting',
     bridgeUnavailable: 'Bridge unavailable',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    healthUpdated: 'Live bridge health updated.',
+    directorReady: 'Boba library and director settings are ready.',
+    requestFailed: 'Request failed: {message}',
+    framePreviewUnavailable: 'The selected Boba frame preview is unavailable.',
+    chooseManualZip: 'Choose a set name and ZIP first.',
+    manualSetUploaded: 'Manual set {setName} uploaded.',
+    manualSetDeleted: 'Manual set deleted.',
+    manualSetAssigned: 'Manual set assigned.',
+    cacheCleared: 'Generated cache cleared.',
+    viewerBarSaved: 'Viewer Bar saved locally.',
+    copyUnavailable: 'Copy is unavailable in this browser.',
     urlCopied: 'URL copied.',
     noManualSets: 'No manual sets yet.',
     delete: 'Delete',
@@ -37,7 +52,22 @@
   function directorText(key, fallback, params = {}) {
     const fullKey = `plugins.talking-heads.talking_heads_ui.stream_director.messages.${key}`;
     const value = window.i18n?.t?.(fullKey, params);
-    return value && value !== fullKey ? value : fallback || messages[key] || key;
+    const text = value && value !== fullKey ? value : fallback || messages[key] || key;
+    return String(text).replace(/\{([\w]+)\}/g, (match, name) => (
+      Object.hasOwn(params, name) ? String(params[name]) : match
+    ));
+  }
+
+  function errorText(error, fallbackKey = 'requestFailed') {
+    const message = String(error?.message || directorText('statusUnavailable')).trim();
+    return directorText(fallbackKey, undefined, { message });
+  }
+
+  function showError(error, { toast = false } = {}) {
+    const message = errorText(error);
+    setStatus(message, true);
+    if (toast) notify(message, 'error');
+    return message;
   }
 
   function setStatus(text, isError = false) {
@@ -60,7 +90,7 @@
   async function readJson(response) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success === false) {
-      throw new Error(data.error || 'The request could not be completed.');
+      throw new Error(data.error || directorText('statusUnavailable'));
     }
     return data;
   }
@@ -99,6 +129,60 @@
       assetCharacter: el('assetCharacter')?.value || 'Fox',
       assetOptions: options
     };
+  }
+
+  function selectionKey(selection = {}) {
+    return JSON.stringify({
+      assetPack: selection.assetPack || 'boba',
+      assetCharacter: selection.assetCharacter || 'Fox',
+      assetOptions: selection.assetOptions || {}
+    });
+  }
+
+  function bobaThumbnailUrl(character) {
+    const safeCharacter = encodeURIComponent(String(character || 'Fox'));
+    return `/plugins/talking-heads/assets/asset-packs/boba/animals/${safeCharacter}/Ready-To-Use/${safeCharacter}.png`;
+  }
+
+  function setFramePreview(selection, spriteUrl) {
+    const preview = el('assetPreview');
+    if (!preview || !spriteUrl) return;
+    preview.src = spriteUrl;
+    preview.alt = [selection.assetCharacter, selection.assetOptions?.expression]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  function materializeSelectedFrame({ force = false } = {}) {
+    const preview = el('assetPreview');
+    const selection = readSelection();
+    if (!preview || selection.assetPack !== 'boba') return Promise.resolve(null);
+
+    const key = selectionKey(selection);
+    if (state.framePreviewRequest?.key === key) return state.framePreviewRequest.promise;
+    if (!force && state.framePreviewKey === key && preview.getAttribute('src')) {
+      return Promise.resolve({ spriteUrls: { idle_neutral: preview.getAttribute('src') } });
+    }
+
+    const request = postJson('/api/talkingheads/test-generate', selection).then((data) => {
+      const spriteUrl = data.spriteUrls?.idle_neutral;
+      if (!spriteUrl) throw new Error(directorText('framePreviewUnavailable'));
+      if (selectionKey(readSelection()) === key) {
+        setFramePreview(selection, spriteUrl);
+        state.framePreviewKey = key;
+      }
+      return data;
+    });
+    state.framePreviewRequest = { key, promise: request };
+    request.then(
+      () => {
+        if (state.framePreviewRequest?.promise === request) state.framePreviewRequest = null;
+      },
+      () => {
+        if (state.framePreviewRequest?.promise === request) state.framePreviewRequest = null;
+      }
+    );
+    return request;
   }
 
   function renderOptions(preferred = {}) {
@@ -152,7 +236,14 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'boba-thumbnail';
-      button.textContent = character;
+      button.setAttribute('aria-label', character);
+      const image = document.createElement('img');
+      image.src = bobaThumbnailUrl(character);
+      image.alt = '';
+      image.loading = 'lazy';
+      const label = document.createElement('span');
+      label.textContent = character;
+      button.append(image, label);
       button.classList.toggle('is-selected', el('assetCharacter')?.value === character && el('assetPack')?.value === 'boba');
       button.addEventListener('click', () => {
         const packSelect = el('assetPack');
@@ -175,6 +266,7 @@
       .join(' · ');
     if (el('assetSelectionSummary')) el('assetSelectionSummary').textContent = summary || directorText('bobaAnimals');
     renderBobaThumbnails();
+    void materializeSelectedFrame().catch(showError);
   }
 
   function readConfig() {
@@ -227,8 +319,10 @@
     state.status = status;
     const bridge = status.rendererBridge || {};
     const set = (id, value) => { if (el(id)) el(id).textContent = value; };
-    set('enabledHealth', status.enabled ? 'Enabled' : 'Disabled');
-    set('rendererHealth', bridge.state || (bridge.available ? 'Ready' : 'Waiting'));
+    set('enabledHealth', status.enabled ? directorText('enabled') : directorText('disabled'));
+    set('rendererHealth', bridge.state === 'playing'
+      ? directorText('audioLive')
+      : bridge.available ? directorText('bridgeReady') : directorText('bridgeWaiting'));
     set('activeSpeakerHealth', status.activeSpeaker?.userId || directorText('idle'));
     set('activeSpinHealth', status.activeSpin?.userId || directorText('idle'));
     const statePill = el('directorState');
@@ -244,14 +338,14 @@
     try {
       const data = await getJson('/api/talkingheads/status');
       renderHealth(data.status || {});
-      if (!quiet) setStatus('Live bridge health updated.');
+      if (!quiet) setStatus(directorText('healthUpdated'));
     } catch (error) {
       const statePill = el('directorState');
       if (statePill) {
         statePill.textContent = directorText('bridgeUnavailable');
         statePill.dataset.state = 'error';
       }
-      if (!quiet) setStatus(error.message || directorText('statusUnavailable'), true);
+      if (!quiet) showError(error);
     }
   }
 
@@ -259,7 +353,7 @@
     const data = await getJson('/api/talkingheads/config');
     state.catalog = data.assetCatalog || { packs: [] };
     applyConfig(data.config || {});
-    setStatus('Boba library and director settings are ready.');
+    setStatus(directorText('directorReady'));
   }
 
   async function saveConfig({ quiet = false } = {}) {
@@ -275,8 +369,7 @@
       }
       return data;
     } catch (error) {
-      setStatus(error.message, true);
-      notify(error.message, 'error');
+      if (!quiet) showError(error, { toast: true });
       throw error;
     } finally {
       if (button) button.disabled = false;
@@ -287,15 +380,11 @@
     const button = el('prepareAssetBtn');
     if (button) button.disabled = true;
     try {
-      const data = await postJson('/api/talkingheads/test-generate', readSelection());
-      if (data.spriteUrls?.idle_neutral && el('assetPreview')) {
-        el('assetPreview').src = data.spriteUrls.idle_neutral;
-      }
+      await materializeSelectedFrame({ force: true });
       setStatus(directorText('framesPrepared'));
       notify(directorText('framesPrepared'));
     } catch (error) {
-      setStatus(error.message, true);
-      notify(error.message, 'error');
+      showError(error, { toast: true });
     } finally {
       if (button) button.disabled = false;
     }
@@ -309,8 +398,7 @@
       setStatus(directorText('testSpinStarted'));
       notify(directorText('testSpinStarted'));
     } catch (error) {
-      setStatus(error.message, true);
-      notify(error.message, 'error');
+      showError(error, { toast: true });
     } finally {
       if (button) button.disabled = false;
     }
@@ -327,8 +415,8 @@
       });
       setStatus(directorText('previewStarted'));
       notify(directorText('previewStarted'));
-    } catch (_) {
-      // saveConfig already showed the actionable failure.
+    } catch (error) {
+      showError(error, { toast: true });
     } finally {
       if (button) button.disabled = false;
     }
@@ -347,15 +435,14 @@
       setStatus(directorText('animationStarted'));
       notify(directorText('animationStarted'));
     } catch (error) {
-      setStatus(error.message, true);
-      notify(error.message, 'error');
+      showError(error, { toast: true });
     } finally {
       if (button) button.disabled = false;
     }
   }
 
   async function copyText(value) {
-    if (!value) throw new Error('No URL is available yet.');
+    if (!value) throw new Error(directorText('copyUnavailable'));
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(value);
       return;
@@ -369,7 +456,7 @@
     textarea.select();
     const copied = document.execCommand?.('copy');
     textarea.remove();
-    if (!copied) throw new Error('Copy is unavailable in this browser.');
+    if (!copied) throw new Error(directorText('copyUnavailable'));
   }
 
   async function copyField(id) {
@@ -377,7 +464,7 @@
       await copyText(el(id)?.value || '');
       notify(directorText('urlCopied'));
     } catch (error) {
-      notify(error.message, 'error');
+      notify(errorText(error), 'error');
     }
   }
 
@@ -409,7 +496,7 @@
       const data = await getJson('/api/talkingheads/manual-templates');
       renderManualSets(data.sets || []);
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -417,7 +504,7 @@
     const file = el('manualZip')?.files?.[0];
     const setName = el('manualSetName')?.value.trim();
     if (!file || !setName) {
-      setStatus('Choose a set name and ZIP first.', true);
+      setStatus(directorText('chooseManualZip'), true);
       return;
     }
     const formData = new FormData();
@@ -428,10 +515,10 @@
         method: 'POST',
         body: formData
       }));
-      setStatus(`Manual set ${data.setName || setName} uploaded.`);
+      setStatus(directorText('manualSetUploaded', undefined, { setName: data.setName || setName }));
       await loadManualSets();
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -442,9 +529,9 @@
         method: 'DELETE'
       }));
       await loadManualSets();
-      setStatus('Manual set deleted.');
+      setStatus(directorText('manualSetDeleted'));
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -455,9 +542,9 @@
         username: el('manualUsername')?.value.trim() || '',
         setId: el('manualSetSelect')?.value || ''
       });
-      setStatus('Manual set assigned.');
+      setStatus(directorText('manualSetAssigned'));
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -485,7 +572,7 @@
         list.append(row);
       });
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -494,9 +581,9 @@
     try {
       await postJson('/api/talkingheads/cache/clear');
       await loadCache();
-      setStatus('Generated cache cleared.');
+      setStatus(directorText('cacheCleared'));
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -509,7 +596,7 @@
       if (el('viewerBarMaxVisible')) el('viewerBarMaxVisible').value = state.viewerBar.maxVisibleViewers || 20;
       if (el('viewerBarAvatarSize')) el('viewerBarAvatarSize').value = state.viewerBar.avatarSize || 64;
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -522,9 +609,9 @@
         avatarSize: Number(el('viewerBarAvatarSize')?.value) || 64
       });
       state.viewerBar = data.config || state.viewerBar;
-      setStatus('Viewer Bar saved locally.');
+      setStatus(directorText('viewerBarSaved'));
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -536,7 +623,7 @@
         `${entry.timestamp || ''} ${entry.level || 'info'} ${entry.message || ''}`
       )).join('\n') || directorText('noLocalLog');
     } catch (error) {
-      setStatus(error.message, true);
+      showError(error);
     }
   }
 
@@ -594,8 +681,7 @@
     try {
       await loadConfig();
     } catch (error) {
-      setStatus(error.message, true);
-      notify(error.message, 'error');
+      showError(error, { toast: true });
     }
     await refreshStatus({ quiet: true });
   }

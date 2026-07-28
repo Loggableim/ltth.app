@@ -183,8 +183,28 @@ describe('TTS renderer lifecycle', () => {
       prepareAvatarForPlayback: jest.fn(() => new Promise(() => {}))
     });
     const timed = plugin._prepareAvatarForPlayback({ playbackId: 'gate-timeout' });
-    await jest.advanceTimersByTimeAsync(26);
+    await jest.advanceTimersByTimeAsync(10501);
     await expect(timed).resolves.toEqual(expect.objectContaining({ state: 'timeout' }));
+  });
+
+  test('keeps the maximum ten-second avatar reveal gate alive through its 500ms grace period', async () => {
+    jest.useFakeTimers();
+    const plugin = createPlugin();
+    plugin.config.avatarPreparationTimeoutMs = 8500;
+    plugin.api.getPlugin.mockReturnValue({
+      prepareAvatarForPlayback: jest.fn(() => new Promise(() => {}))
+    });
+
+    const gate = plugin._prepareAvatarForPlayback({ playbackId: 'maximum-spin-gate' });
+    let settled = false;
+    gate.then(() => { settled = true; });
+
+    await jest.advanceTimersByTimeAsync(8500);
+    expect(settled).toBe(false);
+    await jest.advanceTimersByTimeAsync(1999);
+    expect(settled).toBe(false);
+    await jest.advanceTimersByTimeAsync(1);
+    await expect(gate).resolves.toEqual(expect.objectContaining({ state: 'timeout' }));
   });
 
   test('keeps legacy tts:play fields while waiting for native renderer ended', async () => {

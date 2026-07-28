@@ -61,6 +61,7 @@
       this.reels = [...document.querySelectorAll('[data-slot-reel]')];
       this.timers = [];
       this.activeSpin = null;
+      this.pendingPreview = null;
       this.hideTimer = null;
     }
 
@@ -83,6 +84,9 @@
         this.root.classList.remove('is-visible', 'is-spinning', 'is-revealed');
         this.root.hidden = true;
         this.activeSpin = null;
+        const preview = this.pendingPreview;
+        this.pendingPreview = null;
+        if (preview) this.start(preview);
       }, delay);
     }
 
@@ -105,6 +109,7 @@
 
     _acknowledge(spin) {
       if (!spin || spin.acknowledged || this.activeSpin?.token !== spin.token) return;
+      if (spin.preview) return;
       if (!spin.spinId || !spin.playbackId || !spin.userId) return;
       spin.acknowledged = true;
       socket.emit('talkingheads:avatar:spin:complete', {
@@ -116,6 +121,14 @@
 
     start(data = {}) {
       if (!this.root || this.reels.length !== 3) return;
+      const isPreview = data.preview === true;
+      if (isPreview && this.activeSpin) {
+        if (!this.activeSpin.preview && !this.pendingPreview) {
+          this.pendingPreview = { ...data };
+        }
+        return;
+      }
+      if (!isPreview) this.pendingPreview = null;
       const winner = data.winner || {};
       const winnerEntry = {
         selection: winner.selection || {},
@@ -135,6 +148,7 @@
         playbackId: String(data.playbackId || '').trim(),
         userId: String(data.userId || '').trim(),
         spinId: String(data.spinId || '').trim(),
+        preview: isPreview,
         acknowledged: false
       };
       this.activeSpin = spin;

@@ -114,4 +114,84 @@ describe('Talking Heads Broadcast Arcade Stream Director', () => {
     });
     expect(fetchImpl.mock.calls.map(([url]) => url)).not.toContain('/api/talkingheads/preview-tts');
   });
+
+  test('renders Boba artwork cards and materializes the selected usable frame preview', async () => {
+    const html = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets', 'ui.js'), 'utf8');
+    const dom = new JSDOM(html, {
+      url: 'http://127.0.0.1:3000/plugins/talking-heads/ui.html',
+      pretendToBeVisual: true
+    });
+    const fetchImpl = jest.fn(async (url, options = {}) => {
+      if (url === '/api/talkingheads/config') {
+        return response({
+          success: true,
+          config: {
+            enabled: true,
+            assetPack: 'boba',
+            assetCharacter: 'Fox',
+            assetOptions: { expression: 'Default' },
+            firstAssignmentEnabled: true,
+            rerollGiftEnabled: true,
+            rerollGiftNames: ['Heart Me'],
+            spinDurationMs: 2600
+          },
+          assetCatalog: {
+            packs: [{
+              id: 'boba',
+              name: 'Boba Animals',
+              characters: ['Fox', 'Bear'],
+              options: { expression: ['Default', 'Happy'] }
+            }]
+          }
+        });
+      }
+      if (url === '/api/talkingheads/status') {
+        return response({ success: true, status: { enabled: true, rendererBridge: { available: true } } });
+      }
+      if (url === '/api/talkingheads/test-generate') {
+        const selection = JSON.parse(options.body || '{}');
+        return response({
+          success: true,
+          spriteUrls: {
+            idle_neutral: `/api/talkingheads/sprite/${selection.assetCharacter}-${selection.assetOptions?.expression || 'Default'}.svg`
+          }
+        });
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    const context = {
+      window: dom.window,
+      document: dom.window.document,
+      fetch: fetchImpl,
+      console,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      URL
+    };
+    dom.window.i18n = { t: jest.fn(() => '') };
+    vm.runInNewContext(source, context, { filename: 'talking-heads-ui.js' });
+
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+    await flush();
+    await flush();
+    await flush();
+
+    const grid = dom.window.document.getElementById('bobaThumbnailGrid');
+    const preview = dom.window.document.getElementById('assetPreview');
+    expect(grid.querySelectorAll('.boba-thumbnail img')).toHaveLength(2);
+    expect(grid.querySelector('.boba-thumbnail img').getAttribute('src'))
+      .toContain('/plugins/talking-heads/assets/asset-packs/boba/animals/Fox/Ready-To-Use/Fox.png');
+    expect(preview.getAttribute('src')).toBe('/api/talkingheads/sprite/Fox-Default.svg');
+
+    const character = dom.window.document.getElementById('assetCharacter');
+    character.value = 'Bear';
+    character.dispatchEvent(new dom.window.Event('change'));
+    await flush();
+    await flush();
+
+    expect(preview.getAttribute('src')).toBe('/api/talkingheads/sprite/Bear-Default.svg');
+  });
 });

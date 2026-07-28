@@ -412,13 +412,15 @@ class TalkingHeadsPlugin {
     if (existing) return existing.promise;
 
     const timeoutMs = Math.max(0, Number(payload.duration) || 0) + 500;
+    const createdAt = Date.now();
     let timer = null;
     const pending = {
       userId: payload.userId,
       spinId: payload.spinId,
       reason: payload.reason,
       duration: payload.duration,
-      createdAt: Date.now(),
+      createdAt,
+      revealAt: createdAt + Math.max(0, Number(payload.duration) || 0),
       promise: null,
       resolve: null,
       timer: null
@@ -463,6 +465,7 @@ class TalkingHeadsPlugin {
     if (!pending) return false;
     if (!data.userId || String(data.userId) !== String(pending.userId)) return false;
     if (!data.spinId || String(data.spinId) !== String(pending.spinId)) return false;
+    if (Date.now() < pending.revealAt) return false;
     if (pending.timer) clearTimeout(pending.timer);
     this.pendingAvatarSpins.delete(playbackId);
     pending.resolve({ created: true, spinStatus: 'complete' });
