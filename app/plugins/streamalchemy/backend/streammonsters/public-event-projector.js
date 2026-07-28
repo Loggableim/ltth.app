@@ -95,10 +95,11 @@ function boundedText(value, maximum = 96) {
 
 function publicViewerName(value) {
   const candidate = boundedText(value, 64);
+  const normalized = candidate?.replace(/^@+/, '');
   if (
-    !candidate ||
-    /^\d{8,}$/.test(candidate) ||
-    /^tiktok:\d+$/i.test(candidate)
+    !normalized ||
+    /^\d{8,}$/.test(normalized) ||
+    /^tiktok:\d+$/i.test(normalized)
   ) {
     return null;
   }

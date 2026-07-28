@@ -1196,9 +1196,10 @@ class StreamMonstersDatabase {
     `).get(value, value);
     const isPublicName = candidate => {
       const name = String(candidate || '').trim();
-      return name &&
-        !/^\d{8,}$/.test(name) &&
-        !/^tiktok:\d+$/i.test(name);
+      const normalized = name.replace(/^@+/, '');
+      return normalized &&
+        !/^\d{8,}$/.test(normalized) &&
+        !/^tiktok:\d+$/i.test(normalized);
     };
     if (isPublicName(identity?.current_unique_id)) return identity.current_unique_id;
     const aliases = this.db.prepare(`
