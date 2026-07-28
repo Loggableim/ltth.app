@@ -213,13 +213,24 @@ describe('Stream Monsters 1.10 public owner identity and avatar security', () =>
     expect(avatarProxyReference('https://p16-sign-va.tiktokcdn.com/a.webp'))
       .toMatch(/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i);
 
+    const arrayBuffer = jest.fn(async () => Uint8Array.from([1, 2, 3, 4]).buffer);
+    const read = jest.fn()
+      .mockResolvedValueOnce({ done: false, value: Uint8Array.from([1, 2, 3, 4]) })
+      .mockResolvedValueOnce({ done: true });
     const fetchImpl = jest.fn(async () => ({
       status: 200,
       headers: new Headers({
         'content-type': 'image/webp',
         'content-length': '4'
       }),
-      arrayBuffer: async () => Uint8Array.from([1, 2, 3, 4]).buffer
+      body: {
+        getReader: () => ({
+          read,
+          cancel: jest.fn(async () => {}),
+          releaseLock: jest.fn()
+        })
+      },
+      arrayBuffer
     }));
     await expect(fetchAvatar(
       'https://p16-sign-va.tiktokcdn.com/a.webp',
@@ -232,5 +243,36 @@ describe('Stream Monsters 1.10 public owner identity and avatar security', () =>
       'https://p16-sign-va.tiktokcdn.com/a.webp',
       expect.objectContaining({ redirect: 'manual' })
     );
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  test('stops reading a chunked avatar as soon as decompressed bytes exceed 2 MiB', async () => {
+    const mebibyte = 1024 * 1024;
+    const read = jest.fn()
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array(mebibyte) })
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array(mebibyte + 1) })
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array([9]) });
+    const cancel = jest.fn(async () => {});
+    const arrayBuffer = jest.fn(async () => new ArrayBuffer((3 * mebibyte) + 1));
+    let signal = null;
+    const fetchImpl = jest.fn(async (_url, options) => {
+      signal = options.signal;
+      return {
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/webp' }),
+        body: {
+          getReader: () => ({ read, cancel })
+        },
+        arrayBuffer
+      };
+    });
+
+    await expect(fetchAvatar(
+      'https://p16-sign-va.tiktokcdn.com/chunked.webp',
+      { fetchImpl }
+    )).rejects.toThrow('STREAM_MONSTERS_AVATAR_TOO_LARGE');
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(arrayBuffer).not.toHaveBeenCalled();
+    expect(signal.aborted).toBe(true);
   });
 });

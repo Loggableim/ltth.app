@@ -57,6 +57,32 @@ function avatarUrlFromToken(token) {
   }
 }
 
+async function readAvatarBody(response, maximumBytes, controller) {
+  const reader = response.body?.getReader?.();
+  if (!reader) {
+    throw new Error('STREAM_MONSTERS_AVATAR_BODY_UNAVAILABLE');
+  }
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = Buffer.from(value);
+      totalBytes += chunk.length;
+      if (totalBytes > maximumBytes) {
+        controller.abort();
+        await reader.cancel().catch(() => {});
+        throw new Error('STREAM_MONSTERS_AVATAR_TOO_LARGE');
+      }
+      chunks.push(chunk);
+    }
+  } finally {
+    reader.releaseLock?.();
+  }
+  return Buffer.concat(chunks, totalBytes);
+}
+
 async function fetchAvatar(value, {
   fetchImpl = global.fetch,
   timeoutMs = TIMEOUT_MS,
@@ -95,12 +121,10 @@ async function fetchAvatar(value, {
       }
       const contentLength = Number(response.headers.get('content-length'));
       if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
+        controller.abort();
         throw new Error('STREAM_MONSTERS_AVATAR_TOO_LARGE');
       }
-      const body = Buffer.from(await response.arrayBuffer());
-      if (body.length > maximumBytes) {
-        throw new Error('STREAM_MONSTERS_AVATAR_TOO_LARGE');
-      }
+      const body = await readAvatarBody(response, maximumBytes, controller);
       return { body, contentType };
     }
     throw new Error('STREAM_MONSTERS_AVATAR_REDIRECT_LIMIT');

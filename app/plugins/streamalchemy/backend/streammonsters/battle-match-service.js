@@ -2900,7 +2900,17 @@ class BattleMatchService {
   recoverActionMatch(matchId, nowMs = this.now()) {
     return this.store.runInImmediateTransaction(() => {
       const match = this.getMatch(matchId);
-      if (!match || match.state !== 'action' || match.actionDeadlineMs > nowMs) return false;
+      if (
+        !match ||
+        match.state !== 'action' ||
+        match.actionDeadlineMs > nowMs ||
+        (
+          match.chargePauseReason === 'reconnect' &&
+          match.chargePauseStartedAtMs != null
+        )
+      ) {
+        return false;
+      }
       match.participants.forEach(participant => {
         const existing = this.db.prepare(`
           SELECT 1 FROM streammonsters_match_decisions
@@ -3160,6 +3170,9 @@ class BattleMatchService {
     this.db.prepare(`
       SELECT match_id FROM streammonsters_matches
       WHERE state = 'action' AND action_deadline_ms <= ?
+        AND NOT (
+          charge_pause_reason = 'reconnect' AND charge_pause_started_at_ms IS NOT NULL
+        )
       ORDER BY action_deadline_ms, match_id
     `).all(nowMs).forEach(({ match_id: matchId }) => {
       recover('actionsExpired', matchId, () => this.recoverActionMatch(matchId, nowMs));

@@ -394,6 +394,51 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(restored.chargeWindow).not.toHaveProperty('pauseReason');
   });
 
+  test('auto-start sweep waits for reconnect restoration before timing out an expired Rules-v7 window', () => {
+    jest.useFakeTimers();
+    const original = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 30_000
+    });
+    original.advance(9_000);
+    let recovered = null;
+    try {
+      recovered = createMatchService({
+        store: original.service.store,
+        now: () => 39_000,
+        rulesVersion: 7,
+        autoStart: true
+      });
+
+      expect(recovered.getMatch(original.matchId)).toEqual(expect.objectContaining({
+        state: 'action',
+        actionDeadlineMs: 38_000,
+        chargePauseStartedAtMs: 30_000,
+        chargePauseReason: 'reconnect'
+      }));
+      expect(recovered.safeSweep()).toEqual(expect.objectContaining({
+        actionsExpired: 0
+      }));
+      expect(original.sqlite.prepare(`
+        SELECT COUNT(*) AS count
+        FROM streammonsters_match_decisions
+        WHERE match_id = ? AND source = 'timeout'
+      `).get(original.matchId).count).toBe(0);
+
+      const restored = recovered.getPublicSnapshot({ restoreReconnect: true })
+        .matches.find(match => match.matchId === original.matchId);
+      expect(restored).toEqual(expect.objectContaining({
+        state: 'action',
+        actionDeadlineMs: 47_000
+      }));
+      expect(restored.chargeWindow).not.toHaveProperty('pauseReason');
+    } finally {
+      recovered?.destroy();
+      jest.useRealTimers();
+    }
+  });
+
   test('Rules v7 timeout charge uses the persisted action deadline', () => {
     const { service, advance, decisions } = createReservedRulesV7Match({
       chargeA: 70,
