@@ -154,6 +154,7 @@ describe('public overlay Socket.IO registry', () => {
     'story:chapter-display',
     'stt-ticker:transcript',
     'streammonsters:battle_choices_revealed',
+    'streammonsters:monster_discovered',
     'streammonsters:tutorial_hint',
     'weather:trigger'
   ])('allows required outgoing event %s', eventName => {

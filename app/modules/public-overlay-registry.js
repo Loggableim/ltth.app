@@ -442,6 +442,7 @@ streammonsters:gift_combo
 streammonsters:hatch_started
 streammonsters:hype_changed
 streammonsters:hype_milestone
+streammonsters:monster_discovered
 streammonsters:monster_evolved
 streammonsters:monster_level_up
 streammonsters:monster_stat_auto_assigned

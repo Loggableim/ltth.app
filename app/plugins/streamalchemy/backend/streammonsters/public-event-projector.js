@@ -449,6 +449,12 @@ class StreamMonstersPublicEventProjector {
   }
 
   project(eventType, payload = {}) {
+    if (eventType === 'streammonsters:monster_discovered') {
+      return {
+        displayName: this.displayName(payload),
+        monster: projectMonster(payload.monster)
+      };
+    }
     if (eventType === 'streammonsters:monster_evolved') {
       const unlockedSkill = projectEvolutionSkill(payload.unlockedSkill);
       return {

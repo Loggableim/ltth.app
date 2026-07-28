@@ -144,6 +144,86 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
     ].forEach(secret => expect(publicJson).not.toContain(secret));
   });
 
+  test('projects monster discoveries to display name and normalized monster only', () => {
+    const { store, api, plugin } = createRuntime();
+    const emitted = plugin.emitStreamMonsters('streammonsters:monster_discovered', {
+      userId: 'tiktok:private-platform-id',
+      username: 'ReadableViewer',
+      monster: {
+        monster_id: 'private-monster-id',
+        user_id: 'tiktok:private-platform-id',
+        egg_id: 'private-egg-id',
+        seed: 'private-seed',
+        gift_id: 777,
+        visual_key: 'private-visual-key',
+        visual_source: 'provider',
+        name: 'Ashfang',
+        element: 'Ember',
+        rarity: 'Rare',
+        personality: 'Bold',
+        template_id: 'ashfang',
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        evolution_stage: 2,
+        unspent_stat_points: 3,
+        level: 4,
+        xp: 25,
+        stats: { vitality: 7, might: 8, guard: 6, agility: 7 }
+      },
+      template: {
+        id: 'private-template-id',
+        visualKey: 'private-template-visual-key',
+        providerMetadata: 'private-provider-metadata'
+      },
+      nested: {
+        previousUserId: 'private-previous-user',
+        roundSeed: 'private-round-seed'
+      }
+    });
+
+    expect(emitted).toEqual({
+      displayName: 'ReadableViewer',
+      monster: {
+        name: 'Ashfang',
+        element: 'Ember',
+        rarity: 'Rare',
+        level: 4,
+        xp: 25,
+        personality: 'Bold',
+        templateId: 'ashfang',
+        evolutionStage: 2,
+        unspentStatPoints: 3,
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        stats: { vitality: 7, might: 8, guard: 6, agility: 7 }
+      },
+      eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
+      correlationId: expect.stringMatching(/^sm-[a-f0-9]{32}$/)
+    });
+    expect(api.emit).toHaveBeenCalledTimes(1);
+    expect(api.emit).toHaveBeenCalledWith(
+      'streammonsters:monster_discovered',
+      emitted
+    );
+    expect(store.getRecentPublicEvents('creator:live-1')).toEqual([
+      expect.objectContaining({
+        type: 'streammonsters:monster_discovered',
+        payload: emitted
+      })
+    ]);
+    const publicJson = JSON.stringify(emitted);
+    [
+      'tiktok:private-platform-id',
+      'private-monster-id',
+      'private-egg-id',
+      'private-seed',
+      'private-visual-key',
+      'private-template-id',
+      'private-template-visual-key',
+      'private-provider-metadata',
+      'private-previous-user',
+      'private-round-seed'
+    ].forEach(secret => expect(publicJson).not.toContain(secret));
+  });
+
   test('uses stable opaque lifecycle IDs, suppresses duplicate live emits and replays one public event', () => {
     const { store, api, plugin } = createRuntime();
     store.resolveViewerIdentity({
