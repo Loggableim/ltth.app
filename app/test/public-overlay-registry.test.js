@@ -43,6 +43,7 @@ const expectedEntrypoints = [
   '/overlay/spotlight/:type',
   '/streammonsters/overlay',
   '/overlay/stt-ticker',
+  '/overlay/talking-heads',
   '/plugins/toptier/overlay.html',
   '/visual-fx-frame-webgpu/overlay',
   '/weather-control/overlay',
@@ -98,6 +99,10 @@ describe('public overlay HTTP registry', () => {
     ['GET', '/api/quiz-show/layouts/7'],
     ['GET', '/api/lastevent/last/gift'],
     ['GET', '/api/streammonsters/state'],
+    ['GET', '/overlay/talking-heads/assets/overlay.css'],
+    ['GET', '/overlay/talking-heads/assets/overlay.js'],
+    ['GET', '/api/talkingheads/sprite/Fox.png'],
+    ['GET', '/api/talkingheads/manual-sprite/creator-set/Fox.png'],
     ['GET', '/plugins/toptier/assets/overlay.js'],
     ['GET', '/api/weather/config'],
     ['GET', '/api/webgpu-weather/overlay-config']
@@ -132,7 +137,8 @@ describe('public overlay Socket.IO registry', () => {
     'goals:subscribe',
     'musicbot:request-status',
     'weather:client-ready',
-    'webgpu-weather:overlay-state'
+    'webgpu-weather:overlay-state',
+    'talkingheads:avatar:spin:complete'
   ])('allows required incoming event %s', eventName => {
     expect(isIncomingSocketEventAllowed(eventName)).toBe(true);
   });
@@ -156,6 +162,12 @@ describe('public overlay Socket.IO registry', () => {
     'streammonsters:battle_choices_revealed',
     'streammonsters:monster_discovered',
     'streammonsters:tutorial_hint',
+    'talkingheads:animation:start',
+    'talkingheads:animation:frame',
+    'talkingheads:animation:end',
+    'talkingheads:animation:stop',
+    'talkingheads:avatar:spawn',
+    'talkingheads:avatar:spin:start',
     'weather:trigger'
   ])('allows required outgoing event %s', eventName => {
     expect(isOutgoingSocketEventAllowed(eventName)).toBe(true);
@@ -163,6 +175,16 @@ describe('public overlay Socket.IO registry', () => {
 
   test('denies an unrelated outgoing dashboard event', () => {
     expect(isOutgoingSocketEventAllowed('admin:settings-updated')).toBe(false);
+  });
+
+  test.each([
+    'tts:renderer:started',
+    'tts:renderer:progress',
+    'tts:renderer:ended',
+    'tts:renderer:failed'
+  ])('keeps renderer acknowledgements local-only: %s', eventName => {
+    expect(isIncomingSocketEventAllowed(eventName)).toBe(false);
+    expect(isOutgoingSocketEventAllowed(eventName)).toBe(false);
   });
 });
 

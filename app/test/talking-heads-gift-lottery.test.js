@@ -25,53 +25,270 @@ const fox = { packId: 'boba', characterId: 'Fox', options: {} };
 const bear = { packId: 'boba', characterId: 'Bear', options: {} };
 const dog = { packId: 'boba', characterId: 'Dog', options: {} };
 
+function spinIdFor(io, playbackId) {
+  const event = io.emit.mock.calls.find(([eventName, payload]) => (
+    eventName === 'talkingheads:avatar:spin:start' && payload.playbackId === playbackId
+  ));
+  return event?.[1]?.spinId;
+}
+
 describe('Talking Heads gift avatar lottery', () => {
-  test('registers gift and chat listeners, then emits a local lottery result for Heart Me', async () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('registers only the configured gift behavior and rerolls an existing avatar', async () => {
     const { plugin, api, io } = createPlugin();
-    await plugin.init();
+    plugin._registerAvatarLotteryEvents();
 
     plugin.assetSpriteLibrary = {
-      getRandomSelection: jest.fn(() => fox),
+      getRandomSelection: jest.fn(() => dog),
       getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
       getSpriteSet: jest.fn(async (selection) => ({ ...selection, sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` } }))
     };
     plugin.avatarLotteryManager = {
-      getChoice: jest.fn(() => null),
-      shouldDraw: jest.fn(() => true),
-      draw: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'pending' })),
-      applyCommand: jest.fn()
+      getAssignment: jest.fn(() => ({ userId: 'viewer-1', username: 'ViewerOne', selection: fox, state: 'kept' })),
+      reroll: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'kept' }))
     };
 
     await plugin._handleLotteryGift({ userId: 'viewer-1', uniqueId: 'ViewerOne', giftName: 'Heart Me' });
 
     expect(api.registerTikTokEvent).toHaveBeenCalledWith('gift', expect.any(Function));
-    expect(api.registerTikTokEvent).toHaveBeenCalledWith('chat', expect.any(Function));
-    expect(plugin.avatarLotteryManager.draw).toHaveBeenCalledWith('viewer-1', 'ViewerOne', fox);
-    expect(io.emit).toHaveBeenCalledWith('talkingheads:avatar:lottery:start', expect.objectContaining({
+    expect(api.registerTikTokEvent).toHaveBeenCalledTimes(1);
+    expect(plugin.assetSpriteLibrary.getRandomSelection).toHaveBeenCalledWith(expect.any(Function), fox);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer-1', 'ViewerOne', dog);
+    expect(io.emit).toHaveBeenCalledWith('talkingheads:avatar:spin:start', expect.objectContaining({
       userId: 'viewer-1',
       username: 'ViewerOne',
-      candidates: expect.arrayContaining([expect.objectContaining({ spriteUrl: '/sprite/Bear.svg' })]),
-      winner: expect.objectContaining({ sprites: { idle_neutral: '/sprite/Fox.svg' } }),
-      keepCommand: '!keep',
-      rerollCommand: '!reroll'
+      reason: 'gift-reroll',
+      candidates: expect.arrayContaining([expect.objectContaining({ spriteUrl: '/api/talkingheads/sprite/Bear.svg' })]),
+      winner: expect.objectContaining({ sprites: { idle_neutral: '/api/talkingheads/sprite/Dog.svg' } })
     }));
+    const payload = io.emit.mock.calls.find(([event]) => event === 'talkingheads:avatar:spin:start')[1];
+    expect(payload).not.toHaveProperty('keepCommand');
+    expect(payload).not.toHaveProperty('rerollCommand');
   });
 
-  test('uses a configured gift ID over names and forwards exact keep/reroll chat commands', async () => {
+  test('uses a configured gift ID over names and ignores gifts from users without avatars', async () => {
     const { plugin } = createPlugin();
-    await plugin.init();
     plugin.config.lotteryGiftId = '42';
-    plugin.avatarLotteryManager = { applyCommand: jest.fn(() => ({ state: 'kept' })) };
+    plugin.avatarLotteryManager = { getAssignment: jest.fn(() => null), reroll: jest.fn() };
+    plugin.assetSpriteLibrary = { getRandomSelection: jest.fn() };
 
     expect(plugin._isLotteryGift({ giftId: '42', giftName: 'Other' })).toBe(true);
     expect(plugin._isLotteryGift({ giftId: '17', giftName: 'Heart Me' })).toBe(false);
 
-    await plugin._handleLotteryCommand({ userId: 'viewer-1', comment: ' !KEEP ' });
-    await plugin._handleLotteryCommand({ userId: 'viewer-1', comment: 'hello !reroll' });
-    await plugin._handleLotteryCommand({ userId: 'viewer-1', comment: '!ReRoLl' });
+    await expect(plugin._handleLotteryGift({
+      userId: 'viewer-1',
+      uniqueId: 'ViewerOne',
+      giftId: '42'
+    })).resolves.toBe(false);
+    expect(plugin.assetSpriteLibrary.getRandomSelection).not.toHaveBeenCalled();
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+  });
 
-    expect(plugin.avatarLotteryManager.applyCommand).toHaveBeenNthCalledWith(1, 'viewer-1', '!keep');
-    expect(plugin.avatarLotteryManager.applyCommand).toHaveBeenNthCalledWith(2, 'viewer-1', '!reroll');
-    expect(plugin.avatarLotteryManager.applyCommand).toHaveBeenCalledTimes(2);
+  test('defers a gift reroll until the viewer is no longer speaking', async () => {
+    const { plugin, api } = createPlugin();
+    plugin.activePlaybackByUser.set('viewer-1', 'active-playback');
+    plugin.assetSpriteLibrary = { getRandomSelection: jest.fn() };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => ({ userId: 'viewer-1', username: 'ViewerOne', selection: fox })),
+      reroll: jest.fn()
+    };
+
+    await expect(plugin._handleLotteryGift({
+      userId: 'viewer-1',
+      uniqueId: 'ViewerOne',
+      giftName: 'Heart Me'
+    })).resolves.toBe(true);
+
+    expect(plugin.assetSpriteLibrary.getRandomSelection).not.toHaveBeenCalled();
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+    expect(plugin.pendingGiftRerolls.get('viewer-1')).toEqual(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
+
+    plugin.animationController = { endExternalAnimation: jest.fn() };
+    plugin._handleLotteryGift = jest.fn().mockResolvedValue(true);
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    handlers.get('tts:renderer:ended')({
+      playbackId: 'active-playback',
+      userId: 'viewer-1'
+    });
+    await Promise.resolve();
+
+    expect(plugin.pendingGiftRerolls.has('viewer-1')).toBe(false);
+    expect(plugin._handleLotteryGift).toHaveBeenCalledWith(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
+  });
+
+  test('defers a gift that arrives during an initial avatar spin until renderer terminal', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    const { plugin, api, io } = createPlugin();
+    let currentAssignment = null;
+    plugin.config.avatarLotteryEnabled = true;
+    plugin.config.lotteryGiftNames = ['Heart Me'];
+    plugin.config.spinDurationMs = 10;
+    plugin.assetSpriteLibrary = {
+      getRandomSelection: jest.fn((random, excludedSelection) => excludedSelection ? dog : fox),
+      getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
+      getSpriteSet: jest.fn(async (selection) => ({
+        ...selection,
+        sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` }
+      }))
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => currentAssignment),
+      assign: jest.fn((userId, username, selection) => {
+        currentAssignment = { userId, username, selection, state: 'kept' };
+        return currentAssignment;
+      }),
+      reroll: jest.fn((userId, username, selection) => {
+        currentAssignment = { userId, username, selection, state: 'kept' };
+        return currentAssignment;
+      })
+    };
+
+    const preparation = plugin.prepareAvatarForPlayback({
+      playbackId: 'initial-spin',
+      userId: 'viewer-1',
+      username: 'ViewerOne',
+      hasAssignedVoice: true
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    await expect(plugin._handleLotteryGift({
+      userId: 'viewer-1',
+      uniqueId: 'ViewerOne',
+      giftName: 'Heart Me'
+    })).resolves.toBe(true);
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+    expect(plugin.pendingGiftRerolls.get('viewer-1')).toEqual(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
+
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'initial-spin',
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'initial-spin')
+    })).toBe(false);
+    await jest.advanceTimersByTimeAsync(10);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'initial-spin',
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'initial-spin')
+    })).toBe(true);
+    await expect(preparation).resolves.toEqual(expect.objectContaining({ spinStatus: 'complete' }));
+
+    plugin.animationController = { endExternalAnimation: jest.fn(), setMouthIntensity: jest.fn() };
+    plugin._handleTTSEvent = jest.fn().mockResolvedValue();
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    await handlers.get('tts:renderer:started')({
+      playbackId: 'initial-spin',
+      userId: 'viewer-1',
+      username: 'ViewerOne',
+      source: 'chat'
+    });
+    handlers.get('tts:renderer:ended')({
+      playbackId: 'initial-spin',
+      userId: 'viewer-1'
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledTimes(1);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer-1', 'ViewerOne', dog);
+  });
+
+  test('keeps a first-spin reservation after acknowledgement until renderer failure terminal', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    const { plugin, api, io } = createPlugin();
+    let currentAssignment = null;
+    plugin.config.avatarLotteryEnabled = true;
+    plugin.config.lotteryGiftNames = ['Heart Me'];
+    plugin.config.spinDurationMs = 10;
+    plugin.assetSpriteLibrary = {
+      getRandomSelection: jest.fn((random, excludedSelection) => excludedSelection ? dog : fox),
+      getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
+      getSpriteSet: jest.fn(async (selection) => ({
+        ...selection,
+        sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` }
+      }))
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => currentAssignment),
+      assign: jest.fn((userId, username, selection) => {
+        currentAssignment = { userId, username, selection, state: 'kept' };
+        return currentAssignment;
+      }),
+      reroll: jest.fn((userId, username, selection) => {
+        currentAssignment = { userId, username, selection, state: 'kept' };
+        return currentAssignment;
+      })
+    };
+
+    const preparation = plugin.prepareAvatarForPlayback({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      username: 'ViewerOne',
+      hasAssignedVoice: true
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'post-reveal-gap')
+    })).toBe(false);
+    await jest.advanceTimersByTimeAsync(10);
+    expect(plugin._completeAvatarSpin({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      spinId: spinIdFor(io, 'post-reveal-gap')
+    })).toBe(true);
+    await expect(preparation).resolves.toEqual(expect.objectContaining({ spinStatus: 'complete' }));
+
+    expect(plugin.initialAvatarPlaybackReservations?.get('viewer-1')).toBe('post-reveal-gap');
+    await expect(plugin._handleLotteryGift({
+      userId: 'viewer-1',
+      uniqueId: 'ViewerOne',
+      giftName: 'Heart Me'
+    })).resolves.toBe(true);
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+    expect(plugin.pendingGiftRerolls.get('viewer-1')).toEqual(expect.objectContaining({
+      giftName: 'Heart Me'
+    }));
+
+    plugin.animationController = { endExternalAnimation: jest.fn(), setMouthIntensity: jest.fn() };
+    plugin._handleTTSEvent = jest.fn().mockResolvedValue();
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    handlers.get('tts:renderer:failed')({
+      playbackId: 'stale-playback',
+      userId: 'viewer-1',
+      reason: 'renderer-watchdog'
+    });
+    expect(plugin.initialAvatarPlaybackReservations.get('viewer-1')).toBe('post-reveal-gap');
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+
+    await handlers.get('tts:renderer:started')({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      username: 'ViewerOne',
+      source: 'chat'
+    });
+    expect(plugin.avatarLotteryManager.reroll).not.toHaveBeenCalled();
+
+    handlers.get('tts:renderer:failed')({
+      playbackId: 'post-reveal-gap',
+      userId: 'viewer-1',
+      reason: 'renderer-watchdog'
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(plugin.initialAvatarPlaybackReservations?.has('viewer-1')).toBe(false);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledTimes(1);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer-1', 'ViewerOne', dog);
   });
 });

@@ -41,6 +41,7 @@ const ENTRYPOINTS = Object.freeze([
   '/overlay/spotlight/:type',
   '/streammonsters/overlay',
   '/overlay/stt-ticker',
+  '/overlay/talking-heads',
   '/plugins/toptier/overlay.html',
   '/visual-fx-frame-webgpu/overlay',
   '/weather-control/overlay',
@@ -172,6 +173,11 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[a-z0-9-]+\.png$/)),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/evolution\/[a-z]+\/[a-z0-9-]+-stage[23]\.png$/)),
 
+  rule(['GET', 'HEAD'], exact('/overlay/talking-heads/assets/overlay.css')),
+  rule(['GET', 'HEAD'], exact('/overlay/talking-heads/assets/overlay.js')),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/talkingheads\/sprite\/[A-Za-z0-9_.-]+\.(?:png|svg)$/i)),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/talkingheads\/manual-sprite\/[a-z0-9-]{1,64}\/[A-Za-z0-9_.-]+\.png$/i)),
+
   rule(['GET', 'HEAD'], exact('/plugins/toptier/assets/animations.css')),
   rule(['GET', 'HEAD'], exact('/plugins/toptier/assets/avatar-placeholder.svg')),
   rule(['GET', 'HEAD'], exact('/plugins/toptier/assets/overlay.css')),
@@ -218,6 +224,7 @@ goals:subscribe
 goals:animation-end
 multigoals:subscribe
 tts:playback:ended
+talkingheads:avatar:spin:complete
 musicbot:request-status
 zappiehell:request:state
 coinJar.sync.request
@@ -462,6 +469,12 @@ streammonsters:win_streak
 stt-ticker:clear
 stt-ticker:interim
 stt-ticker:transcript
+talkingheads:animation:end
+talkingheads:animation:frame
+talkingheads:animation:start
+talkingheads:animation:stop
+talkingheads:avatar:spawn
+talkingheads:avatar:spin:start
 toptier:decay
 toptier:new-leader
 toptier:rank-change

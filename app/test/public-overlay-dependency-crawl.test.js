@@ -60,6 +60,8 @@ const surfaceSources = [
   'plugins/streamalchemy/streammonsters-arena-view.js',
   'plugins/streamalchemy/streammonsters-chat-view.js',
   'plugins/stt-ticker/overlay/ticker.html',
+  'plugins/talking-heads/overlay.html',
+  'plugins/talking-heads/assets/overlay.js',
   'plugins/toptier/overlay.html',
   'plugins/toptier/assets/overlay.js',
   'plugins/visual-fx-frame-webgpu/renderer/index.html',

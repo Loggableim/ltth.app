@@ -43,6 +43,7 @@ const overlaySources = [
   'plugins/spotlight/overlays/multihud.js',
   'plugins/streamalchemy/streammonsters-overlay.html',
   'plugins/stt-ticker/overlay/ticker.html',
+  'plugins/talking-heads/assets/overlay.js',
   'plugins/toptier/assets/overlay.js',
   'plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js',
   'plugins/weather-control/overlay.html',
@@ -130,6 +131,10 @@ describe('public overlay Socket.IO source contract', () => {
     'minigame:request',
     'plugins:reload',
     'settings:update',
+    'tts:renderer:started',
+    'tts:renderer:progress',
+    'tts:renderer:ended',
+    'tts:renderer:failed',
     'stable-overlay-routing:recover'
   ])('keeps privileged or mutating incoming event %s off the public surface', eventName => {
     expect(isIncomingSocketEventAllowed(eventName)).toBe(false);

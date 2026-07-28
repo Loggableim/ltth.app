@@ -1,13 +1,13 @@
 {
   "id": "talking-heads",
   "name": "Talking Heads",
-  "version": "1.1.0",
-  "description": "Local modular 2D characters with synchronized TTS mouth animation",
+  "version": "2.0.0",
+  "description": "Boba speaker-stage avatars with renderer-synchronized TTS animation",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": false,
   "type": "module",
-  "devStatus": "early-version",
+  "devStatus": "stable",
   "dependencies": [],
   "permissions": [
     "socket.io",
@@ -22,8 +22,11 @@
     "Bundled Vector Character Builder",
     "Modular Head, Hair, Eye and Mouth Selection",
     "5-Frame Sprite Animation System",
-    "Gift Avatar Lottery with Keep/Reroll",
-    "TTS Audio Synchronization",
+    "First Voice Assignment Avatar Slot",
+    "Cosmetic Gift Avatar Rerolls",
+    "Renderer-Synchronized TTS Animation",
+    "Broadcast Arcade Stream Director",
+    "Public TikTok Studio Speaker Overlay",
     "OBS WebSocket Integration",
     "Role-based Activation",
     "Manual Sprite Sets"
@@ -33,10 +36,11 @@
     "assetPack": "boba",
     "assetCharacter": "Fox",
     "assetOptions": {},
-    "avatarLotteryEnabled": true,
-    "lotteryGiftId": "",
-    "lotteryGiftNames": ["Heart Me", "Team Heart", "Team Herz"],
-    "lotteryAnimationDuration": 2600,
+    "firstAssignmentEnabled": true,
+    "rerollGiftEnabled": true,
+    "rerollGiftId": "",
+    "rerollGiftNames": ["Heart Me", "Team Heart", "Team Herz"],
+    "spinDurationMs": 2600,
     "cacheEnabled": true,
     "cacheDuration": 2592000,
     "obsEnabled": true,
@@ -55,7 +59,7 @@
     "spriteMode": "asset-library"
   },
   "descriptions": {
-    "en": "Local modular 2D characters with synchronized TTS mouth animation. Includes Boba Animals, Kenney Monster Builder, and a vector character builder with no external avatar API costs.",
-    "de": "Lokale modulare 2D-Figuren mit synchronisierter TTS-Mundanimation. Enthält Boba Animals, Kenney Monster Builder und einen Vector Character Builder ohne Bildgenerierungs-APIs."
+    "en": "Boba speaker-stage avatars with a first-voice assignment slot and mouth animation synchronized to the actual TTS renderer. Includes local Boba, Kenney, and vector character assets without external avatar APIs.",
+    "de": "Boba-Sprecheravatare mit einem Slot bei der ersten Stimmzuweisung und Mundanimation, die mit dem echten TTS-Renderer synchronisiert ist. Enthaelt lokale Boba-, Kenney- und Vector-Assets ohne externe Avatar-APIs."
   }
 }

@@ -1,128 +1,193 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Talking Heads</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.title">Talking Heads - Stream Director</title>
   <link rel="stylesheet" href="/css/tailwind.output.css">
   <link rel="stylesheet" href="/css/themes.css">
   <link rel="stylesheet" href="/plugins/talking-heads/assets/ui.css">
-  <style>
-    .talking-heads-page { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    .asset-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
-    .asset-card { background: var(--color-bg-card, #fff); border: 1px solid var(--color-border, #d1d5db); border-radius: 12px; padding: 20px; }
-    .asset-card h2 { margin-top: 0; font-size: 1.15rem; }
-    .asset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .asset-option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-    .asset-preview { min-height: 300px; display: grid; place-items: center; background: linear-gradient(145deg, #172033, #0c1220); border-radius: 10px; overflow: hidden; }
-    .asset-preview img { width: min(260px, 85%); height: 260px; object-fit: contain; image-rendering: auto; }
-    .local-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: .875rem; font-weight: 600; }
-    .asset-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-    .asset-status { min-height: 24px; margin-top: 12px; color: var(--color-text-secondary, #4b5563); }
-    .muted { color: var(--color-text-secondary, #4b5563); }
-    .inline-checks { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 16px; }
-    .lottery-settings { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--color-border, #d1d5db); }
-    .lottery-settings h2 { margin-bottom: 6px; }
-    .tts-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 16px; }
-    .toast { position: fixed; right: 20px; bottom: 20px; z-index: 30; max-width: 420px; padding: 12px 16px; border-radius: 8px; color: #fff; background: #334155; display: none; }
-    .toast.error { background: #b91c1c; }.toast.success { background: #15803d; }
-    @media (max-width: 760px) { .talking-heads-page { padding: 14px; }.asset-layout { grid-template-columns: 1fr; }.asset-grid { grid-template-columns: 1fr; }.tts-row { grid-template-columns: 1fr; } }
-  </style>
 </head>
 <body>
-  <main class="talking-heads-page">
-    <header class="mb-6">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 class="text-2xl font-bold m-0" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.title">Talking Heads</h1>
-          <p class="muted mt-2 mb-0" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.subtitle">Lokale Figurenbibliothek für TTS-Animationen</p>
-        </div>
-        <span class="local-badge" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.local_badge">● Lokal · keine Bild-API</span>
+  <main class="th-director" data-surface="broadcast-arcade">
+    <header class="director-hero">
+      <div>
+        <p class="eyebrow" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.eyebrow">BROADCAST ARCADE / TALKING HEADS</p>
+        <h1 data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.title">Stream Director</h1>
+        <p class="hero-copy" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.subtitle">Boba avatar assignment, real audio bridge, and an OBS-ready speaker stage.</p>
+      </div>
+      <div class="hero-actions">
+        <span id="directorState" class="status-pill" data-state="loading" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.state_loading">Loading bridge</span>
+        <button class="director-button ghost" id="refreshStatusBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.refresh_health">Refresh health</button>
       </div>
     </header>
 
-    <section class="asset-layout">
-      <div class="asset-card">
-        <h2 data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.selection_title">Figur auswählen</h2>
-        <p class="muted" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.selection_help">Wähle eine Bibliothek und ihre Bausteine. Die Auswahl wird einmal lokal zu fünf TTS-Frames zusammengesetzt.</p>
-        <div class="asset-grid">
-          <div class="form-group">
-            <label class="form-label" for="assetPack" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.library">Bibliothek</label>
-            <select class="form-select" id="assetPack"></select>
+    <p id="assetStatus" class="director-status" role="status" aria-live="polite"></p>
+
+    <section class="director-grid">
+      <section id="liveBridgeHealth" class="director-card director-card--live" aria-labelledby="liveBridgeTitle">
+        <div class="card-heading">
+          <div>
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.live_bridge">LIVE / TTS BRIDGE</p>
+            <h2 id="liveBridgeTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.playback_health">Playback health</h2>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="assetCharacter" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.base_character">Basisfigur / Kopf</label>
-            <select class="form-select" id="assetCharacter"></select>
+          <span class="pulse-orb" aria-hidden="true"></span>
+        </div>
+        <div class="health-grid">
+          <div class="health-cell"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.talking_heads">Talking Heads</span><strong id="enabledHealth" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.state_loading">Loading</strong></div>
+          <div class="health-cell"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.renderer_bridge">Renderer bridge</span><strong id="rendererHealth" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.state_loading">Loading</strong></div>
+          <div class="health-cell"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.active_speaker">Active speaker</span><strong id="activeSpeakerHealth" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.states.idle">Idle</strong></div>
+          <div class="health-cell"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.avatar_spin">Avatar spin</span><strong id="activeSpinHealth" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.states.idle">Idle</strong></div>
+        </div>
+        <p class="helper-copy"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.help.renderer_sync">The mouth follows the dashboard renderer's real playing, level, and ended events.</span></p>
+      </section>
+
+      <section id="assignmentRules" class="director-card" aria-labelledby="assignmentTitle">
+        <div class="card-heading">
+          <div>
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.voice_avatar">VOICE TO AVATAR</p>
+            <h2 id="assignmentTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.assignment_rules">Assignment rules</h2>
           </div>
         </div>
-        <div class="asset-option-grid" id="assetOptions" aria-live="polite"></div>
-
-        <div class="inline-checks">
-          <label class="form-check"><input class="form-check-input" type="checkbox" id="enabled"> <span class="form-check-label" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.enable">Talking Heads aktivieren</span></label>
-          <label class="form-check"><input class="form-check-input" type="checkbox" id="requireSubscriber"> <span data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.subscribers_only">Nur Abonnenten</span></label>
-          <label class="form-check"><input class="form-check-input" type="checkbox" id="requireCustomVoice"> <span data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.custom_voice_only">Nur Custom Voice</span></label>
+        <div class="toggle-row">
+          <label><input id="enabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.enable_talking_heads">Enable Talking Heads</span></label>
+          <label><input id="firstAssignmentEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.first_assignment">First TTS assigns a Boba avatar</span></label>
+          <label><input id="rerollGiftEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.reroll_gift">Allow a cosmetic reroll gift</span></label>
         </div>
-
-        <div class="asset-grid mt-4">
-          <div class="form-group">
-            <label class="form-label" for="rolePermission" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.permission">Berechtigung</label>
-            <select class="form-select" id="rolePermission">
-              <option value="all" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.permission_all">Alle TTS-Nutzer</option>
-              <option value="team" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.permission_team">Team</option>
-              <option value="moderator" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.permission_moderator">Moderatoren</option>
-              <option value="subscriber" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.permission_subscriber">Abonnenten</option>
+        <div class="form-grid form-grid--three">
+          <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.permission">Permission</span>
+            <select id="rolePermission">
+              <option value="all" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.all_tts_users">All TTS users</option>
+              <option value="team" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.team">Team</option>
+              <option value="moderator" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.moderators">Moderators</option>
+              <option value="subscriber" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.subscribers">Subscribers</option>
             </select>
+          </label>
+          <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.spin_duration">Spin duration (ms)</span><input id="spinDurationMs" type="number" min="800" max="10000" step="100" value="2600"></label>
+          <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.speech_fallback">Speech fallback (ms)</span><input id="animationDuration" type="number" min="1000" max="30000" step="250" value="5000"></label>
+        </div>
+        <div class="form-grid">
+          <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.reroll_gift_id">Reroll gift ID (optional)</span><input id="rerollGiftId" maxlength="80" placeholder="e.g. 5655" data-i18n-placeholder="plugins.talking-heads.talking_heads_ui.stream_director.placeholders.reroll_id"></label>
+          <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.reroll_gift_names">Reroll gift names</span><input id="rerollGiftNames" maxlength="240" placeholder="Heart Me, Team Heart" data-i18n-placeholder="plugins.talking-heads.talking_heads_ui.stream_director.placeholders.reroll_names"></label>
+        </div>
+        <div class="toggle-row compact">
+          <label><input id="requireSubscriber" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.subscribers_only">Subscribers only</span></label>
+          <label><input id="requireCustomVoice" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.custom_voice_only">Custom voice only</span></label>
+        </div>
+        <button class="director-button primary" id="saveConfigBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.save_settings">Save director settings</button>
+      </section>
+
+      <section id="bobaCharacterLab" class="director-card director-card--lab" aria-labelledby="labTitle">
+        <div class="card-heading">
+          <div>
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.boba_lab">BOBA CHARACTER LAB</p>
+            <h2 id="labTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.frame_slot_preview">Frame and slot preview</h2>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="animationDuration" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.duration">Standarddauer (ms)</label>
-            <input class="form-input" id="animationDuration" type="number" min="1000" max="30000" step="250" value="5000">
+          <span class="boba-badge" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.badges.default_pool">DEFAULT POOL</span>
+        </div>
+        <div class="lab-layout">
+          <div class="lab-preview">
+            <img id="assetPreview" alt="Selected Boba frame preview" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.labels.selected_frame">
+            <p id="assetSelectionSummary" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.messages.bobaAnimals">Boba Animals</p>
+          </div>
+          <div>
+            <div class="form-grid">
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.asset_library">Asset library</span><select id="assetPack"></select></label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.boba_character">Boba character</span><select id="assetCharacter"></select></label>
+            </div>
+            <div id="assetOptions" class="form-grid" aria-live="polite"></div>
+            <div id="bobaThumbnailGrid" class="boba-thumbnail-grid" aria-label="Boba character thumbnails" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.labels.boba_thumbnails"></div>
+            <div class="button-row">
+              <button class="director-button" id="prepareAssetBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.prepare_frame">Prepare frame preview</button>
+              <button class="director-button accent" id="testSpinBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.test_spin">Test spin safely</button>
+            </div>
+            <div class="tts-row">
+              <input id="previewText" maxlength="500" value="Hello! My avatar is now synchronized to real TTS audio." data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.preview_text">
+              <button class="director-button" id="previewTtsBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.tts_preview">TTS preview</button>
+              <button class="director-button ghost" id="testAnimationBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.stage_test">Stage test</button>
+            </div>
           </div>
         </div>
+      </section>
 
-        <section class="lottery-settings" aria-labelledby="lotterySettingsTitle">
-          <h2 id="lotterySettingsTitle" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.lottery_title">Geschenk-Avatar-Lotterie</h2>
-          <p class="muted" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.lottery_help">Beim passenden Geschenk wird eine lokale Figur gezogen. Ohne !keep wird beim nächsten passenden Geschenk erneut ausgelost.</p>
-          <label class="form-check mt-3"><input class="form-check-input" type="checkbox" id="avatarLotteryEnabled"> <span data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.lottery_enabled">Avatar-Lotterie aktivieren</span></label>
-          <div class="asset-grid mt-3">
-            <div class="form-group">
-              <label class="form-label" for="lotteryGiftId" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.lottery_gift_id">Geschenk-ID (optional)</label>
-              <input class="form-input" id="lotteryGiftId" maxlength="80" placeholder="z. B. 5655" data-i18n-placeholder="plugins.talking-heads.talking_heads_ui.local_assets.lottery_gift_id_placeholder">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="lotteryAnimationDuration" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.lottery_duration">Lotterie-Dauer (ms)</label>
-              <input class="form-input" id="lotteryAnimationDuration" type="number" min="800" max="10000" step="100" value="2600">
-            </div>
+      <section id="overlaySetup" class="director-card" aria-labelledby="overlaySetupTitle">
+        <div class="card-heading">
+          <div>
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.overlay_setup">OVERLAY SETUP</p>
+            <h2 id="overlaySetupTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.overlay_studio">OBS and TikTok Studio</h2>
           </div>
-          <div class="form-group mt-3">
-            <label class="form-label" for="lotteryGiftNames" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.lottery_gift_names">Geschenkname(n), kommasepariert</label>
-            <input class="form-input" id="lotteryGiftNames" maxlength="240" value="Heart Me, Team Heart, Team Herz">
+        </div>
+        <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.local_obs_source">Local OBS browser source</span>
+          <input id="localOverlayUrl" class="url-field" readonly>
+        </label>
+        <div class="button-row"><button id="copyLocalOverlayUrl" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.copy_local">Copy local URL</button></div>
+        <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.public_overlay">TikTok Studio / stable public overlay</span>
+          <input id="publicOverlayUrl" class="url-field" readonly>
+        </label>
+        <div class="button-row">
+          <button class="director-button accent" type="button" data-copy-tiktok-studio-url data-overlay-url-source="#publicOverlayUrl" data-i18n="common.tiktok_studio.copy_url">Copy TikTok Studio URL</button>
+        </div>
+        <p class="helper-copy" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.help.public_overlay">The public route is only the speaker overlay. Viewer Bar remains a local OBS source by default.</p>
+      </section>
+    </section>
+
+    <details id="advancedSettings" class="advanced-panel">
+      <summary><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.advanced_tools">Advanced studio tools</span><small data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.help.advanced_summary">Manual sets - cache - Viewer Bar</small></summary>
+      <div class="advanced-grid">
+        <section id="manualSetsPanel" class="director-card" aria-labelledby="manualSetsTitle">
+          <div class="card-heading"><div><p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.manual_sets">MANUAL SETS</p><h2 id="manualSetsTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.manual_workflows">Keep custom frame workflows</h2></div></div>
+          <div class="form-grid">
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.set_name">Set name</span><input id="manualSetName" maxlength="64" placeholder="Creator pack" data-i18n-placeholder="plugins.talking-heads.talking_heads_ui.stream_director.placeholders.creator_pack"></label>
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.zip_frames">ZIP with 5 frames</span><input id="manualZip" type="file" accept=".zip"></label>
           </div>
+          <div class="button-row"><button id="manualUploadBtn" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.upload_set">Upload manual set</button><button id="refreshManualSetsBtn" class="director-button ghost" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.refresh_sets">Refresh sets</button></div>
+          <div id="manualSetList" class="advanced-list" aria-live="polite"></div>
+          <div class="form-grid form-grid--three">
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.viewer_id">Viewer ID</span><input id="manualUserId" maxlength="80"></label>
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.viewer_name">Viewer name</span><input id="manualUsername" maxlength="50"></label>
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.manual_set">Manual set</span><select id="manualSetSelect"></select></label>
+          </div>
+          <button id="manualAssignBtn" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.assign_manual">Assign manual set</button>
         </section>
 
-        <div class="asset-actions">
-          <button type="button" class="btn btn-primary" id="saveConfigBtn" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.save">Auswahl speichern</button>
-          <button type="button" class="btn btn-secondary" id="prepareAssetBtn" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.prepare">Frames erzeugen &amp; prüfen</button>
-          <button type="button" class="btn btn-secondary" id="testAnimationBtn" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.test_animation">Animation testen</button>
-        </div>
-        <div class="asset-status" id="assetStatus" aria-live="polite"></div>
+        <section id="cachePanel" class="director-card" aria-labelledby="cacheTitle">
+          <div class="card-heading"><div><p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.local_cache">LOCAL CACHE</p><h2 id="cacheTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.generated_frames">Generated avatar frames</h2></div></div>
+          <p id="cacheSummary" class="helper-copy" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.help.cache_summary">Load cache status to inspect local sprite materialization.</p>
+          <div class="button-row"><button id="refreshCacheBtn" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.refresh_cache">Refresh cache</button><button id="clearCacheBtn" class="director-button danger" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.clear_cache">Clear generated cache</button></div>
+          <div id="cacheList" class="advanced-list" aria-live="polite"></div>
+          <div class="toggle-row compact"><label><input id="cacheEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.cache_enabled">Enable local cache</span></label><label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.cache_duration">Cache duration (ms)</span><input id="cacheDuration" type="number" min="60000" step="60000"></label></div>
+        </section>
 
-        <div class="tts-row">
-          <input class="form-input" id="previewText" maxlength="500" value="Hallo! Mein Mund öffnet und schließt sich jetzt synchron zu TTS.">
-          <button type="button" class="btn btn-primary" id="previewTtsBtn" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.tts_preview">TTS-Vorschau</button>
-        </div>
+        <section id="viewerBarPanel" class="director-card" aria-labelledby="viewerBarTitle">
+          <div class="card-heading"><div><p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.viewer_bar">VIEWER BAR / LOCAL</p><h2 id="viewerBarTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.viewer_bar">Keep the audience strip available</h2></div></div>
+          <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.local_viewer_bar">Local Viewer Bar source</span><input id="viewerBarUrl" class="url-field" readonly></label>
+          <div class="button-row"><button id="copyViewerBarUrl" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.copy_viewer_bar">Copy Viewer Bar URL</button><button id="loadViewerBarBtn" class="director-button ghost" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.load_viewer_bar">Load Viewer Bar</button></div>
+          <div class="form-grid form-grid--three">
+            <label><input id="viewerBarEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.viewer_bar_enabled">Enable Viewer Bar</span></label>
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.max_viewers">Max viewers</span><input id="viewerBarMaxVisible" type="number" min="1" max="100"></label>
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.avatar_size">Avatar size</span><input id="viewerBarAvatarSize" type="number" min="24" max="180"></label>
+          </div>
+          <button id="saveViewerBarBtn" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.save_viewer_bar">Save Viewer Bar</button>
+        </section>
+
+        <section id="diagnosticsPanel" class="director-card" aria-labelledby="diagnosticsTitle">
+          <div class="card-heading"><div><p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.diagnostics">DIAGNOSTICS</p><h2 id="diagnosticsTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.local_log">Local plugin log</h2></div></div>
+          <div class="form-grid form-grid--three">
+            <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.sprite_mode">Sprite mode</span><select id="spriteMode"><option value="asset-library" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.asset_library">Asset library</option><option value="manual" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.manual_only">Manual only</option><option value="hybrid" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.hybrid">Hybrid</option></select></label>
+            <label><input id="manualFallback" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.manual_fallback">Manual fallback to assets</span></label>
+            <label><input id="debugLogging" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.debug_logging">Verbose local logging</span></label>
+          </div>
+          <div class="button-row"><button id="saveAdvancedConfigBtn" class="director-button" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.save_advanced">Save advanced configuration</button></div>
+          <div class="button-row"><button id="refreshLogsBtn" class="director-button ghost" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.refresh_log">Refresh log</button></div>
+          <pre id="logList" class="log-list" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.messages.noLocalLog">No log loaded.</pre>
+        </section>
       </div>
-
-      <aside class="asset-card">
-        <h2 data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.preview_title">Frame-Vorschau</h2>
-        <div class="asset-preview"><img id="assetPreview" alt="Ausgewählte Talking-Head-Figur"></div>
-        <p class="muted text-sm mt-3 mb-0" data-i18n="plugins.talking-heads.talking_heads_ui.local_assets.preview_help">Beim Sprechen wechselt das Overlay zwischen Mund geschlossen, mittel und offen; im Leerlauf wird ein Blink-Frame eingeblendet.</p>
-        <div class="asset-status" id="assetSelectionSummary"></div>
-      </aside>
-    </section>
+    </details>
   </main>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div id="toast" class="director-toast" role="status" aria-live="polite"></div>
   <script src="/js/i18n-client.js"></script>
+  <script src="/js/tiktok-studio-url.js"></script>
   <script src="/plugins/talking-heads/assets/ui.js"></script>
 </body>
 </html>

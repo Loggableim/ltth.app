@@ -39,7 +39,7 @@ describe('TalkingHeads log buffer', () => {
     expect(logs.find((entry) => entry.message.includes('Debug message'))).toBeFalsy();
   });
 
-  test('normalizes local avatar lottery settings', () => {
+  test('migrates legacy avatar lottery settings into the release assignment names', () => {
     const configuredApi = {
       ...api,
       getConfig: jest.fn(() => ({
@@ -51,8 +51,11 @@ describe('TalkingHeads log buffer', () => {
 
     const plugin = new TalkingHeadsPlugin(configuredApi);
 
-    expect(plugin.config.lotteryGiftNames).toEqual(['Heart Me', 'Team Herz']);
-    expect(plugin.config.lotteryAnimationDuration).toBe(10000);
-    expect(plugin.config.avatarLotteryEnabled).toBe(true);
+    expect(plugin.config.rerollGiftNames).toEqual(['Heart Me', 'Team Herz']);
+    expect(plugin.config.spinDurationMs).toBe(10000);
+    expect(plugin.config.firstAssignmentEnabled).toBe(true);
+    expect(plugin.config.rerollGiftEnabled).toBe(true);
+    expect(plugin.config).not.toHaveProperty('avatarLotteryEnabled');
+    expect(plugin.config).not.toHaveProperty('lotteryGiftNames');
   });
 });

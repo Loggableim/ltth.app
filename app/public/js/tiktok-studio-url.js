@@ -46,6 +46,7 @@
       '/overlay/game-engine/slot',
       '/overlay/game-engine/unified',
       '/overlay/game-engine/wheel',
+      '/overlay/talking-heads',
       '/plugins/gcce/overlay-hud',
       '/goals/overlay',
       '/goals/multigoal-overlay',

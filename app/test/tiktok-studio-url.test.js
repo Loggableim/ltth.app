@@ -585,6 +585,38 @@ describe('same-origin iframe account handoff', () => {
     );
   });
 
+  test('accepts the registered Talking Heads speaker overlay in the browser fallback allowlist', async () => {
+    const getFreshClerkToken = jest.fn().mockResolvedValue('fresh-top-token');
+    const getAccount = jest.fn().mockResolvedValue({
+      success: true,
+      account: {
+        claims: [{ username: 'talking.creator', state: 'active' }]
+      },
+      defaultUsername: 'talking.creator'
+    });
+    const topRef = {
+      location: { origin: 'http://127.0.0.1:3000' },
+      LTTHStableOverlayRouting: {
+        getFreshClerkToken,
+        accountAccess: {
+          getAccount,
+          getConnectedUsername: jest.fn().mockResolvedValue('talking.creator')
+        }
+      }
+    };
+    const windowRef = iframeWindow(topRef);
+    const api = browserApi(windowRef);
+
+    await expect(api.copy(
+      'http://127.0.0.1:3000/overlay/talking-heads'
+    )).resolves.toBe(
+      'https://overlay.ltth.app/talking.creator/overlay/talking-heads'
+    );
+    expect(windowRef.writeText).toHaveBeenCalledWith(
+      'https://overlay.ltth.app/talking.creator/overlay/talking-heads'
+    );
+  });
+
   test('contains cross-origin top access failures as claim-required', async () => {
     const windowRef = iframeWindow(null);
     Object.defineProperty(windowRef, 'top', {

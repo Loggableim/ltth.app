@@ -288,6 +288,7 @@ class TTSPlugin {
         this.profanityFilter = new ProfanityFilter(this.logger);
         this.permissionManager = new PermissionManager(this.api.getDatabase(), this.logger);
         this.queueManager = new QueueManager(this.config, this.logger);
+        this._activeRendererPlaybacks = new Map();
 
         // Set profanity filter mode
         this.profanityFilter.setMode(this.config.profanityFilter);
@@ -730,6 +731,257 @@ class TTSPlugin {
         });
     }
 
+    _ensureRendererPlaybackState() {
+        if (!this._activeRendererPlaybacks) {
+            this._activeRendererPlaybacks = new Map();
+        }
+        return this._activeRendererPlaybacks;
+    }
+
+    _getRendererPlaybackId(meta = {}) {
+        return String(meta.playbackId || meta.id || '').trim();
+    }
+
+    _getRendererWatchdogMs(durationMs = 0) {
+        const configured = Number(this.config?.rendererPlaybackWatchdogMs);
+        const base = Number.isFinite(configured) ? configured : 15000;
+        return Math.max(1, Math.round(base));
+    }
+
+    _getRendererPlaybackMaxMs() {
+        const configured = Number(this.config?.rendererPlaybackMaxMs);
+        return Math.max(1, Math.round(Number.isFinite(configured) ? configured : 120000));
+    }
+
+    _rendererPayload(record, details = {}) {
+        const meta = record.meta || {};
+        const payload = {
+            id: meta.id || record.playbackId,
+            playbackId: record.playbackId,
+            userId: meta.userId || null,
+            username: meta.username || null,
+            voice: meta.voice || null,
+            engine: meta.engine || null,
+            hasAssignedVoice: meta.hasAssignedVoice === true,
+            source: meta.source || 'unknown',
+            isStreaming: meta.isStreaming === true
+        };
+
+        if (Number.isFinite(Number(details.currentTimeMs))) {
+            payload.currentTimeMs = Math.max(0, Math.round(Number(details.currentTimeMs)));
+        }
+        if (details.level === null) {
+            payload.level = null;
+        } else if (Number.isFinite(Number(details.level))) {
+            payload.level = Math.max(0, Math.min(1, Number(details.level)));
+        }
+        if (details.reason) {
+            payload.reason = String(details.reason).slice(0, 120);
+        }
+        return payload;
+    }
+
+    _armRendererWatchdog(record) {
+        if (!record || record.settled || record.watchdogsArmed !== true) return;
+        if (record.watchdogTimer) clearTimeout(record.watchdogTimer);
+        record.watchdogTimer = setTimeout(() => {
+            this._settleRendererPlayback(record.playbackId, 'failed', { reason: 'renderer-watchdog' });
+        }, record.watchdogMs);
+    }
+
+    _activateRendererPlayback(playbackId, { durationMs } = {}) {
+        const record = this._ensureRendererPlaybackState().get(String(playbackId || ''));
+        if (!record || record.settled) return null;
+
+        if (Number.isFinite(Number(durationMs))) {
+            record.durationMs = Math.max(0, Math.round(Number(durationMs)));
+        }
+        record.watchdogsArmed = true;
+        this._armRendererWatchdog(record);
+        if (!record.maxTimer) {
+            record.maxTimer = setTimeout(() => {
+                this._settleRendererPlayback(record.playbackId, 'failed', { reason: 'renderer-max-watchdog' });
+            }, this._getRendererPlaybackMaxMs());
+        }
+        return record.completion;
+    }
+
+    _emitLegacyRendererAlias(record, phase, payload) {
+        const aliasPayload = {
+            ...payload,
+            duration: Math.max(0, Math.round(Number(record.durationMs) || 0)),
+            isStreaming: record.meta?.isStreaming === true,
+            rendererAuthoritative: true,
+            rendererPhase: phase === 'started' ? 'started' : 'ended'
+        };
+
+        if (phase === 'started') {
+            if (record.meta?.isStreaming === true) {
+                this.api.emit('tts:playback:started', {
+                    ...aliasPayload,
+                    isStreaming: true
+                });
+                return;
+            }
+            this.api.emit('tts:playback:started', aliasPayload);
+            return;
+        }
+
+        this.api.emit('tts:playback:ended', {
+            ...aliasPayload,
+            rendererOutcome: phase === 'ended' ? 'ended' : 'failed'
+        });
+    }
+
+    /**
+     * Create the server-side waiter before dispatching audio. Only renderer
+     * acknowledgements can settle it, except its bounded watchdogs.
+     */
+    _beginRendererPlayback(meta = {}, { durationMs = 0, deferWatchdogs = false } = {}) {
+        const playbackId = this._getRendererPlaybackId(meta);
+        if (!playbackId) {
+            return Promise.resolve({ playbackId: null, outcome: 'failed', reason: 'missing-playback-id' });
+        }
+
+        const active = this._ensureRendererPlaybackState();
+        const existing = active.get(playbackId);
+        if (existing) return existing.completion;
+
+        const record = {
+            playbackId,
+            meta: { ...meta, id: meta.id || playbackId, playbackId },
+            started: false,
+            settled: false,
+            durationMs: Math.max(0, Math.round(Number(durationMs) || 0)),
+            watchdogsArmed: deferWatchdogs !== true,
+            watchdogMs: this._getRendererWatchdogMs(durationMs),
+            watchdogTimer: null,
+            maxTimer: null,
+            resolve: null,
+            completion: null
+        };
+        record.completion = new Promise((resolve) => {
+            record.resolve = resolve;
+        });
+        active.set(playbackId, record);
+        if (record.watchdogsArmed) {
+            this._activateRendererPlayback(playbackId, { durationMs });
+        }
+        return record.completion;
+    }
+
+    _settleRendererPlayback(playbackId, outcome, details = {}) {
+        const active = this._ensureRendererPlaybackState();
+        const record = active.get(String(playbackId || ''));
+        if (!record || record.settled) return false;
+
+        record.settled = true;
+        if (record.watchdogTimer) clearTimeout(record.watchdogTimer);
+        if (record.maxTimer) clearTimeout(record.maxTimer);
+        active.delete(record.playbackId);
+
+        const phase = outcome === 'ended' ? 'ended' : 'failed';
+        const payload = this._rendererPayload(record, details);
+        this.api.emit(`tts:renderer:${phase}`, payload);
+        this._emitLegacyRendererAlias(record, phase, payload);
+        record.resolve({
+            playbackId: record.playbackId,
+            outcome: phase,
+            reason: payload.reason || null
+        });
+        return true;
+    }
+
+    _handleRendererLifecycle(event, data = {}) {
+        const playbackId = String(data.playbackId || '').trim();
+        if (!playbackId) return false;
+        const record = this._ensureRendererPlaybackState().get(playbackId);
+        if (!record || record.settled) return false;
+
+        if (event === 'tts:renderer:started') {
+            if (record.started) return false;
+            record.started = true;
+            this._activateRendererPlayback(playbackId);
+            const payload = this._rendererPayload(record, data);
+            this.api.emit('tts:renderer:started', payload);
+            this._emitLegacyRendererAlias(record, 'started', payload);
+            return true;
+        }
+
+        if (event === 'tts:renderer:progress') {
+            if (!record.started) return false;
+            this.api.emit('tts:renderer:progress', this._rendererPayload(record, data));
+            this._armRendererWatchdog(record);
+            return true;
+        }
+
+        if (event === 'tts:renderer:ended') {
+            return this._settleRendererPlayback(playbackId, 'ended', data);
+        }
+
+        if (event === 'tts:renderer:failed') {
+            return this._settleRendererPlayback(playbackId, 'failed', data);
+        }
+
+        return false;
+    }
+
+    _settleAllRendererPlaybacks(reason = 'plugin-destroyed') {
+        const activeIds = Array.from(this._ensureRendererPlaybackState().keys());
+        activeIds.forEach((playbackId) => {
+            this._settleRendererPlayback(playbackId, 'failed', { reason });
+        });
+    }
+
+    async _prepareAvatarForPlayback(meta = {}) {
+        let talkingHeads = null;
+        try {
+            talkingHeads = this.api.getPlugin?.('talking-heads')
+                || this.api.pluginLoader?.getPluginInstance?.('talking-heads')
+                || null;
+        } catch (error) {
+            return { state: 'unavailable' };
+        }
+
+        if (!talkingHeads || typeof talkingHeads.prepareAvatarForPlayback !== 'function') {
+            return { state: 'unavailable' };
+        }
+
+        try {
+            // Talking Heads only starts its duration + grace fallback after the
+            // spin frames are ready and the overlay event has been emitted.
+            // Racing here would begin the cap during cold asset composition and
+            // could dispatch native audio before a maximum-length reveal ends.
+            const result = await Promise.resolve().then(() => talkingHeads.prepareAvatarForPlayback(meta));
+            return {
+                state: result?.spinStatus || result?.reason || 'ready',
+                created: result?.created === true
+            };
+        } catch (error) {
+            this.logger.warn(`TTS: Talking Heads avatar preparation failed: ${error.message}`);
+            return { state: 'error' };
+        }
+    }
+
+    _emitPlaybackPrepared(meta, avatarGate, durationMs) {
+        this.api.emit('tts:playback:prepared', {
+            id: meta.id,
+            playbackId: meta.playbackId,
+            userId: meta.userId || null,
+            username: meta.username || null,
+            voice: meta.voice || null,
+            engine: meta.engine || null,
+            hasAssignedVoice: meta.hasAssignedVoice === true,
+            source: meta.source || 'unknown',
+            isStreaming: meta.isStreaming === true,
+            durationMs: Math.max(0, Math.round(Number(durationMs) || 0)),
+            avatarGate: {
+                state: avatarGate?.state || 'unavailable',
+                created: avatarGate?.created === true
+            }
+        });
+    }
+
     _clonePlainObject(value) {
         return JSON.parse(JSON.stringify(value || {}));
     }
@@ -920,6 +1172,8 @@ class TTSPlugin {
             performanceMode: 'balanced', // Performance mode: 'fast' (low-resource), 'balanced', 'quality' (high-resource)
             playbackCompletionBufferMs: 250, // Small safety buffer added to measured audio duration
             playbackEstimateBufferMs: 2000, // Compatibility buffer when audio duration cannot be measured
+            rendererPlaybackWatchdogMs: 15000, // Release queue when no dashboard renderer acknowledges playback
+            rendererPlaybackMaxMs: 120000, // Hard cap remains bounded even if a renderer keeps reporting progress
             enableEngineCircuitBreaker: true, // Temporarily skip engines with repeated failures
             engineCircuitBreakerFailureThreshold: 3,
             engineCircuitBreakerCooldownMs: 30000,
@@ -2004,13 +2258,21 @@ class TTSPlugin {
 
         // Clear queue
         this.api.registerRoute('POST', '/api/tts/queue/clear', (req, res) => {
+            const currentPlaybackId = this.queueManager.currentItem?.id;
             const count = this.queueManager.clear();
+            if (currentPlaybackId) {
+                this._settleRendererPlayback(currentPlaybackId, 'failed', { reason: 'queue-cleared' });
+            }
             res.json({ success: true, cleared: count });
         });
 
         // Skip current item
         this.api.registerRoute('POST', '/api/tts/queue/skip', (req, res) => {
+            const currentPlaybackId = this.queueManager.currentItem?.id;
             const skipped = this.queueManager.skipCurrent();
+            if (skipped && currentPlaybackId) {
+                this._settleRendererPlayback(currentPlaybackId, 'failed', { reason: 'queue-skipped' });
+            }
             res.json({ success: true, skipped });
         });
 
@@ -2440,16 +2702,33 @@ class TTSPlugin {
 
         // Clear queue
         this.api.registerSocket('tts:queue:clear', (socket) => {
+            const currentPlaybackId = this.queueManager.currentItem?.id;
             const count = this.queueManager.clear();
+            if (currentPlaybackId) {
+                this._settleRendererPlayback(currentPlaybackId, 'failed', { reason: 'queue-cleared' });
+            }
             socket.emit('tts:queue:cleared', { count });
             this.api.emit('tts:queue:cleared', { count });
         });
 
         // Skip current
         this.api.registerSocket('tts:queue:skip', (socket) => {
+            const currentPlaybackId = this.queueManager.currentItem?.id;
             const skipped = this.queueManager.skipCurrent();
+            if (skipped && currentPlaybackId) {
+                this._settleRendererPlayback(currentPlaybackId, 'failed', { reason: 'queue-skipped' });
+            }
             socket.emit('tts:queue:skipped', { skipped });
             this.api.emit('tts:queue:skipped', { skipped });
+        });
+
+        [
+            'tts:renderer:started',
+            'tts:renderer:progress',
+            'tts:renderer:ended',
+            'tts:renderer:failed'
+        ].forEach((event) => {
+            this.api.registerSocket(event, (socket, data) => this._handleRendererLifecycle(event, data));
         });
 
         this.logger.info('TTS Plugin: Socket.IO events registered');
@@ -3173,7 +3452,7 @@ class TTSPlugin {
             }
 
             // Step 5: Generate TTS (no caching)
-            // For Fish Audio (not in quality mode), use lazy queuing with streaming
+            // For Fish Audio requests, use lazy queuing with streaming
             const useLazyQueuing = selectedEngine === 'fishaudio' && requestOverrides.streaming;
             
             this._logDebug('SPEAK_STEP5', 'Starting TTS synthesis', {
@@ -3579,427 +3858,216 @@ class TTSPlugin {
      * Play audio (called by queue processor)
      */
     async _playAudio(item) {
+        const playbackMeta = {
+            id: item.id,
+            playbackId: item.id,
+            userId: item.userId,
+            username: item.username,
+            text: item.text,
+            voice: item.voice,
+            engine: item.engine,
+            hasAssignedVoice: item.hasAssignedVoice === true,
+            source: item.source || 'unknown',
+            isStreaming: item.isStreaming === true
+        };
+        const avatarGatePromise = this._prepareAvatarForPlayback(playbackMeta);
+
         try {
-            this._logDebug('PLAYBACK', 'Starting playback', {
-                id: item.id,
-                username: item.username,
-                text: item.text?.substring(0, 50),
-                voice: item.voice,
-                engine: item.engine,
-                volume: item.volume,
-                speed: item.speed,
-                isStreaming: item.isStreaming || false
+            this._logDebug('PLAYBACK', 'Preparing renderer-synchronised playback', {
+                id: playbackMeta.playbackId,
+                username: playbackMeta.username,
+                engine: playbackMeta.engine,
+                isStreaming: playbackMeta.isStreaming
             });
 
-            const playbackMeta = {
-                id: item.id,
-                userId: item.userId,
-                username: item.username,
-                text: item.text,
-                voice: item.voice,
-                engine: item.engine,
-                hasAssignedVoice: item.hasAssignedVoice === true,
-                source: item.source || 'unknown',
-                isStreaming: item.isStreaming || false
-            };
-
-            // Check if audio needs on-demand synthesis (pre-generation failed or not complete)
-            if (!item.audioData && !item.isStreaming) {
-                this._logDebug('PLAYBACK', 'No pre-generated audio, synthesizing on-demand', {
-                    id: item.id,
-                    engine: item.engine
-                });
-                
-                const ttsEngine = this.engines[item.engine];
-                if (ttsEngine) {
-                    try {
-                        item.audioData = await this._synthesizeWithCircuit(
-                            item.engine,
-                            item.text,
-                            item.voice,
-                            item.speed,
-                            item.synthesisOptions || {}
-                        );
-                        this._logDebug('PLAYBACK', 'On-demand synthesis complete', {
-                            id: item.id,
-                            audioLength: item.audioData?.length || 0
-                        });
-                    } catch (synthError) {
-                        this.logger.error(`On-demand synthesis failed: ${synthError.message}`);
-                        throw synthError;
-                    }
-                }
-            }
-
-            // Handle streaming mode
             if (item.isStreaming) {
-                this._logDebug('PLAYBACK', 'Using streaming mode', {
-                    id: item.id,
-                    engine: item.engine
-                });
-
-                try {
-                    const ttsEngine = this.engines[item.engine];
-                    
-                    // WebSocket streaming temporarily disabled due to timeout issues with Fish.audio API
-                    // Using HTTP streaming (synthesizeStream) instead which works reliably
-                    const useWebSocket = false;
-                    
-                    if (!ttsEngine || (!useWebSocket && !ttsEngine.synthesizeStream)) {
-                        throw new Error(`Streaming not supported for engine: ${item.engine}`);
-                    }
-
-                    let streamResult;
-                    
-                    let streamedAudioData = null;
-
-                    if (useWebSocket) {
-                        // WebSocket-based streaming for Fish.audio (true low-latency)
-                        this._logDebug('PLAYBACK', 'Using WebSocket streaming for Fish.audio', {
-                            id: item.id
-                        });
-
-                        // Prepare synthesis options with custom voices
-                        const synthesisOptions = {
-                            ...(item.synthesisOptions || {}),
-                            customVoices: this.config.customFishVoices,
-                            onChunk: (base64Chunk, isFirst) => {
-                            this.api.emit('tts:stream:chunk', {
-                                id: item.id,
-                                chunk: base64Chunk,
-                                isFirst: isFirst,
-                                volume: item.volume,
-                                speed: item.speed,
-                                format: 'mp3',
-                                source: item.source || 'unknown',
-                                duckOther: item.duckOther ?? this.config.duckOtherAudio,
-                                duckVolume: this.config.duckVolume
-                            });
-
-                                this._logDebug('PLAYBACK', 'WebSocket chunk emitted', {
-                                    id: item.id,
-                                    isFirst: isFirst
-                                });
-                            },
-                            onStart: () => {
-                                this._logDebug('PLAYBACK', 'WebSocket stream started', {
-                                    id: item.id
-                                });
-                            },
-                            onEnd: (totalChunks, totalBytes) => {
-                                this.api.emit('tts:stream:end', {
-                                    id: item.id,
-                                    totalChunks: totalChunks,
-                                    totalBytes: totalBytes,
-                                    format: 'mp3',
-                                    source: item.source || 'unknown'
-                                });
-
-                                this._logDebug('PLAYBACK', 'WebSocket stream ended', {
-                                    id: item.id,
-                                    totalChunks: totalChunks,
-                                    totalBytes: totalBytes
-                                });
-                            }
-                        };
-
-                        // Emit playback start event before synthesis
-                        this.api.emit('tts:playback:started', {
-                            id: item.id,
-                            username: item.username,
-                            text: item.text,
-                            isStreaming: true,
-                            source: item.source || 'unknown'
-                        });
-
-                        if (this.api.pluginLoader && typeof this.api.pluginLoader.emit === 'function') {
-                            try {
-                                this.api.pluginLoader.emit('tts:playback:started', playbackMeta);
-                            } catch (error) {
-                                this.logger.warn(`TTS: Failed to broadcast playback start to plugins: ${error.message}`);
-                            }
-                        }
-
-                        // Start WebSocket streaming
-                        streamResult = await ttsEngine.synthesizeWebSocket(
-                            item.text,
-                            item.voice,
-                            synthesisOptions
-                        );
-
-                        this._logDebug('PLAYBACK', 'WebSocket stream completed', {
-                            id: item.id,
-                            format: streamResult.format,
-                            totalBytes: streamResult.totalBytes
-                        });
-
-                    } else {
-                        // HTTP streaming for other engines
-                        this._logDebug('PLAYBACK', 'Using HTTP streaming', {
-                            id: item.id
-                        });
-
-                        // Start streaming synthesis
-                        this._assertEngineCircuitAllows(item.engine);
-                        streamResult = await ttsEngine.synthesizeStream(
-                            item.text,
-                            item.voice,
-                            item.speed,
-                            item.synthesisOptions || {}
-                        );
-                        this._recordEngineSuccess(item.engine);
-
-                        this._logDebug('PLAYBACK', 'Stream connection established', {
-                            id: item.id,
-                            format: streamResult.format
-                        });
-
-                        // Emit playback start event now that stream has started
-                        this.api.emit('tts:playback:started', {
-                            id: item.id,
-                            username: item.username,
-                            text: item.text,
-                            isStreaming: true
-                        });
-
-                        if (this.api.pluginLoader && typeof this.api.pluginLoader.emit === 'function') {
-                            try {
-                                this.api.pluginLoader.emit('tts:playback:started', playbackMeta);
-                            } catch (error) {
-                                this.logger.warn(`TTS: Failed to broadcast playback start to plugins: ${error.message}`);
-                            }
-                        }
-
-                        // Process the HTTP stream
-                        const stream = streamResult.stream;
-                        const chunks = [];
-                        let totalBytes = 0;
-
-                        // Handle stream data
-                        stream.on('data', (chunk) => {
-                            chunks.push(chunk);
-                            totalBytes += chunk.length;
-                            
-                            // Convert chunk to Base64 and emit immediately
-                            const base64Chunk = chunk.toString('base64');
-                            this.api.emit('tts:stream:chunk', {
-                                id: item.id,
-                                chunk: base64Chunk,
-                                isFirst: chunks.length === 1,
-                                volume: item.volume,
-                                speed: item.speed,
-                                format: streamResult.format || 'mp3',
-                                source: item.source || 'unknown',
-                                duckOther: item.duckOther ?? this.config.duckOtherAudio,
-                                duckVolume: this.config.duckVolume
-                            });
-
-                            this._logDebug('PLAYBACK', 'Stream chunk emitted', {
-                                id: item.id,
-                                chunkNumber: chunks.length,
-                                chunkSize: chunk.length,
-                                totalBytes: totalBytes
-                            });
-                        });
-
-                        // Wait for stream to complete
-                        await new Promise((resolve, reject) => {
-                            stream.on('end', () => {
-                                this._logDebug('PLAYBACK', 'Stream completed', {
-                                    id: item.id,
-                                    totalChunks: chunks.length,
-                                    totalBytes: totalBytes
-                                });
-                                
-                                // Signal to client that stream is complete
-                                this.api.emit('tts:stream:end', {
-                                    id: item.id,
-                                    totalChunks: chunks.length,
-                                    totalBytes: totalBytes,
-                                    format: streamResult.format || 'mp3',
-                                    source: item.source || 'unknown'
-                                });
-                                
-                                resolve();
-                            });
-
-                            stream.on('error', (error) => {
-                                this._logDebug('PLAYBACK', 'Stream error', {
-                                    id: item.id,
-                                    error: error.message
-                                });
-                                reject(error);
-                            });
-                        });
-                        streamedAudioData = chunks.length > 0 ? Buffer.concat(chunks).toString('base64') : null;
-                    }
-
-                    const durationInfo = this._resolvePlaybackDuration(item, streamedAudioData);
-                    const estimatedDuration = durationInfo.durationMs;
-                    playbackMeta.duration = estimatedDuration;
-
-                    this._logDebug('PLAYBACK', 'Waiting for audio playback to complete', {
-                        estimatedDuration,
-                        textLength: item.text.length,
-                        durationSource: durationInfo.source,
-                        audioFormat: durationInfo.format,
-                        measuredDurationMs: durationInfo.measuredDurationMs
-                    });
-
-                    // Wait for audio playback to complete
-                    await new Promise(resolve => setTimeout(resolve, estimatedDuration));
-
-                } catch (streamError) {
-                    this._recordEngineFailure(item.engine, streamError);
-                    this.logger.error(`TTS streaming error: ${streamError.message}, falling back to regular synthesis`);
-                    this._logDebug('PLAYBACK', 'Streaming failed, attempting fallback to regular synthesis', {
-                        id: item.id,
-                        error: streamError.message
-                    });
-
-                    // Fallback to regular synthesis
-                    const ttsEngine = this.engines[item.engine];
-                    if (ttsEngine && ttsEngine.synthesize) {
-                        try {
-                            const audioData = await this._synthesizeWithCircuit(
-                                item.engine,
-                                item.text,
-                                item.voice,
-                                item.speed,
-                                item.synthesisOptions || {}
-                            );
-
-                            // Emit regular playback events
-                            this.api.emit('tts:playback:started', {
-                                id: item.id,
-                                username: item.username,
-                                text: item.text,
-                                source: item.source || 'unknown'
-                            });
-
-                            this.api.emit('tts:play', {
-                                id: item.id,
-                                username: item.username,
-                                text: item.text,
-                                voice: item.voice,
-                                engine: item.engine,
-                                audioData: audioData,
-                                volume: item.volume,
-                                speed: item.speed,
-                                source: item.source || 'unknown',
-                                duckOther: item.duckOther ?? this.config.duckOtherAudio,
-                                duckVolume: this.config.duckVolume
-                            });
-
-                            const durationInfo = this._resolvePlaybackDuration(item, audioData);
-                            const estimatedDuration = durationInfo.durationMs;
-                            this._logDebug('PLAYBACK', 'Waiting for fallback audio playback to complete', {
-                                estimatedDuration,
-                                durationSource: durationInfo.source,
-                                audioFormat: durationInfo.format,
-                                measuredDurationMs: durationInfo.measuredDurationMs
-                            });
-                            await new Promise(resolve => setTimeout(resolve, estimatedDuration));
-
-                        } catch (fallbackError) {
-                            this.logger.error(`TTS fallback synthesis also failed: ${fallbackError.message}`);
-                            throw fallbackError;
-                        }
-                    } else {
-                        throw streamError;
-                    }
-                }
-
-            } else {
-                // Regular (non-streaming) playback mode
-                // Emit playback start event
-                this.api.emit('tts:playback:started', {
-                    id: item.id,
-                    username: item.username,
-                    text: item.text,
-                    source: item.source || 'unknown'
-                });
-
-                // Send audio to clients for playback
-                this.api.emit('tts:play', {
-                    id: item.id,
-                    username: item.username,
-                    text: item.text,
-                    voice: item.voice,
-                    engine: item.engine,
-                    audioData: item.audioData,
-                    volume: item.volume,
-                    speed: item.speed,
-                    source: item.source || 'unknown',
-                    duckOther: item.duckOther ?? this.config.duckOtherAudio,
-                    duckVolume: this.config.duckVolume
-                });
-
-                this._logDebug('PLAYBACK', 'Audio event emitted to clients', {
-                    id: item.id,
-                    event: 'tts:play',
-                    audioDataLength: item.audioData?.length || 0
-                });
-
-                const durationInfo = this._resolvePlaybackDuration(item);
-                const estimatedDuration = durationInfo.durationMs;
-                playbackMeta.duration = estimatedDuration;
-
-                if (this.api.pluginLoader && typeof this.api.pluginLoader.emit === 'function') {
-                    try {
-                        this.api.pluginLoader.emit('tts:playback:started', playbackMeta);
-                    } catch (error) {
-                        this.logger.warn(`TTS: Failed to broadcast playback start to plugins: ${error.message}`);
-                    }
-                }
-
-                this._logDebug('PLAYBACK', 'Waiting for playback to complete', {
-                    estimatedDuration,
-                    textLength: item.text.length,
-                    speed: item.speed,
-                    durationSource: durationInfo.source,
-                    audioFormat: durationInfo.format,
-                    measuredDurationMs: durationInfo.measuredDurationMs
-                });
-
-                // Wait for playback to complete
-                await new Promise(resolve => setTimeout(resolve, estimatedDuration));
+                await this._playStreamingWithRenderer(item, playbackMeta, avatarGatePromise);
+                return;
             }
 
-            // Emit playback end event
-            this.api.emit('tts:playback:ended', {
-                id: item.id,
-                username: item.username,
-                source: item.source || 'unknown'
-            });
-
-            if (this.api.pluginLoader && typeof this.api.pluginLoader.emit === 'function') {
-                try {
-                    this.api.pluginLoader.emit('tts:playback:ended', {
-                        id: item.id,
-                        userId: item.userId,
-                        username: item.username
-                    });
-                } catch (error) {
-                    this.logger.warn(`TTS: Failed to broadcast playback end to plugins: ${error.message}`);
+            if (!item.audioData) {
+                if (!this.engines[item.engine]) {
+                    throw new Error(`Engine not available: ${item.engine}`);
                 }
+                item.audioData = await this._synthesizeWithCircuit(
+                    item.engine,
+                    item.text,
+                    item.voice,
+                    item.speed,
+                    item.synthesisOptions || {}
+                );
             }
 
-            this._logDebug('PLAYBACK', 'Playback completed', { id: item.id });
-
+            const avatarGate = await avatarGatePromise;
+            await this._dispatchRendererAudio(item, playbackMeta, item.audioData, avatarGate);
         } catch (error) {
-            this._logDebug('PLAYBACK', 'Playback error', {
-                id: item.id,
+            this._settleRendererPlayback(playbackMeta.playbackId, 'failed', {
+                reason: 'server-playback-error'
+            });
+            this._logDebug('PLAYBACK', 'Renderer-synchronised playback failed', {
+                id: playbackMeta.playbackId,
                 error: error.message,
                 stack: error.stack
             });
             this.logger.error(`TTS playback error: ${error.message}`);
             this.api.emit('tts:playback:error', {
-                id: item.id,
+                id: playbackMeta.id,
+                playbackId: playbackMeta.playbackId,
                 error: error.message,
-                source: item.source || 'unknown'
+                source: playbackMeta.source
             });
         }
+    }
+
+    async _dispatchRendererAudio(item, playbackMeta, audioData, avatarGate) {
+        const durationInfo = this._resolvePlaybackDuration(item, audioData);
+        const durationMs = durationInfo.durationMs;
+        const completion = this._beginRendererPlayback(playbackMeta, { durationMs });
+        this._emitPlaybackPrepared(playbackMeta, avatarGate, durationMs);
+        this.api.emit('tts:play', {
+            id: playbackMeta.id,
+            playbackId: playbackMeta.playbackId,
+            userId: playbackMeta.userId,
+            username: playbackMeta.username,
+            text: playbackMeta.text,
+            voice: playbackMeta.voice,
+            engine: playbackMeta.engine,
+            hasAssignedVoice: playbackMeta.hasAssignedVoice,
+            audioData,
+            volume: item.volume,
+            speed: item.speed,
+            source: playbackMeta.source,
+            duckOther: item.duckOther ?? this.config.duckOtherAudio,
+            duckVolume: this.config.duckVolume
+        });
+        this._logDebug('PLAYBACK', 'Audio dispatched to renderer', {
+            id: playbackMeta.playbackId,
+            durationMs,
+            durationSource: durationInfo.source,
+            audioFormat: durationInfo.format
+        });
+        return completion;
+    }
+
+    async _playStreamingWithRenderer(item, playbackMeta, avatarGatePromise) {
+        const ttsEngine = this.engines[item.engine];
+        let streamResult;
+        try {
+            if (!ttsEngine || typeof ttsEngine.synthesizeStream !== 'function') {
+                throw new Error(`Streaming not supported for engine: ${item.engine}`);
+            }
+            this._assertEngineCircuitAllows(item.engine);
+            streamResult = await ttsEngine.synthesizeStream(
+                item.text,
+                item.voice,
+                item.speed,
+                item.synthesisOptions || {}
+            );
+            this._recordEngineSuccess(item.engine);
+        } catch (streamError) {
+            this._recordEngineFailure(item.engine, streamError);
+            if (!ttsEngine || typeof ttsEngine.synthesize !== 'function') throw streamError;
+            // fallback to regular synthesis when the streaming setup cannot start
+            const fallbackAudio = await this._synthesizeWithCircuit(
+                item.engine,
+                item.text,
+                item.voice,
+                item.speed,
+                item.synthesisOptions || {}
+            );
+            const avatarGate = await avatarGatePromise;
+            return this._dispatchRendererAudio(
+                { ...item, isStreaming: false },
+                { ...playbackMeta, isStreaming: false },
+                fallbackAudio,
+                avatarGate
+            );
+        }
+
+        const avatarGate = await avatarGatePromise;
+        const stream = streamResult?.stream;
+        if (!stream || typeof stream.on !== 'function') {
+            throw new Error('Streaming response did not contain a readable stream');
+        }
+
+        // Reserve a completion record before the first transport chunk reaches
+        // Dashboard. It deliberately has no playback watchdog until buffered
+        // audio is ready at EOF, yet can accept an early autoplay/renderer
+        // failure immediately.
+        const completion = this._beginRendererPlayback(playbackMeta, {
+            deferWatchdogs: true
+        });
+        const chunks = [];
+        let totalBytes = 0;
+        const playbackId = playbackMeta.playbackId;
+        const streamResultPromise = new Promise((resolve) => {
+            stream.on('data', (chunk) => {
+                // If Dashboard has already rejected this playback (for example
+                // due to autoplay lock), keep draining the source without
+                // retaining or broadcasting more chunks.
+                if (!this._ensureRendererPlaybackState().has(playbackId)) return;
+
+                chunks.push(chunk);
+                totalBytes += chunk.length;
+                const base64Chunk = chunk.toString('base64');
+                this.api.emit('tts:stream:chunk', {
+                    id: item.id,
+                    playbackId,
+                    userId: playbackMeta.userId,
+                    chunk: base64Chunk,
+                    isFirst: chunks.length === 1,
+                    volume: item.volume,
+                    speed: item.speed,
+                    format: streamResult.format || 'mp3',
+                    source: playbackMeta.source,
+                    duckOther: item.duckOther ?? this.config.duckOtherAudio,
+                    duckVolume: this.config.duckVolume
+                });
+            });
+            stream.once('end', () => {
+                const record = this._ensureRendererPlaybackState().get(playbackId);
+                if (record && !record.settled) {
+                    const streamedAudio = chunks.length > 0 ? Buffer.concat(chunks).toString('base64') : null;
+                    const durationInfo = this._resolvePlaybackDuration(item, streamedAudio);
+                    this._activateRendererPlayback(playbackId, {
+                        durationMs: durationInfo.durationMs
+                    });
+                    this._emitPlaybackPrepared(playbackMeta, avatarGate, durationInfo.durationMs);
+                }
+
+                // This remains a transport EOF marker, not a playback terminal
+                // event. It lets Dashboard release a rejected stream buffer.
+                this.api.emit('tts:stream:end', {
+                    id: item.id,
+                    playbackId,
+                    totalChunks: chunks.length,
+                    totalBytes,
+                    format: streamResult.format || 'mp3',
+                    source: playbackMeta.source
+                });
+                resolve({ type: 'stream-ended' });
+            });
+            stream.once('error', (error) => {
+                const didSettle = this._settleRendererPlayback(playbackId, 'failed', {
+                    reason: 'stream-error'
+                });
+                resolve({ type: 'stream-error', error, didSettle });
+            });
+        });
+
+        const firstOutcome = await Promise.race([
+            streamResultPromise,
+            completion.then((result) => ({ type: 'renderer-terminal', result }))
+        ]);
+        if (firstOutcome.type === 'stream-error') {
+            this._recordEngineFailure(item.engine, firstOutcome.error);
+            throw firstOutcome.error;
+        }
+        if (firstOutcome.type === 'renderer-terminal') {
+            return firstOutcome.result;
+        }
+
+        return completion;
     }
 
     /**
@@ -4007,6 +4075,8 @@ class TTSPlugin {
      */
     async destroy() {
         try {
+            this._settleAllRendererPlaybacks('plugin-destroyed');
+
             // Stop queue processing
             this.queueManager.stopProcessing();
 

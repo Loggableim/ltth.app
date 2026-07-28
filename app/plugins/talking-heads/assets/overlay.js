@@ -1,528 +1,294 @@
-/**
- * Talking Heads OBS Overlay JavaScript
- * Handles sprite animation synchronized with TTS audio
- */
+/* Talking Heads speaker stage and Boba avatar assignment overlay. */
+(() => {
+  'use strict';
 
-const socket = io();
+  const socket = io();
+  const activeAvatars = new Map();
+  const stage = document.getElementById('speakerStage');
+  const avatarContainer = document.getElementById('avatarContainer');
+  const stageIdle = document.getElementById('stageIdle');
+  const spawnPulse = document.getElementById('spawnPulse');
+  const OVERLAY_FALLBACK_COPY = Object.freeze({
+    boba_avatar: 'Boba avatar',
+    test_spin: 'Boba test spin',
+    assigning: 'Assigning a new avatar',
+    new_voice: 'New voice',
+    reels_spinning: 'Reels are spinning'
+  });
 
-function t(key) {
-  if (window.i18n && typeof window.i18n.t === 'function') {
-    return window.i18n.t(key);
-  }
-  return key;
-}
-
-// Active avatar instances
-const activeAvatars = new Map();
-const SPAWN_DURATION = 1800;
-
-/**
- * WebGL-based spawn animator for OBS HUD / overlay
- */
-class SpawnAnimator {
-  constructor() {
-    this.duration = SPAWN_DURATION;
-    this.startTime = 0;
-    this.active = false;
-
-    this.canvas = document.createElement('canvas');
-    this.canvas.id = 'spawnCanvas';
-    this.canvas.className = 'spawn-canvas';
-    document.body.appendChild(this.canvas);
-
-    this.mediaLayer = document.createElement('div');
-    this.mediaLayer.id = 'spawnMediaLayer';
-    document.body.appendChild(this.mediaLayer);
-
-    this.gl = this.canvas.getContext('webgl', { premultipliedAlpha: false });
-    this.program = null;
-    this.positionBuffer = null;
-    this.timeUniform = null;
-    this.resolutionUniform = null;
-
-    this._resize = this._resize.bind(this);
-    window.addEventListener('resize', this._resize);
-    this._resize();
-
-    if (this.gl) {
-      this._initGL();
-    }
+  function playbackKey(data = {}) {
+    const userId = String(data.userId || '').trim();
+    const supplied = String(data.playbackId || '').trim();
+    return supplied || `legacy:${userId}`;
   }
 
-  _initGL() {
-    const vsSource = `
-      attribute vec2 a_position;
-      void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
-      }
-    `;
+  function playbackMatches(avatar, data = {}) {
+    const supplied = String(data.playbackId || '').trim();
+    if (!supplied) return avatar.playbackId.startsWith('legacy:');
+    return avatar.playbackId === supplied;
+  }
 
-    const fsSource = `
-      precision mediump float;
-      uniform float u_time;
-      uniform vec2 u_resolution;
-      void main() {
-        vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
-        float len = length(uv);
-        float wave = 0.45 + 0.08 * sin(u_time * 4.0);
-        float ring = smoothstep(0.25, 0.0, abs(len - wave));
-        float glow = smoothstep(0.9, 0.1, len);
-        float pulse = 0.5 + 0.5 * sin(u_time * 3.5);
-        vec3 color = mix(vec3(0.16, 0.62, 1.0), vec3(0.92, 0.25, 1.0), pulse);
-        float alpha = ring * glow;
-        gl_FragColor = vec4(color, alpha * 0.9);
-      }
-    `;
+  function updateStageState() {
+    const speaking = activeAvatars.size > 0;
+    stage?.classList.toggle('is-speaking', speaking);
+    if (stageIdle) stageIdle.hidden = speaking;
+  }
 
-    const gl = this.gl;
-    const vertexShader = this._compileShader(gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = this._compileShader(gl.FRAGMENT_SHADER, fsSource);
-    if (!vertexShader || !fragmentShader) {
-      this.program = null;
-      return;
-    }
-    this.program = gl.createProgram();
-    gl.attachShader(this.program, vertexShader);
-    gl.attachShader(this.program, fragmentShader);
-    gl.linkProgram(this.program);
+  function selectionLabel(selection = {}) {
+    const character = String(selection.characterId || overlayText('boba_avatar'));
+    const expression = String(selection.options?.expression || '').trim();
+    return expression ? `${character} · ${expression}` : character;
+  }
 
-    if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-      console.warn('SpawnAnimator: WebGL program failed to link');
-      this.program = null;
-      return;
+  function overlayText(key, fallback = OVERLAY_FALLBACK_COPY[key]) {
+    const fullKey = `plugins.talking-heads.talking_heads_ui.stream_director.overlay.${key}`;
+    const value = window.i18n?.t?.(fullKey);
+    return value && value !== fullKey ? value : fallback || key;
+  }
+
+  function card(selection = {}, spriteUrl = '') {
+    const element = document.createElement('div');
+    element.className = 'reel-card';
+    const image = document.createElement('img');
+    image.alt = selectionLabel(selection);
+    image.src = spriteUrl || '';
+    const label = document.createElement('span');
+    label.textContent = selectionLabel(selection);
+    element.append(image, label);
+    return element;
+  }
+
+  class AvatarSlotPresenter {
+    constructor() {
+      this.root = document.getElementById('avatarSpinOverlay');
+      this.title = document.getElementById('slotTitle');
+      this.username = document.getElementById('slotUsername');
+      this.winnerAvatar = document.getElementById('slotWinnerAvatar');
+      this.winnerName = document.getElementById('slotWinnerName');
+      this.reels = [...document.querySelectorAll('[data-slot-reel]')];
+      this.timers = [];
+      this.activeSpin = null;
+      this.pendingPreview = null;
+      this.hideTimer = null;
     }
 
-    this.positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      -1, -1,
-      3, -1,
-      -1, 3
-    ]), gl.STATIC_DRAW);
-
-    this.timeUniform = gl.getUniformLocation(this.program, 'u_time');
-    this.resolutionUniform = gl.getUniformLocation(this.program, 'u_resolution');
-  }
-
-  _compileShader(type, source) {
-    const shader = this.gl.createShader(type);
-    this.gl.shaderSource(shader, source);
-    this.gl.compileShader(shader);
-    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      console.warn('SpawnAnimator: shader compile error', this.gl.getShaderInfoLog(shader));
-      return null;
-    }
-    return shader;
-  }
-
-  _resize() {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    this.canvas.width = width;
-    this.canvas.height = height;
-  }
-
-  _clearMedia() {
-    this.mediaLayer.innerHTML = '';
-  }
-
-  _playCustomMedia(options) {
-    this._clearMedia();
-    if (!options || options.mode !== 'custom' || !options.customMediaUrl) return;
-
-    const url = options.customMediaUrl;
-    const lower = url.toLowerCase();
-    const isVideo = lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov');
-
-    if (isVideo) {
-      const video = document.createElement('video');
-      video.src = url;
-      video.autoplay = true;
-      video.muted = false;
-      video.playsInline = true;
-      video.loop = false;
-      video.volume = typeof options.volume === 'number' ? options.volume : 0.8;
-      video.className = 'spawn-media';
-      this.mediaLayer.appendChild(video);
-      video.addEventListener('ended', () => this._clearMedia(), { once: true });
-      video.play().catch(() => {
-        // Autoplay with sound can fail; retry muted fallback
-        video.muted = true;
-        video.play().catch(() => {});
-      });
-    } else {
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = 'Spawn animation';
-      img.className = 'spawn-media';
-      this.mediaLayer.appendChild(img);
-      setTimeout(() => this._clearMedia(), this.duration);
-    }
-  }
-
-  trigger(options = {}) {
-    this.startTime = performance.now();
-    this.active = true;
-    this.canvas.classList.add('active');
-    this._playCustomMedia(options);
-    requestAnimationFrame(() => this._renderFrame());
-  }
-
-  _renderFrame() {
-    if (!this.active) {
-      this.canvas.classList.remove('active');
-      return;
+    _clearTimers() {
+      this.timers.forEach(timer => clearTimeout(timer));
+      this.timers = [];
+      clearTimeout(this.hideTimer);
+      this.hideTimer = null;
     }
 
-    const elapsed = performance.now() - this.startTime;
-    if (elapsed > this.duration) {
-      this.active = false;
-      this.canvas.classList.remove('active');
-      this._clearMedia();
-      return;
-    }
-
-    if (this.gl && this.program) {
-      const gl = this.gl;
-      gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.useProgram(this.program);
-
-      const positionLocation = gl.getAttribLocation(this.program, 'a_position');
-      gl.enableVertexAttribArray(positionLocation);
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-      gl.uniform1f(this.timeUniform, elapsed / 1000);
-      gl.uniform2f(this.resolutionUniform, this.canvas.width, this.canvas.height);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-    } else {
-      // Fallback: brief CSS flash if WebGL unavailable
-      this.canvas.style.background = 'radial-gradient(circle, rgba(97,197,255,0.35), transparent 60%)';
-    }
-
-    requestAnimationFrame(() => this._renderFrame());
-  }
-}
-
-const spawnAnimator = new SpawnAnimator();
-
-/**
- * Presents a gift-awarded avatar as a short local slot draw in OBS.
- */
-class AvatarLotteryPresenter {
-  constructor() {
-    this.root = document.getElementById('lotteryOverlay');
-    this.title = document.getElementById('lotteryTitle');
-    this.avatar = document.getElementById('lotteryAvatar');
-    this.username = document.getElementById('lotteryUsername');
-    this.message = document.getElementById('lotteryMessage');
-    this.commands = document.getElementById('lotteryCommands');
-    this.spinTimer = null;
-    this.hideTimer = null;
-  }
-
-  _show() {
-    if (!this.root) return;
-    this.root.hidden = false;
-    requestAnimationFrame(() => this.root.classList.add('is-visible'));
-  }
-
-  _hideAfter(delay) {
-    clearTimeout(this.hideTimer);
-    this.hideTimer = setTimeout(() => {
+    _show() {
       if (!this.root) return;
-      this.root.classList.remove('is-visible', 'is-result');
-      setTimeout(() => { this.root.hidden = true; }, 200);
-    }, delay);
-  }
-
-  _displayName(selection = {}) {
-    const character = selection.characterId || 'Neue Figur';
-    const pack = selection.packId === 'boba' ? 'Boba Animals'
-      : selection.packId === 'kenney' ? 'Kenney Monster'
-        : selection.packId === 'rgs' ? 'Character Builder' : 'Lokale Bibliothek';
-    return `${pack}: ${character}`;
-  }
-
-  start(data = {}) {
-    if (!this.root || !this.avatar) return;
-    clearInterval(this.spinTimer);
-    clearTimeout(this.hideTimer);
-
-    const candidates = Array.isArray(data.candidates) ? data.candidates.filter((candidate) => candidate?.spriteUrl) : [];
-    const winner = data.winner || {};
-    const winnerSprite = winner.sprites?.idle_neutral;
-    const duration = Math.max(800, Number(data.duration) || 2600);
-    let index = 0;
-
-    this.username.textContent = data.username || t('plugins.talking-heads.talking_heads_ui.lottery_overlay.new_supporter');
-    this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.drawing');
-    this.message.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.running');
-    this.commands.textContent = '';
-    this.root.classList.remove('is-result');
-    this.root.classList.add('is-spinning');
-    this._show();
-
-    const spinFrames = candidates.length ? candidates : (winnerSprite ? [{ spriteUrl: winnerSprite }] : []);
-    const showNext = () => {
-      if (!spinFrames.length) return;
-      this.avatar.src = spinFrames[index % spinFrames.length].spriteUrl;
-      index += 1;
-    };
-    showNext();
-    this.spinTimer = setInterval(showNext, 110);
-
-    setTimeout(() => {
-      clearInterval(this.spinTimer);
-      this.root.classList.remove('is-spinning');
-      this.root.classList.add('is-result');
-      if (winnerSprite) this.avatar.src = winnerSprite;
-      this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.won');
-      this.message.textContent = this._displayName(winner.selection);
-      this.commands.textContent = `${t('plugins.talking-heads.talking_heads_ui.lottery_overlay.keep_label')}: ${data.keepCommand || '!keep'}  ·  ${t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_label')}: ${data.rerollCommand || '!reroll'}`;
-      this._hideAfter(10000);
-    }, Math.max(520, duration - 420));
-  }
-
-  showChoice(data = {}) {
-    if (!this.root) return;
-    clearTimeout(this.hideTimer);
-    this._show();
-    this.root.classList.remove('is-spinning');
-    this.root.classList.add('is-result');
-    this.username.textContent = data.username || t('plugins.talking-heads.talking_heads_ui.lottery_overlay.supporter');
-    if (data.command === '!keep') {
-      this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.kept');
-      this.message.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.kept_message');
-      this.commands.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.kept_hint');
-    } else {
-      this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_armed');
-      this.message.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_message');
-      this.commands.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_hint');
+      this.root.hidden = false;
+      requestAnimationFrame(() => this.root?.classList.add('is-visible'));
     }
-    this._hideAfter(6500);
-  }
-}
 
-const avatarLotteryPresenter = new AvatarLotteryPresenter();
+    _hideAfter(delay, token) {
+      this.hideTimer = setTimeout(() => {
+        if (this.activeSpin?.token !== token || !this.root) return;
+        this.root.classList.remove('is-visible', 'is-spinning', 'is-revealed');
+        this.root.hidden = true;
+        this.activeSpin = null;
+        const preview = this.pendingPreview;
+        this.pendingPreview = null;
+        if (preview) this.start(preview);
+      }, delay);
+    }
 
-/**
- * Avatar instance class
- */
-class AvatarInstance {
-  constructor(userId, username, sprites, fadeInDuration) {
-    this.userId = userId;
-    this.username = username;
-    this.sprites = sprites;
-    this.fadeInDuration = fadeInDuration;
-    
-    this.element = null;
-    this.currentFrame = 'idle_neutral';
-    this.isActive = false;
-    
-    this.createElements();
-  }
+    _renderReel(reel, entries, duration) {
+      const track = reel?.querySelector('.reel-track');
+      if (!track) return;
+      track.replaceChildren(...entries.map(entry => card(entry.selection, entry.spriteUrl)));
+      track.style.setProperty('--reel-duration', `${Math.max(1, duration)}ms`);
+      track.classList.remove('is-stopped');
+      track.classList.add('is-spinning');
+    }
 
-  /**
-   * Create DOM elements for avatar
-   */
-  createElements() {
-    // Create avatar container
-    this.element = document.createElement('div');
-    this.element.className = 'avatar';
-    this.element.id = `avatar-${this.userId}`;
-    
-    // Create image element
-    this.img = document.createElement('img');
-    this.img.src = this.sprites.idle_neutral || '';
-    this.img.alt = this.username;
-    
-    this.element.appendChild(this.img);
-    document.getElementById('avatarContainer').appendChild(this.element);
-  }
+    _stopReel(index, entry) {
+      const track = this.reels[index]?.querySelector('.reel-track');
+      if (!track) return;
+      track.replaceChildren(card(entry.selection, entry.spriteUrl));
+      track.classList.remove('is-spinning');
+      track.classList.add('is-stopped');
+    }
 
-  /**
-   * Show avatar with fade-in
-   */
-  show() {
-    this.isActive = true;
-    this.element.classList.add('animating-in', 'active');
-    
-    setTimeout(() => {
-      this.element.classList.remove('animating-in');
-    }, this.fadeInDuration);
-  }
+    _acknowledge(spin) {
+      if (!spin || spin.acknowledged || this.activeSpin?.token !== spin.token) return;
+      if (spin.preview) return;
+      if (!spin.spinId || !spin.playbackId || !spin.userId) return;
+      spin.acknowledged = true;
+      socket.emit('talkingheads:avatar:spin:complete', {
+        playbackId: spin.playbackId,
+        userId: spin.userId,
+        spinId: spin.spinId
+      });
+    }
 
-  /**
-   * Hide avatar with fade-out
-   * @param {number} fadeOutDuration - Fade out duration in ms
-   */
-  hide(fadeOutDuration) {
-    this.isActive = false;
-    this.element.classList.add('animating-out', 'fading-out');
-    
-    setTimeout(() => {
-      this.element.remove();
-    }, fadeOutDuration);
-  }
-
-  /**
-   * Update displayed sprite frame
-   * @param {string} frame - Frame name (idle_neutral, blink, speak_closed, etc.)
-   */
-  updateFrame(frame) {
-    if (this.sprites[frame] && this.isActive) {
-      this.currentFrame = frame;
-      this.img.src = this.sprites[frame];
-      // Only log in development/debug mode to avoid performance impact
-      if (window.DEBUG_TALKING_HEADS) {
-        console.log(`[TalkingHeads] Updated ${this.username} to frame: ${frame}`);
+    start(data = {}) {
+      if (!this.root || this.reels.length !== 3) return;
+      const isPreview = data.preview === true;
+      if (isPreview && this.activeSpin) {
+        if (!this.activeSpin.preview && !this.pendingPreview) {
+          this.pendingPreview = { ...data };
+        }
+        return;
       }
-    } else if (!this.sprites[frame]) {
-      console.warn(`[TalkingHeads] Sprite not found for frame: ${frame}`);
-    } else if (!this.isActive) {
-      console.warn(`[TalkingHeads] Avatar ${this.username} is not active, skipping frame update`);
+      if (!isPreview) this.pendingPreview = null;
+      const winner = data.winner || {};
+      const winnerEntry = {
+        selection: winner.selection || {},
+        spriteUrl: winner.sprites?.idle_neutral || ''
+      };
+      if (!winnerEntry.spriteUrl) return;
+
+      this._clearTimers();
+      const duration = Math.max(1, Math.round(Number(data.duration) || 2600));
+      const candidates = Array.isArray(data.candidates)
+        ? data.candidates.filter(candidate => candidate?.spriteUrl)
+        : [];
+      const cards = candidates.length ? candidates : [winnerEntry];
+      const token = `${String(data.spinId || '')}:${Date.now()}:${Math.random()}`;
+      const spin = {
+        token,
+        playbackId: String(data.playbackId || '').trim(),
+        userId: String(data.userId || '').trim(),
+        spinId: String(data.spinId || '').trim(),
+        preview: isPreview,
+        acknowledged: false
+      };
+      this.activeSpin = spin;
+
+      this.title.textContent = data.preview === true
+        ? overlayText('test_spin')
+        : overlayText('assigning');
+      this.username.textContent = String(data.username || overlayText('new_voice'));
+      this.winnerAvatar.removeAttribute('src');
+      this.winnerName.textContent = overlayText('reels_spinning');
+      this.root.classList.remove('is-revealed');
+      this.root.classList.add('is-spinning');
+      this.reels.forEach((reel, index) => {
+        const strip = [...cards, ...cards, ...cards, ...cards].map((entry, entryIndex) => (
+          entryIndex === 6 + index ? winnerEntry : entry
+        ));
+        this._renderReel(reel, strip, duration);
+      });
+      this._show();
+
+      const stops = [0.56, 0.76, 1];
+      stops.forEach((fraction, index) => {
+        this.timers.push(setTimeout(() => {
+          if (this.activeSpin?.token !== token) return;
+          this._stopReel(index, index === 1 ? winnerEntry : cards[index % cards.length]);
+        }, Math.round(duration * fraction)));
+      });
+      this.timers.push(setTimeout(() => {
+        if (this.activeSpin?.token !== token) return;
+        this.root.classList.remove('is-spinning');
+        this.root.classList.add('is-revealed');
+        this.winnerAvatar.src = winnerEntry.spriteUrl;
+        this.winnerName.textContent = selectionLabel(winnerEntry.selection);
+        this._acknowledge(spin);
+        this._hideAfter(5200, token);
+      }, duration));
     }
   }
 
-  /**
-   * Stop and remove avatar
-   */
-  stop() {
-    this.isActive = false;
-    if (this.element && this.element.parentNode) {
+  class AvatarInstance {
+    constructor(data) {
+      this.userId = String(data.userId || '');
+      this.username = String(data.username || this.userId);
+      this.playbackId = playbackKey(data);
+      this.sprites = data.sprites || {};
+      this.element = document.createElement('article');
+      this.element.className = 'avatar';
+      this.element.dataset.userId = this.userId;
+      this.element.dataset.playbackId = this.playbackId;
+      this.image = document.createElement('img');
+      this.image.alt = this.username;
+      this.image.src = this.sprites.idle_neutral || '';
+      const name = document.createElement('span');
+      name.className = 'avatar-name';
+      name.textContent = this.username;
+      this.element.append(this.image, name);
+      avatarContainer?.appendChild(this.element);
+      requestAnimationFrame(() => this.element.classList.add('is-visible'));
+    }
+
+    updateFrame(frame) {
+      if (this.sprites[frame]) this.image.src = this.sprites[frame];
+    }
+
+    hide(fadeOutDuration, onComplete) {
+      this.element.classList.remove('is-visible');
+      this.element.classList.add('is-leaving');
+      setTimeout(() => {
+        this.element.remove();
+        onComplete?.();
+      }, Math.max(0, Number(fadeOutDuration) || 0));
+    }
+
+    stop() {
       this.element.remove();
     }
   }
-}
 
-/**
- * Socket event handlers
- */
+  const slotPresenter = new AvatarSlotPresenter();
 
-// Animation start event
-socket.on('talkingheads:animation:start', (data) => {
-  const { userId, username, sprites, fadeInDuration } = data;
-  
-  console.log(`[TalkingHeads] Starting animation for ${username} (${userId})`);
-  console.log(`[TalkingHeads] Received sprites:`, Object.keys(sprites || {}));
-  
-  // Check if avatar already exists
-  if (activeAvatars.has(userId)) {
-    console.warn(`[TalkingHeads] Avatar already active for ${userId}`);
-    return;
-  }
-  
-  // Create new avatar instance
-  const avatar = new AvatarInstance(userId, username, sprites, fadeInDuration);
-  activeAvatars.set(userId, avatar);
-  
-  // Show avatar
-  avatar.show();
-  console.log(`[TalkingHeads] Avatar shown for ${username}`);
-});
+  socket.on('talkingheads:avatar:spin:start', data => {
+    slotPresenter.start(data || {});
+  });
 
-// Spawn animation event for new avatars
-socket.on('talkingheads:avatar:spawn', (data = {}) => {
-  spawnAnimator.trigger(data);
-});
+  socket.on('talkingheads:animation:start', data => {
+    const userId = String(data?.userId || '').trim();
+    if (!userId || !data?.sprites) return;
+    const incomingPlaybackId = playbackKey(data);
+    const existing = activeAvatars.get(userId);
+    if (existing?.playbackId === incomingPlaybackId) return;
+    if (existing) existing.stop();
+    const avatar = new AvatarInstance(data);
+    activeAvatars.set(userId, avatar);
+    updateStageState();
+  });
 
-// Gift avatar lottery: animated slot draw followed by keep/reroll guidance.
-socket.on('talkingheads:avatar:lottery:start', (data = {}) => {
-  avatarLotteryPresenter.start(data);
-});
+  socket.on('talkingheads:animation:frame', data => {
+    const avatar = activeAvatars.get(String(data?.userId || ''));
+    if (!avatar || !playbackMatches(avatar, data)) return;
+    avatar.updateFrame(data.frame);
+  });
 
-socket.on('talkingheads:avatar:lottery:choice', (data = {}) => {
-  avatarLotteryPresenter.showChoice(data);
-});
-
-// Frame update event
-socket.on('talkingheads:animation:frame', (data) => {
-  const { userId, frame } = data;
-  
-  // Enable debug logging by setting window.DEBUG_TALKING_HEADS = true in console
-  if (window.DEBUG_TALKING_HEADS) {
-    console.log(`[TalkingHeads] Frame update for ${userId}: ${frame}`);
-  }
-  
-  const avatar = activeAvatars.get(userId);
-  if (avatar) {
-    avatar.updateFrame(frame);
-  } else {
-    console.warn(`[TalkingHeads] No avatar found for userId ${userId}, cannot update frame`);
-  }
-});
-
-// Animation end event
-socket.on('talkingheads:animation:end', (data) => {
-  const { userId, fadeOutDuration } = data;
-  
-  console.log(`[TalkingHeads] Ending animation for ${userId}`);
-  
-  const avatar = activeAvatars.get(userId);
-  if (avatar) {
-    avatar.hide(fadeOutDuration);
-    
-    // Remove from active avatars after fade out
-    setTimeout(() => {
+  socket.on('talkingheads:animation:end', data => {
+    const userId = String(data?.userId || '');
+    const avatar = activeAvatars.get(userId);
+    if (!avatar || !playbackMatches(avatar, data)) return;
+    avatar.hide(data.fadeOutDuration, () => {
+      if (activeAvatars.get(userId) !== avatar) return;
       activeAvatars.delete(userId);
-      console.log(`[TalkingHeads] Avatar removed for ${userId}`);
-    }, fadeOutDuration);
-  } else {
-    console.warn(`[TalkingHeads] No avatar found for userId ${userId}, cannot end animation`);
-  }
-});
+      updateStageState();
+    });
+  });
 
-// Animation stop event (immediate)
-socket.on('talkingheads:animation:stop', (data) => {
-  const { userId } = data;
-  
-  console.log(`Stopping animation for ${userId}`);
-  
-  const avatar = activeAvatars.get(userId);
-  if (avatar) {
+  socket.on('talkingheads:animation:stop', data => {
+    const userId = String(data?.userId || '');
+    const avatar = activeAvatars.get(userId);
+    if (!avatar || !playbackMatches(avatar, data)) return;
     avatar.stop();
     activeAvatars.delete(userId);
-  }
-});
+    updateStageState();
+  });
 
-/**
- * Connection status
- */
-socket.on('connect', () => {
-  console.log('[TalkingHeads] Overlay connected to server');
-  console.log('[TalkingHeads] Socket ID:', socket.id);
-});
+  socket.on('talkingheads:avatar:spawn', () => {
+    if (!spawnPulse) return;
+    spawnPulse.classList.remove('is-active');
+    requestAnimationFrame(() => spawnPulse.classList.add('is-active'));
+  });
 
-socket.on('disconnect', () => {
-  console.warn('[TalkingHeads] Overlay disconnected from server');
-  
-  // Clear all avatars on disconnect
-  for (const avatar of activeAvatars.values()) {
-    avatar.stop();
-  }
-  activeAvatars.clear();
-  console.log('[TalkingHeads] All avatars cleared due to disconnect');
-});
+  socket.on('disconnect', () => {
+    activeAvatars.forEach(avatar => avatar.stop());
+    activeAvatars.clear();
+    updateStageState();
+  });
 
-/**
- * Error handling
- */
-socket.on('error', (error) => {
-  console.error('[TalkingHeads] Socket error:', error);
-});
-
-/**
- * Socket connection test handler
- */
-socket.on('talkingheads:test:ping', (data) => {
-  console.log('[TalkingHeads] ✅ Socket test ping received!', data);
-  console.log('[TalkingHeads] Connection is working correctly.');
-});
-
-// Log when overlay loads
-console.log('[TalkingHeads] OBS Overlay loaded and ready');
-console.log('[TalkingHeads] Waiting for socket connection...');
-console.log('[TalkingHeads] To enable verbose frame logging, run: window.DEBUG_TALKING_HEADS = true');
+  updateStageState();
+})();
