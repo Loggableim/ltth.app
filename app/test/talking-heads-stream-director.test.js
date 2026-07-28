@@ -92,7 +92,7 @@ describe('Talking Heads Stream Director routes', () => {
     expect(JSON.stringify(payload)).not.toMatch(/audioData|chat text|message text/i);
   });
 
-  test('emits a preview-only Boba test spin without assigning an avatar or invoking TTS', async () => {
+  test('emits a preview-only avatar test spin without assigning an avatar or invoking TTS', async () => {
     const { plugin, api, io } = createPlugin();
     plugin._registerRoutes();
     const testSpinRoute = findRoute(api, 'post', '/api/talkingheads/test-spin');
@@ -109,7 +109,7 @@ describe('Talking Heads Stream Director routes', () => {
         reason: 'preview',
         playbackId: expect.stringMatching(/^preview-spin-/),
         spinId: expect.any(String),
-        winner: expect.objectContaining({ selection: expect.objectContaining({ packId: 'boba' }) })
+        winner: expect.objectContaining({ selection: expect.objectContaining({ packId: expect.stringMatching(/^(boba|kenney|rgs)$/) }) })
       })
     ]);
     expect(plugin.avatarLotteryManager.assign).not.toHaveBeenCalled();
@@ -118,6 +118,19 @@ describe('Talking Heads Stream Director routes', () => {
       preview: true,
       spin: expect.objectContaining({ preview: true, spinId: expect.any(String) })
     }));
+  });
+
+  test('reports an avatar-generic error when the preview spin is unavailable', async () => {
+    const { plugin, api } = createPlugin();
+    plugin._emitAvatarSpin = jest.fn(async () => null);
+    plugin._registerRoutes();
+    const testSpinRoute = findRoute(api, 'post', '/api/talkingheads/test-spin');
+    const res = responseRecorder();
+
+    await testSpinRoute({ body: {} }, res);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Avatar preview is unavailable' });
   });
 
   test('migrates persisted lottery settings into the first-assignment and reroll-gift names', () => {

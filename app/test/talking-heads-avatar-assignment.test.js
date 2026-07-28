@@ -2,6 +2,7 @@ const TalkingHeadsPlugin = require('../plugins/talking-heads/main.js');
 
 const fox = { packId: 'boba', characterId: 'Fox', options: { expression: 'Happy' } };
 const bear = { packId: 'boba', characterId: 'Bear', options: { expression: 'Angry' } };
+const kenney = { packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } };
 
 function createPlugin() {
   const io = { on: jest.fn(), emit: jest.fn() };
@@ -42,8 +43,9 @@ function createPlugin() {
 }
 
 describe('Talking Heads persistent avatar assignment', () => {
-  test('assigns and persists a Boba avatar on an assigned-voice user first playback', async () => {
+  test('assigns and persists a cross-pack avatar on an assigned-voice user first playback', async () => {
     const { plugin } = createPlugin();
+    plugin.assetSpriteLibrary.getRandomSelection.mockReturnValue(kenney);
     plugin.avatarLotteryManager = {
       getAssignment: jest.fn(() => null),
       assign: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'kept' }))
@@ -57,16 +59,14 @@ describe('Talking Heads persistent avatar assignment', () => {
       userData: { hasAssignedVoice: true }
     });
 
-    expect(plugin.avatarLotteryManager.assign).toHaveBeenCalledWith('voice-user', 'Voice User', fox);
-    expect(prepareSpy.mock.results[0].value).toMatchObject({
-      created: true,
-      selection: fox,
-      reason: 'assigned-voice'
-    });
+    const result = prepareSpy.mock.results[0].value;
+    expect(plugin.avatarLotteryManager.assign).toHaveBeenCalledWith('voice-user', 'Voice User', kenney);
+    expect(result).toMatchObject({ created: true, reason: 'assigned-voice' });
+    expect(result.selection).toEqual(kenney);
     expect(plugin.animationController.startAnimation).toHaveBeenCalledWith(
       'voice-user',
       'Voice User',
-      { idle_neutral: '/sprites/Fox.svg' },
+      { idle_neutral: '/sprites/blueA.svg' },
       1000
     );
   });

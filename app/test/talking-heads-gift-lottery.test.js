@@ -24,6 +24,8 @@ function createPlugin() {
 const fox = { packId: 'boba', characterId: 'Fox', options: {} };
 const bear = { packId: 'boba', characterId: 'Bear', options: {} };
 const dog = { packId: 'boba', characterId: 'Dog', options: {} };
+const kenney = { packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } };
+const rgs = { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } };
 
 function spinIdFor(io, playbackId) {
   const event = io.emit.mock.calls.find(([eventName, payload]) => (
@@ -72,11 +74,11 @@ describe('Talking Heads gift avatar lottery', () => {
   });
 
   test('gift reroll uses the TikTok handle when the event also carries a numeric user ID', async () => {
-    const { plugin } = createPlugin();
+    const { plugin, io } = createPlugin();
     plugin.config.rerollGiftNames = ['Go Popular'];
     plugin.assetSpriteLibrary = {
-      getRandomSelection: jest.fn(() => dog),
-      getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
+      getRandomSelection: jest.fn(() => rgs),
+      getLotteryCandidates: jest.fn(() => [bear, kenney, fox]),
       getSpriteSet: jest.fn(async (selection) => ({
         ...selection,
         sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` }
@@ -95,7 +97,12 @@ describe('Talking Heads gift avatar lottery', () => {
       giftName: 'Go Popular'
     })).resolves.toBe(true);
 
-    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer_handle', 'viewer_handle', dog);
+    expect(plugin.assetSpriteLibrary.getRandomSelection).toHaveBeenCalledWith(expect.any(Function), fox);
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer_handle', 'viewer_handle', rgs);
+    expect(io.emit).toHaveBeenCalledWith('talkingheads:avatar:spin:start', expect.objectContaining({
+      reason: 'gift-reroll',
+      winner: expect.objectContaining({ selection: rgs })
+    }));
   });
 
   test('registers only the configured gift behavior and rerolls an existing avatar', async () => {
