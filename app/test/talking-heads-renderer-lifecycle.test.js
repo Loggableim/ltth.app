@@ -164,6 +164,35 @@ describe('Talking Heads renderer lifecycle', () => {
     expect(plugin.animationController.endExternalAnimation).not.toHaveBeenCalled();
   });
 
+  test('releases generated winner frames only for the matching renderer terminal playback', async () => {
+    const { plugin, api } = createTalkingHeads();
+    plugin.animationController = {
+      setMouthIntensity: jest.fn(),
+      endExternalAnimation: jest.fn()
+    };
+    plugin.cacheManager = {
+      releaseGeneratedAssetOwner: jest.fn().mockResolvedValue(5)
+    };
+    plugin.activePlaybackByUser.set('same-user', 'newer-playback');
+
+    plugin._registerPlaybackBridge();
+    const handlers = new Map(api.pluginLoader.on.mock.calls);
+    handlers.get('tts:renderer:ended')({
+      playbackId: 'stale-playback',
+      userId: 'same-user'
+    });
+    expect(plugin.cacheManager.releaseGeneratedAssetOwner).not.toHaveBeenCalled();
+
+    handlers.get('tts:renderer:ended')({
+      playbackId: 'newer-playback',
+      userId: 'same-user'
+    });
+    await Promise.resolve();
+
+    expect(plugin.cacheManager.releaseGeneratedAssetOwner)
+      .toHaveBeenCalledWith('playback:newer-playback');
+  });
+
   test('ignores renderer-authoritative legacy aliases so the avatar starts only once', async () => {
     const { plugin, api } = createTalkingHeads();
     plugin._handleTTSEvent = jest.fn().mockResolvedValue();

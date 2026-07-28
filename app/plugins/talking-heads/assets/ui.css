@@ -240,6 +240,7 @@ input[type="file"] { padding: 7px; }
   margin: 12px 0;
   overflow: auto;
 }
+.boba-thumbnail-grid[hidden] { display: none; }
 .boba-thumbnail {
   min-height: 58px;
   display: grid;

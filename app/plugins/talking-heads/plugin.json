@@ -2,7 +2,7 @@
   "id": "talking-heads",
   "name": "Talking Heads",
   "version": "2.0.0",
-  "description": "Boba speaker-stage avatars with renderer-synchronized TTS animation",
+  "description": "Three-pack speaker-stage avatars with renderer-synchronized TTS animation",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": false,
@@ -39,7 +39,7 @@
     "firstAssignmentEnabled": true,
     "rerollGiftEnabled": true,
     "rerollGiftId": "",
-    "rerollGiftNames": ["Heart Me", "Team Heart", "Team Herz"],
+    "rerollGiftNames": ["Go Popular", "Heart Me", "Team Heart", "Team Herz"],
     "spinDurationMs": 2600,
     "cacheEnabled": true,
     "cacheDuration": 2592000,
@@ -59,7 +59,7 @@
     "spriteMode": "asset-library"
   },
   "descriptions": {
-    "en": "Boba speaker-stage avatars with a first-voice assignment slot and mouth animation synchronized to the actual TTS renderer. Includes local Boba, Kenney, and vector character assets without external avatar APIs.",
-    "de": "Boba-Sprecheravatare mit einem Slot bei der ersten Stimmzuweisung und Mundanimation, die mit dem echten TTS-Renderer synchronisiert ist. Enthaelt lokale Boba-, Kenney- und Vector-Assets ohne externe Avatar-APIs."
+    "en": "Speaker-stage avatars with an equal-weight Boba, Kenney, and vector-character assignment slot plus mouth animation synchronized to the actual TTS renderer. Uses bundled assets without external avatar APIs.",
+    "de": "Sprecheravatare mit einem gleichgewichteten Slot aus Boba-, Kenney- und Vector-Figuren sowie Mundanimation, die mit dem echten TTS-Renderer synchronisiert ist. Nutzt gebuendelte Assets ohne externe Avatar-APIs."
   }
 }

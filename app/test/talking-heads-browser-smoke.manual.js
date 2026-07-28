@@ -151,8 +151,26 @@ function createFixtureHandler(record) {
     // Socket.IO owns this route after it has attached to the same HTTP server.
     if (pathname.startsWith('/socket.io/')) return;
 
-    if (pathname === '/api/i18n/translations/de' && method === 'GET') {
-      sendJson(response, 200, {});
+    if (
+      ['/api/i18n/translations/de', '/api/talkingheads/overlay/translations/de'].includes(pathname)
+      && method === 'GET'
+    ) {
+      sendJson(response, 200, {
+        plugins: {
+          'talking-heads': {
+            talking_heads_ui: {
+              stream_director: {
+                overlay: {
+                  assigning: 'Neuer Avatar wird zugewiesen',
+                  new_voice: 'Neue Stimme',
+                  reels_spinning: 'Rollen drehen sich',
+                  avatar: 'Avatar'
+                }
+              }
+            }
+          }
+        }
+      });
       return;
     }
     if (pathname === '/api/talkingheads/config' && method === 'GET') {
@@ -311,6 +329,8 @@ async function assertDirectorWorkflow(page, origin, record) {
   });
   assert.equal(await page.locator('#assetPack').inputValue(), 'kenney');
   assert.equal(await page.locator('#bobaThumbnailGrid').evaluate(grid => grid.hidden), true);
+  assert.equal(await page.locator('#bobaThumbnailGrid').isHidden(), true);
+  assert.equal(await page.locator('#bobaThumbnailGrid').boundingBox(), null);
   assert.equal(await page.locator('#bobaThumbnailGrid .boba-thumbnail').count(), 0);
 
   await page.locator('#testSpinBtn').click();
@@ -326,15 +346,16 @@ async function assertDirectorWorkflow(page, origin, record) {
 
 async function assertOverlayWorkflow(page, fixture, screenshotPaths) {
   const { io, origin, record } = fixture;
-  await page.goto(`${origin}/overlay/talking-heads`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${origin}/overlay/talking-heads?lang=de`, { waitUntil: 'domcontentloaded' });
   await page.locator('#speakerStage').waitFor();
+  await page.waitForFunction(() => window.i18n?.initialized === true);
   await waitFor(() => record.connections.size === 1, 'the local overlay Socket.IO connection');
 
   const spin = {
     playbackId: 'smoke-playback-1',
     spinId: 'smoke-spin-1',
     userId: 'smoke-user-1',
-    username: 'Smoke RGS',
+    username: '',
     duration: 350,
     winner: {
       selection: {
@@ -366,6 +387,9 @@ async function assertOverlayWorkflow(page, fixture, screenshotPaths) {
   io.emit('talkingheads:avatar:spin:start', spin);
 
   await page.locator('#avatarSpinOverlay').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#slotTitle').textContent(), 'Neuer Avatar wird zugewiesen');
+  assert.equal(await page.locator('#slotUsername').textContent(), 'Neue Stimme');
+  assert.equal(await page.locator('#slotWinnerName').textContent(), 'Rollen drehen sich');
   assert.equal(await page.locator('[data-slot-reel]').count(), 3);
   assert.equal(await page.locator('[data-slot-reel] .reel-track.is-spinning').count(), 3);
   await waitFor(() => record.completionAcks.length === 1, 'exactly one spin completion acknowledgement');
