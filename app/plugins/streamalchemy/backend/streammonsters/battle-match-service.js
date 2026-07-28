@@ -16,6 +16,7 @@ const {
   projectBattleFighter,
   projectBattleChoices
 } = require('./public-event-projector');
+const ArenaDirector = require('../../streammonsters-arena-director');
 
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
@@ -95,6 +96,7 @@ class BattleMatchService {
     this.rulesVersion = Number(rulesVersion) >= 7 ? 7 : Number(rulesVersion) >= 6 ? 6 : 5;
     this.sweepIntervalMs = Math.max(250, Number(sweepIntervalMs) || 1_000);
     this.sweepTimer = null;
+    this.pauseActiveChargesForReconnect();
     if (autoStart) this.start();
   }
 
@@ -156,10 +158,21 @@ class BattleMatchService {
 
   chargeWindow(match) {
     if (!this.isRulesV7(match)) return null;
+    const pausedMs = Number(match.chargePausedMs) || 0;
+    const pauseStartedAtMs = match.chargePauseStartedAtMs == null
+      ? NaN
+      : Number(match.chargePauseStartedAtMs);
+    const pauseUntilMs = match.chargePauseUntilMs == null
+      ? NaN
+      : Number(match.chargePauseUntilMs);
     return {
       openedAtMs: Number(match.actionOpenedAtMs) || 0,
       deadlineMs: Number(match.actionDeadlineMs) || 0,
-      passivePerSecond: PASSIVE_CHARGE_PER_SECOND
+      passivePerSecond: PASSIVE_CHARGE_PER_SECOND,
+      ...(pausedMs > 0 ? { pausedMs } : {}),
+      ...(Number.isFinite(pauseStartedAtMs) ? { pauseStartedAtMs } : {}),
+      ...(Number.isFinite(pauseUntilMs) ? { pauseUntilMs } : {}),
+      ...(match.chargePauseReason ? { pauseReason: match.chargePauseReason } : {})
     };
   }
 
@@ -170,8 +183,87 @@ class BattleMatchService {
       deadlineMs: match?.actionDeadlineMs,
       asOfMs,
       active: match?.state === 'action' &&
-        Number(match?.actionDeadlineMs) > Number(match?.actionOpenedAtMs)
+        Number(match?.actionDeadlineMs) > Number(match?.actionOpenedAtMs),
+      pausedMs: match?.chargePausedMs,
+      pauseStartedAtMs: match?.chargePauseStartedAtMs,
+      pauseUntilMs: match?.chargePauseUntilMs
     });
+  }
+
+  logBattleDiagnostic(event, {
+    matchId,
+    round = null,
+    slot = null,
+    eventType = null,
+    sequence = null
+  } = {}) {
+    const payload = {
+      component: 'streammonsters',
+      event,
+      matchId: String(matchId || '').slice(0, 128)
+    };
+    if (Number.isFinite(Number(round))) payload.round = Number(round);
+    if ([1, 2].includes(Number(slot))) payload.slot = Number(slot);
+    if (eventType) payload.eventType = String(eventType).slice(0, 96);
+    if (Number.isFinite(Number(sequence))) payload.sequence = Number(sequence);
+    this.logger?.info?.(JSON.stringify(payload));
+  }
+
+  pauseChargeClock(matchId, reason = 'pause', atMs = this.now(), untilMs = null) {
+    const match = this.getMatch(matchId);
+    if (!this.isRulesV7(match) || match?.state !== 'action') return false;
+    if (match.chargePauseStartedAtMs != null) return false;
+    return this.db.prepare(`
+      UPDATE streammonsters_matches
+      SET charge_pause_started_at_ms = ?,
+          charge_pause_until_ms = ?,
+          charge_pause_reason = ?,
+          updated_at_ms = ?
+      WHERE match_id = ? AND state = 'action'
+        AND charge_pause_started_at_ms IS NULL
+    `).run(
+      Math.max(Number(match.actionOpenedAtMs) || 0, Number(atMs) || 0),
+      untilMs != null && Number.isFinite(Number(untilMs)) ? Number(untilMs) : null,
+      String(reason || 'pause').slice(0, 32),
+      Number(atMs) || this.now(),
+      matchId
+    ).changes > 0;
+  }
+
+  resumeChargeClock(matchId, atMs = this.now()) {
+    const match = this.getMatch(matchId);
+    if (!this.isRulesV7(match) || match?.chargePauseStartedAtMs == null) return false;
+    const endedAtMs = Math.max(
+      Number(match.chargePauseStartedAtMs) || 0,
+      Number(atMs) || 0
+    );
+    return this.db.prepare(`
+      UPDATE streammonsters_matches
+      SET charge_paused_ms = charge_paused_ms + ?,
+          charge_pause_started_at_ms = NULL,
+          charge_pause_until_ms = NULL,
+          charge_pause_reason = NULL,
+          updated_at_ms = ?
+      WHERE match_id = ? AND charge_pause_started_at_ms IS NOT NULL
+    `).run(
+      endedAtMs - Number(match.chargePauseStartedAtMs),
+      endedAtMs,
+      matchId
+    ).changes > 0;
+  }
+
+  pauseActiveChargesForReconnect() {
+    if (!this.db?.prepare) return 0;
+    return this.db.prepare(`
+      SELECT match_id, updated_at_ms
+      FROM streammonsters_matches
+      WHERE state = 'action' AND rules_version >= 7
+        AND charge_pause_started_at_ms IS NULL
+    `).all().filter(row => this.pauseChargeClock(
+      row.match_id,
+      'reconnect',
+      Math.min(this.now(), Number(row.updated_at_ms) || this.now())
+    )).length;
   }
 
   materializePassiveCharge(match, asOfMs) {
@@ -216,7 +308,16 @@ class BattleMatchService {
           matchId: match.matchId,
           round: match.roundNumber,
           slot: participant.slot,
-          charge: 100
+          charge: 100,
+          monsterId: participant.lockedMonsterId,
+          monster: {
+            monster_id: participant.lockedMonsterId,
+            name: participant.roster?.name || 'Monster',
+            element: participant.roster?.element || '',
+            template_id: participant.roster?.template_id || '',
+            evolution_stage: participant.roster?.evolution_stage || 1,
+            image_url: participant.roster?.image_url || null
+          }
         }
       );
       existing.push({ round: match.roundNumber, slot: participant.slot });
@@ -443,6 +544,10 @@ class BattleMatchService {
       rosterDeadlineMs: row.roster_deadline_ms,
       actionOpenedAtMs: row.action_opened_at_ms,
       actionDeadlineMs: row.action_deadline_ms,
+      chargePausedMs: Number(row.charge_paused_ms) || 0,
+      chargePauseStartedAtMs: row.charge_pause_started_at_ms,
+      chargePauseUntilMs: row.charge_pause_until_ms,
+      chargePauseReason: row.charge_pause_reason,
       winnerMonsterId: row.winner_monster_id,
       result: parseJson(row.result_json),
       finalizedAtMs: row.finalized_at_ms,
@@ -962,6 +1067,7 @@ class BattleMatchService {
       };
     });
     const projected = {
+      rulesVersion: Number(match.rulesVersion) || 5,
       sequence: numeric(action.sequence),
       eventSequence: numeric(eventSequence ?? action.eventSequence),
       round: numeric(action.round),
@@ -1045,6 +1151,10 @@ class BattleMatchService {
           roster_deadline_ms = NULL,
           action_opened_at_ms = ?,
           action_deadline_ms = ?,
+          charge_paused_ms = 0,
+          charge_pause_started_at_ms = NULL,
+          charge_pause_until_ms = NULL,
+          charge_pause_reason = NULL,
           updated_at_ms = ?
       WHERE match_id = ? AND state IN ('roster', 'action') ${predicate}
     `).run(...args);
@@ -1231,15 +1341,37 @@ class BattleMatchService {
       return this.finalize(matchId, expectedVersion, winnerId);
     }
     const nowMs = this.now();
+    const cinematicPauseMs = outcome.actions.reduce((total, action) => {
+      const timeline = ArenaDirector.buildJackpotActionTimeline({
+        ...action,
+        rulesVersion: match.rulesVersion
+      });
+      return total + timeline.reduce(
+        (maximum, beat) => Math.max(maximum, beat.atMs + beat.durationMs),
+        0
+      );
+    }, 0);
     const changed = this.db.prepare(`
       UPDATE streammonsters_matches
       SET phase_version = phase_version + 1,
           round_number = round_number + 1,
           action_opened_at_ms = ?,
           action_deadline_ms = ?,
+          charge_paused_ms = 0,
+          charge_pause_started_at_ms = ?,
+          charge_pause_until_ms = ?,
+          charge_pause_reason = 'cinematic',
           updated_at_ms = ?
       WHERE match_id = ? AND state = 'action' AND phase_version = ?
-    `).run(nowMs, nowMs + this.actionWindowMs(match), nowMs, matchId, expectedVersion);
+    `).run(
+      nowMs,
+      nowMs + this.actionWindowMs(match),
+      nowMs,
+      nowMs + cinematicPauseMs,
+      nowMs,
+      matchId,
+      expectedVersion
+    );
     if (changed.changes) {
       const next = this.getMatch(matchId);
       const chargeWindow = this.chargeWindow(next);
@@ -2338,13 +2470,13 @@ class BattleMatchService {
     return this.getPublicNormalizedReplay(battleOrMatchId, cursor, limit);
   }
 
-  getPublicSnapshot() {
+  getPublicSnapshot({ restoreReconnect = false } = {}) {
     const matchIds = this.db.prepare(`
       SELECT match_id FROM streammonsters_matches
       WHERE state IN ('roster', 'action', 'finalizing')
       ORDER BY created_at_ms, match_id
     `).all();
-    return {
+    const snapshot = {
       rulesVersion: this.rulesVersion,
       matches: matchIds.map(({ match_id: matchId }) => {
         const match = this.getMatch(matchId);
@@ -2366,6 +2498,15 @@ class BattleMatchService {
         };
       })
     };
+    if (restoreReconnect) {
+      matchIds.forEach(({ match_id: matchId }) => {
+        const match = this.getMatch(matchId);
+        if (match?.chargePauseReason === 'reconnect') {
+          this.resumeChargeClock(matchId, this.now());
+        }
+      });
+    }
+    return snapshot;
   }
 
   appendEvent(matchId, eventType, payload, publicPayload = payload) {
@@ -2397,6 +2538,30 @@ class BattleMatchService {
       correlationId: matchId,
       sequence
     });
+    const publicAction = persistedPublicPayload?.action;
+    const diagnostic = {
+      matchId,
+      round: persistedPublicPayload?.round ?? publicAction?.round,
+      slot: persistedPublicPayload?.decision?.slot ??
+        persistedPublicPayload?.slot ??
+        publicAction?.actorSlot,
+      eventType,
+      sequence
+    };
+    if (eventType === 'streammonsters:battle_choice_locked') {
+      this.logBattleDiagnostic('choice_lock', diagnostic);
+    } else if (eventType === 'streammonsters:battle_special_charged') {
+      this.logBattleDiagnostic('charge_transition', diagnostic);
+    } else if (eventType === 'streammonsters:battle_skill_used') {
+      this.logBattleDiagnostic('action_start', diagnostic);
+      this.logBattleDiagnostic('action_end', diagnostic);
+    } else if ([
+      'streammonsters:battle_match_found',
+      'streammonsters:battle_choice_opened',
+      'streammonsters:battle_completed'
+    ].includes(eventType)) {
+      this.logBattleDiagnostic('phase', diagnostic);
+    }
     return { eventId, sequence };
   }
 

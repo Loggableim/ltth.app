@@ -38,6 +38,15 @@ describe('Stream Monsters 1.10 Jackpot battle contract', () => {
       asOfMs: 8_000,
       active: false
     })).toBe(70);
+    expect(projectPassiveCharge({
+      baseCharge: 70,
+      openedAtMs: 1_000,
+      deadlineMs: 9_000,
+      asOfMs: 8_000,
+      pausedMs: 2_000,
+      pauseStartedAtMs: 6_000,
+      pauseUntilMs: 7_000
+    })).toBe(90);
   });
 
   test('projects an explicit unavailable reason and one ready edge for Special', () => {
@@ -146,5 +155,35 @@ describe('Stream Monsters 1.10 Jackpot battle contract', () => {
       [...first].sort((left, right) => left.atMs - right.atMs)
         .map(beat => beat.atMs)
     );
+  });
+
+  test('routes a Rules-v7 battle_action through the Jackpot director timeline', () => {
+    const timeline = ArenaDirector.buildArcadeTimeline('battle_action', {
+      eventId: 'action-7',
+      matchId: 'match-7',
+      action: {
+        rulesVersion: 7,
+        actorSlot: 1,
+        targetSlot: 2,
+        skill: { type: 'attack', projectile: true },
+        hits: [{ index: 1, hpDamage: 4 }],
+        terminal: true
+      }
+    });
+
+    expect(timeline.scene).toBe('battle_action');
+    expect(timeline.beats.map(beat => beat.type)).toEqual(expect.arrayContaining([
+      'entrance',
+      'anticipation',
+      'movement',
+      'projectile',
+      'hit',
+      'number_pop',
+      'hud_update',
+      'recoil',
+      'recovery',
+      'knockout',
+      'winner'
+    ]));
   });
 });

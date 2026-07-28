@@ -172,7 +172,9 @@ class StreamMonstersRoutes {
         visualPack: 'furry',
         season,
         gcce: this.publicGcceState(this.gcceStateProvider()),
-        battle: this.battleMatchService?.getPublicSnapshot?.() || {
+        battle: this.battleMatchService?.getPublicSnapshot?.({
+          restoreReconnect: true
+        }) || {
           rulesVersion: V7_RULES_VERSION,
           matches: []
         },

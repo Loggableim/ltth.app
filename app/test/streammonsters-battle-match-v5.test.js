@@ -269,10 +269,40 @@ describe('Stream Monsters durable BattleMatchService', () => {
         matchId,
         round: 1,
         slot: 2,
-        charge: 100
+        charge: 100,
+        monsterId: 'alpha-v7',
+        monster: expect.objectContaining({
+          monster_id: 'alpha-v7',
+          name: 'alpha-v7'
+        })
       })
     ]]);
-    expect(JSON.stringify(ready)).not.toMatch(/viewer-a|alpha-v7/);
+    expect(JSON.stringify(ready)).not.toContain('viewer-a');
+  });
+
+  test('Rules v7 subtracts explicit cinematic pause time from passive charge', () => {
+    const { service, matchId, advance } = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+    advance(2_000);
+    service.pauseChargeClock(matchId, 'cinematic', 12_000);
+    advance(4_000);
+    const paused = service.getMatch(matchId);
+    expect(paused).toEqual(expect.objectContaining({
+      actionOpenedAtMs: 10_000,
+      actionDeadlineMs: 18_000,
+      chargePausedMs: 0,
+      chargePauseStartedAtMs: 12_000,
+      chargePauseUntilMs: null,
+      chargePauseReason: 'cinematic'
+    }));
+    expect(paused.participants[1].combatState.charge).toBe(70);
+    expect(service.projectParticipantCharge(paused.participants[1], paused, 16_000)).toBe(80);
+    service.resumeChargeClock(matchId, 16_000);
+    const resumed = service.getMatch(matchId);
+    expect(service.projectParticipantCharge(resumed.participants[1], resumed, 17_000)).toBe(85);
   });
 
   test('Rules v7 timeout charge uses the persisted action deadline', () => {
@@ -301,7 +331,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(recovered.getActiveMatchForViewer('viewer-a').actionOpenedAtMs).toBe(30_000);
     recovered.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'reload-a' });
     recovered.submitChoice({ userId: 'viewer-b', choice: 'A', eventId: 'reload-b' });
-    expect(original.decisions().map(decision => decision.charge_at_choice)).toEqual([75, 75]);
+    expect(original.decisions().map(decision => decision.charge_at_choice)).toEqual([70, 70]);
   });
 
   test('applies Arena season duration changes without requiring a plugin reload', () => {

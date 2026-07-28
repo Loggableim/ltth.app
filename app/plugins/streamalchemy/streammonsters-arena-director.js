@@ -926,7 +926,9 @@
       const action = payload.action && typeof payload.action === 'object'
         ? { ...payload.action, eventId: payload.eventId || payload.action.eventId }
         : payload;
-      beats = buildArcadeActionBeats(action);
+      beats = numeric(action.rulesVersion ?? payload.rulesVersion) >= 7
+        ? buildJackpotActionTimeline(action)
+        : buildArcadeActionBeats(action);
     } else if (type === 'battle_completed') {
       scene = 'battle_finale';
       beats = [{

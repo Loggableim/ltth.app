@@ -286,7 +286,19 @@ function projectBattleChargeWindow(chargeWindow = null) {
   return {
     openedAtMs: Math.max(0, openedAtMs),
     deadlineMs: Math.max(0, deadlineMs),
-    passivePerSecond
+    passivePerSecond,
+    ...(finiteNumber(chargeWindow.pausedMs) > 0
+      ? { pausedMs: finiteNumber(chargeWindow.pausedMs) }
+      : {}),
+    ...(finiteNumber(chargeWindow.pauseStartedAtMs) !== null
+      ? { pauseStartedAtMs: finiteNumber(chargeWindow.pauseStartedAtMs) }
+      : {}),
+    ...(finiteNumber(chargeWindow.pauseUntilMs) !== null
+      ? { pauseUntilMs: finiteNumber(chargeWindow.pauseUntilMs) }
+      : {}),
+    ...(typeof chargeWindow.pauseReason === 'string'
+      ? { pauseReason: boundedText(chargeWindow.pauseReason, 32) }
+      : {})
   };
 }
 
@@ -567,6 +579,16 @@ class StreamMonstersPublicEventProjector {
         matchId: boundedText(payload.matchId, 160),
         round: Math.max(0, finiteNumber(payload.round, 0)),
         choices: projectBattleChoices(payload.choices)
+      };
+    }
+    if (eventType === 'streammonsters:battle_special_charged') {
+      return {
+        matchId: boundedText(payload.matchId, 160),
+        round: Math.max(0, finiteNumber(payload.round, 0)),
+        slot: Math.max(0, finiteNumber(payload.slot, 0)),
+        charge: Math.max(0, Math.min(100, finiteNumber(payload.charge, 0))),
+        monsterId: boundedText(payload.monsterId, 160),
+        monster: projectMonster(payload.monster)
       };
     }
     if (eventType === 'streammonsters:chat_result') {

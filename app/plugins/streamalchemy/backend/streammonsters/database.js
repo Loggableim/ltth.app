@@ -426,6 +426,10 @@ class StreamMonstersDatabase {
         roster_deadline_ms INTEGER,
         action_opened_at_ms INTEGER,
         action_deadline_ms INTEGER,
+        charge_paused_ms INTEGER NOT NULL DEFAULT 0,
+        charge_pause_started_at_ms INTEGER,
+        charge_pause_until_ms INTEGER,
+        charge_pause_reason TEXT,
         winner_monster_id TEXT,
         result_json TEXT,
         finalized_at_ms INTEGER,
@@ -633,6 +637,10 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_match_decisions', 'charge_at_choice', 'INTEGER');
     this.ensureColumn('streammonsters_match_actions', 'event_sequence', 'INTEGER');
     this.ensureColumn('streammonsters_matches', 'action_opened_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_matches', 'charge_paused_ms', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_matches', 'charge_pause_started_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_matches', 'charge_pause_until_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_matches', 'charge_pause_reason', 'TEXT');
     this.ensureColumn(
       'streammonsters_matches',
       'matchmaking_level_gap',

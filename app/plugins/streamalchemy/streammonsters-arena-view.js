@@ -154,7 +154,14 @@
       const deadlineMs = numeric(source.deadlineMs, -1);
       const passivePerSecond = Math.max(0, numeric(source.passivePerSecond));
       if (openedAtMs < 0 || deadlineMs < openedAtMs) return null;
-      return { openedAtMs, deadlineMs, passivePerSecond };
+      return {
+        openedAtMs,
+        deadlineMs,
+        passivePerSecond,
+        pausedMs: Math.max(0, numeric(source.pausedMs)),
+        pauseStartedAtMs: numeric(source.pauseStartedAtMs, -1),
+        pauseUntilMs: numeric(source.pauseUntilMs, -1)
+      };
     }
 
     function renderSkillDeck(slot) {
@@ -205,9 +212,24 @@
         const asOfMs = window
           ? Math.min(window.deadlineMs, Math.max(window.openedAtMs, now()))
           : now();
+        const currentPauseMs = window && window.pauseStartedAtMs >= 0
+          ? Math.max(
+              0,
+              Math.min(
+                asOfMs,
+                window.pauseUntilMs >= 0 ? window.pauseUntilMs : asOfMs
+              ) - Math.max(window.openedAtMs, window.pauseStartedAtMs)
+            )
+          : 0;
         const projectedCharge = window
-          ? numeric(fighter.charge) +
-            (((asOfMs - window.openedAtMs) / 1_000) * window.passivePerSecond)
+          ? numeric(fighter.charge) + (
+            (
+              asOfMs -
+              window.openedAtMs -
+              window.pausedMs -
+              currentPauseMs
+            ) / 1_000
+          ) * window.passivePerSecond
           : numeric(fighter.charge);
         const readyAtMs = numeric(skill.readyAtMs, Number.POSITIVE_INFINITY);
         const ready = skill.available === true ||
@@ -541,7 +563,17 @@
     function playBeat(beat, action, beatIndex, timeline) {
       const actor = fighterNode(action.actorSlot);
       const target = fighterNode(action.targetSlot);
-      switch (beat.type) {
+      const compatibleType = {
+        entrance: 'telegraph',
+        movement: 'advance',
+        projectile: 'element_trail',
+        hit: 'impact',
+        number_pop: 'damage_number',
+        hud_update: 'hud',
+        recoil: 'camera_impulse',
+        recovery: 'recover'
+      }[beat.type] || beat.type;
+      switch (compatibleType) {
         case 'telegraph': {
           setText('arena-feed', action.skill?.name || labels.skill);
           setText('arena-round', formatLabel('round', { round: action.round || 1 }));
@@ -656,7 +688,7 @@
         case 'hud': {
           const hitCount = timeline
             .slice(0, beatIndex)
-            .filter(candidate => candidate.type === 'hud').length;
+            .filter(candidate => ['hud', 'hud_update'].includes(candidate.type)).length;
           const hit = action.hits?.[hitCount] || null;
           if (hit) applyHit(action, hit);
           node('arena-impact')?.classList.remove('visible');
@@ -714,6 +746,10 @@
           target?.classList.remove('hit', 'evaded', 'status-hit', 'retaliation-hit');
           arena?.classList.remove('hit-stop', 'camera-impulse');
           node('arena-special')?.classList.remove('visible');
+          break;
+        case 'winner':
+          actor?.classList.add('winner');
+          if (arena) arena.dataset.phase = 'winner';
           break;
         default:
           break;
