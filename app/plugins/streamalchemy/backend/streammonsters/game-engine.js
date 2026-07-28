@@ -294,10 +294,13 @@ class StreamMonstersEngine {
     this.store.runInImmediateTransaction(() => {
       ready = this.store.markReadyEggs(nowMs);
       ready.forEach(egg => {
+        const eggStage = this.eggStageProjector.projectEgg(egg);
         this.emitAfterCommit('streammonsters:egg_ready', {
           userId: egg.user_id,
           egg,
-          hint: `${this.getCommandReference('hatch')} [slot]`
+          eggStage,
+          hint: `${this.getCommandReference('hatch')} [slot]`,
+          ...this.eggStageProjector.eventIdentity('streammonsters:egg_ready', eggStage)
         });
       });
       const expired = this.store.expireReadyEggs(nowMs, this.config.eggExpiryMs);
@@ -377,6 +380,10 @@ class StreamMonstersEngine {
       const currentMs = this.now();
       const reservation = this.collection?.reserveTemplateForEgg(egg);
       const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
+      const removedEggStage = this.eggStageProjector.projectEgg({
+        ...egg,
+        state: 'hatched'
+      });
       this.store.incrementViewer(userId, 'eggs_hatched');
       this.store.incrementStreamMetric(this.streamKey, 'hatches');
       this.progression?.recordHatch(userId, this.streamKey, monster);
@@ -391,6 +398,13 @@ class StreamMonstersEngine {
         egg,
         monster,
         ...(autoHatch ? { autoHatch: true } : {})
+      });
+      this.emitAfterCommit('streammonsters:egg_stage_removed', {
+        eggStage: removedEggStage,
+        ...this.eggStageProjector.eventIdentity(
+          'streammonsters:egg_stage_removed',
+          removedEggStage
+        )
       });
       return monster;
     });

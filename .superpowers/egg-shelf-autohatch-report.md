@@ -50,3 +50,42 @@ Targeted ESLint passed for every changed JavaScript module and test. The CSS bui
 
 - No runtime reload, restart, network action, OBS test or TikTok live test was performed.
 - The active-viewer signal is an observed-activity heuristic, not a claim that TikTok reports presence.
+
+## Review fix round 1: connected shelf state changes
+
+### Defects confirmed
+
+1. The backend emitted `egg_ready`, but the event contained no projected public shelf egg. A connected overlay therefore continued to display the stale incubation countdown until it reconnected and received a fresh snapshot.
+2. `hatchEgg()` emitted the hatch lifecycle, but not an `egg_stage_removed` event. A successfully hatched egg consequently remained on the connected shelf until the next snapshot.
+
+### Fix
+
+- `egg_ready` now carries the same opaque projected stage item and stable stage event identity as the other shelf lifecycle events.
+- `hatchEgg()` now emits exactly one `egg_stage_removed` after the successful transaction. Manual hatch and active-viewer auto-hatch share this code path.
+- The overlay applies an incoming `egg_ready` stage update before continuing its established ready-card behaviour. A removal still targets only its matching opaque `visualId`, so a stale removal cannot delete a neighbouring shelf egg.
+
+### Regression evidence
+
+- The new engine regression covers both manual and active-viewer auto-hatch, asserts the ready-stage projection, opaque event identity, no raw egg/viewer identifiers, and exactly one matching removal.
+- The JSDOM overlay regression drives the real socket event path: landed -> ready -> hatch lifecycle -> stage removed. It verifies `Ready` plus the active hatch command is visible immediately and that a separately landed neighbour remains after the first egg is removed.
+- While tracing that path, one stale assertion was corrected from `upper` to the implemented `upper-third` egg-wait placement. This matches `streammonsters-chat-view.js` and preserves the intended TikTok-safe hatch feedback location.
+
+### Verification
+
+Bundled Node 22 / ABI 127 focused suite:
+
+- `streammonsters-egg-stage-v110`
+- `streammonsters-jackpot-overlay-v110`
+- `streammonsters-auto-hatch-v7`
+- `streammonsters-creator-retention-v6`
+- `streammonsters-plugin-integration`
+- `streammonsters-free-egg-drops-v6`
+- `streammonsters-gcce-v15`
+- `streammonsters-review-fix-round2`
+- `streammonsters-public-events-v15`
+- `streammonsters-overlay-reconnect-v15`
+- `streammonsters-arcade-overlay-v6`
+
+Result: 11 suites, 155 tests passed. `git diff --check` passed. The first ESLint invocation used the wrong worktree-relative node_modules path; it was corrected to `app/node_modules` for the final targeted lint run.
+
+No runtime reload, restart, merge, or push was performed.

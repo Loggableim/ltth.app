@@ -146,6 +146,57 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
     }));
   });
 
+  test.each([
+    ['manual hatch', subject => subject.engine.hatchEgg('viewer-a', 1)],
+    ['active-viewer auto hatch', subject => subject.engine.autoHatchReadyEggs({
+      isViewerActive: userId => userId === 'viewer-a'
+    })]
+  ])('projects a ready stage and one opaque stage removal for %s', (_label, hatch) => {
+    const subject = createSubject({ hatchDurationMs: 100 });
+    const spawned = gift(subject, 'gift-stage-transition');
+    const landed = subject.emitted.find(entry => (
+      entry.event === 'streammonsters:egg_landed'
+    )).payload;
+
+    subject.setNow(1_100);
+    subject.engine.markReadyEggs();
+    const ready = subject.emitted.find(entry => (
+      entry.event === 'streammonsters:egg_ready'
+    )).payload;
+
+    expect(ready.eggStage).toEqual(expect.objectContaining({
+      visualId: landed.eggStage.visualId,
+      state: 'ready',
+      provenance: 'gift',
+      adoptionStatus: 'owned',
+      adoptable: false
+    }));
+    expect(ready).toEqual(expect.objectContaining({
+      eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
+      correlationId: expect.stringMatching(/^sm-[a-f0-9]{32}$/)
+    }));
+    expect(JSON.stringify(ready.eggStage)).not.toMatch(
+      new RegExp(spawned.egg.egg_id + '|viewer-a|user_id|egg_id')
+    );
+
+    hatch(subject);
+    const removals = subject.emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_stage_removed'
+    ));
+    expect(removals).toHaveLength(1);
+    expect(removals[0].payload).toEqual(expect.objectContaining({
+      eggStage: expect.objectContaining({
+        visualId: landed.eggStage.visualId,
+        state: 'hatched'
+      }),
+      eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
+      correlationId: expect.stringMatching(/^sm-[a-f0-9]{32}$/)
+    }));
+    expect(JSON.stringify(removals[0].payload.eggStage)).not.toMatch(
+      new RegExp(spawned.egg.egg_id + '|viewer-a|user_id|egg_id')
+    );
+  });
+
   test('projects a reserved offer, releases it at 60 seconds, and preserves its visual on claim', () => {
     const subject = createSubject();
     const offered = subject.freeEggs.onFirstChat({

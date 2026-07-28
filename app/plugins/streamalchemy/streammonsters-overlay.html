@@ -1805,6 +1805,9 @@
       }
       return;
     }
+    if (type === 'egg_ready') {
+      eggStageView.applyEvent(type, data);
+    }
     if ([
       'egg_landed',
       'free_egg_reserved',
