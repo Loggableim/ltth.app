@@ -29,8 +29,11 @@ describe('Stream Monsters public guide', () => {
     expect(guide).toContain("es:");
     expect(guide).toContain("fr:");
     expect(guide).toContain('/assets/streammonsters/furry/');
+    expect(guide).toContain('${id}.webp');
+    expect(page).toContain('/assets/streammonsters/furry/neonclaw.webp');
+    expect(page).not.toContain('/assets/streammonsters/furry/neonclaw.png');
     expect(pagesBuilder).toContain('"streammonsters"');
-    expect(pagesBuilder).toContain('assets/streammonsters/furry');
+    expect(pagesBuilder).not.toContain('app/plugins/streamalchemy/assets/streammonsters/furry');
     expect(sitemap).toContain('https://ltth.app/streammonsters/');
   });
 
@@ -43,5 +46,15 @@ describe('Stream Monsters public guide', () => {
     expect(guide).toContain('86400');
     expect(guide).toContain('24');
     expect(guide).toContain('72');
+  });
+
+  test('publishes a compact WebP-only Furry roster for the public Monsterdex', () => {
+    const furryDirectory = path.join(root, 'assets', 'streammonsters', 'furry');
+    const webpFiles = fs.readdirSync(furryDirectory).filter(file => file.endsWith('.webp'));
+    const pngFiles = fs.readdirSync(furryDirectory).filter(file => file.endsWith('.png'));
+
+    expect(webpFiles).toHaveLength(24);
+    expect(pngFiles).toHaveLength(0);
+    expect(webpFiles).toEqual(expect.arrayContaining(['ashfang.webp', 'tsuki.webp']));
   });
 });
