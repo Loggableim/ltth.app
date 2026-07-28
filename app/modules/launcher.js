@@ -14,6 +14,10 @@ const crypto = require('crypto');
 const { execFile, execFileSync } = require('child_process');
 const TTYLogger = require('./tty-logger');
 const UpdateManager = require('./update-manager');
+const {
+    describeDependencyVerification,
+    verifyProductionDependencies
+} = require('./dependency-integrity');
 
 // PERFORMANCE: Cache file for npm/node version checks
 const ENV_CACHE_FILE = path.join(os.tmpdir(), 'ltth-env-cache.json');
@@ -162,6 +166,7 @@ class Launcher {
             // prepared the backend port. Keep this process as the server
             // supervisor so exit code 75 profile-switch restarts still work.
             if (process.env.LTTH_GO_LAUNCHER_MANAGED === 'true') {
+                await this.checkDependencies({ productionOnly: true });
                 this.log.info('Go-Launcher verwaltet Vorabprüfungen; starte Server-Supervisor...');
                 await this.startServer();
                 return;
@@ -280,68 +285,8 @@ class Launcher {
     /**
      * Prüft ob kritische Dependencies installiert sind
      */
-    getDeclaredProductionDependencies() {
-        const packageJsonPath = path.join(this.projectRoot, 'package.json');
-        try {
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-            return Object.keys(packageJson.dependencies || {});
-        } catch (error) {
-            return { error };
-        }
-    }
-
     verifyCriticalDependencies() {
-        const bootCriticalDeps = [
-            'dotenv',
-            'express',
-            'socket.io',
-            'better-sqlite3',
-            'winston',
-            '@eulerstream/euler-websocket-sdk',
-            'jsonwebtoken',
-            'axios',
-            'ws',
-            '@deepgram/sdk'
-        ];
-        const declaredDepsResult = this.getDeclaredProductionDependencies();
-        const missingDeps = [];
-        const errors = [];
-
-        if (declaredDepsResult.error) {
-            errors.push(`package.json: ${declaredDepsResult.error.message}`);
-            return { valid: false, missing: missingDeps, errors };
-        }
-
-        for (const dep of declaredDepsResult) {
-            const depPath = path.join(this.projectRoot, 'node_modules', dep);
-            if (!fs.existsSync(depPath)) {
-                missingDeps.push(dep);
-            }
-        }
-
-        for (const dep of bootCriticalDeps) {
-            const depPath = path.join(this.projectRoot, 'node_modules', dep);
-            if (!fs.existsSync(depPath)) {
-                if (!missingDeps.includes(dep)) {
-                    missingDeps.push(dep);
-                }
-                continue;
-            }
-
-            try {
-                const entryPath = require.resolve(dep, { paths: [this.projectRoot] });
-                delete require.cache[entryPath];
-                require(entryPath);
-            } catch (error) {
-                errors.push(`${dep}: ${error.message}`);
-            }
-        }
-
-        return {
-            valid: missingDeps.length === 0 && errors.length === 0,
-            missing: missingDeps,
-            errors
-        };
+        return verifyProductionDependencies(this.projectRoot);
     }
 
     getDependencyStatePath() {
@@ -393,11 +338,11 @@ class Launcher {
     /**
      * Prüft und installiert Dependencies
      */
-    async reinstallAndVerifyDependencies(successMessage) {
-        await this.installDependencies();
+    async reinstallAndVerifyDependencies(successMessage, options = {}) {
+        await this.installDependencies(options);
         const verification = this.verifyCriticalDependencies();
         if (!verification.valid) {
-            const details = [...verification.missing, ...verification.errors].join('; ');
+            const details = describeDependencyVerification(verification);
             this.log.error(`Dependency verification failed after installation: ${details}`);
             throw new Error(`Dependency verification failed after installation: ${details}`);
         }
@@ -407,7 +352,7 @@ class Launcher {
         this.log.success(successMessage);
     }
 
-    async checkDependencies() {
+    async checkDependencies({ productionOnly = false } = {}) {
         const nodeModulesPath = path.join(this.projectRoot, 'node_modules');
         const packageLockPath = path.join(this.projectRoot, 'package-lock.json');
 
@@ -416,19 +361,19 @@ class Launcher {
             this.log.warn('Dependencies nicht gefunden. Installiere...');
             this.log.newLine();
 
-            await this.reinstallAndVerifyDependencies('Dependencies erfolgreich installiert!');
+            await this.reinstallAndVerifyDependencies('Dependencies erfolgreich installiert!', { productionOnly });
             return;
         }
 
         // Prüfe ob kritische Dependencies vorhanden sind
         const verification = this.verifyCriticalDependencies();
         if (!verification.valid) {
-            const details = [...verification.missing, ...verification.errors].join('; ');
+            const details = describeDependencyVerification(verification);
             this.log.warn(`Fehlende oder fehlerhafte Dependencies erkannt: ${details}`);
             this.log.warn('Reinstalliere Dependencies...');
             this.log.newLine();
 
-            await this.reinstallAndVerifyDependencies('Dependencies erfolgreich installiert!');
+            await this.reinstallAndVerifyDependencies('Dependencies erfolgreich installiert!', { productionOnly });
             return;
         }
 
@@ -443,7 +388,7 @@ class Launcher {
             this.log.warn('package.json oder package-lock.json wurde geändert. Reinstalliere Dependencies...');
             this.log.newLine();
 
-            await this.reinstallAndVerifyDependencies('Dependencies aktualisiert!');
+            await this.reinstallAndVerifyDependencies('Dependencies aktualisiert!', { productionOnly });
         } else {
             this.log.success('Dependencies bereits installiert');
         }
@@ -452,12 +397,12 @@ class Launcher {
     /**
      * Installiert Dependencies
      */
-    async installDependencies() {
+    async installDependencies({ productionOnly = false } = {}) {
         const packageLockPath = path.join(this.projectRoot, 'package-lock.json');
-        let useCI = false;
+        let useCI = productionOnly;
 
         // Prüfe ob package-lock.json existiert UND valide ist (lockfileVersion >= 1)
-        if (fs.existsSync(packageLockPath)) {
+        if (!productionOnly && fs.existsSync(packageLockPath)) {
             try {
                 const lockContent = JSON.parse(fs.readFileSync(packageLockPath, 'utf8'));
                 useCI = lockContent.lockfileVersion >= 1;
@@ -476,7 +421,7 @@ class Launcher {
             }
         }
 
-        const npmArgs = useCI ? ['ci'] : ['install'];
+        const npmArgs = useCI ? ['ci', ...(productionOnly ? ['--omit=dev'] : [])] : ['install'];
         const command = `npm ${npmArgs.join(' ')}`;
         this.log.info(`Führe "${command}" aus...`);
 
@@ -497,7 +442,7 @@ class Launcher {
             this.log.success('Installation erfolgreich!');
         } catch (error) {
             // Fallback: Wenn npm ci fehlschlägt, versuche npm install
-            if (useCI) {
+            if (useCI && !productionOnly) {
                 this.log.warn('npm ci fehlgeschlagen. Versuche Fallback mit npm install...');
                 try {
                     this.runNpm(['install'], {
@@ -510,6 +455,10 @@ class Launcher {
                     this.log.error('Auch npm install fehlgeschlagen!');
                     this.log.error(`Fehler: ${fallbackError.message}`);
                 }
+            }
+            if (productionOnly) {
+                this.log.error('Production dependency repair failed. Run npm ci --omit=dev manually.');
+                throw new Error('Production dependency repair failed');
             }
             this.log.error('Installation fehlgeschlagen!');
             this.log.error(`Fehler: ${error.message}`);

@@ -140,7 +140,7 @@ describe('launcher runtime toolchain', () => {
     expect(verification.missing).toContain('@deepgram/sdk');
   });
 
-  test('detects a boot-critical package whose nested module is missing', () => {
+  test('reports a boot-critical package whose nested module is missing without raw load details', () => {
     const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-broken-sdk-'));
     fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
     writeDependencyPackageJson(projectRoot, { '@deepgram/sdk': '5.5.0' });
@@ -152,14 +152,8 @@ describe('launcher runtime toolchain', () => {
     );
 
     const verification = createQuietLauncher(projectRoot).verifyCriticalDependencies();
-    const details = [
-      ...(verification.missing || []),
-      ...(verification.errors || [])
-    ].join(' ');
-
     expect(verification.valid).toBe(false);
-    expect(details).toContain('@deepgram/sdk');
-    expect(details).toContain('api/index.js');
+    expect(verification.errors).toEqual(['@deepgram/sdk']);
   });
 
   test('re-verifies dependencies after reinstalling', async () => {
@@ -278,7 +272,7 @@ describe('launcher runtime toolchain', () => {
     );
   });
 
-  test('Go-managed launch skips Node preflight but keeps the server supervisor', async () => {
+  test('Go-managed launch skips Go-owned preflight but runs the dependency gate before the server supervisor', async () => {
     const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-go-managed-'));
     const launcher = createQuietLauncher(projectRoot);
     const previousManagedValue = process.env.LTTH_GO_LAUNCHER_MANAGED;
@@ -305,8 +299,34 @@ describe('launcher runtime toolchain', () => {
     expect(launcher.checkNode).not.toHaveBeenCalled();
     expect(launcher.checkNpm).not.toHaveBeenCalled();
     expect(launcher.checkUpdates).not.toHaveBeenCalled();
-    expect(launcher.checkDependencies).not.toHaveBeenCalled();
+    expect(launcher.checkDependencies).toHaveBeenCalledWith({ productionOnly: true });
     expect(launcher.checkNativeModules).not.toHaveBeenCalled();
     expect(launcher.startServer).toHaveBeenCalledTimes(1);
+    expect(launcher.checkDependencies.mock.invocationCallOrder[0]).toBeLessThan(
+      launcher.startServer.mock.invocationCallOrder[0]
+    );
+  });
+
+  test('Go-managed dependency repair runs production-only npm ci once and re-verifies once', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-go-managed-repair-'));
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    writeDependencyPackageJson(projectRoot, { '@deepgram/sdk': '5.5.0' });
+    writeDependencyLockfile(projectRoot);
+
+    const launcher = createQuietLauncher(projectRoot);
+    launcher.verifyCriticalDependencies = jest
+      .fn()
+      .mockReturnValueOnce({ valid: false, missing: ['@deepgram/sdk'], errors: [] })
+      .mockReturnValueOnce({ valid: true, missing: [], errors: [] });
+    launcher.runNpm = jest.fn();
+
+    await launcher.checkDependencies({ productionOnly: true });
+
+    expect(launcher.runNpm).toHaveBeenCalledTimes(1);
+    expect(launcher.runNpm).toHaveBeenCalledWith(
+      ['ci', '--omit=dev'],
+      expect.objectContaining({ PUPPETEER_SKIP_DOWNLOAD: 'true' })
+    );
+    expect(launcher.verifyCriticalDependencies).toHaveBeenCalledTimes(2);
   });
 });
