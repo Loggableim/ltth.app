@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.eyebrow">BROADCAST ARCADE / TALKING HEADS</p>
         <h1 data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.title">Stream Director</h1>
-        <p class="hero-copy" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.subtitle">Boba avatar assignment, real audio bridge, and an OBS-ready speaker stage.</p>
+        <p class="hero-copy" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.subtitle">Avatar assignment, real audio bridge, and an OBS-ready speaker stage.</p>
       </div>
       <div class="hero-actions">
         <span id="directorState" class="status-pill" data-state="loading" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.state_loading">Loading bridge</span>
@@ -51,7 +51,7 @@
         </div>
         <div class="toggle-row">
           <label><input id="enabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.enable_talking_heads">Enable Talking Heads</span></label>
-          <label><input id="firstAssignmentEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.first_assignment">First TTS assigns a Boba avatar</span></label>
+          <label><input id="firstAssignmentEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.first_assignment">First TTS assigns an avatar</span></label>
           <label><input id="rerollGiftEnabled" type="checkbox"><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.reroll_gift">Allow a cosmetic reroll gift</span></label>
         </div>
         <div class="form-grid form-grid--three">
@@ -80,20 +80,20 @@
       <section id="bobaCharacterLab" class="director-card director-card--lab" aria-labelledby="labTitle">
         <div class="card-heading">
           <div>
-            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.boba_lab">BOBA CHARACTER LAB</p>
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.character_lab">CHARACTER LAB</p>
             <h2 id="labTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.frame_slot_preview">Frame and slot preview</h2>
           </div>
           <span class="boba-badge" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.badges.default_pool">DEFAULT POOL</span>
         </div>
         <div class="lab-layout">
           <div class="lab-preview">
-            <img id="assetPreview" alt="Selected Boba frame preview" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.labels.selected_frame">
-            <p id="assetSelectionSummary" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.messages.bobaAnimals">Boba Animals</p>
+            <img id="assetPreview" alt="Selected avatar frame preview" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.labels.selected_frame">
+            <p id="assetSelectionSummary" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.messages.avatarLibrary">Avatar library</p>
           </div>
           <div>
             <div class="form-grid">
               <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.asset_library">Asset library</span><select id="assetPack"></select></label>
-              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.boba_character">Boba character</span><select id="assetCharacter"></select></label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.avatar_character">Avatar character</span><select id="assetCharacter"></select></label>
             </div>
             <div id="assetOptions" class="form-grid" aria-live="polite"></div>
             <div id="bobaThumbnailGrid" class="boba-thumbnail-grid" aria-label="Boba character thumbnails" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.labels.boba_thumbnails"></div>

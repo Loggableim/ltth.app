@@ -114,12 +114,26 @@ function bobaSprite(character, expression = '') {
 
 function assetCatalog() {
   return {
-    packs: [{
-      id: 'boba',
-      name: 'Boba Animals',
-      characters: ['Fox', 'Dog', 'Bunny'],
-      options: { expression: ['neutral', 'Happy', 'Angry'] }
-    }]
+    packs: [
+      {
+        id: 'boba',
+        name: 'Boba Animals',
+        characters: ['Fox', 'Dog', 'Bunny'],
+        options: { expression: ['neutral', 'Happy', 'Angry'] }
+      },
+      {
+        id: 'kenney',
+        name: 'Kenney Monster Builder',
+        characters: ['body_blue'],
+        options: { eye: ['eye_human'] }
+      },
+      {
+        id: 'rgs',
+        name: 'RGS Character Pack',
+        characters: ['head1'],
+        options: { hair: ['hair1'], eyes: ['eyes1'], mouth: ['mouth1'] }
+      }
+    ]
   };
 }
 
@@ -290,8 +304,17 @@ async function assertDirectorWorkflow(page, origin, record) {
   assert.equal(await page.locator('#assetPack').inputValue(), 'boba');
   assert.equal(await page.locator('#bobaThumbnailGrid .boba-thumbnail').count(), 3);
 
+  await page.locator('#assetPack').selectOption('kenney');
+  await page.waitForFunction(() => {
+    const grid = document.getElementById('bobaThumbnailGrid');
+    return grid?.hidden === true && grid.querySelectorAll('.boba-thumbnail').length === 0;
+  });
+  assert.equal(await page.locator('#assetPack').inputValue(), 'kenney');
+  assert.equal(await page.locator('#bobaThumbnailGrid').evaluate(grid => grid.hidden), true);
+  assert.equal(await page.locator('#bobaThumbnailGrid .boba-thumbnail').count(), 0);
+
   await page.locator('#testSpinBtn').click();
-  await page.waitForFunction(() => document.getElementById('assetStatus')?.textContent.includes('Safe Boba test spin'));
+  await page.waitForFunction(() => document.getElementById('assetStatus')?.textContent.includes('Safe avatar test spin'));
   assert.equal(record.apiCalls.filter(pathname => pathname === '/api/talkingheads/test-spin').length, 1);
 
   await page.locator('#advancedSettings > summary').click();
@@ -311,16 +334,33 @@ async function assertOverlayWorkflow(page, fixture, screenshotPaths) {
     playbackId: 'smoke-playback-1',
     spinId: 'smoke-spin-1',
     userId: 'smoke-user-1',
-    username: 'Smoke Fox',
+    username: 'Smoke RGS',
     duration: 350,
     winner: {
-      selection: { characterId: 'Fox', options: { expression: 'neutral' } },
+      selection: {
+        packId: 'rgs',
+        characterId: 'head1',
+        options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' }
+      },
       sprites: { idle_neutral: bobaSprite('Fox') }
     },
     candidates: [
-      { selection: { characterId: 'Dog', options: { expression: 'Happy' } }, spriteUrl: bobaSprite('Dog', 'Happy') },
-      { selection: { characterId: 'Bunny', options: { expression: 'neutral' } }, spriteUrl: bobaSprite('Bunny') },
-      { selection: { characterId: 'Fox', options: { expression: 'neutral' } }, spriteUrl: bobaSprite('Fox') }
+      {
+        selection: { packId: 'boba', characterId: 'Dog', options: { expression: 'Happy' } },
+        spriteUrl: bobaSprite('Dog', 'Happy')
+      },
+      {
+        selection: { packId: 'kenney', characterId: 'body_blue', options: { eye: 'eye_human' } },
+        spriteUrl: bobaSprite('Bunny')
+      },
+      {
+        selection: {
+          packId: 'rgs',
+          characterId: 'head1',
+          options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' }
+        },
+        spriteUrl: bobaSprite('Fox')
+      }
     ]
   };
   io.emit('talkingheads:avatar:spin:start', spin);
@@ -337,7 +377,10 @@ async function assertOverlayWorkflow(page, fixture, screenshotPaths) {
     userId: 'smoke-user-1'
   });
   await page.waitForFunction(() => document.getElementById('slotWinnerAvatar')?.getAttribute('src')?.includes('/Fox.png'));
-  assert.match(await page.locator('#slotWinnerName').textContent(), /Fox/);
+  assert.equal(
+    await page.locator('#slotWinnerName').textContent(),
+    'RGS · head1 · hair1 · eyes1 · mouth1'
+  );
   const revealScreenshot = path.join(OUTPUT_DIR, 'avatar-slot-reveal.png');
   await page.screenshot({ path: revealScreenshot });
   screenshotPaths.push(revealScreenshot);

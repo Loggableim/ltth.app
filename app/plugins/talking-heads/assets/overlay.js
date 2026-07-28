@@ -1,4 +1,4 @@
-/* Talking Heads speaker stage and Boba avatar assignment overlay. */
+/* Talking Heads speaker stage and avatar assignment overlay. */
 (() => {
   'use strict';
 
@@ -9,8 +9,8 @@
   const stageIdle = document.getElementById('stageIdle');
   const spawnPulse = document.getElementById('spawnPulse');
   const OVERLAY_FALLBACK_COPY = Object.freeze({
-    boba_avatar: 'Boba avatar',
-    test_spin: 'Boba test spin',
+    avatar: 'Avatar',
+    test_spin: 'Avatar test spin',
     assigning: 'Assigning a new avatar',
     new_voice: 'New voice',
     reels_spinning: 'Reels are spinning'
@@ -35,9 +35,15 @@
   }
 
   function selectionLabel(selection = {}) {
-    const character = String(selection.characterId || overlayText('boba_avatar'));
-    const expression = String(selection.options?.expression || '').trim();
-    return expression ? `${character} · ${expression}` : character;
+    const packId = String(selection.packId || 'boba').toLowerCase();
+    const character = String(selection.characterId || '').trim();
+    const options = selection.options || {};
+    const parts = packId === 'kenney'
+      ? ['Kenney', character, options.eye]
+      : packId === 'rgs'
+        ? ['RGS', character, options.hair, options.eyes, options.mouth]
+        : [character, options.expression];
+    return parts.filter(Boolean).join(' · ') || overlayText('avatar');
   }
 
   function overlayText(key, fallback = OVERLAY_FALLBACK_COPY[key]) {

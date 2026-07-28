@@ -95,6 +95,20 @@ describe('Talking Heads speaker-stage slot overlay', () => {
     });
   });
 
+  test('labels Kenney and RGS reel winners with their full pack options', () => {
+    const { dom, handlers } = bootOverlay();
+    const startSpin = handlers.get('talkingheads:avatar:spin:start');
+    startSpin(spinPayload({
+      winner: {
+        selection: { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } },
+        sprites: { idle_neutral: '/api/talkingheads/sprite/rgs-head1.png' }
+      }
+    }));
+    jest.advanceTimersByTime(240);
+    expect(dom.window.document.getElementById('slotWinnerName').textContent)
+      .toBe('RGS · head1 · hair1 · eyes1 · mouth1');
+  });
+
   test('queues a preview behind a real spin so the real acknowledgement still arrives once', () => {
     const { handlers, socket } = bootOverlay();
     const startSpin = handlers.get('talkingheads:avatar:spin:start');
@@ -142,7 +156,7 @@ describe('Talking Heads speaker-stage slot overlay', () => {
 
     jest.advanceTimersByTime(240);
 
-    expect(document.getElementById('slotWinnerName').textContent).toBe('Boba avatar');
+    expect(document.getElementById('slotWinnerName').textContent).toBe('Avatar');
   });
 
   test('uses translated slot copy when an i18n runtime is present', () => {
@@ -150,7 +164,7 @@ describe('Talking Heads speaker-stage slot overlay', () => {
       'plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigning': 'Neuer Avatar wird zugewiesen',
       'plugins.talking-heads.talking_heads_ui.stream_director.overlay.new_voice': 'Neue Stimme',
       'plugins.talking-heads.talking_heads_ui.stream_director.overlay.reels_spinning': 'Rollen drehen sich',
-      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.boba_avatar': 'Boba-Avatar'
+      'plugins.talking-heads.talking_heads_ui.stream_director.overlay.avatar': 'Avatar'
     };
     const { dom, handlers } = bootOverlay({
       i18n: {
@@ -176,7 +190,7 @@ describe('Talking Heads speaker-stage slot overlay', () => {
 
     jest.advanceTimersByTime(240);
 
-    expect(document.getElementById('slotWinnerName').textContent).toBe('Boba-Avatar');
+    expect(document.getElementById('slotWinnerName').textContent).toBe('Avatar');
   });
 
   test('does not let a stale playback end remove a newer speaker stage for the same viewer', () => {
