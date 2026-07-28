@@ -64,31 +64,35 @@ describe('Talking Heads avatar lottery manager', () => {
     expect(manager.getAssignment('u1').selection).toEqual(bear);
   });
 
-  test('draws uniformly from unique mouth-animatable Boba animal-expression assignments only', () => {
-    const library = new AssetSpriteLibrary({ dataDir: '/tmp/talking-heads-lottery-test' });
-    const first = library.getRandomSelection(() => 0);
-    const last = library.getRandomSelection(() => 0.999999);
-    const all = library.getLotteryCandidates(120, () => 0);
-    const reroll = library.getRandomSelection(() => 0, first);
+  function randomSequence(...values) {
+    let index = 0;
+    return () => values[index++] ?? 0;
+  }
 
-    expect(first).toEqual({
-      packId: 'boba',
-      characterId: 'Axolotl',
-      options: { expression: 'Default' }
-    });
-    expect(last).toEqual({
-      packId: 'boba',
-      characterId: 'Spider',
-      options: { expression: 'Scared' }
-    });
-    expect(all).toHaveLength(90);
-    expect(new Set(all.map((selection) => JSON.stringify(selection))).size).toBe(90);
-    expect(all.every((selection) => selection.packId === 'boba')).toBe(true);
-    expect(new Set(all.map((selection) => selection.characterId))).toEqual(new Set([
-      'Axolotl', 'Bear', 'Bunny', 'Dog', 'Fox', 'Frog', 'Giraffe', 'Goat',
-      'Monkey', 'Octopus', 'Otter', 'Raccoon', 'Seal', 'Snake', 'Spider'
-    ]));
-    expect(reroll).not.toEqual(first);
+  test('builds canonical three-pack pools and chooses each eligible pack uniformly', () => {
+    const library = new AssetSpriteLibrary({ dataDir: '/tmp/talking-heads-lottery-test' });
+    const pools = library.getLotterySelectionPools();
+    const boba = { packId: 'boba', characterId: 'Axolotl', options: { expression: 'Default' } };
+    const kenney = { packId: 'kenney', characterId: 'blueA', options: { eye: 'angry_blue' } };
+    const rgs = { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } };
+
+    expect(Object.fromEntries(Object.entries(pools).map(([packId, selections]) => [packId, selections.length])))
+      .toEqual({ boba: 90, kenney: 540, rgs: 504 });
+    expect(library.getRandomSelection(randomSequence(0, 0))).toEqual(boba);
+    expect(library.getRandomSelection(randomSequence(0.34, 0))).toEqual(kenney);
+    expect(library.getRandomSelection(randomSequence(0.67, 0))).toEqual(rgs);
+  });
+
+  test('keeps reel candidates unique and excludes the exact current selection across packs', () => {
+    const library = new AssetSpriteLibrary({ dataDir: '/tmp/talking-heads-lottery-test' });
+    const current = { packId: 'boba', characterId: 'Axolotl', options: { expression: 'Default' } };
+    const candidates = library.getLotteryCandidates(3, randomSequence(0, 0, 0.34, 0, 0.67, 0));
+    const reroll = library.getRandomSelection(randomSequence(0.34, 0), current);
+
+    expect(candidates.map(selection => selection.packId)).toEqual(['boba', 'kenney', 'rgs']);
+    expect(new Set(candidates.map(selection => JSON.stringify(selection))).size).toBe(3);
+    expect(reroll).toEqual({ packId: 'kenney', characterId: 'blueA', options: { eye: 'angry_blue' } });
+    expect(reroll).not.toEqual(current);
   });
 
   test('every automatic Boba selection resolves three materially distinct speaking states', async () => {
