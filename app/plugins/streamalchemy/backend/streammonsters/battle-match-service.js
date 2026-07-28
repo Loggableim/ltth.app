@@ -961,6 +961,7 @@ class BattleMatchService {
     const templateId = String(monster?.template_id || '');
     return {
       slot: Number(participant?.slot) || 0,
+      viewerName: this.publicViewerName(participant?.viewerId),
       name: String(monster?.name || '').slice(0, 80),
       element: String(monster?.element || '').slice(0, 16),
       templateId,
@@ -982,6 +983,7 @@ class BattleMatchService {
     const templateId = String(monster?.templateId || '');
     return {
       slot: Number(monster?.slot) || 0,
+      viewerName: String(monster?.viewerName || '').slice(0, 80) || 'Viewer',
       name: String(monster?.name || '').slice(0, 80),
       element: String(monster?.element || '').slice(0, 16),
       templateId,
@@ -1703,6 +1705,13 @@ class BattleMatchService {
       }, {
         matchId,
         winnerSlot: winnerParticipant.slot,
+        winner: winnerPublic,
+        ratingChanges: participantResults.map(participant => ({
+          slot: participant.slot,
+          before: participant.rating.before,
+          after: participant.rating.after,
+          delta: participant.rating.delta
+        })),
         completion,
         forfeitedSlot: forfeitedParticipant?.slot || null
       });
@@ -2106,6 +2115,15 @@ class BattleMatchService {
       return {
         matchId: match.matchId,
         winnerSlot: Number(payload.winnerSlot) || winner?.slot || 0,
+        winner: this.sanitizePublicMonster(payload.winner),
+        ratingChanges: Array.isArray(payload.ratingChanges)
+          ? payload.ratingChanges.map(change => ({
+              slot: Number(change?.slot) || 0,
+              before: Math.max(0, Math.round(Number(change?.before) || 0)),
+              after: Math.max(0, Math.round(Number(change?.after) || 0)),
+              delta: Math.round(Number(change?.delta) || 0)
+            })).filter(change => change.slot > 0)
+          : [],
         completion: payload.completion === 'forfeit' ? 'forfeit' : 'battle',
         forfeitedSlot: Number(payload.forfeitedSlot) || null
       };

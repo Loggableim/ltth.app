@@ -285,7 +285,7 @@
     .arena-skill-card {
       display:grid; grid-template-columns:auto auto minmax(0,1fr) auto;
       grid-template-areas:"icon choice name charge" "icon choice copy charge";
-      align-items:center; gap:1px 8px; min-width:0; padding:7px 9px;
+      align-items:center; gap:3px 10px; min-width:0; padding:10px 12px;
       border:1px solid #aebaff4f; border-radius:13px;
       color:#f7fbff; background:linear-gradient(145deg,#121a31f2,#080d1dec);
       box-shadow:0 8px 18px #0009,inset 0 0 16px #7deaff08;
@@ -298,12 +298,12 @@
       font-size:13px; font-weight:1000;
     }
     .arena-skill-card .skill-name {
-      grid-area:name; overflow:hidden; font-size:clamp(11px,1.25vw,16px); font-weight:950;
-      text-overflow:ellipsis; white-space:nowrap;
+      grid-area:name; overflow:visible; font-size:clamp(15px,1.7vw,22px); font-weight:950;
+      line-height:1.12; white-space:normal;
     }
     .arena-skill-card .skill-copy {
-      grid-area:copy; overflow:hidden; color:#b9c7dc; font-size:clamp(9px,1vw,12px);
-      line-height:1.1; text-overflow:ellipsis; white-space:nowrap;
+      grid-area:copy; overflow:visible; color:#d9e6f7; font-size:clamp(12px,1.3vw,17px);
+      line-height:1.22; white-space:normal;
     }
     .arena-skill-card .skill-charge {
       grid-area:charge; min-width:39px; color:#ffdc83; font-size:12px; font-weight:1000;
@@ -363,6 +363,15 @@
       border:1px solid #ffe6a15c; border-radius:18px; color:white; background:#0b1022df; box-shadow:0 16px 45px #000b;
       transform:translateX(-50%); text-align:center; font-size:clamp(16px,2vw,26px); font-weight:950;
     }
+    #arena-result {
+      position:absolute; top:15%; left:50%; z-index:30; width:min(86%,760px); padding:18px 24px;
+      border:1px solid #ffe78eaa; border-radius:24px; color:#fff; background:linear-gradient(135deg,#101a36e8,#4b257bdc);
+      box-shadow:0 20px 58px #000b,inset 0 0 34px #ffe79d22; opacity:0; pointer-events:none;
+      transform:translate(-50%,-12px) scale(.94); text-align:center; transition:opacity .22s ease,transform .28s ease;
+    }
+    #arena-result.visible { opacity:1; transform:translate(-50%,0) scale(1); }
+    #arena-result-winner { display:block; color:#fff0a3; font-size:clamp(27px,4vw,52px); line-height:1.05; text-shadow:0 3px 0 #3d1b55,0 0 28px #ffe57e99; }
+    #arena-result-rating { display:block; margin-top:10px; color:#e5f5ff; font-size:clamp(14px,1.8vw,22px); font-weight:900; font-variant-numeric:tabular-nums; }
     #arena-impact {
       position:absolute; left:50%; top:44%; z-index:18; opacity:0; color:white;
       filter:drop-shadow(0 6px 4px #000d); transform:translate(-50%,-50%) scale(.5) rotate(-6deg);
@@ -802,7 +811,7 @@
       #arena-fighter-2 .fighter-hud { top:auto; bottom:0; }
       #arena-fighter-2 .arena-sprite-wrap { inset:0 0 24%; }
       .arena-skill-deck { top:24%; gap:5px; }
-      .arena-skill-card { padding:6px 8px; }
+      .arena-skill-card { padding:8px 10px; }
       #arena-feed { top:16%; bottom:auto; width:82%; }
       #arena-impact { top:49%; }
       #chat-card { left:16px; bottom:calc(26% + 18px); max-width:calc(100vw - 32px); }
@@ -1024,6 +1033,7 @@
     <div id="arena-impact" aria-hidden="true"></div>
     <div id="arena-combo" aria-hidden="true"></div>
     <div id="arena-feed">Die Arena wird vorbereitet …</div>
+    <div id="arena-result" aria-live="polite"><strong id="arena-result-winner"></strong><span id="arena-result-rating"></span></div>
   </section>
   <div id="arena-chat-safe-zone" aria-hidden="true"></div>
   <section id="chat-detail" data-placement="upper" role="status" aria-atomic="true"></section>

@@ -998,16 +998,42 @@
       }
       setText('arena-skill-prompt', '');
       setText('arena-countdown', '');
+      const winner = payload.winner && typeof payload.winner === 'object'
+        ? payload.winner
+        : {};
+      const winnerName = String(
+        payload.winnerViewerName || winner.viewerName ||
+        stateBySlot.get(winnerSlot)?.viewerName ||
+        stateBySlot.get(winnerSlot)?.name ||
+        formatLabel('monster', { slot: winnerSlot })
+      ).trim();
+      const ratingText = (Array.isArray(payload.ratingChanges) ? payload.ratingChanges : [])
+        .map(change => {
+          const slot = numeric(change?.slot);
+          const name = stateBySlot.get(slot)?.viewerName || formatLabel('monster', { slot });
+          const delta = Math.round(numeric(change?.delta));
+          const sign = delta >= 0 ? '+' : '';
+          return `${name} ${sign}${delta} ELO · ${Math.round(numeric(change?.after))}`;
+        }).join('   ');
+      const result = node('arena-result');
+      if (result) result.classList.add('visible');
+      setText('arena-result-winner', winnerSlot
+        ? formatLabel('winner', { name: winnerName })
+        : labels.battleEnded);
+      setText('arena-result-rating', ratingText);
       setText('arena-feed', winnerSlot
         ? formatLabel('winner', {
-            name: stateBySlot.get(winnerSlot)?.name || formatLabel('monster', { slot: winnerSlot })
+            name: winnerName
           })
         : labels.battleEnded);
       fire(audio, 'arena.victory', {
         eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
       });
       await wait(4_000);
-      if (terminalVersion === surfaceVersion) arena?.classList.remove('visible');
+      if (terminalVersion === surfaceVersion) {
+        result?.classList.remove('visible');
+        arena?.classList.remove('visible');
+      }
       return true;
     }
 

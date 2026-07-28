@@ -30,6 +30,7 @@ function mountArena() {
       <div id="arena-special"></div>
       <div id="arena-impact"></div>
       <div id="arena-feed"></div>
+      <div id="arena-result"><strong id="arena-result-winner"></strong><span id="arena-result-rating"></span></div>
       <article id="arena-fighter-1" data-slot="1">
         <img id="arena-image-1"><div id="arena-name-1"></div>
         <div id="arena-level-1"></div><div id="arena-hp-text-1"></div>
@@ -165,6 +166,37 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#battle').classList.contains('visible')).toBe(false);
     view.cancel({ reason: 'roster_unavailable' });
     expect(document.querySelector('#battle').dataset.terminal).toBe('cancelled');
+  });
+
+  test('shows the winning viewer and both applied Arena Rating changes in the finale', async () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'result-a',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@pupcid', hp: 20, maxHp: 20 },
+        { slot: 2, name: 'Ripple', viewerName: '@mark_teufel01', hp: 0, maxHp: 20 }
+      ]
+    });
+
+    await view.complete({
+      winnerSlot: 1,
+      winnerViewerName: '@pupcid',
+      ratingChanges: [
+        { slot: 1, before: 900, after: 916, delta: 16 },
+        { slot: 2, before: 900, after: 884, delta: -16 }
+      ]
+    });
+
+    expect(document.getElementById('arena-result-winner').textContent).toContain('@pupcid');
+    expect(document.getElementById('arena-result-rating').textContent)
+      .toContain('+16');
+    expect(document.getElementById('arena-result-rating').textContent)
+      .toContain('-16');
   });
 
   test('keeps sealed locks choice-free until the ordered reveal event arrives', () => {
