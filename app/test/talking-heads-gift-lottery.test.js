@@ -37,6 +37,67 @@ describe('Talking Heads gift avatar lottery', () => {
     jest.useRealTimers();
   });
 
+  test('admin reroll targets the supplied persistent avatar and emits the gift-reroll spin', async () => {
+    const { plugin, api, io } = createPlugin();
+    plugin.assetSpriteLibrary = {
+      getRandomSelection: jest.fn(() => dog),
+      getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
+      getSpriteSet: jest.fn(async (selection) => ({
+        ...selection,
+        sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` }
+      }))
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn((userId) => userId === 'viewer_handle'
+        ? { userId, username: 'ViewerHandle', selection: fox, state: 'kept' }
+        : null),
+      reroll: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'kept' }))
+    };
+    plugin._registerRoutes();
+    const rerollRoute = api.registerRoute.mock.calls.find(([, route]) => (
+      route === '/api/talkingheads/avatar-reroll'
+    ))?.[2];
+    const response = { status: jest.fn(() => response), json: jest.fn() };
+
+    expect(rerollRoute).toEqual(expect.any(Function));
+    await rerollRoute({ body: { userId: 'viewer_handle', username: 'ViewerHandle' } }, response);
+
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer_handle', 'ViewerHandle', dog);
+    expect(io.emit).toHaveBeenCalledWith('talkingheads:avatar:spin:start', expect.objectContaining({
+      userId: 'viewer_handle',
+      username: 'ViewerHandle',
+      reason: 'gift-reroll'
+    }));
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  test('gift reroll uses the TikTok handle when the event also carries a numeric user ID', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.rerollGiftNames = ['Go Popular'];
+    plugin.assetSpriteLibrary = {
+      getRandomSelection: jest.fn(() => dog),
+      getLotteryCandidates: jest.fn(() => [bear, dog, fox]),
+      getSpriteSet: jest.fn(async (selection) => ({
+        ...selection,
+        sprites: { idle_neutral: `/sprite/${selection.characterId}.svg` }
+      }))
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn((userId) => userId === 'viewer_handle'
+        ? { userId, username: 'ViewerHandle', selection: fox, state: 'kept' }
+        : null),
+      reroll: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'kept' }))
+    };
+
+    await expect(plugin._handleLotteryGift({
+      userId: '1234567890123456789',
+      uniqueId: 'viewer_handle',
+      giftName: 'Go Popular'
+    })).resolves.toBe(true);
+
+    expect(plugin.avatarLotteryManager.reroll).toHaveBeenCalledWith('viewer_handle', 'viewer_handle', dog);
+  });
+
   test('registers only the configured gift behavior and rerolls an existing avatar', async () => {
     const { plugin, api, io } = createPlugin();
     plugin._registerAvatarLotteryEvents();
