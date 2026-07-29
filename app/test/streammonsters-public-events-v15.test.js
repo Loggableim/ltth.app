@@ -24,6 +24,23 @@ function createRuntime() {
 }
 
 describe('Stream Monsters v1.5 public event projection and reconnect outbox', () => {
+  test('preserves the validated late-collapse prompt choices from the battle service', () => {
+    const projector = new StreamMonstersPublicEventProjector();
+    const projected = projector.project('streammonsters:battle_choice_opened', {
+      matchId: 'match-collapse-11',
+      round: 11,
+      deadlineMs: 15_000,
+      choices: ['C', 'A', 'C', 'D', null]
+    });
+
+    expect(projected.choices).toEqual(['A', 'C']);
+    expect(projector.project('streammonsters:battle_choice_opened', {
+      matchId: 'legacy-match',
+      round: 1,
+      deadlineMs: 15_000
+    }).choices).toEqual(['A', 'B', 'C']);
+  });
+
   test('projects a charged special without exposing the internal monster database id', () => {
     const projector = new StreamMonstersPublicEventProjector();
     const projected = projector.project('streammonsters:battle_special_charged', {

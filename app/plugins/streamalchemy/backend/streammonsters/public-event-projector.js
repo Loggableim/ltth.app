@@ -332,6 +332,17 @@ function projectBattleChoices(choices = null) {
   return projected.sort((left, right) => left.slot - right.slot);
 }
 
+function projectBattlePromptChoices(choices = null) {
+  if (!Array.isArray(choices)) return ['A', 'B', 'C'];
+  const requested = new Set(
+    choices
+      .map(choice => String(choice || '').trim().toUpperCase())
+      .filter(choice => ['A', 'B', 'C'].includes(choice))
+  );
+  const projected = ['A', 'B', 'C'].filter(choice => requested.has(choice));
+  return projected.length ? projected : ['A', 'B', 'C'];
+}
+
 function projectWait(wait = null) {
   if (!wait || typeof wait !== 'object') return null;
   return {
@@ -584,7 +595,7 @@ class StreamMonstersPublicEventProjector {
         matchId: boundedText(payload.matchId, 160),
         round: Math.max(0, finiteNumber(payload.round, 0)),
         deadlineMs: Math.max(0, finiteNumber(payload.deadlineMs, 0)),
-        choices: ['A', 'B', 'C'],
+        choices: projectBattlePromptChoices(payload.choices),
         ...(chargeWindow ? { chargeWindow } : {}),
         fighters: Array.isArray(payload.fighters)
           ? payload.fighters.map(projectBattleFighter).filter(Boolean)
