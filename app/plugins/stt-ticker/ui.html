@@ -1974,12 +1974,18 @@
         fallbackLanguage: 'en'
       };
       // STT-Modell aus dynamischem Dropdown
+      const providerEl = document.getElementById('asr-provider');
       const modelSelect = document.getElementById('asr-model-select');
       const selectedModel = modelSelect ? modelSelect.value : '';
-      if (asr.provider === 'elevenlabs') {
-        asr.elevenlabsModel = selectedModel || 'scribe_v2';
-      } else {
-        asr.deepgramModel = selectedModel || 'nova-3';
+      if (asr.provider === 'deepgram') {
+        asr.deepgramModel = selectedModel
+          || providerEl?.dataset.deepgramModel
+          || providerEl?.dataset.deepgramDefault
+          || 'nova-3';
+      } else if (asr.provider === 'elevenlabs') {
+        asr.elevenlabsModel = selectedModel
+          || providerEl?.dataset.elevenlabsModel
+          || 'scribe_v2';
       }
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField) {

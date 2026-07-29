@@ -49,6 +49,55 @@ async function renderUiStatus(asr) {
   return dom;
 }
 
+async function renderUiForAsrSave(asrOverrides = {}) {
+  const html = fs.readFileSync(
+    path.join(__dirname, '../plugins/stt-ticker/ui.html'),
+    'utf8'
+  );
+  const { DEFAULT_CONFIG } = require('../plugins/stt-ticker/backend/config');
+  const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  Object.assign(config.asr, asrOverrides);
+  const status = {
+    enabled: true,
+    asr: config.asr,
+    translation: { enabled: false, configured: false },
+    buffer: { segmentCount: 0 },
+    vrchatChatbox: { enabled: false, bridgeAvailable: false },
+    config
+  };
+  const savedAsrPayloads = [];
+  const deepgramModels = [
+    { id: 'nova-3', name: 'Nova-3' },
+    { id: 'nova-2', name: 'Nova-2' }
+  ];
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'http://127.0.0.1/stt-ticker/ui',
+    beforeParse(window) {
+      window.fetch = async (input, options = {}) => {
+        const url = String(input);
+        if (url === '/api/stt-ticker/asr/settings') {
+          savedAsrPayloads.push(JSON.parse(options.body));
+          return { json: async () => ({ success: true }) };
+        }
+        if (url === '/api/stt-ticker/status') return { json: async () => ({ success: true, status }) };
+        if (url === '/api/stt-ticker/asr/deepgram/models') {
+          return { json: async () => ({ success: true, models: deepgramModels }) };
+        }
+        if (url.endsWith('/models')) return { json: async () => ({ success: true, models: [] }) };
+        if (url === '/api/stt-ticker/translator/languages') return { json: async () => ({ success: true, languages: [] }) };
+        return { json: async () => ({ success: true }) };
+      };
+    }
+  });
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (dom.window._dgModels?.length) return { dom, savedAsrPayloads };
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  return { dom, savedAsrPayloads };
+}
+
 describe('STT Ticker Fish-first configuration', () => {
   test('new configurations default to Fish.audio', () => {
     const { ConfigManager } = require('../plugins/stt-ticker/backend/config');
@@ -125,6 +174,72 @@ describe('STT Ticker Fish-first configuration', () => {
     );
     expect(hint).not.toContain('raw private path');
     expect(hint).not.toContain('C:\\private');
+    dom.window.close();
+  });
+
+  test('saving Fish settings leaves stored Deepgram and ElevenLabs models out of the payload', async () => {
+    const { dom, savedAsrPayloads } = await renderUiForAsrSave({
+      provider: 'fish.audio',
+      deepgramModel: 'nova-2',
+      elevenlabsModel: 'scribe_v2'
+    });
+
+    const provider = dom.window.document.getElementById('asr-provider');
+    expect(provider.dataset.deepgramModel).toBe('nova-2');
+    expect(dom.window.document.getElementById('asr-model-select').value).toBe('');
+
+    dom.window.document.getElementById('btn-save-asr').click();
+    for (let attempt = 0; attempt < 20 && savedAsrPayloads.length === 0; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    expect(savedAsrPayloads).toHaveLength(1);
+    expect(savedAsrPayloads[0].asr).toMatchObject({ provider: 'fish.audio' });
+    expect(savedAsrPayloads[0].asr).not.toHaveProperty('deepgramModel');
+    expect(savedAsrPayloads[0].asr).not.toHaveProperty('elevenlabsModel');
+    dom.window.close();
+  });
+
+  test('an explicit new Deepgram selection saves the Nova-3 default model', async () => {
+    const { dom, savedAsrPayloads } = await renderUiForAsrSave({ provider: 'fish.audio' });
+    const provider = dom.window.document.getElementById('asr-provider');
+
+    provider.value = 'deepgram';
+    provider.dispatchEvent(new dom.window.Event('change'));
+    expect(dom.window.document.getElementById('asr-model-select').value).toBe('nova-3');
+
+    dom.window.document.getElementById('btn-save-asr').click();
+    for (let attempt = 0; attempt < 20 && savedAsrPayloads.length === 0; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    expect(savedAsrPayloads).toHaveLength(1);
+    expect(savedAsrPayloads[0].asr).toMatchObject({
+      provider: 'deepgram',
+      deepgramModel: 'nova-3'
+    });
+    expect(savedAsrPayloads[0].asr).not.toHaveProperty('elevenlabsModel');
+    dom.window.close();
+  });
+
+  test('an explicit Deepgram save preserves its stored model when model loading is unavailable', async () => {
+    const { dom, savedAsrPayloads } = await renderUiForAsrSave({
+      provider: 'deepgram',
+      deepgramModel: 'nova-2'
+    });
+    const modelSelect = dom.window.document.getElementById('asr-model-select');
+    modelSelect.innerHTML = '<option value="">No models</option>';
+
+    dom.window.document.getElementById('btn-save-asr').click();
+    for (let attempt = 0; attempt < 20 && savedAsrPayloads.length === 0; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    expect(savedAsrPayloads).toHaveLength(1);
+    expect(savedAsrPayloads[0].asr).toMatchObject({
+      provider: 'deepgram',
+      deepgramModel: 'nova-2'
+    });
     dom.window.close();
   });
 });
