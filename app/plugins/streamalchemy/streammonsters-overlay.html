@@ -614,6 +614,7 @@
       letter-spacing:.04em; white-space:nowrap;
     }
     [data-egg-adopt-summary][hidden] { display:none; }
+    [data-egg-focus] { display:none; }
     [data-egg-timing] {
       position:absolute; right:50%; bottom:-4px; left:50%; z-index:3;
       width:max-content; max-width:132px; padding:3px 7px; border-radius:999px;
@@ -957,25 +958,34 @@
         font-size:clamp(13px,2.8vw,19px);
       }
       #egg-shelf {
-        bottom:26%; height:66px; display:grid;
-        grid-template-columns:minmax(0,auto) auto; grid-template-rows:18px 48px;
-        align-items:end; column-gap:5px; row-gap:0;
+        bottom:26%; height:clamp(146px,19vh,246px); display:grid;
+        grid-template-columns:1fr; grid-template-rows:1fr;
+        align-items:end; justify-items:center;
       }
-      #egg-shelf [data-egg-slots] {
-        grid-column:1; grid-row:2; height:48px; align-items:flex-end;
+      #egg-shelf [data-egg-slots],
+      #egg-shelf [data-egg-overflow],
+      #egg-shelf [data-egg-adopt-summary] { display:none!important; }
+      #egg-shelf [data-egg-focus] {
+        display:grid; grid-template-columns:clamp(78px,20vw,132px) minmax(0,1fr);
+        grid-template-rows:auto auto auto; column-gap:clamp(10px,2.6vw,18px);
+        width:clamp(280px,86vw,560px); min-height:clamp(116px,15vh,182px); padding:clamp(10px,2.4vw,18px);
+        border:2px solid #b4a1ff; border-radius:22px; color:var(--ink); background:#10182bf2;
+        box-shadow:0 14px 42px #000b,0 0 30px #a984ff33;
       }
-      #egg-shelf [data-egg-adopt-summary] {
-        position:static; top:auto; left:auto; grid-column:1 / -1; grid-row:1;
-        align-self:stretch; justify-self:center; box-sizing:border-box; height:18px;
-        max-height:18px; padding:1px 7px; transform:none; font-size:10px; line-height:12px;
-      }
-      #egg-shelf .egg-shelf-item {
-        width:clamp(38px,9.2vw,44px); height:48px;
-      }
-      #egg-shelf [data-egg-timing] { bottom:0px; padding:2px 5px; font-size:9px; }
-      #egg-shelf [data-egg-overflow] {
-        grid-column:2; grid-row:2; width:44px; height:48px;
-      }
+      #egg-shelf [data-egg-focus][hidden] { display:none!important; }
+      .egg-focus-art { grid-row:1 / -1; display:grid; place-items:center; width:100%; height:100%; }
+      .egg-focus-art img { width:100%; height:100%; object-fit:contain; }
+      .egg-focus-art[data-fallback="true"] { font-size:clamp(58px,14vw,96px); }
+      [data-egg-focus-owner] { align-self:end; color:var(--muted); font-size:clamp(16px,3.7vw,24px); font-weight:800; }
+      [data-egg-focus-state] { align-self:center; font-size:clamp(20px,4.8vw,34px); font-weight:1000; line-height:1.1; }
+      [data-egg-focus-position] { align-self:start; color:var(--muted); font-size:clamp(14px,3.2vw,21px); font-weight:800; }
+      [data-egg-focus][data-state="public"] { border-color:#ffd76f; box-shadow:0 0 38px #ffd76f88,0 14px 42px #000b; }
+      [data-egg-focus][data-state="public"] [data-egg-focus-state] { color:#fff0a0; }
+      [data-egg-focus][data-state="ready"] { border-color:#6ef1b8; }
+      [data-egg-focus][data-state="ready"] [data-egg-focus-state] { color:#a8ffd8; }
+      [data-egg-focus][data-state="queued"] { border-color:#55dcff; }
+      [data-egg-focus][data-state="queued"] [data-egg-focus-state] { color:#9eeeff; }
+      [data-egg-focus][data-state="incubating"] { border-color:#a984ff; }
       #art-wrap { width:160px; height:160px; margin:auto; }
       #card[data-presentation="hatch"] {
         top:clamp(92px,7vh,128px); right:auto; bottom:clamp(18px,2vh,34px); left:50%;
@@ -1210,6 +1220,7 @@
     <div data-egg-slots></div>
     <div data-egg-overflow hidden></div>
     <div data-egg-adopt-summary hidden></div>
+    <article data-egg-focus hidden></article>
   </section>
   <section id="battle"
     aria-label="Stream Monsters Arena"
@@ -1617,7 +1628,12 @@
       expired:text('eggShelfExpired', 'Verrottet'),
       reserved:text('eggShelfReserved', 'Reserviert · {time}'),
       public:text('eggShelfPublicCountdown', 'Gratis · {time}'),
-      adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · {command}')
+      adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · {command}'),
+      eggFocusOwner:text('eggFocusOwner', 'Besitzer: {owner}'),
+      eggFocusPosition:text('eggFocusPosition', '{position} / {total}'),
+      eggFocusReady:text('eggFocusReady', 'Bereit · {command}'),
+      eggFocusIncubating:text('eggFocusIncubating', 'Schlüpft in {time}'),
+      eggFocusPublic:text('eggFocusPublic', 'Gratis-Ei · {command}')
     }),
     getHatchReference:() => commandReference('hatch'),
     getAdoptReference:() => commandReference('adopt')

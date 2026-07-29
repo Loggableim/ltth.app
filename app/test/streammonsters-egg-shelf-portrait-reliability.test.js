@@ -284,7 +284,7 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     }));
   });
 
-  test('keeps the portrait shelf in its documented band without changing battle geometry', () => {
+  test('anchors the portrait focus shelf above chat without changing battle geometry', () => {
     const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
     const rules = styleRules(dom.window.document);
     const portraitRules = rules.filter(rule => (
@@ -299,39 +299,17 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       rule.selector === '#card[data-presentation="egg-offer"]'
     ));
     const rootRule = portraitRules.find(rule => rule.selector === ':root');
-    const summaryRule = portraitRules.find(rule => (
-      rule.selector === '#egg-shelf [data-egg-adopt-summary]'
-    ));
-    const timingRule = portraitRules.find(rule => (
-      rule.selector === '#egg-shelf [data-egg-timing]'
-    ));
-    const slotsRule = portraitRules.find(rule => (
-      rule.selector === '#egg-shelf [data-egg-slots]'
+    const focusRule = portraitRules.find(rule => (
+      rule.selector === '#egg-shelf [data-egg-focus]'
     ));
 
     expect(rootRule?.style.getPropertyValue('--egg-shelf-lane-height')).toBe('66px');
     expect(shelfRule?.style.bottom).toBe('26%');
-    expect(shelfRule?.style.height).toBe('66px');
     expect(shelfRule?.style.display).toBe('grid');
-    expect(shelfRule?.style['grid-template-rows']).toBe('18px 48px');
-    expect(slotsRule?.style['grid-row']).toBe('2');
-    expect(summaryRule?.style.position).toBe('static');
-    expect(summaryRule?.style.top).toBe('auto');
-    expect(summaryRule?.style.transform).toBe('none');
-    expect(summaryRule?.style['grid-row']).toBe('1');
-    expect(timingRule?.style.bottom).toBe('0px');
+    expect(focusRule?.style.display).toBe('grid');
     expect(compactCardRule?.style['min-height']).toBe('250px');
     expect(offerRule?.style['min-height']).toBe('0px');
     expect(offerRule?.style.top).toBe('7%');
-
-    const viewport = { width:477, height:829 };
-    const shelfBottom = viewport.height * 0.74;
-    const shelfTop = shelfBottom - Number.parseFloat(shelfRule.style.height);
-    const chatSafeBoundary = viewport.height * 0.74;
-    expect(viewport.width).toBe(477);
-    expect(shelfTop).toBeCloseTo(547.46, 2);
-    expect(shelfBottom).toBeCloseTo(chatSafeBoundary, 5);
-    expect(shelfTop + 18 + 48).toBeCloseTo(chatSafeBoundary, 5);
 
     const battleRule = portraitRules.find(rule => rule.selector === '#battle');
     expect(battleRule?.style.inset).toBe('0 0 26%');
@@ -433,4 +411,50 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     expect(visibleSnapshot.querySelector('img')).toBeNull();
     dom.window.close();
   });
+});
+
+
+describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
+  test('uses a viewport-relative focus card above the 26 percent chat boundary', () => {
+    const overlayHtml = fs.readFileSync(overlayPath, 'utf8');
+    expect(overlayHtml).toContain('[data-egg-focus]');
+    expect(overlayHtml).toMatch(/#egg-shelf\s*\{[^}]*bottom:26%/s);
+    expect(overlayHtml).toMatch(
+      /@media \(orientation: portrait\)\s*\{[\s\S]*?\[data-egg-focus\]\s*\{[\s\S]*?width:clamp\(/s
+    );
+    expect(overlayHtml).toMatch(/\[data-egg-focus-owner\][\s\S]*?font-size:clamp\(/s);
+    expect(overlayHtml).toMatch(/\[data-egg-focus-state\][\s\S]*?font-size:clamp\(/s);
+    expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="ready"\]/);
+    expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="public"\]/);
+    expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="queued"\]/);
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])(
+    'provides non-empty %s focus labels in plugin and app locale catalogs',
+    locale => {
+      const pluginLocale = JSON.parse(fs.readFileSync(
+        path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+        'utf8'
+      ));
+      const appLocale = JSON.parse(fs.readFileSync(
+        path.join(process.cwd(), 'locales', `${locale}.json`),
+        'utf8'
+      ));
+      const keys = [
+        'eggFocusOwner',
+        'eggFocusPosition',
+        'eggFocusReady',
+        'eggFocusIncubating',
+        'eggFocusPublic'
+      ];
+
+      for (const key of keys) {
+        expect(pluginLocale.plugins.streamalchemy.ui.monsters[key])
+          .toEqual(expect.any(String));
+        expect(pluginLocale.plugins.streamalchemy.ui.monsters[key].trim()).not.toBe('');
+        expect(appLocale.streammonsters[key]).toEqual(expect.any(String));
+        expect(appLocale.streammonsters[key].trim()).not.toBe('');
+      }
+    }
+  );
 });

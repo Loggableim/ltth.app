@@ -412,12 +412,8 @@
     };
   }
 
-  function buildShelfModel(eggStage = [], {
-    maxVisible = MAX_VISIBLE_EGGS,
-    rotationIndex = 0,
-    reducedMotion = false
-  } = {}) {
-    const normalized = (Array.isArray(eggStage) ? eggStage : [])
+  function orderedStageEggs(eggStage = [], reducedMotion = false) {
+    return (Array.isArray(eggStage) ? eggStage : [])
       .map(egg => normalizeEgg(egg))
       .filter(egg => (
         egg &&
@@ -436,6 +432,52 @@
         ...egg,
         motion: deterministicEggMotion(egg.visualId, index, reducedMotion)
       }));
+  }
+
+  function buildPortraitFocusModel(eggStage = [], {
+    rotationIndex = 0,
+    reducedMotion = false
+  } = {}) {
+    const eggs = orderedStageEggs(eggStage, reducedMotion);
+    const publicEggs = eggs.filter(isPublicFreeEgg);
+    const activeEggs = eggs
+      .filter(egg => (
+        !isPublicFreeEgg(egg) &&
+        ['ready', 'incubating', 'queued', 'reserved'].includes(egg.state)
+      ))
+      .sort((left, right) => (
+        ['ready', 'incubating', 'queued', 'reserved'].indexOf(left.state) -
+          ['ready', 'incubating', 'queued', 'reserved'].indexOf(right.state) ||
+        left.visualId.localeCompare(right.visualId)
+      ));
+    const turn = Math.max(0, Number(rotationIndex) || 0);
+    const alternateIndex = Math.floor(turn / 2);
+    let focus = null;
+
+    if (publicEggs.length && turn % 2 === 0) {
+      focus = publicEggs[alternateIndex % publicEggs.length];
+    } else if (activeEggs.length) {
+      focus = activeEggs[alternateIndex % activeEggs.length];
+    } else if (publicEggs.length) {
+      focus = publicEggs[turn % publicEggs.length];
+    } else if (eggs.length) {
+      focus = eggs[turn % eggs.length];
+    }
+
+    return {
+      focus,
+      position: focus ? eggs.findIndex(egg => egg.visualId === focus.visualId) + 1 : 0,
+      total: eggs.length,
+      rotationIndex: turn
+    };
+  }
+
+  function buildShelfModel(eggStage = [], {
+    maxVisible = MAX_VISIBLE_EGGS,
+    rotationIndex = 0,
+    reducedMotion = false
+  } = {}) {
+    const normalized = orderedStageEggs(eggStage, reducedMotion);
     const visibleLimit = Math.max(1, Math.min(MAX_VISIBLE_EGGS, Number(maxVisible) || 1));
     const visible = normalized.slice(0, visibleLimit);
     const hidden = normalized.slice(visibleLimit);
@@ -468,6 +510,13 @@
     if (!root) throw new Error('STREAM_MONSTERS_EGG_STAGE_ROOT_REQUIRED');
     const slots = root.querySelector('[data-egg-slots]');
     const overflow = root.querySelector('[data-egg-overflow]');
+    let focusCard = root.querySelector('[data-egg-focus]');
+    if (!focusCard) {
+      focusCard = documentLike.createElement('article');
+      focusCard.dataset.eggFocus = '';
+      focusCard.hidden = true;
+      root.appendChild(focusCard);
+    }
     let adoptSummary = root.querySelector('[data-egg-adopt-summary]');
     if (!adoptSummary) {
       adoptSummary = documentLike.createElement('div');
@@ -667,6 +716,98 @@
         : '';
     }
 
+    function focusTiming(egg) {
+      const labels = currentLabels();
+      const timing = egg.timing || {};
+      if (isPublicFreeEgg(egg)) {
+        return replaceTokens(labels.eggFocusPublic || labels.public || 'Free egg · {command}', {
+          command: getAdoptReference()
+        });
+      }
+      if (egg.state === 'ready') {
+        return replaceTokens(labels.eggFocusReady || labels.ready || 'Ready · {command}', {
+          command: getHatchReference()
+        });
+      }
+      if (egg.state === 'queued') {
+        return replaceTokens(labels.eggFocusQueued || labels.queued || 'Queue #{position}', {
+          position: Number(egg.queuePosition) || 1
+        });
+      }
+      if (egg.state === 'reserved') {
+        return replaceTokens(labels.eggFocusReserved || labels.reserved || 'Reserved · {time}', {
+          time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(now())))
+        });
+      }
+      return replaceTokens(
+        labels.eggFocusIncubating || labels.incubating || 'Hatches in {time}',
+        {
+          time: formatCountdown(Math.max(0, Number(timing.readyAtMs) - Number(now())))
+        }
+      );
+    }
+
+    function updateFocusCard(model) {
+      if (!focusCard) return;
+      const egg = model.focus;
+      focusCard.hidden = !egg;
+      if (!egg) {
+        delete focusCard.dataset.eggId;
+        return;
+      }
+      focusCard.dataset.eggId = egg.visualId;
+      focusCard.dataset.state = boundedText(egg.state, 24);
+      focusCard.dataset.provenance = boundedText(egg.provenance, 24);
+      focusCard.dataset.element = egg.element.toLowerCase();
+      focusCard.dataset.adoptable = String(isPublicFreeEgg(egg));
+
+      let art = focusCard.querySelector('[data-egg-focus-art]');
+      if (!art) {
+        art = documentLike.createElement('div');
+        art.dataset.eggFocusArt = '';
+        art.className = 'egg-focus-art';
+        focusCard.appendChild(art);
+      }
+      const imageUrl = safeImageUrl(egg.imageUrl);
+      if (imageUrl) {
+        let image = art.querySelector('img');
+        if (!image) {
+          image = documentLike.createElement('img');
+          art.replaceChildren(image);
+        }
+        image.src = imageUrl;
+        image.alt = `${egg.element} egg`;
+        delete art.dataset.fallback;
+      } else if (art.dataset.fallback !== 'true') {
+        art.replaceChildren();
+        art.textContent = '🥚';
+        art.dataset.fallback = 'true';
+      }
+
+      const ensureLine = (name, className) => {
+        let line = focusCard.querySelector(`[data-egg-focus-${name}]`);
+        if (!line) {
+          line = documentLike.createElement('span');
+          line.dataset[`eggFocus${name[0].toUpperCase()}${name.slice(1)}`] = '';
+          line.className = className;
+          focusCard.appendChild(line);
+        }
+        return line;
+      };
+      const owner = isPublicFreeEgg(egg)
+        ? currentLabels().eggFocusOpenOwner || 'Open to everyone'
+        : safeViewerName(egg.displayName) || 'Viewer';
+      ensureLine('owner', 'egg-focus-owner').textContent = replaceTokens(
+        currentLabels().eggFocusOwner || 'Owner: {owner}',
+        { owner }
+      );
+      ensureLine('state', 'egg-focus-state').textContent = focusTiming(egg);
+      ensureLine('position', 'egg-focus-position').textContent = replaceTokens(
+        currentLabels().eggFocusPosition || '{position} / {total}',
+        { position: model.position, total: model.total }
+      );
+    }
+
     function render() {
       const viewportWidth = Number(
         options.viewportWidth?.() ||
@@ -696,6 +837,10 @@
       }
       updateOverflow(model);
       updateAdoptSummary(model);
+      updateFocusCard(buildPortraitFocusModel([...eggsById.values()], {
+        rotationIndex,
+        reducedMotion
+      }));
       root.dataset.total = String(model.total);
       root.dataset.adoptable = String(model.adoptable);
       root.dataset.ready = String(model.ready);
@@ -760,7 +905,7 @@
     }
 
     if (typeof options.setInterval === 'function') {
-      rotationTimer = options.setInterval(rotateOverflow, 3_000);
+      rotationTimer = options.setInterval(rotateOverflow, 5_000);
       countdownTimer = options.setInterval(render, COUNTDOWN_INTERVAL_MS);
     }
 
@@ -796,6 +941,7 @@
     buildEventPresentation,
     buildHatchRevealNotice,
     buildLifecycleNotice,
+    buildPortraitFocusModel,
     buildShelfModel,
     createEggStageView,
     deterministicEggMotion,

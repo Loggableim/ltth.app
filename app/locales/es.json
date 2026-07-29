@@ -844,6 +844,11 @@
   "streammonsters": {
     "eggShelfPublicCountdown": "Libre · {time}",
     "eggShelfAdoptSummary": "{count} gratis · {command}",
+    "eggFocusOwner": "Propietario: {owner}",
+    "eggFocusPosition": "{position} / {total}",
+    "eggFocusReady": "Listo · {command}",
+    "eggFocusIncubating": "Eclosiona en {time}",
+    "eggFocusPublic": "Huevo gratis · {command}",
     "eggLifecycleFreeReservedTitle": "Huevo gratis reservado",
     "eggLifecycleFreeReservedCopy": "Solo {viewer} puede adoptarlo ahora con {command}.",
     "eggLifecycleFreePublicTitle": "Huevo gratis disponible",
