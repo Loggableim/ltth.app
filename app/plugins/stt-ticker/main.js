@@ -902,6 +902,8 @@ class SttTickerPlugin {
         providerConfig: asrStatus.providerConfig,
         deepgramConfigured: asrStatus.deepgramConfigured,
         deepgramKeySource: asrStatus.deepgramKeySource || null,
+        deepgramSdkAvailable: asrStatus.deepgramSdkAvailable,
+        deepgramSdkReasonCode: asrStatus.deepgramSdkReasonCode || null,
         deepgramModel: asrStatus.deepgramModel,
         elevenlabsConfigured: asrStatus.elevenlabsConfigured,
         elevenlabsKeySource: asrStatus.elevenlabsKeySource || null,

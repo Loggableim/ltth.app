@@ -4,11 +4,11 @@
  * Transkribiert Audio über einen wählbaren Provider:
  *  - 'fish.audio'  → via TTS-Plugin (transcribeFishAudio), Default
  *  - 'deepgram'    → direkter REST-Call (DeepgramAsrClient)
- *  - 'auto'        → Deepgram wenn key vorhanden, sonst Fish.audio
+ *  - 'auto'        → legacy alias for Fish.audio
  *
  * Sprache:
  *  - mode='fixed' → übergibt languageFixed an Provider
- *  - mode='auto'  → sendet KEIN language-param → Provider macht Auto-Detect
+ *  - mode='auto'  → provider-specific safe automatic/default language
  *  - Heuristische Nach-Klassifikation des Textes (lang-detect.js) für Overlay-Routing
  */
 
@@ -133,18 +133,22 @@ class AsrPipeline {
 
   /**
    * Liefert den aktiven Provider.
-   * Logik: asr.provider config > "auto" → falls deepgramKey vorhanden → deepgram,
-   *         sonst falls elevenlabsKey vorhanden → elevenlabs, sonst fish.audio
+   * Legacy "auto" remains a Fish.audio alias. Cloud providers require an
+   * explicit selection and their runtime prerequisites.
    */
   _resolveProvider() {
     const asr = this.config.asr || {};
-    const explicit = (asr.provider || 'auto').toLowerCase();
+    const explicit = (asr.provider || 'fish.audio').toLowerCase();
 
     if (explicit === 'deepgram') {
       const key = this._getDeepgramKey();
       if (!key) {
         this.logger.warn('STT Ticker: provider=deepgram requested but no key configured, falling back');
-        return this._resolveFallbackProvider();
+        return 'fish.audio';
+      }
+      if (!DeepgramAsrClient.getSdkStatus().available) {
+        this.logger.warn('STT Ticker: provider=deepgram requested but SDK is unavailable, falling back');
+        return 'fish.audio';
       }
       return 'deepgram';
     }
@@ -152,22 +156,14 @@ class AsrPipeline {
       const key = this._getElevenLabsKey();
       if (!key) {
         this.logger.warn('STT Ticker: provider=elevenlabs requested but no key configured, falling back');
-        return this._resolveFallbackProvider();
+        return 'fish.audio';
       }
       return 'elevenlabs';
     }
     if (explicit === 'fish.audio' || explicit === 'fish') {
       return 'fish.audio';
     }
-    // 'auto'
-    if (this._getDeepgramKey()) return 'deepgram';
-    if (this._getElevenLabsKey()) return 'elevenlabs';
-    return 'fish.audio';
-  }
-
-  _resolveFallbackProvider() {
-    if (this._getDeepgramKey()) return 'deepgram';
-    if (this._getElevenLabsKey()) return 'elevenlabs';
+    // Fish.audio, legacy "auto", and unknown values all use the safe default.
     return 'fish.audio';
   }
 
@@ -328,18 +324,14 @@ class AsrPipeline {
       maxAudioBytes: 25 * 1024 * 1024
     });
 
-    // Sprach-Auflösung für Deepgram:
-    // - 'multi' = Deepgram Nova-2 Multilingual Mode (DE, EN, ES, FR, IT, PT, RU)
-    //   Verhindert Halluzinationen in Chinesisch/Japanisch/Koreanisch/Thai
-    // - ISO-639-1 (de, en) = Sprache festschnüren, kein Auto-Detect
-    // - undefined = kein language → Client mappt auf 'multi' als Default
-    const model = asrCfg.deepgramModel || 'nova-2';
-    let dgLanguage = apiLanguage;
-    if (!dgLanguage || dgLanguage === 'auto') {
-      dgLanguage = 'multi'; // sicherer Default
-    }
-    // Wenn der User explizit 'de' oder 'en' setzt → behalten (single-language mode)
-
+    // Nova-3 auto mode uses `multi`. Legacy Nova-2 auto mode uses the
+    // configured default language because Nova-2 multi excludes German.
+    const model = asrCfg.deepgramModel || 'nova-3';
+    const dgLanguage = DeepgramAsrClient.resolveRequestLanguage(
+      model,
+      apiLanguage,
+      asrCfg.languageDefault
+    );
     const modelInfo = DeepgramAsrClient.MODELS[model];
     if (dgLanguage === 'multi' && modelInfo && !modelInfo.multilingual) {
       throw new Error(`Deepgram model "${model}" does not support multilingual mode; choose a fixed language or a multilingual model`);
@@ -353,6 +345,7 @@ class AsrPipeline {
       mimeType: options.mimeType,
       filename: options.filename,
       language: dgLanguage,
+      languageDefault: asrCfg.languageDefault,
       model
     });
   }
@@ -633,6 +626,7 @@ class AsrPipeline {
     const tts = this._getTtsPlugin();
     const credentials = this.getCredentialStatus();
     const asr = this.config.asr || {};
+    const deepgramSdk = DeepgramAsrClient.getSdkStatus();
     return {
       ttsAvailable: !!tts,
       ttsHasAsr: tts && typeof tts.transcribeFishAudio === 'function',
@@ -642,9 +636,11 @@ class AsrPipeline {
       elevenlabsKeySource: credentials.elevenlabs.source,
       fishaudioConfigured: credentials.fishaudio.configured,
       fishaudioKeySource: credentials.fishaudio.source,
+      deepgramSdkAvailable: deepgramSdk.available,
+      deepgramSdkReasonCode: deepgramSdk.reasonCode,
       provider: this._resolveProvider(),
-      providerConfig: (asr.provider || 'auto'),
-      deepgramModel: asr.deepgramModel || 'nova-2',
+      providerConfig: (asr.provider || 'fish.audio'),
+      deepgramModel: asr.deepgramModel || 'nova-3',
       elevenlabsModel: asr.elevenlabsModel || 'scribe_v2',
       diagnostics: {
         ...this.diagnostics,

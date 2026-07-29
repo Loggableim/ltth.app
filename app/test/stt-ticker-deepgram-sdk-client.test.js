@@ -60,6 +60,40 @@ function createSdkClient() {
 }
 
 describe('STT Ticker Deepgram SDK client', () => {
+  test('uses Nova-3 multilingual mode when no model or language is supplied', async () => {
+    const sdk = createSdkClient();
+    const client = new DeepgramAsrClient('test-key', null, {
+      clientFactory: () => sdk,
+      timeout: 10000
+    });
+
+    await client.transcribe(Buffer.from([1, 2, 3]));
+
+    expect(sdk.listen.v1.media.transcribeFile).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.objectContaining({ model: 'nova-3', language: 'multi' })
+    );
+  });
+
+  test('uses the configured default language for Nova-2 auto mode', async () => {
+    const sdk = createSdkClient();
+    const client = new DeepgramAsrClient('test-key', null, {
+      clientFactory: () => sdk,
+      timeout: 10000
+    });
+
+    await client.transcribe(Buffer.from([1, 2, 3]), {
+      model: 'nova-2',
+      language: 'auto',
+      languageDefault: 'de'
+    });
+
+    expect(sdk.listen.v1.media.transcribeFile).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.objectContaining({ model: 'nova-2', language: 'de' })
+    );
+  });
+
   test('uses SDK file transcription with only supported options', async () => {
     const sdk = createSdkClient();
     const client = new DeepgramAsrClient('test-key', null, {
@@ -106,7 +140,7 @@ describe('STT Ticker Deepgram SDK client', () => {
     const result = await client.testConnection();
 
     expect(sdk.listen.v1.connect).toHaveBeenCalledWith(expect.objectContaining({
-      model: 'nova-2',
+      model: 'nova-3',
       encoding: 'linear16',
       sample_rate: 16000,
       Authorization: 'Token test-key'

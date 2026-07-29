@@ -1302,11 +1302,10 @@
         <div class="grid-2">
           <div>
             <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.asr_provider">ASR-Provider</label>
-            <select id="asr-provider">
-              <option value="auto" data-i18n="plugins.stt-ticker.labels.auto_deepgram_elevenlabs_wenn_key_da_sonst_fish">Auto - Deepgram/ElevenLabs wenn Key da, sonst Fish.audio</option>
+            <select id="asr-provider" data-deepgram-default="nova-3">
+              <option value="fish.audio" selected data-i18n="plugins.stt-ticker.labels.fish_audio_1_50_h">Fish.audio (~$1.50/h) - Standard</option>
               <option value="deepgram" data-i18n="plugins.stt-ticker.labels.deepgram_0_26_h">Deepgram (~$0.26/h)</option>
               <option value="elevenlabs" data-i18n="plugins.stt-ticker.labels.elevenlabs_speech_to_text">ElevenLabs (Speech-to-Text)</option>
-              <option value="fish.audio" data-i18n="plugins.stt-ticker.labels.fish_audio_1_50_h">Fish.audio (~$1.50/h)</option>
             </select>
           </div>
           <div>
@@ -1555,8 +1554,8 @@
             providerHintEl.style.color = '#4CAF50';
             providerHintEl.textContent = translateUi(
               'plugins.stt-ticker.stt_ticker.ui.messages.deepgram_active',
-              `Deepgram active — model: ${asr.deepgramModel || 'nova-2'}`,
-              { model: asr.deepgramModel || 'nova-2' }
+              `Deepgram active — model: ${asr.deepgramModel || 'nova-3'}`,
+              { model: asr.deepgramModel || 'nova-3' }
             );
           }
         } else if (asr.provider === 'elevenlabs') {
@@ -1714,7 +1713,11 @@
       populateLanguageSelect('asr-languageFixed', asr.languageFixed || 'de');
 
       const providerEl = document.getElementById('asr-provider');
-      if (providerEl) providerEl.value = asr.provider || 'auto';
+      if (providerEl) {
+        providerEl.value = asr.provider === 'auto' ? 'fish.audio' : (asr.provider || 'fish.audio');
+        providerEl.dataset.deepgramModel = asr.deepgramModel || providerEl.dataset.deepgramDefault;
+        providerEl.dataset.elevenlabsModel = asr.elevenlabsModel || 'scribe_v2';
+      }
 
       // STT-Modell-Dropdown bef\u00fcllen (wird von loadAsrModels() gemacht)
       // Gespeichertes Modell aus Config setzen
@@ -1783,12 +1786,10 @@
       const select = document.getElementById('asr-model-select');
       select.innerHTML = '';
       let models = [];
-      // Bei 'auto': effektiven Provider aus den Keys ableiten
+      // Legacy 'auto' remains a Fish.audio alias.
       let effectiveProvider = provider;
       if (effectiveProvider === 'auto') {
-        if (window._dgModels && window._dgModels.length > 0) effectiveProvider = 'deepgram';
-        else if (window._elModels && window._elModels.length > 0) effectiveProvider = 'elevenlabs';
-        else effectiveProvider = 'fish.audio';
+        effectiveProvider = 'fish.audio';
       }
       if (effectiveProvider === 'deepgram') models = window._dgModels || [];
       else if (effectiveProvider === 'elevenlabs') models = window._elModels || [];
@@ -1799,6 +1800,10 @@
           opt.textContent = m.name;
           select.appendChild(opt);
         }
+        const preferredModel = effectiveProvider === 'deepgram'
+          ? document.getElementById('asr-provider').dataset.deepgramModel
+          : document.getElementById('asr-provider').dataset.elevenlabsModel;
+        if (models.some(model => model.id === preferredModel)) select.value = preferredModel;
         updateDeepgramLanguageHint(effectiveProvider, models.find(model => model.id === select.value) || models[0]);
       } else {
         setSelectFallback(
@@ -1945,7 +1950,7 @@
 
     async function saveAsrConfig() {
       const asr = {
-        provider: document.getElementById('asr-provider')?.value || 'auto',
+        provider: document.getElementById('asr-provider')?.value || 'fish.audio',
         languageMode: document.getElementById('language-mode-auto')?.checked ? 'auto' : 'fixed',
         languageDefault: document.getElementById('asr-languageDefault').value,
         languageFixed: document.getElementById('asr-languageFixed').value,
@@ -1957,7 +1962,7 @@
       if (asr.provider === 'elevenlabs') {
         asr.elevenlabsModel = selectedModel || 'scribe_v2';
       } else {
-        asr.deepgramModel = selectedModel || 'nova-2';
+        asr.deepgramModel = selectedModel || 'nova-3';
       }
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField) {
@@ -2245,8 +2250,12 @@
         // Provider-Wechsel = STT-Modell-Dropdown aktualisieren
         document.getElementById('asr-provider').addEventListener('change', updateAsrModelDropdown);
         document.getElementById('asr-model-select').addEventListener('change', () => {
-          const model = (window._dgModels || []).find(item => item.id === document.getElementById('asr-model-select').value);
-          updateDeepgramLanguageHint(document.getElementById('asr-provider').value, model);
+          const provider = document.getElementById('asr-provider');
+          const selectedModel = document.getElementById('asr-model-select').value;
+          if (provider.value === 'deepgram') provider.dataset.deepgramModel = selectedModel;
+          if (provider.value === 'elevenlabs') provider.dataset.elevenlabsModel = selectedModel;
+          const model = (window._dgModels || []).find(item => item.id === selectedModel);
+          updateDeepgramLanguageHint(provider.value, model);
         });
       } catch (e) {
         console.error('Init failed:', e);
@@ -2259,6 +2268,3 @@
   </div>
 </body>
 </html>
-
-
-

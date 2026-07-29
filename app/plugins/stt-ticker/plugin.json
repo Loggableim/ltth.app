@@ -20,7 +20,7 @@
   "config": {
     "enabled": true,
     "asr": {
-      "provider": "auto",
+      "provider": "fish.audio",
       "languageMode": "auto",
       "languageDefault": "de",
       "languageFixed": "de",
@@ -30,7 +30,7 @@
         "en"
       ],
       "deepgramApiKey": "",
-      "deepgramModel": "nova-2"
+      "deepgramModel": "nova-3"
     },
     "vad": {
       "enabled": true,

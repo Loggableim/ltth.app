@@ -1,5 +1,5 @@
-const { DeepgramClient } = require('@deepgram/sdk');
 const DeepgramAsrClient = require('./deepgram-client');
+const { createDeepgramClient } = require('./deepgram-sdk');
 
 const MAX_FRAME_BYTES = 256 * 1024;
 const KEEPALIVE_INTERVAL_MS = 5000;
@@ -15,7 +15,7 @@ class DeepgramLiveSessionManager {
     this.onInterim = options.onInterim || (() => {});
     this.onFinal = options.onFinal || (() => {});
     this.onStatus = options.onStatus || (() => {});
-    this.clientFactory = options.clientFactory || ((apiKey) => new DeepgramClient({ apiKey }));
+    this.clientFactory = options.clientFactory || createDeepgramClient;
     this.sessions = new Map();
     this.generation = 0;
   }
@@ -214,11 +214,16 @@ class DeepgramLiveSessionManager {
   _buildConnectOptions(input, apiKey) {
     const config = this.getConfig() || {};
     const asr = config.asr || {};
-    const fixedLanguage = asr.languageMode === 'fixed' ? asr.languageFixed : null;
+    const requestedLanguage = asr.languageMode === 'fixed' ? asr.languageFixed : 'auto';
+    const model = asr.deepgramModel || 'nova-3';
 
     return {
-      model: asr.deepgramModel || 'nova-2',
-      language: fixedLanguage || 'multi',
+      model,
+      language: DeepgramAsrClient.resolveRequestLanguage(
+        model,
+        requestedLanguage,
+        asr.languageDefault
+      ),
       encoding: 'linear16',
       sample_rate: input.sampleRate,
       channels: 1,
@@ -236,10 +241,14 @@ class DeepgramLiveSessionManager {
 
   _validateModelLanguage() {
     const asr = this.getConfig()?.asr || {};
-    const model = asr.deepgramModel || 'nova-2';
+    const model = asr.deepgramModel || 'nova-3';
     const modelInfo = DeepgramAsrClient.MODELS[model];
     if (!modelInfo) return;
-    const language = asr.languageMode === 'fixed' ? asr.languageFixed : 'multi';
+    const language = DeepgramAsrClient.resolveRequestLanguage(
+      model,
+      asr.languageMode === 'fixed' ? asr.languageFixed : 'auto',
+      asr.languageDefault
+    );
     if (language === 'multi' && !modelInfo.multilingual) {
       throw new Error(`Deepgram model "${model}" does not support multilingual mode; choose a fixed language or a multilingual model`);
     }
@@ -391,7 +400,7 @@ class DeepgramLiveSessionManager {
       language: language ? String(language).toLowerCase().slice(0, 2) : null,
       confidence: confidences.length ? confidences.reduce((sum, value) => sum + value, 0) / confidences.length : null,
       provider: 'deepgram',
-      model: this.getConfig()?.asr?.deepgramModel || 'nova-2',
+      model: this.getConfig()?.asr?.deepgramModel || 'nova-3',
       requestId: session.requestId
     });
     return true;

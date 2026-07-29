@@ -39,14 +39,14 @@ const DEFAULT_CONFIG = {
 
   // ASR settings — Sprache & Provider
   asr: {
-    provider: 'auto',           // 'auto' | 'fish.audio' | 'deepgram' (auto = Deepgram wenn Key da, sonst Fish)
+    provider: 'fish.audio',     // Fish.audio default; legacy 'auto' is migrated
     languageMode: 'auto',       // 'auto' = Auto-Erkennung, 'fixed' = feste Sprache
     languageDefault: 'de',      // Default-Sprache für Auto-Modus (UI-Auswahl)
     languageFixed: 'de',        // Feste Sprache für Fix-Modus
     fallbackLanguage: 'en',     // Fallback wenn Heuristik nichts findet
     languageWhitelist: SUPPORTED_SOURCE_LANGUAGES,  // alle UI-Quellsprachen erlauben
     deepgramApiKey: '',         // Deepgram API-Key (NIE im Git, persistent in Plugin-Config)
-    deepgramModel: 'nova-2',     // 'nova-2' | 'whisper-large' | 'whisper-medium'
+    deepgramModel: 'nova-3',     // explicit Deepgram default
     elevenlabsApiKey: '',        // ElevenLabs API-Key für ASR
     elevenlabsModel: 'scribe_v2',  // ElevenLabs ASR Modell (Scribe Realtime v2)
     fishaudioApiKey: ''          // Fish.audio API-Key (für ASR, Fallback zum TTS-Plugin)
@@ -194,7 +194,8 @@ class ConfigManager {
         const translationMigrated = this._migrateLegacyTranslationModel();
         const overlayMigrated = this._migrateLegacyOverlayDesign();
         const languagePolicyMigrated = this._migrateLegacyLanguageWhitelist();
-        if (translationMigrated || overlayMigrated || languagePolicyMigrated) {
+        const providerMigrated = this._migrateLegacyAsrProvider();
+        if (translationMigrated || overlayMigrated || languagePolicyMigrated || providerMigrated) {
           this.save();
         }
       } else {
@@ -287,6 +288,13 @@ class ConfigManager {
     if (!isHistoricalDefault) return false;
 
     this.config.asr.languageWhitelist = [...SUPPORTED_SOURCE_LANGUAGES];
+    return true;
+  }
+
+  _migrateLegacyAsrProvider() {
+    if (String(this.config?.asr?.provider || '').toLowerCase() !== 'auto') return false;
+
+    this.config.asr.provider = 'fish.audio';
     return true;
   }
 }

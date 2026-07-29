@@ -5,7 +5,11 @@
  * path is managed separately per connected capture socket.
  */
 
-const { DeepgramClient, DeepgramError } = require('@deepgram/sdk');
+const {
+  createDeepgramClient,
+  getDeepgramSdkStatus,
+  isDeepgramError
+} = require('./deepgram-sdk');
 
 class DeepgramAsrClient {
   static SERVICE_MAX_AUDIO_BYTES = 2 * 1024 * 1024 * 1024;
@@ -25,6 +29,7 @@ class DeepgramAsrClient {
     'nova-2': {
       name: 'Nova-2',
       multilingual: true,
+      automaticMultilingual: false,
       multilingualLanguages: ['en', 'es'],
       supportedFixedLanguages: [
         'de', 'en', 'es', 'fr', 'it', 'pt', 'nl', 'pl', 'ru', 'ja', 'ko', 'zh',
@@ -34,18 +39,21 @@ class DeepgramAsrClient {
     'nova-3': {
       name: 'Nova-3',
       multilingual: true,
+      automaticMultilingual: true,
       multilingualLanguages: ['en', 'es', 'fr', 'de', 'ru', 'pt', 'ja', 'it', 'nl', 'hi'],
       supportedFixedLanguages: ['en', 'es', 'fr', 'de', 'ru', 'pt', 'ja', 'it', 'nl']
     },
     'whisper-large': {
       name: 'Whisper Large (Deepgram-hosted)',
       multilingual: false,
+      automaticMultilingual: false,
       multilingualLanguages: [],
       supportedFixedLanguages: []
     },
     'whisper-medium': {
       name: 'Whisper Medium (Deepgram-hosted)',
       multilingual: false,
+      automaticMultilingual: false,
       multilingualLanguages: [],
       supportedFixedLanguages: []
     }
@@ -59,7 +67,7 @@ class DeepgramAsrClient {
     this.logger = logger || {
       info: () => {}, warn: () => {}, error: () => {}, debug: () => {}
     };
-    this.clientFactory = config.clientFactory || ((key) => new DeepgramClient({ apiKey: key }));
+    this.clientFactory = config.clientFactory || createDeepgramClient;
     this.timeout = this._resolveTimeout(config.timeout, 30000);
     this.maxAudioBytes = this._resolveMaxAudioBytes(config.maxAudioBytes);
   }
@@ -67,10 +75,12 @@ class DeepgramAsrClient {
   async transcribe(audioBuffer, options = {}) {
     this._validateAudio(audioBuffer);
 
-    const model = options.model || 'nova-2';
-    const language = !options.language || options.language === 'auto'
-      ? 'multi'
-      : options.language;
+    const model = options.model || 'nova-3';
+    const language = DeepgramAsrClient.resolveRequestLanguage(
+      model,
+      options.language,
+      options.languageDefault
+    );
     const requestOptions = {
       model,
       language,
@@ -104,7 +114,7 @@ class DeepgramAsrClient {
     }
   }
 
-  _parseResponse(data, model = 'nova-2') {
+  _parseResponse(data, model = 'nova-3') {
     if (!data || typeof data !== 'object') {
       throw new Error('Deepgram ASR malformed response: empty');
     }
@@ -193,7 +203,7 @@ class DeepgramAsrClient {
       ? this._extractErrorMessage(body)
       : (error?.message || 'Unknown error');
 
-    if (status || error instanceof DeepgramError) {
+    if (status || isDeepgramError(error)) {
       const normalized = new Error(`Deepgram ASR API error (${status || 'unknown'}): ${message}`);
       normalized.deepgramStatus = status ? Number(status) : null;
       normalized.deepgramApiError = true;
@@ -248,7 +258,7 @@ class DeepgramAsrClient {
     try {
       const client = this.clientFactory(this.apiKey);
       connection = await client.listen.v1.connect({
-        model: 'nova-2',
+        model: 'nova-3',
         language: 'de',
         encoding: 'linear16',
         sample_rate: 16000,
@@ -272,6 +282,20 @@ class DeepgramAsrClient {
     } finally {
       try { connection?.close(); } catch (error) { /* best effort */ }
     }
+  }
+
+  static getSdkStatus() {
+    return getDeepgramSdkStatus();
+  }
+
+  static resolveRequestLanguage(model = 'nova-3', language, languageDefault = 'de') {
+    const requested = String(language || '').toLowerCase();
+    const fallback = String(languageDefault || 'de').toLowerCase();
+    const modelInfo = DeepgramAsrClient.MODELS[model];
+
+    if (requested && requested !== 'auto' && requested !== 'multi') return requested;
+    if (modelInfo?.automaticMultilingual) return 'multi';
+    return fallback;
   }
 }
 

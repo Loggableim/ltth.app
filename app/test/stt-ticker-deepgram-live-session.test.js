@@ -51,7 +51,7 @@ function createHarness(overrides = {}) {
     onStatus: overrides.onStatus || jest.fn()
   };
   const manager = new DeepgramLiveSessionManager({
-    getConfig: () => ({
+    getConfig: () => overrides.config || ({
       asr: { deepgramModel: 'nova-2', languageMode: 'fixed', languageFixed: 'de' },
       silenceTimeoutMs: 900,
       vad: { sustainedSilenceMs: 1500 }
@@ -65,6 +65,31 @@ function createHarness(overrides = {}) {
 }
 
 describe('STT Ticker Deepgram live session manager', () => {
+  test.each([
+    ['nova-3', 'multi'],
+    ['nova-2', 'de']
+  ])('uses %s with %s in auto-language mode', async (model, expectedLanguage) => {
+    const connection = createConnection();
+    const { manager, connect, socket } = createHarness({
+      connections: [connection],
+      config: {
+        asr: {
+          deepgramModel: model,
+          languageMode: 'auto',
+          languageDefault: 'de'
+        }
+      }
+    });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+
+    expect(connect).toHaveBeenCalledWith(expect.objectContaining({
+      model,
+      language: expectedLanguage
+    }));
+    await manager.destroy();
+  });
+
   test('isolates audio by socket and configures a Linear16 live stream', async () => {
     const connection = createConnection();
     const { manager, connect, socket } = createHarness({ connections: [connection] });
