@@ -1633,7 +1633,9 @@
       eggFocusPosition:text('eggFocusPosition', '{position} / {total}'),
       eggFocusReady:text('eggFocusReady', 'Bereit · {command}'),
       eggFocusIncubating:text('eggFocusIncubating', 'Schlüpft in {time}'),
-      eggFocusPublic:text('eggFocusPublic', 'Gratis-Ei · {command}')
+      eggFocusPublic:text('eggFocusPublic', 'Gratis-Ei · {time} · {command}'),
+      eggFocusReserved:text('eggFocusReserved', 'Reserviert · {time} · {command}'),
+      eggFocusOpenOwner:text('eggFocusOpenOwner', 'Für alle offen')
     }),
     getHatchReference:() => commandReference('hatch'),
     getAdoptReference:() => commandReference('adopt')

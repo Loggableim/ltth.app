@@ -23,6 +23,12 @@
       egg.adoptable === true;
   }
 
+  function isReservedFreeEgg(egg = {}) {
+    return egg.provenance === 'free' &&
+      egg.state === 'reserved' &&
+      egg.adoptionStatus === 'reserved';
+  }
+
   function isClaimedFreeInventoryEgg(egg = {}) {
     return egg.provenance === 'free' &&
       egg.ownershipState === 'owned';
@@ -439,10 +445,13 @@
     reducedMotion = false
   } = {}) {
     const eggs = orderedStageEggs(eggStage, reducedMotion);
-    const publicEggs = eggs.filter(isPublicFreeEgg);
+    const freeOfferEggs = eggs.filter(egg => (
+      isPublicFreeEgg(egg) || isReservedFreeEgg(egg)
+    ));
     const activeEggs = eggs
       .filter(egg => (
         !isPublicFreeEgg(egg) &&
+        !isReservedFreeEgg(egg) &&
         ['ready', 'incubating', 'queued', 'reserved'].includes(egg.state)
       ))
       .sort((left, right) => (
@@ -454,12 +463,12 @@
     const alternateIndex = Math.floor(turn / 2);
     let focus = null;
 
-    if (publicEggs.length && turn % 2 === 0) {
-      focus = publicEggs[alternateIndex % publicEggs.length];
+    if (freeOfferEggs.length && turn % 2 === 0) {
+      focus = freeOfferEggs[alternateIndex % freeOfferEggs.length];
     } else if (activeEggs.length) {
       focus = activeEggs[alternateIndex % activeEggs.length];
-    } else if (publicEggs.length) {
-      focus = publicEggs[turn % publicEggs.length];
+    } else if (freeOfferEggs.length) {
+      focus = freeOfferEggs[turn % freeOfferEggs.length];
     } else if (eggs.length) {
       focus = eggs[turn % eggs.length];
     }
@@ -537,8 +546,10 @@
     const landingTimers = new Map();
     const eggsById = new Map();
     const pendingLandingIds = new Set();
-    let rotationIndex = 0;
-    let rotationTimer = null;
+    let overflowRotationIndex = 0;
+    let focusRotationIndex = 0;
+    let overflowRotationTimer = null;
+    let focusRotationTimer = null;
     let countdownTimer = null;
 
     function currentLabels() {
@@ -548,7 +559,8 @@
 
     function safeImageUrl(value) {
       const url = boundedText(value, 512);
-      return /^\/plugins\/streamalchemy\/assets\/[a-z0-9./_-]+$/i.test(url)
+      return /^\/plugins\/streamalchemy\/assets\/[a-z0-9./_-]+$/i.test(url) &&
+        !url.split('/').includes('..')
         ? url
         : '';
     }
@@ -720,7 +732,11 @@
       const labels = currentLabels();
       const timing = egg.timing || {};
       if (isPublicFreeEgg(egg)) {
-        return replaceTokens(labels.eggFocusPublic || labels.public || 'Free egg · {command}', {
+        return replaceTokens(labels.eggFocusPublic || labels.public || 'Free egg · {time} · {command}', {
+          time: formatCountdown(Math.max(
+            0,
+            Number(timing.expiresAtMs ?? timing.expiryAtMs) - Number(now())
+          )),
           command: getAdoptReference()
         });
       }
@@ -735,8 +751,9 @@
         });
       }
       if (egg.state === 'reserved') {
-        return replaceTokens(labels.eggFocusReserved || labels.reserved || 'Reserved · {time}', {
-          time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(now())))
+        return replaceTokens(labels.eggFocusReserved || labels.reserved || 'Reserved · {time} · {command}', {
+          time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(now()))),
+          command: getAdoptReference()
         });
       }
       return replaceTokens(
@@ -816,7 +833,7 @@
       );
       const model = buildShelfModel([...eggsById.values()], {
         maxVisible: visibleCapacity(viewportWidth),
-        rotationIndex,
+        rotationIndex:overflowRotationIndex,
         reducedMotion
       });
       if (slots) {
@@ -838,7 +855,7 @@
       updateOverflow(model);
       updateAdoptSummary(model);
       updateFocusCard(buildPortraitFocusModel([...eggsById.values()], {
-        rotationIndex,
+        rotationIndex:focusRotationIndex,
         reducedMotion
       }));
       root.dataset.total = String(model.total);
@@ -900,12 +917,18 @@
     }
 
     function rotateOverflow() {
-      rotationIndex += 1;
+      overflowRotationIndex += 1;
+      return render();
+    }
+
+    function rotateFocus() {
+      focusRotationIndex += 1;
       return render();
     }
 
     if (typeof options.setInterval === 'function') {
-      rotationTimer = options.setInterval(rotateOverflow, 5_000);
+      overflowRotationTimer = options.setInterval(rotateOverflow, 3_000);
+      focusRotationTimer = options.setInterval(rotateFocus, 5_000);
       countdownTimer = options.setInterval(render, COUNTDOWN_INTERVAL_MS);
     }
 
@@ -913,18 +936,23 @@
       applyEvent,
       applySnapshot,
       model: () => buildShelfModel([...eggsById.values()], {
-        rotationIndex,
+        rotationIndex:overflowRotationIndex,
         reducedMotion
       }),
       render,
+      rotateFocus,
       rotateOverflow,
       destroy() {
         for (const handle of landingTimers.values()) cancel(handle);
         landingTimers.clear();
-        if (rotationTimer != null && typeof options.clearInterval === 'function') {
-          options.clearInterval(rotationTimer);
+        if (overflowRotationTimer != null && typeof options.clearInterval === 'function') {
+          options.clearInterval(overflowRotationTimer);
         }
-        rotationTimer = null;
+        overflowRotationTimer = null;
+        if (focusRotationTimer != null && typeof options.clearInterval === 'function') {
+          options.clearInterval(focusRotationTimer);
+        }
+        focusRotationTimer = null;
         if (countdownTimer != null && typeof options.clearInterval === 'function') {
           options.clearInterval(countdownTimer);
         }
@@ -948,6 +976,7 @@
     formatCountdown,
     isClaimedFreeInventoryEgg,
     isPublicFreeEgg,
+    isReservedFreeEgg,
     shelfTiming,
     visibleCapacity
   };

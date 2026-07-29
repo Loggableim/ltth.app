@@ -53,6 +53,23 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
       }));
   });
 
+  test('alternates a reserved free egg with active owned eggs on every second turn', () => {
+    const stage = [
+      egg('ready', { state: 'ready' }),
+      egg('reserved-free', {
+        provenance: 'free',
+        ownershipState: 'unowned',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        timing: { publicAtMs: 61_000, landedAtMs: 1_000 }
+      })
+    ];
+
+    expect([0, 1, 2, 3].map(rotationIndex => (
+      EggStageView.buildPortraitFocusModel(stage, { rotationIndex }).focus.visualId
+    ))).toEqual(['reserved-free', 'ready', 'reserved-free', 'ready']);
+  });
+
   test('omits claimed and expired eggs while keeping the landscape multi-egg shelf', () => {
     const stage = [
       egg('ready', { state: 'ready' }),
@@ -119,6 +136,52 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
     view.destroy();
   });
 
+  test('renders localized free and reserved state lines with timer and adopt command', () => {
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><article data-egg-focus hidden></article></section>
+    `);
+    const view = EggStageView.createEggStageView({
+      document: dom.window.document,
+      now: () => 1_000,
+      labels: {
+        eggFocusOwner: 'Besitzer: {owner}',
+        eggFocusOpenOwner: 'Für alle offen',
+        eggFocusPosition: '{position} / {total}',
+        eggFocusPublic: 'Gratis-Ei · {time} · {command}',
+        eggFocusReserved: 'Reserviert · {time} · {command}'
+      },
+      getAdoptReference: () => '!adoptieren'
+    });
+    const focus = dom.window.document.querySelector('[data-egg-focus]');
+
+    view.applySnapshot([egg('public', {
+      provenance: 'free',
+      ownershipState: 'unowned',
+      state: 'public',
+      adoptionStatus: 'public',
+      adoptable: true,
+      timing: { expiresAtMs: 61_000, landedAtMs: 1_000 }
+    })]);
+    expect(focus.querySelector('[data-egg-focus-owner]').textContent)
+      .toBe('Besitzer: Für alle offen');
+    expect(focus.querySelector('[data-egg-focus-state]').textContent)
+      .toBe('Gratis-Ei · 01:00 · !adoptieren');
+
+    view.applySnapshot([egg('reserved', {
+      displayName: '@Mira',
+      provenance: 'free',
+      ownershipState: 'unowned',
+      state: 'reserved',
+      adoptionStatus: 'reserved',
+      timing: { publicAtMs: 61_000, landedAtMs: 1_000 }
+    })]);
+    expect(focus.querySelector('[data-egg-focus-owner]').textContent)
+      .toBe('Besitzer: @Mira');
+    expect(focus.querySelector('[data-egg-focus-state]').textContent)
+      .toBe('Reserviert · 01:00 · !adoptieren');
+    view.destroy();
+  });
+
   test('replaces a focus fallback with its sanitized egg art', () => {
     const dom = new JSDOM(`
       <section id="egg-shelf"><article data-egg-focus hidden></article></section>
@@ -137,6 +200,25 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
     expect(art.querySelector('img')?.getAttribute('src'))
       .toBe('/plugins/streamalchemy/assets/eggs/lunar.png');
     expect(art.textContent).toBe('');
+    view.destroy();
+  });
+
+  test.each([
+    'https://example.test/egg.png',
+    '//example.test/egg.png',
+    'data:image/png;base64,AAAA',
+    '/plugins/streamalchemy/assets/../../private.png'
+  ])('keeps an unsafe focus image URL on the emoji fallback: %s', imageUrl => {
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><article data-egg-focus hidden></article></section>
+    `);
+    const view = EggStageView.createEggStageView({ document: dom.window.document });
+    view.applySnapshot([egg('unsafe', { state: 'ready', imageUrl })]);
+
+    const art = dom.window.document.querySelector('[data-egg-focus-art]');
+    expect(art.dataset.fallback).toBe('true');
+    expect(art.querySelector('img')).toBeNull();
+    expect(art.textContent).toBe('🥚');
     view.destroy();
   });
 });

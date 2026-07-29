@@ -128,6 +128,38 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     dom.window.close();
   });
 
+  test('keeps 3-second landscape overflow and 5-second portrait focus rotations independent', () => {
+    const { dom, view, intervals } = shelfFixture();
+    view.applySnapshot([
+      egg('ready', { state: 'ready' }),
+      egg('public', {
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { expiresAtMs: 70_000, landedAtMs: 1_000 }
+      }),
+      ...Array.from({ length: 8 }, (_, index) => egg(`extra-${index}`))
+    ]);
+    const focus = dom.window.document.querySelector('[data-egg-focus]');
+    const beforeFocusId = focus.dataset.eggId;
+    const beforeOverflowId = dom.window.document.querySelector(
+      '[data-egg-overflow]'
+    ).dataset.previewEggId;
+
+    expect(intervals.has(3_000)).toBe(true);
+    expect(intervals.has(5_000)).toBe(true);
+    intervals.get(3_000)();
+    expect(focus.dataset.eggId).toBe(beforeFocusId);
+    expect(dom.window.document.querySelector('[data-egg-overflow]').dataset.previewEggId)
+      .not.toBe(beforeOverflowId);
+
+    intervals.get(5_000)();
+    expect(focus.dataset.eggId).toBe('ready');
+    view.destroy();
+    dom.window.close();
+  });
+
   test('renders one adopt summary instead of one wide command pill per egg', () => {
     const { dom, view } = shelfFixture();
     view.applySnapshot(Array.from({ length: 5 }, (_, index) => egg(
@@ -316,6 +348,20 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     dom.window.close();
   });
 
+  test.each([
+    [477, 829, 157.51],
+    [1080, 1920, 246]
+  ])('keeps the focus card above chat at %ix%i', (width, height, shelfHeight) => {
+    const chatBoundary = height * 0.74;
+    const shelfTop = chatBoundary - shelfHeight;
+    const cardMinimum = Math.min(182, Math.max(116, height * 0.15));
+
+    expect(width).toBeGreaterThanOrEqual(477);
+    expect(shelfTop).toBeGreaterThanOrEqual(0);
+    expect(shelfTop + shelfHeight).toBeCloseTo(chatBoundary, 5);
+    expect(cardMinimum).toBeLessThanOrEqual(shelfHeight);
+  });
+
   test.each(['de', 'en', 'es', 'fr'])(
     'ships compact egg guidance in app/locales/%s.json',
     locale => {
@@ -445,7 +491,9 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
         'eggFocusPosition',
         'eggFocusReady',
         'eggFocusIncubating',
-        'eggFocusPublic'
+        'eggFocusPublic',
+        'eggFocusReserved',
+        'eggFocusOpenOwner'
       ];
 
       for (const key of keys) {
