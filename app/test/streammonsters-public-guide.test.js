@@ -11,6 +11,7 @@ describe('Stream Monsters public guide', () => {
   test('publishes a dedicated, localized overview at /streammonsters', () => {
     const page = read('streammonsters/index.html');
     const guide = read('js/streammonsters-guide.js');
+    const catalog = read('js/streammonsters-catalog.generated.js');
     const pagesBuilder = read('scripts/build_pages_bundle.py');
     const sitemap = read('sitemap.xml');
 
@@ -20,16 +21,22 @@ describe('Stream Monsters public guide', () => {
     expect(page).toContain('id="monster-dex"');
     expect(page).toContain('id="command-reference"');
     expect(page).toContain('id="rules"');
-    expect(guide).toContain('Ashfang');
-    expect(guide).toContain('Tsuki');
-    expect(guide).toContain("'Ember'");
-    expect(guide).toContain("'Lunar'");
+    expect(page.indexOf('/js/streammonsters-catalog.generated.js'))
+      .toBeLessThan(page.indexOf('/js/streammonsters-guide.js'));
+    expect(page).toContain(
+      '/js/streammonsters-catalog.generated.js?v=20260729'
+    );
+    expect(guide).toContain('STREAM_MONSTERS_PUBLIC_CATALOG');
+    expect(catalog).toContain('"name": "Ashfang"');
+    expect(catalog).toContain('"name": "Tsuki"');
+    expect(catalog).toContain('"element": "Ember"');
+    expect(catalog).toContain('"element": "Lunar"');
     expect(guide).toContain("de:");
     expect(guide).toContain("en:");
     expect(guide).toContain("es:");
     expect(guide).toContain("fr:");
-    expect(guide).toContain('/assets/streammonsters/furry/');
-    expect(guide).toContain('${id}.webp');
+    expect(catalog).toContain('/assets/streammonsters/furry/');
+    expect(catalog).toContain('ashfang-stage3.webp');
     expect(page).toContain('/assets/streammonsters/furry/neonclaw.webp');
     expect(page).not.toContain('/assets/streammonsters/furry/neonclaw.png');
     expect(pagesBuilder).toContain('"streammonsters"');
