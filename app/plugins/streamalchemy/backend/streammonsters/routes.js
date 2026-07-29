@@ -19,6 +19,7 @@ const {
   evolutionStatGrant,
   applyEvolutionGrant
 } = require('./evolution-rules');
+const { readWebpMetadata } = require('./asset-registry');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -1521,10 +1522,13 @@ class StreamMonstersRoutes {
     } catch (_) {
       parsed = null;
     }
+    const isLegacyPngManifest = parsed?.schemaVersion === 2 &&
+      parsed?.assetVersion === 'furry-1.5.0';
+    const isWebpManifest = parsed?.schemaVersion === 3 &&
+      parsed?.assetVersion === FURRY_ASSET_VERSION;
     if (
-      parsed?.schemaVersion !== 2 ||
+      (!isLegacyPngManifest && !isWebpManifest) ||
       parsed?.productionMode !== 'bundled-only' ||
-      parsed?.assetVersion !== FURRY_ASSET_VERSION ||
       !Array.isArray(parsed.assets)
     ) {
       return { byTemplate, available: 0, assetVersion: null };
@@ -1546,7 +1550,10 @@ class StreamMonstersRoutes {
       if (
         !getTemplate(templateId) ||
         ![1, 2, 3].includes(stage) ||
-        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath) ||
+        !(isLegacyPngManifest
+          ? /^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath)
+          : /^assets\/streammonsters\/furry\/[a-z0-9/-]+\.webp$/.test(relativePath) &&
+            asset?.mediaType === 'image/webp') ||
         dimensions[0] !== 1024 ||
         dimensions[1] !== 1024 ||
         !/^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))
@@ -1611,18 +1618,18 @@ class StreamMonstersRoutes {
       } catch (_) {
         return;
       }
-      if (
-        fileBuffer.length < 24 ||
-        !fileBuffer.subarray(0, 8).equals(
+      const webp = isWebpManifest ? readWebpMetadata(fileBuffer) : null;
+      const validImage = isLegacyPngManifest
+        ? fileBuffer.length >= 24 && fileBuffer.subarray(0, 8).equals(
           Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
-        ) ||
-        fileBuffer.readUInt32BE(8) !== 13 ||
-        fileBuffer.subarray(12, 16).toString('ascii') !== 'IHDR' ||
-        fileBuffer.readUInt32BE(16) !== dimensions[0] ||
-        fileBuffer.readUInt32BE(20) !== dimensions[1] ||
-        crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
-          String(asset.sha256).toLocaleLowerCase()
-      ) {
+        ) && fileBuffer.readUInt32BE(8) === 13 &&
+          fileBuffer.subarray(12, 16).toString('ascii') === 'IHDR' &&
+          fileBuffer.readUInt32BE(16) === dimensions[0] &&
+          fileBuffer.readUInt32BE(20) === dimensions[1]
+        : webp?.width === dimensions[0] && webp?.height === dimensions[1] &&
+          webp?.hasAlpha;
+      if (!validImage || crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
+        String(asset.sha256).toLocaleLowerCase()) {
         return;
       }
       if (!byTemplate.has(templateId)) byTemplate.set(templateId, []);
@@ -1633,6 +1640,7 @@ class StreamMonstersRoutes {
         element: asset.element,
         species: asset.species,
         assetPath: `/plugins/streamalchemy/${relativePath}`,
+        mediaType: isWebpManifest ? 'image/webp' : 'image/png',
         dimensions,
         sha256: String(asset.sha256).toLocaleLowerCase(),
         trimRect: asset.trimRect || null,

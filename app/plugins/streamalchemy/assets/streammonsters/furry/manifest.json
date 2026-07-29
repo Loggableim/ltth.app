@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "assetVersion": "furry-1.5.0",
+  "schemaVersion": 3,
+  "assetVersion": "furry-1.12.0",
   "pack": "furry",
   "productionMode": "bundled-only",
   "promptVersion": "furry-v1.5-evolution-chat",
@@ -12,14 +12,14 @@
       "stage": 1,
       "element": "Ember",
       "species": "Wolf",
-      "assetPath": "assets/streammonsters/furry/ashfang.png",
+      "assetPath": "assets/streammonsters/furry/ashfang.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "942ca3239ad13c01983ac031408e8882111677b3882e4b8e03e1a193eff6c363",
+      "sha256": "bf1be6af13596bb19588f93efac98ed505fd1af26eb2cece61a7bbe4d334195b",
       "trimRect": {
         "x": 155,
         "y": 37,
@@ -44,7 +44,9 @@
         7,
         247,
         15
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "942ca3239ad13c01983ac031408e8882111677b3882e4b8e03e1a193eff6c363"
     },
     {
       "templateId": "ashfang",
@@ -52,14 +54,14 @@
       "stage": 2,
       "element": "Ember",
       "species": "Wolf",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/ashfang-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "1e7072694a4d798b9283f2f8f2bbbac233c93114863f61e5a62650e41e0cfa46",
+      "sha256": "e745cab4201c209148dfb062cea43f08a90669ee3dc6bcc2009ab1e8dbd8423f",
       "trimRect": {
         "x": 131,
         "y": 26,
@@ -79,7 +81,9 @@
         "y": 0.4589
       },
       "opaqueFraction": 0.3717,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "1e7072694a4d798b9283f2f8f2bbbac233c93114863f61e5a62650e41e0cfa46"
     },
     {
       "templateId": "ashfang",
@@ -87,14 +91,14 @@
       "stage": 3,
       "element": "Ember",
       "species": "Wolf",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/ashfang-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "31f10969abcacde26421e77f6ead9f0de85e16f39a58f2de7b4fc69d9ae7027a",
+      "sha256": "cf7797bfa430a266776dbbbb02cb2a4c38e309582f42fd8bc8ae35a9c296f78e",
       "trimRect": {
         "x": 151,
         "y": 29,
@@ -114,7 +118,9 @@
         "y": 0.4605
       },
       "opaqueFraction": 0.3818,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "31f10969abcacde26421e77f6ead9f0de85e16f39a58f2de7b4fc69d9ae7027a"
     },
     {
       "templateId": "cinder",
@@ -122,14 +128,14 @@
       "stage": 1,
       "element": "Ember",
       "species": "Fox",
-      "assetPath": "assets/streammonsters/furry/cinder.png",
+      "assetPath": "assets/streammonsters/furry/cinder.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "0c36be95be48d5b5e3329455cb873f82a1f44b2be302f28614120db87756fbd2",
+      "sha256": "5dba2935462db1b7fc3b1cd5588a3a41e006db64d60edc6ec17d7248c99c8a23",
       "trimRect": {
         "x": 195,
         "y": 44,
@@ -154,7 +160,9 @@
         10,
         236,
         20
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "0c36be95be48d5b5e3329455cb873f82a1f44b2be302f28614120db87756fbd2"
     },
     {
       "templateId": "cinder",
@@ -162,14 +170,14 @@
       "stage": 2,
       "element": "Ember",
       "species": "Fox",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/cinder-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/cinder-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "c8f63c484d23c7fd7174d40f37a9e038ffac8e4f5f4fdfb6bad3996162fa4214",
+      "sha256": "274398cc7acc113af5b4b69757c1b959b430a1a8ad8ded2e8e34b625b8d38637",
       "trimRect": {
         "x": 169,
         "y": 56,
@@ -189,7 +197,9 @@
         "y": 0.4603
       },
       "opaqueFraction": 0.2734,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "c8f63c484d23c7fd7174d40f37a9e038ffac8e4f5f4fdfb6bad3996162fa4214"
     },
     {
       "templateId": "cinder",
@@ -197,14 +207,14 @@
       "stage": 3,
       "element": "Ember",
       "species": "Fox",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/cinder-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/cinder-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "fcb6a3a070468193762a60ddc626ec93de5a9d7e5d8c8f0e8f96d90da99a9415",
+      "sha256": "4586b3db1d83af0d5f3e27d43f0c0fccf7623e94c9662654678a0ff83ef74478",
       "trimRect": {
         "x": 170,
         "y": 47,
@@ -224,7 +234,9 @@
         "y": 0.4632
       },
       "opaqueFraction": 0.3093,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "fcb6a3a070468193762a60ddc626ec93de5a9d7e5d8c8f0e8f96d90da99a9415"
     },
     {
       "templateId": "embergrin",
@@ -232,14 +244,14 @@
       "stage": 1,
       "element": "Ember",
       "species": "Hyena",
-      "assetPath": "assets/streammonsters/furry/embergrin.png",
+      "assetPath": "assets/streammonsters/furry/embergrin.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "094cd234234402ec9b37fc8002d2db085a961049524259b17148a951ab3ca04f",
+      "sha256": "4023583c29be0bc587a1836bade257cfd89235c8b082311df57c7081c7ccd338",
       "trimRect": {
         "x": 134,
         "y": 66,
@@ -264,7 +276,9 @@
         7,
         240,
         20
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "094cd234234402ec9b37fc8002d2db085a961049524259b17148a951ab3ca04f"
     },
     {
       "templateId": "embergrin",
@@ -272,14 +286,14 @@
       "stage": 2,
       "element": "Ember",
       "species": "Hyena",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/embergrin-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/embergrin-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "9d320855814a8d819415018cff5f242dfec847321ff99371ca627290ea808195",
+      "sha256": "4d01f47a66ed99facfe5913522955aa6a19aeeb6475e536a550a94bff723ea43",
       "trimRect": {
         "x": 144,
         "y": 35,
@@ -299,7 +313,9 @@
         "y": 0.4636
       },
       "opaqueFraction": 0.3391,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "9d320855814a8d819415018cff5f242dfec847321ff99371ca627290ea808195"
     },
     {
       "templateId": "embergrin",
@@ -307,14 +323,14 @@
       "stage": 3,
       "element": "Ember",
       "species": "Hyena",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/embergrin-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/embergrin-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "8d2adc00ae944260bfdd2180f4e2ad824639e64ba7d67ada1ea888fdcec7d21c",
+      "sha256": "71829818ae5aea2437b75a0ce707c25636c31e0358264f1ea1b0837a5ed5980e",
       "trimRect": {
         "x": 156,
         "y": 33,
@@ -334,7 +350,9 @@
         "y": 0.4626
       },
       "opaqueFraction": 0.3591,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "8d2adc00ae944260bfdd2180f4e2ad824639e64ba7d67ada1ea888fdcec7d21c"
     },
     {
       "templateId": "pyrra",
@@ -342,14 +360,14 @@
       "stage": 1,
       "element": "Ember",
       "species": "Red Panda",
-      "assetPath": "assets/streammonsters/furry/pyrra.png",
+      "assetPath": "assets/streammonsters/furry/pyrra.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "eac4e16139dc968e6637312abbcd005b10b3064f28a1445faec3fc7d42040636",
+      "sha256": "31004488ae36c5f77274912306cbe45af4618a9304422efe814eea21870bc76f",
       "trimRect": {
         "x": 143,
         "y": 71,
@@ -374,7 +392,9 @@
         6,
         237,
         21
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "eac4e16139dc968e6637312abbcd005b10b3064f28a1445faec3fc7d42040636"
     },
     {
       "templateId": "pyrra",
@@ -382,14 +402,14 @@
       "stage": 2,
       "element": "Ember",
       "species": "Red Panda",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/pyrra-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/pyrra-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "792796c5efc59f495f808664aef2ad3e43e8be2abfd93662e26719944c91087a",
+      "sha256": "3dd1e0222f09d7494118773aa70406f666658c1823791e9aa28be9960ae3edc6",
       "trimRect": {
         "x": 194,
         "y": 72,
@@ -409,7 +429,9 @@
         "y": 0.4706
       },
       "opaqueFraction": 0.3015,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "792796c5efc59f495f808664aef2ad3e43e8be2abfd93662e26719944c91087a"
     },
     {
       "templateId": "pyrra",
@@ -417,14 +439,14 @@
       "stage": 3,
       "element": "Ember",
       "species": "Red Panda",
-      "assetPath": "assets/streammonsters/furry/evolution/ember/pyrra-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/ember/pyrra-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "e38378fee907dfcf81fad38bf445bc01f42d2cdd9fc88a7531a4ac4822f3feb3",
+      "sha256": "b11414f9b3e82c31d11b03af6dce2d915583c14ee0bc06bb4b624f1feeed115e",
       "trimRect": {
         "x": 135,
         "y": 51,
@@ -444,7 +466,9 @@
         "y": 0.4698
       },
       "opaqueFraction": 0.345,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "e38378fee907dfcf81fad38bf445bc01f42d2cdd9fc88a7531a4ac4822f3feb3"
     },
     {
       "templateId": "ripple",
@@ -452,14 +476,14 @@
       "stage": 1,
       "element": "Tide",
       "species": "Otter",
-      "assetPath": "assets/streammonsters/furry/ripple.png",
+      "assetPath": "assets/streammonsters/furry/ripple.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "015efd8ec699edc8ca97a0c4057ba5917d63579b598826e802d7481e62a01de8",
+      "sha256": "97d949c19343c128a2a0dee1809bd5382d1cbb6be64293e72d5dbfa4869f8bf4",
       "trimRect": {
         "x": 143,
         "y": 60,
@@ -484,7 +508,9 @@
         8,
         237,
         20
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "015efd8ec699edc8ca97a0c4057ba5917d63579b598826e802d7481e62a01de8"
     },
     {
       "templateId": "ripple",
@@ -492,14 +518,14 @@
       "stage": 2,
       "element": "Tide",
       "species": "Otter",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/ripple-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/ripple-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "2c1ec7078e6c1b1e68f833ec9edabbc391dd138a016ec1be6efd3b3779e7525b",
+      "sha256": "283c3f860e6152cfc3b55494b11dc5d242dd15031bf668849d15fe29b320f9fb",
       "trimRect": {
         "x": 160,
         "y": 53,
@@ -519,7 +545,9 @@
         "y": 0.4574
       },
       "opaqueFraction": 0.2986,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "2c1ec7078e6c1b1e68f833ec9edabbc391dd138a016ec1be6efd3b3779e7525b"
     },
     {
       "templateId": "ripple",
@@ -527,14 +555,14 @@
       "stage": 3,
       "element": "Tide",
       "species": "Otter",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/ripple-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/ripple-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "a519c544583393e9e3dcdb7988b87c28fdc8b6fbe3296b01c60e5b5c8003bc9e",
+      "sha256": "3bda22c314b3c25ae1d24451ed2f3046a73ad10823b95cece7f423acb2dfba87",
       "trimRect": {
         "x": 136,
         "y": 31,
@@ -554,7 +582,9 @@
         "y": 0.462
       },
       "opaqueFraction": 0.354,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "a519c544583393e9e3dcdb7988b87c28fdc8b6fbe3296b01c60e5b5c8003bc9e"
     },
     {
       "templateId": "brine",
@@ -562,14 +592,14 @@
       "stage": 1,
       "element": "Tide",
       "species": "Seal",
-      "assetPath": "assets/streammonsters/furry/brine.png",
+      "assetPath": "assets/streammonsters/furry/brine.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "a1593f43ea43a03560f8b2d954efc7829fc6a2f31e743be2c15c1cdc4554f673",
+      "sha256": "2708c272a5fa4066f1a2afef42c49b507d6d55ce09b9e8c4276da81878fa5513",
       "trimRect": {
         "x": 125,
         "y": 63,
@@ -594,7 +624,9 @@
         9,
         234,
         18
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "a1593f43ea43a03560f8b2d954efc7829fc6a2f31e743be2c15c1cdc4554f673"
     },
     {
       "templateId": "brine",
@@ -602,14 +634,14 @@
       "stage": 2,
       "element": "Tide",
       "species": "Seal",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/brine-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/brine-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "c52fa021d5ad0c579af19cb2ba0d89b4a40269246f318bb46a6091e1909ac269",
+      "sha256": "650e3558baa4a52350fdd45ee2c6a22b2e79f9eefe77a9e10df8405023179a84",
       "trimRect": {
         "x": 174,
         "y": 45,
@@ -629,7 +661,9 @@
         "y": 0.4514
       },
       "opaqueFraction": 0.3146,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "c52fa021d5ad0c579af19cb2ba0d89b4a40269246f318bb46a6091e1909ac269"
     },
     {
       "templateId": "brine",
@@ -637,14 +671,14 @@
       "stage": 3,
       "element": "Tide",
       "species": "Seal",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/brine-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/brine-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "215a63aa984eebc4458337ad0075eaf2ecbf72479e77140b4a97505b8954f37c",
+      "sha256": "9ec53078f62c41571d689541436bbd5d521e113005f5c7c212934781fd6ca2c4",
       "trimRect": {
         "x": 125,
         "y": 38,
@@ -664,7 +698,9 @@
         "y": 0.4571
       },
       "opaqueFraction": 0.3314,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "215a63aa984eebc4458337ad0075eaf2ecbf72479e77140b4a97505b8954f37c"
     },
     {
       "templateId": "reefbite",
@@ -672,14 +708,14 @@
       "stage": 1,
       "element": "Tide",
       "species": "Shark Furry",
-      "assetPath": "assets/streammonsters/furry/reefbite.png",
+      "assetPath": "assets/streammonsters/furry/reefbite.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "508b20c09cb9795622e8286aaf731a31afc51005ad788cf2488c0197bf45e3f8",
+      "sha256": "d368c64c03ee5b27ca5794308a52b78aa1eeb56ddb2e1327013fbae67368feb4",
       "trimRect": {
         "x": 131,
         "y": 49,
@@ -704,7 +740,9 @@
         5,
         244,
         12
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "508b20c09cb9795622e8286aaf731a31afc51005ad788cf2488c0197bf45e3f8"
     },
     {
       "templateId": "reefbite",
@@ -712,14 +750,14 @@
       "stage": 2,
       "element": "Tide",
       "species": "Shark Furry",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/reefbite-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/reefbite-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "cdb0086fb0f8de183822b7efaf51031c1282092c46a6a77bfc61079f67ff072b",
+      "sha256": "bd05457fa7f1eaf9ce57bcf0aae0619efec30836dfe35274c44f7b82ecd14459",
       "trimRect": {
         "x": 124,
         "y": 47,
@@ -739,7 +777,9 @@
         "y": 0.4614
       },
       "opaqueFraction": 0.3283,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "cdb0086fb0f8de183822b7efaf51031c1282092c46a6a77bfc61079f67ff072b"
     },
     {
       "templateId": "reefbite",
@@ -747,14 +787,14 @@
       "stage": 3,
       "element": "Tide",
       "species": "Shark Furry",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/reefbite-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/reefbite-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "ed015f25a30d6250d73f4a5eb54ad7985334264ea239f743a11fe979f53340e2",
+      "sha256": "b5b24e33973989eb6a0ca8edf451912a93e7987a2aef50763c5779b1283b9180",
       "trimRect": {
         "x": 162,
         "y": 66,
@@ -774,7 +814,9 @@
         "y": 0.4688
       },
       "opaqueFraction": 0.3049,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "ed015f25a30d6250d73f4a5eb54ad7985334264ea239f743a11fe979f53340e2"
     },
     {
       "templateId": "axi",
@@ -782,14 +824,14 @@
       "stage": 1,
       "element": "Tide",
       "species": "Axolotl",
-      "assetPath": "assets/streammonsters/furry/axi.png",
+      "assetPath": "assets/streammonsters/furry/axi.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "55786ca360f9475ef759258279646be41093c04e66f670efb570def959bc08e8",
+      "sha256": "aae037d2619bdfbf144222c4dfe34e4019a006c3b0d4e2a9923e5a83b6e20852",
       "trimRect": {
         "x": 154,
         "y": 40,
@@ -814,7 +856,9 @@
         7,
         241,
         16
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "55786ca360f9475ef759258279646be41093c04e66f670efb570def959bc08e8"
     },
     {
       "templateId": "axi",
@@ -822,14 +866,14 @@
       "stage": 2,
       "element": "Tide",
       "species": "Axolotl",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/axi-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/axi-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "c6c1f0dd42bfd771fc420d2d1b5d1494f7f25dde05713975d49b14ec7356a5fb",
+      "sha256": "4947c661615cbac44b77d582c96fd3ec9400153cad93f5817e0863f4a3f33597",
       "trimRect": {
         "x": 157,
         "y": 38,
@@ -849,7 +893,9 @@
         "y": 0.4621
       },
       "opaqueFraction": 0.3198,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "c6c1f0dd42bfd771fc420d2d1b5d1494f7f25dde05713975d49b14ec7356a5fb"
     },
     {
       "templateId": "axi",
@@ -857,14 +903,14 @@
       "stage": 3,
       "element": "Tide",
       "species": "Axolotl",
-      "assetPath": "assets/streammonsters/furry/evolution/tide/axi-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/tide/axi-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "d02726c0f653b29b51366217dc6739086b09d5f603ec369d1a2765d73ad3db63",
+      "sha256": "baba002f4aef9b4b1a4a7d216f85b20fde07d2ca303f0935b08395b08836286d",
       "trimRect": {
         "x": 152,
         "y": 36,
@@ -884,7 +930,9 @@
         "y": 0.4682
       },
       "opaqueFraction": 0.3403,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "d02726c0f653b29b51366217dc6739086b09d5f603ec369d1a2765d73ad3db63"
     },
     {
       "templateId": "mosswhisker",
@@ -892,14 +940,14 @@
       "stage": 1,
       "element": "Grove",
       "species": "Mouse",
-      "assetPath": "assets/streammonsters/furry/mosswhisker.png",
+      "assetPath": "assets/streammonsters/furry/mosswhisker.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "9c3fbb76b345198adae2ba7ef23041d96bbbdae4de800f1609ec9a21763d0f1a",
+      "sha256": "66a4269528983a91117381dcd0671fb088849b5ee76142e8ee16ef167d408551",
       "trimRect": {
         "x": 226,
         "y": 91,
@@ -924,7 +972,9 @@
         12,
         233,
         24
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "9c3fbb76b345198adae2ba7ef23041d96bbbdae4de800f1609ec9a21763d0f1a"
     },
     {
       "templateId": "mosswhisker",
@@ -932,14 +982,14 @@
       "stage": 2,
       "element": "Grove",
       "species": "Mouse",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/mosswhisker-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/mosswhisker-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "f4d1ceff82622eb534be5a8b74e792b31a12693ef61d77317ef471596199976e",
+      "sha256": "245e879b075b1309c7393ec0537520c3f8188436e1e3a04a0de71ab233df1bef",
       "trimRect": {
         "x": 237,
         "y": 68,
@@ -959,7 +1009,9 @@
         "y": 0.4689
       },
       "opaqueFraction": 0.2727,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "f4d1ceff82622eb534be5a8b74e792b31a12693ef61d77317ef471596199976e"
     },
     {
       "templateId": "mosswhisker",
@@ -967,14 +1019,14 @@
       "stage": 3,
       "element": "Grove",
       "species": "Mouse",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/mosswhisker-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/mosswhisker-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "7de0684077b816d5ed0ea26c78f9e61e2e1a35f18de9838f32a00e863c9bc75d",
+      "sha256": "2f2699e099f95316b0ab34deef8c0aa7d8e77f7fdfa8e7a86d8c6162c79fbd5f",
       "trimRect": {
         "x": 132,
         "y": 60,
@@ -994,7 +1046,9 @@
         "y": 0.4647
       },
       "opaqueFraction": 0.3012,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "7de0684077b816d5ed0ea26c78f9e61e2e1a35f18de9838f32a00e863c9bc75d"
     },
     {
       "templateId": "cloverhop",
@@ -1002,14 +1056,14 @@
       "stage": 1,
       "element": "Grove",
       "species": "Rabbit",
-      "assetPath": "assets/streammonsters/furry/cloverhop.png",
+      "assetPath": "assets/streammonsters/furry/cloverhop.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "fcea5e0a1b7f2d781c435f162d524c7aa00d061ae5d179b829c63a91b44eec6d",
+      "sha256": "a3e64ed97a22b22c918974fc337cc98371d6b0290ca2ea1531afdda47d8758e8",
       "trimRect": {
         "x": 226,
         "y": 16,
@@ -1034,7 +1088,9 @@
         249,
         4,
         229
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "fcea5e0a1b7f2d781c435f162d524c7aa00d061ae5d179b829c63a91b44eec6d"
     },
     {
       "templateId": "cloverhop",
@@ -1042,14 +1098,14 @@
       "stage": 2,
       "element": "Grove",
       "species": "Rabbit",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/cloverhop-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/cloverhop-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "0fa0e9c0f00dfc610d4527947d991501d68fdd60991eadbd4dd48af65d201cd7",
+      "sha256": "8143ed1b966c98e4389514cc86aadff26940ddc889d78f4f0fe6cb9faed1c45e",
       "trimRect": {
         "x": 200,
         "y": 28,
@@ -1069,7 +1125,9 @@
         "y": 0.4568
       },
       "opaqueFraction": 0.2841,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "0fa0e9c0f00dfc610d4527947d991501d68fdd60991eadbd4dd48af65d201cd7"
     },
     {
       "templateId": "cloverhop",
@@ -1077,14 +1135,14 @@
       "stage": 3,
       "element": "Grove",
       "species": "Rabbit",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/cloverhop-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/cloverhop-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "5f6286c0ba67c85535703a35f6a46823f2a223c0ae6d2c27973d4790ba345477",
+      "sha256": "d999cf83df9a85e801cc58b5a6c1325d43da1986bd4b125dea720230e498f25e",
       "trimRect": {
         "x": 216,
         "y": 62,
@@ -1104,7 +1162,9 @@
         "y": 0.4671
       },
       "opaqueFraction": 0.2474,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "5f6286c0ba67c85535703a35f6a46823f2a223c0ae6d2c27973d4790ba345477"
     },
     {
       "templateId": "oakheart",
@@ -1112,14 +1172,14 @@
       "stage": 1,
       "element": "Grove",
       "species": "Deer",
-      "assetPath": "assets/streammonsters/furry/oakheart.png",
+      "assetPath": "assets/streammonsters/furry/oakheart.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "fcc55cf61a0822a7d8c777c513116d3d4ba0de6442501a4f4bd0d9804fce0b86",
+      "sha256": "95b0032bec52b93e218afa88944b1dec0fb8dd4fe196aa9164fb22bd3ce60fb1",
       "trimRect": {
         "x": 265,
         "y": 20,
@@ -1144,7 +1204,9 @@
         250,
         3,
         231
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "fcc55cf61a0822a7d8c777c513116d3d4ba0de6442501a4f4bd0d9804fce0b86"
     },
     {
       "templateId": "oakheart",
@@ -1152,14 +1214,14 @@
       "stage": 2,
       "element": "Grove",
       "species": "Deer",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/oakheart-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/oakheart-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "20569e619df054dc8c8d1ad1c65c5326c71305e7cb00a7c8c955a38d275121e8",
+      "sha256": "28780b67ece0436d3f455c2fafcb702d67a93b11bea945bb69d21ffe9eb9f0e9",
       "trimRect": {
         "x": 254,
         "y": 26,
@@ -1179,7 +1241,9 @@
         "y": 0.4683
       },
       "opaqueFraction": 0.2587,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "20569e619df054dc8c8d1ad1c65c5326c71305e7cb00a7c8c955a38d275121e8"
     },
     {
       "templateId": "oakheart",
@@ -1187,14 +1251,14 @@
       "stage": 3,
       "element": "Grove",
       "species": "Deer",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/oakheart-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/oakheart-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "1dfc06d7388723c2096cd773a4f2295358afdf541c5ae1cabfc68e2e12e0616f",
+      "sha256": "7a398e1c25b821034be9c78879597208d4fccfdd64852029b3f79d4c76b56c69",
       "trimRect": {
         "x": 252,
         "y": 19,
@@ -1214,7 +1278,9 @@
         "y": 0.4619
       },
       "opaqueFraction": 0.2595,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "1dfc06d7388723c2096cd773a4f2295358afdf541c5ae1cabfc68e2e12e0616f"
     },
     {
       "templateId": "fernmask",
@@ -1222,14 +1288,14 @@
       "stage": 1,
       "element": "Grove",
       "species": "Raccoon",
-      "assetPath": "assets/streammonsters/furry/fernmask.png",
+      "assetPath": "assets/streammonsters/furry/fernmask.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "e1bfb1bbe2583f7266431a10bc71c1da80309f8038ff3fc0c4883247c900d1d4",
+      "sha256": "285b3ac8146d621ff59454d9c426247dbb3c0baa48781e00f9d5f9993a4caa68",
       "trimRect": {
         "x": 75,
         "y": 72,
@@ -1254,7 +1320,9 @@
         249,
         2,
         232
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "e1bfb1bbe2583f7266431a10bc71c1da80309f8038ff3fc0c4883247c900d1d4"
     },
     {
       "templateId": "fernmask",
@@ -1262,14 +1330,14 @@
       "stage": 2,
       "element": "Grove",
       "species": "Raccoon",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/fernmask-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/fernmask-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "b1bc8ba52277e49443e9c14ccf968a8f976bc6e9128a906c252c1cd8f2a5747a",
+      "sha256": "46d99219e9dac03a84a4416cd4d570a3fd3caae2681c6c705a0e6dd1d064a05b",
       "trimRect": {
         "x": 109,
         "y": 76,
@@ -1289,7 +1357,9 @@
         "y": 0.4767
       },
       "opaqueFraction": 0.3527,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "b1bc8ba52277e49443e9c14ccf968a8f976bc6e9128a906c252c1cd8f2a5747a"
     },
     {
       "templateId": "fernmask",
@@ -1297,14 +1367,14 @@
       "stage": 3,
       "element": "Grove",
       "species": "Raccoon",
-      "assetPath": "assets/streammonsters/furry/evolution/grove/fernmask-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/grove/fernmask-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "8a6c5d88b612978dea3bcc595c921577a001c532c9cbaa2544ea8a379d36e5c1",
+      "sha256": "675ef0efb68bfd9e2e23d5ed7c3ec341ce633d266e2b1f753eedca1a07d533f2",
       "trimRect": {
         "x": 111,
         "y": 35,
@@ -1324,7 +1394,9 @@
         "y": 0.4627
       },
       "opaqueFraction": 0.3599,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "8a6c5d88b612978dea3bcc595c921577a001c532c9cbaa2544ea8a379d36e5c1"
     },
     {
       "templateId": "zephyr",
@@ -1332,14 +1404,14 @@
       "stage": 1,
       "element": "Gale",
       "species": "Bat",
-      "assetPath": "assets/streammonsters/furry/zephyr.png",
+      "assetPath": "assets/streammonsters/furry/zephyr.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "1509a577288c5266103cce14ef847dc3199b882a509ee32a019cc1183df2d319",
+      "sha256": "c4e229e03cc20ae09020bfafbcc21307ab1f764308d2a6ae346f3880e514b62b",
       "trimRect": {
         "x": 35,
         "y": 88,
@@ -1364,7 +1436,9 @@
         249,
         2,
         237
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "1509a577288c5266103cce14ef847dc3199b882a509ee32a019cc1183df2d319"
     },
     {
       "templateId": "zephyr",
@@ -1372,14 +1446,14 @@
       "stage": 2,
       "element": "Gale",
       "species": "Bat",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/zephyr-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/zephyr-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "d5deb7ab716d703bece154f1c43cf57e08e69098571adf8d193718ffa040a86d",
+      "sha256": "48ce0fcc8761261a79ccb3c7ee7c4027c14742af8dd70ca79d31547be0889b5f",
       "trimRect": {
         "x": 50,
         "y": 102,
@@ -1399,7 +1473,9 @@
         "y": 0.4747
       },
       "opaqueFraction": 0.3172,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "d5deb7ab716d703bece154f1c43cf57e08e69098571adf8d193718ffa040a86d"
     },
     {
       "templateId": "zephyr",
@@ -1407,14 +1483,14 @@
       "stage": 3,
       "element": "Gale",
       "species": "Bat",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/zephyr-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/zephyr-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "39c0c81d54ee01533a457d413b31e5ba1289fc109a19e979c34e9095784156a1",
+      "sha256": "3f096bbba6239c46b064a4929817d6ad18a0b6ee88cc60277e2f25afedf1fa2d",
       "trimRect": {
         "x": 22,
         "y": 86,
@@ -1434,7 +1510,9 @@
         "y": 0.4627
       },
       "opaqueFraction": 0.3645,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "39c0c81d54ee01533a457d413b31e5ba1289fc109a19e979c34e9095784156a1"
     },
     {
       "templateId": "skyrend",
@@ -1442,14 +1520,14 @@
       "stage": 1,
       "element": "Gale",
       "species": "Griffin",
-      "assetPath": "assets/streammonsters/furry/skyrend.png",
+      "assetPath": "assets/streammonsters/furry/skyrend.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "1eabcba1a31ef66824cd2dde103ee1ea03079a46fa22981d0a3eaa7fe0ee3900",
+      "sha256": "526090e8768f9804f58d2473184a3ebbfb71a34359d0fee97482e7998865cea1",
       "trimRect": {
         "x": 68,
         "y": 62,
@@ -1474,7 +1552,9 @@
         246,
         3,
         233
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "1eabcba1a31ef66824cd2dde103ee1ea03079a46fa22981d0a3eaa7fe0ee3900"
     },
     {
       "templateId": "skyrend",
@@ -1482,14 +1562,14 @@
       "stage": 2,
       "element": "Gale",
       "species": "Griffin",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/skyrend-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/skyrend-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "c8768c2320dc3a21482060a6a480b43d1afe54869502058ee05053226e2c9776",
+      "sha256": "0e2ece7626a226032a36ad832eb8c6e46307fc8047cbfc35628ed6b194da8f8d",
       "trimRect": {
         "x": 67,
         "y": 52,
@@ -1509,7 +1589,9 @@
         "y": 0.4681
       },
       "opaqueFraction": 0.391,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "c8768c2320dc3a21482060a6a480b43d1afe54869502058ee05053226e2c9776"
     },
     {
       "templateId": "skyrend",
@@ -1517,14 +1599,14 @@
       "stage": 3,
       "element": "Gale",
       "species": "Griffin",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/skyrend-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/skyrend-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "174b4f4a69f3ed350e8e679c6a26264853d4b9b6b3345436954699ac1a31906e",
+      "sha256": "6cda63400629bc6002f840c05bdb054bb8c28118f5c7d24310196a90b265d64e",
       "trimRect": {
         "x": 84,
         "y": 49,
@@ -1544,7 +1626,9 @@
         "y": 0.4634
       },
       "opaqueFraction": 0.3634,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "174b4f4a69f3ed350e8e679c6a26264853d4b9b6b3345436954699ac1a31906e"
     },
     {
       "templateId": "cirrus",
@@ -1552,14 +1636,14 @@
       "stage": 1,
       "element": "Gale",
       "species": "Owl Furry",
-      "assetPath": "assets/streammonsters/furry/cirrus.png",
+      "assetPath": "assets/streammonsters/furry/cirrus.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "9be5b2edaeacc890801433bf2244ffd9d2ad1cd054958cd62a57bf5a8f88572c",
+      "sha256": "f7ad5c729caa6f149ff4643ad9e26a8ea55b4c783f914aa43c3adc4979191657",
       "trimRect": {
         "x": 111,
         "y": 42,
@@ -1584,7 +1668,9 @@
         249,
         3,
         234
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "9be5b2edaeacc890801433bf2244ffd9d2ad1cd054958cd62a57bf5a8f88572c"
     },
     {
       "templateId": "cirrus",
@@ -1592,14 +1678,14 @@
       "stage": 2,
       "element": "Gale",
       "species": "Owl Furry",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/cirrus-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/cirrus-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "967ab258bc282a8c0a0aa34068312efcabe1f6023a7004cba22abc72becd2ce6",
+      "sha256": "04a33a3ef4d585a654e22d20aaeddf5e16222ddad25b7b226a18847fca8cf172",
       "trimRect": {
         "x": 117,
         "y": 38,
@@ -1619,7 +1705,9 @@
         "y": 0.4693
       },
       "opaqueFraction": 0.3733,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "967ab258bc282a8c0a0aa34068312efcabe1f6023a7004cba22abc72becd2ce6"
     },
     {
       "templateId": "cirrus",
@@ -1627,14 +1715,14 @@
       "stage": 3,
       "element": "Gale",
       "species": "Owl Furry",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/cirrus-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/cirrus-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "e5675e26e865a1213722c65d80e618d038d274c911961c510eeafe007f087f15",
+      "sha256": "5390f762f8a4c2fe11cce4767a6589db048ee0b02bd8a8ee8fde4fcaadcd6858",
       "trimRect": {
         "x": 76,
         "y": 45,
@@ -1654,7 +1742,9 @@
         "y": 0.4667
       },
       "opaqueFraction": 0.3945,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "e5675e26e865a1213722c65d80e618d038d274c911961c510eeafe007f087f15"
     },
     {
       "templateId": "gusttail",
@@ -1662,14 +1752,14 @@
       "stage": 1,
       "element": "Gale",
       "species": "Flying Squirrel",
-      "assetPath": "assets/streammonsters/furry/gusttail.png",
+      "assetPath": "assets/streammonsters/furry/gusttail.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "757954480229cd0ea04cb9ef89e7cff9b771b055434a05e36a2df0fe3dda7bc2",
+      "sha256": "5777b8cb364331adacbfb14cb39ce9cf398d2b17f5d973b5c044414d011896a9",
       "trimRect": {
         "x": 135,
         "y": 73,
@@ -1694,7 +1784,9 @@
         251,
         5,
         230
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "757954480229cd0ea04cb9ef89e7cff9b771b055434a05e36a2df0fe3dda7bc2"
     },
     {
       "templateId": "gusttail",
@@ -1702,14 +1794,14 @@
       "stage": 2,
       "element": "Gale",
       "species": "Flying Squirrel",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/gusttail-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/gusttail-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "76987d5a76b6ecb808847d662a3865cbda17ce05e1159c74665536da70f154f6",
+      "sha256": "eb0272dfcab571d92288abaceb1ce7c54d478a2149f9b9e4a0109cc086b40123",
       "trimRect": {
         "x": 106,
         "y": 78,
@@ -1729,7 +1821,9 @@
         "y": 0.4706
       },
       "opaqueFraction": 0.4054,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "76987d5a76b6ecb808847d662a3865cbda17ce05e1159c74665536da70f154f6"
     },
     {
       "templateId": "gusttail",
@@ -1737,14 +1831,14 @@
       "stage": 3,
       "element": "Gale",
       "species": "Flying Squirrel",
-      "assetPath": "assets/streammonsters/furry/evolution/gale/gusttail-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/gale/gusttail-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "fd6f652b2d84305c1793796a72340e9c0b92a9385fa6920d77c2bca7f1af49bb",
+      "sha256": "7e59abd78da1ac98b6ce74307433b0065824046ac62dd665977f9cd1ebf59739",
       "trimRect": {
         "x": 85,
         "y": 49,
@@ -1764,7 +1858,9 @@
         "y": 0.4553
       },
       "opaqueFraction": 0.4248,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "fd6f652b2d84305c1793796a72340e9c0b92a9385fa6920d77c2bca7f1af49bb"
     },
     {
       "templateId": "pulse",
@@ -1772,14 +1868,14 @@
       "stage": 1,
       "element": "Volt",
       "species": "Protogen",
-      "assetPath": "assets/streammonsters/furry/pulse.png",
+      "assetPath": "assets/streammonsters/furry/pulse.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "63a02d9eb2b9da4b492b0ce78a7ecf40958571fdd88b45e2c958f85b7f5e1046",
+      "sha256": "b2f4eb9fc2087423db48eea5a2b6f967e612b36f88bf483987a497db7a71b363",
       "trimRect": {
         "x": 133,
         "y": 44,
@@ -1804,7 +1900,9 @@
         13,
         235,
         23
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "63a02d9eb2b9da4b492b0ce78a7ecf40958571fdd88b45e2c958f85b7f5e1046"
     },
     {
       "templateId": "pulse",
@@ -1812,14 +1910,14 @@
       "stage": 2,
       "element": "Volt",
       "species": "Protogen",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/pulse-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/pulse-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "73bd270d83d9273010a915d735449b2186264410419b02dc8662806994e0f5f1",
+      "sha256": "89ee04a8a467f8905a825730ddb8493db2b0e5613aaf2cd4a3c8f2bcd9e3a5e8",
       "trimRect": {
         "x": 151,
         "y": 47,
@@ -1839,7 +1937,9 @@
         "y": 0.4628
       },
       "opaqueFraction": 0.3206,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "73bd270d83d9273010a915d735449b2186264410419b02dc8662806994e0f5f1"
     },
     {
       "templateId": "pulse",
@@ -1847,14 +1947,14 @@
       "stage": 3,
       "element": "Volt",
       "species": "Protogen",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/pulse-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/pulse-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "2d87b745c075ac03a1c5b889b9e44da9c17e2bbc1a1df9ac0f49a70e56fa2981",
+      "sha256": "fa44f1b040ad694ae34e490a574c2923f592e4d07aad10c5115609ddaadfee5d",
       "trimRect": {
         "x": 106,
         "y": 32,
@@ -1874,7 +1974,9 @@
         "y": 0.4688
       },
       "opaqueFraction": 0.3605,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "2d87b745c075ac03a1c5b889b9e44da9c17e2bbc1a1df9ac0f49a70e56fa2981"
     },
     {
       "templateId": "neonclaw",
@@ -1882,14 +1984,14 @@
       "stage": 1,
       "element": "Volt",
       "species": "Cyber Lynx",
-      "assetPath": "assets/streammonsters/furry/neonclaw.png",
+      "assetPath": "assets/streammonsters/furry/neonclaw.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "50dce76c84fc9df53e3e02cecfdbafcf735fa91df9a57c5f4b199c487f746c62",
+      "sha256": "25762bfa5b68faa603d50a0d6e9c97025e3ef4fc066bdaad91e83910b72cc0c0",
       "trimRect": {
         "x": 93,
         "y": 26,
@@ -1914,7 +2016,9 @@
         8,
         235,
         19
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "50dce76c84fc9df53e3e02cecfdbafcf735fa91df9a57c5f4b199c487f746c62"
     },
     {
       "templateId": "neonclaw",
@@ -1922,14 +2026,14 @@
       "stage": 2,
       "element": "Volt",
       "species": "Cyber Lynx",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/neonclaw-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/neonclaw-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "44b7b688ee7f029723b2d2636ae08e6135cfc9f5fb1f3c4ed18913984d078575",
+      "sha256": "74c914d986203184748a6ba047700988408a9f8f9a30efe6ca61c0cf856c3ed2",
       "trimRect": {
         "x": 81,
         "y": 26,
@@ -1949,7 +2053,9 @@
         "y": 0.4566
       },
       "opaqueFraction": 0.2984,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "44b7b688ee7f029723b2d2636ae08e6135cfc9f5fb1f3c4ed18913984d078575"
     },
     {
       "templateId": "neonclaw",
@@ -1957,14 +2063,14 @@
       "stage": 3,
       "element": "Volt",
       "species": "Cyber Lynx",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/neonclaw-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/neonclaw-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "d5ade143a74f50bf3bad94d6c7072ff8977725ec0195c6368169bb1c0e1fe50a",
+      "sha256": "6ca5557c64435cf5758d7ccaaffb5c5cf5937c357aef2ed78df55d68f5fd1f32",
       "trimRect": {
         "x": 91,
         "y": 20,
@@ -1984,7 +2090,9 @@
         "y": 0.4575
       },
       "opaqueFraction": 0.3096,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "d5ade143a74f50bf3bad94d6c7072ff8977725ec0195c6368169bb1c0e1fe50a"
     },
     {
       "templateId": "ampjack",
@@ -1992,14 +2100,14 @@
       "stage": 1,
       "element": "Volt",
       "species": "Synth Jackal",
-      "assetPath": "assets/streammonsters/furry/ampjack.png",
+      "assetPath": "assets/streammonsters/furry/ampjack.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "834b9a819166c60fa908e2f84b498ecab3101c1854fe31111a7fbf60048bc56c",
+      "sha256": "8760ce0128a9c0e6e9c7b46214a8946d4865f9e26e105e185b937093494a0e06",
       "trimRect": {
         "x": 150,
         "y": 38,
@@ -2024,7 +2132,9 @@
         8,
         237,
         24
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "834b9a819166c60fa908e2f84b498ecab3101c1854fe31111a7fbf60048bc56c"
     },
     {
       "templateId": "ampjack",
@@ -2032,14 +2142,14 @@
       "stage": 2,
       "element": "Volt",
       "species": "Synth Jackal",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/ampjack-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/ampjack-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "fd9a227601fb93751bbcab94652b446b9cf074536b10d6967aa1c814255fb610",
+      "sha256": "34a20c4f181064711ea1e39efa7263377d5d376ac4161c1367fec61af27468c8",
       "trimRect": {
         "x": 156,
         "y": 29,
@@ -2059,7 +2169,9 @@
         "y": 0.4614
       },
       "opaqueFraction": 0.2554,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "fd9a227601fb93751bbcab94652b446b9cf074536b10d6967aa1c814255fb610"
     },
     {
       "templateId": "ampjack",
@@ -2067,14 +2179,14 @@
       "stage": 3,
       "element": "Volt",
       "species": "Synth Jackal",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/ampjack-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/ampjack-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "31d7a4ebc3f2686b8b5c541ec0ec1eec019470bb91c2ebb907aee24a1826d711",
+      "sha256": "dfc52679753e69a434de07835296b05c745000b31ca1e81c70572fd60e20502e",
       "trimRect": {
         "x": 159,
         "y": 22,
@@ -2094,7 +2206,9 @@
         "y": 0.4626
       },
       "opaqueFraction": 0.2484,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "31d7a4ebc3f2686b8b5c541ec0ec1eec019470bb91c2ebb907aee24a1826d711"
     },
     {
       "templateId": "flashstep",
@@ -2102,14 +2216,14 @@
       "stage": 1,
       "element": "Volt",
       "species": "Cheetah",
-      "assetPath": "assets/streammonsters/furry/flashstep.png",
+      "assetPath": "assets/streammonsters/furry/flashstep.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "196647d60a1525ca3d83eea157fe763a1a6eaac9cf6b76d37653578564a39e80",
+      "sha256": "292bbf74c1e22f5173c92e38eaa3e6f97918009faefb08a5d5e252042cb35a9c",
       "trimRect": {
         "x": 36,
         "y": 110,
@@ -2134,7 +2248,9 @@
         10,
         237,
         24
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "196647d60a1525ca3d83eea157fe763a1a6eaac9cf6b76d37653578564a39e80"
     },
     {
       "templateId": "flashstep",
@@ -2142,14 +2258,14 @@
       "stage": 2,
       "element": "Volt",
       "species": "Cheetah",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/flashstep-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/flashstep-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "651df1dcbf6bd185bf0f9ca5ea3f189df9a4a652b2fc79f15f7f067b7b59afd7",
+      "sha256": "5853d078973b24ea31788ae84380d966d950c1acbd4043960f6488ad15de8b36",
       "trimRect": {
         "x": 53,
         "y": 121,
@@ -2169,7 +2285,9 @@
         "y": 0.4569
       },
       "opaqueFraction": 0.2562,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "651df1dcbf6bd185bf0f9ca5ea3f189df9a4a652b2fc79f15f7f067b7b59afd7"
     },
     {
       "templateId": "flashstep",
@@ -2177,14 +2295,14 @@
       "stage": 3,
       "element": "Volt",
       "species": "Cheetah",
-      "assetPath": "assets/streammonsters/furry/evolution/volt/flashstep-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/volt/flashstep-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "961035fbbf654bc3fe0bef299ea876441753f43ace5d6fedbcddc33b95727d6e",
+      "sha256": "8bd8dda99d30d12ecfe54d1923a885392ae5f20cef62a9e28356eb22f39ebf7e",
       "trimRect": {
         "x": 25,
         "y": 121,
@@ -2204,7 +2322,9 @@
         "y": 0.4726
       },
       "opaqueFraction": 0.3098,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "961035fbbf654bc3fe0bef299ea876441753f43ace5d6fedbcddc33b95727d6e"
     },
     {
       "templateId": "selene",
@@ -2212,14 +2332,14 @@
       "stage": 1,
       "element": "Lunar",
       "species": "Snow Leopard",
-      "assetPath": "assets/streammonsters/furry/selene.png",
+      "assetPath": "assets/streammonsters/furry/selene.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "3800bfa4318fbfe15eabf1b0816916d546321db5bd0953c9daec7adeb9f449b3",
+      "sha256": "0e3b2408522ab6019058d2aff3a658b44d9839f4e7ef24248dbd8e45061c2ccb",
       "trimRect": {
         "x": 138,
         "y": 48,
@@ -2244,7 +2364,9 @@
         12,
         238,
         25
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "3800bfa4318fbfe15eabf1b0816916d546321db5bd0953c9daec7adeb9f449b3"
     },
     {
       "templateId": "selene",
@@ -2252,14 +2374,14 @@
       "stage": 2,
       "element": "Lunar",
       "species": "Snow Leopard",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/selene-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/selene-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "8131a96e39c5f6c5dc563a3256d5490fc6780d289141222cf73d3b0fd9d410cc",
+      "sha256": "7a09d2c8fc5dd41078662abc4b56f0a0e4561ca21c9a0b4954d8407b47bb3418",
       "trimRect": {
         "x": 182,
         "y": 40,
@@ -2279,7 +2401,9 @@
         "y": 0.4645
       },
       "opaqueFraction": 0.3115,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "8131a96e39c5f6c5dc563a3256d5490fc6780d289141222cf73d3b0fd9d410cc"
     },
     {
       "templateId": "selene",
@@ -2287,14 +2411,14 @@
       "stage": 3,
       "element": "Lunar",
       "species": "Snow Leopard",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/selene-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/selene-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "010aaf9315687c76225c7d0e204a140dea883ef57933c6ecbfab24d45c9d748f",
+      "sha256": "a2c6d236d067de093bfb2f414e3c178f3efd8ec921da171e06d3321aa857b940",
       "trimRect": {
         "x": 163,
         "y": 27,
@@ -2314,7 +2438,9 @@
         "y": 0.45
       },
       "opaqueFraction": 0.3172,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "010aaf9315687c76225c7d0e204a140dea883ef57933c6ecbfab24d45c9d748f"
     },
     {
       "templateId": "umbra",
@@ -2322,14 +2448,14 @@
       "stage": 1,
       "element": "Lunar",
       "species": "Black Cat",
-      "assetPath": "assets/streammonsters/furry/umbra.png",
+      "assetPath": "assets/streammonsters/furry/umbra.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "1d1b4d347a722bb2e6a0829a279c5322bcb2d59bb9aeb5f8ed97c8f629e2016b",
+      "sha256": "1f03aecc2516e68f7b155d1c462a5f56257aaae2cd291937196bf0d16dc9b989",
       "trimRect": {
         "x": 106,
         "y": 66,
@@ -2354,7 +2480,9 @@
         11,
         238,
         18
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "1d1b4d347a722bb2e6a0829a279c5322bcb2d59bb9aeb5f8ed97c8f629e2016b"
     },
     {
       "templateId": "umbra",
@@ -2362,14 +2490,14 @@
       "stage": 2,
       "element": "Lunar",
       "species": "Black Cat",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/umbra-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/umbra-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "94667117df47a7590bfa8827b2036bdd6a8b110d5fb183c36da3101b3112925c",
+      "sha256": "acd53e684e22c30721f5d77d7353615b2b8618ed3c8df6ddbdae3bc050bdf2bb",
       "trimRect": {
         "x": 177,
         "y": 20,
@@ -2389,7 +2517,9 @@
         "y": 0.4625
       },
       "opaqueFraction": 0.3097,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "94667117df47a7590bfa8827b2036bdd6a8b110d5fb183c36da3101b3112925c"
     },
     {
       "templateId": "umbra",
@@ -2397,14 +2527,14 @@
       "stage": 3,
       "element": "Lunar",
       "species": "Black Cat",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/umbra-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/umbra-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "bd20cfff5fa70909a86e354e0c0debc9a3fa40e163e40896f372024d55c88fc9",
+      "sha256": "789ec9331589b936be3f66a337d3eba69ddfc238d87d29c7216b83163c97e212",
       "trimRect": {
         "x": 139,
         "y": 83,
@@ -2424,7 +2554,9 @@
         "y": 0.4687
       },
       "opaqueFraction": 0.3271,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "bd20cfff5fa70909a86e354e0c0debc9a3fa40e163e40896f372024d55c88fc9"
     },
     {
       "templateId": "lumen",
@@ -2432,14 +2564,14 @@
       "stage": 1,
       "element": "Lunar",
       "species": "Moth Furry",
-      "assetPath": "assets/streammonsters/furry/lumen.png",
+      "assetPath": "assets/streammonsters/furry/lumen.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "9b669eb4ecffb694468b0c518b13fb31aa2e1dec8cb49e1509a41162b59dde15",
+      "sha256": "fd03b619879e7b8b969c899f90a91c763a78314569502ae055e220e270b444a9",
       "trimRect": {
         "x": 93,
         "y": 30,
@@ -2464,7 +2596,9 @@
         8,
         237,
         15
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "9b669eb4ecffb694468b0c518b13fb31aa2e1dec8cb49e1509a41162b59dde15"
     },
     {
       "templateId": "lumen",
@@ -2472,14 +2606,14 @@
       "stage": 2,
       "element": "Lunar",
       "species": "Moth Furry",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/lumen-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/lumen-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "30219da5fa801634578207f1f3d1e843f8bbd0ace4be1f051d8d0f822e116464",
+      "sha256": "a40fdfcaa39b4d3b21de8b960653620d3ee8152414fc9ba314c81676abf140d0",
       "trimRect": {
         "x": 72,
         "y": 16,
@@ -2499,7 +2633,9 @@
         "y": 0.4586
       },
       "opaqueFraction": 0.4311,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "30219da5fa801634578207f1f3d1e843f8bbd0ace4be1f051d8d0f822e116464"
     },
     {
       "templateId": "lumen",
@@ -2507,14 +2643,14 @@
       "stage": 3,
       "element": "Lunar",
       "species": "Moth Furry",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/lumen-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/lumen-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "ae767f2a968caec5af47ec1b9f17e457a29b354b85ab3fd0a6760f2bc41032aa",
+      "sha256": "b24a9510a8b2ffb11f05bac3957c0ae5d3cf99e12c9a767b60f6facd3dd16e1e",
       "trimRect": {
         "x": 73,
         "y": 15,
@@ -2534,7 +2670,9 @@
         "y": 0.458
       },
       "opaqueFraction": 0.4361,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "ae767f2a968caec5af47ec1b9f17e457a29b354b85ab3fd0a6760f2bc41032aa"
     },
     {
       "templateId": "tsuki",
@@ -2542,14 +2680,14 @@
       "stage": 1,
       "element": "Lunar",
       "species": "Kitsune",
-      "assetPath": "assets/streammonsters/furry/tsuki.png",
+      "assetPath": "assets/streammonsters/furry/tsuki.webp",
       "promptVersion": "furry-v1-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "5b67fc8c98eb0d62d075b3576172f0eaa7ee7e3879c655b0c825fd22cc431c4a",
+      "sha256": "50b1d79e00a24e7f19d0967527bc9f81b9b558fc91fb3d6160497b7084cf1996",
       "trimRect": {
         "x": 131,
         "y": 25,
@@ -2574,7 +2712,9 @@
         9,
         234,
         26
-      ]
+      ],
+      "mediaType": "image/webp",
+      "sourcePngSha256": "5b67fc8c98eb0d62d075b3576172f0eaa7ee7e3879c655b0c825fd22cc431c4a"
     },
     {
       "templateId": "tsuki",
@@ -2582,14 +2722,14 @@
       "stage": 2,
       "element": "Lunar",
       "species": "Kitsune",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/tsuki-stage2.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/tsuki-stage2.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "34268b7247530d2749373f34ae0ad2566ce3e79498120c95214cffaed7bfdb82",
+      "sha256": "c8a05031fb62a96d2086b4456c978aba0c5c36bb9bbd01f23dfd65928da2420c",
       "trimRect": {
         "x": 79,
         "y": 23,
@@ -2609,7 +2749,9 @@
         "y": 0.4591
       },
       "opaqueFraction": 0.4277,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "34268b7247530d2749373f34ae0ad2566ce3e79498120c95214cffaed7bfdb82"
     },
     {
       "templateId": "tsuki",
@@ -2617,14 +2759,14 @@
       "stage": 3,
       "element": "Lunar",
       "species": "Kitsune",
-      "assetPath": "assets/streammonsters/furry/evolution/lunar/tsuki-stage3.png",
+      "assetPath": "assets/streammonsters/furry/evolution/lunar/tsuki-stage3.webp",
       "promptVersion": "furry-v1.5-evolution-chat",
       "generator": "OpenAI Chat image generation",
       "dimensions": [
         1024,
         1024
       ],
-      "sha256": "d42ee845ff810cde6c842e5cda0e01e292892a70571a9ff7fe414c2d4a377eb5",
+      "sha256": "4776691991fb5ba8cdae05ca807fa9ba5f393cb38c9bba04fad893ad73d60162",
       "trimRect": {
         "x": 61,
         "y": 12,
@@ -2644,7 +2786,9 @@
         "y": 0.4618
       },
       "opaqueFraction": 0.478,
-      "facing": "center"
+      "facing": "center",
+      "mediaType": "image/webp",
+      "sourcePngSha256": "d42ee845ff810cde6c842e5cda0e01e292892a70571a9ff7fe414c2d4a377eb5"
     }
   ]
 }

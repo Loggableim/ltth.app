@@ -1,7 +1,7 @@
+const childProcess = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const zlib = require('zlib');
 const { TEMPLATE_CATALOG } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 
 const EXPECTED_CUES = [
@@ -33,60 +33,22 @@ function hashFile(filename) {
   return crypto.createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
 }
 
-function paeth(left, above, upperLeft) {
-  const estimate = left + above - upperLeft;
-  const leftDistance = Math.abs(estimate - left);
-  const aboveDistance = Math.abs(estimate - above);
-  const upperLeftDistance = Math.abs(estimate - upperLeft);
-  if (leftDistance <= aboveDistance && leftDistance <= upperLeftDistance) return left;
-  return aboveDistance <= upperLeftDistance ? above : upperLeft;
-}
-
-function readRgbaPng(filename) {
-  const buffer = fs.readFileSync(filename);
-  const chunks = [];
-  let offset = 8;
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.toString('ascii', offset + 4, offset + 8);
-    chunks.push({ type, data: buffer.subarray(offset + 8, offset + 8 + length) });
-    offset += 12 + length;
-  }
-  const header = chunks.find(chunk => chunk.type === 'IHDR')?.data;
-  if (!header) throw new Error(`PNG has no IHDR: ${filename}`);
-  const width = header.readUInt32BE(0);
-  const height = header.readUInt32BE(4);
-  if (header[8] !== 8 || header[9] !== 6) {
-    throw new Error(`Expected 8-bit RGBA PNG: ${filename}`);
-  }
-  const source = zlib.inflateSync(Buffer.concat(
-    chunks.filter(chunk => chunk.type === 'IDAT').map(chunk => chunk.data)
-  ));
-  const stride = width * 4;
-  const rgba = Buffer.alloc(stride * height);
-  for (let y = 0; y < height; y += 1) {
-    const filter = source[y * (stride + 1)];
-    const input = source.subarray((y * (stride + 1)) + 1, (y + 1) * (stride + 1));
-    const output = rgba.subarray(y * stride, (y + 1) * stride);
-    const previous = y ? rgba.subarray((y - 1) * stride, y * stride) : null;
-    for (let x = 0; x < stride; x += 1) {
-      const left = x >= 4 ? output[x - 4] : 0;
-      const above = previous ? previous[x] : 0;
-      const upperLeft = previous && x >= 4 ? previous[x - 4] : 0;
-      const predictor = filter === 0 ? 0
-        : filter === 1 ? left
-          : filter === 2 ? above
-            : filter === 3 ? Math.floor((left + above) / 2)
-              : paeth(left, above, upperLeft);
-      output[x] = (input[x] + predictor) & 255;
-    }
-  }
-  return {
-    width,
-    height,
-    rgba,
-    chunkTypes: chunks.map(chunk => chunk.type)
-  };
+function inspectRgbaWebp(filename) {
+  const script = [
+    'import json, sys',
+    'from PIL import Image',
+    'image = Image.open(sys.argv[1]).convert("RGBA")',
+    'pixels = list(image.getdata())',
+    'visible = sum(alpha > 200 for _, _, _, alpha in pixels)',
+    'partial_green = sum(8 < alpha < 248 and green > 190 and red < 100 and blue < 100 and green > red + 72 and green > blue + 72 for red, green, blue, alpha in pixels)',
+    'partial_magenta = sum(8 < alpha < 248 and red > 190 and blue > 190 and green < 100 and red > green + 72 and blue > green + 72 for red, green, blue, alpha in pixels)',
+    'print(json.dumps({"width": image.width, "height": image.height, "corners": [image.getpixel((0, 0))[3], image.getpixel((image.width - 1, 0))[3], image.getpixel((0, image.height - 1))[3], image.getpixel((image.width - 1, image.height - 1))[3]], "visible": visible, "partialGreen": partial_green, "partialMagenta": partial_magenta}))'
+  ].join('\n');
+  const result = childProcess.spawnSync('python', ['-c', script, filename], {
+    encoding: 'utf8'
+  });
+  if (result.status !== 0) throw new Error(result.stderr || 'WebP inspection failed');
+  return JSON.parse(result.stdout);
 }
 
 function readPcmWavHeader(filename) {
@@ -127,8 +89,8 @@ describe('Stream Monsters 1.5 bundled asset library', () => {
   test('ships 72 unique canonical furry forms with stage metadata and clean alpha', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(furryDir, 'manifest.json'), 'utf8'));
     expect(manifest).toEqual(expect.objectContaining({
-      schemaVersion: 2,
-      assetVersion: 'furry-1.5.0',
+      schemaVersion: 3,
+      assetVersion: 'furry-1.12.0',
       pack: 'furry',
       productionMode: 'bundled-only'
     }));
@@ -150,6 +112,7 @@ describe('Stream Monsters 1.5 bundled asset library', () => {
           promptVersion: expect.any(String),
           generator: expect.stringMatching(/chat image/i),
           dimensions: [1024, 1024],
+          mediaType: 'image/webp',
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
           trimRect: expect.objectContaining({
             x: expect.any(Number),
@@ -168,42 +131,15 @@ describe('Stream Monsters 1.5 bundled asset library', () => {
         expect(hashFile(absolutePath)).toBe(asset.sha256);
         hashes.add(asset.sha256);
 
-        const image = readRgbaPng(absolutePath);
+        expect(asset.assetPath).toMatch(/\.webp$/);
+        const image = inspectRgbaWebp(absolutePath);
         expect([image.width, image.height]).toEqual([1024, 1024]);
-        expect(image.chunkTypes).not.toEqual(expect.arrayContaining(['tEXt', 'iTXt', 'zTXt']));
-        const corners = [
-          3,
-          ((image.width - 1) * 4) + 3,
-          ((image.height - 1) * image.width * 4) + 3,
-          (((image.width * image.height) - 1) * 4) + 3
-        ];
-        corners.forEach(index => expect(image.rgba[index]).toBe(0));
-
-        let visible = 0;
-        let partialGreen = 0;
-        let partialMagenta = 0;
-        for (let index = 0; index < image.rgba.length; index += 4) {
-          const red = image.rgba[index];
-          const green = image.rgba[index + 1];
-          const blue = image.rgba[index + 2];
-          const alpha = image.rgba[index + 3];
-          if (alpha > 200) visible += 1;
-          if (
-            alpha > 8 && alpha < 248 &&
-            green > 190 && red < 100 && blue < 100 &&
-            green > red + 72 && green > blue + 72
-          ) partialGreen += 1;
-          if (
-            alpha > 8 && alpha < 248 &&
-            red > 190 && blue > 190 && green < 100 &&
-            red > green + 72 && blue > green + 72
-          ) partialMagenta += 1;
-        }
-        const coverage = visible / (image.width * image.height);
+        image.corners.forEach(alpha => expect(alpha).toBe(0));
+        const coverage = image.visible / (image.width * image.height);
         expect(coverage).toBeGreaterThan(0.18);
         expect(coverage).toBeLessThan(0.68);
-        expect(partialGreen).toBeLessThan(25);
-        expect(partialMagenta).toBeLessThan(25);
+        expect(image.partialGreen).toBeLessThan(25);
+        expect(image.partialMagenta).toBeLessThan(25);
       });
     }
     expect(hashes.size).toBe(72);
