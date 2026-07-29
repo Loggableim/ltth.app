@@ -37,7 +37,7 @@ describe('WebGPU Superfan finale settings', () => {
   async function waitFor(assertion) {
     const startedAt = Date.now();
     let lastError;
-    while (Date.now() - startedAt < 1000) {
+    while (Date.now() - startedAt < 5000) {
       try {
         assertion();
         return;

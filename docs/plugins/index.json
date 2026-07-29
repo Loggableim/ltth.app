@@ -871,10 +871,10 @@
     "devStatus": "stable",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/features/stream-monsters-creator-1.11.png",
-      "en": "/screenshots/features/stream-monsters-creator-1.11.png",
-      "es": "/screenshots/features/stream-monsters-creator-1.11.png",
-      "fr": "/screenshots/features/stream-monsters-creator-1.11.png"
+      "de": "/screenshots/de/docs/plugins/streamalchemy/alchemy-card.png",
+      "en": "/screenshots/docs/plugins/streamalchemy/alchemy-card.png",
+      "es": "/screenshots/es/docs/plugins/streamalchemy/alchemy-card.png",
+      "fr": "/screenshots/fr/docs/plugins/streamalchemy/alchemy-card.png"
     },
     "translations": {
       "de": {

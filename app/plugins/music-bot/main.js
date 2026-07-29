@@ -2335,7 +2335,7 @@ class MusicBotPlugin extends EventEmitter {
         const code = error?.code;
         const statusCode = code === 'PLAYBACK_SAFETY_LOCKED'
           ? 423
-          : code === 'PLAYBACK_STALE_ID' || code === 'PLAYBACK_SEEK_STATE'
+          : code === 'PLAYBACK_STALE_ID' || code === 'PLAYBACK_SEEK_STATE' || code === 'PLAYBACK_SEEK_UNCONFIRMED'
             ? 409
             : code === 'PLAYBACK_UNSEEKABLE' || code === 'PLAYBACK_UNKNOWN_DURATION'
               ? 422

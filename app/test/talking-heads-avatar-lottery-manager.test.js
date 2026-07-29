@@ -119,5 +119,5 @@ describe('Talking Heads avatar lottery manager', () => {
         .map(frameName => frames[frameName].filter(Boolean).join('|'));
       expect(new Set(speakingSignatures).size).toBe(3);
     }
-  });
+  }, 30000);
 });

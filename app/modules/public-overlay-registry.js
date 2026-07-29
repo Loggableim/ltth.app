@@ -433,6 +433,7 @@ streammonsters:battle_arena_collapse
 streammonsters:battle_cancelled
 streammonsters:battle_choice_locked
 streammonsters:battle_choice_opened
+streammonsters:battle_choice_rejected
 streammonsters:battle_choices_revealed
 streammonsters:battle_completed
 streammonsters:battle_knockout
@@ -445,6 +446,7 @@ streammonsters:battle_special_charged
 streammonsters:battle_started
 streammonsters:chat_result
 streammonsters:egg_boosted
+streammonsters:egg_expired
 streammonsters:egg_landed
 streammonsters:egg_hatched
 streammonsters:egg_ready

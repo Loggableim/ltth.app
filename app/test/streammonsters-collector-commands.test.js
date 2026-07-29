@@ -208,7 +208,7 @@ describe('Stream Monsters 1.2 public commands', () => {
         queue_position: 1
       }),
       card: expect.objectContaining({
-        placement: 'upper',
+        placement: 'upper-third',
         queuePosition: 1
       })
     }));

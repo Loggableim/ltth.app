@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const yauzl = require('yauzl');
+const zlib = require('zlib');
 
 const repoRoot = path.join(__dirname, '..', '..');
 const canonicalTextExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.svg', '.txt']);
@@ -23,13 +24,18 @@ function openZip(zipPath) {
 }
 
 async function listZipEntries(zipPath) {
+  const entries = await listZipFileEntries(zipPath);
+  return entries.map((entry) => entry.fileName);
+}
+
+async function listZipFileEntries(zipPath) {
   const zipFile = await openZip(zipPath);
   const entries = [];
 
   return new Promise((resolve, reject) => {
     zipFile.readEntry();
     zipFile.on('entry', (entry) => {
-      entries.push(entry.fileName);
+      entries.push(entry);
       zipFile.readEntry();
     });
     zipFile.on('end', () => resolve(entries));
@@ -37,77 +43,62 @@ async function listZipEntries(zipPath) {
   });
 }
 
+function readZipEntryBytes(descriptor, entry) {
+  const localHeader = Buffer.alloc(30);
+  const headerBytesRead = fs.readSync(
+    descriptor,
+    localHeader,
+    0,
+    localHeader.length,
+    entry.relativeOffsetOfLocalHeader
+  );
+  assert.strictEqual(headerBytesRead, localHeader.length, `${entry.fileName} must have a complete local ZIP header`);
+  assert.strictEqual(localHeader.readUInt32LE(0), 0x04034b50, `${entry.fileName} must have a local ZIP header`);
+
+  const fileNameLength = localHeader.readUInt16LE(26);
+  const extraFieldLength = localHeader.readUInt16LE(28);
+  const dataStart = entry.relativeOffsetOfLocalHeader + localHeader.length + fileNameLength + extraFieldLength;
+  const compressedBytes = Buffer.alloc(entry.compressedSize);
+  const bytesRead = fs.readSync(descriptor, compressedBytes, 0, compressedBytes.length, dataStart);
+  assert.strictEqual(bytesRead, compressedBytes.length, `${entry.fileName} must have complete ZIP entry data`);
+
+  let bytes;
+  if (entry.compressionMethod === 0) {
+    bytes = compressedBytes;
+  } else if (entry.compressionMethod === 8) {
+    bytes = zlib.inflateRawSync(compressedBytes);
+  } else {
+    throw new Error(`${entry.fileName} uses unsupported ZIP compression method ${entry.compressionMethod}`);
+  }
+
+  assert.strictEqual(bytes.length, entry.uncompressedSize, `${entry.fileName} must match its declared ZIP size`);
+  return bytes;
+}
+
+function readZipFileEntries(zipPath, entries) {
+  const descriptor = fs.openSync(zipPath, 'r');
+  try {
+    return entries
+      .filter((entry) => !entry.fileName.endsWith('/'))
+      .map((entry) => [entry.fileName, readZipEntryBytes(descriptor, entry)]);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
 async function readZipEntry(zipPath, entryName) {
-  const zipFile = await openZip(zipPath);
+  const entries = await listZipFileEntries(zipPath);
+  const entry = entries.find((candidate) => candidate.fileName === entryName);
+  if (!entry) {
+    throw new Error(`ZIP entry not found: ${entryName}`);
+  }
 
-  return new Promise((resolve, reject) => {
-    let found = false;
-
-    zipFile.readEntry();
-    zipFile.on('entry', (entry) => {
-      if (entry.fileName !== entryName) {
-        zipFile.readEntry();
-        return;
-      }
-
-      found = true;
-      zipFile.openReadStream(entry, (streamError, stream) => {
-        if (streamError) {
-          zipFile.close();
-          reject(streamError);
-          return;
-        }
-
-        const chunks = [];
-        stream.on('data', (chunk) => chunks.push(chunk));
-        stream.on('error', (error) => {
-          zipFile.close();
-          reject(error);
-        });
-        stream.on('end', () => {
-          zipFile.close();
-          resolve(Buffer.concat(chunks));
-        });
-      });
-    });
-    zipFile.on('end', () => {
-      if (!found) {
-        zipFile.close();
-        reject(new Error(`ZIP entry not found: ${entryName}`));
-      }
-    });
-    zipFile.on('error', reject);
-  });
+  return readZipFileEntries(zipPath, [entry])[0][1];
 }
 
 async function readAllZipFiles(zipPath) {
-  const zipFile = await openZip(zipPath);
-  const files = new Map();
-
-  return new Promise((resolve, reject) => {
-    zipFile.readEntry();
-    zipFile.on('entry', (entry) => {
-      if (entry.fileName.endsWith('/')) {
-        zipFile.readEntry();
-        return;
-      }
-      zipFile.openReadStream(entry, (streamError, stream) => {
-        if (streamError) {
-          reject(streamError);
-          return;
-        }
-        const chunks = [];
-        stream.on('data', (chunk) => chunks.push(chunk));
-        stream.on('error', reject);
-        stream.on('end', () => {
-          files.set(entry.fileName, Buffer.concat(chunks));
-          zipFile.readEntry();
-        });
-      });
-    });
-    zipFile.on('end', () => resolve(files));
-    zipFile.on('error', reject);
-  });
+  const entries = await listZipFileEntries(zipPath);
+  return new Map(readZipFileEntries(zipPath, entries));
 }
 
 function listSourceFiles(rootDir, relativeDir = '') {
@@ -115,6 +106,14 @@ function listSourceFiles(rootDir, relativeDir = '') {
     const relativePath = path.posix.join(relativeDir.replace(/\\/g, '/'), entry.name);
     return entry.isDirectory() ? listSourceFiles(rootDir, relativePath) : [relativePath];
   });
+}
+
+function listGitTreeFiles(sourceTree) {
+  return childProcess.execFileSync('git', ['ls-tree', '-r', '--name-only', sourceTree], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    windowsHide: true
+  }).split(/\r?\n/).filter(Boolean);
 }
 
 function canonicalSourceBytes(relativeFile, bytes) {
@@ -127,9 +126,13 @@ function canonicalSourceBytes(relativeFile, bytes) {
   );
 }
 
-async function assertPackagedFilesMatchGitSource(packagePath, sourcePrefix, relativeFiles) {
+async function assertPackagedFilesMatchGitSource(packagePath, source, relativeFiles) {
   const packagedFiles = await readAllZipFiles(packagePath);
-  const specs = relativeFiles.map(relativeFile => `:${path.posix.join(sourcePrefix, relativeFile)}`);
+  const specs = relativeFiles.map((relativeFile) => (
+    source.sourceTree
+      ? `${source.sourceTree}:${relativeFile}`
+      : `:${path.posix.join(source.sourcePath, relativeFile)}`
+  ));
   const batch = childProcess.execFileSync('git', ['cat-file', '--batch'], {
     cwd: repoRoot,
     input: `${specs.join('\n')}\n`,
@@ -162,6 +165,30 @@ async function assertPackagedFilesMatchGitSource(packagePath, sourcePrefix, rela
 }
 
 describe('Official plugin store registry', () => {
+  it('reads consecutive compressed Stream Monsters entries without stalling', async () => {
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.1.zip');
+    const files = await readAllZipFiles(packagePath);
+    const first = files.get('assets/audio/cues/arena-heal-1.wav');
+    const second = files.get('assets/audio/cues/arena-hit-1.wav');
+
+    assert(first);
+    assert(second);
+    assert.strictEqual(first.length, 11592);
+    assert.strictEqual(second.length, 41410);
+  }, 5000);
+
+  it('uses the Stream Monsters release-map source tree for package verification', () => {
+    const releaseMap = JSON.parse(fs.readFileSync(
+      path.join(repoRoot, 'app', 'scripts', 'streammonsters-release-map.json'),
+      'utf8'
+    ));
+    const release = releaseMap.releases['1.11.1'];
+    const sourceFiles = listGitTreeFiles(release.sourceTree);
+
+    assert(sourceFiles.includes('backend/streammonsters/avatar-proxy.js'));
+    assert.strictEqual(sourceFiles.length, 523);
+  });
+
   it('publishes the WebGPU Weather Control open beta as a source-identical 1080p package', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'webgpu-weather-control');
@@ -192,7 +219,7 @@ describe('Official plugin store registry', () => {
     assert.deepStrictEqual(packagedManifest, sourceManifest);
     await assertPackagedFilesMatchGitSource(
       packagePath,
-      'app/plugins/webgpu-weather-control',
+      { sourcePath: 'app/plugins/webgpu-weather-control' },
       ['main.js', 'overlay.html', 'ui.html']
     );
   });
@@ -210,8 +237,16 @@ describe('Official plugin store registry', () => {
   it('publishes Stream Monsters 1.11.1 stable for LTTH 1.4.1 with source-identical release assets and keeps earlier archives unchanged', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
-    const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
-    const sourceManifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'plugin.json'), 'utf8'));
+    const releaseMap = JSON.parse(fs.readFileSync(
+      path.join(repoRoot, 'app', 'scripts', 'streammonsters-release-map.json'),
+      'utf8'
+    ));
+    const release = releaseMap.releases['1.11.1'];
+    const sourceManifest = JSON.parse(childProcess.execFileSync(
+      'git',
+      ['show', `${release.sourceTree}:plugin.json`],
+      { cwd: repoRoot, encoding: 'utf8', windowsHide: true }
+    ));
 
     assert(storePlugin, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
@@ -223,6 +258,15 @@ describe('Official plugin store registry', () => {
     assert.strictEqual(storePlugin.channel, 'stable');
     assert(storePlugin.badges.includes('subscriber-only'));
     assert(!storePlugin.badges.includes('working-beta'));
+    assert.strictEqual(release.manifestVersion, storePlugin.version);
+    assert.strictEqual(
+      childProcess.execFileSync(
+        'git',
+        ['rev-parse', `${release.sourceCommit}:app/plugins/streamalchemy`],
+        { cwd: repoRoot, encoding: 'utf8', windowsHide: true }
+      ).trim(),
+      release.sourceTree
+    );
     const legacyPackages = new Map([
       ['streamalchemy-1.2.0.zip', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
       ['streamalchemy-1.3.0.zip', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf'],
@@ -240,15 +284,16 @@ describe('Official plugin store registry', () => {
     const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.1.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
     assert.strictEqual(storePlugin.sha256, digest);
+    assert.strictEqual(release.sha256, digest);
 
     const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
-    const sourceFiles = listSourceFiles(sourceDir).sort();
+    const sourceFiles = listGitTreeFiles(release.sourceTree).sort();
     assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
     assert.deepStrictEqual(packagedManifest, sourceManifest);
     await assertPackagedFilesMatchGitSource(
       packagePath,
-      'app/plugins/streamalchemy',
+      { sourceTree: release.sourceTree },
       sourceFiles
     );
   });

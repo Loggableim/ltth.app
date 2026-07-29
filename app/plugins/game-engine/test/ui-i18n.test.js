@@ -108,6 +108,62 @@ describe('Game Engine UI i18n', () => {
     }
   });
 
+  test('localizes Connect4 timeout lockout administration in every supported locale', () => {
+    const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
+    const controlKeys = [
+      'timeout_lockout_title',
+      'timeout_lockout_minutes',
+      'timeout_lockout_hint',
+      'timeout_lockout_active'
+    ];
+    const runtimeKeys = [
+      'timeout_lockout_empty',
+      'timeout_lockout_reason_viewer_timeout',
+      'timeout_lockout_expires',
+      'timeout_lockout_unlock',
+      'timeout_lockout_unlock_failed',
+      'timeout_lockout_load_failed'
+    ];
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const values = flattenTranslations(JSON.parse(fs.readFileSync(
+        path.join(pluginRoot, 'locales', `${locale}.json`),
+        'utf8'
+      )));
+      for (const key of controlKeys) {
+        expect(values[`plugins.game-engine.ui.connect4.${key}`]).toEqual(expect.any(String));
+        expect(values[`plugins.game-engine.ui.connect4.${key}`]).not.toBe('');
+      }
+      for (const key of runtimeKeys) {
+        expect(values[`plugins.game-engine.ui.runtime.dashboard.${key}`]).toEqual(expect.any(String));
+        expect(values[`plugins.game-engine.ui.runtime.dashboard.${key}`]).not.toBe('');
+      }
+    }
+  });
+
+  test('localizes direct Arena ability controls in every supported locale', () => {
+    const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
+    const requiredKeys = [
+      'direct_abilities_enabled',
+      'ability_charge_seconds',
+      'boost_duration_seconds',
+      'shield_duration_seconds',
+      'boost_color',
+      'shield_color'
+    ];
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const values = flattenTranslations(JSON.parse(fs.readFileSync(
+        path.join(pluginRoot, 'locales', `${locale}.json`),
+        'utf8'
+      )));
+      for (const key of requiredKeys) {
+        expect(values[`plugins.game-engine.ui.arena.${key}`]).toEqual(expect.any(String));
+        expect(values[`plugins.game-engine.ui.arena.${key}`]).not.toBe('');
+      }
+    }
+  });
+
   test('routes dynamic dashboard and overlay copy through independently translated runtime keys', () => {
     const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
     const sources = [

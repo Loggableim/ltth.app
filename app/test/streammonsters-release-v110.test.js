@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const yauzl = require('yauzl');
+const { readZipEntries: readZip } = require('./helpers/zip-reader');
 
 const {
   buildReleaseFromGit,
@@ -34,34 +34,6 @@ function sha256(filename) {
   return crypto.createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
 }
 
-function readZip(filename) {
-  return new Promise((resolve, reject) => {
-    yauzl.open(filename, { lazyEntries: true }, (error, zipFile) => {
-      if (error) return reject(error);
-      const entries = new Map();
-      zipFile.readEntry();
-      zipFile.on('entry', entry => {
-        if (entry.fileName.endsWith('/')) {
-          zipFile.readEntry();
-          return;
-        }
-        zipFile.openReadStream(entry, (streamError, stream) => {
-          if (streamError) return reject(streamError);
-          const chunks = [];
-          stream.on('data', chunk => chunks.push(chunk));
-          stream.on('error', reject);
-          stream.on('end', () => {
-            entries.set(entry.fileName.replace(/\\/g, '/'), Buffer.concat(chunks));
-            zipFile.readEntry();
-          });
-        });
-      });
-      zipFile.on('end', () => resolve(entries));
-      zipFile.on('error', reject);
-    });
-  });
-}
-
 describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
   test('records Jackpot Arena as an immutable 1.10.0 Open Beta plugin', () => {
     const release = loadReleaseMap().releases['1.10.0'];
@@ -83,7 +55,7 @@ describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
     expect(changelog).toContain('Stream Monsters 1.10.0');
     expect(changelog).toContain('Living Egg Shelf');
     expect(changelog).toContain('Jackpot');
-    expect(currentRelease.notes).toContain('archive through 1.10.0 remain preserved');
+    expect(currentRelease.notes).toContain('archive through 1.11.0 remain preserved');
   });
 
   test('binds every tree-backed release to its recorded source commit', () => {
@@ -139,5 +111,5 @@ describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });

@@ -6,6 +6,10 @@ const crypto = require('crypto');
 
 const creatorScreenshot = '/screenshots/features/stream-monsters-creator-1.11.png';
 const arenaScreenshot = '/screenshots/features/stream-monsters-arena-portrait-1.11.png';
+function guideScreenshot(locale, stepId) {
+  const prefix = locale === 'en' ? '/screenshots/docs' : `/screenshots/${locale}/docs`;
+  return `${prefix}/plugins/streamalchemy/${stepId}.png`;
+}
 const historicalScreenshots = {
   'stream-monsters-creator-1.5.png': 'bd02ef5412b2b79b7f6bd1f01507838d91850d0cfaca831c75c3011d437c4c36',
   'stream-monsters-arena-portrait-1.5.png': '450707f0235cdf8661e6165f788669f172407a9145d1c723416eb09221bf1ade'
@@ -81,12 +85,9 @@ describe('Stream Monsters 1.11 public branding', () => {
     expect(docsPage).toContain('Kenney-Notfall-Fallback');
     expect(docsPage).not.toMatch(/>Stream[\s-]?Alchemy</i);
     expect(streamMonstersDocs.name).toBe('Stream Monsters');
-    expect(streamMonstersDocs.image).toEqual({
-      de: creatorScreenshot,
-      en: creatorScreenshot,
-      es: creatorScreenshot,
-      fr: creatorScreenshot
-    });
+    expect(streamMonstersDocs.image).toEqual(Object.fromEntries(
+      ['de', 'en', 'es', 'fr'].map(locale => [locale, guideScreenshot(locale, 'alchemy-card')])
+    ));
     for (const locale of ['de', 'en', 'es', 'fr']) {
       expect(streamMonstersDocs.translations[locale].summary).toContain('72');
       expect(streamMonstersDocs.translations[locale].summary).toMatch(/Rules v8/i);
@@ -103,17 +104,17 @@ describe('Stream Monsters 1.11 public branding', () => {
     expect(furryManifest.assets.filter((asset) => asset.stage === 3)).toHaveLength(24);
   });
 
-  it('uses the Creator screenshot for setup steps and the portrait arena for battle and OBS steps', () => {
-    const creatorSteps = ['alchemy-card', 'automation-rule', 'action-chain', 'rule-reset'];
-    const arenaSteps = ['rule-dry-run', 'alchemy-overlay'];
+  it('uses one localized current UI capture for every documented Stream Monsters step', () => {
+    const steps = [
+      'alchemy-card', 'retention-rules', 'automation-rule', 'action-chain',
+      'rule-dry-run', 'alchemy-overlay', 'rule-reset'
+    ];
 
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const guideLocale = readJson('locales', 'guides', `${locale}.json`);
-      for (const stepId of creatorSteps) {
-        expect(guideLocale[`docs.plugin.streamalchemy.steps.${stepId}.src`]).toBe(creatorScreenshot);
-      }
-      for (const stepId of arenaSteps) {
-        expect(guideLocale[`docs.plugin.streamalchemy.steps.${stepId}.src`]).toBe(arenaScreenshot);
+      for (const stepId of steps) {
+        expect(guideLocale[`docs.plugin.streamalchemy.steps.${stepId}.src`])
+          .toBe(guideScreenshot(locale, stepId));
       }
     }
 

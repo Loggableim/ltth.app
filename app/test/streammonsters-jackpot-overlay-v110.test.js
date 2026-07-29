@@ -66,21 +66,18 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     );
   });
 
-  test('shows !adopt for eight seconds only on public free eggs while the gold ring persists', () => {
+  test('keeps public free eggs visible through the persistent portrait focus instead of a transient card callout', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
       <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
     `);
-    let now = 10_000;
-    const scheduled = [];
     const view = Shelf.createEggStageView({
       document: dom.window.document,
-      now: () => now,
-      setTimeout: callback => {
-        scheduled.push(callback);
-        return scheduled.length;
-      },
-      clearTimeout: () => {}
+      now: () => 10_000,
+      labels: {
+        eggFocusOpenOwner: 'Open to eligible viewers',
+        eggFocusPublic: 'Free egg · {time} · {command}'
+      }
     });
     view.applySnapshot([
       egg('gift-owned'),
@@ -94,17 +91,20 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
 
     const free = dom.window.document.querySelector('[data-egg-id="free-public"]');
     const gift = dom.window.document.querySelector('[data-egg-id="gift-owned"]');
+    const focus = dom.window.document.querySelector('[data-egg-focus]');
     expect(free.dataset.adoptable).toBe('true');
     expect(free.classList.contains('gold-ring')).toBe(true);
-    expect(free.querySelector('[data-adopt-callout]').textContent).toBe('!adopt');
+    expect(free.querySelector('[data-adopt-callout]')).toBeNull();
+    expect(focus.hidden).toBe(false);
+    expect(focus.dataset.eggId).toBe('free-public');
+    expect(focus.dataset.adoptable).toBe('true');
+    expect(focus.querySelector('[data-egg-focus-owner]').textContent)
+      .toBe('Open to eligible viewers');
+    expect(focus.querySelector('[data-egg-focus-state]').textContent)
+      .toBe('Free egg · 00:40 · !adopt');
     expect(gift.dataset.adoptable).toBe('false');
     expect(gift.classList.contains('gold-ring')).toBe(false);
     expect(gift.querySelector('[data-adopt-callout]')).toBeNull();
-
-    now += 8_001;
-    scheduled.forEach(callback => callback());
-    expect(free.classList.contains('gold-ring')).toBe(true);
-    expect(free.querySelector('[data-adopt-callout]')).toBeNull();
 
     view.applyEvent('free_egg_claimed', {
       eggStage: egg('free-public', {
@@ -118,7 +118,7 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(dom.window.document.querySelector('[data-egg-id="free-public"]')).toBeNull();
   });
 
-  test('refreshes exact countdown, queue, ready, rotten and free-offer status without replaying landing', () => {
+  test('refreshes exact countdown, queue, ready and free-offer status without replaying landing', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
       <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
@@ -139,7 +139,7 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
         ready: 'Bereit · {command}',
         expired: 'Verrottet',
         reserved: 'Reserviert · {time}',
-        public: 'Gratis · {command}'
+        public: 'Gratis · {time}'
       },
       getHatchReference: () => '!schlupf',
       getAdoptReference: () => '!adoptieren'
@@ -173,9 +173,9 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(label('owned-incubating')).toBe('Schlüpft in 00:04');
     expect(label('owned-queued')).toBe('Warteschlange #2');
     expect(label('owned-ready')).toBe('Bereit · !schlupf');
-    expect(label('owned-expired')).toBe('Verrottet');
+    expect(item('owned-expired')).toBeNull();
     expect(label('free-reserved')).toBe('Reserviert · 01:00');
-    expect(label('free-public')).toBe('Gratis · !adoptieren');
+    expect(label('free-public')).toBe('Gratis · 00:49');
     expect(item('owned-incubating').classList.contains('landing')).toBe(false);
 
     view.applyEvent('egg_landed', { eggStage: egg('fresh-landing') });
@@ -227,7 +227,7 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     view.destroy();
   });
 
-  test('turns a live ready egg rotten without removing its shelf entry', () => {
+  test('removes an expired egg from the rendered shelf while preserving the authoritative stage model', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
       <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
@@ -243,9 +243,8 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     });
 
     const item = dom.window.document.querySelector('[data-egg-id="rotten-live"]');
-    expect(item).not.toBeNull();
-    expect(item.dataset.state).toBe('expired');
-    expect(item.querySelector('[data-egg-timing]').textContent).toBe('Rotten');
+    expect(item).toBeNull();
+    expect(view.model().visible).toEqual([]);
     view.destroy();
   });
 
@@ -304,21 +303,14 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(reduced.visible[0].motion.phase).toBe('settled');
   });
 
-  test('expires the ninth public egg callout in the rotating overflow without removing its ring', () => {
+  test('keeps the gold ring on an overflowing public egg without rendering a per-egg callout', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
       <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
     `);
-    let now = 20_000;
-    const scheduled = [];
     const view = Shelf.createEggStageView({
       document: dom.window.document,
-      now: () => now,
-      setTimeout: callback => {
-        scheduled.push(callback);
-        return scheduled.length;
-      },
-      clearTimeout: () => {}
+      now: () => 20_000
     });
     view.applySnapshot(Array.from({ length: 9 }, (_, index) => egg(`public-${index}`, {
       provenance: 'free',
@@ -328,13 +320,8 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     })));
     const overflow = dom.window.document.querySelector('[data-egg-overflow]');
 
-    expect(overflow.querySelector('[data-adopt-callout]')).not.toBeNull();
+    expect(overflow.querySelector('[data-adopt-callout]')).toBeNull();
     expect(overflow.querySelector('.gold-ring')).not.toBeNull();
-
-    now += 8_001;
-    scheduled.forEach(callback => callback());
-
-    expect(dom.window.document.querySelectorAll('[data-adopt-callout]')).toHaveLength(0);
     expect(overflow.querySelector('.gold-ring')).not.toBeNull();
     view.destroy();
   });

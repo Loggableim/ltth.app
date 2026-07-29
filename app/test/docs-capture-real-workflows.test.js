@@ -290,6 +290,12 @@ describe('documentation capture real workflows', () => {
     }
   );
 
+  test('captures the current portrait battle preview instead of the removed legacy stage', () => {
+    expect(step('streamalchemy', 'rule-dry-run').workflow.captureRule).toEqual(
+      expect.objectContaining({ selector: '#portraitBattlePreview' })
+    );
+  });
+
   test('captures the current Stream Monsters overlay URL control at the documented viewport', () => {
     expect(step('streamalchemy', 'alchemy-overlay').workflow.captureRule).toEqual(
       expect.objectContaining({

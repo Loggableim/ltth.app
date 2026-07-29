@@ -22,13 +22,13 @@ describe('plugin documentation QA gallery', () => {
     const report = JSON.parse(fs.readFileSync(path.join(outputDir, 'report.json'), 'utf8'));
     const html = fs.readFileSync(path.join(outputDir, 'index.html'), 'utf8');
 
-    expect(result).toEqual(expect.objectContaining({ screenshotCount: 852, guideCount: 38 }));
+    expect(result).toEqual(expect.objectContaining({ screenshotCount: 856, guideCount: 38 }));
     expect(report).toEqual(expect.objectContaining({
       reviewStatus: 'pending',
       guides: 38,
       locales: ['de', 'en', 'es', 'fr'],
-      screenshots: 852,
-      receipts: 852,
+      screenshots: 856,
+      receipts: 856,
       obs: expect.objectContaining({ expected: 104, records: 0 })
     }));
     expect(html).toContain('data-plugin');
