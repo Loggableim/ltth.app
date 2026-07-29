@@ -1,4 +1,5 @@
 const { createHash } = require('crypto');
+const { sanitizeCombatReport } = require('./battle-report');
 
 const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:egg_spawned',
@@ -17,6 +18,7 @@ const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:monster_evolved',
   'streammonsters:mastery_unlocked',
   'streammonsters:stream_mission_completed',
+  'streammonsters:battle_completed',
   'streammonsters:achievement_unlocked',
   'streammonsters:season_rank_changed'
 ]);
@@ -656,6 +658,57 @@ class StreamMonstersPublicEventProjector {
         charge: Math.max(0, Math.min(100, finiteNumber(payload.charge, 0))),
         monster: projectMonster(payload.monster)
       };
+    }
+    if (eventType === 'streammonsters:battle_completed') {
+      const winnerSlot = Math.max(0, Math.min(
+        2,
+        finiteNumber(payload.winnerSlot, 0)
+      ));
+      const forfeitedSlot = Math.max(0, Math.min(
+        2,
+        finiteNumber(payload.forfeitedSlot, 0)
+      ));
+      const terminalReason = [
+        'knockout',
+        'double_knockout',
+        'forfeit'
+      ].includes(payload.terminalReason)
+        ? payload.terminalReason
+        : null;
+      const sequence = Math.max(0, finiteNumber(payload.sequence, 0));
+      const projected = {
+        matchId: boundedText(payload.matchId, 160),
+        winnerSlot,
+        winner: projectMonster(payload.winner),
+        ratingChanges: Array.isArray(payload.ratingChanges)
+          ? payload.ratingChanges.map(change => ({
+              slot: Math.max(0, Math.min(2, finiteNumber(change?.slot, 0))),
+              before: Math.max(0, finiteNumber(change?.before, 0)),
+              after: Math.max(0, finiteNumber(change?.after, 0)),
+              delta: finiteNumber(change?.delta, 0)
+            })).filter(change => change.slot > 0)
+          : [],
+        completion: payload.completion === 'forfeit' ? 'forfeit' : 'battle',
+        forfeitedSlot: forfeitedSlot || null,
+        ...(sequence ? { sequence } : {})
+      };
+      if (terminalReason) {
+        projected.terminalReason = terminalReason;
+        projected.knockout = terminalReason === 'knockout'
+          ? {
+              round: Math.max(1, finiteNumber(payload.knockout?.round, 1)),
+              remainingHp: Math.max(
+                0,
+                finiteNumber(payload.knockout?.remainingHp, 0)
+              ),
+              maxHp: Math.max(1, finiteNumber(payload.knockout?.maxHp, 1))
+            }
+          : null;
+      }
+      if (payload.combatReport && typeof payload.combatReport === 'object') {
+        projected.combatReport = sanitizeCombatReport(payload.combatReport);
+      }
+      return projected;
     }
     if (eventType === 'streammonsters:chat_result') {
       return {

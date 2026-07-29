@@ -22,6 +22,10 @@ const {
   projectBattleFighter,
   projectBattleChoices
 } = require('./public-event-projector');
+const {
+  buildCombatReport,
+  sanitizeCombatReport
+} = require('./battle-report');
 const ArenaDirector = require('../../streammonsters-arena-director');
 
 const ROSTER_WINDOW_MS = 10_000;
@@ -2065,6 +2069,19 @@ class BattleMatchService {
       }
 
       const actions = this.getReplay(matchId).actions;
+      const combatReport = buildCombatReport({
+        actions,
+        fighters: match.participants.map(participant => ({
+          slot: participant.slot,
+          monsterId: participant.lockedMonsterId,
+          playerName: this.publicViewerName(participant.viewerId),
+          monsterName: participant.roster?.name
+        })),
+        participantResults,
+        roundNumber: match.roundNumber,
+        createdAtMs: match.createdAtMs,
+        completedAtMs: nowMs
+      });
       const durableWinnerMonsterId = isDraw
         ? 'double_knockout'
         : resolvedWinnerMonsterId;
@@ -2081,7 +2098,8 @@ class BattleMatchService {
         forfeitedSlot: forfeitedParticipant?.slot || null,
         season,
         participants: participantResults,
-        actions
+        actions,
+        combatReport
       };
       this.db.prepare(`
         UPDATE streammonsters_matches SET result_json = ? WHERE match_id = ?
@@ -2114,7 +2132,8 @@ class BattleMatchService {
         completion,
         terminalReason,
         knockout,
-        forfeitedParticipantId: forfeitedParticipant?.participantId || null
+        forfeitedParticipantId: forfeitedParticipant?.participantId || null,
+        combatReport
       }, {
         matchId,
         winnerSlot: winnerParticipant?.slot || 0,
@@ -2128,7 +2147,8 @@ class BattleMatchService {
         completion,
         terminalReason,
         knockout,
-        forfeitedSlot: forfeitedParticipant?.slot || null
+        forfeitedSlot: forfeitedParticipant?.slot || null,
+        combatReport
       });
       return this.getMatch(matchId);
     });
@@ -2599,6 +2619,9 @@ class BattleMatchService {
         completion: payload.completion === 'forfeit' ? 'forfeit' : 'battle',
         forfeitedSlot: Number(payload.forfeitedSlot) || null
       };
+      if (payload.combatReport && typeof payload.combatReport === 'object') {
+        projected.combatReport = sanitizeCombatReport(payload.combatReport);
+      }
       if (terminalReason) {
         projected.terminalReason = terminalReason;
         projected.knockout = knockout;
@@ -2963,6 +2986,10 @@ class BattleMatchService {
           maxHp: Math.max(1, Math.round(Number(match.result.knockout?.maxHp) || 1))
         }
       : null;
+    const combatReport = match.result.combatReport &&
+      typeof match.result.combatReport === 'object'
+      ? sanitizeCombatReport(match.result.combatReport)
+      : null;
     return {
       winnerSlot: winner?.slot || 0,
       winner: persistedWinner || (winner
@@ -2974,6 +3001,7 @@ class BattleMatchService {
       completion: match.result.completion === 'forfeit' ? 'forfeit' : 'battle',
       forfeitedSlot: forfeited?.slot || null,
       ...(terminalReason ? { terminalReason, knockout } : {}),
+      ...(combatReport ? { combatReport } : {}),
       season,
       participants: Array.isArray(match.result.participants)
         ? match.result.participants.map(result => ({

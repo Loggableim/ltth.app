@@ -360,6 +360,116 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
     ].forEach(secret => expect(publicJson).not.toContain(secret));
   });
 
+  test('persists one bounded battle completion for reconnect with its stable identity', () => {
+    const { store, api, plugin } = createRuntime();
+    const raw = {
+      matchId: 'match-public-report',
+      winnerSlot: 1,
+      completion: 'battle',
+      terminalReason: 'knockout',
+      knockout: {
+        round: 2,
+        remainingHp: 8,
+        maxHp: 40
+      },
+      eventId: 'match-public-report:event:9',
+      correlationId: 'match-public-report',
+      seed: 'private-seed',
+      combatReport: {
+        roundCount: 2,
+        durationMs: 1_500,
+        decisiveSkill: {
+          round: 2,
+          ownerSlot: 1,
+          choice: 'C',
+          skillName: 'Solar Bloom',
+          skillIcon: '☀️',
+          actorId: 'private-monster'
+        },
+        fighters: [{
+          slot: 1,
+          playerName: 'tiktok:7123456789012345678',
+          monsterName: 'Ashfang',
+          damageDealt: Number.MAX_VALUE,
+          damageBlocked: 1,
+          healingDone: 2,
+          shieldGained: 4,
+          specialsUsed: 1,
+          hits: 1,
+          evades: 0,
+          xpAwarded: 15,
+          rating: {
+            before: 900,
+            after: 916,
+            delta: 16,
+            eligible: true,
+            viewerId: 'private-viewer'
+          },
+          participantId: 'private-participant',
+          actions: [{ seed: 'private-action-seed' }]
+        }]
+      }
+    };
+
+    const first = plugin.emitStreamMonsters(
+      'streammonsters:battle_completed',
+      raw
+    );
+    const duplicate = plugin.emitStreamMonsters(
+      'streammonsters:battle_completed',
+      raw
+    );
+    const recent = store.getRecentPublicEvents('creator:live-1');
+
+    expect(plugin.streamMonstersPublicEventProjector.isCritical(
+      'streammonsters:battle_completed'
+    )).toBe(true);
+    expect(first.eventId).toBe(raw.eventId);
+    expect(duplicate).toEqual(first);
+    expect(first.combatReport).toEqual({
+      roundCount: 2,
+      durationMs: 1_500,
+      decisiveSkill: {
+        round: 2,
+        ownerSlot: 1,
+        choice: 'C',
+        skillName: 'Solar Bloom',
+        skillIcon: '☀️'
+      },
+      fighters: [{
+        slot: 1,
+        playerName: 'Viewer',
+        monsterName: 'Ashfang',
+        damageDealt: 1_000_000,
+        damageBlocked: 1,
+        healingDone: 2,
+        shieldGained: 4,
+        specialsUsed: 1,
+        hits: 1,
+        evades: 0,
+        xpAwarded: 15,
+        rating: {
+          before: 900,
+          after: 916,
+          delta: 16,
+          eligible: true
+        }
+      }]
+    });
+    expect(api.emit.mock.calls.filter(([event]) => (
+      event === 'streammonsters:battle_completed'
+    ))).toHaveLength(1);
+    expect(recent).toEqual([expect.objectContaining({
+      eventId: raw.eventId,
+      correlationId: raw.correlationId,
+      type: 'streammonsters:battle_completed',
+      payload: first
+    })]);
+    expect(JSON.stringify(recent)).not.toMatch(
+      /private-|viewerId|participantId|actorId|actions|seed/
+    );
+  });
+
   test('deduplicates mastery unlocks with stable opaque event and correlation IDs', () => {
     const { store, api, plugin } = createRuntime();
     const raw = {
