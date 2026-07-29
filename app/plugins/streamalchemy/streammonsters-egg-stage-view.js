@@ -25,8 +25,7 @@
 
   function isClaimedFreeInventoryEgg(egg = {}) {
     return egg.provenance === 'free' &&
-      egg.ownershipState === 'owned' &&
-      !['reserved', 'public'].includes(egg.state);
+      egg.ownershipState === 'owned';
   }
 
   function formatCountdown(milliseconds) {
@@ -697,6 +696,8 @@
       }
       if (
         type === 'egg_stage_removed' ||
+        type === 'egg_expired' ||
+        isClaimedFreeInventoryEgg(egg) ||
         egg?.state === 'claimed'
       ) {
         eggsById.delete(visualId);

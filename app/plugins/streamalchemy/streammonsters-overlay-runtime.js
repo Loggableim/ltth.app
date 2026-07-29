@@ -35,6 +35,23 @@
     'monster_visual_evolved'
   ]);
   const COALESCED_TYPES = new Set(['hype_changed', 'chat_result']);
+  const EGG_STAGE_TYPES = new Set([
+    'egg_landed',
+    'free_egg_reserved',
+    'free_egg_public',
+    'free_egg_claimed',
+    'egg_ready',
+    'egg_stage_updated',
+    'egg_boosted',
+    'egg_expired',
+    'egg_stage_removed'
+  ]);
+  const EGG_LIFECYCLE_TYPES = new Set([
+    ...EGG_STAGE_TYPES,
+    'egg_spawned',
+    'hatch_started',
+    'egg_hatched'
+  ]);
   const DURABLE_TYPES = new Set([
     'hype_milestone',
     'elemental_hour',
@@ -120,6 +137,10 @@
     return RECENT_TYPE_ALIASES[normalized] || normalized;
   }
 
+  function isEggStageEvent(type) {
+    return EGG_STAGE_TYPES.has(normalizeRecentEventType(type));
+  }
+
   function replayableRecentEvents(snapshot = {}, {
     afterSequence = 0,
     seenEventIds = []
@@ -146,6 +167,7 @@
       if (publicSequence && publicSequence <= cursor) continue;
       const type = normalizeRecentEventType(event.type);
       if (!REPLAYABLE_RECENT_TYPES.has(type)) continue;
+      if (EGG_LIFECYCLE_TYPES.has(type)) continue;
       const eventId = String(event.eventId || '').trim();
       if (eventId && (seenIds.has(eventId) || replayIds.has(eventId))) continue;
       if (eventId) replayIds.add(eventId);
@@ -599,10 +621,34 @@
     let activeBattleId = null;
     let activeGroupBattleId = null;
 
-    function priority(type) {
+    function priority(type, data = {}) {
       if (type === 'state_snapshot') return 4;
       if (CRITICAL_TYPES.has(type)) return 3;
+      if (type === 'chat_result' && data?.result?.status === 'egg_not_ready') return 2;
       return DURABLE_TYPES.has(type) ? 2 : 1;
+    }
+
+    function semanticPart(value, fallback = '') {
+      return String(value ?? fallback)
+        .replace(/[\u0000-\u001f\u007f]/g, '')
+        .trim()
+        .toLowerCase()
+        .slice(0, 96);
+    }
+
+    function coalescingKey(type, data = {}) {
+      if (type === 'hype_changed') return 'hype_changed';
+      if (type === 'free_egg_reserved' || type === 'free_egg_public') return type;
+      if (type !== 'chat_result' || data?.result?.status === 'egg_not_ready') return null;
+      return [
+        'chat_result',
+        semanticPart(
+          data.displayName || data.playerName || data.username || data.nickname,
+          'viewer'
+        ),
+        semanticPart(data.command, 'unknown'),
+        semanticPart(data?.result?.status, 'unknown')
+      ].join(':');
     }
 
     function groupKey(type, data = {}) {
@@ -657,13 +703,14 @@
       return entries.length + (snapshotEvent ? 1 : 0);
     }
 
-    function eventFingerprint(type, data = {}, targetGroupKey = null) {
+    function eventFingerprint(type, data = {}, targetGroupKey = null, semanticKey = null) {
       const explicitId = data.eventId || data.event_id || data.event?.id ||
         data.round?.eventId || data.round?.event_id;
       const round = typeof data.round === 'object'
         ? data.round?.number
         : (data.round ?? data.roundNumber);
       if (explicitId) return `${targetGroupKey || 'event'}:${type}:id:${explicitId}`;
+      if (semanticKey) return null;
       if (!targetGroupKey) return null;
       if ([
         'battle_started',
@@ -772,8 +819,9 @@
     }
 
     function enqueue(type, data, enqueuedAt = Date.now()) {
+      const semanticKey = coalescingKey(type, data);
       const targetGroupKey = groupKey(type, data);
-      const fingerprint = eventFingerprint(type, data, targetGroupKey);
+      const fingerprint = eventFingerprint(type, data, targetGroupKey, semanticKey);
       if (
         fingerprint &&
         (
@@ -781,18 +829,19 @@
           !rememberFingerprint(fingerprint)
         )
       ) return false;
-      if (COALESCED_TYPES.has(type)) {
-        const priorIndex = entries.findIndex(entry => entry.type === type);
+      if (semanticKey) {
+        const priorIndex = entries.findIndex(entry => entry.coalescingKey === semanticKey);
         if (priorIndex >= 0) entries.splice(priorIndex, 1);
       }
       entries.push({
         type,
         data,
         enqueuedAt,
-        priority: priority(type),
+        priority: priority(type, data),
         sequence: sequence += 1,
         groupKey: targetGroupKey,
-        fingerprint
+        fingerprint,
+        coalescingKey: semanticKey
       });
       trim();
       return true;
@@ -803,7 +852,7 @@
         type: 'state_snapshot',
         data,
         enqueuedAt,
-        priority: priority('state_snapshot'),
+        priority: priority('state_snapshot', data),
         sequence: sequence += 1
       };
       trim();
@@ -1582,6 +1631,7 @@
     hatchDurationSpec,
     criticalLocalePages,
     isCritical: type => CRITICAL_TYPES.has(type),
+    isEggStageEvent,
     localizedPayloadField,
     localeForStableEvent,
     normalizeVolume,

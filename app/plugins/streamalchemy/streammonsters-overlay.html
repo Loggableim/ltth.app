@@ -2271,17 +2271,7 @@
         )
       );
     }
-    if ([
-      'egg_landed',
-      'free_egg_reserved',
-      'free_egg_public',
-      'free_egg_claimed',
-      'egg_ready',
-      'egg_stage_updated',
-      'egg_boosted',
-      'egg_stage_removed'
-    ].includes(type)) {
-      eggStageView.applyEvent(type, data);
+    if (window.StreamMonstersOverlayRuntime.isEggStageEvent(type)) {
       const projectedEgg = data?.eggStage || data?.egg_stage || data?.egg;
       const adoptionNotice = window.StreamMonstersEggStageView
         .buildAdoptionNotice(type, data);
@@ -2926,6 +2916,9 @@
     scheduleQueueWake();
   };
   const enqueue = (type, data) => {
+    if (window.StreamMonstersOverlayRuntime.isEggStageEvent(type)) {
+      eggStageView.applyEvent(type, data);
+    }
     if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {
       criticalLocaleSequencer.cancel(
         window.StreamMonstersOverlayRuntime.statSequenceKey(data)
@@ -3007,6 +3000,7 @@
     'streammonsters:free_egg_public':'free_egg_public',
     'streammonsters:free_egg_claimed':'free_egg_claimed',
     'streammonsters:egg_stage_removed':'egg_stage_removed',
+    'streammonsters:egg_expired':'egg_expired',
     'streammonsters:egg_boosted':'egg_boosted',
     'streammonsters:gift_combo':'gift_combo',
     'streammonsters:hype_changed':'hype_changed',
