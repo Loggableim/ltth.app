@@ -3,7 +3,7 @@ const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const yauzl = require('yauzl');
+const { readZipEntries: readZip } = require('./helpers/zip-reader');
 
 const {
   RELEASE_MAP_PATH,
@@ -46,34 +46,6 @@ function git(...args) {
     ['-C', repoRoot, ...args],
     { encoding: 'utf8', windowsHide: true }
   ).trim();
-}
-
-function readZip(filename) {
-  return new Promise((resolve, reject) => {
-    yauzl.open(filename, { lazyEntries: true }, (error, zipFile) => {
-      if (error) return reject(error);
-      const entries = new Map();
-      zipFile.readEntry();
-      zipFile.on('entry', entry => {
-        if (entry.fileName.endsWith('/')) {
-          zipFile.readEntry();
-          return;
-        }
-        zipFile.openReadStream(entry, (streamError, stream) => {
-          if (streamError) return reject(streamError);
-          const chunks = [];
-          stream.on('data', chunk => chunks.push(chunk));
-          stream.on('error', reject);
-          stream.on('end', () => {
-            entries.set(entry.fileName.replace(/\\/g, '/'), Buffer.concat(chunks));
-            zipFile.readEntry();
-          });
-        });
-      });
-      zipFile.on('end', () => resolve(entries));
-      zipFile.on('error', reject);
-    });
-  });
 }
 
 describe('Stream Monsters 1.6-1.8 release integrity', () => {

@@ -122,7 +122,66 @@ git add app/test/plugin-store-registry.test.js docs/superpowers/plans/2026-07-29
 git commit -m "test(plugin-store): read package entries without stream stalls"
 ```
 
-### Task 3: Verify the integration and publish
+### Task 3: Share the direct ZIP reader across historical Stream Monsters release tests
+
+**Files:**
+- Create: `app/test/helpers/zip-reader.js`
+- Create: `app/test/helpers/zip-reader.test.js`
+- Modify: `app/test/streammonsters-release-v18.test.js`
+- Modify: `app/test/streammonsters-release-v19.test.js`
+- Modify: `app/test/streammonsters-release-v110.test.js`
+- Modify: `app/test/streammonsters-release-v111.test.js`
+
+**Interfaces:**
+- Consumes: a ZIP file path and `yauzl` central-directory metadata.
+- Produces: `readZipEntries(zipPath): Promise<Map<string, Buffer>>`, with normalized slash-separated entry names and exact uncompressed entry bytes.
+
+- [x] **Step 1: Write the failing shared-helper regression**
+
+```js
+const { readZipEntries } = require('./zip-reader');
+
+it('reads two consecutive compressed entries from Stream Monsters 1.11.1', async () => {
+  const entries = await readZipEntries(packagePath);
+  expect(entries.get('assets/audio/cues/arena-heal-1.wav')).toHaveLength(11592);
+  expect(entries.get('assets/audio/cues/arena-hit-1.wav')).toHaveLength(41410);
+});
+```
+
+- [x] **Step 2: Run the helper test to verify it fails before the helper exists**
+
+Run: `node .\\node_modules\\jest\\bin\\jest.js --runInBand test/helpers/zip-reader.test.js`
+
+Expected: FAIL because `./zip-reader` has not been created.
+
+- [x] **Step 3: Implement the shared direct ZIP reader**
+
+Implement metadata enumeration through `yauzl` and direct `fs.readSync` reads from each local file header. For methods `0` and `8`, return stored bytes or `zlib.inflateRawSync` output; validate the local signature, complete compressed-data read, and final uncompressed size. Reject every unsupported compression method.
+
+- [x] **Step 4: Replace only the duplicated `readZip()` functions that consume archive contents**
+
+```js
+const { readZipEntries: readZip } = require('./helpers/zip-reader');
+```
+
+Remove their local `yauzl` imports and `openReadStream()` readers in the four historical Stream Monsters release suites. Preserve all existing manifest, SHA-256, Git-provenance, and rebuild assertions.
+
+- [x] **Step 5: Run the helper and all affected release suites**
+
+```powershell
+node .\\node_modules\\jest\\bin\\jest.js --runInBand test/helpers/zip-reader.test.js test/streammonsters-release-v18.test.js test/streammonsters-release-v19.test.js test/streammonsters-release-v110.test.js test/streammonsters-release-v111.test.js
+```
+
+Expected: No ZIP-reader timeout. If a post-timeout assertion fails, diagnose it independently before changing test or production behavior.
+
+- [x] **Step 6: Commit the shared ZIP-reader migration**
+
+```powershell
+git add app/test/helpers/zip-reader.js app/test/helpers/zip-reader.test.js app/test/streammonsters-release-v18.test.js app/test/streammonsters-release-v19.test.js app/test/streammonsters-release-v110.test.js app/test/streammonsters-release-v111.test.js docs/superpowers/plans/2026-07-29-plugin-store-archive-reader.md
+git commit -m "test(releases): share robust ZIP entry reader"
+```
+
+### Task 4: Verify the integration and publish
 
 **Files:**
 - Verify: `app/test/plugin-store-registry.test.js`, `app/plugins/game-engine/test/`
