@@ -58,8 +58,8 @@ describe('Stream Monsters current 1.11 release', () => {
       packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       screenshots: [
-        '/screenshots/features/stream-monsters-creator-1.5.png',
-        '/screenshots/features/stream-monsters-arena-portrait-1.5.png'
+        '/screenshots/features/stream-monsters-creator-1.11.png',
+        '/screenshots/features/stream-monsters-arena-portrait-1.11.png'
       ]
     }));
     expect(readJson('package.json').version).toBe('1.4.1');
@@ -125,7 +125,7 @@ describe('Stream Monsters current 1.11 release', () => {
     );
   });
 
-  test('ships the requested landscape Creator and portrait Arena screenshots', () => {
+  test('preserves the historical 1.5 landscape Creator and portrait Arena screenshots', () => {
     const creator = fs.readFileSync(path.join(
       repoRoot,
       'screenshots',
@@ -140,5 +140,17 @@ describe('Stream Monsters current 1.11 release', () => {
     ));
     expect([creator.readUInt32BE(16), creator.readUInt32BE(20)]).toEqual([1920, 1080]);
     expect([arena.readUInt32BE(16), arena.readUInt32BE(20)]).toEqual([1080, 1920]);
+    expect(sha256(path.join(
+      repoRoot,
+      'screenshots',
+      'features',
+      'stream-monsters-creator-1.5.png'
+    ))).toBe('bd02ef5412b2b79b7f6bd1f01507838d91850d0cfaca831c75c3011d437c4c36');
+    expect(sha256(path.join(
+      repoRoot,
+      'screenshots',
+      'features',
+      'stream-monsters-arena-portrait-1.5.png'
+    ))).toBe('450707f0235cdf8661e6165f788669f172407a9145d1c723416eb09221bf1ade');
   });
 });

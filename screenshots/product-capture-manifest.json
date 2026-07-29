@@ -587,8 +587,8 @@
       }
     },
     {
-      "id": "stream-monsters-arena-portrait-1.5",
-      "canonical": "/screenshots/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "canonical": "/screenshots/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": "default-demo",
       "viewport": {
@@ -598,8 +598,8 @@
       }
     },
     {
-      "id": "stream-monsters-creator-1.5",
-      "canonical": "/screenshots/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "canonical": "/screenshots/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": "default-demo",
       "viewport": {
@@ -840,8 +840,8 @@
       }
     }
   ],
-  "sourceUrl": "http://127.0.0.1:3128",
-  "capturedAt": "2026-07-11T19:05:37.295Z",
+  "sourceUrl": "isolated-local-process",
+  "capturedAt": "2026-07-29T04:35:44.748Z",
   "requestedLocales": [
     "de",
     "en",
@@ -1241,23 +1241,40 @@
     },
     {
       "locale": "de",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/de/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/de/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "de",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "charge",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "d795bdb13a7411c408712c9038027f1a15cc29bf17e95509b2e1247755e7aaa7",
+      "bytes": 1145766
     },
     {
       "locale": "de",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/de/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/de/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "de",
         "theme": "cid"
-      }
+      },
+      "sha256": "d5acf08401a8ab080d42a57b2a72c5309d4d8175c5b0fc5a35f37934a72feda1",
+      "bytes": 770115
     },
     {
       "locale": "de",
@@ -1821,23 +1838,40 @@
     },
     {
       "locale": "en",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "en",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "charge",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "64bd758d045952352b3a4c3cd6849e2d93880735cfcdb6106be101c8149ff437",
+      "bytes": 1139441
     },
     {
       "locale": "en",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "en",
         "theme": "cid"
-      }
+      },
+      "sha256": "8f0bf8d6b6d98bd1876aae5ef81702f92e8b2d5007d792fed9a559bae2926dc3",
+      "bytes": 773309
     },
     {
       "locale": "en",
@@ -2401,23 +2435,40 @@
     },
     {
       "locale": "es",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/es/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/es/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "es",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "charge",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "3635d8c94679eaa8072fde93c52f54caef00780714f2192b5d32fb2169958edc",
+      "bytes": 1139741
     },
     {
       "locale": "es",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/es/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/es/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "es",
         "theme": "cid"
-      }
+      },
+      "sha256": "e8d9f8a8a0cd3703bed3594c9b846c37fd3fa5f511c4ca75c70422d6047b7fd0",
+      "bytes": 781499
     },
     {
       "locale": "es",
@@ -2981,23 +3032,40 @@
     },
     {
       "locale": "fr",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/fr/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/fr/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "fr",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "charge",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "67ef50ec26df3ab2b69a20755e66b5ed64e69491facedb92c504a4b5603d9916",
+      "bytes": 1138949
     },
     {
       "locale": "fr",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/fr/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/fr/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "fr",
         "theme": "cid"
-      }
+      },
+      "sha256": "9a723c26be55a06c6c99211412c91cc9e486cd2073247c783da5d0b6abce4ea8",
+      "bytes": 775979
     },
     {
       "locale": "fr",
@@ -3890,5 +3958,9 @@
       }
     }
   ],
-  "failures": []
+  "failures": [],
+  "requestedIds": [
+    "stream-monsters-creator-1.11",
+    "stream-monsters-arena-portrait-1.11"
+  ]
 }

@@ -53,8 +53,8 @@ const PLUGIN_ROUTES = {
   'soundboard': '/soundboard/ui',
   'soundboard-detail': '/soundboard/ui',
   'spotlight': '/spotlight/ui',
-  'stream-monsters-creator-1.5': '/streammonsters/ui',
-  'stream-monsters-arena-portrait-1.5': '/streammonsters/overlay?layout=portrait',
+  'stream-monsters-creator-1.11': '/streammonsters/ui',
+  'stream-monsters-arena-portrait-1.11': '/streammonsters/overlay?layout=portrait',
   'stt-ticker': '/stt-ticker/ui',
   'stt-ticker-night': '/stt-ticker/ui',
   'stt-ticker-overlay-url': '/stt-ticker/ui',
@@ -129,9 +129,9 @@ function buildSpec(repoRoot) {
         canonical: asset,
         route: routeFor(id),
         state: id.includes('night') || id.includes('contrast') || id.includes('vision-impaired') ? 'cid-accessibility-layout' : 'default-demo',
-        viewport: id === 'stream-monsters-creator-1.5'
+        viewport: id === 'stream-monsters-creator-1.11'
           ? { width: 1920, height: 1080, deviceScaleFactor: 1 }
-          : id === 'stream-monsters-arena-portrait-1.5'
+          : id === 'stream-monsters-arena-portrait-1.11'
             ? { width: 1080, height: 1920, deviceScaleFactor: 1 }
             : id.startsWith('live-')
               ? { width: 1280, height: 720, deviceScaleFactor: 1 }

@@ -12,8 +12,8 @@ const {
 
 const repoRoot = path.join(__dirname, '..', '..');
 const packageDir = path.join(repoRoot, 'plugin-store', 'packages');
-const expectedSourceCommit = 'd65ed2404a79da6ada690dda677e8b757ee756fe';
-const expectedSourceTree = 'dadc3c27395d02345ec27e07ef612d6461ad6c7f';
+const expectedSourceCommit = '413bc515334563cd3138384bcc59014c1f85c9aa';
+const expectedSourceTree = '68848af33798e82376fb309797eaa4234d5853f9';
 const canonicalTextExtensions = new Set([
   '.css',
   '.html',

@@ -57,11 +57,11 @@
       "sha256": "232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626"
     },
     "1.11.0": {
-      "sourceCommit": "d65ed2404a79da6ada690dda677e8b757ee756fe",
-      "sourceTree": "dadc3c27395d02345ec27e07ef612d6461ad6c7f",
+      "sourceCommit": "413bc515334563cd3138384bcc59014c1f85c9aa",
+      "sourceTree": "68848af33798e82376fb309797eaa4234d5853f9",
       "manifestVersion": "1.11.0",
       "package": "plugin-store/packages/streamalchemy-1.11.0.zip",
-      "sha256": "9ccf95eaee2411c77e8f2fa238fcb37e7dc18240a716ab9bc6e808c669790875"
+      "sha256": "f0c0991e0b0e047ee81b26103714bd2661a43079eb53945437dd39c88f69659e"
     }
   }
 }

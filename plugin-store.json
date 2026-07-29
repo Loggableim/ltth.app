@@ -643,15 +643,15 @@
         "type": "subscriber"
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip",
-      "sha256": "9ccf95eaee2411c77e8f2fa238fcb37e7dc18240a716ab9bc6e808c669790875",
+      "sha256": "f0c0991e0b0e047ee81b26103714bd2661a43079eb53945437dd39c88f69659e",
       "pricing": {
         "type": "free",
         "amount": 0,
         "currency": "EUR"
       },
       "screenshots": [
-        "/screenshots/features/stream-monsters-creator-1.5.png",
-        "/screenshots/features/stream-monsters-arena-portrait-1.5.png"
+        "/screenshots/features/stream-monsters-creator-1.11.png",
+        "/screenshots/features/stream-monsters-arena-portrait-1.11.png"
       ]
     },
     {

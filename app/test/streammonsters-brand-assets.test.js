@@ -2,8 +2,14 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.join(__dirname, '..', '..');
-const creatorScreenshot = '/screenshots/features/stream-monsters-creator-1.5.png';
-const arenaScreenshot = '/screenshots/features/stream-monsters-arena-portrait-1.5.png';
+const crypto = require('crypto');
+
+const creatorScreenshot = '/screenshots/features/stream-monsters-creator-1.11.png';
+const arenaScreenshot = '/screenshots/features/stream-monsters-arena-portrait-1.11.png';
+const historicalScreenshots = {
+  'stream-monsters-creator-1.5.png': 'bd02ef5412b2b79b7f6bd1f01507838d91850d0cfaca831c75c3011d437c4c36',
+  'stream-monsters-arena-portrait-1.5.png': '450707f0235cdf8661e6165f788669f172407a9145d1c723416eb09221bf1ade'
+};
 
 function readJson(...parts) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, ...parts), 'utf8'));
@@ -12,6 +18,7 @@ function readJson(...parts) {
 describe('Stream Monsters 1.11 public branding', () => {
   it('publishes the stable plugin ID with the 1.11 package and both broadcast screenshots', () => {
     const featurePage = fs.readFileSync(path.join(repoRoot, 'features', 'plugin-stream-alchemy.html'), 'utf8');
+    const tutorialPage = fs.readFileSync(path.join(repoRoot, 'streammonsters', 'index.html'), 'utf8');
     const pluginPage = fs.readFileSync(path.join(repoRoot, 'plugins.html'), 'utf8');
     const storeRegistry = readJson('plugin-store.json');
     const pluginManifest = readJson('app', 'plugins', 'streamalchemy', 'plugin.json');
@@ -41,6 +48,9 @@ describe('Stream Monsters 1.11 public branding', () => {
     expect(featurePage).toContain(`https://ltth.app${creatorScreenshot}`);
     expect(featurePage).toContain(`src="${creatorScreenshot}"`);
     expect(featurePage).toContain(`src="${arenaScreenshot}"`);
+    expect(featurePage).toContain('Creator Live Center 1.11');
+    expect(featurePage).toContain('Portrait A/B/C Arena 1.11');
+    expect(tutorialPage).toContain(`https://ltth.app${arenaScreenshot}`);
     expect(pluginPage).toContain("'streamalchemy': '/assets/plugin-logos/stream-monsters-icon.png'");
   });
 
@@ -117,11 +127,11 @@ describe('Stream Monsters 1.11 public branding', () => {
     const captureSpec = buildSpec(repoRoot);
     const captureManifest = readJson('screenshots', 'product-capture-manifest.json');
     const expected = {
-      'stream-monsters-creator-1.5': {
+      'stream-monsters-creator-1.11': {
         route: '/streammonsters/ui',
         viewport: { width: 1920, height: 1080, deviceScaleFactor: 1 }
       },
-      'stream-monsters-arena-portrait-1.5': {
+      'stream-monsters-arena-portrait-1.11': {
         route: '/streammonsters/overlay?layout=portrait',
         viewport: { width: 1080, height: 1920, deviceScaleFactor: 1 }
       }
@@ -138,6 +148,13 @@ describe('Stream Monsters 1.11 public branding', () => {
     ));
     expect(streamMonsterOutputs).toHaveLength(8);
     expect(new Set(streamMonsterOutputs.map((output) => output.locale))).toEqual(new Set(['de', 'en', 'es', 'fr']));
+  });
+
+  it('preserves the historical 1.5 captures byte-for-byte', () => {
+    for (const [filename, digest] of Object.entries(historicalScreenshots)) {
+      const bytes = fs.readFileSync(path.join(repoRoot, 'screenshots', 'features', filename));
+      expect(crypto.createHash('sha256').update(bytes).digest('hex')).toBe(digest);
+    }
   });
 
   it('keeps Furry canonical and names the global SiliconFlow copy only after Fish Speech', () => {
