@@ -1,18 +1,37 @@
 (async () => {
-  const loadCommonJs = async source => {
+  const loadCommonJs = async (source, dependencies = {}) => {
     const response = await fetch(source);
     if (!response.ok) throw new Error(`Modul nicht verfügbar: ${source}`);
     const module = { exports: {} };
-    new Function('module', 'exports', await response.text())(module, module.exports);
+    const requireDependency = dependency => {
+      if (dependencies[dependency]) return dependencies[dependency];
+      throw new Error(`Abhängigkeit nicht verfügbar: ${dependency}`);
+    };
+    new Function('module', 'exports', 'require', await response.text())(
+      module,
+      module.exports,
+      requireDependency
+    );
     return module.exports;
   };
 
-  const [{ PARTS, createSelection, setPart, randomize }, { drawComposite }, manifest] = await Promise.all([
-    loadCommonJs('/builder-state.js'),
+  const builderState = await loadCommonJs('/builder-state.js');
+  const [
+    { drawComposite },
+    { createLabController },
+    atlasManifest,
+    rigManifest
+  ] = await Promise.all([
     loadCommonJs('/furry-builder-lab.js'),
-    fetch('/assets/atlas-manifest.json').then(response => response.json())
+    loadCommonJs('/lab-controller.js', { './builder-state': builderState }),
+    fetch('/assets/atlas-manifest.json').then(response => response.json()),
+    fetch('/assets/rig-manifest.json').then(response => response.json())
   ]);
-  manifest.atlases = Object.fromEntries(Object.entries(manifest.atlases).map(([part, source]) => [part, `/assets/${source}`]));
+  const { PARTS, createSelection } = builderState;
+  atlasManifest.atlases = Object.fromEntries(
+    Object.entries(atlasManifest.atlases)
+      .map(([part, source]) => [part, `/assets/${source}`])
+  );
 
   const canvas = document.querySelector('#preview');
   const readout = document.querySelector('#selection-readout');
@@ -21,12 +40,19 @@
 
   const render = async () => {
     const version = ++renderVersion;
-    await drawComposite(canvas, manifest, selection);
+    await drawComposite(canvas, atlasManifest, rigManifest, selection);
     if (version === renderVersion) {
       document.querySelectorAll('.choice').forEach(button => button.classList.toggle('is-selected', Number(button.dataset.id) === selection[button.closest('[data-part]').dataset.part]));
       readout.textContent = `Kopf ${selection.heads + 1} · Augen ${selection.eyes + 1} · Mund ${selection.mouths + 1}`;
     }
   };
+  const controller = createLabController({
+    selection,
+    onChange(next) {
+      selection = next;
+      render();
+    }
+  });
 
   PARTS.forEach(part => {
     const card = document.querySelector(`[data-part="${part}"]`);
@@ -35,17 +61,15 @@
       const choice = document.createElement('button');
       choice.type = 'button'; choice.className = 'choice'; choice.dataset.id = id; choice.dataset.number = id + 1;
       choice.setAttribute('aria-label', `${part === 'heads' ? 'Kopf' : part === 'eyes' ? 'Augen' : 'Mund'} ${id + 1} auswählen`);
-      choice.style.backgroundImage = `url("/assets/${manifest.atlases[part].split('/').pop()}")`;
+      choice.style.backgroundImage = `url("/assets/${atlasManifest.atlases[part].split('/').pop()}")`;
       choice.style.backgroundPosition = `${(id % 3) * 50}% ${Math.floor(id / 3) * (100 / 3)}%`;
-      choice.addEventListener('click', () => { selection = setPart(selection, part, id); render(); });
+      choice.addEventListener('click', () => controller.select(part, id));
       grid.append(choice);
     }
     card.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
-      const direction = button.dataset.action === 'next' ? 1 : 11;
-      selection = setPart(selection, part, (selection[part] + direction) % 12);
-      render();
+      controller.cycle(part, button.dataset.action === 'next' ? 1 : -1);
     }));
   });
-  document.querySelector('#randomize').addEventListener('click', () => { selection = randomize(selection); render(); });
+  document.querySelector('#randomize').addEventListener('click', () => controller.randomize());
   render();
 })().catch(error => { document.querySelector('#selection-readout').textContent = `Vorschau konnte nicht geladen werden: ${error.message}`; });

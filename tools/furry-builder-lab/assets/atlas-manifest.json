@@ -1,6 +1,7 @@
 {
   "columns": 3,
   "rows": 4,
+  "cellSize": 362,
   "renderMode": "alpha",
   "atlases": {
     "heads": "heads-atlas.png",
