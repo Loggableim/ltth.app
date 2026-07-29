@@ -2,6 +2,26 @@ const { normalizeIngressEventId } = require('./ingress-event-id');
 const { avatarProxyReference } = require('./avatar-proxy');
 const { publicViewerName } = require('./egg-stage-projector');
 
+function formatRemainingDuration(remainingMs) {
+  let seconds = Math.max(1, Math.ceil(Number(remainingMs || 0) / 1_000));
+  const units = [
+    ['d', 86_400],
+    ['h', 3_600],
+    ['m', 60],
+    ['s', 1]
+  ];
+  const parts = [];
+  for (const [suffix, size] of units) {
+    const amount = Math.floor(seconds / size);
+    if (amount > 0) {
+      parts.push(`${amount}${suffix}`);
+      seconds -= amount * size;
+    }
+    if (parts.length >= 2) break;
+  }
+  return parts.join(' ') || '1s';
+}
+
 class ChatCommands {
   constructor({
     store,
@@ -174,11 +194,17 @@ class ChatCommands {
       };
     }
     const messages = {
-      cooldown: 'You already adopted a free egg recently.',
+      cooldown: `You recently received a free egg. Try again in ${
+        formatRemainingDuration(result.remainingMs)
+      }.`,
       no_offer: 'There is no free egg available right now.',
       disabled: 'Free egg drops are currently unavailable.'
     };
-    return { ...result, message: messages[result.status] || 'Free egg adoption is unavailable.' };
+    return {
+      ...result,
+      ...(result.status === 'cooldown' ? { cooldownKind: 'free_egg' } : {}),
+      message: messages[result.status] || 'Free egg adoption is unavailable.'
+    };
   }
 
   hatch(userId, slot) {

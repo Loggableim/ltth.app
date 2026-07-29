@@ -256,9 +256,26 @@ class StreamMonstersCommandIngress {
   }
 
   emitResult(commandName, context, result, transport) {
+    const cooldownRemainingMs = Number(result?.remainingMs);
+    const isAdoptCooldown = (
+      result?.status === 'cooldown' &&
+      result?.cooldownKind === 'free_egg' &&
+      Number.isFinite(cooldownRemainingMs) &&
+      cooldownRemainingMs > 0
+    );
     const publicResult = {
       ...result,
-      messageKey: CHAT_RESULT_MESSAGE_KEYS[result?.status] || 'chatResultUnknown'
+      messageKey: isAdoptCooldown
+        ? 'chatResultAdoptCooldown'
+        : CHAT_RESULT_MESSAGE_KEYS[result?.status] || 'chatResultUnknown',
+      ...(isAdoptCooldown
+        ? {
+          wait: {
+            state: 'adopt_cooldown',
+            remainingMs: cooldownRemainingMs
+          }
+        }
+        : {})
     };
     this.emit('streammonsters:chat_result', {
       userId: context.userId || context.uniqueId || context.username,

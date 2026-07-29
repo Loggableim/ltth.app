@@ -280,6 +280,37 @@ describe('Stream Monsters recurring free egg drops', () => {
       .toEqual(expect.objectContaining({ success: false, status: 'cooldown' }));
   });
 
+  test('explains the remaining personal cooldown without blocking another eligible adopter', () => {
+    const subject = createSubject({ config: { freeEggCooldownSeconds: 120 } });
+    const commands = new StreamMonstersChatCommands({
+      store: subject.store,
+      engine: subject.engine,
+      freeEggDropService: subject.service,
+      now: subject.now
+    });
+    offer(subject, 'viewer-a', 'chat-a', 1_000);
+    subject.setNow(61_000);
+    expect(commands.execute({ userId: 'viewer-c' }, 'adopt').success).toBe(true);
+
+    offer(subject, 'viewer-b', 'chat-b', 61_001);
+    subject.setNow(121_001);
+
+    expect(commands.execute({ userId: 'viewer-c' }, 'adopt'))
+      .toEqual(expect.objectContaining({
+        success: false,
+        status: 'cooldown',
+        cooldownKind: 'free_egg',
+        remainingMs: 59_999,
+        message: expect.stringMatching(/try again in 1m/i)
+      }));
+    expect(commands.execute({ userId: 'viewer-d' }, 'adopt'))
+      .toEqual(expect.objectContaining({
+        success: true,
+        status: 'claimed',
+        sourceUserId: 'viewer-b'
+      }));
+  });
+
   test('deduplicates chat and adoption event ids and allows only one source offer per viewer and stream', () => {
     const subject = createSubject();
     const first = offer(subject, 'viewer-a', 'chat-a', 1_000);

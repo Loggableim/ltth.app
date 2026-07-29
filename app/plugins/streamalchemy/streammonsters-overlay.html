@@ -1633,14 +1633,14 @@
       expired:text('eggShelfExpired', 'Verrottet'),
       reserved:text('eggShelfReserved', 'Reserviert · {time}'),
       public:text('eggShelfPublicCountdown', 'Gratis · {time}'),
-      adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · {command}'),
+      adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · nur berechtigt · {command}'),
       eggFocusOwner:text('eggFocusOwner', 'Besitzer: {owner}'),
       eggFocusPosition:text('eggFocusPosition', '{position} / {total}'),
       eggFocusReady:text('eggFocusReady', 'Bereit · {command}'),
       eggFocusIncubating:text('eggFocusIncubating', 'Schlüpft in {time}'),
       eggFocusPublic:text('eggFocusPublic', 'Gratis-Ei · {time} · {command}'),
       eggFocusReserved:text('eggFocusReserved', 'Reserviert · {time} · {command}'),
-      eggFocusOpenOwner:text('eggFocusOpenOwner', 'Für alle offen')
+      eggFocusOpenOwner:text('eggFocusOpenOwner', 'Öffentlich · nur berechtigte Viewer')
     }),
     getHatchReference:() => commandReference('hatch'),
     getAdoptReference:() => commandReference('adopt')
@@ -1824,6 +1824,7 @@
     rankCard:'League ranks',
     arenaRating:'Arena Rating',
     collectorScore:'Collector Score',
+    chatResultAdoptCooldown:'Free egg available again in {remaining}.',
     commandUnavailable:'Command result is unavailable.'
   });
   const CHAT_VIEW_I18N_KEYS = Object.freeze({
@@ -2194,7 +2195,7 @@
     eggLifecycleFreeReservedTitle:'Free egg reserved for you',
     eggLifecycleFreeReservedCopy:'Only you can adopt it right now.',
     eggLifecycleFreePublicTitle:'Free egg released to everyone',
-    eggLifecycleFreePublicCopy:'The first viewer to adopt gets the egg.',
+    eggLifecycleFreePublicCopy:'The first viewer currently eligible for a free egg gets it.',
     eggLifecycleFreeClaimedTitle:'Free egg adopted',
     eggLifecycleFreeClaimedCopy:'The egg is now safe in the inventory.',
     eggLifecycleWaitTitle:'The egg is still incubating',
@@ -2475,7 +2476,7 @@
           title:text('tutorialHintFreeReleaseTitle', 'Gratis-Ei freigegeben'),
           subtitle:text(
             'tutorialHintFreeReleaseBody',
-            'Das Ei ist jetzt öffentlich. Wer zuerst {command} schreibt, bekommt es.',
+            'Das Ei ist jetzt öffentlich. Wer wieder ein Gratis-Ei erhalten darf und zuerst {command} schreibt, bekommt es.',
             { command:commandReference('adopt') }
           ),
           hint:commandReference('adopt')

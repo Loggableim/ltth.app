@@ -811,13 +811,13 @@
         }
         return line;
       };
-      const owner = isPublicFreeEgg(egg)
-        ? currentLabels().eggFocusOpenOwner || 'Open to everyone'
-        : safeViewerName(egg.displayName) || 'Viewer';
-      ensureLine('owner', 'egg-focus-owner').textContent = replaceTokens(
-        currentLabels().eggFocusOwner || 'Owner: {owner}',
-        { owner }
-      );
+      const ownerLine = ensureLine('owner', 'egg-focus-owner');
+      ownerLine.textContent = isPublicFreeEgg(egg)
+        ? currentLabels().eggFocusOpenOwner || 'Open to eligible viewers'
+        : replaceTokens(
+            currentLabels().eggFocusOwner || 'Owner: {owner}',
+            { owner: safeViewerName(egg.displayName) || 'Viewer' }
+          );
       ensureLine('state', 'egg-focus-state').textContent = focusTiming(egg);
       ensureLine('position', 'egg-focus-position').textContent = replaceTokens(
         currentLabels().eggFocusPosition || '{position} / {total}',

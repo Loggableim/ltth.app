@@ -96,6 +96,7 @@
     'chatResultRateLimited',
     'chatResultGlobalCooldown',
     'chatResultCooldown',
+    'chatResultAdoptCooldown',
     'chatResultEggs',
     'chatResultHatched',
     'chatResultEggNotReady',

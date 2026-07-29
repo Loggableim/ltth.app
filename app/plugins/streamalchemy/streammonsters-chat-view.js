@@ -373,8 +373,15 @@
     const showCompact = async (payload, result) => {
       hideDetail();
       const viewer = displayName(payload, localize('viewer'));
+      const remainingMs = safeNumber(
+        result.wait?.remainingMs ?? result.wait?.remaining_ms,
+        0
+      );
+      const messageParams = remainingMs > 0
+        ? { remaining: formatRemaining(remainingMs) }
+        : {};
       const message = boundedText(
-        localize(result.messageKey || 'commandUnavailable'),
+        localize(result.messageKey || 'commandUnavailable', messageParams),
         localize('commandUnavailable'),
         220
       );

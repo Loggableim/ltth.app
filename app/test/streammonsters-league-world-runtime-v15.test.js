@@ -164,6 +164,80 @@ describe('Stream Monsters 1.5 League World runtime cleanup', () => {
     );
   });
 
+  test('projects and localizes the personal free-egg cooldown with its remaining time', async () => {
+    const emit = jest.fn();
+    const ingress = new CommandIngress({
+      execute: jest.fn(),
+      emit
+    });
+    for (const [alias, transport] of [
+      ['adopt', 'gcce'],
+      ['adoptieren', 'fallback']
+    ]) {
+      ingress.emitResult(alias, {
+        userId: 'private-viewer-id',
+        username: 'ReadableViewer'
+      }, {
+        success: false,
+        status: 'cooldown',
+        cooldownKind: 'free_egg',
+        remainingMs: 65_000,
+        message: 'private server prose'
+      }, transport);
+    }
+
+    const ingressPayloads = emit.mock.calls.map(([, payload]) => payload);
+    for (const ingressPayload of ingressPayloads) {
+      expect(ingressPayload.result).toEqual(expect.objectContaining({
+        messageKey: 'chatResultAdoptCooldown',
+        wait: {
+          state: 'adopt_cooldown',
+          remainingMs: 65_000
+        }
+      }));
+    }
+    const ingressPayload = ingressPayloads[1];
+    const projected = projectChatResult(ingressPayload.result);
+    expect(projected).toEqual(expect.objectContaining({
+      messageKey: 'chatResultAdoptCooldown',
+      wait: expect.objectContaining({
+        state: 'adopt_cooldown',
+        remainingMs: 65_000
+      })
+    }));
+    expect(overlayRuntime.chatMessageKey(projected))
+      .toBe('chatResultAdoptCooldown');
+    expect(JSON.stringify(projected)).not.toContain('private server prose');
+
+    const dom = new JSDOM(`
+      <!doctype html>
+      <body>
+        <section id="detail"></section>
+        <div id="compact"></div>
+      </body>
+    `);
+    const compact = dom.window.document.getElementById('compact');
+    const snapshots = [];
+    const view = chatRuntime.createChatView({
+      document: dom.window.document,
+      detailElement: dom.window.document.getElementById('detail'),
+      compactElement: compact,
+      translate: (key, params = {}) => key === 'chatResultAdoptCooldown'
+        ? `Free egg available again in ${params.remaining}.`
+        : key,
+      wait: async () => snapshots.push(compact.textContent)
+    });
+
+    await view.show({
+      displayName: ingressPayload.username,
+      result: projected
+    });
+
+    expect(snapshots).toEqual([
+      'ReadableViewer · Free egg available again in 01:05.'
+    ]);
+  });
+
   test('does not replay retired starter events after reconnect', () => {
     const replay = overlayRuntime.replayableRecentEvents({
       recentEvents: [{

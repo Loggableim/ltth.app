@@ -145,7 +145,7 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
       now: () => 1_000,
       labels: {
         eggFocusOwner: 'Besitzer: {owner}',
-        eggFocusOpenOwner: 'Für alle offen',
+        eggFocusOpenOwner: 'Öffentlich · nur berechtigte Viewer',
         eggFocusPosition: '{position} / {total}',
         eggFocusPublic: 'Gratis-Ei · {time} · {command}',
         eggFocusReserved: 'Reserviert · {time} · {command}'
@@ -163,7 +163,7 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
       timing: { expiresAtMs: 61_000, landedAtMs: 1_000 }
     })]);
     expect(focus.querySelector('[data-egg-focus-owner]').textContent)
-      .toBe('Besitzer: Für alle offen');
+      .toBe('Öffentlich · nur berechtigte Viewer');
     expect(focus.querySelector('[data-egg-focus-state]').textContent)
       .toBe('Gratis-Ei · 01:00 · !adoptieren');
 
