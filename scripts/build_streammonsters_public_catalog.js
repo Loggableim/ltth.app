@@ -168,6 +168,10 @@ function renderBrowserCatalog(publicCatalog) {
   );
 }
 
+function normalizeLineEndings(source) {
+  return String(source || '').replace(/\r\n?/g, '\n');
+}
+
 function parseArguments(argv) {
   const options = {
     check: false,
@@ -200,7 +204,10 @@ function main(argv = process.argv.slice(2)) {
     const currentSource = fs.existsSync(options.outputPath)
       ? fs.readFileSync(options.outputPath, 'utf8')
       : '';
-    if (currentSource !== generatedSource) {
+    if (
+      normalizeLineEndings(currentSource) !==
+      normalizeLineEndings(generatedSource)
+    ) {
       process.stderr.write(
         `Stream Monsters public catalog is stale: ${options.outputPath}\n`
       );
@@ -236,6 +243,7 @@ module.exports = {
   LOCALES,
   buildPublicCatalog,
   main,
+  normalizeLineEndings,
   publicAssetPath,
   readRulesVersion,
   renderBrowserCatalog

@@ -171,13 +171,17 @@ describe('Stream Monsters public catalog generator', () => {
   test('keeps the checked-in browser artifact deterministic and executable', () => {
     const {
       buildPublicCatalog,
+      normalizeLineEndings,
       renderBrowserCatalog
     } = requireGenerator();
     const publicCatalog = buildPublicCatalog({ repoRoot: REPO_ROOT });
 
     expect(fs.existsSync(GENERATED_PATH)).toBe(true);
     const generatedSource = fs.readFileSync(GENERATED_PATH, 'utf8');
-    expect(generatedSource).toBe(renderBrowserCatalog(publicCatalog));
+    const renderedSource = renderBrowserCatalog(publicCatalog);
+    expect(normalizeLineEndings(generatedSource)).toBe(renderedSource);
+    expect(normalizeLineEndings(renderedSource.replace(/\n/g, '\r\n')))
+      .toBe(renderedSource);
 
     const browserGlobal = {};
     vm.runInNewContext(generatedSource, browserGlobal, {
