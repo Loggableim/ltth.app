@@ -841,7 +841,7 @@
     }
   ],
   "sourceUrl": "isolated-local-process",
-  "capturedAt": "2026-07-29T04:35:44.748Z",
+  "capturedAt": "2026-07-29T04:54:45.995Z",
   "requestedLocales": [
     "de",
     "en",
@@ -1247,6 +1247,25 @@
       "state": {
         "lang": "de",
         "theme": "cid",
+        "renderedLocale": "de",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "de",
+          "locales": [
+            "de"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Runde 1",
+          "commandPrompt": "A Angriff  ·  B Verteidigung  ·  C Spezial"
+        },
         "renderer": {
           "mode": "webgpu",
           "backend": "webgpu",
@@ -1256,13 +1275,13 @@
           "active": true,
           "source": "deterministic-capture-harness",
           "scene": "special",
-          "phase": "charge",
+          "phase": "element-signature",
           "signature": "volt:special",
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "d795bdb13a7411c408712c9038027f1a15cc29bf17e95509b2e1247755e7aaa7",
-      "bytes": 1145766
+      "sha256": "c950bd38dceb305fa05ce8b083acde10223da916e5b4b3a962f0b8b3cf34be1d",
+      "bytes": 1113562
     },
     {
       "locale": "de",
@@ -1844,6 +1863,25 @@
       "state": {
         "lang": "en",
         "theme": "cid",
+        "renderedLocale": "en",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "en",
+          "locales": [
+            "en"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Round 1",
+          "commandPrompt": "A Attack  ·  B Defense  ·  C Special"
+        },
         "renderer": {
           "mode": "webgpu",
           "backend": "webgpu",
@@ -1853,13 +1891,13 @@
           "active": true,
           "source": "deterministic-capture-harness",
           "scene": "special",
-          "phase": "charge",
+          "phase": "element-signature",
           "signature": "volt:special",
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "64bd758d045952352b3a4c3cd6849e2d93880735cfcdb6106be101c8149ff437",
-      "bytes": 1139441
+      "sha256": "d451ea1fa6a19a72d7b8a4d7e25654bac30ec1d4963b307f76308691daffb1b9",
+      "bytes": 1124139
     },
     {
       "locale": "en",
@@ -2441,6 +2479,25 @@
       "state": {
         "lang": "es",
         "theme": "cid",
+        "renderedLocale": "es",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "es",
+          "locales": [
+            "es"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Ronda 1",
+          "commandPrompt": "A Ataque  ·  B Defensa  ·  C Especial"
+        },
         "renderer": {
           "mode": "webgpu",
           "backend": "webgpu",
@@ -2450,13 +2507,13 @@
           "active": true,
           "source": "deterministic-capture-harness",
           "scene": "special",
-          "phase": "charge",
+          "phase": "element-signature",
           "signature": "volt:special",
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "3635d8c94679eaa8072fde93c52f54caef00780714f2192b5d32fb2169958edc",
-      "bytes": 1139741
+      "sha256": "dcbb37e3c536ad3034f90b9eabbc3f421cf18667bd3e20efd5a955116895f487",
+      "bytes": 1140225
     },
     {
       "locale": "es",
@@ -3038,6 +3095,25 @@
       "state": {
         "lang": "fr",
         "theme": "cid",
+        "renderedLocale": "fr",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "fr",
+          "locales": [
+            "fr"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Manche 1",
+          "commandPrompt": "A Attaque  ·  B Défense  ·  C Spécial"
+        },
         "renderer": {
           "mode": "webgpu",
           "backend": "webgpu",
@@ -3047,13 +3123,13 @@
           "active": true,
           "source": "deterministic-capture-harness",
           "scene": "special",
-          "phase": "charge",
+          "phase": "element-signature",
           "signature": "volt:special",
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "67ef50ec26df3ab2b69a20755e66b5ed64e69491facedb92c504a4b5603d9916",
-      "bytes": 1138949
+      "sha256": "deed9af12e44785560a95d0369824696fcfc4843b1bfb6bb26be3bb6132ff814",
+      "bytes": 1120295
     },
     {
       "locale": "fr",

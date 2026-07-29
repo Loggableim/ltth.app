@@ -10,6 +10,9 @@ const historicalScreenshots = {
   'stream-monsters-creator-1.5.png': 'bd02ef5412b2b79b7f6bd1f01507838d91850d0cfaca831c75c3011d437c4c36',
   'stream-monsters-arena-portrait-1.5.png': '450707f0235cdf8661e6165f788669f172407a9145d1c723416eb09221bf1ade'
 };
+const {
+  validateArenaCaptureReceipt
+} = require('../../scripts/capture-streammonsters-v111');
 
 function readJson(...parts) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, ...parts), 'utf8'));
@@ -148,6 +151,96 @@ describe('Stream Monsters 1.11 public branding', () => {
     ));
     expect(streamMonsterOutputs).toHaveLength(8);
     expect(new Set(streamMonsterOutputs.map((output) => output.locale))).toEqual(new Set(['de', 'en', 'es', 'fr']));
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const arenaOutput = streamMonsterOutputs.find(output => (
+        output.locale === locale &&
+        output.id === 'stream-monsters-arena-portrait-1.11'
+      ));
+      expect(arenaOutput.state).toEqual(expect.objectContaining({
+        lang: locale,
+        renderedLocale: locale,
+        localePhase: 'stable',
+        overlayLanguage: {
+          primaryLocale: locale,
+          locales: [locale],
+          secondsPerLocale: 5
+        },
+        readability: expect.objectContaining({
+          roundVisible: true,
+          commandPromptVisible: true,
+          fighterCount: 2,
+          statBlockCount: 2,
+          skillCardCount: 6
+        })
+      }));
+    }
+  });
+
+  it('rejects arena receipts that claim a locale without configuring and visibly rendering it', () => {
+    const readable = {
+      roundLabel: 'ROUND 1',
+      roundVisible: true,
+      commandPrompt: 'A Attack · B Defense · C Special',
+      commandPromptVisible: true,
+      fighterNames: ['Pulse', 'Ashfang'],
+      statBlocks: [
+        { visible: true, hp: 'HP 50 / 50', shield: 'SHIELD', special: 'SPECIAL' },
+        { visible: true, hp: 'HP 48 / 52', shield: 'SHIELD', special: 'SPECIAL' }
+      ],
+      skillCards: [
+        { visible: true, choice: 'A', name: 'Arc Slash', copy: 'Deals damage.' },
+        { visible: true, choice: 'B', name: 'Static Shield', copy: 'Builds a shield.' },
+        { visible: true, choice: 'C', name: 'Thunderbreak', copy: 'Heavy special damage.' },
+        { visible: true, choice: 'A', name: 'Flame Fang', copy: 'Deals damage.' },
+        { visible: true, choice: 'B', name: 'Ember Guard', copy: 'Builds a shield.' },
+        { visible: true, choice: 'C', name: 'Inferno Heart', copy: 'Heavy special damage.' }
+      ]
+    };
+    const base = {
+      requestedLocale: 'fr',
+      overlayLanguage: {
+        primaryLocale: 'fr',
+        locales: ['fr'],
+        secondsPerLocale: 5
+      },
+      renderedLocale: 'fr',
+      localePhase: 'stable',
+      battlePhase: 'choice',
+      readability: readable,
+      activeEffect: true,
+      effectScene: 'special',
+      effectSignature: 'volt:special',
+      effectMotifs: 'chain-lightning-storm,white-flash',
+      renderer: {
+        mode: 'webgpu',
+        backend: 'webgpu',
+        fallbackReason: ''
+      }
+    };
+
+    expect(validateArenaCaptureReceipt(base)).toEqual(expect.objectContaining({
+      requestedLocale: 'fr',
+      renderedLocale: 'fr',
+      localePhase: 'stable'
+    }));
+    expect(() => validateArenaCaptureReceipt({
+      ...base,
+      overlayLanguage: {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      },
+      renderedLocale: 'de'
+    })).toThrow(/locale/i);
+    expect(() => validateArenaCaptureReceipt({
+      ...base,
+      localePhase: 'transition',
+      readability: {
+        ...readable,
+        roundLabel: '',
+        skillCards: readable.skillCards.map(card => ({ ...card, copy: '' }))
+      }
+    })).toThrow(/readable|stable/i);
   });
 
   it('preserves the historical 1.5 captures byte-for-byte', () => {

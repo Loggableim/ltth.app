@@ -18,6 +18,7 @@ const IDS = Object.freeze([
   'stream-monsters-arena-portrait-1.11'
 ]);
 const LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
+const SUPPORTED_LOCALES = new Set(LOCALES);
 const VIEWPORTS = Object.freeze({
   'stream-monsters-creator-1.11': Object.freeze({ width: 1920, height: 1080 }),
   'stream-monsters-arena-portrait-1.11': Object.freeze({ width: 1080, height: 1920 })
@@ -41,6 +42,92 @@ function pngDimensions(filename) {
     width: bytes.readUInt32BE(16),
     height: bytes.readUInt32BE(20)
   };
+}
+
+function validateArenaCaptureReceipt(receipt = {}) {
+  const requestedLocale = String(receipt.requestedLocale || '').trim().toLowerCase();
+  const renderedLocale = String(receipt.renderedLocale || '').trim().toLowerCase();
+  const language = receipt.overlayLanguage && typeof receipt.overlayLanguage === 'object'
+    ? receipt.overlayLanguage
+    : {};
+  const primaryLocale = String(language.primaryLocale || '').trim().toLowerCase();
+  const configuredLocales = Array.isArray(language.locales)
+    ? language.locales.map(locale => String(locale || '').trim().toLowerCase())
+    : [];
+  if (
+    !SUPPORTED_LOCALES.has(requestedLocale) ||
+    primaryLocale !== requestedLocale ||
+    configuredLocales.length !== 1 ||
+    configuredLocales[0] !== requestedLocale ||
+    renderedLocale !== requestedLocale
+  ) {
+    throw new Error(
+      `Arena locale receipt mismatch: requested=${requestedLocale || 'none'}, ` +
+      `configured=${JSON.stringify(language)}, rendered=${renderedLocale || 'none'}`
+    );
+  }
+  const readability = receipt.readability && typeof receipt.readability === 'object'
+    ? receipt.readability
+    : {};
+  const hasText = value => typeof value === 'string' && value.trim().length > 0;
+  const statBlocks = Array.isArray(readability.statBlocks) ? readability.statBlocks : [];
+  const skillCards = Array.isArray(readability.skillCards) ? readability.skillCards : [];
+  const skillChoices = skillCards.map(card => String(card?.choice || '').trim());
+  const readable = (
+    receipt.localePhase === 'stable' &&
+    ['choice', 'action'].includes(String(receipt.battlePhase || '')) &&
+    readability.roundVisible === true &&
+    readability.commandPromptVisible === true &&
+    hasText(readability.roundLabel) &&
+    hasText(readability.commandPrompt) &&
+    Array.isArray(readability.fighterNames) &&
+    readability.fighterNames.length === 2 &&
+    readability.fighterNames.every(hasText) &&
+    statBlocks.length === 2 &&
+    statBlocks.every(block => (
+      block?.visible === true &&
+      hasText(block.hp) &&
+      hasText(block.shield) &&
+      hasText(block.special)
+    )) &&
+    skillCards.length === 6 &&
+    skillCards.every(card => (
+      card?.visible === true &&
+      hasText(card.choice) &&
+      hasText(card.name) &&
+      hasText(card.copy)
+    )) &&
+    ['A', 'B', 'C'].every(choice => (
+      skillChoices.filter(candidate => candidate === choice).length === 2
+    ))
+  );
+  if (!readable) {
+    throw new Error(`Arena capture is not in a stable readable phase: ${JSON.stringify({
+      localePhase: receipt.localePhase,
+      battlePhase: receipt.battlePhase,
+      readability
+    })}`);
+  }
+  if (
+    receipt.activeEffect !== true ||
+    !hasText(receipt.effectScene) ||
+    !hasText(receipt.effectSignature) ||
+    !hasText(receipt.effectMotifs)
+  ) {
+    throw new Error('Arena capture has no active deterministic effect receipt');
+  }
+  const renderer = receipt.renderer && typeof receipt.renderer === 'object'
+    ? receipt.renderer
+    : {};
+  if (
+    !hasText(renderer.mode) ||
+    !hasText(renderer.backend) ||
+    renderer.mode === 'unknown' ||
+    renderer.backend === 'unknown'
+  ) {
+    throw new Error(`Arena capture renderer is unknown: ${JSON.stringify(renderer)}`);
+  }
+  return receipt;
 }
 
 function freePort() {
@@ -101,10 +188,15 @@ function runPlaywright(args, env) {
   return result.stdout || '';
 }
 
-function captureCode({ baseUrl, locale, creatorPath, arenaPath }) {
-  return `async page => {
-    const baseUrl = ${JSON.stringify(baseUrl)};
-    const locale = ${JSON.stringify(locale)};
+function captureCode({
+  baseUrl,
+  locale,
+  creatorPath,
+  arenaPath,
+  captureCreator = true
+}) {
+  const creatorCapture = captureCreator
+    ? `
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(baseUrl + '/streammonsters/ui?lang=' + locale, {
       waitUntil: 'domcontentloaded'
@@ -116,6 +208,38 @@ function captureCode({ baseUrl, locale, creatorPath, arenaPath }) {
     }, null, { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2200);
     await page.screenshot({ path: ${JSON.stringify(creatorPath)} });
+`
+    : '';
+  return `async page => {
+    const baseUrl = ${JSON.stringify(baseUrl)};
+    const locale = ${JSON.stringify(locale)};
+    ${creatorCapture}
+
+    const configResult = await page.evaluate(async locale => {
+      const response = await fetch('/api/streammonsters/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          overlayLanguage: {
+            primaryLocale: locale,
+            locales: [locale],
+            secondsPerLocale: 5
+          }
+        })
+      });
+      const body = await response.json().catch(() => null);
+      return {
+        status: response.status,
+        body
+      };
+    }, locale);
+    if (configResult.status !== 200 || !configResult.body?.config?.overlayLanguage) {
+      throw new Error(
+        'Overlay locale configuration returned HTTP ' + configResult.status +
+        ': ' + JSON.stringify(configResult.body)
+      );
+    }
+    const configuredOverlayLanguage = configResult.body.config.overlayLanguage;
 
     await page.setViewportSize({ width: 1080, height: 1920 });
     await page.goto(
@@ -123,65 +247,200 @@ function captureCode({ baseUrl, locale, creatorPath, arenaPath }) {
       { waitUntil: 'domcontentloaded' }
     );
     await page.waitForSelector('#battle', { state: 'attached' });
-    await page.waitForTimeout(1800);
-    const demo = await page.evaluate(async () => {
-      const response = await fetch('/api/streammonsters/demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scene: 'special',
-          templateId: 'pulse',
-          layout: 'portrait',
-          anchor: 'center',
-          scale: 100
-        })
-      });
-      return { status: response.status, body: await response.text() };
+    await page.evaluate(() => {
+      const text = id => String(document.getElementById(id)?.textContent || '').trim();
+      const visible = element => {
+        if (!element) return false;
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return (
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          Number(style.opacity || 1) > 0.05 &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      };
+      window.__readStreamMonstersArenaCapture = () => {
+        const battle = document.getElementById('battle');
+        const choiceSurface = document.getElementById('arena-choice-surface');
+        const skillCards = Array.from(
+          document.querySelectorAll('#arena-choice-surface .arena-skill-card')
+        ).map(card => ({
+          visible: visible(card) && visible(choiceSurface),
+          choice: String(card.querySelector('.skill-choice')?.textContent || '').trim(),
+          name: String(card.querySelector('.skill-name')?.textContent || '').trim(),
+          copy: String(card.querySelector('.skill-copy')?.textContent || '').trim()
+        }));
+        const statBlocks = [1, 2].map(slot => ({
+          visible: visible(document.getElementById('arena-fighter-' + slot)),
+          hp: text('arena-hp-text-' + slot),
+          shield: text('arena-shield-label-' + slot),
+          special: text('arena-special-label-' + slot)
+        }));
+        return {
+          renderedLocale: String(document.documentElement.lang || '').trim().toLowerCase(),
+          battlePhase: String(battle?.dataset.phase || '').trim(),
+          roundLabel: text('arena-round'),
+          roundVisible: visible(document.getElementById('arena-round')),
+          commandPrompt: text('arena-skill-prompt'),
+          commandPromptVisible: visible(document.getElementById('arena-skill-prompt')),
+          fighterNames: [text('arena-name-1'), text('arena-name-2')],
+          statBlocks,
+          skillCards,
+          spritesReady: [1, 2].every(slot => {
+            const image = document.getElementById('arena-image-' + slot);
+            return Boolean(image?.complete && image?.naturalWidth > 0 && visible(image));
+          })
+        };
+      };
     });
-    if (demo.status !== 200) {
-      throw new Error('Demo endpoint returned HTTP ' + demo.status + ': ' + demo.body);
-    }
-    let activeEffect = await page.waitForFunction(() => {
-      const canvas = document.getElementById('battle-effects-canvas');
-      return canvas?.dataset.effectScene === 'special' &&
-        Boolean(canvas?.dataset.effectPhase);
-    }, null, { timeout: 2500 }).then(() => true).catch(() => false);
-    let effectSource = 'demo-event';
-    if (!activeEffect) {
-      effectSource = 'deterministic-capture-harness';
-      await page.evaluate(async () => {
-        const canvas = document.getElementById('battle-effects-canvas');
-        const renderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
-          canvas,
-          quality: 'high'
+    let demo = null;
+    let battleOpened = false;
+    for (let attempt = 0; attempt < 10 && !battleOpened; attempt += 1) {
+      demo = await page.evaluate(async () => {
+        const response = await fetch('/api/streammonsters/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scene: 'match',
+            templateId: 'pulse',
+            layout: 'portrait',
+            anchor: 'center',
+            scale: 100
+          })
         });
-        await renderer.init();
-        window.__streamMonstersCaptureRenderer = renderer;
-        window.__streamMonstersCapturePlayback = renderer.play('special', {
-          element: 'Volt',
-          vfxKey: 'pulse:special',
-          actorSlot: 1,
-          targetSlot: 2,
-          origin: { x: 0.28, y: 0.48 },
-          targetOrigin: { x: 0.72, y: 0.48 },
-          durationMs: 2200,
-          quality: 'high',
-          scale: 1.15
-        });
+        return { status: response.status, body: await response.text() };
       });
-      activeEffect = await page.waitForFunction(() => {
-        const canvas = document.getElementById('battle-effects-canvas');
-        return canvas?.dataset.effectScene === 'special' &&
-          Boolean(canvas?.dataset.effectPhase);
-      }, null, { timeout: 5000 }).then(() => true).catch(() => false);
+      if (demo.status !== 200) {
+        throw new Error('Demo endpoint returned HTTP ' + demo.status + ': ' + demo.body);
+      }
+      battleOpened = await page.waitForFunction(() => (
+        window.__readStreamMonstersArenaCapture?.().battlePhase === 'choice'
+      ), null, { timeout: 1250, polling: 100 }).then(() => true).catch(() => false);
     }
-    if (activeEffect) await page.waitForTimeout(320);
-    const arenaState = await page.evaluate(() => {
+    if (!battleOpened) {
+      const observed = await page.evaluate(() => (
+        window.__readStreamMonstersArenaCapture?.() || null
+      ));
+      throw new Error(
+        'Demo event never reached the overlay after 10 readiness probes: ' +
+        JSON.stringify(observed)
+      );
+    }
+
+    try {
+      await page.waitForFunction(locale => {
+        const state = window.__readStreamMonstersArenaCapture?.();
+        const hasText = value => typeof value === 'string' && value.trim().length > 0;
+        const choices = Array.isArray(state?.skillCards)
+          ? state.skillCards.map(card => card.choice)
+          : [];
+        const readable = Boolean(
+          state &&
+          state.renderedLocale === locale &&
+          state.battlePhase === 'choice' &&
+          state.roundVisible &&
+          state.commandPromptVisible &&
+          hasText(state.roundLabel) &&
+          hasText(state.commandPrompt) &&
+          state.fighterNames?.length === 2 &&
+          state.fighterNames.every(hasText) &&
+          state.statBlocks?.length === 2 &&
+          state.statBlocks.every(block => (
+            block.visible &&
+            hasText(block.hp) &&
+            hasText(block.shield) &&
+            hasText(block.special)
+          )) &&
+          state.skillCards?.length === 6 &&
+          state.skillCards.every(card => (
+            card.visible &&
+            hasText(card.choice) &&
+            hasText(card.name) &&
+            hasText(card.copy)
+          )) &&
+          ['A', 'B', 'C'].every(choice => (
+            choices.filter(candidate => candidate === choice).length === 2
+          )) &&
+          state.spritesReady
+        );
+        if (!readable) {
+          delete window.__smArenaStableSignature;
+          delete window.__smArenaStableSince;
+          return false;
+        }
+        const signature = JSON.stringify(state);
+        if (window.__smArenaStableSignature !== signature) {
+          window.__smArenaStableSignature = signature;
+          window.__smArenaStableSince = performance.now();
+          return false;
+        }
+        return performance.now() - window.__smArenaStableSince >= 600;
+      }, locale, { timeout: 15000, polling: 100 });
+    } catch (error) {
+      const observed = await page.evaluate(() => (
+        window.__readStreamMonstersArenaCapture?.() || null
+      ));
+      throw new Error(
+        'Arena did not reach a stable readable phase: ' +
+        JSON.stringify(observed) +
+        ' (' + error.message + ')'
+      );
+    }
+
+    const effectSource = 'deterministic-capture-harness';
+    await page.evaluate(async () => {
+      const canvas = document.getElementById('battle-effects-canvas');
+      if (!canvas || !window.StreamMonstersEffectsRenderer?.createEffectsRenderer) {
+        throw new Error('Stream Monsters effects renderer is unavailable');
+      }
+      const renderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
+        canvas,
+        quality: 'high'
+      });
+      await renderer.init();
+      window.__streamMonstersCaptureRenderer = renderer;
+      window.__streamMonstersCapturePlayback = renderer.play('special', {
+        element: 'Volt',
+        vfxKey: 'pulse:special',
+        actorSlot: 1,
+        targetSlot: 2,
+        origin: { x: 0.28, y: 0.48 },
+        targetOrigin: { x: 0.72, y: 0.48 },
+        durationMs: 2200,
+        quality: 'high',
+        scale: 1.15
+      });
+    });
+    await page.waitForFunction(locale => {
+      const canvas = document.getElementById('battle-effects-canvas');
+      const state = window.__readStreamMonstersArenaCapture?.();
+      return (
+        canvas?.dataset.effectScene === 'special' &&
+        canvas?.dataset.effectPhase === 'element-signature' &&
+        state?.renderedLocale === locale &&
+        state?.battlePhase === 'choice' &&
+        state?.skillCards?.length === 6 &&
+        state.skillCards.every(card => card.visible && card.name && card.copy)
+      );
+    }, locale, { timeout: 8000, polling: 50 });
+
+    const arenaState = await page.evaluate(async () => {
       const battle = document.getElementById('battle');
       const canvas = document.getElementById('battle-effects-canvas');
+      const readability = window.__readStreamMonstersArenaCapture?.() || {};
+      const stateResponse = await fetch('/api/streammonsters/state');
+      const publicState = stateResponse.ok
+        ? await stateResponse.json().catch(() => null)
+        : null;
       return {
         battleActive: battle?.dataset.active || '',
         battlePhase: battle?.dataset.phase || '',
+        renderedLocale: readability.renderedLocale || '',
+        localePhase: 'stable',
+        readability,
+        publicOverlayLanguage: publicState?.config?.overlayLanguage || null,
         effectScene: canvas?.dataset.effectScene || '',
         effectPhase: canvas?.dataset.effectPhase || '',
         effectSignature: canvas?.dataset.effectSignature || '',
@@ -200,8 +459,9 @@ function captureCode({ baseUrl, locale, creatorPath, arenaPath }) {
         lang: locale
       },
       arena: {
-        lang: locale,
-        activeEffect,
+        requestedLocale: locale,
+        overlayLanguage: configuredOverlayLanguage,
+        activeEffect: true,
         effectSource,
         ...arenaState
       }
@@ -278,9 +538,27 @@ function updateManifest(captureResults) {
       path: path.relative(REPO_ROOT, filename).replace(/\\/g, '/'),
       route,
       state: {
-        lang: result.locale,
+        lang: id === 'stream-monsters-arena-portrait-1.11'
+          ? result.arena.renderedLocale
+          : result.locale,
         theme: 'cid',
-        ...(renderer ? { renderer, effect } : {})
+        ...(renderer ? {
+          renderedLocale: result.arena.renderedLocale,
+          localePhase: result.arena.localePhase,
+          overlayLanguage: result.arena.overlayLanguage,
+          battlePhase: result.arena.battlePhase,
+          readability: {
+            roundVisible: result.arena.readability.roundVisible,
+            commandPromptVisible: result.arena.readability.commandPromptVisible,
+            fighterCount: result.arena.readability.fighterNames.length,
+            statBlockCount: result.arena.readability.statBlocks.length,
+            skillCardCount: result.arena.readability.skillCards.length,
+            roundLabel: result.arena.readability.roundLabel,
+            commandPrompt: result.arena.readability.commandPrompt
+          },
+          renderer,
+          effect
+        } : {})
       },
       sha256: sha256(filename),
       bytes: fs.statSync(filename).size
@@ -311,6 +589,7 @@ function updateManifest(captureResults) {
 }
 
 async function main() {
+  const arenaOnly = process.argv.includes('--arena-only');
   const port = await freePort();
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-sm111-capture-'));
   const capturePluginDir = prepareDocsPluginFixture(REPO_ROOT, profileDir, 'streamalchemy');
@@ -355,7 +634,13 @@ async function main() {
       fs.mkdirSync(path.dirname(arenaPath), { recursive: true });
       fs.writeFileSync(
         playwrightCodePath,
-        `${captureCode({ baseUrl, locale, creatorPath, arenaPath })}\n`,
+        `${captureCode({
+          baseUrl,
+          locale,
+          creatorPath,
+          arenaPath,
+          captureCreator: !arenaOnly
+        })}\n`,
         'utf8'
       );
       const stdout = runPlaywright(
@@ -368,18 +653,15 @@ async function main() {
         ],
         childEnv
       );
-      captureResults.push(
-        parseRunCodeResult(stdout) || {
-          locale,
-          arena: {
-            renderer: {
-              mode: 'unknown',
-              backend: 'unknown',
-              fallbackReason: 'playwright-cli-result-unparsed'
-            }
-          }
-        }
-      );
+      const parsed = parseRunCodeResult(stdout);
+      if (!parsed) {
+        throw new Error(
+          `Could not parse Playwright receipt for locale ${locale}:\n` +
+          String(stdout || '').slice(-8_000)
+        );
+      }
+      validateArenaCaptureReceipt(parsed.arena);
+      captureResults.push(parsed);
       for (const [id, dimensions] of Object.entries(VIEWPORTS)) {
         const filename = outputPath(id, locale);
         const actual = pngDimensions(filename);
@@ -422,5 +704,6 @@ module.exports = {
   captureCode,
   pngDimensions,
   replaceScopedEntries,
-  updateManifest
+  updateManifest,
+  validateArenaCaptureReceipt
 };
