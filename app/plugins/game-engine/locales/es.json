@@ -1135,9 +1135,15 @@
           "remove_image": "Quitar imagen"
         },
         "arena": {
-          "test_activity": "Actividad de prueba",
-          "test_gift": "Regalo de prueba",
-          "field_size": "Tamaño de la arena:",
+        "test_activity": "Actividad de prueba",
+        "test_gift": "Regalo de prueba",
+        "direct_abilities_enabled": "Habilidades directas activadas",
+        "ability_charge_seconds": "Carga de habilidad (segundos):",
+        "boost_duration_seconds": "Duración de impulso (segundos):",
+        "shield_duration_seconds": "Duración de escudo (segundos):",
+        "boost_color": "Color de impulso:",
+        "shield_color": "Color de escudo:",
+        "field_size": "Tamaño de la arena:",
           "field_width": "Ancho de la arena:",
           "field_height": "Alto de la arena:",
           "render_resolution": "Resolución de renderizado:",

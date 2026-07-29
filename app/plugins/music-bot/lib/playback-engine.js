@@ -20,6 +20,7 @@ const SEEK_ERROR_CODES = new Set([
   'PLAYBACK_STALE_ID',
   'PLAYBACK_UNSEEKABLE',
   'PLAYBACK_UNKNOWN_DURATION',
+  'PLAYBACK_SEEK_UNCONFIRMED',
   'MPV_IPC_DISCONNECTED'
 ]);
 
@@ -233,11 +234,10 @@ class PlaybackEngine extends EventEmitter {
         timeoutMs
       });
       this._assertSeekTargetCurrent(activeTrack, activeTrackId);
-      const [positionResult, durationResult] = await Promise.all([
-        this._sendCommand(['get_property', 'time-pos'], { waitForResponse: true, timeoutMs }),
+      const [position, durationResult] = await Promise.all([
+        this._waitForSeekPosition(target, activeTrack, activeTrackId, timeoutMs),
         this._sendCommand(['get_property', 'duration'], { waitForResponse: true, timeoutMs })
       ]);
-      const position = Number(positionResult?.data);
       const duration = Number(durationResult?.data);
       if (!Number.isFinite(duration) || duration <= 0) {
         throw createSeekError('PLAYBACK_UNKNOWN_DURATION', 'The active track has no known duration');
@@ -268,6 +268,32 @@ class PlaybackEngine extends EventEmitter {
     if (!['playing', 'paused'].includes(this.state)) {
       throw createSeekError('PLAYBACK_SEEK_STATE', 'Playback changed state while seeking');
     }
+  }
+
+  async _waitForSeekPosition(target, activeTrack, activeTrackId, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    let lastPosition = null;
+
+    while (Date.now() <= deadline) {
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
+      const remainingMs = Math.max(1, deadline - Date.now());
+      const positionResult = await this._sendCommand(['get_property', 'time-pos'], {
+        waitForResponse: true,
+        timeoutMs: Math.min(timeoutMs, remainingMs)
+      });
+      const position = Number(positionResult?.data);
+      if (Number.isFinite(position)) {
+        lastPosition = position;
+        if (Math.abs(position - target) <= 0.5) return position;
+      }
+      if (Date.now() >= deadline) break;
+      await new Promise(resolve => setTimeout(resolve, Math.min(25, deadline - Date.now())));
+    }
+
+    throw createSeekError(
+      'PLAYBACK_SEEK_UNCONFIRMED',
+      `mpv did not confirm seek to ${target} seconds (last position: ${lastPosition ?? 'unknown'})`
+    );
   }
 
   async stop() {

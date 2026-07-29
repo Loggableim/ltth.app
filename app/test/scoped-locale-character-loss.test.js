@@ -35,7 +35,7 @@ describe('scoped plugin locale character-loss regressions', () => {
     expect(Object.keys(streamMonstersLocale)).toEqual(['ui']);
     expect(Object.keys(streamMonstersLocale.ui)).toEqual(['monsters']);
     expect(streamMonstersLocale.ui.monsters.title)
-      .toBe('Stream Monsters · League World Hybrid');
+      .toBe('Stream Monsters · Portrait Arcade Rally');
     expect(streamMonstersLocale.ui.monsters.heartMeHelp).toContain('Team Heart');
     expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[7], 'utf8')).plugins['osc-bridge'].osc_bridge.config.target_host)
       .toBe('Hôte cible (IP de VRChat)');

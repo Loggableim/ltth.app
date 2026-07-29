@@ -1135,9 +1135,15 @@
           "remove_image": "Bild entfernen"
         },
         "arena": {
-          "test_activity": "Test-Aktivitaet",
-          "test_gift": "Test-Geschenk",
-          "field_size": "Spielfeldgroesse:",
+        "test_activity": "Test-Aktivitaet",
+        "test_gift": "Test-Geschenk",
+        "direct_abilities_enabled": "Direkte Fähigkeiten aktiv",
+        "ability_charge_seconds": "Fähigkeit laden (Sekunden):",
+        "boost_duration_seconds": "Boost-Dauer (Sekunden):",
+        "shield_duration_seconds": "Shield-Dauer (Sekunden):",
+        "boost_color": "Boost-Farbe:",
+        "shield_color": "Shield-Farbe:",
+        "field_size": "Spielfeldgroesse:",
           "field_width": "Spielfeld-Breite:",
           "field_height": "Spielfeld-Hoehe:",
           "render_resolution": "Render-Aufloesung:",

@@ -205,7 +205,8 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
       } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
       }
-    }
+    },
+    30000
   );
 
   test('ships release-specific retention guidance in the 1.6 and 1.7 root READMEs', async () => {

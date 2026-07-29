@@ -235,7 +235,7 @@ module.exports = Object.freeze({
         alt: 'Bibliothèque Stream Monsters 1.11 avec 72 formes Furry'
       }
     }),
-    readOnlyStep('rule-dry-run', '#portraitStagePreview', {
+    readOnlyStep('rule-dry-run', '#portraitBattlePreview', {
       de: {
         title: 'Interaktive A/B/C-Arena im Portrait prüfen',
         body: 'Prüfe die 1080×1920-Vorschau: Rules v8 zeigt beide Kämpfer, Namen, HP, Schild, Spezialenergie und lesbare A/B/C-Wirkungen in den oberen 74 Prozent. Ab Runde 5 wird Arena Collapse erklärt; K.-o.-Board und elementspezifische WebGPU-Effekte dürfen die unteren 26 Prozent TikTok-Chat-Safe-Zone nicht belegen.',

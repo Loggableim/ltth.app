@@ -267,7 +267,7 @@ describe('Stream Monsters 1.5 League World runtime cleanup', () => {
     )).toBe('apiErrorGiftMapping');
   });
 
-  test('ships only League World Hybrid fallback branding and no starter socket path', () => {
+  test('ships only Portrait Arcade Rally fallback branding and no starter socket path', () => {
     const indexSource = fs.readFileSync(path.join(pluginDir, 'index.js'), 'utf8');
     const overlaySource = fs.readFileSync(
       path.join(pluginDir, 'streammonsters-overlay.html'),
@@ -277,8 +277,8 @@ describe('Stream Monsters 1.5 League World runtime cleanup', () => {
 
     expect(indexSource).not.toContain('Collector Arena');
     expect(overlaySource).not.toContain('Collector Arena');
-    expect(overlayDocument.title).toBe('Stream Monsters · League World Hybrid Overlay');
-    expect(overlayDocument.getElementById('title').textContent).toBe('League World Hybrid');
+    expect(overlayDocument.title).toBe('Stream Monsters · Portrait Arcade Rally Overlay');
+    expect(overlayDocument.getElementById('title').textContent).toBe('Portrait Arcade Rally');
     expect(overlaySource).not.toContain('starter_revealed');
     expect(overlaySource).not.toContain('streammonsters:starter_claimed');
   });

@@ -724,7 +724,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(queue.snapshot()[0].data).toEqual({ marker: 'snapshot' });
   });
 
-  test('replays persisted events after the snapshot cursor without replaying battle actions twice', () => {
+  test('replays persisted battle events after the snapshot cursor while egg lifecycles restore from state', () => {
     const snapshot = {
       battle: {
         matches: [{
@@ -788,18 +788,11 @@ describe('Stream Monsters overlay layout and critical queue', () => {
           correlationId: 'match-live',
           action: expect.objectContaining({ eventSequence: 5 })
         })
-      }),
-      expect.objectContaining({
-        type: 'egg_ready',
-        data: expect.objectContaining({
-          eventId: 'egg-ready-public',
-          displayName: 'Public Hatcher'
-        })
       })
     ]);
   });
 
-  test('deduplicates persisted event ids and a matching live socket delivery', () => {
+  test('does not replay egg lifecycle events and still deduplicates matching live delivery', () => {
     const snapshot = {
       battle: { matches: [] },
       recentEvents: [{
@@ -819,18 +812,23 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     const replay = runtime.replayableRecentEvents(snapshot);
     const queue = runtime.createPriorityQueue();
 
-    expect(replay).toHaveLength(1);
-    expect(queue.enqueue(replay[0].type, replay[0].data, 1)).toBe(true);
+    expect(replay).toEqual([]);
     expect(queue.enqueue('egg_ready', {
       eventId: 'persisted-ready',
       correlationId: 'egg-correlation',
       displayName: 'Viewer',
       egg: { element: 'Grove' }
-    }, 2)).toBe(false);
+    }, 2)).toBe(true);
+    expect(queue.enqueue('egg_ready', {
+      eventId: 'persisted-ready',
+      correlationId: 'egg-correlation',
+      displayName: 'Viewer',
+      egg: { element: 'Grove' }
+    }, 3)).toBe(false);
     expect(queue.snapshot()).toHaveLength(1);
   });
 
-  test('honors the persisted public cursor and event ids already shown live', () => {
+  test('does not replay egg lifecycle events missed after the persisted public cursor', () => {
     const snapshot = {
       battle: { matches: [] },
       recentEvents: [{
@@ -854,15 +852,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(runtime.replayableRecentEvents(snapshot, {
       afterSequence: 9,
       seenEventIds: new Set(['already-live'])
-    })).toEqual([
-      expect.objectContaining({
-        sequence: 11,
-        data: expect.objectContaining({
-          eventId: 'missed-while-offline',
-          displayName: 'Three'
-        })
-      })
-    ]);
+    })).toEqual([]);
   });
 
   test.each([

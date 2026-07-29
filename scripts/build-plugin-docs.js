@@ -11,19 +11,11 @@ const OUT = path.join(ROOT, 'docs', 'plugins');
 const GUIDE_LOCALES_OUT = path.join(ROOT, 'locales', 'guides');
 const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const key = (id, suffix) => `docs.plugin.${id}.${suffix}`;
-const STREAM_MONSTERS_CREATOR_SCREENSHOT = '/screenshots/features/stream-monsters-creator-1.11.png';
-const STREAM_MONSTERS_ARENA_SCREENSHOT = '/screenshots/features/stream-monsters-arena-portrait-1.11.png';
-const STREAM_MONSTERS_ARENA_STEPS = new Set(['rule-dry-run', 'alchemy-overlay']);
-const imagePath = (locale, id, stepId) => {
-  if (id === 'streamalchemy') {
-    return STREAM_MONSTERS_ARENA_STEPS.has(stepId)
-      ? STREAM_MONSTERS_ARENA_SCREENSHOT
-      : STREAM_MONSTERS_CREATOR_SCREENSHOT;
-  }
-  return locale === 'en'
+const imagePath = (locale, id, stepId) => (
+  locale === 'en'
     ? `/screenshots/docs/plugins/${id}/${stepId}.png`
-    : `/screenshots/${locale}/docs/plugins/${id}/${stepId}.png`;
-};
+    : `/screenshots/${locale}/docs/plugins/${id}/${stepId}.png`
+);
 
 function waitForFileUnlock(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);

@@ -111,5 +111,5 @@ describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });

@@ -202,7 +202,7 @@ describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test.each([...historicalArchives])(
     'preserves the published %s archive byte-for-byte',

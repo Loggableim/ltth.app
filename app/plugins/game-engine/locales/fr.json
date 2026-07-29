@@ -1135,9 +1135,15 @@
           "remove_image": "Retirer l’image"
         },
         "arena": {
-          "test_activity": "Activité de test",
-          "test_gift": "Cadeau de test",
-          "field_size": "Taille de l’arène :",
+        "test_activity": "Activité de test",
+        "test_gift": "Cadeau de test",
+        "direct_abilities_enabled": "Compétences directes activées",
+        "ability_charge_seconds": "Temps de charge de la compétence (secondes) :",
+        "boost_duration_seconds": "Durée du boost (secondes) :",
+        "shield_duration_seconds": "Durée du bouclier (secondes) :",
+        "boost_color": "Couleur du boost :",
+        "shield_color": "Couleur du bouclier :",
+        "field_size": "Taille de l’arène :",
           "field_width": "Largeur de l’arène :",
           "field_height": "Hauteur de l’arène :",
           "render_resolution": "Résolution de rendu :",

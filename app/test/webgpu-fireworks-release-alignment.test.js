@@ -6,6 +6,8 @@ const repoRoot = path.join(appRoot, '..');
 const APP_VERSION = '1.4.1';
 const PLUGIN_VERSION = '3.1.1';
 const RELEASE_DATE = '2026-07-26';
+const CURRENT_RELEASE_DATE = '2026-07-29';
+const CURRENT_STREAM_MONSTERS_RELEASE = 'Stream Monsters 1.11.1';
 
 function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
@@ -21,7 +23,7 @@ function pluginAssetUrls(source) {
 }
 
 describe('WebGPU Fireworks 3.1.1 release alignment', () => {
-  test('keeps WebGPU Fireworks 3.1.1 while aligning app metadata to LTTH 1.4.1', () => {
+  test('keeps WebGPU Fireworks 3.1.1 cache keys while current app metadata tracks Stream Monsters 1.11.1', () => {
     const rootPackage = readJson('package.json');
     const appPackage = readJson('app/package.json');
     const appLock = readJson('app/package-lock.json');
@@ -35,8 +37,8 @@ describe('WebGPU Fireworks 3.1.1 release alignment', () => {
     expect(read('app/CURRENT_VERSION.txt').trim()).toBe(APP_VERSION);
 
     expect(currentRelease.version).toBe(APP_VERSION);
-    expect(currentRelease.updated_at.startsWith(RELEASE_DATE)).toBe(true);
-    expect(currentRelease.notes).toContain('Stream Monsters 1.5.0');
+    expect(currentRelease.updated_at.startsWith(CURRENT_RELEASE_DATE)).toBe(true);
+    expect(currentRelease.notes).toContain(CURRENT_STREAM_MONSTERS_RELEASE);
 
     expect(publicRelease).toEqual(expect.objectContaining({
       version: APP_VERSION,
@@ -44,7 +46,7 @@ describe('WebGPU Fireworks 3.1.1 release alignment', () => {
       downloadVersion: APP_VERSION,
       downloadUrl: `https://github.com/Loggableim/ltth.app/releases/tag/v${APP_VERSION}`
     }));
-    expect(publicRelease.downloadNote).toContain('Stream Monsters 1.5.0');
+    expect(publicRelease.downloadNote).toContain(CURRENT_STREAM_MONSTERS_RELEASE);
     expect(publicRelease.changelog[APP_VERSION]).toEqual(expect.objectContaining({
       date: RELEASE_DATE,
       changes: expect.any(Array)

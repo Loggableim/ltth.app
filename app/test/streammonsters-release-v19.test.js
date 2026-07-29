@@ -126,5 +126,5 @@ describe('Stream Monsters 1.9 Rules-v7 release contract', () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });

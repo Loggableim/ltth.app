@@ -103,6 +103,23 @@ describe('Music Bot backend seek', () => {
     expect(engine.state).toBe('paused');
   });
 
+  test('waits for MPV to report the requested position after accepting an exact seek', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const positions = [0.02, 42];
+    engine.socket = { destroyed: false };
+    engine.state = 'playing';
+    engine.nowPlaying = { id: 'track', duration: 120, startedAt: Date.now() };
+    engine._sendCommand = jest.fn(async (command) => {
+      if (command[1] === 'time-pos') return { data: positions.shift() };
+      if (command[1] === 'duration') return { data: 120 };
+      if (command[1] === 'seekable') return { data: true };
+      return { data: null };
+    });
+
+    await expect(engine.seek(42)).resolves.toEqual(expect.objectContaining({ position: 42 }));
+    expect(engine._sendCommand.mock.calls.filter(([command]) => command[1] === 'time-pos')).toHaveLength(2);
+  });
+
   test('PlaybackEngine rejects an unknown duration before moving the active track', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
     engine.socket = { destroyed: false };

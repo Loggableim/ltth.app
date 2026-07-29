@@ -1135,9 +1135,15 @@
           "remove_image": "Remove image"
         },
         "arena": {
-          "test_activity": "Test activity",
-          "test_gift": "Test gift",
-          "field_size": "Arena size:",
+        "test_activity": "Test activity",
+        "test_gift": "Test gift",
+        "direct_abilities_enabled": "Direct abilities enabled",
+        "ability_charge_seconds": "Ability charge time (seconds):",
+        "boost_duration_seconds": "Boost duration (seconds):",
+        "shield_duration_seconds": "Shield duration (seconds):",
+        "boost_color": "Boost color:",
+        "shield_color": "Shield color:",
+        "field_size": "Arena size:",
           "field_width": "Arena width:",
           "field_height": "Arena height:",
           "render_resolution": "Render resolution:",

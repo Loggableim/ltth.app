@@ -813,7 +813,7 @@
       };
       const ownerLine = ensureLine('owner', 'egg-focus-owner');
       ownerLine.textContent = isPublicFreeEgg(egg)
-        ? currentLabels().eggFocusOpenOwner || 'Open to eligible viewers'
+        ? currentLabels().eggFocusOpenOwner || ''
         : replaceTokens(
             currentLabels().eggFocusOwner || 'Owner: {owner}',
             { owner: safeViewerName(egg.displayName) || 'Viewer' }
