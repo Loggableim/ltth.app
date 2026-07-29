@@ -91,6 +91,47 @@ const V6_ELEMENT_DAMAGE_TUNING = Object.freeze({
   Lunar: 1,
   Volt: 1.5
 });
+const V8_NEUTRAL_ROLE_DAMAGE_TUNING = Object.freeze({
+  Ember: Object.freeze({
+    striker: 0.5,
+    guardian: 0.5,
+    trickster: 1,
+    sustain: 1.5
+  }),
+  Tide: Object.freeze({
+    striker: 1.5,
+    guardian: 1.7,
+    trickster: 0.7,
+    sustain: 2.5
+  }),
+  Grove: Object.freeze({
+    striker: -0.4,
+    guardian: 0,
+    trickster: 0.4,
+    sustain: 1.3
+  }),
+  Gale: Object.freeze({
+    striker: -0.75,
+    guardian: -0.5,
+    trickster: -2.5,
+    sustain: 0
+  }),
+  Volt: Object.freeze({
+    striker: 2,
+    guardian: 2.5,
+    trickster: 1.75,
+    sustain: 3
+  }),
+  Lunar: Object.freeze({
+    striker: 0.75,
+    guardian: 0.75,
+    trickster: 0.75,
+    sustain: 2.5
+  })
+});
+const V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING = Object.freeze({
+  Gale: 0.5
+});
 
 const SKILL_PRESENTATION = Object.freeze({
   Ember: Object.freeze({
@@ -557,7 +598,7 @@ function stageSkillKey(prefix, templateId, choice, revision) {
   return `${prefix}${templateKey}${choice}Stage${revision}`;
 }
 
-function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 7) {
+function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 8) {
   const normalizedChoice = String(choice || '').trim().toUpperCase();
   const base = V6_SKILL_CATALOG[templateId]?.[normalizedChoice];
   if (!base) {
@@ -590,6 +631,15 @@ function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 7) {
     const secondary = effects.find(effect => effect !== primary);
     if (primary) adjustPower(effects, primary.type, secondary ? 1 : 2);
     if (secondary) adjustSecondary(effects, secondary.type, 1);
+  }
+  const rulesV8DamageDelta = Number(rulesVersion) >= 8
+    ? Number(V8_NEUTRAL_ROLE_DAMAGE_TUNING[templateEntry.element]?.[templateEntry.role]) || 0
+    : 0;
+  if (
+    rulesV8DamageDelta &&
+    effects.some(effect => effect.type === 'damage')
+  ) {
+    adjustPower(effects, 'damage', rulesV8DamageDelta, 1);
   }
   const nameKey = stageSkillKey(
     'skillName',
@@ -632,6 +682,8 @@ module.exports = {
   V6_TRICKSTER_TUNING,
   V6_GUARDIAN_TUNING,
   V6_ELEMENT_DAMAGE_TUNING,
+  V8_NEUTRAL_ROLE_DAMAGE_TUNING,
+  V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING,
   TEMPLATE_CATALOG,
   getTemplate,
   getTemplatesForElement,

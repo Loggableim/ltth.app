@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stream Monsters · League World Hybrid</title>
+  <title>Stream Monsters · Portrait Arcade Rally</title>
   <style>
     :root {
       color-scheme: dark;
@@ -135,6 +135,9 @@
     .status-tile strong { margin-top:7px; color:var(--cyan); font-size:17px; }
     .warning-stack { display:grid; gap:7px; min-height:48px; padding:11px; border:1px solid #55496e; border-radius:12px; background:#0d1424; }
     .alias-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .alias-command-group { display:grid; align-content:start; gap:10px; padding:12px; border:1px solid #46567d; border-radius:16px; background:#0a1120a8; }
+    .alias-command-group h4 { margin:0; color:var(--cyan); font-size:15px; letter-spacing:.04em; }
+    .command-policy-meta { display:grid; gap:3px; margin-top:5px; color:var(--muted); font-size:12px; white-space:normal; }
     .alias-row { padding:12px; border:1px solid #344568; border-radius:13px; background:#0c1425; }
     .alias-row header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .alias-row header code { margin:0; padding:4px 7px; }
@@ -142,12 +145,33 @@
     .language-toggles { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .language-toggles label { display:flex; align-items:center; gap:4px; margin:0; padding:4px 7px; border:1px solid #3c4a70; border-radius:999px; background:#10192d; }
     .language-toggles input { width:auto; min-height:0; }
-    .preview-grid { display:grid; grid-template-columns:minmax(230px,.7fr) minmax(0,1.3fr); gap:16px; align-items:start; margin-top:14px; }
+    .preview-grid { display:grid; grid-template-columns:repeat(2,minmax(230px,1fr)); gap:16px; align-items:start; margin-top:14px; }
+    .preview-example { min-width:0; }
+    .preview-example h4 { margin:0 0 7px; color:#f6f9ff; font-size:14px; }
+    .preview-example > p { min-height:38px; margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
+    .preview-example .stage-preview { margin-inline:auto; }
+    .obs-composition-guide { margin-top:14px; padding:13px 15px; border:1px solid #586c9c; border-radius:14px; background:#0b1325; }
+    .obs-composition-guide h4 { margin:0; color:#f6f9ff; }
+    .obs-composition-guide p { margin:7px 0; color:var(--muted); }
+    .obs-composition-guide ol { margin:8px 0; padding-left:24px; color:#dce8ff; }
+    .obs-composition-guide li + li { margin-top:4px; }
+    .obs-source-warning { padding:9px 11px; border:1px solid #f4b85f; border-radius:10px; color:#ffe2ae !important; background:#4a321d85; font-weight:750; }
     .stage-preview { position:relative; overflow:hidden; width:100%; border:2px solid #687caf; border-radius:18px; background:
       radial-gradient(circle at 50% 32%,#45549c88,transparent 32%),
       linear-gradient(180deg,#17213b,#0a1020); box-shadow:inset 0 0 60px #0008; }
     .stage-preview.portrait { max-width:300px; aspect-ratio:9/16; }
     .stage-preview.landscape { aspect-ratio:16/9; }
+    .preview-zone {
+      position:absolute; z-index:4; left:var(--x); top:var(--y); width:var(--w); height:var(--h);
+      display:grid; place-items:center; overflow:hidden; border:1px dashed #7ceaff8c;
+      border-radius:5px; color:#e9fbff; background:#132b3b61; font-size:8px;
+      font-weight:900; line-height:1; text-transform:uppercase; pointer-events:none;
+    }
+    .preview-zone[data-preview-zone="notification"] { border-color:#ffd76f; background:#563f1f70; }
+    .preview-zone[data-preview-zone="avatar"] { border-color:#a984ff; background:#38275d45; }
+    .preview-zone[data-preview-zone="likes"],
+    .preview-zone[data-preview-zone="shelf"],
+    .preview-zone[data-preview-zone="xp"] { border-color:#6ef1b8; background:#193f3561; }
     .stage-gameplay { position:absolute; inset:0 0 26% 0; overflow:hidden; background:
       radial-gradient(ellipse at 50% 84%,#6652bb59,transparent 45%),
       linear-gradient(180deg,transparent,#141a35b8); }
@@ -227,7 +251,7 @@
   <header class="hero">
     <div>
       <img class="hero-logo" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
-      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Jackpot Arena &amp; Living Egg Shelf · Version 1.10</div>
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Portrait Arcade Rally · Version 1.11</div>
       <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
       <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Portrait-first PvP, permanente Sammlung und 72 fertig gebündelte Furry-Formen. Geschenke kaufen Tempo und Show, niemals Kampfstärke.</p>
     </div>
@@ -242,9 +266,10 @@
     <a href="#live-center" data-i18n="plugins.streamalchemy.ui.monsters.navLiveCenter">1 · Live Center</a>
     <a href="#gameplay" data-i18n="plugins.streamalchemy.ui.monsters.navGameplay">2 · Gameplay</a>
     <a href="#gifts-chat" data-i18n="plugins.streamalchemy.ui.monsters.navGiftsChat">3 · Gifts &amp; Chat</a>
-    <a href="#overlay-studio" data-i18n="plugins.streamalchemy.ui.monsters.navOverlayStudio">4 · Overlay Studio</a>
-    <a href="#asset-library" data-i18n="plugins.streamalchemy.ui.monsters.navAssetLibrary">5 · Monster &amp; Assets</a>
-    <a href="#community-seasons" data-i18n="plugins.streamalchemy.ui.monsters.navCommunitySeasons">6 · Community &amp; Seasons</a>
+    <a href="#languages" data-i18n="plugins.streamalchemy.ui.monsters.navLanguages">4 · Languages</a>
+    <a href="#overlay-studio" data-i18n="plugins.streamalchemy.ui.monsters.navOverlayStudio">5 · Overlay Studio</a>
+    <a href="#asset-library" data-i18n="plugins.streamalchemy.ui.monsters.navAssetLibrary">6 · Monster &amp; Assets</a>
+    <a href="#community-seasons" data-i18n="plugins.streamalchemy.ui.monsters.navCommunitySeasons">7 · Community &amp; Seasons</a>
   </nav>
   <div id="notice" class="notice" role="status" data-i18n="plugins.streamalchemy.ui.monsters.loading">Stream Monsters wird geladen …</div>
 
@@ -298,7 +323,7 @@
   </section>
 
   <section id="gameplay" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v7</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v8</span></div>
     <div class="grid">
       <article class="card wide">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTiming">Eggs &amp; seasons</h3>
@@ -306,10 +331,17 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.hatchPreset">Hatch preset</span><select id="hatchPreset">
             <option value="30000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Seconds">30 seconds</option>
             <option value="60000" data-i18n="plugins.streamalchemy.ui.monsters.duration1Minute">1 minute</option>
+            <option value="90000" data-i18n="plugins.streamalchemy.ui.monsters.duration90Seconds">90 seconds</option>
             <option value="120000" data-i18n="plugins.streamalchemy.ui.monsters.duration2Minutes">2 minutes</option>
             <option value="300000" data-i18n="plugins.streamalchemy.ui.monsters.duration5Minutes">5 minutes</option>
             <option value="600000" data-i18n="plugins.streamalchemy.ui.monsters.duration10Minutes">10 minutes</option>
             <option value="1800000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Minutes">30 minutes</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.gameplayPace">Gameplay pace</span><select id="gameplayPace">
+            <option value="arcade-rally" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceArcadeRally">Arcade Rally</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleMode">Portrait battle mode</span><select id="portraitBattleMode">
+            <option value="takeover-74" data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleModeTakeover74">74% arena takeover</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.eggExpiry">Egg expiry</span><select id="eggExpiry">
             <option value="21600000" data-i18n="plugins.streamalchemy.ui.monsters.duration6Hours">6 hours</option><option value="43200000" data-i18n="plugins.streamalchemy.ui.monsters.duration12Hours">12 hours</option>
@@ -322,11 +354,15 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack"><option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry · bundled</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveViewers">Auto-hatch active viewers</span><input id="autoHatchActiveViewers" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveWindowSeconds">Auto-hatch active window (seconds)</span><input id="autoHatchActiveWindowSeconds" type="number" min="30" max="900" step="1" value="300"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveHelp">Ready owned eggs hatch only after the viewer has recently interacted in this stream.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
+        <div id="presentationModeStatus" class="badge" role="status" aria-live="polite"></div>
         <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
         <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">No stream data yet</div>
       </article>
@@ -372,7 +408,7 @@
         <div><h3 data-i18n="plugins.streamalchemy.ui.monsters.aliasTitle">Command aliases &amp; language variants</h3><p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.aliasCopy">Comma-separated active and disabled aliases are persisted per action. Locale switches move their suggested alias between the lists.</p></div>
         <span id="aliasConflictStatus" class="badge" role="status" aria-live="polite">Checking conflicts…</span>
       </div>
-      <div class="alias-grid">
+      <div id="aliasGrid" class="alias-grid">
         <article class="alias-row" data-command-alias="eggs">
           <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandEggs">Egg list</strong><code data-command="eggs">!eier</code></header>
           <div class="alias-fields"><label id="alias-eggs-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsEnabled">Active egg aliases</span><input id="aliasEggsEnabled" data-alias-command="eggs" data-alias-mode="enabled" value="eier, eierliste, meineeier"></label><label id="alias-eggs-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsDisabled">Optional egg aliases</span><input id="aliasEggsDisabled" data-alias-command="eggs" data-alias-mode="disabled" value="eggs, huevos, oeufs"></label></div>
@@ -453,9 +489,39 @@
     </article>
   </section>
 
+  <section id="languages" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Languages</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p></div><span class="badge">DE · EN · ES · FR</span></div>
+    <div class="grid">
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Overlay languages</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayPrimaryLocale">Primary language</span><select id="overlayPrimaryLocale">
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlaySecondsPerLocale">Seconds per language</span><select id="overlaySecondsPerLocale">
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select></label>
+        </div>
+        <span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayActiveLocales">Active overlay languages</span>
+        <div class="language-toggles">
+          <label><input id="overlayLocaleDe" type="checkbox" value="de" checked>DE</label>
+          <label><input id="overlayLocaleEn" type="checkbox" value="en" checked>EN</label>
+          <label><input id="overlayLocaleEs" type="checkbox" value="es">ES</label>
+          <label><input id="overlayLocaleFr" type="checkbox" value="fr">FR</label>
+        </div>
+      </article>
+    </div>
+  </section>
+
 
   <section id="overlay-studio" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge">Portrait first · 74/26</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge">Portrait first · 74/26</span></div>
     <div class="grid">
       <article class="card full">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLayoutTitle">Layout, readability &amp; quality</h3>
@@ -476,14 +542,46 @@
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.landscapeScale">Landscape scale</span><input id="landscapeScale" type="number" min="70" max="130" value="100"></label>
         </div>
+        <aside id="obsTakeoverSourceOrder" class="obs-composition-guide" aria-labelledby="obsSourceOrderHeading">
+          <h4 id="obsSourceOrderHeading" data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderTitle">OBS source order for battle takeover</h4>
+          <p data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderIntro">Put these sources in this order from top to bottom:</p>
+          <ol>
+            <li data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderTakeover">Stream Monsters overlay</li>
+            <li data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderExternal">Avatar, likes and music sources</li>
+            <li data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderBase">Base scene or camera</li>
+          </ol>
+          <p id="obsExternalSourcesWarning" class="obs-source-warning" data-i18n="plugins.streamalchemy.ui.monsters.obsExternalSourcesWarning">Stream Monsters cannot hide another OBS source with CSS. Keep those sources below the takeover, or disable them in your battle scene.</p>
+        </aside>
         <div class="preview-grid">
-          <div id="portraitStagePreview" class="stage-preview portrait" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 portrait stage preview">
-            <div class="stage-gameplay" data-gameplay-percent="74"><div class="stage-hud"><span>HP · 100%</span><span>ROUND 1</span><span>SPECIAL · 50%</span></div><div class="stage-callout">A · B · C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
-            <div class="stage-chat-safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
+          <div class="preview-example" data-preview-example="normal">
+            <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateNormal">Normal stream</h4>
+            <div id="portraitNormalPreview" class="stage-preview portrait" data-preview-mode="normal" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 normal portrait stage preview">
+            <div class="preview-zone" data-preview-zone="logo" style="--x:4%;--y:2%;--w:24%;--h:6%">Logo</div>
+            <div class="preview-zone" data-preview-zone="music" style="--x:5%;--y:14.5%;--w:58%;--h:4.5%">Music</div>
+            <div class="preview-zone" data-preview-zone="notification" style="--x:4%;--y:20%;--w:92%;--h:5%">Info</div>
+            <div class="preview-zone" data-preview-zone="avatar" style="--x:2%;--y:26.5%;--w:96%;--h:31%">Avatar</div>
+            <div class="preview-zone" data-preview-zone="likes" style="--x:2%;--y:58.5%;--w:96%;--h:6%">Likes</div>
+            <div class="preview-zone" data-preview-zone="shelf" style="--x:3%;--y:66.5%;--w:94%;--h:7%">Egg shelf</div>
+            <div class="preview-zone" data-preview-zone="xp" style="--x:4%;--y:82.5%;--w:92%;--h:11%">XP</div>
+            <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
           </div>
-          <div id="landscapeStagePreview" class="stage-preview landscape" data-width="1920" data-height="1080" role="img" aria-label="1920 by 1080 landscape stage preview">
-            <div class="stage-gameplay" data-gameplay-percent="74"><div class="stage-hud"><span>HP · 100%</span><span>ROUND 1</span><span>SPECIAL · 50%</span></div><div class="stage-callout">A · B · C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
-            <div class="stage-chat-safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.previewNormalHelp">External avatar, music, likes, egg shelf and XP sources remain visible during normal play.</p>
+          </div>
+          <div class="preview-example" data-preview-example="battle">
+            <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
+            <div id="portraitBattlePreview" class="stage-preview portrait" data-preview-mode="battle" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 battle portrait stage preview">
+              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span>HP &middot; 100%</span><span>ROUND 1</span><span>SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
+              <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone &middot; lower 26%</div>
+            </div>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">The Stream Monsters source covers the upper 74%; the lower 26% stays clear for TikTok chat.</p>
+          </div>
+          <div class="preview-example" data-preview-example="landscape-battle">
+            <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
+            <div id="landscapeStagePreview" class="stage-preview landscape" data-preview-mode="battle" data-width="1920" data-height="1080" role="img" aria-label="1920 by 1080 landscape stage preview">
+              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span>HP &middot; 100%</span><span>ROUND 1</span><span>SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
+              <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone &middot; lower 26%</div>
+            </div>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">The Stream Monsters source covers the upper 74%; the lower 26% stays clear for TikTok chat.</p>
           </div>
         </div>
         <div id="creatorEggShelfPreview" class="creator-egg-shelf-preview" aria-label="Living egg shelf preview">
@@ -545,7 +643,7 @@
   </section>
 
   <section id="asset-library" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
     <div class="asset-summary">
       <div class="asset-stat"><strong>24</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetTemplates">Templates</span></div>
       <div class="asset-stat"><strong>3</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetStages">Stages each</span></div>
@@ -575,7 +673,7 @@
   </section>
 
   <section id="community-seasons" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsTitle">Community &amp; Seasons</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsCopy">Search collections and compare competitive Arena Rating with permanent Collector Score.</p></div><span id="seasonCountdown" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.seasonLoading">Loading season</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area7">Area 7</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsTitle">Community &amp; Seasons</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsCopy">Search collections and compare competitive Arena Rating with permanent Collector Score.</p></div><span id="seasonCountdown" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.seasonLoading">Loading season</span></div>
     <div id="visual-library" class="grid">
       <article class="card">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.findViewer">Find viewer</h3>
@@ -695,6 +793,7 @@
   let currentLiveStatus = {};
   let currentCreatorState = {};
   let currentStateConfig = {};
+  let liveRefreshInFlight = false;
   const repairPreviews = { eggs:null, matches:null };
   const repairSuffixes = Object.freeze({ eggs:'Eggs', matches:'Matches' });
   const CATALOG_PAGE_SIZE = 100;
@@ -901,6 +1000,30 @@
     .split(',')
     .map(alias => alias.trim().toLocaleLowerCase())
     .filter(Boolean))];
+  const collectOverlayLanguage = () => {
+    const primaryLocale = byId('overlayPrimaryLocale').value;
+    const selected = ['de', 'en', 'es', 'fr'].filter(locale => (
+      byId(`overlayLocale${locale.charAt(0).toUpperCase()}${locale.slice(1)}`).checked
+    ));
+    const locales = [
+      primaryLocale,
+      ...selected.filter(locale => locale !== primaryLocale)
+    ].slice(0, 2);
+    return creatorRuntime.normalizeOverlayLanguage({
+      primaryLocale,
+      locales,
+      secondsPerLocale:Number(byId('overlaySecondsPerLocale').value)
+    });
+  };
+  const applyOverlayLanguage = languageInput => {
+    const language = creatorRuntime.normalizeOverlayLanguage(languageInput);
+    byId('overlayPrimaryLocale').value = language.primaryLocale;
+    byId('overlaySecondsPerLocale').value = String(language.secondsPerLocale);
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      byId(`overlayLocale${locale.charAt(0).toUpperCase()}${locale.slice(1)}`).checked =
+        language.locales.includes(locale);
+    }
+  };
   const aliasInput = (command, mode) => document.querySelector(
     `[data-alias-command="${command}"][data-alias-mode="${mode}"]`
   );
@@ -936,6 +1059,28 @@
     root.className = 'badge';
     return result;
   };
+  const organizeAliasGroups = () => {
+    const root = byId('aliasGrid');
+    if (!root || root.dataset.grouped === 'true') return;
+    const rows = new Map(
+      [...root.querySelectorAll('[data-command-alias]')]
+        .map(row => [row.dataset.commandAlias, row])
+    );
+    for (const group of creatorRuntime.COMMAND_GROUPS) {
+      const section = document.createElement('section');
+      section.className = 'alias-command-group';
+      section.dataset.commandGroup = group.id;
+      const title = document.createElement('h4');
+      title.textContent = text(group.titleKey, group.id);
+      section.append(title);
+      for (const command of group.commands) {
+        const row = rows.get(command);
+        if (row) section.append(row);
+      }
+      root.append(section);
+    }
+    root.dataset.grouped = 'true';
+  };
   const renderCommandDiagnostics = gcce => {
     const filter = gcce?.tiktokFilter || {};
     byId('tiktokFilterStatus').textContent = filter.status === 'not_probeable'
@@ -963,26 +1108,63 @@
     };
     const root = byId('commandPolicyList');
     root.replaceChildren();
-    creatorRuntime.buildCommandDiagnostics(gcce).forEach(policy => {
-      const row = document.createElement('div');
-      row.className = 'gift-row';
-      const copy = document.createElement('div');
-      copy.className = 'grow';
-      const title = document.createElement('strong');
-      title.textContent = policy.reference || text(
-        commandLabelKeys[policy.command],
-        policy.command
-      );
-      const meta = document.createElement('small');
-      meta.textContent = policy.enabled
-        ? text('cooldownPolicyLine', 'Viewer {user} · Global {global}', {
-          user:formatCooldown(policy.userCooldownMs),
-          global:formatCooldown(policy.globalCooldownMs)
-        })
-        : text('commandDisabled', 'Command disabled');
-      copy.append(title, meta);
-      row.append(copy);
-      root.append(row);
+    creatorRuntime.buildCommandGroups({
+      gcce,
+      commandAliases:collectCommandAliases()
+    }).forEach(group => {
+      const section = document.createElement('section');
+      section.className = 'alias-command-group';
+      section.dataset.policyGroup = group.id;
+      const heading = document.createElement('h4');
+      heading.textContent = text(group.titleKey, group.id);
+      section.append(heading);
+      group.commands.forEach(policy => {
+        const row = document.createElement('div');
+        row.className = 'gift-row';
+        const copy = document.createElement('div');
+        copy.className = 'grow';
+        const title = document.createElement('strong');
+        title.textContent = policy.reference || text(
+          commandLabelKeys[policy.command],
+          policy.command
+        );
+        const meta = document.createElement('div');
+        meta.className = 'command-policy-meta';
+        const lines = [
+          text('commandPrimaryAlias', 'Primary: {command}', {
+            command:policy.reference || `${policy.prefix}${policy.primaryAlias}`
+          }),
+          text('commandAliasesLabel', 'Aliases: {aliases}', {
+            aliases:policy.enabledAliases.join(', ') || '—'
+          }),
+          text('commandGcceConflict', 'GCCE conflict: {status}', {
+            status:policy.gcceConflict
+              ? text('statusConflict', 'conflict')
+              : text('statusClear', 'clear')
+          }),
+          text('commandTikTokFilter', 'TikTok filter: {status}', {
+            status:policy.tiktokFilterStatus === 'not_probeable'
+              ? text('tiktokFilterNotProbeableStatus', 'Not probeable')
+              : text('statusUnavailable', 'Unavailable')
+          }),
+          text('commandCooldowns', 'Cooldown: viewer {user} · global {global}', {
+            user:formatCooldown(policy.userCooldownMs),
+            global:formatCooldown(policy.globalCooldownMs)
+          }),
+          text('commandOutcome', 'Result: {outcome}', {
+            outcome:text(policy.outcomeKey, policy.command)
+          })
+        ];
+        lines.forEach(line => {
+          const item = document.createElement('span');
+          item.textContent = line;
+          meta.append(item);
+        });
+        copy.append(title, meta);
+        row.append(copy);
+        section.append(row);
+      });
+      root.append(section);
     });
   };
   const syncLocaleAlias = control => {
@@ -1314,6 +1496,8 @@
       values: {
         creatorName:byId('creatorName').value,
         hatchDurationMs:byId('hatchPreset').value,
+        gameplayPace:byId('gameplayPace').value,
+        portraitBattleMode:byId('portraitBattleMode').value,
         eggExpiryMs:byId('eggExpiry').value,
         seasonDurationDays:byId('seasonDuration').value,
         landscapeAnchor:byId('landscapeAnchor').value,
@@ -1324,8 +1508,11 @@
         notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
         freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
         freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
+        autoHatchActiveViewers:byId('autoHatchActiveViewers').checked,
+        autoHatchActiveWindowSeconds:byId('autoHatchActiveWindowSeconds').value,
         tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
         tutorialHintIntervalSeconds:byId('tutorialHintIntervalSeconds').value,
+        overlayLanguage:collectOverlayLanguage(),
         commandAliases:collectCommandAliases(),
         audioChannels:{
           master:audioChannel('Master'),
@@ -1388,8 +1575,9 @@
       byId(id).classList.toggle('collision', collisions.includes(name));
     }
     byId('safeReveal').classList.toggle('collision', collisions.length > 0);
-    byId('portraitStagePreview').hidden = layout !== 'portrait';
-    byId('landscapeStagePreview').hidden = layout !== 'landscape';
+    byId('portraitNormalPreview').closest('.preview-example').hidden = layout !== 'portrait';
+    byId('portraitBattlePreview').closest('.preview-example').hidden = layout !== 'portrait';
+    byId('landscapeStagePreview').closest('.preview-example').hidden = layout !== 'landscape';
     byId('safeZoneWarning').textContent = collisions.length
       ? text('safeZoneCollision', 'Collision: {areas}', { areas:collisions.join(', ') })
       : text('safeZoneClear', 'No safe-zone collisions.');
@@ -1399,7 +1587,27 @@
       ...(state.config || {}),
       giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
     };
-    byId('hatchPreset').value = String(state.config?.hatchDurationMs || 120000);
+    const storedHatchDurationMs = Number(state.config?.hatchDurationMs ?? 90000);
+    creatorRuntime.hydrateHatchPresetControl(
+      byId('hatchPreset'),
+      storedHatchDurationMs,
+      {
+        label:text('legacyCustomHatchDuration', 'Legacy Custom · {duration}', {
+          duration:formatDuration(storedHatchDurationMs)
+        })
+      }
+    );
+    byId('gameplayPace').value = state.config?.gameplayPace || 'arcade-rally';
+    byId('portraitBattleMode').value =
+      state.config?.portraitBattleMode || 'takeover-74';
+    byId('presentationModeStatus').textContent = text(
+      'presentationModeStatus',
+      '{pace} · {mode}',
+      {
+        pace:text('gameplayPaceArcadeRally', 'Arcade Rally'),
+        mode:text('portraitBattleModeTakeover74', '74% arena takeover')
+      }
+    );
     byId('visualPack').value = 'furry';
     byId('eggExpiry').value = String(state.config?.eggExpiryMs || 86400000);
     byId('seasonDuration').value = String(state.config?.seasonDurationDays || 28);
@@ -1412,11 +1620,17 @@
     byId('freeEggCooldownSeconds').value = String(
       state.config?.freeEggCooldownSeconds || 86400
     );
+    byId('autoHatchActiveViewers').checked =
+      state.config?.autoHatchActiveViewers !== false;
+    byId('autoHatchActiveWindowSeconds').value = String(
+      state.config?.autoHatchActiveWindowSeconds || 300
+    );
     byId('tutorialHintsEnabled').checked =
       state.config?.tutorialHintsEnabled !== false;
     byId('tutorialHintIntervalSeconds').value = String(
       state.config?.tutorialHintIntervalSeconds || 90
     );
+    applyOverlayLanguage(state.config?.overlayLanguage);
     currentGcceState = state.gcce || {};
     applyAliasState(state.config?.commandAliases || {});
     renderCommandDiagnostics(currentGcceState);
@@ -1539,13 +1753,32 @@
       });
     }
   };
+  const refreshLiveCenterState = async () => {
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+    try {
+      const [status, state] = await Promise.all([
+        request('/api/status'),
+        request('/api/streammonsters/creator-state')
+      ]);
+      renderLiveCenter(status, state);
+    } catch (_) {
+      // Keep the last verified live snapshot visible during a transient poll failure.
+    } finally {
+      liveRefreshInFlight = false;
+    }
+  };
   const renderRetentionTimerWarning = () => {
     const cooldown = Number(byId('freeEggCooldownSeconds').value);
+    const activeWindow = Number(byId('autoHatchActiveWindowSeconds').value);
     const interval = Number(byId('tutorialHintIntervalSeconds').value);
     const warning = byId('retentionTimerWarning');
     const invalid = !Number.isFinite(cooldown) ||
       cooldown < 60 ||
       cooldown > 31536000 ||
+      !Number.isFinite(activeWindow) ||
+      activeWindow < 30 ||
+      activeWindow > 900 ||
       !Number.isFinite(interval) ||
       interval < 60 ||
       interval > 300;
@@ -1560,7 +1793,7 @@
     const duration = formatDuration(hatchDurationMs);
     byId('activePrefix').textContent = prefix;
     byId('activeHatchDuration').textContent = duration;
-    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v7 skill arena.', { duration, prefix });
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v8 skill arena.', { duration, prefix });
     document.querySelectorAll('[data-command]').forEach(command => {
       const name = command.dataset.command;
       const alias = creatorRuntime.resolveCommandReference(name, {
@@ -1583,6 +1816,7 @@
         loadAssetIntegrity()
       ]);
       byId('creatorName').value = state.config?.creatorName || status.username || '';
+      organizeAliasGroups();
       byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
       applyPresentationState(state);
@@ -1600,7 +1834,7 @@
       byId('readinessScore').textContent = `${readiness}/6`;
       const end = state.season?.ends_at_ms;
       if (end) byId('seasonCountdown').textContent = text('seasonEnds', 'Endet {date}', { date:new Date(end).toLocaleDateString() });
-      notice(text('arenaReady', 'League World Hybrid ready. Map gifts and test the overlay.'), 'success');
+          notice(text('arenaReady', 'Portrait Arcade Rally ready. Map gifts and test the overlay.'), 'success');
     } catch (error) {
       notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', {
         error:apiErrorText(error)
@@ -1660,6 +1894,8 @@
   for (const id of [
     'freeEggDropsEnabled',
     'freeEggCooldownSeconds',
+    'autoHatchActiveViewers',
+    'autoHatchActiveWindowSeconds',
     'tutorialHintsEnabled',
     'tutorialHintIntervalSeconds'
   ]) {
@@ -1679,6 +1915,18 @@
   document.querySelectorAll('[data-alias-locale]').forEach(control => {
     control.addEventListener('change', () => syncLocaleAlias(control));
   });
+  for (const id of [
+    'overlayPrimaryLocale',
+    'overlayLocaleDe',
+    'overlayLocaleEn',
+    'overlayLocaleEs',
+    'overlayLocaleFr',
+    'overlaySecondsPerLocale'
+  ]) {
+    byId(id).addEventListener('change', () => {
+      applyOverlayLanguage(collectOverlayLanguage());
+    });
+  }
   byId('giftSearch').addEventListener('input', event => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => loadCatalog(event.target.value).catch(error => notice(apiErrorText(error), 'error')), 180);
@@ -1686,7 +1934,11 @@
   loadCatalog().catch(() => {});
   loadLeaderboards().catch(() => {});
   const liveCountdownTimer = setInterval(() => renderLiveCenter(), 1000);
-  window.addEventListener('pagehide', () => clearInterval(liveCountdownTimer), { once:true });
+  const liveStateRefreshTimer = setInterval(refreshLiveCenterState, 5_000);
+  window.addEventListener('pagehide', () => {
+    clearInterval(liveCountdownTimer);
+    clearInterval(liveStateRefreshTimer);
+  }, { once:true });
   if (window.i18n?.onLanguageChange) {
     window.i18n.onLanguageChange(() => {
       Promise.allSettled([

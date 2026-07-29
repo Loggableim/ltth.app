@@ -134,7 +134,7 @@ describe('Stream Monsters competitive depth rules-v6', () => {
     }));
   });
 
-  test('cancels before a roster lock, records a locked forfeit, and cools repeated queue dodges', () => {
+  test('cancels or forfeits without combat rewards and cools repeated queue dodges', () => {
     const { sqlite, store } = createStore();
     [
       ['alpha', 'viewer-alpha', 'Ember', 'ashfang'],
@@ -152,11 +152,13 @@ describe('Stream Monsters competitive depth rules-v6', () => {
     let nowMs = 10_000;
     const progression = { recordBattleProgress: jest.fn() };
     const collection = { recordBattleOutcome: jest.fn() };
+    const emit = jest.fn();
     const service = createService({
       store,
       now: () => nowMs,
       progression,
-      collection
+      collection,
+      emit
     });
 
     service.join({ userId: 'viewer-alpha' });
@@ -206,11 +208,21 @@ describe('Stream Monsters competitive depth rules-v6', () => {
         forfeitedSlot: alphaSlot
       })
     }));
+    expect(store.getMonster('alpha')).toEqual(expect.objectContaining({
+      xp: 0,
+      battle_count: 0,
+      win_streak: 0
+    }));
+    expect(store.getMonster('beta')).toEqual(expect.objectContaining({
+      xp: 0,
+      battle_count: 0,
+      win_streak: 0
+    }));
     expect(store.getViewerBattleStats('viewer-alpha')).toEqual(
-      expect.objectContaining({ battle_count: 1, win_streak: 0 })
+      expect.objectContaining({ battle_count: 0, win_streak: 0 })
     );
     expect(store.getViewerBattleStats('viewer-beta')).toEqual(
-      expect.objectContaining({ battle_count: 1, win_streak: 1 })
+      expect.objectContaining({ battle_count: 0, win_streak: 0 })
     );
     expect(service.getQueueDodgeStatus('viewer-alpha')).toEqual(
       expect.objectContaining({
@@ -218,12 +230,34 @@ describe('Stream Monsters competitive depth rules-v6', () => {
         cooldownUntilMs: nowMs + 60_000
       })
     );
-    expect(progression.recordBattleProgress).toHaveBeenCalledTimes(2);
-    expect(collection.recordBattleOutcome).toHaveBeenCalledTimes(1);
+    expect(progression.recordBattleProgress).not.toHaveBeenCalled();
+    expect(collection.recordBattleOutcome).not.toHaveBeenCalled();
     const rewardCount = sqlite.prepare(`
       SELECT COUNT(*) AS count FROM streammonsters_match_rewards
       WHERE match_id = ?
     `).get(locked.matchId).count;
+    expect(rewardCount).toBe(0);
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_arena_daily_ledger
+      WHERE viewer_id IN ('viewer-alpha', 'viewer-beta')
+    `).get().count).toBe(0);
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_match_events
+      WHERE match_id = ?
+        AND event_type IN (
+          'streammonsters:monster_xp_awarded',
+          'streammonsters:monster_level_up',
+          'streammonsters:arena_rating_changed',
+          'streammonsters:win_streak',
+          'streammonsters:upset',
+          'streammonsters:rivalry'
+        )
+    `).get(locked.matchId).count).toBe(0);
+    expect(emit.mock.calls.filter(([event]) => (
+      event === 'streammonsters:battle_completed'
+    ))).toHaveLength(1);
     const eventCount = sqlite.prepare(`
       SELECT COUNT(*) AS count FROM streammonsters_match_events
       WHERE match_id = ?
@@ -245,10 +279,10 @@ describe('Stream Monsters competitive depth rules-v6', () => {
       SELECT COUNT(*) AS count FROM streammonsters_match_events
       WHERE match_id = ?
     `).get(locked.matchId).count).toBe(eventCount);
-    expect(store.getViewerBattleStats('viewer-alpha').battle_count).toBe(1);
-    expect(store.getViewerBattleStats('viewer-beta').battle_count).toBe(1);
-    expect(progression.recordBattleProgress).toHaveBeenCalledTimes(2);
-    expect(collection.recordBattleOutcome).toHaveBeenCalledTimes(1);
+    expect(store.getViewerBattleStats('viewer-alpha').battle_count).toBe(0);
+    expect(store.getViewerBattleStats('viewer-beta').battle_count).toBe(0);
+    expect(progression.recordBattleProgress).not.toHaveBeenCalled();
+    expect(collection.recordBattleOutcome).not.toHaveBeenCalled();
 
     for (let dodge = 1; dodge <= 3; dodge += 1) {
       expect(service.join({ userId: 'viewer-dodger' }).status).toBe('queued');

@@ -180,10 +180,14 @@ class CollectionService {
         return this.getEssence(userId, element);
       }
       const previous = this.store.getElementEssence(userId, element);
-      const total = previous.amount + Math.max(0, Number(amount) || 0);
+      const available = Math.max(0, Number(previous.amount) || 0);
+      const spent = Math.max(0, Number(previous.spent) || 0);
+      const earned = Math.max(0, Number(amount) || 0);
+      const total = available + earned;
+      const lifetimeTotal = available + spent + earned;
       const unlocks = [...previous.unlocks];
       ESSENCE_UNLOCKS.forEach(([threshold, key]) => {
-        if (previous.amount < threshold && total >= threshold && !unlocks.includes(key)) unlocks.push(key);
+        if (lifetimeTotal >= threshold && !unlocks.includes(key)) unlocks.push(key);
       });
       return this.store.setElementEssence(userId, element, total, unlocks);
     });

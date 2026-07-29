@@ -21,7 +21,7 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('streammonsters:achievement_unlocked');
     expect(html).toContain('streammonsters:season_rank_changed');
     expect(html).toContain('streammonsters:chat_result');
-    expect(html).toContain('const eventQueue');
+    expect(html).toContain('let eventQueue');
     expect(html).toContain('drainQueue');
     expect(html).toContain('hat Elementvorteil');
     expect(html).toContain('battleAdvantageSuffix');

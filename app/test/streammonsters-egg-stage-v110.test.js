@@ -20,6 +20,13 @@ const StreamMonstersPublicEventProjector = require(
 );
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
+const activeFreeEggServices = new Set();
+
+afterEach(() => {
+  for (const service of activeFreeEggServices) service.destroy();
+  activeFreeEggServices.clear();
+});
+
 function createSubject({
   now = 1_000,
   hatchDurationMs = 120_000,
@@ -50,6 +57,7 @@ function createSubject({
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow
   });
+  activeFreeEggServices.add(freeEggs);
   return {
     sqlite,
     store,
@@ -224,7 +232,7 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
     }));
   });
 
-  test('projects queue, ready, and removal transitions without exposing internal egg ids', () => {
+  test('projects queue, ready, and rotten transitions without exposing internal egg ids', () => {
     const subject = createSubject({ hatchDurationMs: 100, eggExpiryMs: 200 });
     const eggs = Array.from({ length: 4 }, (_, index) => (
       gift(subject, `gift-${index}`, 'viewer-a')
@@ -247,13 +255,47 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
 
     subject.setNow(1_300);
     subject.engine.markReadyEggs();
-    const removed = subject.emitted.filter(entry => (
-      entry.event === 'streammonsters:egg_stage_removed'
+    const expiredUpdates = subject.emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_stage_updated' &&
+      entry.payload.reason === 'expired'
     ));
-    expect(removed).toHaveLength(3);
-    expect(removed.map(entry => entry.payload.eggStage.state))
+    expect(expiredUpdates).toHaveLength(3);
+    expect(expiredUpdates.map(entry => entry.payload.eggStage.state))
       .toEqual(['expired', 'expired', 'expired']);
-    expect(JSON.stringify(removed)).not.toContain(eggs[0].egg.egg_id);
+    expect(JSON.stringify(expiredUpdates)).not.toContain(eggs[0].egg.egg_id);
+  });
+
+  test('keeps safely expired gift eggs visible as rotten shelf entries', () => {
+    const subject = createSubject({ hatchDurationMs: 100, eggExpiryMs: 200 });
+    gift(subject, 'gift-rotten');
+    const projector = new EggStageProjector({
+      store: subject.store,
+      now: subject.now
+    });
+
+    subject.setNow(1_100);
+    subject.engine.markReadyEggs();
+    subject.setNow(1_300);
+    subject.engine.markReadyEggs();
+
+    expect(projector.snapshot('creator:stream-1')).toEqual([
+      expect.objectContaining({
+        provenance: 'gift',
+        state: 'expired',
+        adoptionStatus: 'owned',
+        adoptable: false
+      })
+    ]);
+    expect(subject.emitted).toContainEqual({
+      event: 'streammonsters:egg_stage_updated',
+      payload: expect.objectContaining({
+        reason: 'expired',
+        eggStage: expect.objectContaining({ state: 'expired' })
+      })
+    });
+    expect(subject.emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_stage_removed'
+    ))).toEqual([]);
   });
 
   test('expires outstanding free-offer stage entries when a stream is cleaned up', () => {

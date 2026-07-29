@@ -9,12 +9,13 @@ const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'ut
 const document = new JSDOM(html).window.document;
 
 describe('Stream Monsters 1.5 creator workspace', () => {
-  test('renders exactly the six approved creator areas in order', () => {
+  test('renders exactly the seven approved creator areas in order', () => {
     const areas = [...document.querySelectorAll('section[data-creator-area]')];
     expect(areas.map(area => area.id)).toEqual([
       'live-center',
       'gameplay',
       'gifts-chat',
+      'languages',
       'overlay-studio',
       'asset-library',
       'community-seasons'
@@ -23,10 +24,17 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       'Live Center',
       'Gameplay',
       'Gifts & Chat',
+      'Languages',
       'Overlay Studio',
       'Monster & Asset Library',
       'Community & Seasons'
     ]);
+    expect(document.querySelector('nav a[href="#languages"]')).not.toBeNull();
+    expect(document.getElementById('gameplay').textContent).not.toContain('Rules v7');
+    expect(document.getElementById('gameplay').textContent).toContain('Rules v8');
+    expect(document.getElementById('gameplayPace').value).toBe('arcade-rally');
+    expect(document.getElementById('portraitBattleMode').value).toBe('takeover-74');
+    expect(document.querySelector('#hatchPreset option[value="90000"]')).not.toBeNull();
   });
 
   test('shows every required live diagnostic without exposing unrelated machine data', () => {
@@ -46,6 +54,10 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       expect(document.getElementById(id)).not.toBeNull();
     }
     expect(document.getElementById('liveWarnings').getAttribute('aria-live')).toBe('polite');
+    expect(html).toContain('const refreshLiveCenterState = async () =>');
+    expect(html).toContain(
+      'const liveStateRefreshTimer = setInterval(refreshLiveCenterState, 5_000)'
+    );
   });
 
   test('offers all command alias actions with conflict feedback and full catalog mapping', () => {
@@ -82,15 +94,33 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect(teamHeartHelp).not.toContain('Heart Me');
   });
 
-  test('renders real portrait and landscape stage previews with a lower 26 percent chat safe-zone', () => {
-    const portrait = document.getElementById('portraitStagePreview');
+  test('renders separate normal/battle portrait previews and a landscape battle stage', () => {
+    const portraitNormal = document.getElementById('portraitNormalPreview');
+    const portraitBattle = document.getElementById('portraitBattlePreview');
     const landscape = document.getElementById('landscapeStagePreview');
-    expect([portrait.dataset.width, portrait.dataset.height]).toEqual(['1080', '1920']);
+    expect([portraitNormal.dataset.width, portraitNormal.dataset.height]).toEqual(['1080', '1920']);
+    expect([portraitBattle.dataset.width, portraitBattle.dataset.height]).toEqual(['1080', '1920']);
     expect([landscape.dataset.width, landscape.dataset.height]).toEqual(['1920', '1080']);
-    for (const preview of [portrait, landscape]) {
+    for (const preview of [portraitBattle, landscape]) {
       expect(preview.querySelector('[data-gameplay-percent="74"]')).not.toBeNull();
       expect(preview.querySelector('[data-chat-safe-percent="26"]')).not.toBeNull();
     }
+    expect(portraitNormal.querySelector('[data-gameplay-percent="74"]')).toBeNull();
+    expect([...portraitNormal.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
+      .toEqual([
+        'logo',
+        'music',
+        'notification',
+        'avatar',
+        'likes',
+        'shelf',
+        'xp',
+        'safe'
+      ]);
+    expect([...portraitBattle.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
+      .toEqual(['battle', 'safe']);
+    expect(document.getElementById('obsTakeoverSourceOrder')).not.toBeNull();
+    expect(document.getElementById('obsExternalSourcesWarning').textContent).toContain('CSS');
   });
 
   test('offers every v1.5 demo scene while retaining attack and defense compatibility', () => {
@@ -178,7 +208,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
 });
 
 describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', locale => {
-  test('contains the six 1.5 area labels and no retired hero copy', () => {
+  test('contains the seven creator area labels and no retired hero copy', () => {
     const translations = JSON.parse(
       fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
     ).plugins.streamalchemy.ui.monsters;
@@ -186,6 +216,7 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       translations.liveCenterTitle,
       translations.gameplayTitle,
       translations.giftsChatTitle,
+      translations.overlayLanguagesTitle,
       translations.overlayStudioTitle,
       translations.assetLibraryTitle,
       translations.communitySeasonsTitle
@@ -204,7 +235,13 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       'statusConnected',
       'statusDisconnected',
       'statusActive',
-      'statusIdle'
+      'statusIdle',
+      'duration90Seconds',
+      'legacyCustomHatchDuration',
+      'gameplayPace',
+      'gameplayPaceArcadeRally',
+      'portraitBattleMode',
+      'portraitBattleModeTakeover74'
     ]) {
       expect(translations[key]).toEqual(expect.any(String));
       expect(translations[key]).not.toHaveLength(0);

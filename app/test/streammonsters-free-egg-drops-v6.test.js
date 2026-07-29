@@ -12,6 +12,18 @@ const {
 } = require('../plugins/streamalchemy/backend/streammonsters/ingress-event-id');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
+const activeServices = new Set();
+
+function trackService(service) {
+  activeServices.add(service);
+  return service;
+}
+
+afterEach(() => {
+  for (const service of activeServices) service.destroy();
+  activeServices.clear();
+});
+
 function createSubject({ now = 1_000, config = {} } = {}) {
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
@@ -23,13 +35,13 @@ function createSubject({ now = 1_000, config = {} } = {}) {
     config: { hatchDurationMs: 120_000, eggExpiryMs: 86_400_000 }
   });
   engine.setStreamKey('creator:stream-1');
-  const service = new FreeEggDropService({
+  const service = trackService(new FreeEggDropService({
     store,
     engine,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow,
     config
-  });
+  }));
   return {
     store,
     engine,
@@ -392,12 +404,12 @@ describe('Stream Monsters recurring free egg drops', () => {
   test('recovers reserved offers after a service reload', () => {
     const subject = createSubject();
     offer(subject, 'viewer-a', 'chat-a', 1_000);
-    const reloaded = new FreeEggDropService({
+    const reloaded = trackService(new FreeEggDropService({
       store: subject.store,
       engine: subject.engine,
       emit: (event, payload) => subject.emitted.push({ event, payload }),
       now: () => 1_001
-    });
+    }));
 
     expect(reloaded.adopt({
       userId: 'viewer-a', streamKey: 'creator:stream-1', eventId: 'adopt-a', nowMs: 1_001
@@ -442,12 +454,12 @@ describe('Stream Monsters recurring free egg drops', () => {
       subject.setNow(61_000);
       subject.emitted.splice(0);
 
-      const reloaded = new FreeEggDropService({
+      const reloaded = trackService(new FreeEggDropService({
         store: subject.store,
         engine: subject.engine,
         emit: (event, payload) => subject.emitted.push({ event, payload }),
         now: subject.now
-      });
+      }));
 
       expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
         .toBe('public');
@@ -493,6 +505,14 @@ describe('Stream Monsters recurring free egg drops', () => {
       expect(jest.getTimerCount()).toBe(1);
       subject.service.destroy();
       expect(jest.getTimerCount()).toBe(0);
+      subject.setNow(130_000);
+      jest.advanceTimersByTime(60_000);
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-3', 'viewer-c').status)
+        .toBe('reserved');
+      expect(subject.emitted.filter(entry => (
+        entry.event === 'streammonsters:free_egg_public' &&
+        entry.payload.streamKey === 'creator:stream-3'
+      ))).toHaveLength(0);
     });
   });
 
@@ -508,7 +528,11 @@ describe('Stream Monsters recurring free egg drops', () => {
       config: { hatchDurationMs: 120_000, eggExpiryMs: 86_400_000 }
     });
     engine.setStreamKey('creator:stream-1');
-    const service = new FreeEggDropService({ store, engine, now: () => 1_000 });
+    const service = trackService(new FreeEggDropService({
+      store,
+      engine,
+      now: () => 1_000
+    }));
     offer({ service }, 'source-a', 'chat-a', 1_000);
     sqlite.close();
 

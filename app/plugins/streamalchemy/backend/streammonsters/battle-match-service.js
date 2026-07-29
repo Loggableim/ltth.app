@@ -10,8 +10,12 @@ const { effectiveCombatPower } = require('./evolution-rules');
 const { selectBattleWinner } = require('./battle-tie-break');
 const {
   PASSIVE_CHARGE_PER_SECOND,
+  MAX_PASSIVE_CHARGE_PER_ROUND,
   projectPassiveCharge
 } = require('./battle-charge');
+const {
+  applyArenaCollapse: resolveArenaCollapse
+} = require('./battle-rules-v8');
 const {
   projectBattleFighter,
   projectBattleChoices
@@ -21,6 +25,9 @@ const ArenaDirector = require('../../streammonsters-arena-director');
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
 const STAT_WINDOW_MS = 15_000;
+const RULES_V8_ROSTER_WINDOW_MS = 8_000;
+const RULES_V8_ACTION_WINDOW_MS = 6_000;
+const RULES_V8_STAT_WINDOW_MS = 10_000;
 const RULES_V5_ROSTER_WINDOW_MS = 15_000;
 const RULES_V5_ACTION_WINDOW_MS = 8_000;
 const RULES_V5_STAT_WINDOW_MS = 30_000;
@@ -77,6 +84,10 @@ class BattleMatchService {
     logger = null,
     seasonDurationDays = 28,
     rulesVersion = 5,
+    localeCount = 1,
+    secondsPerLocale = 6,
+    gameplayPace = 'arcade-rally',
+    portraitBattleMode = 'takeover-74',
     sweepIntervalMs = 1_000,
     autoStart = true
   }) {
@@ -93,7 +104,24 @@ class BattleMatchService {
     this.seasonDurationDays = ARENA_DURATION_PRESETS.includes(Number(seasonDurationDays))
       ? Number(seasonDurationDays)
       : 28;
-    this.rulesVersion = Number(rulesVersion) >= 7 ? 7 : Number(rulesVersion) >= 6 ? 6 : 5;
+    this.rulesVersion = Number(rulesVersion) >= 8
+      ? 8
+      : Number(rulesVersion) >= 7
+        ? 7
+        : Number(rulesVersion) >= 6
+          ? 6
+          : 5;
+    this.localeCount = Math.max(1, Math.min(2, Math.round(Number(localeCount) || 1)));
+    this.secondsPerLocale = Math.max(
+      4,
+      Math.min(6, Number(secondsPerLocale) || 6)
+    );
+    this.gameplayPace = gameplayPace === 'arcade-rally'
+      ? gameplayPace
+      : 'arcade-rally';
+    this.portraitBattleMode = portraitBattleMode === 'takeover-74'
+      ? portraitBattleMode
+      : 'takeover-74';
     this.sweepIntervalMs = Math.max(250, Number(sweepIntervalMs) || 1_000);
     this.sweepTimer = null;
     this.pauseActiveChargesForReconnect();
@@ -114,6 +142,34 @@ class BattleMatchService {
       clearInterval(this.sweepTimer);
       this.sweepTimer = null;
     }
+  }
+
+  setLanguageTiming({ localeCount, secondsPerLocale } = {}) {
+    this.localeCount = Math.max(
+      1,
+      Math.min(2, Math.round(Number(localeCount) || 1))
+    );
+    this.secondsPerLocale = Math.max(
+      4,
+      Math.min(6, Math.round(Number(secondsPerLocale) || 5))
+    );
+    return {
+      localeCount: this.localeCount,
+      secondsPerLocale: this.secondsPerLocale
+    };
+  }
+
+  setPresentationConfig({ gameplayPace, portraitBattleMode } = {}) {
+    this.gameplayPace = gameplayPace === 'arcade-rally'
+      ? gameplayPace
+      : 'arcade-rally';
+    this.portraitBattleMode = portraitBattleMode === 'takeover-74'
+      ? portraitBattleMode
+      : 'takeover-74';
+    return {
+      gameplayPace: this.gameplayPace,
+      portraitBattleMode: this.portraitBattleMode
+    };
   }
 
   setSeasonDurationDays(value) {
@@ -156,6 +212,10 @@ class BattleMatchService {
     return Number(match?.rulesVersion ?? this.rulesVersion) >= 7;
   }
 
+  isRulesV8(match) {
+    return Number(match?.rulesVersion ?? this.rulesVersion) >= 8;
+  }
+
   chargeWindow(match) {
     if (!this.isRulesV7(match)) return null;
     const pausedMs = Number(match.chargePausedMs) || 0;
@@ -169,6 +229,9 @@ class BattleMatchService {
       openedAtMs: Number(match.actionOpenedAtMs) || 0,
       deadlineMs: Number(match.actionDeadlineMs) || 0,
       passivePerSecond: PASSIVE_CHARGE_PER_SECOND,
+      ...(this.isRulesV8(match) ? {
+        maxGain: MAX_PASSIVE_CHARGE_PER_ROUND
+      } : {}),
       ...(pausedMs > 0 ? { pausedMs } : {}),
       ...(Number.isFinite(pauseStartedAtMs) ? { pauseStartedAtMs } : {}),
       ...(Number.isFinite(pauseUntilMs) ? { pauseUntilMs } : {}),
@@ -186,7 +249,8 @@ class BattleMatchService {
         Number(match?.actionDeadlineMs) > Number(match?.actionOpenedAtMs),
       pausedMs: match?.chargePausedMs,
       pauseStartedAtMs: match?.chargePauseStartedAtMs,
-      pauseUntilMs: match?.chargePauseUntilMs
+      pauseUntilMs: match?.chargePauseUntilMs,
+      maxGain: this.isRulesV8(match) ? MAX_PASSIVE_CHARGE_PER_ROUND : 100
     });
   }
 
@@ -275,12 +339,37 @@ class BattleMatchService {
     if (!this.isRulesV7(match)) return match;
     match.participants.forEach(participant => {
       const state = { ...(participant.combatState || {}) };
+      const before = Math.max(0, Math.min(100, Number(state.charge) || 0));
       state.charge = this.projectParticipantCharge(participant, match, asOfMs);
       this.db.prepare(`
         UPDATE streammonsters_match_participants
         SET combat_state_json = ?
         WHERE match_id = ? AND participant_id = ?
       `).run(JSON.stringify(state), match.matchId, participant.participantId);
+      if (this.isRulesV8(match) && state.charge > before) {
+        this.appendEvent(
+          match.matchId,
+          'streammonsters:battle_charge_tick',
+          {
+            matchId: match.matchId,
+            round: match.roundNumber,
+            participantId: participant.participantId,
+            viewerId: participant.viewerId,
+            slot: participant.slot,
+            before,
+            after: state.charge,
+            gained: state.charge - before
+          },
+          {
+            matchId: match.matchId,
+            round: match.roundNumber,
+            slot: participant.slot,
+            before,
+            after: state.charge,
+            gained: state.charge - before
+          }
+        );
+      }
     });
     return this.getMatch(match.matchId);
   }
@@ -332,15 +421,23 @@ class BattleMatchService {
   }
 
   rosterWindowMs(match = null) {
+    if (this.isRulesV8(match)) return RULES_V8_ROSTER_WINDOW_MS;
     return this.isRulesV6(match) ? ROSTER_WINDOW_MS : RULES_V5_ROSTER_WINDOW_MS;
   }
 
   actionWindowMs(match = null) {
+    if (this.isRulesV8(match)) {
+      return Math.max(
+        RULES_V8_ACTION_WINDOW_MS,
+        Math.round(this.localeCount * this.secondsPerLocale * 1_000)
+      );
+    }
     if (this.isRulesV7(match)) return RULES_V7_ACTION_WINDOW_MS;
     return this.isRulesV6(match) ? ACTION_WINDOW_MS : RULES_V5_ACTION_WINDOW_MS;
   }
 
   statWindowMs(match = null) {
+    if (this.isRulesV8(match)) return RULES_V8_STAT_WINDOW_MS;
     return this.isRulesV6(match) ? STAT_WINDOW_MS : RULES_V5_STAT_WINDOW_MS;
   }
 
@@ -825,7 +922,14 @@ class BattleMatchService {
       let readyAtMs;
       if (choice === 'C' && baseCharge >= chargeRequired) {
         readyAtMs = openedAtMs;
-      } else if (choice === 'C' && passivePerSecond > 0) {
+      } else if (
+        choice === 'C' &&
+        passivePerSecond > 0 &&
+        (
+          !this.isRulesV8(match) ||
+          chargeRequired - baseCharge <= MAX_PASSIVE_CHARGE_PER_ROUND
+        )
+      ) {
         readyAtMs = openedAtMs + persistedPauseMs +
           (Math.ceil((chargeRequired - baseCharge) / passivePerSecond) * 1_000);
         const pauseStartedAtMs = chargeWindow?.pauseStartedAtMs == null
@@ -868,7 +972,7 @@ class BattleMatchService {
     if (
       !candidate ||
       /^viewer$/i.test(candidate) ||
-      /^\d{8,}$/.test(candidate) ||
+      /^\d+$/.test(candidate) ||
       /^tiktok:\d+$/i.test(candidate)
     ) {
       return 'Viewer';
@@ -983,7 +1087,7 @@ class BattleMatchService {
     const templateId = String(monster?.templateId || '');
     return {
       slot: Number(monster?.slot) || 0,
-      viewerName: String(monster?.viewerName || '').slice(0, 80) || 'Viewer',
+      viewerName: this.publicViewerName(null, monster?.viewerName),
       name: String(monster?.name || '').slice(0, 80),
       element: String(monster?.element || '').slice(0, 16),
       templateId,
@@ -997,6 +1101,28 @@ class BattleMatchService {
       level: Math.max(1, Math.min(20, Number(monster?.level) || 1)),
       xp: Math.max(0, Number(monster?.xp) || 0),
       unspentStatPoints: Math.max(0, Number(monster?.unspentStatPoints) || 0)
+    };
+  }
+
+  hasOpenStatWindow() {
+    return Boolean(this.db.prepare(`
+      SELECT 1
+      FROM (
+        SELECT prompt_id FROM streammonsters_stat_prompts WHERE status = 'open'
+        UNION ALL
+        SELECT prompt_id FROM streammonsters_stat_allocations WHERE status = 'open'
+      )
+      LIMIT 1
+    `).get());
+  }
+
+  statChoiceContext({ userId, participant = null, monster }) {
+    const projectedMonster = this.projectPublicMonster(participant, monster);
+    return {
+      playerName: this.publicViewerName(userId),
+      monster: projectedMonster,
+      level: projectedMonster.level,
+      remainingUnspentPoints: projectedMonster.unspentStatPoints
     };
   }
 
@@ -1065,6 +1191,13 @@ class BattleMatchService {
       type: String(outcome.type || ''),
       ...(outcome.amount != null ? { amount: numeric(outcome.amount) } : {}),
       ...(outcome.requested != null ? { requested: numeric(outcome.requested) } : {}),
+      ...(outcome.arenaCollapseReduction != null
+        ? {
+            arenaCollapseReduction: numeric(
+              outcome.arenaCollapseReduction
+            )
+          }
+        : {}),
       ...(outcome.hits != null ? { hits: numeric(outcome.hits) } : {}),
       ...(outcome.chance != null ? { chance: numeric(outcome.chance) } : {}),
       ...(outcome.pending != null ? { pending: numeric(outcome.pending) } : {})
@@ -1359,6 +1492,13 @@ class BattleMatchService {
         this.now()
       );
     });
+    if (this.isRulesV8(match) && match.roundNumber >= 5) {
+      outcome.state = this.applyArenaCollapse(
+        match,
+        outcome.state,
+        outcome.actions
+      );
+    }
     match.participants.forEach(participant => {
       this.db.prepare(`
         UPDATE streammonsters_match_participants
@@ -1370,9 +1510,20 @@ class BattleMatchService {
         participant.participantId
       );
     });
-    if (outcome.terminal || match.roundNumber >= 3) {
-      const winnerId = outcome.winnerId || this.tieBreakWinner(match, outcome.state);
-      return this.finalize(matchId, expectedVersion, winnerId);
+    if (outcome.terminal) {
+      if (!outcome.winnerId) {
+        return this.finalizeDraw(matchId, expectedVersion);
+      }
+      const winnerState = outcome.state[outcome.winnerId] || {};
+      return this.finalize(matchId, expectedVersion, outcome.winnerId, {
+        completion: 'battle',
+        terminalReason: 'knockout',
+        knockout: {
+          round: Math.max(1, Number(match.roundNumber) || 1),
+          remainingHp: Math.max(0, Number(winnerState.hp) || 0),
+          maxHp: Math.max(1, Number(winnerState.maxHp) || 1)
+        }
+      });
     }
     const nowMs = this.now();
     const cinematicPauseMs = outcome.actions.reduce((total, action) => {
@@ -1407,11 +1558,48 @@ class BattleMatchService {
     return this.getMatch(matchId);
   }
 
+  applyArenaCollapse(match, resolvedState, actions = []) {
+    const collapse = resolveArenaCollapse({
+      fighters: match.participants.map(participant => ({
+        monsterId: participant.lockedMonsterId,
+        slot: participant.slot
+      })),
+      state: resolvedState,
+      round: match.roundNumber,
+      actions
+    });
+    this.appendEvent(
+      match.matchId,
+      'streammonsters:battle_arena_collapse',
+      {
+        matchId: match.matchId,
+        round: collapse.round,
+        damage: collapse.damage,
+        state: collapse.state
+      },
+      {
+        matchId: match.matchId,
+        round: collapse.round,
+        damage: collapse.damage,
+        fighters: collapse.fighters.map(({ monsterId: _monsterId, ...fighter }) => fighter)
+      }
+    );
+    return collapse.state;
+  }
+
   tieBreakWinner(match, state) {
     return selectBattleWinner(match.participants.map(participant => ({
       monsterId: participant.lockedMonsterId,
       agility: participant.roster?.stats?.agility
     })), state, match.seed);
+  }
+
+  finalizeDraw(matchId, expectedVersion) {
+    return this.finalize(matchId, expectedVersion, null, {
+      completion: 'battle',
+      terminalReason: 'double_knockout',
+      knockout: null
+    });
   }
 
   finalize(matchId, expectedVersion, winnerMonsterId, options = {}) {
@@ -1421,6 +1609,24 @@ class BattleMatchService {
       if (!match || match.state !== 'action' || match.phaseVersion !== expectedVersion) {
         return match;
       }
+      const completion = options.completion === 'forfeit' ? 'forfeit' : 'battle';
+      const terminalReason = options.terminalReason === 'knockout'
+        ? 'knockout'
+        : options.terminalReason === 'double_knockout'
+          ? 'double_knockout'
+          : 'forfeit';
+      const isDraw = terminalReason === 'double_knockout';
+      const resolvedWinnerMonsterId = isDraw ? null : winnerMonsterId;
+      const knockout = terminalReason === 'knockout'
+        ? {
+            round: Math.max(1, Math.round(Number(options.knockout?.round) || 1)),
+            remainingHp: Math.max(
+              0,
+              Math.round(Number(options.knockout?.remainingHp) || 0)
+            ),
+            maxHp: Math.max(1, Math.round(Number(options.knockout?.maxHp) || 1))
+          }
+        : null;
       const changed = this.db.prepare(`
         UPDATE streammonsters_matches
         SET state = 'completed',
@@ -1431,51 +1637,70 @@ class BattleMatchService {
             completed_at_ms = ?,
             updated_at_ms = ?
         WHERE match_id = ? AND state = 'action' AND phase_version = ?
-      `).run(winnerMonsterId, nowMs, nowMs, nowMs, matchId, expectedVersion);
+      `).run(
+        resolvedWinnerMonsterId,
+        nowMs,
+        nowMs,
+        nowMs,
+        matchId,
+        expectedVersion
+      );
       if (!changed.changes) return this.getMatch(matchId);
 
+      const rewardsEnabled = completion === 'battle';
       const season = this.getCurrentArenaSeason();
       const eligibility = Object.fromEntries(match.participants.map(participant => [
         participant.participantId,
-        this.claimArenaDailyBattle(participant.viewerId)
+        rewardsEnabled && !isDraw
+          ? this.claimArenaDailyBattle(participant.viewerId)
+          : false
       ]));
       const winnerParticipant = match.participants.find(
-        participant => participant.lockedMonsterId === winnerMonsterId
+        participant => participant.lockedMonsterId === resolvedWinnerMonsterId
       );
-      const loserParticipant = match.participants.find(
-        participant => participant.lockedMonsterId !== winnerMonsterId
-      );
-      const completion = options.completion === 'forfeit' ? 'forfeit' : 'battle';
+      const loserParticipant = winnerParticipant
+        ? match.participants.find(
+            participant => participant.lockedMonsterId !== resolvedWinnerMonsterId
+          )
+        : null;
       const forfeitedParticipant = options.forfeitedParticipantId
         ? match.participants.find(participant => (
             participant.participantId === options.forfeitedParticipantId
           ))
         : null;
-      const ratingChanges = this.applyArenaElo({
-        seasonId: season.seasonId,
-        winner: winnerParticipant,
-        loser: loserParticipant,
-        eligibility
-      });
+      const ratingChanges = !rewardsEnabled || isDraw
+        ? {}
+        : this.applyArenaElo({
+            seasonId: season.seasonId,
+            winner: winnerParticipant,
+            loser: loserParticipant,
+            eligibility
+          });
       const participantResults = [];
 
       match.participants.forEach(participant => {
-        const won = participant.lockedMonsterId === winnerMonsterId;
+        const won = Boolean(
+          winnerParticipant &&
+          participant.lockedMonsterId === resolvedWinnerMonsterId
+        );
         const before = this.store.getMonster(participant.lockedMonsterId);
-        const xpAwarded = (Number(before?.level) || 1) >= 20
+        const xpAwarded = !rewardsEnabled || (Number(before?.level) || 1) >= 20
           ? 0
           : 10 + (won ? 5 : 0);
-        const battleMonster = this.store.recordMonsterBattle(
-          participant.lockedMonsterId,
-          won
-        );
-        let monster = this.store.awardMonsterXp(participant.lockedMonsterId, xpAwarded);
-        this.progression?.recordBattleProgress?.(
-          participant.viewerId,
-          this.getStreamKey?.() || null,
-          { monster: battleMonster, won }
-        );
-        monster = this.store.getMonster(participant.lockedMonsterId) || monster;
+        let monster = before;
+        if (rewardsEnabled) {
+          const battleMonster = this.store.recordMonsterBattle(
+            participant.lockedMonsterId,
+            won
+          );
+          monster = this.store.awardMonsterXp(participant.lockedMonsterId, xpAwarded);
+          this.progression?.recordBattleProgress?.(
+            participant.viewerId,
+            this.getStreamKey?.() || null,
+            { monster: battleMonster, won }
+          );
+          monster = this.store.getMonster(participant.lockedMonsterId) || monster;
+        }
         const rating = ratingChanges[participant.participantId] || {
           before: participant.ratingBefore,
           after: participant.ratingBefore,
@@ -1486,37 +1711,41 @@ class BattleMatchService {
           SET rating_after = ?, active = 0
           WHERE match_id = ? AND participant_id = ?
         `).run(rating.after, matchId, participant.participantId);
-        this.db.prepare(`
-          INSERT INTO streammonsters_match_rewards (
-            match_id, participant_id, xp_awarded, arena_eligible,
-            rating_delta, claimed_at_ms
-          ) VALUES (?, ?, ?, ?, ?, ?)
-        `).run(
-          matchId,
-          participant.participantId,
-          xpAwarded,
-          eligibility[participant.participantId] ? 1 : 0,
-          rating.delta,
-          nowMs
-        );
+        if (rewardsEnabled) {
+          this.db.prepare(`
+            INSERT INTO streammonsters_match_rewards (
+              match_id, participant_id, xp_awarded, arena_eligible,
+              rating_delta, claimed_at_ms
+            ) VALUES (?, ?, ?, ?, ?, ?)
+          `).run(
+            matchId,
+            participant.participantId,
+            xpAwarded,
+            eligibility[participant.participantId] ? 1 : 0,
+            rating.delta,
+            nowMs
+          );
+        }
         const pointsGained = Math.max(
           0,
           (Number(monster?.unspent_stat_points) || 0) -
             (Number(before?.unspent_stat_points) || 0)
         );
         const publicMonster = this.projectPublicMonster(participant, monster);
-        this.appendEvent(matchId, 'streammonsters:monster_xp_awarded', {
-          matchId,
-          slot: participant.slot,
-          amount: xpAwarded,
-          won,
-          monster: publicMonster
-        });
+        if (rewardsEnabled) {
+          this.appendEvent(matchId, 'streammonsters:monster_xp_awarded', {
+            matchId,
+            slot: participant.slot,
+            amount: xpAwarded,
+            won,
+            monster: publicMonster
+          });
+        }
         const levelsGained = Math.max(
           0,
           (Number(monster?.level) || 1) - (Number(before?.level) || 1)
         );
-        if (levelsGained > 0) {
+        if (rewardsEnabled && levelsGained > 0) {
           this.appendEvent(matchId, 'streammonsters:monster_level_up', {
             matchId,
             slot: participant.slot,
@@ -1556,28 +1785,46 @@ class BattleMatchService {
             delta: rating.delta
           }
         });
-        if (pointsGained > 0) this.createStatPrompt(matchId, participant, pointsGained);
+        if (rewardsEnabled && pointsGained > 0) {
+          this.createStatPrompt(matchId, participant, pointsGained);
+        }
       });
-      this.store.incrementViewer(winnerParticipant.viewerId, 'battles_won');
+      if (rewardsEnabled && winnerParticipant) {
+        this.store.incrementViewer(winnerParticipant.viewerId, 'battles_won');
+      }
       const streamKey = this.getStreamKey?.() || null;
-      if (streamKey) this.store.incrementStreamMetric(streamKey, 'duels');
-      this.collection?.recordBattleOutcome?.({
-        streamKey,
-        battleId: `battle-${matchId}`,
-        fighters: match.participants.map(participant => ({
-          monster: this.store.getMonster(participant.lockedMonsterId),
-          won: participant.lockedMonsterId === winnerMonsterId
-        }))
-      });
+      if (rewardsEnabled) {
+        if (streamKey) this.store.incrementStreamMetric(streamKey, 'duels');
+        this.collection?.recordBattleOutcome?.({
+          streamKey,
+          battleId: `battle-${matchId}`,
+          fighters: match.participants.map(participant => ({
+            monster: this.store.getMonster(participant.lockedMonsterId),
+            won: Boolean(
+              winnerParticipant &&
+              participant.lockedMonsterId === resolvedWinnerMonsterId
+            )
+          }))
+        });
+      }
 
-      const winnerMonster = this.store.getMonster(winnerParticipant.lockedMonsterId);
-      const loserMonster = this.store.getMonster(loserParticipant.lockedMonsterId);
-      const winnerPublic = this.projectPublicMonster(winnerParticipant, winnerMonster);
-      const loserPublic = this.projectPublicMonster(loserParticipant, loserMonster);
-      const winnerStreak = this.store.getViewerBattleStats(
-        winnerParticipant.viewerId
-      ).win_streak;
-      if (winnerStreak >= 2) {
+      const winnerMonster = winnerParticipant
+        ? this.store.getMonster(winnerParticipant.lockedMonsterId)
+        : null;
+      const loserMonster = loserParticipant
+        ? this.store.getMonster(loserParticipant.lockedMonsterId)
+        : null;
+      const winnerPublic = winnerParticipant
+        ? this.projectPublicMonster(winnerParticipant, winnerMonster)
+        : null;
+      const loserPublic = loserParticipant
+        ? this.projectPublicMonster(loserParticipant, loserMonster)
+        : null;
+      if (rewardsEnabled && winnerParticipant && loserParticipant) {
+        const winnerStreak = this.store.getViewerBattleStats(
+          winnerParticipant.viewerId
+        ).win_streak;
+        if (winnerStreak >= 2) {
         this.appendEvent(
           matchId,
           'streammonsters:win_streak',
@@ -1595,11 +1842,11 @@ class BattleMatchService {
             monster: winnerPublic
           }
         );
-      }
-      if (
-        (Number(winnerParticipant.roster?.level) || 1) <
-        (Number(loserParticipant.roster?.level) || 1)
-      ) {
+        }
+        if (
+          (Number(winnerParticipant.roster?.level) || 1) <
+          (Number(loserParticipant.roster?.level) || 1)
+        ) {
         this.appendEvent(
           matchId,
           'streammonsters:upset',
@@ -1619,12 +1866,12 @@ class BattleMatchService {
             loser: loserPublic
           }
         );
-      }
-      const rivalryCount = this.store.countBattlesBetween(
-        winnerParticipant.lockedMonsterId,
-        loserParticipant.lockedMonsterId
-      ) + 1;
-      if (rivalryCount >= 2) {
+        }
+        const rivalryCount = this.store.countBattlesBetween(
+          winnerParticipant.lockedMonsterId,
+          loserParticipant.lockedMonsterId
+        ) + 1;
+        if (rivalryCount >= 2) {
         this.appendEvent(
           matchId,
           'streammonsters:rivalry',
@@ -1657,15 +1904,22 @@ class BattleMatchService {
             count: rivalryCount
           }
         );
+        }
       }
 
       const actions = this.getReplay(matchId).actions;
+      const durableWinnerMonsterId = isDraw
+        ? 'double_knockout'
+        : resolvedWinnerMonsterId;
       const result = {
         matchId,
         rulesVersion: match.rulesVersion,
         seed: match.seed,
-        winnerMonsterId,
+        winnerMonsterId: resolvedWinnerMonsterId,
+        winner: winnerPublic,
         completion,
+        terminalReason,
+        knockout,
         forfeitedParticipantId: forfeitedParticipant?.participantId || null,
         forfeitedSlot: forfeitedParticipant?.slot || null,
         season,
@@ -1686,7 +1940,7 @@ class BattleMatchService {
         match.seed,
         match.participants[0].lockedMonsterId,
         match.participants[1].lockedMonsterId,
-        winnerMonsterId,
+        durableWinnerMonsterId,
         match.participants[0].viewerId,
         match.participants[1].viewerId,
         JSON.stringify([]),
@@ -1699,12 +1953,14 @@ class BattleMatchService {
       );
       this.appendEvent(matchId, 'streammonsters:battle_completed', {
         matchId,
-        winnerMonsterId,
+        winnerMonsterId: resolvedWinnerMonsterId,
         completion,
+        terminalReason,
+        knockout,
         forfeitedParticipantId: forfeitedParticipant?.participantId || null
       }, {
         matchId,
-        winnerSlot: winnerParticipant.slot,
+        winnerSlot: winnerParticipant?.slot || 0,
         winner: winnerPublic,
         ratingChanges: participantResults.map(participant => ({
           slot: participant.slot,
@@ -1713,6 +1969,8 @@ class BattleMatchService {
           delta: participant.rating.delta
         })),
         completion,
+        terminalReason,
+        knockout,
         forfeitedSlot: forfeitedParticipant?.slot || null
       });
       return this.getMatch(matchId);
@@ -1774,6 +2032,7 @@ class BattleMatchService {
       )) || participant;
     }
     if (!participant.lockedMonsterId) return null;
+    if (this.hasOpenStatWindow()) return null;
     const standaloneOpen = this.db.prepare(`
       SELECT 1 FROM streammonsters_stat_allocations
       WHERE monster_id = ? AND status = 'open'
@@ -1800,11 +2059,17 @@ class BattleMatchService {
       SELECT * FROM streammonsters_stat_prompts WHERE prompt_id = ?
     `).get(promptId);
     if (prompt?.status === 'open') {
+      const monster = this.store.getMonster(participant.lockedMonsterId);
       const publicPrompt = {
         matchId,
         slot: participant.slot,
         deadlineMs: prompt.deadline_ms,
-        choices: ['1', '2', '3', '4']
+        choices: ['1', '2', '3', '4'],
+        ...this.statChoiceContext({
+          userId: participant.viewerId,
+          participant,
+          monster
+        })
       };
       const event = this.appendEvent(
         matchId,
@@ -1846,6 +2111,7 @@ class BattleMatchService {
       LIMIT 1
     `).get(monsterId);
     if (existing) return existing;
+    if (this.hasOpenStatWindow()) return null;
     const nowMs = this.now();
     const promptId = `allocation-${randomUUID()}`;
     const uniqueSource = `${String(sourceKey || 'progression')}:${monsterId}:` +
@@ -1873,7 +2139,7 @@ class BattleMatchService {
         promptId,
         deadlineMs: prompt.deadline_ms,
         choices: ['1', '2', '3', '4'],
-        monster: this.projectPublicMonster(null, monster)
+        ...this.statChoiceContext({ userId, monster })
       };
       this.emitAfterCommit('streammonsters:monster_stat_prompt', publicPrompt);
       this.emitAfterCommit('streammonsters:stat_choice_opened', {
@@ -1928,12 +2194,11 @@ class BattleMatchService {
       `).run(stats[index], eventId, this.now(), prompt.prompt_id);
       if (!claimed.changes) return { handled: false, reason: 'already_locked' };
       if (!matchPrompt) {
-        const publicMonster = this.projectPublicMonster(null, applied.monster);
         this.emitAfterCommit('streammonsters:monster_stat_chosen', {
           promptId: prompt.prompt_id,
           stat: stats[index],
           source,
-          monster: publicMonster
+          ...this.statChoiceContext({ userId, monster: applied.monster })
         });
         if ((Number(applied.monster?.unspent_stat_points) || 0) > 0) {
           this.createStandaloneStatPrompt({
@@ -1942,6 +2207,7 @@ class BattleMatchService {
             sourceKey: `${prompt.source_key}:next`
           });
         }
+        this.ensurePendingStatAllocations();
         return {
           handled: true,
           source,
@@ -1951,16 +2217,21 @@ class BattleMatchService {
           promptId: prompt.prompt_id
         };
       }
-      const participant = this.db.prepare(`
-        SELECT slot FROM streammonsters_match_participants
-        WHERE match_id = ? AND participant_id = ?
-      `).get(prompt.match_id, prompt.participant_id);
+      const participant = this.getMatch(prompt.match_id)?.participants.find(entry => (
+        entry.participantId === prompt.participant_id
+      ));
       this.appendEvent(prompt.match_id, 'streammonsters:monster_stat_chosen', {
         matchId: prompt.match_id,
         slot: Number(participant?.slot) || 0,
         stat: stats[index],
-        source
+        source,
+        ...this.statChoiceContext({
+          userId,
+          participant,
+          monster: applied.monster
+        })
       });
+      this.ensurePendingStatAllocations();
       return {
         handled: true,
         source,
@@ -2092,7 +2363,10 @@ class BattleMatchService {
         ? {
             openedAtMs,
             deadlineMs,
-            passivePerSecond: PASSIVE_CHARGE_PER_SECOND
+            passivePerSecond: PASSIVE_CHARGE_PER_SECOND,
+            ...(this.isRulesV8(match) ? {
+              maxGain: MAX_PASSIVE_CHARGE_PER_ROUND
+            } : {})
           }
         : null;
       return {
@@ -2112,10 +2386,27 @@ class BattleMatchService {
       const winner = match.participants.find(participant => (
         participant.lockedMonsterId === match.winnerMonsterId
       ));
-      return {
+      const terminalReason = [
+        'knockout',
+        'double_knockout',
+        'forfeit'
+      ].includes(payload.terminalReason)
+        ? payload.terminalReason
+        : null;
+      const knockout = terminalReason === 'knockout'
+        ? {
+            round: Math.max(1, Math.round(Number(payload.knockout?.round) || 1)),
+            remainingHp: Math.max(
+              0,
+              Math.round(Number(payload.knockout?.remainingHp) || 0)
+            ),
+            maxHp: Math.max(1, Math.round(Number(payload.knockout?.maxHp) || 1))
+          }
+        : null;
+      const projected = {
         matchId: match.matchId,
         winnerSlot: Number(payload.winnerSlot) || winner?.slot || 0,
-        winner: this.sanitizePublicMonster(payload.winner),
+        winner: payload.winner ? this.sanitizePublicMonster(payload.winner) : null,
         ratingChanges: Array.isArray(payload.ratingChanges)
           ? payload.ratingChanges.map(change => ({
               slot: Number(change?.slot) || 0,
@@ -2127,6 +2418,40 @@ class BattleMatchService {
         completion: payload.completion === 'forfeit' ? 'forfeit' : 'battle',
         forfeitedSlot: Number(payload.forfeitedSlot) || null
       };
+      if (terminalReason) {
+        projected.terminalReason = terminalReason;
+        projected.knockout = knockout;
+      }
+      return projected;
+    }
+    if (eventType === 'streammonsters:battle_charge_tick') {
+      return {
+        matchId: match.matchId,
+        round: Math.max(1, Number(payload.round) || 1),
+        slot: Number(payload.slot) || 0,
+        before: Math.max(0, Math.min(100, Number(payload.before) || 0)),
+        after: Math.max(0, Math.min(100, Number(payload.after) || 0)),
+        gained: Math.max(0, Math.min(
+          MAX_PASSIVE_CHARGE_PER_ROUND,
+          Number(payload.gained) || 0
+        ))
+      };
+    }
+    if (eventType === 'streammonsters:battle_arena_collapse') {
+      return {
+        matchId: match.matchId,
+        round: Math.max(5, Number(payload.round) || 5),
+        damage: Math.max(1, Number(payload.damage) || 1),
+        fighters: Array.isArray(payload.fighters)
+          ? payload.fighters.map(fighter => ({
+              slot: Number(fighter?.slot) || 0,
+              shieldReduced: Math.max(0, Number(fighter?.shieldReduced) || 0),
+              hpDamage: Math.max(0, Number(fighter?.hpDamage) || 0),
+              hp: Math.max(0, Number(fighter?.hp) || 0),
+              shield: Math.max(0, Number(fighter?.shield) || 0)
+            })).filter(fighter => [1, 2].includes(fighter.slot))
+          : []
+      };
     }
     if (
       eventType === 'streammonsters:stat_choice_opened' ||
@@ -2136,7 +2461,14 @@ class BattleMatchService {
         matchId: match.matchId,
         slot: Number(payload.slot) || 0,
         deadlineMs: Number(payload.deadlineMs) || 0,
-        choices: ['1', '2', '3', '4']
+        choices: ['1', '2', '3', '4'],
+        playerName: this.publicViewerName(null, payload.playerName),
+        monster: this.sanitizePublicMonster(payload.monster),
+        level: Math.max(1, Math.min(20, Number(payload.level) || 1)),
+        remainingUnspentPoints: Math.max(
+          0,
+          Number(payload.remainingUnspentPoints) || 0
+        )
       };
     }
     if (eventType === 'streammonsters:monster_xp_awarded') {
@@ -2211,7 +2543,14 @@ class BattleMatchService {
         matchId: match.matchId,
         slot: Number(payload.slot) || 0,
         stat,
-        source: eventType.endsWith('auto_assigned') ? 'timeout' : 'viewer'
+        source: eventType.endsWith('auto_assigned') ? 'timeout' : 'viewer',
+        playerName: this.publicViewerName(null, payload.playerName),
+        monster: this.sanitizePublicMonster(payload.monster),
+        level: Math.max(1, Math.min(20, Number(payload.level) || 1)),
+        remainingUnspentPoints: Math.max(
+          0,
+          Number(payload.remainingUnspentPoints) || 0
+        )
       };
     }
     if (eventType === 'streammonsters:battle_cancelled') {
@@ -2357,11 +2696,15 @@ class BattleMatchService {
       .filter(event => event.type === 'streammonsters:battle_skill_used')
       .map(event => event.payload.action);
     const result = this.sanitizePublicMatchResult(match);
+    const replayVersion = this.normalizeReplayRulesVersion(
+      match.rulesVersion,
+      this.rulesVersion
+    );
     return {
       battleId,
       matchId: match.matchId,
-      rulesVersion: match.rulesVersion,
-      replayVersion: match.rulesVersion,
+      rulesVersion: replayVersion,
+      replayVersion,
       cursor: nextCursor,
       hasMore,
       result,
@@ -2413,15 +2756,43 @@ class BattleMatchService {
     const winner = match.participants.find(participant => (
       participant.lockedMonsterId === match.winnerMonsterId
     ));
+    const persistedWinner = match.result.winner &&
+      typeof match.result.winner === 'object'
+      ? this.sanitizePublicMonster(match.result.winner)
+      : null;
     const forfeited = match.result.forfeitedParticipantId
       ? match.participants.find(participant => (
           participant.participantId === match.result.forfeitedParticipantId
         ))
       : null;
+    const terminalReason = [
+      'knockout',
+      'double_knockout',
+      'forfeit'
+    ].includes(match.result.terminalReason)
+      ? match.result.terminalReason
+      : null;
+    const knockout = terminalReason === 'knockout'
+      ? {
+          round: Math.max(1, Math.round(Number(match.result.knockout?.round) || 1)),
+          remainingHp: Math.max(
+            0,
+            Math.round(Number(match.result.knockout?.remainingHp) || 0)
+          ),
+          maxHp: Math.max(1, Math.round(Number(match.result.knockout?.maxHp) || 1))
+        }
+      : null;
     return {
       winnerSlot: winner?.slot || 0,
+      winner: persistedWinner || (winner
+        ? this.projectPublicMonster(
+            winner,
+            this.store.getMonster(winner.lockedMonsterId)
+          )
+        : null),
       completion: match.result.completion === 'forfeit' ? 'forfeit' : 'battle',
       forfeitedSlot: forfeited?.slot || null,
+      ...(terminalReason ? { terminalReason, knockout } : {}),
       season,
       participants: Array.isArray(match.result.participants)
         ? match.result.participants.map(result => ({
@@ -2440,11 +2811,19 @@ class BattleMatchService {
 
   getPublicLegacyReplay(battle) {
     let sequence = 0;
+    const replayVersion = this.normalizeReplayRulesVersion(
+      battle.rulesVersion,
+      3
+    );
     const participants = [
       { lockedMonsterId: battle.monster_a_id, slot: 1 },
       { lockedMonsterId: battle.monster_b_id, slot: 2 }
     ];
-    const match = { matchId: null, participants };
+    const match = {
+      matchId: null,
+      rulesVersion: replayVersion,
+      participants
+    };
     const actions = (battle.rounds || []).flatMap(round => (
       Array.isArray(round.actions) ? round.actions.map(action => {
         sequence += 1;
@@ -2458,8 +2837,8 @@ class BattleMatchService {
     return {
       battleId: battle.battle_id,
       matchId: null,
-      rulesVersion: battle.rulesVersion,
-      replayVersion: battle.rulesVersion || 3,
+      rulesVersion: replayVersion,
+      replayVersion,
       winnerSlot: battle.winner_monster_id === battle.monster_a_id ? 1 : 2,
       cursor: actions.at(-1)?.eventSequence || 0,
       hasMore: false,
@@ -2496,8 +2875,117 @@ class BattleMatchService {
     return this.getPublicLegacyReplay(battle);
   }
 
+  normalizeReplayRulesVersion(value, fallback = 3) {
+    const version = Number(value);
+    if (Number.isInteger(version) && version >= 3 && version <= this.rulesVersion) {
+      return version;
+    }
+    const normalizedFallback = Number(fallback);
+    return Number.isInteger(normalizedFallback) && normalizedFallback >= 3
+      ? Math.min(normalizedFallback, this.rulesVersion)
+      : 3;
+  }
+
   getNormalizedReplay(battleOrMatchId, cursor = 0, limit = 50) {
     return this.getPublicNormalizedReplay(battleOrMatchId, cursor, limit);
+  }
+
+  projectSnapshotChoiceState(match) {
+    if (!match?.matchId || match.state !== 'action') {
+      return { choiceLocks: [] };
+    }
+    const choiceLocks = this.db.prepare(`
+      SELECT decision.window_sequence AS round_number,
+             participant.slot,
+             decision.source
+      FROM streammonsters_match_decisions decision
+      JOIN streammonsters_match_participants participant
+        ON participant.match_id = decision.match_id
+       AND participant.participant_id = decision.participant_id
+      WHERE decision.match_id = ?
+        AND decision.window_kind = 'action'
+        AND decision.window_sequence = ?
+      ORDER BY participant.slot
+    `).all(match.matchId, match.roundNumber).map(decision => ({
+      round: Math.max(1, Number(decision.round_number) || match.roundNumber),
+      slot: Number(decision.slot) || 0,
+      locked: true,
+      source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+      deadlineMs: Math.max(0, Number(match.actionDeadlineMs) || 0)
+    })).filter(decision => [1, 2].includes(decision.slot));
+
+    const state = { choiceLocks };
+    if (match.actionDeadlineMs != null) return state;
+    const reveal = this.db.prepare(`
+      SELECT public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ?
+        AND event_type = 'streammonsters:battle_choices_revealed'
+      ORDER BY sequence DESC
+      LIMIT 1
+    `).get(match.matchId);
+    const payload = parseJson(reveal?.public_payload_json, {});
+    const choices = projectBattleChoices(payload.choices);
+    const round = Math.max(0, Number(payload.round) || 0);
+    if (
+      choices.length === 2 &&
+      round > 0 &&
+      round >= Math.max(1, match.roundNumber - 1)
+    ) {
+      state.revealedChoices = { round, choices };
+    }
+    return state;
+  }
+
+  projectActiveStatPrompt() {
+    const prompt = this.db.prepare(`
+      SELECT 'match' AS prompt_kind,
+             prompt_id,
+             match_id,
+             participant_id,
+             viewer_id,
+             monster_id,
+             deadline_ms,
+             created_at_ms
+      FROM streammonsters_stat_prompts
+      WHERE status = 'open' AND deadline_ms > ?
+      UNION ALL
+      SELECT 'standalone' AS prompt_kind,
+             prompt_id,
+             NULL AS match_id,
+             NULL AS participant_id,
+             viewer_id,
+             monster_id,
+             deadline_ms,
+             created_at_ms
+      FROM streammonsters_stat_allocations
+      WHERE status = 'open' AND deadline_ms > ?
+      ORDER BY created_at_ms, prompt_id
+      LIMIT 1
+    `).get(this.now(), this.now());
+    if (!prompt) return null;
+    const match = prompt.match_id ? this.getMatch(prompt.match_id) : null;
+    const participant = match?.participants.find(candidate => (
+      candidate.participantId === prompt.participant_id
+    ));
+    const monster = this.store.getMonster(prompt.monster_id);
+    if (!monster) return null;
+    const publicParticipant = {
+      viewerId: prompt.viewer_id,
+      slot: Number(participant?.slot) || 0
+    };
+    return {
+      promptId: String(prompt.prompt_id),
+      ...(prompt.match_id ? { matchId: String(prompt.match_id) } : {}),
+      ...(publicParticipant.slot ? { slot: publicParticipant.slot } : {}),
+      deadlineMs: Math.max(0, Number(prompt.deadline_ms) || 0),
+      choices: ['1', '2', '3', '4'],
+      ...this.statChoiceContext({
+        userId: prompt.viewer_id,
+        participant: publicParticipant,
+        monster
+      })
+    };
   }
 
   getPublicSnapshot({ restoreReconnect = false } = {}) {
@@ -2516,6 +3004,8 @@ class BattleMatchService {
     }
     const snapshot = {
       rulesVersion: this.rulesVersion,
+      gameplayPace: this.gameplayPace,
+      portraitBattleMode: this.portraitBattleMode,
       matches: matchIds.map(({ match_id: matchId }) => {
         const match = this.getMatch(matchId);
         const cursor = this.db.prepare(`
@@ -2532,10 +3022,13 @@ class BattleMatchService {
           actionDeadlineMs: match.actionDeadlineMs,
           cursor,
           ...(chargeWindow ? { chargeWindow } : {}),
+          ...this.projectSnapshotChoiceState(match),
           fighters: this.projectPublicFighters(match)
         };
       })
     };
+    const statPrompt = this.projectActiveStatPrompt();
+    if (statPrompt) snapshot.statPrompt = statPrompt;
     return snapshot;
   }
 
@@ -3061,10 +3554,9 @@ class BattleMatchService {
         prompt.prompt_id
       );
       if (applied.applied) {
-        const participant = this.db.prepare(`
-          SELECT slot FROM streammonsters_match_participants
-          WHERE match_id = ? AND participant_id = ?
-        `).get(prompt.match_id, prompt.participant_id);
+        const participant = this.getMatch(prompt.match_id)?.participants.find(entry => (
+          entry.participantId === prompt.participant_id
+        ));
         this.appendEvent(
           prompt.match_id,
           'streammonsters:monster_stat_auto_assigned',
@@ -3072,9 +3564,15 @@ class BattleMatchService {
             matchId: prompt.match_id,
             slot: Number(participant?.slot) || 0,
             stat,
-            source: 'timeout'
+            source: 'timeout',
+            ...this.statChoiceContext({
+              userId: prompt.viewer_id,
+              participant,
+              monster: applied.monster
+            })
           }
         );
+        this.ensurePendingStatAllocations();
       }
       return true;
     });
@@ -3113,7 +3611,10 @@ class BattleMatchService {
           promptId: prompt.prompt_id,
           stat,
           source: 'timeout',
-          monster: this.projectPublicMonster(null, applied.monster)
+          ...this.statChoiceContext({
+            userId: prompt.viewer_id,
+            monster: applied.monster
+          })
         });
         if ((Number(applied.monster?.unspent_stat_points) || 0) > 0) {
           this.createStandaloneStatPrompt({
@@ -3122,12 +3623,14 @@ class BattleMatchService {
             sourceKey: `${prompt.source_key}:next`
           });
         }
+        this.ensurePendingStatAllocations();
       }
       return true;
     });
   }
 
   ensurePendingStatAllocations() {
+    if (this.hasOpenStatWindow()) return 0;
     const candidates = this.db.prepare(`
       SELECT monster_id, user_id
       FROM streammonsters_monsters monster
@@ -3143,15 +3646,16 @@ class BattleMatchService {
       ORDER BY created_at_ms, monster_id
     `).all();
     let opened = 0;
-    candidates.forEach(candidate => {
+    for (const candidate of candidates) {
       if (this.createStandaloneStatPrompt({
         userId: candidate.user_id,
         monsterId: candidate.monster_id,
         sourceKey: 'recovered-unspent'
       })) {
         opened += 1;
+        break;
       }
-    });
+    }
     return opened;
   }
 

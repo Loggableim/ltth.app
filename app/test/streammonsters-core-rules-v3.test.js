@@ -141,22 +141,22 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
     }));
   });
 
-  test('uses the six approved presets, defaults new rules to two minutes, and migrates only missing-version legacy thirty minutes', () => {
+  test('uses the seven approved presets, defaults fresh rules to 90 seconds, and preserves saved durations', () => {
     const plugin = new StreamAlchemyPlugin({ getConfig: jest.fn(), setConfig: jest.fn() });
     expect(plugin.loadConfig({ streamMonsters: {} }).streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 7,
-      hatchDurationMs: 120_000
+      rulesVersion: 8,
+      hatchDurationMs: 90_000
     }));
     expect(plugin.loadConfig({ streamMonsters: { hatchDurationMs: 1_800_000 } }).streamMonsters.hatchDurationMs)
-      .toBe(120_000);
+      .toBe(1_800_000);
     expect(plugin.loadConfig({ streamMonsters: { rulesVersion: 2, hatchDurationMs: 300_000 } }).streamMonsters)
-      .toEqual(expect.objectContaining({ rulesVersion: 7, hatchDurationMs: 300_000 }));
+      .toEqual(expect.objectContaining({ rulesVersion: 8, hatchDurationMs: 300_000 }));
 
     const { store, engine } = createEngine();
     const { routes } = createRoutes({ store, engine });
-    expect([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000].map(value => (
+    expect([30_000, 60_000, 90_000, 120_000, 300_000, 600_000, 1_800_000].map(value => (
       routes.sanitizeConfigUpdate({ hatchDurationMs: value }).hatchDurationMs
-    ))).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
+    ))).toEqual([30_000, 60_000, 90_000, 120_000, 300_000, 600_000, 1_800_000]);
   });
 
   test('queues paid overflow eggs, promotes them FIFO after ready eggs, and never boosts queued eggs', () => {

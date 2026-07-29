@@ -3,20 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stream Monsters · League World Hybrid Overlay</title>
+  <title>Stream Monsters · Portrait Arcade Rally Overlay</title>
   <style>
     :root {
       --ink:#f8f7ff; --muted:#bdc5dc; --violet:#a984ff; --cyan:#55dcff; --mint:#6ef1b8; --gold:#ffd76f;
       --arena-gameplay-height:74%; --arena-safe-zone-height:26%;
+      --egg-shelf-lane-height:124px;
       --arena-glass:#10182be8; --arena-edge:#b4a1ff80; --arena-danger:#ff5f86; --arena-shield:#5be7ff;
     }
     * { box-sizing:border-box; }
     body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
     #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; isolation:isolate; }
     #effects-canvas { position:fixed; inset:0; z-index:0; width:100%; height:100%; background:transparent; }
-    #effects-canvas.effects-fallback { background:radial-gradient(circle at center,#a984ff20 0,transparent 38%); }
+    #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="attack"] {
+      background-image:
+        radial-gradient(circle,var(--sm-effect-color-tertiary) 0 7%,transparent 18%),
+        linear-gradient(var(--sm-effect-angle),transparent 39%,var(--sm-effect-color) 46% 51%,var(--sm-effect-color-secondary) 54%,transparent 62%);
+      background-position:var(--sm-effect-target-x) var(--sm-effect-target-y),50% 52%;
+      background-size:18% 22%,58% 24%;
+      background-repeat:no-repeat;
+      opacity:.72;
+    }
+    #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="defense"] {
+      background-image:
+        radial-gradient(circle,transparent 0 28%,var(--sm-effect-color-tertiary) 30% 34%,transparent 36% 48%,var(--sm-effect-color) 50% 56%,transparent 59%);
+      background-position:var(--sm-effect-origin-x) var(--sm-effect-origin-y);
+      background-size:34% 42%;
+      background-repeat:no-repeat;
+      opacity:.62;
+    }
+    #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="special"] {
+      background-image:
+        radial-gradient(circle,var(--sm-effect-color-tertiary) 0 12%,var(--sm-effect-color) 14% 31%,transparent 55%),
+        conic-gradient(from 20deg,transparent 0 8%,var(--sm-effect-color-secondary) 11% 15%,transparent 18% 34%,var(--sm-effect-color) 38% 43%,transparent 47% 100%);
+      background-position:var(--sm-effect-origin-x) var(--sm-effect-origin-y),var(--sm-effect-origin-x) var(--sm-effect-origin-y);
+      background-size:27% 34%,38% 46%;
+      background-repeat:no-repeat;
+      opacity:.68;
+    }
     #reveal-stage {
-      position:fixed; inset:0; z-index:2; display:flex; align-items:var(--reveal-align,flex-end);
+      position:fixed; inset:0 0 calc(var(--arena-safe-zone-height) + var(--egg-shelf-lane-height)); z-index:2; display:flex; align-items:var(--reveal-align,flex-end);
       justify-content:var(--reveal-justify,center); padding:38px; pointer-events:none;
     }
     #reveal-stage[data-anchor="top-left"] { align-items:flex-start; justify-content:flex-start; }
@@ -168,6 +194,15 @@
     #card[data-presentation="elemental-hour"].visible {
       transform:translate(-50%,0) scale(var(--reveal-scale,1));
     }
+    #card[data-presentation="egg-offer"] {
+      position:absolute; top:7%; left:50%; grid-template-columns:1fr;
+      width:min(560px,calc(100vw - 32px)); min-height:0; padding:18px 20px;
+      transform:translate(-50%,24px) scale(calc(var(--reveal-scale,1) * .94));
+    }
+    #card[data-presentation="egg-offer"].visible {
+      transform:translate(-50%,0) scale(var(--reveal-scale,1));
+    }
+    #card[data-presentation="egg-offer"] #art-wrap { display:none; }
     #evolution-panel[hidden] { display:none; }
     #evolution-panel {
       display:grid; gap:10px; margin-top:14px; padding:12px;
@@ -227,13 +262,28 @@
     #progress { height:9px; margin-top:13px; overflow:hidden; border-radius:99px; background:#070b13; }
     #bar { width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold)); transition:width .5s; }
     #battle {
-      position:absolute; inset:0 0 26%; z-index:4; overflow:hidden; opacity:0; visibility:hidden;
+      position:absolute; inset:0 0 26%; z-index:50; overflow:hidden; opacity:0; visibility:hidden;
       background:
         radial-gradient(ellipse at 50% 88%,#7d5cff28 0 12%,transparent 46%),
-        linear-gradient(180deg,#070a1630 0%,#121937eb 62%,#080b18f5 100%);
+        linear-gradient(180deg,#050815fa 0%,#121937fc 62%,#080b18 100%);
       filter:drop-shadow(0 30px 90px #0009); transform:scale(1.035);
       transition:opacity .34s ease,transform .55s cubic-bezier(.2,.85,.25,1),visibility 0s linear .55s;
       isolation:isolate;
+    }
+    #streammonsters-overlay[data-battle-active="true"] #egg-shelf,
+    #streammonsters-overlay[data-battle-active="true"] #reveal-stage,
+    #streammonsters-overlay[data-battle-active="true"] #arcade-choreography,
+    #streammonsters-overlay[data-battle-active="true"] #chat-detail,
+    #streammonsters-overlay[data-battle-active="true"] #chat-card,
+    #streammonsters-overlay[data-battle-active="true"] #toast,
+    #streammonsters-overlay[data-battle-active="true"] #hype,
+    #streammonsters-overlay[data-battle-active="true"] #brand,
+    #streammonsters-overlay[data-battle-active="true"] #effects-canvas {
+      opacity:0!important; visibility:hidden!important;
+    }
+    #battle-effects-canvas {
+      position:absolute; inset:0; z-index:3; width:100%; height:100%;
+      background:transparent; pointer-events:none;
     }
     #battle::before {
       content:""; position:absolute; inset:36% -12% -18%; z-index:-2; opacity:.74;
@@ -275,13 +325,65 @@
       box-shadow:0 14px 40px #0008,inset 0 0 22px #55dcff12; transform:translateX(-50%);
       text-align:center; font-size:clamp(17px,2.2vw,28px); font-weight:950; letter-spacing:.08em;
     }
-    .arena-skill-deck {
-      position:absolute; top:22%; left:0; z-index:14; display:grid; gap:7px; width:100%;
-      opacity:0; transform:translateY(8px); transition:opacity .2s ease,transform .26s ease;
+    #arena-lead {
+      position:absolute; top:15.5%; left:50%; z-index:15; min-width:170px; padding:7px 16px;
+      border:1px solid #ffffff3d; border-radius:999px; color:#d9f8ff; background:#080d1edb;
+      box-shadow:0 8px 24px #0009; transform:translateX(-50%);
+      text-align:center; font-size:clamp(13px,1.6vw,20px); font-weight:950;
     }
-    #battle[data-phase="choice"] .arena-skill-deck {
-      opacity:1; transform:none;
+    #arena-action-card {
+      position:absolute; top:8%; left:50%; z-index:32; display:grid;
+      grid-template-columns:auto auto minmax(0,1fr); grid-template-areas:
+        "player key skill" "copy copy copy" "metrics metrics metrics";
+      align-items:center; gap:5px 12px; width:min(92%,820px); min-height:118px; padding:14px 18px;
+      border:2px solid #99edff99; border-radius:22px; color:#fff;
+      background:linear-gradient(145deg,#0d1734f7,#251340f4);
+      box-shadow:0 22px 56px #000d,0 0 36px #72dfff35; opacity:0; visibility:hidden;
+      transform:translate(-50%,-12px) scale(.96); transition:opacity .2s,transform .24s,visibility 0s linear .25s;
     }
+    #arena-action-card.visible {
+      opacity:1; visibility:visible; transform:translate(-50%,0) scale(1);
+      transition:opacity .2s,transform .24s;
+    }
+    #arena-action-player {
+      grid-area:player; max-width:min(31vw,250px); overflow:hidden; color:#8feeff;
+      font-size:clamp(15px,2vw,25px); font-weight:1000; text-overflow:ellipsis; white-space:nowrap;
+    }
+    #arena-action-key {
+      grid-area:key; display:grid; place-items:center; width:42px; height:42px;
+      border:2px solid #fff5b7; border-radius:12px; color:#23143a; background:#ffe47d;
+      font-size:clamp(20px,2.6vw,32px); font-weight:1000; box-shadow:0 0 20px #ffe37566;
+    }
+    #arena-action-skill { grid-area:skill; font-size:clamp(22px,3vw,38px); line-height:1.05; }
+    #arena-action-copy {
+      grid-area:copy; color:#e7eefc; font-size:clamp(16px,2vw,25px); font-weight:750;
+      line-height:1.2; white-space:normal;
+    }
+    #arena-action-metrics {
+      grid-area:metrics; color:#fff0a3; font-size:clamp(17px,2.2vw,28px); font-weight:1000;
+      line-height:1.25;
+    }
+    #battle[data-phase="action"] #arena-skill-prompt,
+    #battle[data-phase="action"] #arena-lead { opacity:0; }
+    #arena-choice-surface {
+      position:absolute; right:3%; bottom:2%; left:3%; z-index:18;
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;
+      padding:10px; border:1px solid #aebaff59; border-radius:18px;
+      background:linear-gradient(145deg,#111a31f4,#080d1df2);
+      box-shadow:0 16px 42px #000c,0 0 30px #6ecfff20;
+      opacity:0; visibility:hidden; transform:translateY(12px);
+      transition:opacity .2s ease,transform .26s ease,visibility 0s linear .26s;
+    }
+    #battle[data-phase="choice"] #arena-choice-surface {
+      opacity:1; visibility:visible; transform:none;
+      transition:opacity .2s ease,transform .26s ease;
+    }
+    .arena-choice-player { display:grid; align-content:start; gap:6px; min-width:0; }
+    .arena-choice-owner {
+      overflow:hidden; color:#a9edff; font-size:clamp(14px,1.55vw,20px);
+      font-weight:1000; text-align:center; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-skill-deck { display:grid; gap:7px; min-width:0; }
     .arena-skill-card {
       display:grid; grid-template-columns:auto auto minmax(0,1fr) auto;
       grid-template-areas:"icon choice name charge" "icon choice copy charge";
@@ -364,14 +466,43 @@
       transform:translateX(-50%); text-align:center; font-size:clamp(16px,2vw,26px); font-weight:950;
     }
     #arena-result {
-      position:absolute; top:15%; left:50%; z-index:30; width:min(86%,760px); padding:18px 24px;
+      position:absolute; top:10%; left:50%; z-index:40; display:grid; place-items:center;
+      width:min(92%,820px); min-height:280px; padding:24px 28px;
       border:1px solid #ffe78eaa; border-radius:24px; color:#fff; background:linear-gradient(135deg,#101a36e8,#4b257bdc);
       box-shadow:0 20px 58px #000b,inset 0 0 34px #ffe79d22; opacity:0; pointer-events:none;
       transform:translate(-50%,-12px) scale(.94); text-align:center; transition:opacity .22s ease,transform .28s ease;
     }
     #arena-result.visible { opacity:1; transform:translate(-50%,0) scale(1); }
+    #arena-result-ko {
+      color:#ff6f91; font-size:clamp(34px,6vw,78px); font-weight:1000; line-height:.9;
+      letter-spacing:.08em; text-shadow:0 0 28px #ff4b7a9e,0 5px 0 #481530;
+    }
     #arena-result-winner { display:block; color:#fff0a3; font-size:clamp(27px,4vw,52px); line-height:1.05; text-shadow:0 3px 0 #3d1b55,0 0 28px #ffe57e99; }
-    #arena-result-rating { display:block; margin-top:10px; color:#e5f5ff; font-size:clamp(14px,1.8vw,22px); font-weight:900; font-variant-numeric:tabular-nums; }
+    #arena-result-monster { color:#d8c9ff; font-size:clamp(20px,2.7vw,34px); font-weight:950; }
+    #arena-result-summary { color:#f0f6ff; font-size:clamp(16px,2vw,25px); font-weight:850; }
+    #arena-result-ratings {
+      display:block; margin-top:8px; color:#e5f5ff; font-size:clamp(15px,1.9vw,23px);
+      font-weight:900; font-variant-numeric:tabular-nums; line-height:1.3;
+    }
+    #arena-stat-card {
+      position:absolute; top:17%; left:50%; z-index:60; display:grid; gap:8px;
+      width:min(90%,760px); min-height:210px; padding:22px 26px;
+      border:2px solid #a9f5ff9c; border-radius:24px; color:#fff;
+      background:linear-gradient(145deg,#111a35f7,#32194af4);
+      box-shadow:0 24px 68px #000d,0 0 38px #83eaff2b; opacity:0; visibility:hidden;
+      transform:translate(-50%,-12px) scale(.96); text-align:center;
+    }
+    #arena-stat-card.visible {
+      opacity:1; visibility:visible; transform:translate(-50%,0) scale(1);
+      transition:opacity .22s,transform .28s;
+    }
+    #arena-stat-kicker { color:#ffe481; font-size:clamp(14px,1.8vw,22px); font-weight:1000; letter-spacing:.1em; text-transform:uppercase; }
+    #arena-stat-title { font-size:clamp(25px,3.6vw,46px); line-height:1.08; }
+    #arena-stat-meta { color:#c7f5ff; font-size:clamp(16px,2vw,25px); font-weight:850; }
+    #arena-stat-choices {
+      padding:10px 12px; border-radius:15px; color:#fff; background:#060b1dbd;
+      font-size:clamp(16px,2.1vw,26px); font-weight:950; line-height:1.35;
+    }
     #arena-impact {
       position:absolute; left:50%; top:44%; z-index:18; opacity:0; color:white;
       filter:drop-shadow(0 6px 4px #000d); transform:translate(-50%,-50%) scale(.5) rotate(-6deg);
@@ -467,17 +598,26 @@
       animation:none;
     }
     .egg-shelf-item.public-free.landing {
+      animation:egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18)
+        var(--egg-motion-delay,0ms) both;
+    }
+    .egg-shelf-item.public-free .egg-shelf-art {
       animation:
-        egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18)
-          var(--egg-motion-delay,0ms) both,
-        egg-free-jump 1.2s ease-in-out calc(var(--egg-motion-delay,0ms) + 900ms) 3,
-        egg-free-shake .34s ease-in-out calc(var(--egg-motion-delay,0ms) + 4.5s) 3;
+        egg-free-jump 1.2s ease-in-out var(--egg-public-jump-delay,80ms) 3,
+        egg-free-shake .34s ease-in-out calc(var(--egg-public-jump-delay,80ms) + 3.65s) 3;
     }
     [data-adopt-callout] {
       position:absolute; top:-18px; left:50%; padding:5px 9px; border:2px solid #fff2ad;
       border-radius:999px; color:#17101f; background:#ffd76f; box-shadow:0 4px 18px #0009;
       transform:translateX(-50%); font-size:clamp(11px,1.15vw,16px); font-weight:1000;
       letter-spacing:.04em; white-space:nowrap;
+    }
+    [data-egg-timing] {
+      position:absolute; right:50%; bottom:-4px; left:50%; z-index:3;
+      width:max-content; max-width:132px; padding:3px 7px; border-radius:999px;
+      color:#f8f7ff; background:#10182be8; box-shadow:0 4px 14px #0009;
+      transform:translateX(-50%); font-size:clamp(9px,.82vw,12px); font-weight:800;
+      line-height:1.15; text-align:center; white-space:nowrap;
     }
     #egg-shelf [data-egg-overflow] {
       position:relative; display:grid; place-items:end center; width:clamp(54px,6.5vw,88px);
@@ -621,13 +761,14 @@
       100% { transform:none; filter:none; }
     }
     #chat-card {
-      position:absolute; left:34px; bottom:34px; max-width:min(460px,calc(100vw - 68px)); padding:12px 15px;
+      position:absolute; left:34px; bottom:calc(var(--arena-safe-zone-height) + var(--egg-shelf-lane-height)); max-width:min(460px,calc(100vw - 68px)); padding:12px 15px;
       border:1px solid #3d6d75; border-radius:15px; color:#dffcff; background:#0d2429eb; box-shadow:0 16px 42px #0009;
       opacity:0; transform:translateY(35px); transition:.28s;
     }
     #chat-card.visible { opacity:1; transform:none; }
     #chat-detail {
-      position:absolute; z-index:22; top:max(112px,6%); right:4%; bottom:28%; left:4%;
+      position:absolute; z-index:22; top:max(112px,6%); right:4%;
+      bottom:calc(26% + var(--egg-shelf-lane-height)); left:4%;
       overflow:hidden; padding:clamp(18px,2.2vw,34px); border:2px solid #b9adff85; border-radius:32px;
       color:var(--ink); background:
         radial-gradient(circle at 14% 12%,#5bdcff1d,transparent 34%),
@@ -765,24 +906,28 @@
       #arena-fighter-1 { left:3%; bottom:4%; }
       #arena-fighter-2 { right:3%; bottom:4%; }
       .arena-sprite-wrap { inset:16% 0 0; }
+      #arena-choice-surface { right:2%; bottom:2%; left:2%; }
       .arena-skill-deck {
-        top:auto; bottom:4%; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;
+        grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;
       }
       .arena-skill-card {
         grid-template-columns:auto auto minmax(0,1fr);
-        grid-template-areas:"choice icon name" "charge charge charge";
+        grid-template-areas:"choice icon name" "copy copy copy" "charge charge charge";
         gap:2px 5px; padding:6px;
       }
-      .arena-skill-card .skill-copy { display:none; }
+      .arena-skill-card .skill-copy { display:block; font-size:clamp(10px,1vw,14px); }
       .arena-skill-card .skill-charge { min-width:0; text-align:center; }
       #arena-feed { top:18%; bottom:auto; }
-      #chat-detail { top:9%; right:5%; bottom:28%; left:5%; }
+      #chat-detail {
+        top:9%; right:5%;
+        bottom:calc(26% + var(--egg-shelf-lane-height)); left:5%;
+      }
     }
     @media (orientation: portrait) {
       #brand { top:20px; left:20px; width:210px; height:58px; }
       #hype { top:18px; right:20px; width:76px; height:76px; }
       #toast { top:104px; width:calc(100vw - 32px); }
-      #reveal-stage { inset:0 0 26%; padding:50px 16px; }
+      #reveal-stage { inset:0 0 calc(26% + var(--egg-shelf-lane-height)); padding:50px 16px; }
       #card { grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
       #card:not([data-presentation="hatch"]) { min-height:250px; padding:22px 18px; }
       #card:not([data-presentation="hatch"]) #title { font-size:clamp(34px,7vw,58px); }
@@ -803,19 +948,45 @@
       #battle { inset:0 0 26%; }
       #arena-topline { top:2%; min-width:88%; }
       #arena-skill-prompt { top:8%; width:88%; }
-      .arena-fighter { width:58%; height:47%; }
-      #arena-fighter-1 { left:-2%; top:25%; bottom:auto; }
-      #arena-fighter-2 { right:-2%; top:49%; bottom:auto; }
-      .fighter-hud { left:5%; width:90%; padding:10px 11px; }
-      #arena-fighter-1 .fighter-hud { top:0; }
-      #arena-fighter-2 .fighter-hud { top:auto; bottom:0; }
-      #arena-fighter-2 .arena-sprite-wrap { inset:0 0 24%; }
-      .arena-skill-deck { top:24%; gap:5px; }
-      .arena-skill-card { padding:8px 10px; }
-      #arena-feed { top:16%; bottom:auto; width:82%; }
+      #arena-lead { top:14.5%; }
+      .arena-fighter { top:19%; bottom:auto; width:50%; height:78%; }
+      #arena-fighter-1 { left:0; }
+      #arena-fighter-2 { right:0; }
+      #battle[data-phase="choice"] .arena-fighter {
+        top:16%; width:50%; height:52%;
+      }
+      .fighter-hud { top:0; left:4%; width:92%; padding:9px 10px; }
+      .arena-sprite-wrap { inset:18% -2% 29%; }
+      #arena-fighter-2 .arena-sprite-wrap { inset:18% -2% 29%; }
+      #battle[data-phase="choice"] .arena-sprite-wrap,
+      #battle[data-phase="choice"] #arena-fighter-2 .arena-sprite-wrap {
+        inset:20% 2% 0;
+      }
+      #arena-choice-surface {
+        right:2.5%; bottom:2%; left:2.5%; gap:7px; padding:8px;
+      }
+      #battle[data-phase="choice"] #arena-feed { display:none; }
+      .arena-skill-deck { gap:5px; }
+      #arena-choice-surface .arena-skill-card {
+        min-height:64px; padding:8px 9px;
+      }
+      #arena-choice-surface .arena-skill-card .skill-name {
+        font-size:clamp(16px,3.35vw,22px);
+      }
+      #arena-choice-surface .arena-skill-card .skill-copy {
+        font-size:clamp(14px,2.85vw,18px); line-height:1.16;
+      }
+      #arena-feed { top:auto; bottom:1.5%; width:86%; }
+      #arena-action-card { top:8.5%; width:94%; min-height:130px; }
+      #arena-result { top:8%; width:94%; min-height:360px; }
+      #arena-stat-card { top:14%; width:92%; min-height:260px; }
       #arena-impact { top:49%; }
-      #chat-card { left:16px; bottom:calc(26% + 18px); max-width:calc(100vw - 32px); }
-      #chat-detail { top:7%; right:3%; bottom:28%; left:3%; padding:20px 16px; }
+      #chat-card { left:16px; bottom:calc(26% + var(--egg-shelf-lane-height)); max-width:calc(100vw - 32px); }
+      #chat-detail {
+        top:7%; right:3%;
+        bottom:calc(26% + var(--egg-shelf-lane-height)); left:3%;
+        padding:20px 16px;
+      }
       .sm-collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .sm-collection-card { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; }
       .sm-collection-copy { gap:3px; padding:8px 3px 2px; text-align:center; }
@@ -827,6 +998,55 @@
       .sm-monster-stat { padding:10px; }
       .sm-monster-stat span { font-size:clamp(12px,2.4vw,17px); }
       .sm-monster-stat strong { font-size:clamp(25px,6vw,42px); }
+    }
+    @media (orientation: portrait) and (max-height: 900px) {
+      #arena-topline { top:1%; padding:6px 12px; }
+      #arena-skill-prompt { top:6.5%; padding:7px 10px; font-size:15px; }
+      #arena-lead { top:12.5%; padding:4px 10px; }
+      .arena-fighter { top:34%; height:64%; }
+      #battle[data-phase="choice"] .arena-fighter {
+        top:14%; width:50%; height:52%;
+      }
+      .fighter-hud { padding:6px 7px; border-radius:12px; }
+      .fighter-heading { gap:5px; margin-bottom:3px; }
+      .fighter-name { font-size:14px; }
+      .fighter-owner,.fighter-level,.fighter-hp-row { font-size:10px; }
+      .arena-meter { height:7px; margin-top:3px; }
+      #arena-action-card {
+        top:20%; min-height:0; padding:7px 10px;
+        gap:2px 7px; border-radius:14px;
+      }
+      #arena-action-player { max-width:128px; font-size:12px; }
+      #arena-action-key { width:28px; height:28px; font-size:17px; }
+      #arena-action-skill { font-size:17px; }
+      #arena-action-copy { font-size:11px; line-height:1.08; }
+      #arena-action-metrics { font-size:13px; line-height:1.2; }
+      #battle[data-phase="action"] .arena-fighter {
+        top:43%; height:55%;
+      }
+      #arena-choice-surface {
+        right:1.5%; bottom:1%; left:1.5%; gap:5px; padding:5px;
+      }
+      .arena-choice-player { gap:3px; }
+      .arena-choice-owner { font-size:11px; }
+      .arena-skill-deck { gap:3px; }
+      #arena-choice-surface .arena-skill-card {
+        min-height:50px; padding:4px 5px; gap:1px 4px; border-radius:9px;
+      }
+      #arena-choice-surface .arena-skill-card .skill-icon { font-size:13px; }
+      #arena-choice-surface .arena-skill-card .skill-choice {
+        width:20px; height:20px; font-size:11px;
+      }
+      #arena-choice-surface .arena-skill-card .skill-name {
+        font-size:12px; line-height:1.05;
+      }
+      .arena-skill-card .skill-copy {
+        overflow:visible; font-size:10px; line-height:1.08;
+        text-overflow:clip; white-space:normal;
+      }
+      .arena-skill-card .skill-charge { min-width:31px; font-size:9px; }
+      #battle[data-phase="choice"] #arena-feed { display:none; }
+      #battle-effects-canvas { z-index:3; }
     }
     @media (prefers-reduced-motion: reduce) {
       .arena-skill-card.ready {
@@ -874,7 +1094,7 @@
     <div id="art-wrap"><img id="art" alt=""></div>
     <div>
       <div id="kicker" data-i18n="plugins.streamalchemy.ui.monsters.overlayBrand">Stream Monsters</div>
-      <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">League World Hybrid</h1>
+      <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">Portrait Arcade Rally</h1>
       <div id="subtitle" data-i18n="plugins.streamalchemy.ui.monsters.overlayWaiting">Das nächste Monster wartet.</div>
       <div id="owner-chip" hidden>
         <img id="owner-avatar" alt="">
@@ -945,12 +1165,21 @@
     <div data-egg-overflow hidden></div>
   </section>
   <section id="battle" aria-label="Stream Monsters Arena" aria-live="polite">
+    <canvas id="battle-effects-canvas" aria-hidden="true"></canvas>
     <div id="arena-element-light" aria-hidden="true"></div>
     <div id="arena-topline">
       <span id="arena-round">Monsterwahl</span>
       <span id="arena-countdown"></span>
     </div>
     <div id="arena-skill-prompt">A · Angriff&nbsp;&nbsp; B · Verteidigung&nbsp;&nbsp; C · Special</div>
+    <div id="arena-lead"></div>
+    <div id="arena-action-card" aria-live="polite">
+      <span id="arena-action-player"></span>
+      <span id="arena-action-key"></span>
+      <strong id="arena-action-skill"></strong>
+      <span id="arena-action-copy"></span>
+      <span id="arena-action-metrics"></span>
+    </div>
     <article id="arena-fighter-1" class="arena-fighter" data-slot="1">
       <div class="arena-sprite-wrap">
         <img id="arena-image-1" class="arena-sprite" alt="">
@@ -970,23 +1199,6 @@
         <div class="arena-meter-labels">
           <span id="arena-shield-label-1">Schild</span>
           <span id="arena-special-label-1">Special</span>
-        </div>
-      </div>
-      <div class="arena-skill-deck" data-skill-deck="1" aria-label="Monster A skills">
-        <div class="arena-skill-card" data-skill="A">
-          <span class="skill-icon"></span><span class="skill-choice">A</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="B">
-          <span class="skill-icon"></span><span class="skill-choice">B</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="C">
-          <span class="skill-icon"></span><span class="skill-choice">C</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
         </div>
       </div>
     </article>
@@ -1011,29 +1223,66 @@
           <span id="arena-special-label-2">Special</span>
         </div>
       </div>
-      <div class="arena-skill-deck" data-skill-deck="2" aria-label="Monster B skills">
-        <div class="arena-skill-card" data-skill="A">
-          <span class="skill-icon"></span><span class="skill-choice">A</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="B">
-          <span class="skill-icon"></span><span class="skill-choice">B</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="C">
-          <span class="skill-icon"></span><span class="skill-choice">C</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
+    </article>
+    <section id="arena-choice-surface" aria-live="polite">
+      <div class="arena-choice-player" data-choice-player="1">
+        <strong id="arena-choice-owner-1" class="arena-choice-owner" data-choice-owner="1">Viewer · Monster A</strong>
+        <div class="arena-skill-deck" data-skill-deck="1" aria-label="Monster A skills">
+          <div class="arena-skill-card" data-skill="A">
+            <span class="skill-icon"></span><span class="skill-choice">A</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="B">
+            <span class="skill-icon"></span><span class="skill-choice">B</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="C">
+            <span class="skill-icon"></span><span class="skill-choice">C</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
         </div>
       </div>
-    </article>
+      <div class="arena-choice-player" data-choice-player="2">
+        <strong id="arena-choice-owner-2" class="arena-choice-owner" data-choice-owner="2">Viewer · Monster B</strong>
+        <div class="arena-skill-deck" data-skill-deck="2" aria-label="Monster B skills">
+          <div class="arena-skill-card" data-skill="A">
+            <span class="skill-icon"></span><span class="skill-choice">A</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="B">
+            <span class="skill-icon"></span><span class="skill-choice">B</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="C">
+            <span class="skill-icon"></span><span class="skill-choice">C</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+        </div>
+      </div>
+    </section>
     <div id="arena-special" aria-hidden="true"></div>
     <div id="arena-impact" aria-hidden="true"></div>
     <div id="arena-combo" aria-hidden="true"></div>
     <div id="arena-feed">Die Arena wird vorbereitet …</div>
-    <div id="arena-result" aria-live="polite"><strong id="arena-result-winner"></strong><span id="arena-result-rating"></span></div>
+    <div id="arena-result" aria-live="polite">
+      <span id="arena-result-ko"></span>
+      <strong id="arena-result-winner"></strong>
+      <span id="arena-result-monster"></span>
+      <span id="arena-result-summary"></span>
+      <div id="arena-result-ratings"></div>
+    </div>
+  </section>
+  <section id="arena-stat-card" aria-live="polite">
+    <span id="arena-stat-kicker">NEXT</span>
+    <strong id="arena-stat-title"></strong>
+    <span id="arena-stat-meta"></span>
+    <div id="arena-stat-choices"></div>
   </section>
   <div id="arena-chat-safe-zone" aria-hidden="true"></div>
   <section id="chat-detail" data-placement="upper" role="status" aria-atomic="true"></section>
@@ -1056,11 +1305,21 @@
 
   const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
-  const text = (key, fallback, params = {}) => {
-    const fullKey = `plugins.streamalchemy.ui.monsters.${key}`;
-    const translated = window.i18n?.t?.(fullKey, params);
-    if (translated && translated !== fullKey) return translated;
-    return fallback.replace(/\{(\w+)\}/g, (match, name) => name in params ? params[name] : match);
+  const overlayLocaleResolver = window.StreamMonstersOverlayRuntime
+    .createOverlayLocaleResolver({
+      config:{},
+      loadLocale:async locale => {
+        const response = await fetch(
+          `/plugins/streamalchemy/locales/${encodeURIComponent(locale)}.json`,
+          { cache:'force-cache' }
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }
+    });
+  await overlayLocaleResolver.ready();
+  const text = (key, _fallback, params = {}) => {
+    return overlayLocaleResolver.translate(key, params);
   };
   const elementName = element => text(
     window.StreamMonstersOverlayRuntime.elementKey(element),
@@ -1125,7 +1384,11 @@
   const effectsRenderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
     canvas: node('effects-canvas')
   });
+  const battleEffectsRenderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
+    canvas: node('battle-effects-canvas')
+  });
   effectsRenderer.init();
+  battleEffectsRenderer.init();
   let silentAudioChannels = window.StreamMonstersAudioEngine?.normalizeChannelConfig?.({}) || {
     master:{ enabled:true, volume:1 }
   };
@@ -1162,50 +1425,55 @@
       audioEngine.preload().catch(() => {});
     }
   } catch (_) {}
+  let eventQueue = null;
   const arenaView = window.StreamMonstersArenaView?.createArenaView?.({
     document,
     audio:audioEngine,
-    effects:effectsRenderer,
-    localize:text,
-    choiceLabels:{
-      A:text('skillAttack', 'Angriff'),
-      B:text('skillDefense', 'Verteidigung'),
-      C:text('skillSpecial', 'Spezial')
+    effects:battleEffectsRenderer,
+    presentationEffects:effectsRenderer,
+    localize:(key, params = {}, locale = null) => (
+      overlayLocaleResolver.translate(key, params, locale || undefined)
+    ),
+    choiceKeys:{
+      A:'skillAttack',
+      B:'skillDefense',
+      C:'skillSpecial'
     },
-    labels:{
-      monster:text('arenaMonsterLabel', 'Monster {slot}'),
-      round:text('arenaRoundLabel', 'Runde {round}'),
-      roster:text('arenaRosterChoice', 'Monsterwahl'),
-      skill:text('arenaSkillFallback', 'Skill'),
-      evaded:text('arenaEvaded', 'AUSGEWICHEN'),
-      knockout:text('arenaKnockout', 'K. O.'),
-      winner:text('battleWinner', '{name} gewinnt!'),
-      battleEnded:text('arenaBattleEnded', 'Kampf beendet'),
-      cancelledRoster:text(
-        'arenaCancelledRoster',
-        'Kampf abgebrochen · Monsterwahl unvollständig'
-      ),
-      cancelled:text('arenaCancelled', 'Kampf abgebrochen'),
-      shield:text('arenaShieldLabel', 'Schild'),
-      special:text('arenaSpecialLabel', 'Special'),
-      skillCopyEmberAttack:text('skillCopyEmberAttack', 'A fierce strike that leaves a brief burn.'),
-      skillCopyEmberDefense:text('skillCopyEmberDefense', 'Raises a fiery shield that retaliates once.'),
-      skillCopyEmberSpecial:text('skillCopyEmberSpecial', 'Unleashes a heavy blaze and restores resolve.'),
-      skillCopyTideAttack:text('skillCopyTideAttack', 'A flowing hit that weakens the next attack.'),
-      skillCopyTideDefense:text('skillCopyTideDefense', 'Wraps the fighter in mist, shield and healing.'),
-      skillCopyTideSpecial:text('skillCopyTideSpecial', 'A restorative wave that damages and heals.'),
-      skillCopyGroveAttack:text('skillCopyGroveAttack', 'A thorny strike that punishes one counter-hit.'),
-      skillCopyGroveDefense:text('skillCopyGroveDefense', 'Builds the strongest pure shield in the arena.'),
-      skillCopyGroveSpecial:text('skillCopyGroveSpecial', 'Combines damage, protection and steady healing.'),
-      skillCopyGaleAttack:text('skillCopyGaleAttack', 'Dashes through the target with two visible hits.'),
-      skillCopyGaleDefense:text('skillCopyGaleDefense', 'Creates a light shield and a chance to evade.'),
-      skillCopyGaleSpecial:text('skillCopyGaleSpecial', 'Crosses the arena in a cinematic three-hit rush.'),
-      skillCopyVoltAttack:text('skillCopyVoltAttack', 'Cuts through part of the target shield.'),
-      skillCopyVoltDefense:text('skillCopyVoltDefense', 'Stores charge in a shield that reflects once.'),
-      skillCopyVoltSpecial:text('skillCopyVoltSpecial', 'Detonates a powerful shield-piercing discharge.'),
-      skillCopyLunarAttack:text('skillCopyLunarAttack', 'A measured strike that restores a little health.'),
-      skillCopyLunarDefense:text('skillCopyLunarDefense', 'Raises a veil and dims the next enemy attack.'),
-      skillCopyLunarSpecial:text('skillCopyLunarSpecial', 'Drains life from the target in a lunar burst.')
+    labelKeys:{
+      monster:'arenaMonsterLabel',
+      level:'arenaLevelLabel',
+      round:'arenaRoundLabel',
+      roster:'arenaRosterChoice',
+      skill:'arenaSkillFallback',
+      evaded:'arenaEvaded',
+      knockout:'arenaKnockout',
+      winner:'arenaWinnerLabel',
+      viewer:'arenaViewerLabel',
+      battleEnded:'arenaBattleEnded',
+      cancelledRoster:'arenaCancelledRoster',
+      cancelled:'arenaCancelled',
+      shield:'arenaShieldLabel',
+      special:'arenaSpecialLabel',
+      lead:'arenaLeadLabel',
+      tied:'arenaTiedLabel',
+      knockoutResult:'arenaKnockoutResult',
+      forfeitResult:'arenaForfeitResult',
+      resultSummary:'arenaResultSummary',
+      ratingChanged:'arenaRatingChanged',
+      ratingUnchanged:'arenaRatingUnchanged',
+      damageMetric:'arenaDamageMetric',
+      shieldAbsorbedMetric:'arenaShieldAbsorbedMetric',
+      shieldGainMetric:'arenaShieldGainMetric',
+      healMetric:'arenaHealMetric',
+      evadeMetric:'arenaEvadeMetric',
+      statTitle:'monsterStatTitle',
+      statMeta:'monsterStatMeta',
+      statChoices:'monsterStatChoices',
+      statResult:'monsterStatResult',
+      collapse:'arenaCollapseBanner'
+    },
+    onBattleStateChange:({ active, matchId }) => {
+      eventQueue?.setBattleActive?.(active, matchId);
     }
   }) || {
     applyMatch:() => {},
@@ -1250,14 +1518,27 @@
     setTimeout:window.setTimeout.bind(window),
     clearTimeout:window.clearTimeout.bind(window),
     setInterval:window.setInterval.bind(window),
-    clearInterval:window.clearInterval.bind(window)
+    clearInterval:window.clearInterval.bind(window),
+    labels:{
+      incubating:text('eggShelfIncubating', 'Schlüpft in {time}'),
+      queued:text('eggShelfQueued', 'Warteschlange #{position}'),
+      ready:text('eggShelfReady', 'Bereit · {command}'),
+      expired:text('eggShelfExpired', 'Verrottet'),
+      reserved:text('eggShelfReserved', 'Reserviert · {time}'),
+      public:text('eggShelfPublic', 'Gratis · {command}')
+    },
+    getHatchReference:() => commandReference('hatch'),
+    getAdoptReference:() => commandReference('adopt')
   }) || {
     applyEvent:() => false,
     applySnapshot:() => ({ total:0, visible:[], overflow:null }),
     destroy:() => {}
   };
-  window.addEventListener('resize', () => effectsRenderer.resize());
-  const eventQueue = window.StreamMonstersOverlayRuntime.createPriorityQueue({
+  window.addEventListener('resize', () => {
+    effectsRenderer.resize();
+    battleEffectsRenderer.resize();
+  });
+  eventQueue = window.StreamMonstersOverlayRuntime.createPriorityQueue({
     maxSize: 30,
     staleAfterMs: 15000,
     maxCriticalOverflow: 20
@@ -1272,6 +1553,8 @@
   let rendererQuality = 'auto';
   let battleIds = [null, null];
   let battleMonsters = [null, null];
+  let overlayLanguage = overlayLocaleResolver.config();
+  const battleLocaleSequences = new Map();
   let battleReplaySynchronizer = null;
   let currentCommandPrefix = '!';
   const acceptStatPrompt = (type, data = {}) => {
@@ -1298,6 +1581,62 @@
   );
   let currentCommandReferences = safeFallbackCommandReferences(currentCommandPrefix);
   const commandReference = command => currentCommandReferences[command] || `${currentCommandPrefix}${command}`;
+  const applyPresentationLocale = locale => {
+    const selected = overlayLocaleResolver.setLocale(locale);
+    arenaView?.setLocale?.(selected);
+    document.documentElement.lang = selected;
+    return selected;
+  };
+  const criticalLocaleSequencer = window.StreamMonstersOverlayRuntime
+    .createCriticalLocaleSequencer({
+      getConfig:() => overlayLanguage,
+      applyLocale:applyPresentationLocale,
+      now:() => Date.now(),
+      setTimeout:window.setTimeout.bind(window),
+      clearTimeout:window.clearTimeout.bind(window)
+    });
+  const clearBattleLocaleSequence = matchId => {
+    const key = value(matchId, '').trim();
+    const state = battleLocaleSequences.get(key);
+    if (state?.timer != null) window.clearTimeout(state.timer);
+    if (key) battleLocaleSequences.delete(key);
+  };
+  const startBattleLocaleSequence = data => {
+    const matchId = value(data?.matchId || data?.battleId, '').trim();
+    if (!matchId) return;
+    clearBattleLocaleSequence(matchId);
+    const pages = window.StreamMonstersOverlayRuntime.criticalLocalePages(
+      overlayLanguage
+    );
+    const first = pages[0];
+    if (!first) return;
+    const state = { shown:[first.locale], timer:null };
+    battleLocaleSequences.set(matchId, state);
+    applyPresentationLocale(first.locale);
+    if (pages[1]) {
+      state.timer = window.setTimeout(() => {
+        if (battleLocaleSequences.get(matchId) !== state) return;
+        state.shown.push(pages[1].locale);
+        state.timer = null;
+        applyPresentationLocale(pages[1].locale);
+      }, first.durationMs);
+    }
+  };
+  const prepareBattleActionLocale = data => {
+    const matchId = value(
+      data?.matchId || data?.battleId || data?.action?.matchId,
+      ''
+    ).trim();
+    const state = battleLocaleSequences.get(matchId);
+    if (!state) return;
+    if (state.timer != null) window.clearTimeout(state.timer);
+    const pending = window.StreamMonstersOverlayRuntime.pendingCriticalLocales(
+      overlayLanguage,
+      state.shown
+    );
+    applyPresentationLocale(pending[0] || overlayLanguage.primaryLocale);
+    battleLocaleSequences.delete(matchId);
+  };
   const commandParams = () => ({
     eggs: commandReference('eggs'),
     hatch: commandReference('hatch'),
@@ -1368,15 +1707,16 @@
     CHAT_VIEW_FALLBACKS[key] || CHAT_VIEW_FALLBACKS.commandUnavailable,
     params
   );
-  const publicDisplayName = data => (
-    window.StreamMonstersChatView?.displayName?.(
-      data,
-      chatViewTranslate('viewer')
-    ) || value(
-      data?.displayName || data?.username || data?.nickname,
-      chatViewTranslate('viewer')
-    )
-  );
+  const publicDisplayName = data => {
+    const fallback = chatViewTranslate('viewer');
+    const identity = {
+      ...(data && typeof data === 'object' ? data : {}),
+      displayName:data?.displayName || data?.playerName ||
+        data?.username || data?.nickname
+    };
+    return window.StreamMonstersChatView?.displayName?.(identity, fallback) ||
+      value(identity.displayName, fallback);
+  };
   const chatView = window.StreamMonstersChatView?.createChatView?.({
     document,
     detailElement:node('chat-detail'),
@@ -1573,48 +1913,134 @@
     presentation = null,
     evolution = null,
     owner = null,
-    duration = notificationDurationMs
+    duration = notificationDurationMs,
+    localized = null
   }) => {
+    const presentationStartedAt = Date.now();
     const card = node('card');
     if (presentation === 'hatch') card.dataset.presentation = 'hatch';
     else if (presentation === 'elemental-hour') card.dataset.presentation = 'elemental-hour';
+    else if (presentation === 'egg-offer') card.dataset.presentation = 'egg-offer';
     else card.removeAttribute('data-presentation');
     const evolutionTimers = prepareEvolutionPanel(evolution);
-    try {
-      if (cue) playCue(cue);
-      node('kicker').textContent = kicker;
-      node('title').textContent = title;
-      node('subtitle').textContent = subtitle;
-      renderOwner(owner);
-      card.classList.toggle('no-art', !imageUrl);
+    let opened = false;
+    const renderPage = content => {
+      const page = { kicker, title, subtitle, imageUrl, hint, ...content };
+      node('kicker').textContent = page.kicker || '';
+      node('title').textContent = page.title || '';
+      node('subtitle').textContent = page.subtitle || '';
+      renderOwner(page.owner ?? owner);
+      card.classList.toggle('no-art', !page.imageUrl);
       node('art-wrap').classList.remove('image-fallback');
       node('art-wrap').removeAttribute('data-element');
-      node('art').alt = title;
-      node('art').onerror = () => imageErrorFallback(element);
-      if (imageUrl) node('art').src = imageUrl;
+      node('art').alt = page.title || '';
+      node('art').onerror = () => imageErrorFallback(page.element || element);
+      if (page.imageUrl) node('art').src = page.imageUrl;
       else node('art').removeAttribute('src');
       node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
-      node('hint').textContent = hint || commandHint();
+      node('hint').textContent = page.hint || commandHint();
       card.classList.toggle('charged', Boolean(charged));
-      card.classList.add('visible');
-      if (effectScene) {
-        effectsRenderer.play(effectScene, {
-          ...effectPayload,
-          element,
-          ...effectPlacementForScene(effectScene)
-        }).catch(() => {});
+      if (!opened) {
+        opened = true;
+        if (cue) playCue(cue);
+        card.classList.add('visible');
+        if (effectScene) {
+          effectsRenderer.play(effectScene, {
+            ...effectPayload,
+            element:page.element || element,
+            ...effectPlacementForScene(effectScene)
+          }).catch(() => {});
+        }
       }
-      await wait(Math.max(800, Number(duration) || notificationDurationMs));
+    };
+    try {
+      if (localized?.build) {
+        await criticalLocaleSequencer.run({
+          key:localized.key,
+          deadlineMs:localized.deadlineMs,
+          renderPage:page => renderPage(localized.build(page.locale))
+        });
+        if (localized.deadlineMs == null) {
+          const requestedDuration = Math.max(
+            800,
+            Number(duration) || notificationDurationMs
+          );
+          const remainingDuration = requestedDuration -
+            (Date.now() - presentationStartedAt);
+          if (remainingDuration > 0) await wait(remainingDuration);
+        }
+      } else {
+        renderPage({});
+        await wait(Math.max(800, Number(duration) || notificationDurationMs));
+      }
     } finally {
       evolutionTimers.forEach(timer => window.clearTimeout(timer));
       card.classList.remove('visible');
       card.classList.remove('no-art');
       renderOwner(null);
-      await wait(350);
+      if (opened && !localized?.deadlineMs) await wait(350);
       card.removeAttribute('data-presentation');
       resetEvolutionPanel();
     }
   };
+  const showCriticalCard = (type, data, build, stable = {}) => showCard({
+    ...stable,
+    localized:{
+      key:window.StreamMonstersOverlayRuntime.statSequenceKey(data) ||
+        `${type}:${data?.eventId || data?.correlationId || 'event'}`,
+      deadlineMs:type === 'monster_stat_prompt' || type === 'stat_choice_opened'
+        ? data?.deadlineMs
+        : null,
+      build
+    }
+  });
+  const lifecycleFallbacks = Object.freeze({
+    eggLifecycleGiftOwnedTitle:'Gift egg in inventory',
+    eggLifecycleGiftOwnedCopy:'It belongs to you immediately. No adoption needed.',
+    eggLifecycleFreeReservedTitle:'Free egg reserved for you',
+    eggLifecycleFreeReservedCopy:'Only you can adopt it right now.',
+    eggLifecycleFreePublicTitle:'Free egg released to everyone',
+    eggLifecycleFreePublicCopy:'The first viewer to adopt gets the egg.',
+    eggLifecycleFreeClaimedTitle:'Free egg adopted',
+    eggLifecycleFreeClaimedCopy:'The egg is now safe in the inventory.',
+    eggLifecycleWaitTitle:'The egg is still incubating',
+    eggLifecycleWaitCopy:'{time} remains before it can hatch.',
+    eggLifecycleWaitQueuedCopy:'Queue #{position} · {time} remaining.',
+    eggLifecycleReadyTitle:'Egg ready to hatch',
+    eggLifecycleReadyCopy:'Hatch it now before it expires.',
+    eggLifecycleAutoHatchedTitle:'Auto-hatch complete',
+    eggLifecycleAutoHatchedCopy:'{monster} hatched automatically.',
+    eggLifecycleExpiredTitle:'Egg expired',
+    eggLifecycleExpiredCopy:'This egg can no longer be hatched.'
+  });
+  const showEggLifecycleNotice = (type, data, notice) => showCriticalCard(
+    type,
+    {
+      ...data,
+      eventId:notice.sideEffectKey || data?.eventId
+    },
+    () => ({
+      kicker:notice.viewer || 'NEXT',
+      title:text(
+        notice.titleKey,
+        lifecycleFallbacks[notice.titleKey] || 'Stream Monsters',
+        notice.params
+      ),
+      subtitle:text(
+        notice.copyKey,
+        lifecycleFallbacks[notice.copyKey] || '',
+        notice.params
+      ),
+      hint:notice.commands.slice(0, 2).join(' · ')
+    }),
+    {
+      imageUrl:itemImageUrl(data?.eggStage || data?.egg_stage || data?.egg),
+      element:notice.element,
+      progress:notice.kind === 'ready' ? 100 : 35,
+      presentation:'egg-offer',
+      duration:notice.durationMs
+    }
+  );
   const showHype = async data => {
     const points = Number(data?.hype?.points) || 0;
     node('hype').style.setProperty('--hype', `${points}%`);
@@ -1669,6 +2095,12 @@
     rendererQuality = ['auto', 'high', 'medium', 'low'].includes(data?.config?.rendererQuality)
       ? data.config.rendererQuality
       : 'auto';
+    if (typeof effectsRenderer.setQuality === 'function') {
+      effectsRenderer.setQuality(rendererQuality);
+    }
+    if (typeof battleEffectsRenderer.setQuality === 'function') {
+      battleEffectsRenderer.setQuality(rendererQuality);
+    }
     node('hype').style.setProperty('--hype', `${points}%`);
     node('hype-value').textContent = data?.hype?.charged_eggs
       ? text('charged', 'CHARGED!')
@@ -1748,10 +2180,16 @@
   };
   const present = async ({ type, data }) => {
     if (type === 'state_snapshot') {
+      overlayLanguage = await overlayLocaleResolver.configure(
+        data?.config?.overlayLanguage
+      );
+      applyPresentationLocale(overlayLanguage.primaryLocale);
+      const coldBaseline = battleReplaySynchronizer?.state?.().initialized !== true;
+      if (coldBaseline) applySnapshot(data);
       try {
         await battleReplaySynchronizer?.sync(data?.battle || { matches:[] });
       } catch (_) {}
-      applySnapshot(data);
+      if (!coldBaseline) applySnapshot(data);
       if (Array.isArray(data?.recentEvents)) {
         const recentEvents = data.recentEvents;
         if (publicEventCursor !== null) {
@@ -1778,46 +2216,76 @@
       }
       return;
     }
+    if (!window.StreamMonstersOverlayRuntime.isCritical(type)) {
+      applyPresentationLocale(
+        window.StreamMonstersOverlayRuntime.localeForStableEvent(
+          data?.eventId || data?.correlationId,
+          overlayLanguage
+        )
+      );
+    }
     if ([
       'egg_landed',
       'free_egg_reserved',
       'free_egg_public',
       'free_egg_claimed',
+      'egg_ready',
+      'egg_stage_updated',
+      'egg_boosted',
       'egg_stage_removed'
     ].includes(type)) {
       eggStageView.applyEvent(type, data);
+      const projectedEgg = data?.eggStage || data?.egg_stage || data?.egg;
       const adoptionNotice = window.StreamMonstersEggStageView
-        ?.buildAdoptionNotice(type, data);
+        .buildAdoptionNotice(type, data);
+      const lifecycleType = type === 'egg_stage_removed' &&
+        projectedEgg?.state === 'expired'
+        ? 'egg_expired'
+        : type;
+      const lifecycleNotice = window.StreamMonstersEggStageView
+        ?.buildLifecycleNotice?.(lifecycleType, data, {
+          nowMs:Date.now(),
+          commands:{
+            adopt:commandReference('adopt'),
+            eggs:commandReference('eggs'),
+            hatch:commandReference('hatch'),
+            monsters:commandReference('monster')
+          }
+        });
+      if (lifecycleNotice) {
+        return showEggLifecycleNotice(type, data, lifecycleNotice);
+      }
       if (adoptionNotice?.kind === 'reserved') {
-        const title = text('tutorialHintFreeOfferTitle', 'Gratis-Ei reserviert');
-        const body = text(
-          'tutorialHintFreeOfferBody',
-          'Hole dein reserviertes Ei mit {command} ab, bevor es freigegeben wird.',
-          { command:commandReference('adopt') }
-        );
-        return showToast(
-          `${adoptionNotice.viewer}: ${title} · ${body}`,
-          adoptionNotice.durationMs
-        );
-      }
-      if (adoptionNotice?.kind === 'public') {
-        const title = text('tutorialHintFreeReleaseTitle', 'Gratis-Ei freigegeben');
-        const body = text(
-          'tutorialHintFreeReleaseBody',
-          'Das Ei ist jetzt öffentlich. Wer zuerst {command} schreibt, bekommt es.',
-          { command:commandReference('adopt') }
-        );
-        return showToast(`${title} · ${body}`, adoptionNotice.durationMs);
-      }
-      if (type === 'egg_landed') {
-        return effectsRenderer.play('spawn', {
-          element:data?.eggStage?.element,
-          vfxKey:`egg-shelf:${data?.eggStage?.visualId || 'arrival'}`,
-          origin:{ x:.5, y:.7 },
-          scale:.8
+        return showCriticalCard(type, data, () => ({
+          kicker:adoptionNotice.viewer || 'NEXT',
+          title:text('tutorialHintFreeOfferTitle', 'Gratis-Ei reserviert'),
+          subtitle:text(
+            'tutorialHintFreeOfferBody',
+            'Hole dein reserviertes Ei mit {command} ab, bevor es freigegeben wird.',
+            { command:commandReference('adopt') }
+          ),
+          hint:commandReference('adopt')
+        }), {
+          presentation:'egg-offer',
+          duration:Math.max(12_000, Number(adoptionNotice.durationMs) || 0)
         });
       }
-      return;
+      if (adoptionNotice?.kind === 'public') {
+        return showCriticalCard(type, data, () => ({
+          kicker:'NEXT',
+          title:text('tutorialHintFreeReleaseTitle', 'Gratis-Ei freigegeben'),
+          subtitle:text(
+            'tutorialHintFreeReleaseBody',
+            'Das Ei ist jetzt öffentlich. Wer zuerst {command} schreibt, bekommt es.',
+            { command:commandReference('adopt') }
+          ),
+          hint:commandReference('adopt')
+        }), {
+          presentation:'egg-offer',
+          duration:Math.max(12_000, Number(adoptionNotice.durationMs) || 0)
+        });
+      }
+      if (!['egg_ready', 'egg_boosted'].includes(type)) return;
     }
     const hour = type === 'stream_started' || type === 'elemental_hour'
       ? window.StreamMonstersArenaDirector.buildElementalHourEventPresentation(type, data)
@@ -1845,22 +2313,27 @@
       '{element} Hour ist aktiv',
       { element: elementName(data?.event?.element || data?.element) }
     ));
-    if (type === 'egg_spawned') return presentArcadeScene(type, data, showCard({
-      kicker: text('eggKicker', '{element} · {variant}', {
-        element: elementName(data?.egg?.element),
-        variant: variantName(data?.egg?.variant)
-      }),
-      title: text('newEgg', 'Ein neues Ei!'),
-      subtitle: text('eggSpawned', '{viewer} hat einen Brutplatz gefüllt.', {
-        viewer: publicDisplayName(data)
-      }),
+    if (type === 'egg_spawned') return presentArcadeScene(
+      type,
+      data,
+      showCriticalCard(type, data, () => ({
+        kicker:text('eggKicker', '{element} · {variant}', {
+          element:elementName(data?.egg?.element),
+          variant:variantName(data?.egg?.variant)
+        }),
+        title:text('newEgg', 'Ein neues Ei!'),
+        subtitle:text('eggSpawned', '{viewer} hat einen Brutplatz gefüllt.', {
+          viewer:publicDisplayName(data)
+        }),
+        hint:safeHint(data?.hint, commandHint('eggsTimer', '{eggs} shows the timer'))
+      }), {
       imageUrl:itemImageUrl(data?.egg),
       element:data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: safeHint(data?.hint, commandHint('eggsTimer', '{eggs} shows the timer')),
       progress:4,
       duration:5_200
-    }));
+      })
+    );
     if (type === 'egg_boosted') return showCard({
       kicker: text('speedBoost', 'Tempo-Boost'),
       title: text('eggGlows', 'Das Ei leuchtet!'),
@@ -1881,24 +2354,25 @@
       title: text('hypeMilestoneTitle', '{points}% Stream-Hype', {
         points: milestone
       }),
-      subtitle: text('hypeMilestoneCopy', 'League World Hybrid ist aufgeladen.'),
+      subtitle: text('hypeMilestoneCopy', 'Portrait Arcade Rally ist aufgeladen.'),
       progress: milestone,
       charged: true,
       cue: 'ready'
       });
     }
-    if (type === 'egg_ready') return showCard({
-      kicker: text('ready', 'Bereit!'),
-      title: text('eggReadyTitle', '{element}-Ei kann schlüpfen', {
-        element: elementName(data?.egg?.element)
+    if (type === 'egg_ready') return showCriticalCard(type, data, () => ({
+      kicker:text('ready', 'Bereit!'),
+      title:text('eggReadyTitle', '{element}-Ei kann schlüpfen', {
+        element:elementName(data?.egg?.element)
       }),
-      subtitle: text('hatchMoment', '{viewer}, dein Moment gehört dir.', {
-        viewer: publicDisplayName(data)
+      subtitle:text('hatchMoment', '{viewer}, dein Moment gehört dir.', {
+        viewer:publicDisplayName(data)
       }),
+      hint:safeHint(data?.hint, commandHint('hatchNow', 'Write {hatch} [slot] now'))
+    }), {
       imageUrl:itemImageUrl(data?.egg),
       progress:100,
       charged:data?.egg?.variant === 'charged',
-      hint: safeHint(data?.hint, commandHint('hatchNow', 'Write {hatch} [slot] now')),
       cue:'ready',
       duration:8_000
     });
@@ -1909,53 +2383,104 @@
       }),
       2_800
     ));
-    if (type === 'egg_hatched') return presentArcadeScene(type, data, showCard({
-      kicker: text('monsterKicker', '{element} · {personality}', {
-        element: elementName(data?.monster?.element || data?.egg?.element),
-        personality: personalityName(data?.monster?.personality)
-      }),
-      title: text('hatchedTitle', '{name} ist da!', { name: itemName(data?.monster) }),
-      subtitle: text('hatchedCopy', '28 faire Startpunkte · gehört {viewer} dauerhaft.', {
-        viewer: publicDisplayName(data)
-      }),
-      imageUrl:itemImageUrl(data?.monster) || itemImageUrl(data?.egg),
-      element:data?.monster?.element || data?.egg?.element,
-      charged:data?.egg?.variant === 'charged',
-      hint: commandHint('monsterCardHint', '{monster} [slot] shows the card'),
-      progress:100,
-      presentation:'hatch',
-      owner:data?.owner,
-      duration:7_000
-    }));
-    if (type === 'monster_discovered') return presentArcadeScene(type, data, showCard({
-      kicker:text('monsterDiscoveredKicker', 'NEU IM MONSTERDEX'),
-      title:text('monsterDiscoveredTitle', '{name} entdeckt!', {
-        name:itemName(data?.monster)
-      }),
-      subtitle:text('monsterDiscoveredCopy', '{viewer} hat erstmals dieses Template gefunden.', {
-        viewer:publicDisplayName(data)
-      }),
+    if (type === 'egg_hatched') {
+      const hatchNotice = window.StreamMonstersEggStageView
+        ?.buildHatchRevealNotice?.(data, {
+          commands:{ monsters:commandReference('monster') }
+        });
+      const autoHatchNotice = hatchNotice?.automatic ? hatchNotice : null;
+      return presentArcadeScene(
+        type,
+        data,
+        showCriticalCard(type, data, () => ({
+          kicker:autoHatchNotice
+            ? text(
+              autoHatchNotice.titleKey,
+              lifecycleFallbacks[autoHatchNotice.titleKey],
+              autoHatchNotice.params
+            )
+            : text('monsterKicker', '{element} · {personality}', {
+              element:elementName(data?.monster?.element || data?.egg?.element),
+              personality:personalityName(data?.monster?.personality)
+            }),
+          title:text('hatchedTitle', '{name} ist da!', {
+            name:itemName(data?.monster)
+          }),
+          subtitle:autoHatchNotice
+            ? text(
+              autoHatchNotice.copyKey,
+              lifecycleFallbacks[autoHatchNotice.copyKey],
+              autoHatchNotice.params
+            )
+            : text(
+              'hatchedCopy',
+              '28 faire Startpunkte · gehört {viewer} dauerhaft.',
+              { viewer:publicDisplayName(data) }
+            ),
+          hint:autoHatchNotice
+            ? autoHatchNotice.commands.join(' · ')
+            : commandHint('monsterCardHint', '{monster} [slot] shows the card')
+        }), {
+          imageUrl:itemImageUrl(data?.monster) || itemImageUrl(data?.egg),
+          element:data?.monster?.element || data?.egg?.element,
+          charged:data?.egg?.variant === 'charged',
+          progress:100,
+          presentation:'hatch',
+          owner:data?.owner,
+          duration:12_000
+        })
+      );
+    }
+    if (type === 'monster_discovered') return presentArcadeScene(
+      type,
+      data,
+      showCriticalCard(type, data, () => ({
+        kicker:text('monsterDiscoveredKicker', 'NEU IM MONSTERDEX'),
+        title:text('monsterDiscoveredTitle', '{name} entdeckt!', {
+          name:itemName(data?.monster)
+        }),
+        subtitle:text(
+          'monsterDiscoveredCopy',
+          '{viewer} hat erstmals dieses Template gefunden.',
+          { viewer:publicDisplayName(data) }
+        ),
+        hint:commandHint('monsterCardHint', '{monster} [slot] shows the card')
+      }), {
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
       charged:true,
-      hint:commandHint('monsterCardHint', '{monster} [slot] shows the card'),
       progress:100,
       presentation:'hatch',
       duration:8_000
-    }));
-    if (type === 'battle_match_found') return arenaView.applyMatch({
-      matchId:data?.matchId,
-      state:'roster',
-      rosterDeadlineMs:data?.deadlineMs,
-      fighters:Array.isArray(data?.fighters) ? data.fighters : []
-    });
-    if (type === 'battle_choice_opened') return arenaView.openChoice(data);
-    if (type === 'battle_choice_locked') return playArcadeEvent(type, data);
-    if (type === 'battle_choices_revealed') return playArcadeEvent(type, data);
+      })
+    );
+    if (type === 'battle_match_found') {
+      startBattleLocaleSequence(data);
+      return arenaView.applyMatch({
+        matchId:data?.matchId,
+        state:'roster',
+        rosterDeadlineMs:data?.deadlineMs,
+        fighters:Array.isArray(data?.fighters) ? data.fighters : []
+      });
+    }
+    if (type === 'battle_choice_opened') {
+      startBattleLocaleSequence(data);
+      return arenaView.openChoice(data);
+    }
+    if (type === 'battle_choice_locked') {
+      return data?.snapshotRestore
+        ? arenaView.lockChoice?.(data)
+        : playArcadeEvent(type, data);
+    }
+    if (type === 'battle_choices_revealed') {
+      return data?.snapshotRestore
+        ? arenaView.revealChoices?.(data)
+        : playArcadeEvent(type, data);
+    }
     if (type === 'tutorial_hint') {
       if (data?.kind === 'adopt') return;
       return showCard({
-      kicker:'Stream Monsters',
+      kicker:safeHint(data?.label, 'NEXT'),
       title:safeHint(window.StreamMonstersOverlayRuntime.localizedPayloadField(
         data,
         'title',
@@ -1967,7 +2492,7 @@
         'body',
         (key, params) => text(key, safeHint(data?.body), params)
       )),
-      hint:safeHint(data?.command),
+      hint:safeHint(Array.isArray(data?.commands) ? data.commands.slice(0, 2).join(' · ') : data?.command),
       duration:6_000
       });
     }
@@ -1985,7 +2510,7 @@
         }
       );
       playCue('arena.special', data?.eventId || `${data?.battleId}:charged:${data?.monsterId}`);
-      return effectsRenderer.play('special', {
+      return battleEffectsRenderer.play('special', {
         element:data?.element || monster?.element,
         vfxKey:data?.skill?.vfxKey || monster?.skills?.special?.vfxKey,
         origin:{ x:.5, y:.44 },
@@ -1993,6 +2518,7 @@
       });
     }
     if (type === 'battle_skill_used') {
+      prepareBattleActionLocale(data);
       if (data?.action && data?.matchId) {
         return playArcadeEvent(type, data);
       }
@@ -2027,14 +2553,15 @@
         data?.monster?.evolutionStage ??
         data?.monster?.evolution_stage
       ) || 2;
-      return presentArcadeScene(type, data, showCard({
-      kicker: text('evolution', 'Evolution'),
-      title: text(
+      return presentArcadeScene(type, data, showCriticalCard(type, data, () => ({
+      kicker:text('evolution', 'Evolution'),
+      title:text(
         'evolutionStageTitle',
         '{monster} reaches Stage {stage}',
         { monster:itemName(data?.monster), stage }
       ),
-      subtitle: text('evolutionStatsTitle', 'Combat stats increased'),
+      subtitle:text('evolutionStatsTitle', 'Combat stats increased')
+      }), {
       imageUrl:itemImageUrl(data?.monster),
       element:data?.monster?.element,
       charged:true,
@@ -2066,6 +2593,9 @@
       playCue('arena.portal', data?.eventId || `${data?.battleId}:portal`);
       return;
     }
+    if (type === 'battle_arena_collapse') {
+      return playArcadeEvent(type, data);
+    }
     if (type === 'battle_round') {
       const round = Number(data?.round?.number) || 1;
       const battleId = data?.battleId || 'legacy-battle';
@@ -2091,12 +2621,15 @@
       });
     }
     if (type === 'battle_completed') {
-      const winnerId = itemMonsterId(data?.winner) ||
-        data?.battle?.winnerMonsterId || data?.battle?.winner_monster_id;
-      const winnerSlot = Number(data?.winnerSlot) || (winnerId === battleIds[1] ? 2 : 1);
+      clearBattleLocaleSequence(data?.matchId || data?.battleId);
+      const winnerSlot = window.StreamMonstersOverlayRuntime
+        .resolveBattleWinnerSlot(data, battleIds);
       return playArcadeEvent(type, { ...data, winnerSlot });
     }
-    if (type === 'battle_cancelled') return arenaView.cancel(data);
+    if (type === 'battle_cancelled') {
+      clearBattleLocaleSequence(data?.matchId || data?.battleId);
+      return arenaView.cancel(data);
+    }
     if (type === 'monster_xp_awarded') return presentArcadeScene(type, data, showCard({
       kicker:text('monsterXpKicker', 'Monster-XP'),
       title:text('monsterXpTitle', '{name} erhält +{amount} XP', {
@@ -2128,35 +2661,73 @@
       charged:true
     }));
     if (type === 'stat_choice_opened' || type === 'monster_stat_prompt') {
+      if (data?.snapshotRestore) return arenaView.showStatPrompt?.(data);
       if (!acceptStatPrompt(type, data)) return;
-      return showCard({
+      const statContext = {
+        player:publicDisplayName(data),
+        monster:itemName(data?.monster),
+        level:Number(data?.level ?? data?.monster?.level) || 1,
+        remaining:Math.max(
+          0,
+          Number(
+            data?.remainingUnspentPoints ??
+            data?.monster?.unspentStatPoints ??
+            data?.monster?.unspent_stat_points
+          ) || 0
+        )
+      };
+      return showCriticalCard(type, data, () => ({
         kicker:text('monsterStatKicker', 'Statpunkt'),
-        title:text('monsterStatTitle', 'Wähle jetzt 1, 2, 3 oder 4'),
+        title:text('monsterStatTitle', '{player}: {monster} · Level {level}', statContext),
         subtitle:text(
           'monsterStatCopy',
-          '1 Vitalität · 2 Stärke · 3 Verteidigung · 4 Agilität'
+          '{remaining} Statpunkte übrig · 1 Vitalität +1 · 2 Stärke +1 · ' +
+            '3 Verteidigung +1 · 4 Agilität +1',
+          statContext
         ),
-        progress:100,
         hint:text('monsterStatHint', 'Nur der berechtigte Viewer kann antworten.')
+      }), {
+        imageUrl:itemImageUrl(data?.monster),
+        element:data?.monster?.element,
+        progress:100
       });
     }
     if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {
       const automaticallyAssigned = type === 'monster_stat_auto_assigned' ||
         String(data?.source || '').toLowerCase() === 'timeout';
+      const statContext = {
+        player:publicDisplayName(data),
+        monster:itemName(data?.monster),
+        stat:statName(data?.stat),
+        level:Number(data?.level ?? data?.monster?.level) || 1,
+        remaining:Math.max(
+          0,
+          Number(
+            data?.remainingUnspentPoints ??
+            data?.monster?.unspentStatPoints ??
+            data?.monster?.unspent_stat_points
+          ) || 0
+        )
+      };
       return showCard({
         kicker:text(
           automaticallyAssigned ? 'monsterStatAutoKicker' : 'monsterStatChosenKicker',
           automaticallyAssigned ? 'Automatische Statwahl' : 'Stat gewählt'
         ),
-        title:text('monsterStatChosenTitle', '{stat} +1', {
-          stat:statName(data?.stat)
-        }),
+        title:text(
+          'monsterStatChosenTitle',
+          '{player}: {monster} · {stat} +1',
+          statContext
+        ),
         subtitle:text(
           automaticallyAssigned ? 'monsterStatAutoCopy' : 'monsterStatChosenCopy',
           automaticallyAssigned
-            ? 'Das Zeitfenster endete. Der Level-up-Punkt wurde fair und deterministisch verteilt.'
-            : 'Der Level-up-Punkt wurde dauerhaft verteilt.'
+            ? 'Automatisch verteilt · Level {level} · noch {remaining} Statpunkte übrig.'
+            : 'Level {level} · noch {remaining} Statpunkte übrig.',
+          statContext
         ),
+        imageUrl:itemImageUrl(data?.monster),
+        element:data?.monster?.element,
         progress:100,
         charged:true,
         cue:'progress.level'
@@ -2308,6 +2879,11 @@
     scheduleQueueWake();
   };
   const enqueue = (type, data) => {
+    if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {
+      criticalLocaleSequencer.cancel(
+        window.StreamMonstersOverlayRuntime.statSequenceKey(data)
+      );
+    }
     const eventId = value(data?.eventId, '').trim();
     if (eventId) {
       seenPublicEventIds.add(eventId);
@@ -2323,7 +2899,7 @@
       const payload = window.StreamMonstersOverlayRuntime.overlayHeartbeatPayload({
         layout:layoutController.current()?.layout,
         quality:rendererQuality,
-        renderer:effectsRenderer.status?.() || {},
+        renderer:battleEffectsRenderer.status?.() || effectsRenderer.status?.() || {},
         audio:audioEngine.status?.() || {}
       });
       await fetch('/api/streammonsters/overlay/heartbeat', {
@@ -2352,6 +2928,8 @@
     }
     arenaView.destroy?.();
     eggStageView.destroy?.();
+    battleEffectsRenderer.destroy?.();
+    effectsRenderer.destroy?.();
   };
   window.addEventListener('pagehide', stopOverlayLifecycle, { once:true });
   window.addEventListener('beforeunload', stopOverlayLifecycle, { once:true });
@@ -2388,6 +2966,7 @@
     'streammonsters:hype_milestone':'hype_milestone',
     'streammonsters:elemental_hour':'elemental_hour',
     'streammonsters:egg_ready':'egg_ready',
+    'streammonsters:egg_stage_updated':'egg_stage_updated',
     'streammonsters:hatch_started':'hatch_started',
     'streammonsters:egg_hatched':'egg_hatched',
     'streammonsters:monster_discovered':'monster_discovered',
@@ -2403,6 +2982,7 @@
     'streammonsters:battle_skill_used':'battle_skill_used',
     'streammonsters:battle_action':'battle_skill_used',
     'streammonsters:battle_knockout':'battle_skill_used',
+    'streammonsters:battle_arena_collapse':'battle_arena_collapse',
     'streammonsters:battle_special_charged':'battle_special_charged',
     'streammonsters:battle_round':'battle_round',
     'streammonsters:battle_completed':'battle_completed',

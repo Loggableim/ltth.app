@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Stream Monsters VFX acceptance</title>
+</head>
+<body>
+<script>
+'use strict';
+
+const ROOT = '/app/plugins/streamalchemy/';
+let renderer = null;
+let frameCallback = null;
+let frameClock = 0;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+function setText(selector, value) {
+  const node = document.querySelector(selector);
+  if (node) node.textContent = value;
+}
+
+async function bootstrap() {
+  const source = await fetch(`${ROOT}streammonsters-overlay.html`).then(response => response.text());
+  const parsed = new DOMParser().parseFromString(source, 'text/html');
+  for (const style of parsed.querySelectorAll('style')) {
+    document.head.appendChild(document.importNode(style, true));
+  }
+  document.body.appendChild(document.importNode(
+    parsed.querySelector('#streammonsters-overlay'),
+    true
+  ));
+  await loadScript(`${ROOT}streammonsters-effects-renderer.js`);
+
+  const overlay = document.querySelector('#streammonsters-overlay');
+  const battle = document.querySelector('#battle');
+  overlay.dataset.battleActive = 'true';
+  battle.classList.add('visible');
+  battle.dataset.phase = 'action';
+  setText('#arena-round', 'ROUND 7');
+  setText('#arena-countdown', '06');
+  setText('#arena-name-1', 'Ashfang Prime');
+  setText('#arena-name-2', 'Selene Eclipse');
+  setText('#arena-owner-1', '@CaptainVeryLongViewerName');
+  setText('#arena-owner-2', '@MoonlightChampionViewer');
+  setText('#arena-action-player', '@CaptainVeryLongViewerNameThatMustNotPushTheSkillAway');
+  setText('#arena-action-key', 'C');
+  setText('#arena-action-skill', 'Kristalliner Mondfinsternis-Schlag');
+  setText(
+    '#arena-action-copy',
+    'Verursacht 12 Schaden, durchdringt 4 Schild und heilt den Angreifer um 6.'
+  );
+  setText(
+    '#arena-action-metrics',
+    'Schaden 12 · Schild absorbiert 4 · Heilung 6 · Mondbrand'
+  );
+  document.querySelector('#arena-action-card')?.classList.add('visible');
+
+  const canvas = document.querySelector('#battle-effects-canvas');
+  renderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
+    canvas,
+    navigator: {},
+    quality: 'high',
+    matchMedia: () => ({ matches: false }),
+    requestAnimationFrame: callback => {
+      frameCallback = callback;
+      return 1;
+    },
+    cancelAnimationFrame: () => {
+      frameCallback = null;
+    },
+    now: () => frameClock,
+    setTimeout: () => 1,
+    clearTimeout: () => {}
+  });
+  await renderer.init();
+  window.harnessReady = true;
+}
+
+async function showCanvasScene(scene, payload, progress) {
+  renderer.play(scene, payload);
+  await Promise.resolve();
+  await Promise.resolve();
+  frameClock = window.StreamMonstersEffectsRenderer.SCENE_DURATIONS[scene] * progress;
+  const callback = frameCallback;
+  frameCallback = null;
+  if (callback) callback(frameClock);
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  return layoutMetrics();
+}
+
+async function showCssScene(scene, payload) {
+  renderer.destroy();
+  const canvas = document.querySelector('#battle-effects-canvas');
+  const colors = {
+    Ember: ['#ff5a36', '#ffb347', '#fff2b0'],
+    Tide: ['#2bbcff', '#70f5ff', '#dffbff'],
+    Lunar: ['#b98cff', '#6e5bff', '#f4e7ff']
+  }[payload.element];
+  canvas.classList.add('effects-fallback');
+  canvas.dataset.renderer = 'fallback';
+  canvas.dataset.rendererBackend = 'css';
+  canvas.dataset.effectScene = scene;
+  canvas.style.setProperty('--sm-effect-color', colors[0]);
+  canvas.style.setProperty('--sm-effect-color-secondary', colors[1]);
+  canvas.style.setProperty('--sm-effect-color-tertiary', colors[2]);
+  canvas.style.setProperty('--sm-effect-origin-x', `${payload.origin.x * 100}%`);
+  canvas.style.setProperty('--sm-effect-origin-y', `${payload.origin.y * 100}%`);
+  canvas.style.setProperty('--sm-effect-target-x', `${payload.targetOrigin.x * 100}%`);
+  canvas.style.setProperty('--sm-effect-target-y', `${payload.targetOrigin.y * 100}%`);
+  canvas.style.setProperty('--sm-effect-angle', payload.origin.x < payload.targetOrigin.x ? '90deg' : '270deg');
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  return layoutMetrics();
+}
+
+function layoutMetrics() {
+  const canvas = document.querySelector('#battle-effects-canvas');
+  const action = document.querySelector('#arena-action-card');
+  const fighterPanels = [...document.querySelectorAll('.arena-fighter')];
+  const canvasRect = canvas.getBoundingClientRect();
+  const actionRect = action.getBoundingClientRect();
+  const actionPlayer = document.querySelector('#arena-action-player');
+  const actionCopy = document.querySelector('#arena-action-copy');
+  const actionMetrics = document.querySelector('#arena-action-metrics');
+  const fighterRects = fighterPanels.map(panel => panel.getBoundingClientRect());
+  const intersects = (left, right) => !(
+    left.right <= right.left ||
+    right.right <= left.left ||
+    left.bottom <= right.top ||
+    right.bottom <= left.top
+  );
+  return {
+    renderer: canvas.dataset.rendererBackend,
+    effectScene: canvas.dataset.effectScene,
+    classes: canvas.className,
+    computedBackground: getComputedStyle(canvas).backgroundImage,
+    computedOpacity: getComputedStyle(canvas).opacity,
+    variables: {
+      color: getComputedStyle(canvas).getPropertyValue('--sm-effect-color'),
+      secondary: getComputedStyle(canvas).getPropertyValue('--sm-effect-color-secondary'),
+      tertiary: getComputedStyle(canvas).getPropertyValue('--sm-effect-color-tertiary'),
+      angle: getComputedStyle(canvas).getPropertyValue('--sm-effect-angle'),
+      originX: getComputedStyle(canvas).getPropertyValue('--sm-effect-origin-x'),
+      targetX: getComputedStyle(canvas).getPropertyValue('--sm-effect-target-x')
+    },
+    canvasRect: {
+      left: canvasRect.left,
+      top: canvasRect.top,
+      right: canvasRect.right,
+      bottom: canvasRect.bottom,
+      width: canvasRect.width,
+      height: canvasRect.height
+    },
+    gameplayBoundary: innerHeight * 0.74,
+    actionHudOverlap: fighterPanels.some(panel => (
+      intersects(actionRect, panel.getBoundingClientRect())
+    )),
+    actionHudGap: Math.min(...fighterRects.map(rect => rect.top)) - actionRect.bottom,
+    actionText: {
+      playerConstrained: actionPlayer.scrollWidth > actionPlayer.clientWidth,
+      copyUnclipped: actionCopy.scrollHeight <= actionCopy.clientHeight + 1,
+      metricsUnclipped: actionMetrics.scrollHeight <= actionMetrics.clientHeight + 1,
+      copyHeight: [actionCopy.clientHeight, actionCopy.scrollHeight],
+      metricsHeight: [actionMetrics.clientHeight, actionMetrics.scrollHeight],
+      copy: actionCopy.textContent,
+      metrics: actionMetrics.textContent
+    },
+    z: {
+      canvas: Number(getComputedStyle(canvas).zIndex),
+      action: Number(getComputedStyle(action).zIndex),
+      fighters: fighterPanels.map(panel => Number(getComputedStyle(panel).zIndex))
+    }
+  };
+}
+
+window.showCanvasScene = showCanvasScene;
+window.showCssScene = showCssScene;
+bootstrap().catch(error => {
+  window.harnessError = String(error?.stack || error);
+});
+</script>
+</body>
+</html>

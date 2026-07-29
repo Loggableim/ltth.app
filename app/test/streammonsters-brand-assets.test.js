@@ -2,16 +2,26 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.join(__dirname, '..', '..');
-const creatorScreenshot = '/screenshots/features/stream-monsters-creator-1.5.png';
-const arenaScreenshot = '/screenshots/features/stream-monsters-arena-portrait-1.5.png';
+const crypto = require('crypto');
+
+const creatorScreenshot = '/screenshots/features/stream-monsters-creator-1.11.png';
+const arenaScreenshot = '/screenshots/features/stream-monsters-arena-portrait-1.11.png';
+const historicalScreenshots = {
+  'stream-monsters-creator-1.5.png': 'bd02ef5412b2b79b7f6bd1f01507838d91850d0cfaca831c75c3011d437c4c36',
+  'stream-monsters-arena-portrait-1.5.png': '450707f0235cdf8661e6165f788669f172407a9145d1c723416eb09221bf1ade'
+};
+const {
+  validateArenaCaptureReceipt
+} = require('../../scripts/capture-streammonsters-v111');
 
 function readJson(...parts) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, ...parts), 'utf8'));
 }
 
-describe('Stream Monsters 1.10 public branding', () => {
-  it('publishes the stable plugin ID with the 1.10 package and both broadcast screenshots', () => {
+describe('Stream Monsters 1.11 public branding', () => {
+  it('publishes the stable plugin ID with the 1.11 package and both broadcast screenshots', () => {
     const featurePage = fs.readFileSync(path.join(repoRoot, 'features', 'plugin-stream-alchemy.html'), 'utf8');
+    const tutorialPage = fs.readFileSync(path.join(repoRoot, 'streammonsters', 'index.html'), 'utf8');
     const pluginPage = fs.readFileSync(path.join(repoRoot, 'plugins.html'), 'utf8');
     const storeRegistry = readJson('plugin-store.json');
     const pluginManifest = readJson('app', 'plugins', 'streamalchemy', 'plugin.json');
@@ -19,9 +29,9 @@ describe('Stream Monsters 1.10 public branding', () => {
 
     expect(streamMonsters).toMatchObject({
       id: 'streamalchemy',
-      version: '1.10.0',
+      version: '1.11.0',
       channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
       screenshots: [creatorScreenshot, arenaScreenshot]
     });
     expect(streamMonsters.sha256).toMatch(/^[a-f0-9]{64}$/);
@@ -33,7 +43,7 @@ describe('Stream Monsters 1.10 public branding', () => {
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const description = streamMonsters.description[locale];
       expect(description).toContain('72');
-      expect(description).toContain('A/B/C');
+      expect(description).toMatch(/Rules v8/i);
     }
 
     expect(featurePage).toContain('/assets/plugin-logos/stream-monsters-logo.png');
@@ -41,6 +51,9 @@ describe('Stream Monsters 1.10 public branding', () => {
     expect(featurePage).toContain(`https://ltth.app${creatorScreenshot}`);
     expect(featurePage).toContain(`src="${creatorScreenshot}"`);
     expect(featurePage).toContain(`src="${arenaScreenshot}"`);
+    expect(featurePage).toContain('Creator Live Center 1.11');
+    expect(featurePage).toContain('Portrait A/B/C Arena 1.11');
+    expect(tutorialPage).toContain(`https://ltth.app${arenaScreenshot}`);
     expect(pluginPage).toContain("'streamalchemy': '/assets/plugin-logos/stream-monsters-icon.png'");
   });
 
@@ -58,9 +71,9 @@ describe('Stream Monsters 1.10 public branding', () => {
       'manifest.json'
     );
 
-    expect(docsPage).toContain('Stream Monsters 1.10');
+    expect(docsPage).toContain('Stream Monsters 1.11');
     expect(docsPage).toMatch(/Gift-Eier|Geschenk-Eier/);
-    expect(docsPage).toMatch(/optionale wiederkehrende Gratis-Eier/);
+    expect(docsPage).toMatch(/optionale(?: wiederkehrende)? Gratis-Eier/);
     expect(docsPage).not.toMatch(/Gifts-only-Eier|Gift-only Eier|nur (?:durch )?Gifts/i);
     expect(docsPage).toContain('72 gebündelte Formen');
     expect(docsPage).toContain('A/B/C-Arena');
@@ -76,7 +89,7 @@ describe('Stream Monsters 1.10 public branding', () => {
     });
     for (const locale of ['de', 'en', 'es', 'fr']) {
       expect(streamMonstersDocs.translations[locale].summary).toContain('72');
-      expect(streamMonstersDocs.translations[locale].summary).toContain('A/B/C');
+      expect(streamMonstersDocs.translations[locale].summary).toMatch(/Rules v8/i);
     }
 
     expect(furryManifest).toMatchObject({
@@ -117,11 +130,11 @@ describe('Stream Monsters 1.10 public branding', () => {
     const captureSpec = buildSpec(repoRoot);
     const captureManifest = readJson('screenshots', 'product-capture-manifest.json');
     const expected = {
-      'stream-monsters-creator-1.5': {
+      'stream-monsters-creator-1.11': {
         route: '/streammonsters/ui',
         viewport: { width: 1920, height: 1080, deviceScaleFactor: 1 }
       },
-      'stream-monsters-arena-portrait-1.5': {
+      'stream-monsters-arena-portrait-1.11': {
         route: '/streammonsters/overlay?layout=portrait',
         viewport: { width: 1080, height: 1920, deviceScaleFactor: 1 }
       }
@@ -138,6 +151,103 @@ describe('Stream Monsters 1.10 public branding', () => {
     ));
     expect(streamMonsterOutputs).toHaveLength(8);
     expect(new Set(streamMonsterOutputs.map((output) => output.locale))).toEqual(new Set(['de', 'en', 'es', 'fr']));
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const arenaOutput = streamMonsterOutputs.find(output => (
+        output.locale === locale &&
+        output.id === 'stream-monsters-arena-portrait-1.11'
+      ));
+      expect(arenaOutput.state).toEqual(expect.objectContaining({
+        lang: locale,
+        renderedLocale: locale,
+        localePhase: 'stable',
+        overlayLanguage: {
+          primaryLocale: locale,
+          locales: [locale],
+          secondsPerLocale: 5
+        },
+        readability: expect.objectContaining({
+          roundVisible: true,
+          commandPromptVisible: true,
+          fighterCount: 2,
+          statBlockCount: 2,
+          skillCardCount: 6
+        })
+      }));
+    }
+  });
+
+  it('rejects arena receipts that claim a locale without configuring and visibly rendering it', () => {
+    const readable = {
+      roundLabel: 'ROUND 1',
+      roundVisible: true,
+      commandPrompt: 'A Attack · B Defense · C Special',
+      commandPromptVisible: true,
+      fighterNames: ['Pulse', 'Ashfang'],
+      statBlocks: [
+        { visible: true, hp: 'HP 50 / 50', shield: 'SHIELD', special: 'SPECIAL' },
+        { visible: true, hp: 'HP 48 / 52', shield: 'SHIELD', special: 'SPECIAL' }
+      ],
+      skillCards: [
+        { visible: true, choice: 'A', name: 'Arc Slash', copy: 'Deals damage.' },
+        { visible: true, choice: 'B', name: 'Static Shield', copy: 'Builds a shield.' },
+        { visible: true, choice: 'C', name: 'Thunderbreak', copy: 'Heavy special damage.' },
+        { visible: true, choice: 'A', name: 'Flame Fang', copy: 'Deals damage.' },
+        { visible: true, choice: 'B', name: 'Ember Guard', copy: 'Builds a shield.' },
+        { visible: true, choice: 'C', name: 'Inferno Heart', copy: 'Heavy special damage.' }
+      ]
+    };
+    const base = {
+      requestedLocale: 'fr',
+      overlayLanguage: {
+        primaryLocale: 'fr',
+        locales: ['fr'],
+        secondsPerLocale: 5
+      },
+      renderedLocale: 'fr',
+      localePhase: 'stable',
+      battlePhase: 'choice',
+      readability: readable,
+      activeEffect: true,
+      effectScene: 'special',
+      effectSignature: 'volt:special',
+      effectMotifs: 'chain-lightning-storm,white-flash',
+      renderer: {
+        mode: 'webgpu',
+        backend: 'webgpu',
+        fallbackReason: ''
+      }
+    };
+
+    expect(validateArenaCaptureReceipt(base)).toEqual(expect.objectContaining({
+      requestedLocale: 'fr',
+      renderedLocale: 'fr',
+      localePhase: 'stable'
+    }));
+    expect(() => validateArenaCaptureReceipt({
+      ...base,
+      overlayLanguage: {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      },
+      renderedLocale: 'de'
+    })).toThrow(/locale/i);
+    expect(() => validateArenaCaptureReceipt({
+      ...base,
+      localePhase: 'transition',
+      readability: {
+        ...readable,
+        roundLabel: '',
+        skillCards: readable.skillCards.map(card => ({ ...card, copy: '' }))
+      }
+    })).toThrow(/readable|stable/i);
+  });
+
+  it('preserves the historical 1.5 captures byte-for-byte', () => {
+    for (const [filename, digest] of Object.entries(historicalScreenshots)) {
+      const bytes = fs.readFileSync(path.join(repoRoot, 'screenshots', 'features', filename));
+      expect(crypto.createHash('sha256').update(bytes).digest('hex')).toBe(digest);
+    }
   });
 
   it('keeps Furry canonical and names the global SiliconFlow copy only after Fish Speech', () => {

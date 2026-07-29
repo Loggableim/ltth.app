@@ -9,6 +9,9 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const StreamMonstersViewerActivityTracker = require(
+  './backend/streammonsters/viewer-activity-tracker'
+);
 const { normalizeIngressEventId } = require('./backend/streammonsters/ingress-event-id');
 const TutorialHintDirector = require('./backend/streammonsters/tutorial-hint-director');
 const StreamMonstersPublicEventProjector = require(
@@ -26,12 +29,14 @@ const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 7;
-const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
-const DEFAULT_HATCH_DURATION_MS = 2 * 60 * 1000;
+const STREAM_MONSTERS_RULES_VERSION = 8;
+const DEFAULT_HATCH_DURATION_MS = 90_000;
+const DEFAULT_GAMEPLAY_PACE = 'arcade-rally';
+const DEFAULT_PORTRAIT_BATTLE_MODE = 'takeover-74';
 const INCUBATION_PRESETS_MS = Object.freeze([
   30_000,
   60_000,
+  90_000,
   120_000,
   300_000,
   600_000,
@@ -58,6 +63,12 @@ const DEFAULT_AUDIO_CHANNELS = Object.freeze({
   egg: Object.freeze({ enabled: true, volume: 0.9 }),
   battle: Object.freeze({ enabled: true, volume: 1 }),
   reward: Object.freeze({ enabled: true, volume: 0.9 })
+});
+const SUPPORTED_OVERLAY_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
+const DEFAULT_OVERLAY_LANGUAGE = Object.freeze({
+  primaryLocale: 'de',
+  locales: Object.freeze(['de', 'en']),
+  secondsPerLocale: 5
 });
 const DEFAULT_COMMAND_ALIASES = Object.freeze({
   eggs: Object.freeze({
@@ -89,7 +100,7 @@ class StreamAlchemyPlugin {
   }
 
   async init() {
-    this.api.log('[STREAM MONSTERS] Initializing League World Hybrid runtime', 'info');
+    this.api.log('[STREAM MONSTERS] Initializing Portrait Arcade Rally runtime', 'info');
     const storedConfig = this.api.getConfig('streamalchemy_config');
     this.config = this.loadConfig(storedConfig);
     this.persistSanitizedConfigIfNeeded(storedConfig);
@@ -137,6 +148,9 @@ class StreamAlchemyPlugin {
       getCommandReference: command => this.getStreamMonstersCommandReference(command),
       config: this.config.streamMonsters
     });
+    this.streamMonstersViewerActivity = new StreamMonstersViewerActivityTracker({
+      activeWindowMs: this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
+    });
     this.streamMonstersFreeEggDrops = new FreeEggDropService({
       store: this.streamMonstersStore,
       engine: this.streamMonstersEngine,
@@ -155,6 +169,10 @@ class StreamAlchemyPlugin {
       getStreamKey: () => this.streamMonstersEngine?.streamKey || null,
       logger,
       seasonDurationDays: this.config.streamMonsters.seasonDurationDays,
+      localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
+      secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale,
+      gameplayPace: this.config.streamMonsters.gameplayPace,
+      portraitBattleMode: this.config.streamMonsters.portraitBattleMode,
       rulesVersion: STREAM_MONSTERS_RULES_VERSION
     });
     this.streamMonstersProgression.setMonsterProgressHandler(({
@@ -270,26 +288,22 @@ class StreamAlchemyPlugin {
     });
     this.streamMonstersReadyTimer = setInterval(() => {
       try {
-        if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
-        this.streamMonstersEngine.markReadyEggs();
+        this.runStreamMonstersReadyTimer();
       } catch (error) {
         this.api.log(`[STREAM MONSTERS] Ready timer failed: ${error.message}`, 'warn');
       }
     }, 1_000);
     this.streamMonstersReadyTimer.unref?.();
 
-    this.api.log('[STREAM MONSTERS] League World Hybrid runtime initialized', 'info');
+    this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime initialized', 'info');
   }
 
   loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
     this.retiredConfigArchive = this.extractRetiredConfig(storedConfig);
     const stored = this.sanitizeConfig(storedConfig);
     const storedStreamMonsters = stored.streamMonsters || {};
-    const rulesVersionMissing = storedStreamMonsters.rulesVersion == null;
-    const hatchDurationMs = rulesVersionMissing &&
-      storedStreamMonsters.hatchDurationMs === LEGACY_HATCH_DURATION_MS
-      ? DEFAULT_HATCH_DURATION_MS
-      : (storedStreamMonsters.hatchDurationMs ?? DEFAULT_HATCH_DURATION_MS);
+    const hatchDurationMs = storedStreamMonsters.hatchDurationMs ??
+      DEFAULT_HATCH_DURATION_MS;
     return {
       enabled: true,
       ...stored,
@@ -298,13 +312,18 @@ class StreamAlchemyPlugin {
         creatorName: '',
         hatchDurationMs: DEFAULT_HATCH_DURATION_MS,
         incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        gameplayPace: DEFAULT_GAMEPLAY_PACE,
+        portraitBattleMode: DEFAULT_PORTRAIT_BATTLE_MODE,
         eggExpiryMs: 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: 28,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        autoHatchActiveViewers: true,
+        autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90,
+        overlayLanguage: this.normalizeOverlayLanguage(),
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
         rendererQuality: 'auto',
@@ -318,6 +337,10 @@ class StreamAlchemyPlugin {
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         hatchDurationMs,
         incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        gameplayPace: this.normalizeGameplayPace(storedStreamMonsters.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(
+          storedStreamMonsters.portraitBattleMode
+        ),
         eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(storedStreamMonsters.eggExpiryMs))
           ? Number(storedStreamMonsters.eggExpiryMs)
           : 86_400_000,
@@ -327,9 +350,16 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
         ),
+        autoHatchActiveViewers: storedStreamMonsters.autoHatchActiveViewers !== false,
+        autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
+          storedStreamMonsters.autoHatchActiveWindowSeconds
+        ),
         tutorialHintsEnabled: storedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           storedStreamMonsters.tutorialHintIntervalSeconds
+        ),
+        overlayLanguage: this.normalizeOverlayLanguage(
+          storedStreamMonsters.overlayLanguage
         ),
         commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
@@ -452,11 +482,70 @@ class StreamAlchemyPlugin {
       : 86_400;
   }
 
+  normalizeGameplayPace(value) {
+    return value === DEFAULT_GAMEPLAY_PACE ? value : DEFAULT_GAMEPLAY_PACE;
+  }
+
+  normalizePortraitBattleMode(value) {
+    if (value === true) return DEFAULT_PORTRAIT_BATTLE_MODE;
+    return value === DEFAULT_PORTRAIT_BATTLE_MODE
+      ? value
+      : DEFAULT_PORTRAIT_BATTLE_MODE;
+  }
+
+  normalizeAutoHatchActiveWindowSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
+      ? Math.round(seconds)
+      : 300;
+  }
+
   normalizeTutorialHintIntervalSeconds(value) {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 300
       ? Math.round(seconds)
       : 90;
+  }
+
+  normalizeOverlayLanguage(input = {}) {
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requestedLocales = Array.isArray(candidate.locales)
+      ? candidate.locales
+      : [];
+    const locales = [...new Set(requestedLocales
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => SUPPORTED_OVERLAY_LOCALES.includes(locale)))]
+      .slice(0, 2);
+    const requestedPrimary = String(candidate.primaryLocale || '')
+      .trim()
+      .toLowerCase();
+    const hasExplicitSelection = Boolean(requestedPrimary || requestedLocales.length);
+    if (!hasExplicitSelection) {
+      return {
+        primaryLocale: DEFAULT_OVERLAY_LANGUAGE.primaryLocale,
+        locales: [...DEFAULT_OVERLAY_LANGUAGE.locales],
+        secondsPerLocale: DEFAULT_OVERLAY_LANGUAGE.secondsPerLocale
+      };
+    }
+    const primaryLocale = SUPPORTED_OVERLAY_LOCALES.includes(requestedPrimary)
+      ? requestedPrimary
+      : (locales[0] || DEFAULT_OVERLAY_LANGUAGE.primaryLocale);
+    const orderedLocales = [
+      primaryLocale,
+      ...locales.filter(locale => locale !== primaryLocale)
+    ].slice(0, 2);
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: orderedLocales.length
+        ? orderedLocales
+        : [...DEFAULT_OVERLAY_LANGUAGE.locales],
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : DEFAULT_OVERLAY_LANGUAGE.secondsPerLocale
+    };
   }
 
   normalizeRendererQuality(value) {
@@ -581,7 +670,17 @@ class StreamAlchemyPlugin {
       audioChannels: mergeNamedObjects(
         currentStreamMonsters.audioChannels,
         streamMonstersUpdates.audioChannels
-      )
+      ),
+      overlayLanguage: {
+        ...(currentStreamMonsters.overlayLanguage &&
+          typeof currentStreamMonsters.overlayLanguage === 'object'
+          ? currentStreamMonsters.overlayLanguage
+          : {}),
+        ...(streamMonstersUpdates.overlayLanguage &&
+          typeof streamMonstersUpdates.overlayLanguage === 'object'
+          ? streamMonstersUpdates.overlayLanguage
+          : {})
+      }
     };
 
     this.config = {
@@ -591,6 +690,10 @@ class StreamAlchemyPlugin {
         ...mergedStreamMonsters,
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        gameplayPace: this.normalizeGameplayPace(mergedStreamMonsters.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(
+          mergedStreamMonsters.portraitBattleMode
+        ),
         eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(mergedStreamMonsters.eggExpiryMs))
           ? Number(mergedStreamMonsters.eggExpiryMs)
           : 86_400_000,
@@ -600,9 +703,16 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
         ),
+        autoHatchActiveViewers: mergedStreamMonsters.autoHatchActiveViewers !== false,
+        autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
+          mergedStreamMonsters.autoHatchActiveWindowSeconds
+        ),
         tutorialHintsEnabled: mergedStreamMonsters.tutorialHintsEnabled !== false,
         tutorialHintIntervalSeconds: this.normalizeTutorialHintIntervalSeconds(
           mergedStreamMonsters.tutorialHintIntervalSeconds
+        ),
+        overlayLanguage: this.normalizeOverlayLanguage(
+          mergedStreamMonsters.overlayLanguage
         ),
         commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
@@ -629,12 +739,23 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
       };
     }
+    this.streamMonstersViewerActivity?.setActiveWindowMs?.(
+      this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
+    );
     this.streamMonstersProgression?.setSeasonDurationDays?.(
       this.config.streamMonsters.seasonDurationDays
     );
     this.streamMonstersBattleMatchService?.setSeasonDurationDays?.(
       this.config.streamMonsters.seasonDurationDays
     );
+    this.streamMonstersBattleMatchService?.setLanguageTiming?.({
+      localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
+      secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale
+    });
+    this.streamMonstersBattleMatchService?.setPresentationConfig?.({
+      gameplayPace: this.config.streamMonsters.gameplayPace,
+      portraitBattleMode: this.config.streamMonsters.portraitBattleMode
+    });
     if (
       this.streamMonstersCommandIngress &&
       (
@@ -658,13 +779,44 @@ class StreamAlchemyPlugin {
       this.streamMonstersTutorialHintFlushTimer = null;
     }
     this.streamMonstersFreeEggDrops?.destroy();
+    this.streamMonstersViewerActivity?.destroy?.();
+    this.streamMonstersViewerActivity = null;
     this.streamMonstersBattleMatchService?.destroy();
     this.removeStreamMonstersGCCELifecycle();
     this.deactivateStreamMonstersGCCE();
     this.streamMonstersCommandIngress?.clear();
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
-    this.api.log('[STREAM MONSTERS] League World Hybrid runtime stopped', 'info');
+    this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime stopped', 'info');
+  }
+
+  markStreamMonstersViewerActive(userId, source) {
+    const streamKey = this.streamMonstersEngine?.streamKey;
+    if (!userId || !streamKey || streamKey === 'offline') return false;
+    return Boolean(this.streamMonstersViewerActivity?.observe?.({
+      userId,
+      streamKey,
+      source
+    }));
+  }
+
+  runStreamMonstersReadyTimer() {
+    if (!this.config?.enabled || !this.config?.streamMonsters?.enabled) return [];
+    if (!this.streamMonstersEngine) return [];
+    this.streamMonstersEngine.markReadyEggs();
+    const streamKey = this.streamMonstersEngine.streamKey;
+    const hatched = this.streamMonstersEngine.autoHatchReadyEggs({
+      isViewerActive: userId => Boolean(
+        this.streamMonstersViewerActivity?.isActive?.({ userId, streamKey })
+      )
+    });
+    if (hatched.length) {
+      this.logStructured('auto_hatch_completed', {
+        count: hatched.length,
+        status: 'ready_active_viewer'
+      });
+    }
+    return hatched;
   }
 
   getStreamMonstersGiftCatalog(locale = null) {
@@ -741,23 +893,27 @@ class StreamAlchemyPlugin {
       category: 'Stream Monsters',
       cooldownKey: `streamalchemy:${command}`,
       cooldown: { user: command === 'battle' ? 2000 : 1000, global: command === 'battle' ? 0 : 250 },
-      handler: async (args, context = {}) => this.streamMonstersCommandIngress.executeCommand(
-        command,
-        Array.isArray(args) ? args : [],
-        {
-          ...context,
-          userId: this.resolveStreamMonstersViewerId({
-            platformUserId: context.rawData?.userId,
-            legacyUserId: context.rawData?.uniqueId ||
-              context.uniqueId ||
-              context.userId ||
-              context.username
-          }),
-          username: context.username || context.nickname || context.uniqueId || context.userId
-        },
-        'gcce',
-        name
-      )
+      handler: async (args, context = {}) => {
+        const userId = this.resolveStreamMonstersViewerId({
+          platformUserId: context.rawData?.userId,
+          legacyUserId: context.rawData?.uniqueId ||
+            context.uniqueId ||
+            context.userId ||
+            context.username
+        });
+        this.markStreamMonstersViewerActive(userId, 'chat');
+        return this.streamMonstersCommandIngress.executeCommand(
+          command,
+          Array.isArray(args) ? args : [],
+          {
+            ...context,
+            userId,
+            username: context.username || context.nickname || context.uniqueId || context.userId
+          },
+          'gcce',
+          name
+        );
+      }
     })));
   }
 
@@ -1051,6 +1207,7 @@ class StreamAlchemyPlugin {
         context.username
     });
     if (!userId) return { handled: false };
+    this.markStreamMonstersViewerActive(userId, 'chat');
     const providerEventId = context.rawData?.eventId ??
       context.rawData?.event_id ??
       context.rawData?.msgId ??
@@ -1310,6 +1467,7 @@ class StreamAlchemyPlugin {
       }, 'warn');
       return;
     }
+    this.markStreamMonstersViewerActive(userId, 'gift');
     if (!this.streamMonstersStore.getGiftMapping(giftId) && !this.config.streamMonsters.giftMappingCustomized) {
       this.ensureDefaultStreamMonstersGiftMapping({
         id: giftId,
@@ -1404,12 +1562,13 @@ class StreamAlchemyPlugin {
   }
 
   observeStreamMonstersFirstChat(data = {}) {
-    if (!this.streamMonstersFreeEggDrops || !this.streamMonstersEngine) return null;
     const userId = this.resolveStreamMonstersViewerId({
       platformUserId: data.userId,
       legacyUserId: data.uniqueId || data.username
     });
     if (!userId) return null;
+    this.markStreamMonstersViewerActive(userId, 'chat');
+    if (!this.streamMonstersFreeEggDrops || !this.streamMonstersEngine) return null;
     const streamKey = this.streamMonstersEngine.streamKey || 'offline';
     const eventId = normalizeIngressEventId({
       namespace: 'chat',
@@ -1448,6 +1607,7 @@ class StreamAlchemyPlugin {
     }
     const event = this.streamMonstersProgression.startStreamSession({ streamKey });
     this.streamMonstersEngine.setStreamKey(streamKey);
+    this.streamMonstersViewerActivity?.clear?.();
     this.emitStreamMonsters('streammonsters:stream_started', {
       creatorName: this.config.streamMonsters.creatorName || 'Creator',
       event

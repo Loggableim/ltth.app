@@ -4,6 +4,7 @@ const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:egg_spawned',
   'streammonsters:egg_landed',
   'streammonsters:egg_ready',
+  'streammonsters:egg_stage_updated',
   'streammonsters:free_egg_reserved',
   'streammonsters:free_egg_public',
   'streammonsters:free_egg_claimed',
@@ -99,7 +100,8 @@ function publicViewerName(value) {
   const normalized = candidate?.replace(/^@+/, '');
   if (
     !normalized ||
-    /^\d{8,}$/.test(normalized) ||
+    /^unknown$/i.test(normalized) ||
+    /^\d+$/.test(normalized) ||
     /^tiktok:\d+$/i.test(normalized)
   ) {
     return null;
@@ -276,6 +278,7 @@ function projectBattleChargeWindow(chargeWindow = null) {
   const openedAtMs = finiteNumber(chargeWindow.openedAtMs);
   const deadlineMs = finiteNumber(chargeWindow.deadlineMs);
   const passivePerSecond = finiteNumber(chargeWindow.passivePerSecond);
+  const maxGain = finiteNumber(chargeWindow.maxGain);
   if (
     openedAtMs === null ||
     deadlineMs === null ||
@@ -289,6 +292,9 @@ function projectBattleChargeWindow(chargeWindow = null) {
     openedAtMs: Math.max(0, openedAtMs),
     deadlineMs: Math.max(0, deadlineMs),
     passivePerSecond,
+    ...(maxGain !== null && maxGain >= 0
+      ? { maxGain: Math.min(100, maxGain) }
+      : {}),
     ...(finiteNumber(chargeWindow.pausedMs) > 0
       ? { pausedMs: finiteNumber(chargeWindow.pausedMs) }
       : {}),
@@ -336,6 +342,21 @@ function projectWait(wait = null) {
       0,
       finiteNumber(wait.queuePosition ?? wait.queue_position, 0)
     )
+  };
+}
+
+function projectRosterInstruction(instruction = null) {
+  if (!instruction || typeof instruction !== 'object') return null;
+  const deadlineMs = Math.max(0, finiteNumber(instruction.deadlineMs, 0));
+  const remainingSeconds = Math.max(
+    0,
+    Math.min(300, finiteNumber(instruction.remainingSeconds, 0))
+  );
+  const command = boundedText(instruction.command, 64);
+  return {
+    deadlineMs,
+    remainingSeconds,
+    command: command || null
   };
 }
 
@@ -388,6 +409,7 @@ function projectCard(card = null) {
 
 function projectChatResult(result = {}) {
   const wait = projectWait(result.wait);
+  const rosterInstruction = projectRosterInstruction(result.rosterInstruction);
   const monsters = Array.isArray(result.monsters)
     ? result.monsters.map(projectMonster).filter(Boolean)
     : [];
@@ -427,6 +449,7 @@ function projectChatResult(result = {}) {
     messageKey: boundedText(result.messageKey, 96) || 'chatResultUnknown',
     hint: boundedText(result.hint, 160),
     ...(wait ? { wait } : {}),
+    ...(rosterInstruction ? { rosterInstruction } : {}),
     ...(result.card ? { card: projectCard(result.card) } : {}),
     ...(monsters.length ? { monsters } : {}),
     ...(eggs.length ? { eggs } : {}),
@@ -519,7 +542,8 @@ class StreamMonstersPublicEventProjector {
         displayName: owner.displayName,
         owner,
         egg: projectEgg(payload.egg),
-        monster: projectMonster(payload.monster)
+        monster: projectMonster(payload.monster),
+        ...(payload.autoHatch === true ? { autoHatch: true } : {})
       };
     }
     if (eventType === 'streammonsters:monster_discovered') {

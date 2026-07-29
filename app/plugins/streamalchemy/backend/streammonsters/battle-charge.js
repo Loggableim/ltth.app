@@ -1,4 +1,5 @@
 const PASSIVE_CHARGE_PER_SECOND = 5;
+const MAX_PASSIVE_CHARGE_PER_ROUND = 30;
 
 function projectPassiveCharge({
   baseCharge,
@@ -9,7 +10,8 @@ function projectPassiveCharge({
   pausedMs = 0,
   pauseStartedAtMs = null,
   pauseUntilMs = null,
-  ratePerSecond = PASSIVE_CHARGE_PER_SECOND
+  ratePerSecond = PASSIVE_CHARGE_PER_SECOND,
+  maxGain = MAX_PASSIVE_CHARGE_PER_ROUND
 }) {
   const normalizedBase = Math.min(100, Math.max(0, Number(baseCharge) || 0));
   if (!active) return normalizedBase;
@@ -28,8 +30,15 @@ function projectPassiveCharge({
     0,
     observed - opened - persistedPauseMs - currentPauseMs
   ) / 1_000);
-  return Math.min(100, normalizedBase +
-    (seconds * Math.max(0, Number(ratePerSecond) || 0)));
+  const gained = Math.min(
+    Math.max(0, Number(maxGain) || 0),
+    seconds * Math.max(0, Number(ratePerSecond) || 0)
+  );
+  return Math.min(100, normalizedBase + gained);
 }
 
-module.exports = { PASSIVE_CHARGE_PER_SECOND, projectPassiveCharge };
+module.exports = {
+  PASSIVE_CHARGE_PER_SECOND,
+  MAX_PASSIVE_CHARGE_PER_ROUND,
+  projectPassiveCharge
+};

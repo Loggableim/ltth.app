@@ -623,12 +623,12 @@
         "fr": "Stream Monsters"
       },
       "description": {
-        "en": "Portrait-first Jackpot Arena with an animated Living Egg Shelf, creator-selected gift eggs, recurring free-egg adoption, passive Special charge, sealed A/B/C PvP, balanced elemental roles, 72 bundled Furry forms, permanent progression, and seasonal competition.",
-        "de": "Portrait-first Jackpot-Arena mit animiertem Living Egg Shelf, vom Creator gewählten Geschenk-Eiern, wiederkehrender Gratis-Ei-Adoption, passiver Spezialaufladung, verdecktem A/B/C-PvP, balancierten Elementrollen, 72 gebündelten Furry-Formen, permanentem Fortschritt und Saisonwettbewerb.",
-        "es": "Jackpot Arena vertical con Living Egg Shelf animado, huevos por regalos elegidos por el creador, adopción periódica de huevos gratis, carga pasiva de Especial, PvP A/B/C sellado, roles elementales equilibrados, 72 formas Furry y progreso permanente.",
-        "fr": "Jackpot Arena portrait avec Living Egg Shelf animé, œufs issus des cadeaux choisis par le Creator, adoption récurrente d’œufs gratuits, charge passive du Spécial, PvP A/B/C scellé, rôles élémentaires équilibrés, 72 formes Furry et progression permanente."
+        "en": "Portrait Arcade Rally with a 90-second fresh default, bilingual overlay guidance, a 74/26 TikTok-safe arena, K.O.-only Rules v8 battles, Arena Collapse, element-specific WebGPU effects, 72 bundled Furry forms, and fair permanent progression.",
+        "de": "Portrait Arcade Rally mit 90-Sekunden-Standard für neue Setups, zweisprachigen Overlay-Hinweisen, 74/26-TikTok-Safe-Arena, K.-o.-Kämpfen nach Rules v8, Arena Collapse, elementspezifischen WebGPU-Effekten, 72 gebündelten Furry-Formen und fairem permanentem Fortschritt.",
+        "es": "Portrait Arcade Rally con 90 segundos por defecto en configuraciones nuevas, guía bilingüe, arena 74/26 segura para TikTok, combates Rules v8 hasta K.O., Arena Collapse, efectos WebGPU elementales, 72 formas Furry y progreso permanente justo.",
+        "fr": "Portrait Arcade Rally avec 90 secondes par défaut pour les nouvelles configurations, guide bilingue, arène TikTok 74/26, combats Rules v8 jusqu’au K.-O., Arena Collapse, effets WebGPU élémentaires, 72 formes Furry et progression permanente équitable."
       },
-      "version": "1.10.0",
+      "version": "1.11.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
@@ -642,16 +642,16 @@
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip",
-      "sha256": "232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip",
+      "sha256": "837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4",
       "pricing": {
         "type": "free",
         "amount": 0,
         "currency": "EUR"
       },
       "screenshots": [
-        "/screenshots/features/stream-monsters-creator-1.5.png",
-        "/screenshots/features/stream-monsters-arena-portrait-1.5.png"
+        "/screenshots/features/stream-monsters-creator-1.11.png",
+        "/screenshots/features/stream-monsters-arena-portrait-1.11.png"
       ]
     },
     {

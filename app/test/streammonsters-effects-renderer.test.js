@@ -1,7 +1,9 @@
 'use strict';
 
 const {
+  MAX_BACKING_PIXELS,
   SCENE_DURATIONS,
+  attackBasis,
   createEffectsRenderer,
   phaseForProgress,
   sceneChoreography
@@ -11,6 +13,23 @@ function deferred() {
   let resolve;
   const promise = new Promise(next => { resolve = next; });
   return { promise, resolve };
+}
+
+function validateWgslUniformContract(code) {
+  const uniformStruct = /struct Uniforms\s*\{([\s\S]*?)\};/.exec(code);
+  if (!uniformStruct) throw new Error('missing Uniforms struct');
+  const fields = [...uniformStruct[1].matchAll(/^\s*([A-Za-z_]\w*)\s*:/gm)]
+    .map(match => match[1]);
+  const reservedFields = fields.filter(field => field === 'target');
+  if (reservedFields.length) {
+    throw new Error(`reserved WGSL uniform identifier: ${reservedFields.join(', ')}`);
+  }
+  const unknownReferences = [...code.matchAll(/\bu\.([A-Za-z_]\w*)/g)]
+    .map(match => match[1])
+    .filter(field => !fields.includes(field));
+  if (unknownReferences.length) {
+    throw new Error(`unknown WGSL uniform reference: ${unknownReferences.join(', ')}`);
+  }
 }
 
 function createGpuHarness() {
@@ -382,11 +401,232 @@ describe('Stream Monsters effects renderer', () => {
       'monster-reveal'
     ]);
     expect(sceneChoreography('attack', { vfxKey: 'ashfang:attack', element: 'Ember' }))
-      .toEqual(expect.objectContaining({ steps: ['vfx-trail'], vfxKey: 'ashfang:attack', color: '#ff7043' }));
+      .toEqual(expect.objectContaining({
+        steps: ['telegraph', 'element-strike', 'impact'],
+        vfxKey: 'ashfang:attack',
+        color: '#ff5a36'
+      }));
     expect(sceneChoreography('defense', { vfxKey: 'ripple:defense', element: 'Tide' }))
-      .toEqual(expect.objectContaining({ steps: ['shield-burst'], vfxKey: 'ripple:defense' }));
+      .toEqual(expect.objectContaining({
+        steps: ['guard-rise', 'element-barrier', 'guard-pulse'],
+        vfxKey: 'ripple:defense'
+      }));
     expect(sceneChoreography('special', { vfxKey: 'selene:special', element: 'Lunar' }))
-      .toEqual(expect.objectContaining({ steps: ['element-color-special'], vfxKey: 'selene:special', color: '#c7a4ff' }));
+      .toEqual(expect.objectContaining({
+        steps: ['charge', 'element-signature', 'finisher'],
+        vfxKey: 'selene:special',
+        color: '#b98cff'
+      }));
+  });
+
+  test('mirrors source-to-target bases and uses a deterministic equal-anchor fallback', () => {
+    expect(attackBasis({ x: 0.28, y: 0.52 }, { x: 0.72, y: 0.52 })).toEqual({
+      longitudinal: { x: 1, y: 0 },
+      lateral: { x: 0, y: 1 },
+      distance: 0.44
+    });
+    expect(attackBasis({ x: 0.72, y: 0.52 }, { x: 0.28, y: 0.52 })).toEqual({
+      longitudinal: { x: -1, y: 0 },
+      lateral: { x: 0, y: -1 },
+      distance: 0.44
+    });
+    expect(attackBasis({ x: 0.4, y: 0.4 }, { x: 0.4, y: 0.4 })).toEqual({
+      longitudinal: { x: 1, y: 0 },
+      lateral: { x: 0, y: 1 },
+      distance: 0
+    });
+  });
+
+  test.each([
+    ['high', 112],
+    ['medium', 56],
+    ['low', 24]
+  ])('draws procedural particle quads with the real %s instance budget', async (quality, particles) => {
+    const harness = createGpuHarness();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      quality,
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+
+    await renderer.init();
+    const pipelineDescriptor = harness.device.createRenderPipeline.mock.calls.at(-1)[0];
+    expect(pipelineDescriptor.label).toMatch(/particle/i);
+    expect(harness.device.createShaderModule.mock.calls.at(-1)[0].code)
+      .toMatch(/@builtin\(instance_index\)/);
+    expect(pipelineDescriptor.vertex.buffers || []).toEqual([]);
+
+    const completion = renderer.play('attack', {
+      element: 'Ember',
+      actorSlot: 1,
+      targetSlot: 2
+    });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(harness.pass.draw).toHaveBeenCalledWith(6, particles);
+
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+    await completion;
+  });
+
+  test('falls back inside the active scene when a synchronous frame operation throws', async () => {
+    const harness = createGpuHarness();
+    harness.device.destroy = jest.fn();
+    harness.device.queue.writeBuffer.mockImplementationOnce(() => {
+      throw new Error('surface changed');
+    });
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+
+    await renderer.init();
+    const completion = renderer.play('special', { element: 'Tide' });
+    await expect(jest.advanceTimersByTimeAsync(32)).resolves.toBeUndefined();
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      renderer: 'canvas2d',
+      fallbackReason: 'frame-error'
+    }));
+    expect(harness.canvas2d.stroke).toHaveBeenCalled();
+    renderer.destroy();
+    expect(harness.device.destroy).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.special);
+    await expect(completion).resolves.toEqual(expect.objectContaining({
+      scene: 'special'
+    }));
+  });
+
+  test('active particle shader compiles without reserved or dangling uniform identifiers', async () => {
+    const harness = createGpuHarness();
+    harness.device.createShaderModule.mockImplementation(descriptor => {
+      validateWgslUniformContract(descriptor.code);
+      expect(descriptor.code).toMatch(/let sceneCode = u\.frame\.z/);
+      expect(descriptor.code).toMatch(/if \(sceneCode == 1\.0\)/);
+      expect(descriptor.code).toMatch(/else if \(sceneCode == 2\.0\)/);
+      expect(descriptor.code).toMatch(/else if \(sceneCode == 3\.0\)/);
+      expect(descriptor.code).toMatch(/phaseCode == 3\.0/);
+      expect(descriptor.code).toMatch(/phaseCode == 4\.0/);
+      expect(descriptor.code).toMatch(/phaseCode == 5\.0/);
+      return { shader: true };
+    });
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false })
+    });
+
+    await expect(renderer.init()).resolves.toBe('webgpu');
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      renderer: 'webgpu',
+      fallbackReason: null
+    }));
+  });
+
+  test('destroy during asynchronous device acquisition cannot resurrect WebGPU', async () => {
+    const harness = createGpuHarness();
+    const deviceGate = deferred();
+    const requestDevice = jest.fn(() => deviceGate.promise);
+    harness.device.destroy = jest.fn();
+    harness.gpu.requestAdapter = jest.fn(async () => ({ requestDevice }));
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false })
+    });
+
+    const initialization = renderer.init();
+    await Promise.resolve();
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    renderer.destroy();
+    deviceGate.resolve(harness.device);
+
+    await expect(initialization).resolves.not.toBe('webgpu');
+    expect(harness.device.destroy).toHaveBeenCalledTimes(1);
+    expect(harness.context.configure).not.toHaveBeenCalled();
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      destroyed: true,
+      active: false
+    }));
+    expect(renderer.mode()).not.toBe('webgpu');
+  });
+
+  test('play after destroy is terminal and cannot initialize or schedule work', async () => {
+    const harness = createGpuHarness();
+    const scheduleFrame = jest.fn(callback => setTimeout(() => callback(Date.now()), 16));
+    const setTimer = jest.fn(setTimeout);
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: scheduleFrame,
+      cancelAnimationFrame: clearTimeout,
+      setTimeout: setTimer,
+      clearTimeout
+    });
+
+    renderer.destroy();
+    await expect(renderer.play('hatch', { element: 'Grove' })).resolves.toEqual(
+      expect.objectContaining({
+        scene: 'hatch',
+        mode: 'destroyed',
+        destroyed: true,
+        skipped: true
+      })
+    );
+    expect(harness.gpu.requestAdapter).not.toHaveBeenCalled();
+    expect(scheduleFrame).not.toHaveBeenCalled();
+    expect(setTimer).not.toHaveBeenCalled();
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      mode: 'destroyed',
+      active: false,
+      destroyed: true
+    }));
+  });
+
+  test('caps the backing store and destroys owned GPU resources without later submits', async () => {
+    const priorRatio = globalThis.devicePixelRatio;
+    globalThis.devicePixelRatio = 4;
+    const harness = createGpuHarness();
+    harness.canvas.clientWidth = 1080;
+    harness.canvas.clientHeight = 1920;
+    harness.device.destroy = jest.fn();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+
+    try {
+      await renderer.init();
+      renderer.resize();
+      expect(harness.canvas.width * harness.canvas.height).toBeLessThanOrEqual(MAX_BACKING_PIXELS);
+      expect(harness.canvas.width / harness.canvas.height).toBeCloseTo(1080 / 1920, 2);
+      const completion = renderer.play('attack', { element: 'Gale' });
+      await jest.advanceTimersByTimeAsync(32);
+      const submits = harness.device.queue.submit.mock.calls.length;
+      renderer.destroy();
+      await expect(completion).resolves.toEqual(expect.objectContaining({
+        interrupted: true,
+        destroyed: true
+      }));
+      expect(harness.device.destroy).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+      expect(harness.device.queue.submit).toHaveBeenCalledTimes(submits + 1);
+      expect(renderer.status().active).toBe(false);
+    } finally {
+      globalThis.devicePixelRatio = priorRatio;
+    }
   });
 
   test('advances real spawn and hatch phases in WebGPU uniforms and the canvas DOM contract', async () => {
@@ -400,13 +640,25 @@ describe('Stream Monsters effects renderer', () => {
       now: () => Date.now()
     });
     await renderer.init();
+    const activeShader = harness.device.createShaderModule.mock.calls.at(-1)[0].code;
+    expect(activeShader).toMatch(/sceneCode == 1\.0/);
+    expect(activeShader).toMatch(/sceneCode == 2\.0/);
+    expect(activeShader).toMatch(/sceneCode == 3\.0/);
+
+    const portal = renderer.play('portal', { element: 'Ember' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][2]).toBe(1);
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.portal);
+    await portal;
+
     const spawn = renderer.play('spawn', { element: 'Volt' });
     await jest.advanceTimersByTimeAsync(32);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][2]).toBe(2);
     expect(harness.canvas.dataset.effectPhase).toBe('element-portal');
-    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][8]).toBe(1);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][16]).toBe(1);
     await jest.advanceTimersByTimeAsync(600);
     expect(harness.canvas.dataset.effectPhase).toBe('particle-swirl');
-    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][8]).toBe(2);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][16]).toBe(2);
     await jest.advanceTimersByTimeAsync(600);
     expect(harness.canvas.dataset.effectPhase).toBe('egg-fly-in');
     await jest.advanceTimersByTimeAsync(600);
@@ -416,6 +668,7 @@ describe('Stream Monsters effects renderer', () => {
 
     const hatch = renderer.play('hatch', { element: 'Lunar' });
     await jest.advanceTimersByTimeAsync(32);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][2]).toBe(3);
     expect(harness.canvas.dataset.effectPhase).toBe('pulse');
     await jest.advanceTimersByTimeAsync(600);
     expect(harness.canvas.dataset.effectPhase).toBe('cracks');
@@ -429,7 +682,7 @@ describe('Stream Monsters effects renderer', () => {
     await hatch;
   });
 
-  test('uses deterministic VFX-key variants in WebGPU uniforms and Canvas2D drawing', async () => {
+  test('uses deterministic VFX-key accents without changing the canonical Canvas attack basis', async () => {
     expect(phaseForProgress('spawn', 0.26).name).toBe('particle-swirl');
     expect(sceneChoreography('attack', { vfxKey: 'ashfang:attack' }).vfx)
       .not.toEqual(sceneChoreography('attack', { vfxKey: 'ripple:attack' }).vfx);
@@ -463,10 +716,16 @@ describe('Stream Monsters effects renderer', () => {
       cancelAnimationFrame: clearTimeout
     });
     await secondRenderer.init();
-    const secondPlay = secondRenderer.play('attack', { vfxKey: 'ripple:attack', element: 'Tide' });
+    const secondPlay = secondRenderer.play('attack', {
+      vfxKey: 'ripple:attack',
+      element: 'Tide',
+      actorSlot: 1,
+      targetSlot: 2
+    });
     await jest.advanceTimersByTimeAsync(32);
+    const secondVariant = second.canvas.dataset.vfxVariant;
     expect(second.canvas.dataset.vfxVariant).toMatch(/^v[0-9]+$/);
-    expect(second.canvas2d.rotate).toHaveBeenCalled();
+    expect(second.canvas2d.rotate).toHaveBeenCalledWith(0);
     expect(firstUniforms.slice(9, 11)).not.toEqual([0, 0]);
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await secondPlay;
@@ -480,10 +739,17 @@ describe('Stream Monsters effects renderer', () => {
       cancelAnimationFrame: clearTimeout
     });
     await thirdRenderer.init();
-    const thirdPlay = thirdRenderer.play('attack', { vfxKey: 'ashfang:attack', element: 'Ember' });
+    const thirdPlay = thirdRenderer.play('attack', {
+      vfxKey: 'ashfang:attack',
+      element: 'Ember',
+      actorSlot: 1,
+      targetSlot: 2
+    });
     await jest.advanceTimersByTimeAsync(32);
-    expect(third.canvas2d.rotate.mock.calls.at(-1)).not.toEqual(second.canvas2d.rotate.mock.calls.at(-1));
-    expect(third.canvas2d.lineTo.mock.calls.at(-1)).not.toEqual(second.canvas2d.lineTo.mock.calls.at(-1));
+    expect(third.canvas.dataset.vfxVariant).not.toBe(secondVariant);
+    expect(third.canvas2d.rotate.mock.calls.at(-1)).toEqual([0]);
+    expect(third.canvas2d.lineTo).toHaveBeenCalledWith(844.8, 0);
+    expect(second.canvas2d.lineTo).toHaveBeenCalledWith(844.8, 0);
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await thirdPlay;
   });
@@ -505,7 +771,7 @@ describe('Stream Monsters effects renderer', () => {
     });
     await jest.advanceTimersByTimeAsync(32);
     const uniforms = [...webgpu.device.queue.writeBuffer.mock.calls.at(-1)[2]];
-    expect(uniforms.slice(12, 15)).toEqual([0.25, 0.800000011920929, 1.2999999523162842]);
+    expect(uniforms.slice(20, 23)).toEqual([0.25, 0.800000011920929, 1.2999999523162842]);
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.spawn);
     await webgpuPlay;
 

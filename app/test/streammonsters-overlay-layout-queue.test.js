@@ -28,6 +28,98 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     ]);
   });
 
+  test('restores sealed locks and an active stat prompt on the first cursor baseline', async () => {
+    const shown = [];
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage: jest.fn(),
+      present: async event => shown.push(event)
+    });
+
+    const result = await synchronizer.sync({
+      rulesVersion: 8,
+      statPrompt: {
+        promptId: 'allocation-safe',
+        deadlineMs: 20_000,
+        choices: ['1', '2', '3', '4'],
+        playerName: '@luna',
+        monster: { name: 'Selene', viewerName: '@luna' },
+        level: 7,
+        remainingUnspentPoints: 2
+      },
+      matches: [{
+        matchId: 'match-cold',
+        cursor: 7,
+        roundNumber: 3,
+        choiceLocks: [{
+          round: 3,
+          slot: 1,
+          locked: true,
+          source: 'viewer',
+          deadlineMs: 20_000
+        }]
+      }]
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      baseline: true,
+      restored: 2
+    }));
+    expect(shown.map(event => event.type)).toEqual([
+      'battle_choice_locked',
+      'monster_stat_prompt'
+    ]);
+    expect(shown[0].data.decision).toEqual({
+      round: 3,
+      slot: 1,
+      locked: true,
+      source: 'viewer',
+      deadlineMs: 20_000
+    });
+    expect(shown[0].data.decision).not.toHaveProperty('choice');
+    expect(shown[1].data).toEqual(expect.objectContaining({
+      promptId: 'allocation-safe',
+      playerName: '@luna',
+      monster: { name: 'Selene', viewerName: '@luna' }
+    }));
+  });
+
+  test('restores A/B/C only from a joint reveal in the first cursor baseline', async () => {
+    const shown = [];
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage: jest.fn(),
+      present: async event => shown.push(event)
+    });
+
+    await synchronizer.sync({
+      matches: [{
+        matchId: 'match-revealed',
+        cursor: 9,
+        roundNumber: 2,
+        choiceLocks: [],
+        revealedChoices: {
+          round: 1,
+          choices: [
+            { slot: 1, choice: 'A', source: 'viewer' },
+            { slot: 2, choice: 'B', source: 'timeout' }
+          ]
+        }
+      }]
+    });
+
+    expect(shown).toHaveLength(1);
+    expect(shown[0]).toEqual(expect.objectContaining({
+      type: 'battle_choices_revealed',
+      data: expect.objectContaining({
+        matchId: 'match-revealed',
+        round: 1,
+        choices: [
+          { slot: 1, choice: 'A', source: 'viewer' },
+          { slot: 2, choice: 'B', source: 'timeout' }
+        ]
+      })
+    }));
+  });
+
   test('replays missed rules-v5 events once in sequence across bounded pages', async () => {
     const pages = new Map([
       [4, {
@@ -255,6 +347,29 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(runtime.statPromptKey({ ...canonical, deadlineMs: 123457 })).not.toBe(runtime.statPromptKey(canonical));
   });
 
+  test('preserves an explicit double-knockout draw and only infers exact legacy winners', () => {
+    expect(runtime.resolveBattleWinnerSlot({
+      winnerSlot: 0,
+      winner: null,
+      terminalReason: 'double_knockout'
+    }, ['monster-left', 'monster-right'])).toBe(0);
+    expect(runtime.resolveBattleWinnerSlot({
+      winnerSlot: 1
+    }, ['monster-left', 'monster-right'])).toBe(1);
+    expect(runtime.resolveBattleWinnerSlot({
+      winnerSlot: 2
+    }, ['monster-left', 'monster-right'])).toBe(2);
+    expect(runtime.resolveBattleWinnerSlot({
+      winner: { monsterId: 'monster-right' }
+    }, ['monster-left', 'monster-right'])).toBe(2);
+    expect(runtime.resolveBattleWinnerSlot({
+      winner: null
+    }, ['monster-left', 'monster-right'])).toBe(0);
+    expect(runtime.resolveBattleWinnerSlot({
+      winner: {}
+    }, [null, null])).toBe(0);
+  });
+
   test('keeps spawn, hatch and every battle skill event in indivisible critical groups', () => {
     for (const type of [
       'egg_spawned',
@@ -322,6 +437,50 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     cancelled.enqueue('battle_cancelled', { matchId: 'match-cancelled', eventId: 'cancel' }, 2);
     expect(cancelled.shift(3).type).toBe('battle_match_found');
     expect(cancelled.shift(3).type).toBe('battle_cancelled');
+  });
+
+  test('suspends every non-battle surface for the full active match and releases it after result', () => {
+    const queue = runtime.createPriorityQueue();
+    queue.enqueue('battle_match_found', {
+      matchId: 'takeover',
+      correlationId: 'takeover',
+      eventId: 'takeover:found'
+    }, 1);
+    queue.enqueue('egg_landed', {
+      eventId: 'egg:during-battle',
+      eggStage: { visualId: 'egg-during-battle' }
+    }, 2);
+    queue.enqueue('monster_xp_awarded', {
+      matchId: 'takeover',
+      eventId: 'takeover:xp'
+    }, 3);
+    queue.enqueue('chat_result', {
+      eventId: 'chat:during-battle'
+    }, 4);
+    queue.enqueue('battle_choice_opened', {
+      matchId: 'takeover',
+      correlationId: 'takeover',
+      eventId: 'takeover:choice'
+    }, 5);
+    queue.enqueue('battle_completed', {
+      matchId: 'takeover',
+      correlationId: 'takeover',
+      eventId: 'takeover:completed'
+    }, 6);
+
+    queue.setBattleActive(true, 'takeover');
+    expect(queue.shift(10).type).toBe('battle_match_found');
+    expect(queue.shift(10).type).toBe('battle_choice_opened');
+    expect(queue.shift(10).type).toBe('battle_completed');
+    expect(queue.shift(10)).toBeNull();
+    expect(queue.snapshot().map(entry => entry.type)).toEqual(expect.arrayContaining([
+      'egg_landed',
+      'monster_xp_awarded',
+      'chat_result'
+    ]));
+
+    queue.setBattleActive(false);
+    expect(queue.shift(11).type).toBe('egg_landed');
   });
 
   test('coalesces hype/chat, drops stale noncritical events, and never partially trims hatch groups', () => {

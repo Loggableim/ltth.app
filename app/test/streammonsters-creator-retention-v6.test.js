@@ -164,6 +164,8 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       .toEqual(expect.objectContaining({
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        autoHatchActiveViewers: true,
+        autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90
       }));
@@ -173,6 +175,8 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       localRequest({
         freeEggDropsEnabled: false,
         freeEggCooldownSeconds: 60,
+        autoHatchActiveViewers: false,
+        autoHatchActiveWindowSeconds: 30,
         tutorialHintsEnabled: false,
         tutorialHintIntervalSeconds: 60
       }),
@@ -181,6 +185,8 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     expect(low.payload.config).toEqual(expect.objectContaining({
       freeEggDropsEnabled: false,
       freeEggCooldownSeconds: 60,
+      autoHatchActiveViewers: false,
+      autoHatchActiveWindowSeconds: 30,
       tutorialHintsEnabled: false,
       tutorialHintIntervalSeconds: 60
     }));
@@ -189,12 +195,14 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     await harness.find('POST', '/api/streammonsters/config')(
       localRequest({
         freeEggCooldownSeconds: 31_536_000,
+        autoHatchActiveWindowSeconds: 900,
         tutorialHintIntervalSeconds: 300
       }),
       high
     );
     expect(high.payload.config).toEqual(expect.objectContaining({
       freeEggCooldownSeconds: 31_536_000,
+      autoHatchActiveWindowSeconds: 900,
       tutorialHintIntervalSeconds: 300
     }));
   });
@@ -203,6 +211,9 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     [{ freeEggDropsEnabled: 'yes' }, 'STREAM_MONSTERS_FREE_EGG_ENABLED_INVALID'],
     [{ freeEggCooldownSeconds: 59 }, 'STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID'],
     [{ freeEggCooldownSeconds: 31_536_001 }, 'STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID'],
+    [{ autoHatchActiveViewers: 'yes' }, 'STREAM_MONSTERS_AUTO_HATCH_ENABLED_INVALID'],
+    [{ autoHatchActiveWindowSeconds: 29 }, 'STREAM_MONSTERS_AUTO_HATCH_WINDOW_INVALID'],
+    [{ autoHatchActiveWindowSeconds: 901 }, 'STREAM_MONSTERS_AUTO_HATCH_WINDOW_INVALID'],
     [{ tutorialHintsEnabled: 1 }, 'STREAM_MONSTERS_TUTORIAL_HINTS_ENABLED_INVALID'],
     [{ tutorialHintIntervalSeconds: 59 }, 'STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID'],
     [{ tutorialHintIntervalSeconds: 301 }, 'STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID']
@@ -293,7 +304,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     );
   });
 
-  test('reports current Rules v7 on public and creator surfaces including fallback snapshots', async () => {
+  test('reports current Rules v8 on public and creator surfaces including fallback snapshots', async () => {
     const harness = createRouteHarness({ battleMatchService: null });
     const publicState = response();
     await harness.find('GET', '/api/streammonsters/state')(
@@ -311,13 +322,25 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       battleState
     );
 
-    expect(publicState.payload.config.rulesVersion).toBe(7);
-    expect(publicState.payload.battle).toEqual({ rulesVersion: 7, matches: [] });
-    expect(creatorState.payload.config.rulesVersion).toBe(7);
-    expect(creatorState.payload.battle).toEqual({ rulesVersion: 7, matches: [] });
+    expect(publicState.payload.config.rulesVersion).toBe(8);
+    expect(publicState.payload.battle).toEqual({
+      rulesVersion: 8,
+      gameplayPace: 'arcade-rally',
+      portraitBattleMode: 'takeover-74',
+      matches: []
+    });
+    expect(creatorState.payload.config.rulesVersion).toBe(8);
+    expect(creatorState.payload.battle).toEqual({
+      rulesVersion: 8,
+      gameplayPace: 'arcade-rally',
+      portraitBattleMode: 'takeover-74',
+      matches: []
+    });
     expect(battleState.payload).toEqual({
       success: true,
-      rulesVersion: 7,
+      rulesVersion: 8,
+      gameplayPace: 'arcade-rally',
+      portraitBattleMode: 'takeover-74',
       matches: []
     });
   });
@@ -329,6 +352,8 @@ describe('Stream Monsters Rules v6 retention creator runtime', () => {
       .toEqual(expect.objectContaining({
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        autoHatchActiveViewers: true,
+        autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90
       }));
@@ -336,22 +361,28 @@ describe('Stream Monsters Rules v6 retention creator runtime', () => {
       values: {
         freeEggDropsEnabled: false,
         freeEggCooldownSeconds: '60',
+        autoHatchActiveViewers: false,
+        autoHatchActiveWindowSeconds: '30',
         tutorialHintsEnabled: false,
         tutorialHintIntervalSeconds: '300'
       }
     })).toEqual(expect.objectContaining({
       freeEggDropsEnabled: false,
       freeEggCooldownSeconds: 60,
+      autoHatchActiveViewers: false,
+      autoHatchActiveWindowSeconds: 30,
       tutorialHintsEnabled: false,
       tutorialHintIntervalSeconds: 300
     }));
     expect(creatorRuntime.buildConfigPayload({
       values: {
         freeEggCooldownSeconds: '1',
+        autoHatchActiveWindowSeconds: '901',
         tutorialHintIntervalSeconds: '500'
       }
     })).toEqual(expect.objectContaining({
       freeEggCooldownSeconds: 86_400,
+      autoHatchActiveWindowSeconds: 300,
       tutorialHintIntervalSeconds: 90
     }));
   });
@@ -473,23 +504,28 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
     for (const id of [
       'freeEggDropsEnabled',
       'freeEggCooldownSeconds',
+      'autoHatchActiveViewers',
+      'autoHatchActiveWindowSeconds',
       'tutorialHintsEnabled',
       'tutorialHintIntervalSeconds',
       'freeEggOfferCounts',
       'freeEggNextCleanup',
       'tutorialHintState',
       'retentionTimerWarning',
-      'portraitStagePreview'
+      'portraitNormalPreview',
+      'portraitBattlePreview'
     ]) {
       expect(document.getElementById(id)).not.toBeNull();
     }
     expect(document.getElementById('freeEggCooldownSeconds').type).toBe('number');
     expect(document.getElementById('freeEggCooldownSeconds').min).toBe('60');
     expect(document.getElementById('freeEggCooldownSeconds').max).toBe('31536000');
+    expect(document.getElementById('autoHatchActiveWindowSeconds').min).toBe('30');
+    expect(document.getElementById('autoHatchActiveWindowSeconds').max).toBe('900');
     expect(document.getElementById('tutorialHintIntervalSeconds').min).toBe('60');
     expect(document.getElementById('tutorialHintIntervalSeconds').max).toBe('300');
     expect(document.querySelector('[data-command-alias="adopt"]')).not.toBeNull();
-    expect(document.body.textContent).toContain('Rules v7');
+    expect(document.body.textContent).toContain('Rules v8');
   });
 
   test('ships creator copy for all new controls and live diagnostics in four locales', () => {
@@ -502,6 +538,9 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
         'freeEggDropsEnabled',
         'freeEggCooldownSeconds',
         'freeEggCooldownHelp',
+        'autoHatchActiveViewers',
+        'autoHatchActiveWindowSeconds',
+        'autoHatchActiveHelp',
         'tutorialHintsEnabled',
         'tutorialHintIntervalSeconds',
         'tutorialHintHelp',
@@ -522,7 +561,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
         expect(translations[key]).toEqual(expect.any(String));
         expect(translations[key].trim()).not.toHaveLength(0);
       }
-      expect(translations.rulesDynamic).toContain('v7');
+      expect(translations.rulesDynamic).toContain('v8');
     }
   });
 

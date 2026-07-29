@@ -18,6 +18,7 @@
     'battle_choice_locked',
     'battle_choices_revealed',
     'battle_skill_used',
+    'battle_arena_collapse',
     'battle_completed',
     'monster_xp_awarded',
     'monster_level_up',
@@ -356,8 +357,14 @@
         type: 'special',
         atMs: offset + 1050,
         durationMs: 250,
+        actorSlot: numeric(action.actorSlot),
+        targetSlot: numeric(action.targetSlot),
         element: action.skill?.element || null,
-        vfxKey: action.skill?.vfxKey || null
+        vfxKey: action.skill?.vfxKey || null,
+        role: action.skill?.role || null,
+        skillEffects: Array.isArray(action.skill?.effects)
+          ? [...action.skill.effects]
+          : []
       });
     }
 
@@ -574,12 +581,7 @@
         expanded.push({
           ...beat,
           peak: true,
-          audioCue: 'arena.hit',
-          effect: {
-            scene: 'attack',
-            element: action.skill?.element || null,
-            vfxKey: beat.effectType
-          }
+          audioCue: 'arena.hit'
         });
         continue;
       }
@@ -587,12 +589,7 @@
         expanded.push({
           ...beat,
           peak: true,
-          audioCue: 'arena.hit',
-          effect: {
-            scene: 'attack',
-            element: action.skill?.element || null,
-            vfxKey: beat.retaliationType
-          }
+          audioCue: 'arena.hit'
         }, {
           type: 'camera_impulse',
           atMs: beat.atMs + 18,
@@ -626,18 +623,33 @@
         continue;
       }
       if (beat.type === 'advance') {
-        expanded.push(beat, {
-          type: 'element_trail',
-          atMs: beat.atMs + 60,
-          durationMs: beat.durationMs,
-          actorSlot: beat.actorSlot,
-          targetSlot: beat.targetSlot,
-          effect: {
-            scene: 'attack',
-            element: action.skill?.element || null,
-            vfxKey: action.skill?.vfxKey || null
-          }
-        });
+        expanded.push(beat);
+        const skillType = String(action.skill?.type || '').toLowerCase();
+        const semanticScene = skillType === 'defense' ? 'defense' : (
+          skillType === 'special' || String(action.choice || '').toLowerCase() === 'c'
+            ? 'special'
+            : 'attack'
+        );
+        if (semanticScene !== 'special') {
+          expanded.push({
+            type: 'element_trail',
+            atMs: beat.atMs + 60,
+            durationMs: beat.durationMs,
+            actorSlot: beat.actorSlot,
+            targetSlot: beat.targetSlot,
+            effect: {
+              scene: semanticScene,
+              semanticAction: true,
+              element: action.skill?.element || null,
+              vfxKey: action.skill?.vfxKey || null,
+              role: action.skill?.role || null,
+              skillEffects: Array.isArray(action.skill?.effects)
+                ? [...action.skill.effects]
+                : [],
+              durationMs: 1600
+            }
+          });
+        }
         continue;
       }
       if (beat.type === 'special') {
@@ -648,8 +660,14 @@
           audioDucking: { amount: 0.32, durationMs: 1100 },
           effect: {
             scene: 'special',
+            semanticAction: true,
             element: beat.element,
-            vfxKey: beat.vfxKey
+            vfxKey: beat.vfxKey,
+            role: beat.role,
+            skillEffects: Array.isArray(beat.skillEffects)
+              ? [...beat.skillEffects]
+              : [],
+            durationMs: 2200
           }
         });
         continue;
@@ -725,6 +743,23 @@
     return expanded;
   }
 
+  function compressArcadeActionBeats(beats = [], targetDurationMs = 2_800) {
+    const sourceDurationMs = beats.reduce(
+      (maximum, beat) => Math.max(
+        maximum,
+        numeric(beat.atMs) + numeric(beat.durationMs)
+      ),
+      0
+    );
+    if (sourceDurationMs <= targetDurationMs || sourceDurationMs < 1) return beats;
+    const scale = targetDurationMs / sourceDurationMs;
+    return beats.map(beat => ({
+      ...beat,
+      atMs: Math.round(numeric(beat.atMs) * scale),
+      durationMs: Math.max(60, Math.round(numeric(beat.durationMs) * scale))
+    }));
+  }
+
   function buildArcadeTimeline(eventType, payload = {}, options = {}) {
     const type = normalizedEventType(eventType);
     const element = elementValue(payload);
@@ -752,7 +787,7 @@
           atMs: 0,
           durationMs: 650,
           element,
-          effect: { scene: 'spawn', element, vfxKey: `${element}:egg-portal` },
+          effect: { scene: 'portal', element, vfxKey: `${element}:egg-portal` },
           audioCue: 'egg.spawn'
         },
         ...roulette.map((candidate, index) => ({
@@ -769,21 +804,6 @@
           element,
           peak: true,
           audioCue: 'ui.navigate'
-        },
-        {
-          type: 'egg_flight',
-          atMs: 1420,
-          durationMs: 620,
-          element
-        },
-        {
-          type: 'egg_impact',
-          atMs: 2040,
-          durationMs: 420,
-          element,
-          peak: true,
-          audioCue: 'arena.hit',
-          effect: { scene: 'spawn', element, vfxKey: `${element}:egg-impact` }
         },
         {
           type: 'reward_peak',
@@ -939,8 +959,56 @@
         ? { ...payload.action, eventId: payload.eventId || payload.action.eventId }
         : payload;
       beats = numeric(action.rulesVersion ?? payload.rulesVersion) >= 7
-        ? buildJackpotActionTimeline(action)
+        ? compressArcadeActionBeats(buildArcadeActionBeats(action))
         : buildArcadeActionBeats(action);
+    } else if (type === 'battle_arena_collapse') {
+      scene = 'arena_collapse';
+      const fighters = (Array.isArray(payload.fighters) ? payload.fighters : [])
+        .map(fighter => ({
+          slot: numeric(fighter?.slot),
+          shieldReduced: Math.max(0, numeric(fighter?.shieldReduced)),
+          hpDamage: Math.max(0, numeric(fighter?.hpDamage)),
+          hp: Math.max(0, numeric(fighter?.hp)),
+          shield: Math.max(0, numeric(fighter?.shield))
+        }))
+        .filter(fighter => [1, 2].includes(fighter.slot))
+        .sort((left, right) => left.slot - right.slot);
+      beats = [{
+        type: 'collapse_banner',
+        atMs: 0,
+        durationMs: 620,
+        round: Math.max(5, numeric(payload.round, 5)),
+        damage: Math.max(1, numeric(payload.damage, 1)),
+        effect: {
+          scene: 'special',
+          element: 'Lunar',
+          vfxKey: 'arena:collapse'
+        },
+        audioCue: 'arena.special'
+      }];
+      fighters
+        .filter(fighter => fighter.shieldReduced > 0)
+        .forEach((fighter, index) => beats.push({
+          type: 'collapse_shield',
+          atMs: 520 + (index * 160),
+          durationMs: 340,
+          ...fighter
+        }));
+      fighters
+        .filter(fighter => fighter.hpDamage > 0)
+        .forEach((fighter, index) => beats.push({
+          type: 'collapse_damage',
+          atMs: 940 + (index * 280),
+          durationMs: 420,
+          ...fighter,
+          audioCue: 'arena.hit'
+        }));
+      beats.push({
+        type: 'collapse_hud',
+        atMs: 1_520,
+        durationMs: 420,
+        fighters
+      });
     } else if (type === 'battle_completed') {
       scene = 'battle_finale';
       beats = [{

@@ -156,7 +156,9 @@ function createRealRoutes(rulesVersion = 5) {
     battleMatchService,
     giftCatalogProvider: () => [],
     configProvider: {
-      getConfig: () => ({ streamMonsters: { hatchDurationMs: 120_000 } }),
+      getConfig: () => ({
+        streamMonsters: { hatchDurationMs: 120_000, rulesVersion }
+      }),
       updateConfig: jest.fn()
     }
   });
@@ -165,6 +167,203 @@ function createRealRoutes(rulesVersion = 5) {
 }
 
 describe('Stream Monsters rules-v5 battle routes', () => {
+  test('reports the active v8 contract while preserving legacy replay versions', () => {
+    const { registered, sqlite, battleMatchService } = createRealRoutes(8);
+    try {
+      insertMonster(sqlite, {
+        id: 'v8-route-alpha',
+        userId: 'viewer-v8-route-a',
+        element: 'Ember',
+        templateId: 'ashfang',
+        agility: 20
+      });
+      insertMonster(sqlite, {
+        id: 'v8-route-beta',
+        userId: 'viewer-v8-route-b',
+        element: 'Tide',
+        templateId: 'ripple',
+        agility: 10
+      });
+      battleMatchService.join({ userId: 'viewer-v8-route-a' });
+      const reserved = battleMatchService.join({ userId: 'viewer-v8-route-b' });
+
+      const stateRoute = registered.find(entry => (
+        entry.method === 'GET' && entry.routePath === '/api/streammonsters/state'
+      ));
+      const state = response();
+      stateRoute.handler({ query: {} }, state);
+      expect(state.body.config.rulesVersion).toBe(8);
+      expect(state.body.battle.rulesVersion).toBe(8);
+      expect(state.body.battle.matches).toEqual([
+        expect.objectContaining({
+          matchId: reserved.match.matchId,
+          rulesVersion: 8
+        })
+      ]);
+
+      const battleRoute = registered.find(entry => (
+        entry.method === 'GET' &&
+        entry.routePath === '/api/streammonsters/battle-state'
+      ));
+      const battleState = response();
+      battleRoute.handler({}, battleState);
+      expect(battleState.body).toEqual(expect.objectContaining({
+        success: true,
+        rulesVersion: 8,
+        matches: [
+          expect.objectContaining({
+            matchId: reserved.match.matchId,
+            rulesVersion: 8
+          })
+        ]
+      }));
+
+      [5, 6, 7].forEach(version => {
+        const matchId = `legacy-v${version}-route-contract`;
+        sqlite.prepare(`
+          INSERT INTO streammonsters_matches (
+            match_id, state, phase_version, seed, rules_version, round_number,
+            created_at_ms, updated_at_ms
+          ) VALUES (?, 'completed', 1, ?, ?, 0, 1, 1)
+        `).run(matchId, `legacy-v${version}-seed`, version);
+        expect(
+          battleMatchService.getPublicNormalizedReplay(matchId, 0, 50)
+        ).toEqual(expect.objectContaining({
+          matchId,
+          rulesVersion: version,
+          replayVersion: version
+        }));
+      });
+    } finally {
+      sqlite.close();
+    }
+  });
+
+  test('projects stored legacy v7 actions with their v7 public fields', () => {
+    const { sqlite, battleMatchService } = createRealRoutes(8);
+    try {
+      battleMatchService.store.createBattle({
+        battleId: 'legacy-v7-action',
+        seed: 'private-legacy-seed',
+        monsterAId: 'legacy-private-alpha',
+        monsterBId: 'legacy-private-beta',
+        userAId: 'private-viewer-a',
+        userBId: 'private-viewer-b',
+        winnerMonsterId: 'legacy-private-beta',
+        rulesVersion: 7,
+        createdAtMs: 1,
+        result: {
+          winnerId: 'legacy-private-beta',
+          rounds: [{
+            round: 1,
+            actions: [{
+              round: 1,
+              sequence: 1,
+              actorId: 'legacy-private-alpha',
+              targetId: 'legacy-private-beta',
+              requestedChoice: 'A',
+              choice: 'A',
+              choiceFallback: null,
+              skill: {
+                id: 'ashfang:A',
+                name: 'Ashfang: Flamefang',
+                icon: '🔥',
+                shortText: 'A fierce strike that leaves a brief burn.',
+                shortTextKey: 'skillEffectAshfangAStage1',
+                type: 'attack',
+                element: 'Ember',
+                vfxKey: 'ashfang:attack',
+                role: 'striker',
+                effects: [
+                  { type: 'damage', power: 4 },
+                  { type: 'burn', power: 1 }
+                ]
+              },
+              hits: [{
+                index: 1,
+                requestedDamage: 9,
+                shieldPenetrated: 0,
+                shieldAbsorbed: 0,
+                hpDamage: 9,
+                evaded: false
+              }],
+              outcomes: [{ type: 'burn', amount: 1, pending: 1 }],
+              retaliations: [],
+              statusEffects: [],
+              rolls: [{
+                purpose: 'evade',
+                hitIndex: 1,
+                chance: 0,
+                value: 42
+              }],
+              after: {
+                actor: {
+                  hp: 30,
+                  maxHp: 30,
+                  shield: 0,
+                  charge: 25
+                },
+                target: {
+                  hp: 0,
+                  maxHp: 30,
+                  shield: 0,
+                  charge: 0
+                }
+              },
+              terminal: true,
+              knockouts: [{
+                monsterId: 'legacy-private-beta',
+                cause: 'skill'
+              }],
+              knockout: {
+                monsterId: 'legacy-private-beta',
+                cause: 'skill'
+              }
+            }]
+          }]
+        }
+      });
+
+      const replay = battleMatchService.getPublicNormalizedReplay(
+        'legacy-v7-action',
+        0,
+        50
+      );
+
+      expect(replay).toEqual(expect.objectContaining({
+        rulesVersion: 7,
+        replayVersion: 7
+      }));
+      expect(replay.actions).toEqual([
+        expect.objectContaining({
+          rulesVersion: 7,
+          actorSlot: 1,
+          targetSlot: 2,
+          skill: expect.objectContaining({
+            role: 'striker',
+            effects: [
+              { type: 'damage', power: 4 },
+              { type: 'burn', power: 1 }
+            ]
+          }),
+          rolls: [{
+            purpose: 'evade',
+            hitIndex: 1,
+            chance: 0,
+            value: 42
+          }],
+          knockouts: [{ slot: 2, cause: 'skill' }],
+          knockout: { slot: 2, cause: 'skill' }
+        })
+      ]);
+      expect(JSON.stringify(replay)).not.toMatch(
+        /legacy-private|private-viewer|private-legacy-seed/
+      );
+    } finally {
+      sqlite.close();
+    }
+  });
+
   test('serves a redacted public battle snapshot', () => {
     const { registered, battleMatchService } = createRoutes();
     const route = registered.find(entry => (

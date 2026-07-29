@@ -165,6 +165,8 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/)),
   rule(['POST'], exact('/api/streammonsters/overlay/heartbeat')),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
+  rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/streammonsters-egg-stage-view.js')),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/locales\/(?:de|en|es|fr)\.json$/)),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/branding/stream-monsters-icon.png')),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/branding/stream-monsters-logo.png')),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/audio/manifest.json')),
@@ -427,6 +429,7 @@ lastevent.update.topgift
 streammonsters:achievement_unlocked
 streammonsters:arena_rating_changed
 streammonsters:battle_action
+streammonsters:battle_arena_collapse
 streammonsters:battle_cancelled
 streammonsters:battle_choice_locked
 streammonsters:battle_choice_opened
@@ -442,10 +445,16 @@ streammonsters:battle_special_charged
 streammonsters:battle_started
 streammonsters:chat_result
 streammonsters:egg_boosted
+streammonsters:egg_landed
 streammonsters:egg_hatched
 streammonsters:egg_ready
 streammonsters:egg_spawned
+streammonsters:egg_stage_removed
+streammonsters:egg_stage_updated
 streammonsters:elemental_hour
+streammonsters:free_egg_claimed
+streammonsters:free_egg_public
+streammonsters:free_egg_reserved
 streammonsters:gift_combo
 streammonsters:hatch_started
 streammonsters:hype_changed

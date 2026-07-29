@@ -118,6 +118,84 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(dom.window.document.querySelector('[data-egg-id="free-public"]')).toBeNull();
   });
 
+  test('refreshes exact countdown, queue, ready, rotten and free-offer status without replaying landing', () => {
+    const Shelf = loadShelf();
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
+    `);
+    let now = 1_000;
+    const intervals = [];
+    const view = Shelf.createEggStageView({
+      document: dom.window.document,
+      now: () => now,
+      setInterval: (callback, milliseconds) => {
+        intervals.push({ callback, milliseconds });
+        return intervals.length;
+      },
+      clearInterval: () => {},
+      labels: {
+        incubating: 'Schlüpft in {time}',
+        queued: 'Warteschlange #{position}',
+        ready: 'Bereit · {command}',
+        expired: 'Verrottet',
+        reserved: 'Reserviert · {time}',
+        public: 'Gratis · {command}'
+      },
+      getHatchReference: () => '!schlupf',
+      getAdoptReference: () => '!adoptieren'
+    });
+
+    view.applySnapshot([
+      egg('owned-incubating'),
+      egg('owned-queued', {
+        state: 'queued',
+        queuePosition: 2,
+        timing: { landedAtMs: 1_000 }
+      }),
+      egg('owned-ready', { state: 'ready' }),
+      egg('owned-expired', { state: 'expired' }),
+      egg('free-reserved', {
+        provenance: 'free',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        timing: { landedAtMs: 1_000, publicAtMs: 61_000 }
+      }),
+      egg('free-public', {
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true
+      })
+    ]);
+
+    const item = id => dom.window.document.querySelector(`[data-egg-id="${id}"]`);
+    const label = id => item(id)?.querySelector('[data-egg-timing]')?.textContent;
+    expect(label('owned-incubating')).toBe('Schlüpft in 00:04');
+    expect(label('owned-queued')).toBe('Warteschlange #2');
+    expect(label('owned-ready')).toBe('Bereit · !schlupf');
+    expect(label('owned-expired')).toBe('Verrottet');
+    expect(label('free-reserved')).toBe('Reserviert · 01:00');
+    expect(label('free-public')).toBe('Gratis · !adoptieren');
+    expect(item('owned-incubating').classList.contains('landing')).toBe(false);
+
+    view.applyEvent('egg_landed', { eggStage: egg('fresh-landing') });
+    expect(item('fresh-landing').classList.contains('landing')).toBe(true);
+    now = 2_000;
+    intervals.find(entry => entry.milliseconds === 1_000).callback();
+    expect(label('owned-incubating')).toBe('Schlüpft in 00:03');
+    const landingEnd = new dom.window.Event('animationend');
+    Object.defineProperty(landingEnd, 'animationName', {
+      configurable: true,
+      value: 'egg-shelf-land'
+    });
+    item('fresh-landing').dispatchEvent(landingEnd);
+    expect(item('fresh-landing').classList.contains('landing')).toBe(false);
+
+    view.applySnapshot(view.model().visible);
+    expect(item('fresh-landing').classList.contains('landing')).toBe(false);
+    view.destroy();
+  });
+
   test('plays the shelf landing animation only once per egg id', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
@@ -149,6 +227,28 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     view.destroy();
   });
 
+  test('turns a live ready egg rotten without removing its shelf entry', () => {
+    const Shelf = loadShelf();
+    const dom = new JSDOM(`
+      <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
+    `);
+    const view = Shelf.createEggStageView({
+      document: dom.window.document,
+      labels: { expired: 'Rotten' }
+    });
+    view.applySnapshot([egg('rotten-live', { state: 'ready' })]);
+
+    view.applyEvent('egg_stage_updated', {
+      eggStage: egg('rotten-live', { state: 'expired' })
+    });
+
+    const item = dom.window.document.querySelector('[data-egg-id="rotten-live"]');
+    expect(item).not.toBeNull();
+    expect(item.dataset.state).toBe('expired');
+    expect(item.querySelector('[data-egg-timing]').textContent).toBe('Rotten');
+    view.destroy();
+  });
+
   test('builds compact adoption notices only for reserved and public free eggs', () => {
     const Shelf = loadShelf();
     expect(Shelf.buildAdoptionNotice('free_egg_reserved', {
@@ -161,6 +261,8 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     })).toEqual({
       kind: 'reserved',
       viewer: '@viewer_one',
+      placement: 'upper-third',
+      size: 'compact',
       durationMs: 5_000
     });
     expect(Shelf.buildAdoptionNotice('free_egg_public', {
@@ -173,6 +275,8 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     })).toEqual({
       kind: 'public',
       viewer: 'Viewer',
+      placement: 'upper-third',
+      size: 'compact',
       durationMs: 5_000
     });
     expect(Shelf.buildAdoptionNotice('egg_landed', {

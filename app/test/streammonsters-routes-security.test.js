@@ -12,7 +12,7 @@ function createSubject({
   const config = {
     enabled: true,
     creatorName: 'private-creator',
-    rulesVersion: 5,
+    rulesVersion: 8,
     hatchDurationMs: 120_000,
     visualPack: 'furry'
   };
@@ -88,7 +88,13 @@ describe('Stream Monsters Rules v5 route security', () => {
     }, res);
     expect(JSON.stringify(res.payload)).not.toMatch(/private-creator|arbitrary-viewer|user_id/);
     expect(res.payload.config.visualPack).toBe('furry');
-    expect(res.payload.battle).toEqual({ rulesVersion: 7, matches: [] });
+    expect(res.payload.config.rulesVersion).toBe(8);
+    expect(res.payload.battle).toEqual({
+      rulesVersion: 8,
+      gameplayPace: 'arcade-rally',
+      portraitBattleMode: 'takeover-74',
+      matches: []
+    });
   });
 
   test('keeps creator-only GCCE diagnostics out of the public overlay snapshot', async () => {

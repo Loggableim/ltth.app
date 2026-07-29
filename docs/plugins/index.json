@@ -871,30 +871,30 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/features/stream-monsters-creator-1.5.png",
-      "en": "/screenshots/features/stream-monsters-creator-1.5.png",
-      "es": "/screenshots/features/stream-monsters-creator-1.5.png",
-      "fr": "/screenshots/features/stream-monsters-creator-1.5.png"
+      "de": "/screenshots/features/stream-monsters-creator-1.11.png",
+      "en": "/screenshots/features/stream-monsters-creator-1.11.png",
+      "es": "/screenshots/features/stream-monsters-creator-1.11.png",
+      "fr": "/screenshots/features/stream-monsters-creator-1.11.png"
     },
     "translations": {
       "de": {
         "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.8 verbindet vom Creator aktivierte Gift-Eier, optionale wiederkehrende Gratis-Eier, 72 gebündelte Furry-Formen, permanente Entwicklung und verdeckte A/B/C-Duelle in einer Portrait-first-Arena.",
+        "summary": "Stream Monsters 1.11 verbindet Gift- und optionale Gratis-Eier, 72 gebündelte Furry-Formen, zweisprachige Overlay-Führung und K.-o.-Duelle nach Rules v8 in einer TikTok-sicheren 74/26-Portrait-Arena.",
         "firstResult": "Der Creator zeigt Live-Bereitschaft, Gift- und Gratis-Eier, alle 72 Formen, die verdeckte A/B/C-Arena und die OBS-Browserquelle, ohne eine LIVE-Aktion auszulösen."
       },
       "en": {
         "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.8 combines creator-enabled gift eggs, optional recurring free eggs, 72 bundled Furry forms, permanent progression, and sealed A/B/C battles in a portrait-first arena.",
+        "summary": "Stream Monsters 1.11 combines gift and optional free eggs, 72 bundled Furry forms, bilingual overlay guidance, and sealed Rules v8 K.O. battles in a TikTok-safe 74/26 portrait arena.",
         "firstResult": "The Creator shows live readiness, gift and free eggs, all 72 forms, the sealed A/B/C arena, and the OBS browser source without triggering a LIVE action."
       },
       "es": {
         "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.8 combina huevos por regalos activados por el creador, huevos gratis periódicos opcionales, 72 formas Furry incluidas, progreso permanente y combates A/B/C sellados en una arena vertical.",
+        "summary": "Stream Monsters 1.11 combina huevos por regalos y gratis opcionales, 72 formas Furry, guía bilingüe y combates Rules v8 hasta K.O. en una arena vertical 74/26 segura para TikTok.",
         "firstResult": "Creator muestra la preparación, los huevos por regalos y gratis, las 72 formas, la arena A/B/C sellada y la fuente de navegador de OBS sin activar ninguna acción LIVE."
       },
       "fr": {
         "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.8 réunit les œufs issus des cadeaux activés par le Creator, des œufs gratuits récurrents facultatifs, 72 formes Furry, une progression permanente et des combats A/B/C scellés dans une arène portrait.",
+        "summary": "Stream Monsters 1.11 réunit les œufs-cadeaux et gratuits facultatifs, 72 formes Furry, un guide bilingue et des combats Rules v8 jusqu’au K.-O. dans une arène portrait TikTok 74/26.",
         "firstResult": "Le Creator affiche la préparation, les œufs par cadeaux et gratuits, les 72 formes, l’arène A/B/C scellée et la source navigateur OBS sans déclencher d’action LIVE."
       }
     }

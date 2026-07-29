@@ -13,6 +13,20 @@ function finiteNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function publicViewerName(value) {
+  const candidate = boundedText(value, 64);
+  const normalized = candidate?.replace(/^@+/, '');
+  if (
+    !normalized ||
+    /^unknown$/i.test(normalized) ||
+    /^\d+$/.test(normalized) ||
+    /^tiktok:\d+$/i.test(normalized)
+  ) {
+    return null;
+  }
+  return candidate;
+}
+
 function safeAssetReference(value) {
   const reference = boundedText(value, 512);
   if (!reference) return null;
@@ -84,12 +98,11 @@ class EggStageProjector {
       element: boundedText(egg.element, 24),
       variant: boundedText(egg.variant, 24) || 'standard',
       state: boundedText(egg.state, 24) || 'incubating',
-      displayName: boundedText(
-        egg.display_name ??
-        egg.displayName ??
-        this.store?.getViewerDisplayName?.(egg.user_id ?? egg.userId),
-        64
-      ) || 'Viewer',
+      displayName: [
+        egg.display_name,
+        egg.displayName,
+        this.store?.getViewerDisplayName?.(egg.user_id ?? egg.userId)
+      ].map(publicViewerName).find(Boolean) || 'Viewer',
       avatarRef: safeAssetReference(egg.avatar_ref ?? egg.avatarRef),
       imageUrl: safeAssetReference(egg.image_url ?? egg.imageUrl),
       timing: {
@@ -112,7 +125,7 @@ class EggStageProjector {
       element: boundedText(offer.element, 24),
       variant: boundedText(offer.variant, 24) || 'standard',
       state,
-      displayName: boundedText(offer.source_display_name, 64) || 'Viewer',
+      displayName: publicViewerName(offer.source_display_name) || 'Viewer',
       avatarRef: safeAssetReference(offer.source_avatar_ref),
       imageUrl: safeAssetReference(offer.image_url),
       timing: {
@@ -141,4 +154,5 @@ class EggStageProjector {
 }
 
 module.exports = EggStageProjector;
+module.exports.publicViewerName = publicViewerName;
 module.exports.safeAssetReference = safeAssetReference;

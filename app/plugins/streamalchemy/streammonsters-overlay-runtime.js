@@ -9,6 +9,7 @@
     'battle_started',
     'stance_revealed',
     'battle_skill_used',
+    'battle_arena_collapse',
     'battle_special_charged',
     'battle_round',
     'battle_completed',
@@ -20,12 +21,15 @@
     'egg_spawned',
     'egg_landed',
     'egg_ready',
+    'egg_stage_updated',
     'hatch_started',
     'egg_hatched',
     'free_egg_reserved',
     'free_egg_public',
     'free_egg_claimed',
     'egg_stage_removed',
+    'stat_choice_opened',
+    'monster_stat_prompt',
     'monster_discovered',
     'monster_evolved',
     'monster_visual_evolved'
@@ -40,7 +44,6 @@
     'rank_card',
     'monster_xp_awarded',
     'monster_level_up',
-    'monster_stat_prompt',
     'monster_stat_chosen',
     'monster_stat_auto_assigned',
     'arena_rating_changed',
@@ -247,6 +250,267 @@
     [600_000, 'duration10Minutes'],
     [1_800_000, 'duration30Minutes']
   ]);
+  const SUPPORTED_OVERLAY_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
+
+  function normalizeOverlayLanguage(input = {}) {
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requested = Array.isArray(candidate.locales) ? candidate.locales : [];
+    const locales = [...new Set(requested
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => SUPPORTED_OVERLAY_LOCALES.includes(locale)))]
+      .slice(0, 2);
+    const rawPrimary = String(candidate.primaryLocale || '').trim().toLowerCase();
+    if (!rawPrimary && !requested.length) {
+      return {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      };
+    }
+    const primaryLocale = SUPPORTED_OVERLAY_LOCALES.includes(rawPrimary)
+      ? rawPrimary
+      : (locales[0] || 'de');
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: [primaryLocale, ...locales.filter(locale => locale !== primaryLocale)]
+        .slice(0, 2),
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : 5
+    };
+  }
+
+  function interpolateOverlayText(template, params = {}) {
+    return String(template || '').replace(
+      /\{\{?(\w+)\}?\}/g,
+      (match, name) => Object.prototype.hasOwnProperty.call(params, name)
+        ? String(params[name])
+        : match
+    );
+  }
+
+  function overlayCatalog(catalog = {}) {
+    return catalog?.plugins?.streamalchemy?.ui?.monsters &&
+      typeof catalog.plugins.streamalchemy.ui.monsters === 'object'
+      ? catalog.plugins.streamalchemy.ui.monsters
+      : (catalog && typeof catalog === 'object' ? catalog : {});
+  }
+
+  function createOverlayLocaleResolver({
+    config = {},
+    loadLocale = async () => ({})
+  } = {}) {
+    let language = normalizeOverlayLanguage(config);
+    let activeLocale = language.primaryLocale;
+    const catalogs = new Map();
+    const loading = new Map();
+
+    function ensureLocale(locale) {
+      const normalized = String(locale || '').trim().toLowerCase();
+      if (!SUPPORTED_OVERLAY_LOCALES.includes(normalized)) {
+        return Promise.resolve({});
+      }
+      if (catalogs.has(normalized)) return Promise.resolve(catalogs.get(normalized));
+      if (!loading.has(normalized)) {
+        loading.set(normalized, Promise.resolve()
+          .then(() => loadLocale(normalized))
+          .then(catalog => {
+            const normalizedCatalog = overlayCatalog(catalog);
+            catalogs.set(normalized, normalizedCatalog);
+            loading.delete(normalized);
+            return normalizedCatalog;
+          })
+          .catch(() => {
+            catalogs.set(normalized, {});
+            loading.delete(normalized);
+            return {};
+          }));
+      }
+      return loading.get(normalized);
+    }
+
+    async function ready() {
+      await Promise.all(language.locales.map(ensureLocale));
+      await ensureLocale(language.primaryLocale);
+      return language;
+    }
+
+    function translate(key, params = {}, locale = activeLocale) {
+      const normalizedKey = String(key || '').trim();
+      if (!normalizedKey) return '';
+      const requestedLocale = SUPPORTED_OVERLAY_LOCALES.includes(locale)
+        ? locale
+        : language.primaryLocale;
+      const candidates = [
+        requestedLocale,
+        language.primaryLocale,
+        ...language.locales
+      ];
+      for (const candidate of [...new Set(candidates)]) {
+        const translated = catalogs.get(candidate)?.[normalizedKey];
+        if (typeof translated === 'string' && translated.trim()) {
+          return interpolateOverlayText(translated, params);
+        }
+      }
+      return '';
+    }
+
+    async function configure(nextConfig = {}) {
+      language = normalizeOverlayLanguage(nextConfig);
+      if (!language.locales.includes(activeLocale)) {
+        activeLocale = language.primaryLocale;
+      }
+      await ready();
+      return language;
+    }
+
+    return {
+      configure,
+      ready,
+      translate,
+      setLocale(locale) {
+        const normalized = String(locale || '').trim().toLowerCase();
+        activeLocale = language.locales.includes(normalized)
+          ? normalized
+          : language.primaryLocale;
+        return activeLocale;
+      },
+      locale: () => activeLocale,
+      config: () => ({
+        ...language,
+        locales: [...language.locales]
+      })
+    };
+  }
+
+  function criticalLocalePages(config = {}, {
+    nowMs = Date.now(),
+    deadlineMs = null
+  } = {}) {
+    const normalized = normalizeOverlayLanguage(config);
+    const configuredDurationMs = normalized.secondsPerLocale * 1_000;
+    const hasDeadline = deadlineMs !== null &&
+      deadlineMs !== undefined &&
+      deadlineMs !== '';
+    const deadline = Number(deadlineMs);
+    const remainingMs = hasDeadline && Number.isFinite(deadline)
+      ? Math.max(0, deadline - (Number(nowMs) || 0))
+      : null;
+    if (remainingMs === 0) return [];
+    const durationMs = remainingMs == null
+      ? configuredDurationMs
+      : Math.min(
+          configuredDurationMs,
+          Math.floor(remainingMs / normalized.locales.length)
+        );
+    if (durationMs < 1) return [];
+    return normalized.locales.map(locale => ({ locale, durationMs }));
+  }
+
+  function statSequenceKey(data = {}) {
+    const promptId = String(data.promptId || '').trim();
+    if (promptId) return `stat:${promptId}`;
+    const matchId = String(data.matchId || '').trim();
+    const slot = Number(data.slot);
+    if (matchId && Number.isInteger(slot) && slot > 0) {
+      return `stat:${matchId}:${slot}`;
+    }
+    return null;
+  }
+
+  function createCriticalLocaleSequencer({
+    getConfig = () => ({}),
+    applyLocale = () => {},
+    now = () => Date.now(),
+    setTimeout: schedule = globalThis.setTimeout,
+    clearTimeout: cancelSchedule = globalThis.clearTimeout
+  } = {}) {
+    const active = new Map();
+
+    function cancel(key) {
+      const normalized = String(key || '').trim();
+      const token = active.get(normalized);
+      if (!token) return false;
+      token.cancelled = true;
+      if (token.timer != null && typeof cancelSchedule === 'function') {
+        cancelSchedule(token.timer);
+      }
+      token.resolve?.(false);
+      active.delete(normalized);
+      return true;
+    }
+
+    function waitForPage(token, durationMs) {
+      return new Promise(resolve => {
+        token.resolve = resolve;
+        token.timer = schedule(() => {
+          token.timer = null;
+          token.resolve = null;
+          resolve(!token.cancelled);
+        }, Math.max(0, Number(durationMs) || 0));
+      });
+    }
+
+    async function run({
+      key,
+      deadlineMs = null,
+      renderPage
+    } = {}) {
+      const normalizedKey = String(key || '').trim() ||
+        `critical:${Math.max(0, Number(now()) || 0)}`;
+      cancel(normalizedKey);
+      const token = { cancelled:false, timer:null, resolve:null };
+      active.set(normalizedKey, token);
+      const config = normalizeOverlayLanguage(getConfig());
+      const pages = criticalLocalePages(config, {
+        nowMs:now(),
+        deadlineMs
+      });
+      try {
+        for (let index = 0; index < pages.length; index += 1) {
+          if (token.cancelled) break;
+          const page = pages[index];
+          applyLocale(page.locale);
+          await renderPage?.({ ...page, index, total:pages.length });
+          if (token.cancelled) break;
+          if (!await waitForPage(token, page.durationMs)) break;
+        }
+      } finally {
+        if (active.get(normalizedKey) === token) active.delete(normalizedKey);
+        applyLocale(config.primaryLocale);
+      }
+      return !token.cancelled && pages.length > 0;
+    }
+
+    return {
+      cancel,
+      run,
+      isActive:key => active.has(String(key || '').trim())
+    };
+  }
+
+  function pendingCriticalLocales(config = {}, shownLocales = []) {
+    const shown = new Set(
+      Array.isArray(shownLocales)
+        ? shownLocales.map(locale => String(locale || '').trim().toLowerCase())
+        : []
+    );
+    return normalizeOverlayLanguage(config).locales.filter(locale => !shown.has(locale));
+  }
+
+  function localeForStableEvent(eventId, config = {}) {
+    const locales = normalizeOverlayLanguage(config).locales;
+    const fingerprint = String(eventId || '');
+    if (!fingerprint || locales.length < 2) return locales[0];
+    let hash = 0;
+    for (let index = 0; index < fingerprint.length; index += 1) {
+      hash = (hash + fingerprint.charCodeAt(index)) >>> 0;
+    }
+    return locales[hash % locales.length];
+  }
 
   function normalizeVolume(storedValue) {
     const numeric = Number(storedValue);
@@ -331,6 +595,9 @@
     let activeGroupKey = null;
     let activeGroupDeadlineMs = 0;
     let durableTurn = false;
+    let battleActive = false;
+    let activeBattleId = null;
+    let activeGroupBattleId = null;
 
     function priority(type) {
       if (type === 'state_snapshot') return 4;
@@ -340,6 +607,8 @@
 
     function groupKey(type, data = {}) {
       if (!CRITICAL_TYPES.has(type)) return null;
+      const battleId = data.battleId || data.matchId ||
+        data.battle?.battleId || data.battle?.battle_id;
       const correlationId = String(
         data.correlationId ||
         data.correlation_id ||
@@ -360,9 +629,28 @@
         const monsterId = data.monster?.monster_id || data.monsterId;
         return monsterId ? `evolution:${monsterId}` : null;
       }
-      const battleId = data.battleId || data.matchId ||
-        data.battle?.battleId || data.battle?.battle_id;
       return battleId ? `battle:${battleId}` : null;
+    }
+
+    function battleIdForEntry(entry = {}) {
+      if (
+        entry.type !== 'stance_revealed' &&
+        entry.type !== 'battle_started' &&
+        !String(entry.type || '').startsWith('battle_')
+      ) return null;
+      const data = entry.data || {};
+      return String(
+        data.battleId ||
+        data.matchId ||
+        data.battle?.battleId ||
+        data.battle?.battle_id ||
+        ''
+      ).trim() || null;
+    }
+
+    function isActiveBattleEntry(entry) {
+      const battleId = battleIdForEntry(entry);
+      return Boolean(battleId) && (!activeBattleId || battleId === activeBattleId);
     }
 
     function totalSize() {
@@ -383,6 +671,7 @@
         'egg_spawned',
         'egg_landed',
         'egg_ready',
+        'egg_stage_updated',
         'hatch_started',
         'egg_hatched',
         'free_egg_reserved',
@@ -440,6 +729,7 @@
 
     function activateCriticalGroup(entry, now) {
       activeGroupKey = entry.groupKey;
+      activeGroupBattleId = battleIdForEntry(entry);
       activeGroupDeadlineMs = Math.max(
         Number(now) || 0,
         Number(entry.enqueuedAt) || 0
@@ -448,11 +738,13 @@
 
     function finishCriticalGroup() {
       activeGroupKey = null;
+      activeGroupBattleId = null;
       activeGroupDeadlineMs = 0;
       durableTurn = true;
     }
 
     function releaseDelay(now = Date.now()) {
+      if (battleActive && !entries.some(isActiveBattleEntry)) return null;
       if (!activeGroupKey || activeGroupDeadlineMs <= 0) return null;
       return Math.max(0, activeGroupDeadlineMs - (Number(now) || 0));
     }
@@ -546,6 +838,17 @@
         finishCriticalGroup();
       }
 
+      if (battleActive) {
+        const battleIndex = entries.findIndex(isActiveBattleEntry);
+        if (battleIndex < 0) return null;
+        const next = entries.splice(battleIndex, 1)[0];
+        if (next.groupKey) {
+          activateCriticalGroup(next, now);
+          if (closesCriticalGroup(next.type, next.data)) finishCriticalGroup();
+        }
+        return next;
+      }
+
       if (durableTurn) {
         const durableIndex = entries.findIndex(entry => entry.priority === 2);
         durableTurn = false;
@@ -576,8 +879,21 @@
       entries.length = 0;
       seenFingerprints.clear();
       activeGroupKey = null;
+      activeGroupBattleId = null;
       activeGroupDeadlineMs = 0;
       durableTurn = false;
+    }
+
+    function setBattleActive(active, matchId = null) {
+      battleActive = Boolean(active);
+      activeBattleId = battleActive && String(matchId || '').trim()
+        ? String(matchId).trim()
+        : null;
+      if (!battleActive && (activeGroupKey?.startsWith('battle:') || activeGroupBattleId)) {
+        finishCriticalGroup();
+      }
+      if (!battleActive) durableTurn = false;
+      return battleActive;
     }
 
     return {
@@ -585,9 +901,11 @@
       beginSnapshot,
       prependSnapshot,
       releaseDelay,
+      setBattleActive,
       shift,
       snapshot: orderedEntries,
-      size: totalSize
+      size: totalSize,
+      battleActive: () => battleActive
     };
   }
 
@@ -624,6 +942,96 @@
           cursor: Math.max(0, Number(match?.cursor) || 0)
         }))
         .filter(match => match.matchId);
+    }
+
+    function snapshotRestorationEvents(snapshot = {}) {
+      const battle = snapshot?.battle && typeof snapshot.battle === 'object'
+        ? snapshot.battle
+        : snapshot;
+      const battleMatches = Array.isArray(battle?.matches) ? battle.matches : [];
+      const events = [];
+      for (const match of battleMatches) {
+        const matchId = String(match?.matchId || '').trim();
+        if (!matchId) continue;
+        const cursor = Math.max(0, Number(match?.cursor) || 0);
+        const locks = Array.isArray(match?.choiceLocks) ? match.choiceLocks : [];
+        for (const lock of locks) {
+          const round = Math.max(1, Number(lock?.round) || Number(match?.roundNumber) || 1);
+          const slot = Number(lock?.slot);
+          if (![1, 2].includes(slot) || lock?.locked !== true) continue;
+          const eventId = `${matchId}:snapshot:${cursor}:lock:${round}:${slot}`;
+          events.push({
+            type: 'battle_choice_locked',
+            sequence: 0,
+            data: {
+              matchId,
+              correlationId: matchId,
+              eventId,
+              snapshotRestore: true,
+              decision: {
+                round,
+                slot,
+                locked: true,
+                source: lock?.source === 'timeout' ? 'timeout' : 'viewer',
+                deadlineMs: Math.max(0, Number(lock?.deadlineMs) || 0)
+              }
+            }
+          });
+        }
+        const reveal = match?.revealedChoices;
+        const choices = Array.isArray(reveal?.choices)
+          ? reveal.choices.map(choice => ({
+              slot: Number(choice?.slot),
+              choice: choice?.choice,
+              source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
+            })).sort((left, right) => left.slot - right.slot)
+          : [];
+        if (
+          choices.length === 2 &&
+          choices[0].slot === 1 &&
+          choices[1].slot === 2 &&
+          choices.every(choice => ['A', 'B', 'C'].includes(choice.choice))
+        ) {
+          const round = Math.max(1, Number(reveal?.round) || 1);
+          const eventId = `${matchId}:snapshot:${cursor}:reveal:${round}`;
+          events.push({
+            type: 'battle_choices_revealed',
+            sequence: 0,
+            data: {
+              matchId,
+              correlationId: matchId,
+              eventId,
+              snapshotRestore: true,
+              round,
+              choices
+            }
+          });
+        }
+      }
+      const prompt = battle?.statPrompt;
+      if (prompt && typeof prompt === 'object') {
+        const promptId = String(prompt.promptId || '').trim();
+        const matchId = String(prompt.matchId || '').trim();
+        const deadlineMs = Number(prompt.deadlineMs);
+        const choices = Array.isArray(prompt.choices) ? prompt.choices : [];
+        if (
+          (promptId || matchId) &&
+          Number.isFinite(deadlineMs) &&
+          choices.length === 4 &&
+          choices.every((choice, index) => String(choice) === String(index + 1))
+        ) {
+          events.push({
+            type: 'monster_stat_prompt',
+            sequence: 0,
+            data: {
+              ...prompt,
+              eventId: `snapshot:stat:${promptId || `${matchId}:${prompt.slot || 0}`}:${deadlineMs}`,
+              snapshotRestore: true
+            }
+          });
+        }
+      }
+      return events;
     }
 
     function eventMatchId(type, data = {}) {
@@ -804,11 +1212,19 @@
             replayPending: false
           });
         }
+        let restored = 0;
+        for (const event of snapshotRestorationEvents(snapshot)) {
+          if (seenEventIds.has(event.data.eventId)) continue;
+          await present(event);
+          rememberEventId(event.data.eventId);
+          restored += 1;
+        }
         initialized = true;
         trimMatches();
         return {
           baseline: true,
           replayed: 0,
+          restored,
           caughtUp: true
         };
       }
@@ -1085,6 +1501,63 @@
       a.y + a.height > b.y;
   }
 
+  function resolveBattleWinnerSlot(payload = {}, battleIds = []) {
+    const explicit = payload.winnerSlot;
+    if (explicit !== null && explicit !== undefined && explicit !== '') {
+      const slot = Number(explicit);
+      if ([0, 1, 2].includes(slot)) return slot;
+    }
+    if (String(payload.terminalReason || '').toLowerCase() === 'double_knockout') {
+      return 0;
+    }
+    const winner = payload.winner && typeof payload.winner === 'object'
+      ? payload.winner
+      : {};
+    const winnerId = String(
+      winner.monsterId ?? winner.monster_id ??
+      payload.battle?.winnerMonsterId ?? payload.battle?.winner_monster_id ??
+      ''
+    ).trim();
+    if (!winnerId) return 0;
+    const normalizedIds = [battleIds[0], battleIds[1]]
+      .map(value => String(value ?? '').trim());
+    if (normalizedIds[0] && winnerId === normalizedIds[0]) return 1;
+    if (normalizedIds[1] && winnerId === normalizedIds[1]) return 2;
+    return 0;
+  }
+
+  function notificationShelfLayout({
+    width,
+    height,
+    shelfHeight = 112,
+    gap = 12
+  } = {}) {
+    const safeWidth = Math.max(0, Number(width) || 0);
+    const safeHeight = Math.max(0, Number(height) || 0);
+    const safeShelfHeight = Math.min(
+      safeHeight,
+      Math.max(0, Number(shelfHeight) || 0)
+    );
+    const safeGap = Math.max(0, Number(gap) || 0);
+    const gameplayBottomY = safeHeight * 0.74;
+    const shelfY = Math.max(0, gameplayBottomY - safeShelfHeight);
+    return {
+      gap: safeGap,
+      shelf: {
+        x: 0,
+        y: shelfY,
+        width: safeWidth,
+        height: safeShelfHeight
+      },
+      notification: {
+        x: 0,
+        y: 0,
+        width: safeWidth,
+        height: Math.max(0, shelfY - safeGap)
+      }
+    };
+  }
+
   function safeZoneCollisions({ reveal, reserved = {} } = {}) {
     return Object.entries(reserved)
       .filter(([, rectangle]) => rectanglesOverlap(reveal, rectangle))
@@ -1096,6 +1569,8 @@
     apiErrorKey,
     anchorPlacement,
     createBattleReplaySynchronizer,
+    createCriticalLocaleSequencer,
+    createOverlayLocaleResolver,
     createLayoutController,
     createPriorityQueue,
     createReconnectController,
@@ -1105,17 +1580,24 @@
     elementKey: value => enumKey(ELEMENT_KEYS, value),
     hypeMilestonePoints,
     hatchDurationSpec,
+    criticalLocalePages,
     isCritical: type => CRITICAL_TYPES.has(type),
     localizedPayloadField,
+    localeForStableEvent,
     normalizeVolume,
     normalizeBattleEventType,
+    normalizeOverlayLanguage,
+    notificationShelfLayout,
     overlayHeartbeatPayload,
+    pendingCriticalLocales,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
     replayableRecentEvents,
     rectanglesOverlap,
+    resolveBattleWinnerSlot,
     resolveLayoutSettings,
     safeZoneCollisions,
     statPromptKey,
+    statSequenceKey,
     variantKey: value => enumKey(VARIANT_KEYS, value)
   };
 }));

@@ -9,6 +9,9 @@ const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammon
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 const chatViewRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
+const eggStageView = require('../plugins/streamalchemy/streammonsters-egg-stage-view');
+const arenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
+const effectsRenderer = require('../plugins/streamalchemy/streammonsters-effects-renderer');
 
 const activeDoms = new Set();
 const activeGcceInstances = new Set();
@@ -143,9 +146,18 @@ function createEggEvents(plugin) {
   const earlyHatch = commands.hatch('viewer-a', 1);
   now = 1_100;
   engine.markReadyEggs();
+  engine.hatchEgg('viewer-a', 1);
   return {
+    giftEvents: emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_spawned' ||
+      entry.event === 'streammonsters:egg_landed'
+    )),
     spawned: emitted.find(entry => entry.event === 'streammonsters:egg_spawned').payload,
+    landed: emitted.find(entry => entry.event === 'streammonsters:egg_landed').payload,
     ready: emitted.find(entry => entry.event === 'streammonsters:egg_ready').payload,
+    hatchStarted: emitted.find(entry => entry.event === 'streammonsters:hatch_started').payload,
+    hatched: emitted.find(entry => entry.event === 'streammonsters:egg_hatched').payload,
+    stageRemoved: emitted.find(entry => entry.event === 'streammonsters:egg_stage_removed')?.payload,
     earlyHatch
   };
 }
@@ -157,12 +169,26 @@ async function createLiveOverlay(snapshot) {
     path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
     'utf8'
   );
-  const translations = JSON.parse(fs.readFileSync(
-    path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', 'en.json'),
-    'utf8'
-  )).plugins.streamalchemy.ui.monsters;
+  const localePayloads = Object.fromEntries(['de', 'en', 'es', 'fr'].map(locale => [
+    locale,
+    JSON.parse(fs.readFileSync(
+      path.join(
+        process.cwd(),
+        'plugins',
+        'streamalchemy',
+        'locales',
+        `${locale}.json`
+      ),
+      'utf8'
+    ))
+  ]));
+  const translations = localePayloads.en.plugins.streamalchemy.ui.monsters;
   const socketHandlers = new Map();
   const chatWaitResolvers = [];
+  const eggStageTimers = new Map();
+  const playedEffects = [];
+  let nextEggStageTimerId = 1;
+  let currentSnapshot = snapshot;
   let fetchFailure = null;
   const interpolate = (template, params = {}) => String(template).replace(
     /\{(\w+)\}/g,
@@ -185,14 +211,36 @@ async function createLiveOverlay(snapshot) {
       window.io = () => ({
         on: (event, handler) => socketHandlers.set(event, handler)
       });
-      window.fetch = jest.fn(async () => {
+      window.fetch = jest.fn(async input => {
+        const localeMatch = String(input || '').match(
+          /\/plugins\/streamalchemy\/locales\/(de|en|es|fr)\.json(?:\?|$)/
+        );
+        if (localeMatch) {
+          return {
+            ok: true,
+            json: async () => localePayloads[localeMatch[1]]
+          };
+        }
         if (fetchFailure) throw fetchFailure;
         return {
           ok: true,
-          json: async () => snapshot
+          json: async () => currentSnapshot
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersEggStageView = {
+        ...eggStageView,
+        createEggStageView: options => eggStageView.createEggStageView({
+          ...options,
+          setTimeout: (callback, milliseconds) => {
+            const timerId = nextEggStageTimerId;
+            nextEggStageTimerId += 1;
+            eggStageTimers.set(timerId, { callback, milliseconds });
+            return timerId;
+          },
+          clearTimeout: timerId => eggStageTimers.delete(timerId)
+        })
+      };
       window.StreamMonstersChatView = {
         ...chatViewRuntime,
         createChatView: options => chatViewRuntime.createChatView({
@@ -204,7 +252,9 @@ async function createLiveOverlay(snapshot) {
         createEffectsRenderer: () => ({
           init: () => {},
           resize: () => {},
-          play: async () => {}
+          play: async (scene, payload) => {
+            playedEffects.push({ scene, payload });
+          }
         })
       };
       window.StreamMonstersAudioCues = {};
@@ -223,6 +273,7 @@ async function createLiveOverlay(snapshot) {
   await flush();
   return {
     dom,
+    playedEffects,
     hint: () => dom.window.document.getElementById('hint'),
     chat: () => dom.window.document.getElementById('chat-card'),
     detail: () => dom.window.document.getElementById('chat-detail'),
@@ -232,8 +283,21 @@ async function createLiveOverlay(snapshot) {
       await flush();
       await flush();
     },
+    async settleEggAnimations() {
+      const pending = [...eggStageTimers.values()];
+      eggStageTimers.clear();
+      pending.forEach(timer => timer.callback());
+      await flush();
+      await flush();
+    },
     failFetch(error = new Error('state unavailable')) {
       fetchFailure = error;
+    },
+    setSnapshot(nextSnapshot) {
+      currentSnapshot = nextSnapshot;
+    },
+    hasSocketHandler(event) {
+      return socketHandlers.has(event);
     },
     async reconnect() {
       await socketHandlers.get('connect')();
@@ -287,21 +351,190 @@ describe('Stream Monsters review fix round 2 guidance', () => {
         messageKey: 'chatResultEggNotReady'
       }
     });
-    expect(overlay.detail().dataset.placement).toBe('upper');
+    expect(overlay.detail().dataset.placement).toBe('upper-third');
     expect(overlay.detail().dataset.kind).toBe('egg-wait');
     expect(overlay.detail().textContent).toContain('Public Hatcher');
-    expect(overlay.detail().textContent).toContain('The egg is still incubating');
-    expect(overlay.detail().textContent).toContain('Ready in 00:01');
+    expect(overlay.detail().textContent).toContain('Das Ei brütet noch');
+    expect(overlay.detail().textContent).toContain('Bereit in 00:01');
     expect(overlay.detail().textContent).not.toContain('viewer-a-secret');
     expect(overlay.chat().textContent).toBe('');
     await overlay.releaseChat();
 
     await overlay.emit('streammonsters:egg_ready', events.ready);
-    expect(overlay.hint().textContent).toBe('/schlupf [slot]');
+    expect(overlay.hint().textContent).toBe('/schlupf');
     expect(overlay.hint().textContent).not.toContain('/hatch');
 
     overlay.close();
     await gcce.destroy();
+  });
+
+  test('updates and clears the connected shelf through ready and hatch socket events', async () => {
+    const { gcce, plugin } = await createCollisionRuntime();
+    const events = createEggEvents(plugin);
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      config: {
+        hatchDurationMs: 120_000,
+        commandAliases: plugin.config.streamMonsters.commandAliases
+      },
+      gcce: plugin.getStreamMonstersGCCEState(),
+      eggStage: []
+    });
+    const shelfItem = visualId => overlay.dom.window.document.querySelector(
+      `[data-egg-id="${visualId}"]`
+    );
+    const timing = visualId => shelfItem(visualId)?.querySelector(
+      '[data-egg-timing]'
+    )?.textContent;
+    const visualId = events.landed.eggStage.visualId;
+    const neighbour = {
+      ...events.landed,
+      eventId: 'neighbour-landed',
+      correlationId: 'neighbour',
+      eggStage: {
+        ...events.landed.eggStage,
+        visualId: 'egg-neighbour-stays',
+        element: 'Tide'
+      }
+    };
+
+    await overlay.emit('streammonsters:egg_landed', events.landed);
+    await overlay.emit('streammonsters:egg_landed', neighbour);
+    expect(shelfItem(visualId)).not.toBeNull();
+    expect(shelfItem('egg-neighbour-stays')).not.toBeNull();
+
+    await overlay.emit('streammonsters:egg_ready', events.ready);
+    expect(timing(visualId)).toBe('Bereit · /schlupf');
+
+    await overlay.emit('streammonsters:hatch_started', events.hatchStarted);
+    await overlay.emit('streammonsters:egg_hatched', events.hatched);
+    expect(events.stageRemoved).toEqual(expect.objectContaining({
+      eggStage: expect.objectContaining({ visualId })
+    }));
+    await overlay.emit('streammonsters:egg_stage_removed', events.stageRemoved);
+    expect(shelfItem(visualId)).toBeNull();
+    expect(shelfItem('egg-neighbour-stays')).not.toBeNull();
+
+    overlay.close();
+    await gcce.destroy();
+  });
+
+  test('uses exactly one spatial flight and landing for a complete gift transaction', async () => {
+    const { gcce, plugin } = await createCollisionRuntime();
+    const events = createEggEvents(plugin);
+    const timeline = arenaDirector.buildArcadeTimeline('egg_spawned', events.spawned);
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 120_000 },
+      gcce: plugin.getStreamMonstersGCCEState(),
+      eggStage: []
+    });
+    const spatialSteps = new Set(['egg-fly-in', 'spring-landing']);
+
+    await overlay.emit('streammonsters:egg_spawned', events.spawned);
+    await overlay.emit('streammonsters:egg_landed', events.landed);
+
+    const directorSpatialBeats = timeline.beats.filter(beat => (
+      beat.type === 'egg_flight' || beat.type === 'egg_impact'
+    ));
+    const effectInputs = [
+      ...timeline.beats
+        .filter(beat => beat.effect?.scene)
+        .map(beat => ({ scene: beat.effect.scene, payload: beat.effect })),
+      ...overlay.playedEffects
+    ];
+    const spatialEffectScenes = effectInputs.filter(input => (
+      effectsRenderer.sceneChoreography(input.scene, input.payload).steps
+        .some(step => spatialSteps.has(step))
+    ));
+    const shelfLandingCount = overlay.dom.window.document
+      .querySelectorAll('.egg-shelf-item.landing').length;
+
+    expect(events.giftEvents.map(entry => entry.event)).toEqual([
+      'streammonsters:egg_spawned',
+      'streammonsters:egg_landed'
+    ]);
+    expect(timeline.beats.filter(beat => beat.effect?.scene).map(beat => (
+      effectsRenderer.sceneChoreography(beat.effect.scene, beat.effect).steps
+    ))).toEqual([['element-portal', 'particle-swirl']]);
+    expect({
+      directorSpatialBeats: directorSpatialBeats.length,
+      spatialEffectScenes: spatialEffectScenes.length,
+      shelfLandingCount,
+      totalSpatialChoreographies:
+        directorSpatialBeats.length + spatialEffectScenes.length + shelfLandingCount
+    }).toEqual({
+      directorSpatialBeats: 0,
+      spatialEffectScenes: 0,
+      shelfLandingCount: 1,
+      totalSpatialChoreographies: 1
+    });
+
+    await overlay.settleEggAnimations();
+    const effectCountBeforeReconnect = overlay.playedEffects.length;
+    overlay.setSnapshot({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 120_000 },
+      gcce: plugin.getStreamMonstersGCCEState(),
+      eggStage: [events.landed.eggStage]
+    });
+    await overlay.reconnect();
+
+    expect(overlay.playedEffects).toHaveLength(effectCountBeforeReconnect);
+    expect(overlay.dom.window.document.querySelector(
+      `[data-egg-id="${events.landed.eggStage.visualId}"]`
+    ).classList.contains('landing')).toBe(false);
+
+    overlay.close();
+    await gcce.destroy();
+  });
+
+  test('applies promotion and boost stage refreshes through live socket handlers', async () => {
+    const readyAtMs = Date.now() + 120_000;
+    const queued = {
+      visualId: 'egg-live-refresh',
+      provenance: 'gift',
+      state: 'queued',
+      element: 'Ember',
+      variant: 'standard',
+      timing: { landedAtMs: Date.now(), readyAtMs: null },
+      queuePosition: 1,
+      adoptionStatus: 'owned',
+      adoptable: false
+    };
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 120_000 },
+      eggStage: [queued]
+    });
+    const timing = () => overlay.dom.window.document.querySelector(
+      '[data-egg-id="egg-live-refresh"] [data-egg-timing]'
+    )?.textContent;
+
+    expect(timing()).toBe('Warteschlange #1');
+    expect(overlay.hasSocketHandler('streammonsters:egg_stage_updated')).toBe(true);
+    expect(overlay.hasSocketHandler('streammonsters:egg_boosted')).toBe(true);
+
+    await overlay.emit('streammonsters:egg_stage_updated', {
+      eggStage: {
+        ...queued,
+        state: 'incubating',
+        timing: { ...queued.timing, readyAtMs },
+        queuePosition: null
+      }
+    });
+    expect(timing()).toMatch(/^Schlüpft in 0[12]:\d{2}$/);
+
+    await overlay.emit('streammonsters:egg_boosted', {
+      eggStage: {
+        ...queued,
+        state: 'incubating',
+        timing: { ...queued.timing, readyAtMs: Date.now() + 30_000 },
+        queuePosition: null
+      }
+    });
+    expect(timing()).toMatch(/^Schlüpft in 00:30$/);
+    overlay.close();
   });
 
   test('uses effective alias fallback when an event hint is absent and never injects hint HTML', async () => {

@@ -40,10 +40,14 @@
     document: documentLike,
     audio = SILENT_OUTPUT,
     effects = SILENT_OUTPUT,
+    presentationEffects = effects,
     clock = {},
     choiceLabels = {},
+    choiceKeys = {},
     labels: arenaLabels = {},
-    localize = null
+    labelKeys = {},
+    localize = null,
+    onBattleStateChange = null
   } = {}) {
     if (!documentLike) throw new Error('STREAM_MONSTERS_ARENA_DOCUMENT_REQUIRED');
     const wait = typeof clock.wait === 'function'
@@ -76,6 +80,10 @@
     let lastEventSequence = 0;
     let countdownHandle = null;
     let surfaceVersion = 0;
+    let battleSurfaceActive = false;
+    let activeLocale = null;
+    let renderVisibleComposite = null;
+    let lastRound = 1;
     const acceptedEventIds = new Set();
     const acceptedTimelineEventIds = new Set();
     const choicesByKey = {
@@ -83,6 +91,12 @@
       B: 'Defense',
       C: 'Special',
       ...choiceLabels
+    };
+    const choiceCatalogKeys = {
+      A: 'skillAttack',
+      B: 'skillDefense',
+      C: 'skillSpecial',
+      ...choiceKeys
     };
     const labels = {
       monster: 'Monster {slot}',
@@ -99,7 +113,74 @@
       cancelled: 'Kampf abgebrochen',
       shield: 'Schild',
       special: 'Special',
+      lead: '{name} führt',
+      tied: 'Gleichstand',
+      knockoutResult: 'K.-O.',
+      forfeitResult: 'Aufgabe',
+      doubleKnockoutResult: 'Doppel-K.-O.',
+      draw: 'Unentschieden',
+      doubleKnockoutSummary: 'Runde {round} · Beide Monster sind K. O.',
+      resultSummary: 'Runde {round} · {hp}/{maxHp} HP übrig',
+      ratingChanged: '{name}: {before} → {after} ({delta})',
+      ratingUnchanged: '{name}: ELO unchanged ({after})',
+      damageMetric: 'Schaden {amount}',
+      shieldAbsorbedMetric: 'Schildtreffer {amount}',
+      shieldGainMetric: 'Schild +{amount}',
+      healMetric: 'Heilung {amount}',
+      evadeMetric: 'Ausweichen',
+      statTitle: '{player}: {monster}',
+      statMeta: 'Level {level} · {remaining} Punkte übrig',
+      statChoices: '1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1',
+      statResult: '{stat} +1',
+      collapse: 'ARENA COLLAPSE · Runde {round}',
+      eggShelfAria: 'Living egg shelf',
+      hpAria: '{monster}: HP',
+      shieldAria: '{monster}: shield',
+      specialAria: '{monster}: special charge',
+      skillDeckAria: '{monster}: skills',
       ...arenaLabels
+    };
+    const catalogKeys = {
+      monster: 'arenaMonsterLabel',
+      level: 'arenaLevelLabel',
+      round: 'arenaRoundLabel',
+      roster: 'arenaRosterChoice',
+      skill: 'arenaSkillFallback',
+      evaded: 'arenaEvaded',
+      knockout: 'arenaKnockout',
+      winner: 'arenaWinnerLabel',
+      viewer: 'arenaViewerLabel',
+      battleEnded: 'arenaBattleEnded',
+      cancelledRoster: 'arenaCancelledRoster',
+      cancelled: 'arenaCancelled',
+      shield: 'arenaShieldLabel',
+      special: 'arenaSpecialLabel',
+      lead: 'arenaLeadLabel',
+      tied: 'arenaTiedLabel',
+      knockoutResult: 'arenaKnockoutResult',
+      forfeitResult: 'arenaForfeitResult',
+      doubleKnockoutResult: 'arenaDoubleKnockoutResult',
+      draw: 'arenaDrawLabel',
+      doubleKnockoutSummary: 'arenaDoubleKnockoutSummary',
+      resultSummary: 'arenaResultSummary',
+      ratingChanged: 'arenaRatingChanged',
+      ratingUnchanged: 'arenaRatingUnchanged',
+      damageMetric: 'arenaDamageMetric',
+      shieldAbsorbedMetric: 'arenaShieldAbsorbedMetric',
+      shieldGainMetric: 'arenaShieldGainMetric',
+      healMetric: 'arenaHealMetric',
+      evadeMetric: 'arenaEvadeMetric',
+      statTitle: 'monsterStatTitle',
+      statMeta: 'monsterStatMeta',
+      statChoices: 'monsterStatChoices',
+      statResult: 'monsterStatResult',
+      collapse: 'arenaCollapseBanner',
+      eggShelfAria: 'eggShelfAria',
+      hpAria: 'arenaHpAria',
+      shieldAria: 'arenaShieldAria',
+      specialAria: 'arenaSpecialAria',
+      skillDeckAria: 'arenaSkillDeckAria',
+      ...labelKeys
     };
 
     const node = id => documentLike.getElementById(id);
@@ -107,29 +188,221 @@
     const skillDeckNode = slot => documentLike.querySelector(
       `[data-skill-deck="${slot}"]`
     );
-    const formatLabel = (key, params = {}) => String(labels[key] || '').replace(
+    const interpolate = (template, params = {}) => String(template || '').replace(
       /\{(\w+)\}/g,
       (match, name) => Object.prototype.hasOwnProperty.call(params, name)
         ? String(params[name])
         : match
     );
+    const translate = (catalogKey, params = {}, fallback = '') => {
+      const normalizedKey = String(catalogKey || '').trim();
+      if (typeof localize === 'function' && normalizedKey) {
+        try {
+          const translated = String(localize(normalizedKey, params, activeLocale) || '');
+          return translated || interpolate(fallback, params);
+        } catch (_) {
+          return interpolate(fallback, params);
+        }
+      }
+      return interpolate(fallback, params);
+    };
+    const formatLabel = (key, params = {}) => translate(
+      catalogKeys[key],
+      params,
+      labels[key]
+    );
+    const choiceLabel = choice => translate(
+      choiceCatalogKeys[choice],
+      {},
+      choicesByKey[choice]
+    );
     const localizedSkillText = (key, fallback = '') => {
       const normalizedKey = String(key || '').trim();
-      if (!normalizedKey) return String(fallback || '');
-      if (Object.prototype.hasOwnProperty.call(labels, normalizedKey)) {
+      if (!normalizedKey) {
+        return String(fallback || '');
+      }
+      if (
+        typeof localize !== 'function' &&
+        Object.prototype.hasOwnProperty.call(labels, normalizedKey)
+      ) {
         return String(labels[normalizedKey] || fallback || '');
       }
-      if (typeof localize === 'function') {
-        try {
-          return String(localize(normalizedKey, String(fallback || '')) || fallback || '');
-        } catch (_) {}
-      }
-      return String(fallback || '');
+      return translate(normalizedKey, {}, fallback);
     };
 
     function setText(id, text) {
       const target = node(id);
-      if (target) target.textContent = String(text ?? '');
+      if (!target) return;
+      delete target.dataset.arenaLabelKey;
+      delete target.dataset.arenaLabelParams;
+      target.textContent = String(text ?? '');
+    }
+
+    function setLabelText(id, key, params = {}) {
+      const target = node(id);
+      if (!target) return;
+      target.dataset.arenaLabelKey = String(key || '');
+      target.dataset.arenaLabelParams = JSON.stringify(params);
+      target.textContent = formatLabel(key, params);
+    }
+
+    function safeDisplayName(value, fallback = '') {
+      const normalized = String(value || '')
+        .replace(/[\u0000-\u001f\u007f]/g, '')
+        .trim()
+        .slice(0, 64);
+      if (
+        !normalized ||
+        /^(?:unknown|unbekannt|viewer)$/i.test(normalized) ||
+        /^@?\d{5,}$/.test(normalized)
+      ) {
+        return String(fallback || formatLabel('viewer')).trim();
+      }
+      return normalized;
+    }
+
+    function setBattleSurface(active, reason = '') {
+      const normalized = Boolean(active);
+      if (surface?.dataset) {
+        surface.dataset.battleActive = String(normalized);
+        if (reason) surface.dataset.battleReason = String(reason);
+        else delete surface.dataset.battleReason;
+      }
+      if (battleSurfaceActive === normalized) return normalized;
+      battleSurfaceActive = normalized;
+      if (typeof onBattleStateChange === 'function') {
+        try {
+          onBattleStateChange({
+            active: normalized,
+            reason: String(reason || ''),
+            matchId: activeMatchId
+          });
+        } catch (_) {}
+      }
+      return normalized;
+    }
+
+    function renderLead() {
+      const left = stateBySlot.get(1);
+      const right = stateBySlot.get(2);
+      if (!left || !right) {
+        setText('arena-lead', '');
+        return null;
+      }
+      const leftVisible = numeric(left.hp) + numeric(left.shield);
+      const rightVisible = numeric(right.hp) + numeric(right.shield);
+      if (leftVisible === rightVisible) {
+        setLabelText('arena-lead', 'tied');
+        return { slot: 0, value: leftVisible };
+      }
+      const slot = leftVisible > rightVisible ? 1 : 2;
+      const fighter = stateBySlot.get(slot) || {};
+      setLabelText('arena-lead', 'lead', {
+        name: safeDisplayName(fighter.viewerName, fighter.name)
+      });
+      return { slot, value: Math.max(leftVisible, rightVisible) };
+    }
+
+    function actionMetrics(action = {}) {
+      const hits = Array.isArray(action.hits) ? action.hits : [];
+      const outcomes = Array.isArray(action.outcomes) ? action.outcomes : [];
+      const damage = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.hpDamage)))
+      ), 0);
+      const absorbed = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.shieldAbsorbed)))
+      ), 0);
+      const shield = outcomes
+        .filter(outcome => outcome?.type === 'shield')
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const heal = outcomes
+        .filter(outcome => ['heal', 'lifesteal'].includes(outcome?.type))
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const metrics = [];
+      if (damage > 0) metrics.push(formatLabel('damageMetric', { amount:damage }));
+      if (absorbed > 0) metrics.push(formatLabel('shieldAbsorbedMetric', { amount:absorbed }));
+      if (shield > 0) metrics.push(formatLabel('shieldGainMetric', { amount:shield }));
+      if (heal > 0) metrics.push(formatLabel('healMetric', { amount:heal }));
+      if (hits.some(hit => hit?.evaded)) metrics.push(formatLabel('evadeMetric'));
+      return metrics;
+    }
+
+    function renderActionCard(action = {}) {
+      const actor = stateBySlot.get(numeric(action.actorSlot)) || {};
+      const skillName = action.skill?.nameKey
+        ? localizedSkillText(action.skill.nameKey, action.skill?.name)
+        : String(action.skill?.name || formatLabel('skill'));
+      const skillCopy = action.skill?.shortTextKey
+        ? localizedSkillText(action.skill.shortTextKey, action.skill?.shortText)
+        : String(action.skill?.shortText || '');
+      setText('arena-action-player', safeDisplayName(actor.viewerName, actor.name));
+      setText('arena-action-key', String(action.choice || '').toUpperCase());
+      setText('arena-action-skill', skillName);
+      setText('arena-action-copy', skillCopy);
+      setText('arena-action-metrics', actionMetrics(action).join(' · '));
+      node('arena-action-card')?.classList.add('visible');
+    }
+
+    function showStatPrompt(payload = {}) {
+      const player = safeDisplayName(payload.playerName || payload.displayName);
+      const monster = safeDisplayName(payload.monster?.name, formatLabel('monster', { slot:1 }));
+      const level = Math.max(1, numeric(payload.level ?? payload.monster?.level, 1));
+      const remaining = Math.max(0, numeric(
+        payload.remainingUnspentPoints ??
+        payload.monster?.unspentStatPoints ??
+        payload.monster?.unspent_stat_points
+      ));
+      setLabelText('arena-stat-title', 'statTitle', { player, monster });
+      setLabelText('arena-stat-meta', 'statMeta', { level, remaining });
+      setLabelText('arena-stat-choices', 'statChoices');
+      node('arena-stat-card')?.classList.add('visible', 'prompt');
+      return true;
+    }
+
+    function showStatResult(payload = {}) {
+      showStatPrompt(payload);
+      const stat = String(payload.stat || '').trim() || formatLabel('skill');
+      setLabelText('arena-stat-meta', 'statResult', { stat });
+      node('arena-stat-card')?.classList.remove('prompt');
+      node('arena-stat-card')?.classList.add('result');
+      return true;
+    }
+
+    function refreshLocalizedText() {
+      documentLike.querySelectorAll('[data-arena-label-key]').forEach(target => {
+        let params = {};
+        try {
+          params = JSON.parse(target.dataset.arenaLabelParams || '{}');
+        } catch (_) {}
+        target.textContent = formatLabel(target.dataset.arenaLabelKey, params);
+      });
+    }
+
+    function refreshLocalizedAccessibility() {
+      node('egg-shelf')?.setAttribute('aria-label', formatLabel('eggShelfAria'));
+      for (const slot of [1, 2]) {
+        const state = stateBySlot.get(slot) || {};
+        const monster = safeDisplayName(
+          state.name,
+          formatLabel('monster', { slot })
+        );
+        node(`arena-hp-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('hpAria', { monster })
+        );
+        node(`arena-shield-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('shieldAria', { monster })
+        );
+        node(`arena-charge-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('specialAria', { monster })
+        );
+        skillDeckNode(slot)?.setAttribute(
+          'aria-label',
+          formatLabel('skillDeckAria', { monster })
+        );
+      }
     }
 
     function setMeter(id, value) {
@@ -154,11 +427,13 @@
       const openedAtMs = numeric(source.openedAtMs, -1);
       const deadlineMs = numeric(source.deadlineMs, -1);
       const passivePerSecond = Math.max(0, numeric(source.passivePerSecond));
+      const maxGain = numeric(source.maxGain, -1);
       if (openedAtMs < 0 || deadlineMs < openedAtMs) return null;
       return {
         openedAtMs,
         deadlineMs,
         passivePerSecond,
+        ...(maxGain >= 0 ? { maxGain: Math.min(100, maxGain) } : {}),
         pausedMs: Math.max(0, numeric(source.pausedMs)),
         pauseStartedAtMs: numeric(source.pauseStartedAtMs, -1),
         pauseUntilMs: numeric(source.pauseUntilMs, -1)
@@ -197,7 +472,11 @@
         setSkillText('skill-choice', choice);
         setSkillText(
           'skill-name',
-          localizedSkillText(skill.nameKey, skill.name || choicesByKey[choice] || labels.skill)
+          skill.nameKey
+            ? localizedSkillText(skill.nameKey, skill.name)
+            : (typeof localize === 'function'
+                ? formatLabel('skill')
+                : (skill.name || choiceLabel(choice) || labels.skill))
         );
         setSkillText(
           'skill-copy',
@@ -222,20 +501,27 @@
               ) - Math.max(window.openedAtMs, window.pauseStartedAtMs)
             )
           : 0;
-        const projectedCharge = window
-          ? numeric(fighter.charge) + (
-            (
+        const baseCharge = numeric(fighter.charge);
+        const passiveGain = window
+          ? Math.max(0, (
               asOfMs -
               window.openedAtMs -
               window.pausedMs -
               currentPauseMs
-            ) / 1_000
-          ) * window.passivePerSecond
-          : numeric(fighter.charge);
+            ) / 1_000) * window.passivePerSecond
+          : 0;
+        const projectedCharge = window
+          ? baseCharge + Math.min(
+              passiveGain,
+              numeric(window.maxGain, Number.POSITIVE_INFINITY)
+            )
+          : baseCharge;
         const readyAtMs = numeric(skill.readyAtMs, Number.POSITIVE_INFINITY);
+        const canReachRequired = !window ||
+          numeric(window.maxGain, Number.POSITIVE_INFINITY) >= required - baseCharge;
         const ready = skill.available === true ||
           projectedCharge >= required ||
-          asOfMs >= readyAtMs;
+          (canReachRequired && asOfMs >= readyAtMs);
         const charge = ready ? required : Math.max(0, Math.min(required, projectedCharge));
         setSkillText('skill-charge', `${Math.round((charge / required) * 100)}%`);
         card.classList.toggle('charging', !ready);
@@ -298,21 +584,30 @@
       };
       stateBySlot.set(slot, state);
       const fallbackName = formatLabel('monster', { slot });
-      setText(`arena-name-${slot}`, state.name || fallbackName);
-      setText(`arena-owner-${slot}`, state.viewerName || labels.viewer);
-      setText(`arena-level-${slot}`, formatLabel('level', {
+      const publicMonsterName = safeDisplayName(state.name, fallbackName);
+      const publicViewerName = safeDisplayName(
+        state.viewerName,
+        formatLabel('viewer')
+      );
+      setText(`arena-name-${slot}`, publicMonsterName);
+      setText(`arena-owner-${slot}`, publicViewerName);
+      setText(
+        `arena-choice-owner-${slot}`,
+        `${publicViewerName} · ${publicMonsterName}`
+      );
+      setLabelText(`arena-level-${slot}`, 'level', {
         level: Math.max(1, numeric(state.level, 1))
-      }));
+      });
       setText(`arena-hp-text-${slot}`, `${state.hp} / ${state.maxHp}`);
-      setText(`arena-shield-label-${slot}`, labels.shield);
-      setText(`arena-special-label-${slot}`, labels.special);
+      setLabelText(`arena-shield-label-${slot}`, 'shield');
+      setLabelText(`arena-special-label-${slot}`, 'special');
       setMeter(`arena-hp-${slot}`, (state.hp / state.maxHp) * 100);
       setMeter(`arena-shield-${slot}`, Math.min(100, state.shield * 10));
       setMeter(`arena-charge-${slot}`, state.charge);
       const image = node(`arena-image-${slot}`);
       if (image && state.imageUrl) {
         image.src = state.imageUrl;
-        image.alt = state.name || fallbackName;
+        image.alt = publicMonsterName;
       }
       const fighter = fighterNode(slot);
       if (fighter) {
@@ -320,6 +615,8 @@
         fighter.dataset.slot = String(slot);
       }
       renderSkillDeck(slot);
+      renderLead();
+      refreshLocalizedAccessibility();
       return state;
     }
 
@@ -332,6 +629,7 @@
     function resetFighters() {
       stateBySlot.clear();
       activeChargeWindow = null;
+      renderVisibleComposite = null;
       acceptedEventIds.clear();
       lastEventSequence = 0;
       for (const slot of [1, 2]) {
@@ -430,14 +728,38 @@
       return { renderer, fallbackReason };
     }
 
-    function fireTimelineOutputs(beat, payload = {}) {
+    function fireTimelineOutputs(beat, payload = {}, effectOutput = effects) {
       if (beat.effect?.scene) {
-        fire(effects, beat.effect.scene, {
+        const hits = Array.isArray(beat.hits)
+          ? beat.hits
+          : (Array.isArray(payload.hits) ? payload.hits : []);
+        const outcomes = Array.isArray(beat.outcomes)
+          ? beat.outcomes
+          : (Array.isArray(payload.outcomes) ? payload.outcomes : []);
+        const statusEffects = Array.isArray(beat.statusEffects)
+          ? beat.statusEffects
+          : (Array.isArray(payload.statusEffects) ? payload.statusEffects : []);
+        fire(effectOutput, beat.effect.scene, {
           ...beat.effect,
           eventId: beat.eventId,
           beatId: beat.beatId,
           correlationId: payload.correlationId || null,
-          motion: beat.motion
+          motion: beat.motion,
+          actorSlot: numeric(beat.actorSlot ?? payload.actorSlot) || null,
+          targetSlot: numeric(beat.targetSlot ?? payload.targetSlot) || null,
+          hitIndex: numeric(beat.hitIndex ?? payload.hitIndex) || 1,
+          hitCount: Math.max(
+            1,
+            numeric(beat.hitCount ?? payload.hitCount) || hits.length || 1
+          ),
+          hits,
+          outcomes,
+          statusEffects,
+          hpDamage: numeric(beat.hpDamage ?? payload.hpDamage),
+          shieldAbsorbed: numeric(beat.shieldAbsorbed ?? payload.shieldAbsorbed),
+          shieldGain: numeric(beat.shieldGain ?? payload.shieldGain),
+          healing: numeric(beat.healing ?? payload.healing),
+          evaded: Boolean(beat.evaded ?? payload.evaded)
         });
       }
       if (beat.audioCue) {
@@ -451,6 +773,7 @@
 
     function applyMatch(match = {}) {
       activateMatch(match.matchId);
+      setBattleSurface(true, match.state || 'match');
       activeChargeWindow = normalizeChargeWindow(match);
       lastEventSequence = Math.max(
         lastEventSequence,
@@ -463,31 +786,44 @@
         arena.dataset.phase = String(match.state || 'roster');
         arena.removeAttribute('data-terminal');
       }
-      setText('arena-round', match.roundNumber || match.round
-        ? formatLabel('round', { round: numeric(match.roundNumber ?? match.round, 1) })
-        : labels.roster);
+      if (match.roundNumber || match.round) {
+        lastRound = Math.max(1, numeric(match.roundNumber ?? match.round, lastRound));
+        setLabelText('arena-round', 'round', {
+          round:lastRound
+        });
+      } else {
+        setLabelText('arena-round', 'roster');
+      }
+      renderVisibleComposite = null;
       startCountdown(match.actionDeadlineMs || match.rosterDeadlineMs || 0);
       return match;
     }
 
     function openChoice(payload = {}) {
       activateMatch(payload.matchId);
+      setBattleSurface(true, 'choice');
       activeChargeWindow = normalizeChargeWindow(payload);
       if (payload.fighters) renderFighters(payload.fighters);
       const round = Math.max(1, numeric(payload.round ?? payload.roundNumber, 1));
+      lastRound = round;
       const choices = Array.isArray(payload.choices) && payload.choices.length
         ? payload.choices
         : ['A', 'B', 'C'];
-      setText('arena-round', formatLabel('round', { round }));
-      setText(
-        'arena-skill-prompt',
-        choices.map(choice => `${choice} ${choicesByKey[choice] || ''}`.trim()).join('  ·  ')
-      );
+      const renderChoiceCopy = () => {
+        setLabelText('arena-round', 'round', { round });
+        setText(
+          'arena-skill-prompt',
+          choices.map(choice => `${choice} ${choiceLabel(choice)}`.trim()).join('  ·  ')
+        );
+      };
+      renderVisibleComposite = renderChoiceCopy;
+      renderChoiceCopy();
       startCountdown(payload.deadlineMs || payload.actionDeadlineMs || 0);
       if (arena) {
         arena.classList.add('visible');
         arena.dataset.phase = 'choice';
       }
+      node('arena-action-card')?.classList.remove('visible');
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.remove('choice-locked');
@@ -502,6 +838,15 @@
         });
       }
       renderSkillDecks();
+    }
+
+    function setLocale(locale) {
+      activeLocale = String(locale || '').trim().toLowerCase() || activeLocale;
+      refreshLocalizedText();
+      renderSkillDecks();
+      renderVisibleComposite?.();
+      refreshLocalizedAccessibility();
+      return activeLocale;
     }
 
     function lockChoice(payload = {}) {
@@ -577,16 +922,28 @@
       }[beat.type] || beat.type;
       switch (compatibleType) {
         case 'telegraph': {
-          setText('arena-feed', action.skill?.name || labels.skill);
-          setText('arena-round', formatLabel('round', { round: action.round || 1 }));
-          setText(
-            'arena-skill-prompt',
-            [
-              action.skill?.icon,
-              action.choice ? `${action.choice} · ${action.skill?.name || ''}` : action.skill?.name,
-              labels[action.skill?.shortTextKey] || action.skill?.shortText
-            ].filter(Boolean).join(' — ')
-          );
+          const renderTelegraphCopy = () => {
+            const skillName = action.skill?.nameKey
+              ? localizedSkillText(action.skill.nameKey, action.skill?.name)
+              : (typeof localize === 'function'
+                  ? formatLabel('skill')
+                  : (action.skill?.name || labels.skill));
+            const skillCopy = action.skill?.shortTextKey
+              ? localizedSkillText(action.skill.shortTextKey, action.skill?.shortText)
+              : (typeof localize === 'function' ? '' : (action.skill?.shortText || ''));
+            setText('arena-feed', skillName);
+            setLabelText('arena-round', 'round', { round:action.round || 1 });
+            setText(
+              'arena-skill-prompt',
+              [
+                action.skill?.icon,
+                action.choice ? `${action.choice} · ${skillName}` : skillName,
+                skillCopy
+              ].filter(Boolean).join(' — ')
+            );
+          };
+          renderVisibleComposite = renderTelegraphCopy;
+          renderTelegraphCopy();
           actor?.classList.add('telegraphing');
           const elementLight = node('arena-element-light');
           if (elementLight) {
@@ -594,16 +951,6 @@
             elementLight.classList.add('visible');
           }
           if (arena) arena.dataset.element = String(action.skill?.element || '').toLowerCase();
-          const scene = String(action.skill?.type || '').toLowerCase();
-          if (scene && scene !== 'special') {
-            fire(effects, scene === 'defense' ? 'defense' : 'attack', {
-              eventId: action.eventId,
-              element: action.skill?.element,
-              vfxKey: action.skill?.vfxKey,
-              actorSlot: action.actorSlot,
-              targetSlot: action.targetSlot
-            });
-          }
           const cue = cueForSkill(action.skill);
           if (cue) fire(audio, cue, {
             eventId: beat.beatId || `${action.eventId || action.eventSequence}:skill`
@@ -630,11 +977,10 @@
           )) || action.hits?.[beat.hitIndex - 1] || {};
           target?.classList.remove('hit', 'evaded');
           target?.classList.add(beat.evaded ? 'evaded' : 'hit');
-          setText(
+          if (beat.evaded) setLabelText('arena-impact', 'evaded');
+          else setText(
             'arena-impact',
-            beat.evaded
-              ? labels.evaded
-              : `-${Math.max(0, numeric(beat.hpDamage))}${beat.shieldAbsorbed ? ' 🛡' : ''}`
+            `-${Math.max(0, numeric(beat.hpDamage))}${beat.shieldAbsorbed ? ' 🛡' : ''}`
           );
           const impact = node('arena-impact');
           impact?.classList.add('visible');
@@ -754,7 +1100,8 @@
               : numeric(beat.targetSlot)
           )?.classList.add('knockout');
           if (arena) arena.dataset.phase = 'knockout';
-          setText('arena-feed', labels.knockout);
+          setLabelText('arena-feed', 'knockout');
+          renderVisibleComposite = () => setLabelText('arena-feed', 'knockout');
           fire(audio, 'arena.ko', {
             eventId: beat.beatId || `${action.eventId || action.eventSequence}:ko`,
             duck: beat.audioDucking || false
@@ -794,9 +1141,17 @@
     async function playAction(payload = {}) {
       const action = unwrapAction(payload);
       if (!acceptAction(action)) return false;
+      if (payload.round != null || payload.roundNumber != null || payload.action?.round != null) {
+        lastRound = Math.max(
+          1,
+          numeric(payload.round ?? payload.roundNumber ?? payload.action?.round, lastRound)
+        );
+      }
       stopCountdown();
       setText('arena-countdown', '');
       if (arena) arena.dataset.phase = 'action';
+      setBattleSurface(true, 'action');
+      renderActionCard(action);
       const arcadeTimeline = ArenaDirector.buildArcadeTimeline('battle_skill_used', {
         ...payload,
         eventId: action.eventId,
@@ -912,6 +1267,40 @@
         case 'evolution_peak':
           if (rootDataset) rootDataset.evolutionStage = String(beat.evolutionStage);
           break;
+        case 'collapse_banner':
+          setLabelText('arena-feed', 'collapse', { round:beat.round });
+          if (arena) {
+            arena.dataset.phase = 'collapse';
+            arena.classList.add('arena-collapse');
+          }
+          break;
+        case 'collapse_shield':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.shieldReduced))} 🛡`);
+          node('arena-impact')?.classList.add('visible', 'shield-number');
+          fighterNode(beat.slot)?.classList.add('shielding');
+          break;
+        case 'collapse_damage':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.hpDamage))}`);
+          node('arena-impact')?.classList.add('visible', 'damage-number');
+          fighterNode(beat.slot)?.classList.add('hit');
+          break;
+        case 'collapse_hud':
+          for (const fighter of Array.isArray(beat.fighters) ? beat.fighters : []) {
+            const current = stateBySlot.get(fighter.slot) || {};
+            renderState(fighter.slot, {
+              ...current,
+              hp: fighter.hp,
+              shield: fighter.shield
+            });
+            fighterNode(fighter.slot)?.classList.remove('hit', 'shielding');
+          }
+          node('arena-impact')?.classList.remove(
+            'visible',
+            'damage-number',
+            'shield-number'
+          );
+          arena?.classList.remove('arena-collapse');
+          break;
         case 'winner_frame':
           if (beat.winnerSlot) {
             for (const slot of [1, 2]) {
@@ -921,10 +1310,14 @@
           }
           if (arena) arena.dataset.phase = 'winner';
           if (beat.winnerSlot) {
-            setText('arena-feed', formatLabel('winner', {
+            setLabelText('arena-feed', 'winner', {
               name: stateBySlot.get(beat.winnerSlot)?.name ||
                 formatLabel('monster', { slot: beat.winnerSlot })
-            }));
+            });
+            renderVisibleComposite = () => setLabelText('arena-feed', 'winner', {
+              name:stateBySlot.get(beat.winnerSlot)?.name ||
+                formatLabel('monster', { slot:beat.winnerSlot })
+            });
           }
           break;
         case 'xp_reward':
@@ -949,7 +1342,11 @@
         default:
           break;
       }
-      fireTimelineOutputs(beat, payload);
+      fireTimelineOutputs(
+        beat,
+        payload,
+        timeline.scene === 'arena_collapse' ? effects : presentationEffects
+      );
     }
 
     async function playEvent(eventType, payload = {}) {
@@ -965,6 +1362,10 @@
       }
       const timeline = ArenaDirector.buildArcadeTimeline(normalized, payload);
       if (!timeline.beats.length || !rememberTimelineEvent(timeline.eventId)) return false;
+      if (normalized === 'battle_completed') return complete(payload);
+      if (normalized === 'battle_arena_collapse') {
+        setBattleSurface(true, 'collapse');
+      }
       transientPresentationClasses.forEach(className => surface?.classList.remove(className));
       resetChoreography();
       syncRendererStatus();
@@ -976,9 +1377,6 @@
       }
       await wait(Math.max(0, timeline.durationMs - cursor));
       resetChoreography();
-      if (timeline.type === 'battle_completed') {
-        arena?.classList.remove('visible');
-      }
       return true;
     }
 
@@ -986,6 +1384,9 @@
       stopCountdown();
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
+      const terminalReason = String(payload.terminalReason || '').toLowerCase();
+      const isDoubleKnockout = terminalReason === 'double_knockout';
+      setBattleSurface(true, 'result');
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.toggle('winner', slot === winnerSlot);
@@ -994,19 +1395,29 @@
       if (arena) {
         arena.classList.add('visible');
         arena.dataset.phase = 'completed';
-        arena.dataset.terminal = 'winner';
+        arena.dataset.terminal = isDoubleKnockout
+          ? 'draw'
+          : (winnerSlot ? 'winner' : 'ended');
       }
       setText('arena-skill-prompt', '');
       setText('arena-countdown', '');
       const winner = payload.winner && typeof payload.winner === 'object'
         ? payload.winner
         : {};
-      const winnerName = String(
-        payload.winnerViewerName || winner.viewerName ||
-        stateBySlot.get(winnerSlot)?.viewerName ||
-        stateBySlot.get(winnerSlot)?.name ||
-        formatLabel('monster', { slot: winnerSlot })
-      ).trim();
+      const winnerName = winnerSlot
+        ? safeDisplayName(
+          payload.winnerViewerName || winner.viewerName ||
+          stateBySlot.get(winnerSlot)?.viewerName ||
+          stateBySlot.get(winnerSlot)?.name,
+          formatLabel('viewer')
+        )
+        : '';
+      const winnerMonster = winnerSlot
+        ? safeDisplayName(
+          winner.name || stateBySlot.get(winnerSlot)?.name,
+          formatLabel('monster', { slot:winnerSlot })
+        )
+        : '';
       const ratingText = (Array.isArray(payload.ratingChanges) ? payload.ratingChanges : [])
         .map(change => {
           const slot = numeric(change?.slot);
@@ -1015,24 +1426,90 @@
           const sign = delta >= 0 ? '+' : '';
           return `${name} ${sign}${delta} ELO · ${Math.round(numeric(change?.after))}`;
         }).join('   ');
+      const canonicalRatingText = (Array.isArray(payload.ratingChanges)
+        ? payload.ratingChanges
+        : []
+      ).map(change => {
+        const slot = numeric(change?.slot);
+        const fighter = stateBySlot.get(slot) || {};
+        const name = safeDisplayName(fighter.viewerName, fighter.name);
+        const before = Math.max(0, Math.round(numeric(change?.before)));
+        const after = Math.max(0, Math.round(numeric(change?.after)));
+        const delta = Math.round(numeric(change?.delta));
+        return before === after || delta === 0
+          ? formatLabel('ratingUnchanged', { name, before, after, delta:0 })
+          : formatLabel('ratingChanged', {
+              name,
+              before,
+              after,
+              delta:delta > 0 ? `+${delta}` : delta
+            });
+      }).join('   ') || ratingText;
+      const knockout = payload.knockout && typeof payload.knockout === 'object'
+        ? payload.knockout
+        : null;
       const result = node('arena-result');
       if (result) result.classList.add('visible');
-      setText('arena-result-winner', winnerSlot
-        ? formatLabel('winner', { name: winnerName })
-        : labels.battleEnded);
-      setText('arena-result-rating', ratingText);
-      setText('arena-feed', winnerSlot
-        ? formatLabel('winner', {
-            name: winnerName
-          })
-        : labels.battleEnded);
-      fire(audio, 'arena.victory', {
-        eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
-      });
-      await wait(4_000);
+      setLabelText(
+        'arena-result-ko',
+        isDoubleKnockout
+          ? 'doubleKnockoutResult'
+          : (terminalReason === 'forfeit' ? 'forfeitResult' : 'knockoutResult')
+      );
+      if (winnerSlot) {
+        setLabelText('arena-result-winner', 'winner', { name:winnerName });
+      } else if (isDoubleKnockout) {
+        setLabelText('arena-result-winner', 'draw');
+      } else {
+        setLabelText('arena-result-winner', 'battleEnded');
+      }
+      setText('arena-result-monster', winnerMonster);
+      if (isDoubleKnockout) {
+        setLabelText('arena-result-summary', 'doubleKnockoutSummary', {
+          round:Math.max(
+            1,
+            numeric(
+              knockout?.round ?? payload.round ?? payload.roundNumber,
+              lastRound
+            )
+          )
+        });
+      } else if (knockout) {
+        setLabelText('arena-result-summary', 'resultSummary', {
+          round:Math.max(1, numeric(knockout.round, 1)),
+          hp:Math.max(0, numeric(knockout.remainingHp)),
+          maxHp:Math.max(1, numeric(knockout.maxHp, 1))
+        });
+      } else {
+        setText('arena-result-summary', '');
+      }
+      setText('arena-result-ratings', canonicalRatingText);
+      if (winnerSlot) setLabelText('arena-feed', 'winner', { name:winnerName });
+      else if (isDoubleKnockout) setLabelText('arena-feed', 'draw');
+      else setLabelText('arena-feed', 'battleEnded');
+      renderVisibleComposite = () => {
+        if (winnerSlot) {
+          setLabelText('arena-result-winner', 'winner', { name:winnerName });
+          setLabelText('arena-feed', 'winner', { name:winnerName });
+        } else if (isDoubleKnockout) {
+          setLabelText('arena-result-winner', 'draw');
+          setLabelText('arena-feed', 'draw');
+        } else {
+          setLabelText('arena-result-winner', 'battleEnded');
+          setLabelText('arena-feed', 'battleEnded');
+        }
+      };
+      if (winnerSlot) {
+        fire(audio, 'arena.victory', {
+          eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
+        });
+      }
+      await wait(8_000);
       if (terminalVersion === surfaceVersion) {
         result?.classList.remove('visible');
         arena?.classList.remove('visible');
+        activeMatchId = null;
+        setBattleSurface(false, 'result_complete');
       }
       return true;
     }
@@ -1047,11 +1524,17 @@
       }
       setText('arena-skill-prompt', '');
       setText('arena-countdown', '');
-      setText('arena-feed', payload.reason === 'roster_unavailable'
-        ? labels.cancelledRoster
-        : labels.cancelled);
+      const cancellationLabel = payload.reason === 'roster_unavailable'
+        ? 'cancelledRoster'
+        : 'cancelled';
+      setLabelText('arena-feed', cancellationLabel);
+      renderVisibleComposite = () => setLabelText('arena-feed', cancellationLabel);
       await wait(3_000);
-      if (terminalVersion === surfaceVersion) arena?.classList.remove('visible');
+      if (terminalVersion === surfaceVersion) {
+        arena?.classList.remove('visible');
+        activeMatchId = null;
+        setBattleSurface(false, 'cancelled');
+      }
       return true;
     }
 
@@ -1061,7 +1544,19 @@
       const match = matches.find(candidate => (
         ['roster', 'action', 'finalizing'].includes(candidate?.state)
       ));
-      if (!match) return null;
+      if (!match) {
+        stopCountdown();
+        surfaceVersion += 1;
+        activeMatchId = null;
+        activeDeadlineMs = 0;
+        resetFighters();
+        arena?.classList.remove('visible');
+        node('arena-result')?.classList.remove('visible');
+        node('arena-action-card')?.classList.remove('visible');
+        setText('arena-countdown', '');
+        setBattleSurface(false, 'snapshot_empty');
+        return null;
+      }
       applyMatch(match);
       if (
         match.state === 'action' &&
@@ -1074,6 +1569,15 @@
           deadlineMs: match.actionDeadlineMs,
           choices: ['A', 'B', 'C']
         });
+      }
+      (Array.isArray(match.choiceLocks) ? match.choiceLocks : []).forEach(decision => {
+        lockChoice({ decision });
+      });
+      if (match.revealedChoices?.choices) {
+        revealChoices(match.revealedChoices);
+      }
+      if (battle.statPrompt) {
+        showStatPrompt(battle.statPrompt);
       }
       return match;
     }
@@ -1089,11 +1593,15 @@
       playEvent,
       playAction,
       renderCountdown,
+      showStatPrompt,
+      showStatResult,
+      setLocale,
       destroy: stopCountdown,
       state: () => ({
         matchId: activeMatchId,
         deadlineMs: activeDeadlineMs,
-        eventSequence: lastEventSequence
+        eventSequence: lastEventSequence,
+        battleActive: battleSurfaceActive
       })
     };
   }

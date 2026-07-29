@@ -245,7 +245,7 @@ describe('documentation capture real workflows', () => {
   test.each([
     ['emoji-rain', 'verify-obs-hud', '/emoji-rain/ui', 'a[href="/emoji-rain/obs-hud"]'],
     ['spotlight', 'spotlight-overlay', '/plugins/spotlight/ui/main.html', 'button[data-action="preview"][data-type="chatter"]'],
-    ['streamalchemy', 'alchemy-overlay', '/plugins/streamalchemy/ui.html', 'a[href="/streamalchemy/overlay"]'],
+    ['streamalchemy', 'alchemy-overlay', '/streammonsters/ui', '#overlayUrl'],
     ['talking-heads', 'heads-overlay', '/plugins/talking-heads/ui.html', '#testAnimationBtn'],
     ['flame-overlay', 'frame-obs-source', '/flame-overlay/ui', '#overlayUrl'],
     ['visual-fx-frame-webgpu', 'frame-obs-source', '/visual-fx-frame-webgpu/ui', '#overlayUrl'],
@@ -281,14 +281,23 @@ describe('documentation capture real workflows', () => {
   });
 
   test.each(['alchemy-card', 'automation-rule', 'action-chain', 'rule-dry-run'])(
-    'opens the real StreamAlchemy Settings view before documenting %s',
+    'opens the current read-only Stream Monsters surface before documenting %s',
     (stepId) => {
-      expect(step('streamalchemy', stepId).capture.action).toMatchObject({ prepare: 'open-streamalchemy-settings' });
+      expect(step('streamalchemy', stepId).capture.action).toMatchObject({
+        type: 'open-plugin-surface',
+        stepId
+      });
     }
   );
 
-  test('uses a tight, distinct crop for the StreamAlchemy overlay link', () => {
-    expect(step('streamalchemy', 'alchemy-overlay').workflow.captureRule.imageCrop).toEqual({ width: 420, height: 260 });
+  test('captures the current Stream Monsters overlay URL control at the documented viewport', () => {
+    expect(step('streamalchemy', 'alchemy-overlay').workflow.captureRule).toEqual(
+      expect.objectContaining({
+        selector: '#overlayUrl',
+        viewport: { width: 1440, height: 900 },
+        stateChange: false
+      })
+    );
   });
 
   test.each(['fireworks-card', 'effect-profile', 'audio-limit'])(

@@ -173,7 +173,7 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Estado:** 🟡 Working / Open Beta
-**Versión:** 1.10.0
+**Versión:** 1.11.0
 **Autor:** Pup Cid
 
 **Descripción:**
@@ -183,11 +183,14 @@ Los regalos de TikTok activados por el creador y los huevos gratis periódicos o
 - 🎁 Los huevos de regalos y los huevos gratis opcionales comparten tres incubadoras, cola FIFO y caducidad de 24 horas
 - 🥚 Huevo gratis opcional: reservado 60 segundos y después público con `!adopt`; cooldown de 60–31.536.000 segundos, 24 horas por defecto
 - 🐾 24 plantillas en Evolución I, II y III – 72 formas incluidas
-- ⚔️ Combates Rules-v7 sellados: 10 segundos para monstruo, 6 para A/B/C, 15 para estadísticas y replay completo
+- ⏱️ Configuraciones nuevas: incubación de 90 segundos; los tiempos guardados y huevos existentes no cambian
+- 🌍 Alemán e inglés activos por defecto; una o dos lenguas de overlay entre DE/EN/ES/FR
+- ⚔️ Combates Rules v8 hasta K.O.: 8 segundos para monstruo, 6 con una o 10 con dos lenguas, 10 para estadísticas y replay completo
+- 💥 Arena Collapse desde la ronda 5 y efectos WebGPU elementales con fallback sincronizado
 - ⚖️ Seis familias elementales y roles Striker, Guardian, Trickster y Sustain con ventajas y desventajas simuladas
 - 🏆 Clasificaciones separadas de Collector Score y Arena Rating
 - 📋 Misiones diarias y semanales sin regalos ni victorias; solo 10 duelos diarios cambian rating y todos los legítimos dan XP
-- 📱 Arena vertical con zona segura de chat del 26 por ciento y diseño horizontal
+- 📱 Arena vertical con 74 por ciento de juego y 26 por ciento de zona segura para chat, más diseño horizontal
 - ✨ Efectos WebGPU con fallback Canvas2D y audio CC0 seleccionado
 - 🔒 Sin Art Lab, generación de imágenes por IA ni instalador de modelos
 

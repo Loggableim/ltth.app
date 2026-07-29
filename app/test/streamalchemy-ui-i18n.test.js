@@ -34,7 +34,7 @@ function placeholders(value) {
     .sort();
 }
 
-describe('Stream Monsters Rules v7 locale contract', () => {
+describe('Stream Monsters 1.11 Rules v8 locale contract', () => {
   const translations = Object.fromEntries(
     LOCALES.map(locale => [locale, readLocale(locale)])
   );
@@ -44,7 +44,7 @@ describe('Stream Monsters Rules v7 locale contract', () => {
     for (const template of TEMPLATE_CATALOG) {
       for (const stage of [1, 2, 3]) {
         for (const choice of ['A', 'B', 'C']) {
-          const skill = resolveStageSkill(template.templateId, choice, stage, 7);
+          const skill = resolveStageSkill(template.templateId, choice, stage, 8);
           requiredKeys.add(skill.nameKey);
           requiredKeys.add(skill.shortTextKey);
         }
@@ -74,7 +74,9 @@ describe('Stream Monsters Rules v7 locale contract', () => {
       'evolutionStatsTitle',
       'evolutionStatDelta',
       'evolutionSkillUnlocked',
-      'evolutionSkillEffect'
+      'evolutionSkillEffect',
+      'arenaCollapseBanner',
+      'overlayBattleKicker'
     ];
 
     for (const key of keys) {
@@ -92,10 +94,10 @@ describe('Stream Monsters Rules v7 locale contract', () => {
     }
   });
 
-  test('identifies the live interactive arena as Rules v7 in every language', () => {
+  test('identifies the live interactive arena as Rules v8 in every language', () => {
     const fullKey = `${MONSTERS_PREFIX}rulesDynamic`;
     for (const locale of LOCALES) {
-      expect(translations[locale][fullKey]).toContain('Rules v7');
+      expect(translations[locale][fullKey]).toContain('Rules v8');
       expect(placeholders(translations[locale][fullKey]))
         .toEqual(['{duration}', '{prefix}']);
     }

@@ -173,7 +173,7 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Status:** 🟡 Working / Open Beta
-**Version:** 1.10.0
+**Version:** 1.11.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
@@ -183,11 +183,14 @@ Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier
 - 🎁 Geschenk-Eier und optionale Gratis-Eier teilen drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
 - 🥚 Optionales Gratis-Ei: 60 Sekunden reserviert, danach öffentlich per `!adopt`; Cooldown 60–31.536.000 Sekunden, Standard 24 Stunden
 - 🐾 24 Monster-Vorlagen mit Evolution I, II und III – insgesamt 72 gebündelte Formen
-- ⚔️ Verdeckte Rules-v7-Duelle: 10 Sekunden Monsterwahl, 6 Sekunden A/B/C, 15 Sekunden Statwahl und vollständiges Replay
+- ⏱️ Neue Setups: 90 Sekunden Brutzeit; gespeicherte Creator-Zeiten und vorhandene Eier bleiben unverändert
+- 🌍 Deutsch und Englisch standardmäßig aktiv; ein oder zwei Overlaysprachen aus DE/EN/ES/FR
+- ⚔️ Verdeckte Rules-v8-K.-o.-Duelle: 8 Sekunden Monsterwahl, 6 Sekunden bei einer bzw. 10 Sekunden bei zwei Sprachen, 10 Sekunden Statwahl und vollständiges Replay
+- 💥 Arena Collapse ab Runde 5 und elementspezifische WebGPU-Effekte mit synchronem Fallback
 - ⚖️ Sechs Elementfamilien sowie Striker, Guardian, Trickster und Sustain mit simulatorisch geprüften Vor- und Nachteilen
 - 🏆 Getrennte Collector-Score- und Arena-Rating-Ranglisten
 - 📋 Gift-/siegunabhängige Daily-/Weekly-Quests; nur 10 Tagesduelle ändern Rating, jedes legitime Duell gibt Monster-XP
-- 📱 Portrait-Arena mit 26-Prozent-Chat-Safe-Zone plus Landscape-Layout
+- 📱 Portrait-Arena mit 74 Prozent Gameplay und 26 Prozent Chat-Safe-Zone plus Landscape-Layout
 - ✨ WebGPU-Effekte mit Canvas2D-Fallback und kuratiertem CC0-Audio
 - 🔒 Kein Art Lab, keine KI-Bildgenerierung und kein Modell-Installer im Plugin
 

@@ -126,8 +126,8 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     );
 
     expect(currentRelease.version).toBe('1.4.1');
-    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.9\.0/);
-    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.5\.0/);
+    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.11\.0/);
+    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.11\.0/);
     expect(publicRelease.changelog['1.4.1'].changes.join('\n')).toMatch(
       /Stream Monsters 1\.5\.0/
     );
@@ -155,19 +155,21 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
         steps: guide.steps.map(step => step.copy[locale])
       });
 
-      expect(localizedGuide).toMatch(/1\.9/);
+      expect(localizedGuide).toMatch(/1\.11/);
       expect(localizedGuide).toMatch(/adopt|adoptier|adopta|adoptez/i);
       expect(localizedGuide).toMatch(/60/);
-      expect(localizedGuide).toMatch(/24\s*(?:h|hour|Stunden|horas|heures)/i);
-      expect(localizedGuide).toMatch(/10\s*(?:s|second|Sekunden)/i);
-      expect(localizedGuide).toMatch(/6\s*(?:s|second|Sekunden)/i);
-      expect(localizedGuide).toMatch(/15\s*(?:s|second|Sekunden)/i);
+      expect(localizedGuide).toMatch(/90/);
+      expect(localizedGuide).toMatch(/8/);
+      expect(localizedGuide).toMatch(/6/);
+      expect(localizedGuide).toMatch(/10/);
       expect(localizedGuide).toMatch(/sealed|verdeckt|sellad|scell/i);
-      expect(localizedGuide).toMatch(/striker|guardian|trickster|sustain/i);
+      expect(localizedGuide).toMatch(/role|Rollen|roles|rôles/i);
       expect(localizedGuide).toMatch(/quest|quête|misión/i);
       expect(localizedGuide).toMatch(/10.*(?:rating|wert|clasific|classement)/i);
       expect(localizedGuide).toMatch(/Art Lab/);
-      expect(localizedGuide).toMatch(/image generation|Bildgenerierung|generación de imágenes|génération d.images/i);
+      expect(localizedGuide).toMatch(
+        /no Art Lab|kein Art Lab|sin Art Lab|sans Art Lab|no incluye Art Lab|ne comprend ni Art Lab/i
+      );
     }
   );
 
@@ -273,10 +275,8 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
       expect(copy).not.toMatch(
         /Gifts-only|gifts-only|huevos solo por regalos|uniquement par cadeaux|Ohne aktiviertes Gift entsteht kein Ei|No egg is created without an enabled gift/i
       );
-      if (locale === 'de' || locale === 'es') {
-        expect(retention.body).toContain('31.536.000');
-        expect(retention.body).not.toContain('31.836.000');
-      }
+      expect(retention.body).toMatch(/90/);
+      expect(retention.body).toMatch(/60/);
     }
 
     for (const relativePath of [

@@ -29,10 +29,33 @@ function mountArena() {
       <div id="arena-skill-prompt"></div>
       <div id="arena-special"></div>
       <div id="arena-impact"></div>
+      <div id="arena-combo"></div>
       <div id="arena-feed"></div>
-      <div id="arena-result"><strong id="arena-result-winner"></strong><span id="arena-result-rating"></span></div>
+      <div id="arena-lead"></div>
+      <div id="arena-action-card">
+        <span id="arena-action-player"></span>
+        <span id="arena-action-key"></span>
+        <strong id="arena-action-skill"></strong>
+        <span id="arena-action-copy"></span>
+        <span id="arena-action-metrics"></span>
+      </div>
+      <div id="arena-stat-card">
+        <span id="arena-stat-kicker"></span>
+        <strong id="arena-stat-title"></strong>
+        <span id="arena-stat-meta"></span>
+        <div id="arena-stat-choices"></div>
+      </div>
+      <div id="arena-result">
+        <span id="arena-result-ko"></span>
+        <strong id="arena-result-winner"></strong>
+        <span id="arena-result-monster"></span>
+        <span id="arena-result-summary"></span>
+        <div id="arena-result-ratings"></div>
+        <span id="arena-result-rating"></span>
+      </div>
       <article id="arena-fighter-1" data-slot="1">
         <img id="arena-image-1"><div id="arena-name-1"></div>
+        <div id="arena-owner-1"></div>
         <div id="arena-level-1"></div><div id="arena-hp-text-1"></div>
         <div id="arena-hp-1"></div><div id="arena-shield-1"></div><div id="arena-charge-1"></div>
         <span id="arena-shield-label-1"></span><span id="arena-special-label-1"></span>
@@ -40,6 +63,7 @@ function mountArena() {
       </article>
       <article id="arena-fighter-2" data-slot="2">
         <img id="arena-image-2"><div id="arena-name-2"></div>
+        <div id="arena-owner-2"></div>
         <div id="arena-level-2"></div><div id="arena-hp-text-2"></div>
         <div id="arena-hp-2"></div><div id="arena-shield-2"></div><div id="arena-charge-2"></div>
         <span id="arena-shield-label-2"></span><span id="arena-special-label-2"></span>
@@ -115,7 +139,15 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(waited.length).toBeGreaterThan(4);
     expect(effects.play).toHaveBeenCalledWith('special', expect.objectContaining({
       element: 'Tide',
-      vfxKey: 'ripple:special'
+      vfxKey: 'ripple:special',
+      actorSlot: 2,
+      targetSlot: 1,
+      hitCount: 2,
+      hits: [
+        { index: 1, hpDamage: 4, shieldAbsorbed: 0, evaded: false },
+        { index: 2, hpDamage: 3, shieldAbsorbed: 0, evaded: false }
+      ],
+      outcomes: [{ type: 'heal', amount: 5 }]
     }));
     expect(audio.play).toHaveBeenCalledWith('arena.hit', expect.objectContaining({
       eventId: expect.stringContaining('hit')
@@ -123,6 +155,111 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-hp-text-1').textContent).toBe('45 / 52');
     expect(document.querySelector('#arena-hp-text-2').textContent).toBe('52 / 52');
     expect(document.querySelector('#arena-feed').textContent).toContain('Tidal Renewal');
+  });
+
+  test('keeps battle effects inside the takeover and presentation effects on the global layer', async () => {
+    mountArena();
+    const battleEffects = {
+      play: jest.fn(async () => true),
+      status: jest.fn(() => ({ backend: 'webgpu' }))
+    };
+    const presentationEffects = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      effects: battleEffects,
+      presentationEffects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+
+    await view.playEvent('egg_spawned', {
+      eventId: 'egg-spawn-1',
+      egg: { element: 'Volt', variant: 'standard' }
+    });
+    expect(presentationEffects.play).toHaveBeenCalledWith(
+      'portal',
+      expect.objectContaining({ element: 'Volt' })
+    );
+    expect(battleEffects.play).not.toHaveBeenCalled();
+
+    view.applyMatch({
+      matchId: 'match-effects',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Pulse', element: 'Volt', hp: 40, maxHp: 40 },
+        { slot: 2, name: 'Ripple', element: 'Tide', hp: 40, maxHp: 40 }
+      ]
+    });
+    await view.playAction({
+      matchId: 'match-effects',
+      eventId: 'battle-effect-1',
+      round: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'A',
+      skill: { name: 'Arc Flash', type: 'attack', element: 'Volt' },
+      hits: [{ index: 1, hpDamage: 5 }]
+    });
+    expect(battleEffects.play).toHaveBeenCalled();
+  });
+
+  test.each([
+    ['attack', 'A'],
+    ['defense', 'B'],
+    ['special', 'C']
+  ])('launches one uninterrupted semantic %s scene for the action', async (scene, choice) => {
+    mountArena();
+    const effects = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      effects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: `single-scene-${scene}`,
+      fighters: [
+        { slot: 1, name: 'Pulse', element: 'Volt', hp: 40, maxHp: 40 },
+        { slot: 2, name: 'Ripple', element: 'Tide', hp: 40, maxHp: 40 }
+      ]
+    });
+
+    await view.playAction({
+      matchId: `single-scene-${scene}`,
+      eventId: `single-scene-${scene}:1`,
+      eventSequence: 1,
+      rulesVersion: 8,
+      round: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice,
+      skill: {
+        name: `${scene} skill`,
+        type: scene,
+        role: 'striker',
+        element: 'Volt',
+        vfxKey: `pulse:${scene}`,
+        effects: [{ type: 'shock', amount: 2 }]
+      },
+      statusEffects: [{ type: 'burn', hpDamage: 1, remaining: 1 }],
+      hits: [],
+      retaliations: [{
+        type: 'thorns',
+        hpDamage: 1,
+        shieldAbsorbed: 0,
+        evaded: false
+      }]
+    });
+
+    expect(effects.play).toHaveBeenCalledTimes(1);
+    expect(effects.play).toHaveBeenCalledWith(scene, expect.objectContaining({
+      eventId: `single-scene-${scene}:1`,
+      element: 'Volt',
+      vfxKey: `pulse:${scene}`,
+      role: 'striker',
+      skillEffects: [{ type: 'shock', amount: 2 }],
+      durationMs: expect.any(Number),
+      actorSlot: 1,
+      targetSlot: 2
+    }));
   });
 
   test('keeps each fighter owner readable beside the monster name', () => {
@@ -145,6 +282,33 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-owner-2').textContent).toBe('@mark_teufel01');
   });
 
+  test('sanitizes persistent HUD names and image alt text from legacy numeric ids', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    view.applyMatch({
+      matchId: 'legacy-private-hud',
+      fighters: [{
+        slot: 1,
+        name: '938475938475',
+        viewerName: '123456789012345678',
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        hp: 10,
+        maxHp: 10
+      }, {
+        slot: 2,
+        name: 'Selene',
+        viewerName: '@mark_teufel01',
+        hp: 10,
+        maxHp: 10
+      }]
+    });
+
+    expect(document.getElementById('arena-name-1').textContent).toBe('Monster 1');
+    expect(document.getElementById('arena-owner-1').textContent).toBe('Viewer');
+    expect(document.getElementById('arena-image-1').alt).toBe('Monster 1');
+    expect(document.getElementById('arena-owner-2').textContent).toBe('@mark_teufel01');
+  });
+
   test('marks locks, cancellation and winner without leaking the lower chat safe zone', async () => {
     mountArena();
     const waited = [];
@@ -162,7 +326,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     await view.complete({ winnerSlot: 1 });
     expect(document.querySelector('#arena-fighter-1').classList.contains('winner')).toBe(true);
     expect(document.querySelector('#battle').dataset.terminal).toBe('winner');
-    expect(waited).toContain(4_000);
+    expect(waited).toContain(8_000);
     expect(document.querySelector('#battle').classList.contains('visible')).toBe(false);
     view.cancel({ reason: 'roster_unavailable' });
     expect(document.querySelector('#battle').dataset.terminal).toBe('cancelled');
@@ -183,20 +347,315 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       ]
     });
 
-    await view.complete({
+    const playback = view.playEvent('battle_completed', {
+      eventId: 'result-a:event:completed',
+      matchId: 'result-a',
       winnerSlot: 1,
-      winnerViewerName: '@pupcid',
+      terminalReason: 'knockout',
+      knockout: { round: 7, remainingHp: 9, maxHp: 20 },
+      winner: { name: 'Ashfang', viewerName: '@pupcid' },
       ratingChanges: [
         { slot: 1, before: 900, after: 916, delta: 16 },
-        { slot: 2, before: 900, after: 884, delta: -16 }
+        { slot: 2, before: 900, after: 900, delta: 0 }
       ]
     });
 
+    expect(document.getElementById('arena-result').classList).toContain('visible');
+    expect(document.getElementById('arena-result-ko').textContent).toContain('K');
     expect(document.getElementById('arena-result-winner').textContent).toContain('@pupcid');
-    expect(document.getElementById('arena-result-rating').textContent)
-      .toContain('+16');
-    expect(document.getElementById('arena-result-rating').textContent)
-      .toContain('-16');
+    expect(document.getElementById('arena-result-monster').textContent).toContain('Ashfang');
+    expect(document.getElementById('arena-result-summary').textContent).toContain('7');
+    expect(document.getElementById('arena-result-summary').textContent).toContain('9');
+    expect(document.getElementById('arena-result-ratings').textContent).toContain('900');
+    expect(document.getElementById('arena-result-ratings').textContent).toContain('916');
+    expect(document.getElementById('arena-result-ratings').textContent).toMatch(/unchanged|unverändert/i);
+    await playback;
+  });
+
+  test('renders a backend double knockout as a draw with one Elo block', async () => {
+    mountArena();
+    const audio = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      audio,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'double-ko',
+      roundNumber: 8,
+      fighters: [
+        {
+          slot: 1,
+          name: 'Ashfang',
+          viewerName: '@left',
+          hp: 0,
+          maxHp: 40
+        },
+        {
+          slot: 2,
+          name: 'Ripple',
+          viewerName: '@right',
+          hp: 0,
+          maxHp: 40
+        }
+      ]
+    });
+
+    await view.complete({
+      eventId: 'double-ko:done',
+      winnerSlot: 0,
+      winner: null,
+      terminalReason: 'double_knockout',
+      knockout: null,
+      ratingChanges: [
+        { slot: 1, before: 1040, after: 1040, delta: 0 },
+        { slot: 2, before: 1010, after: 1010, delta: 0 }
+      ]
+    });
+
+    expect(document.getElementById('battle').dataset.terminal).toBe('draw');
+    for (const slot of [1, 2]) {
+      expect(document.getElementById(`arena-fighter-${slot}`).classList)
+        .not.toContain('winner');
+      expect(document.getElementById(`arena-fighter-${slot}`).classList)
+        .not.toContain('defeated');
+    }
+    expect(document.getElementById('arena-result-ko').textContent)
+      .toBe('Doppel-K.-O.');
+    expect(document.getElementById('arena-result-winner').textContent)
+      .toBe('Unentschieden');
+    expect(document.getElementById('arena-result-monster').textContent).toBe('');
+    expect(document.getElementById('arena-result-summary').textContent)
+      .toContain('8');
+    expect(document.getElementById('arena-result-ratings').textContent)
+      .toContain('@left: ELO unchanged (1040)');
+    expect(document.getElementById('arena-result-rating').textContent).toBe('');
+    expect(audio.play).not.toHaveBeenCalledWith(
+      'arena.victory',
+      expect.any(Object)
+    );
+  });
+
+  test('keeps a readable action card and visible lead from public combat state', async () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'clarity',
+      state: 'action',
+      fighters: [
+        {
+          slot: 1,
+          name: 'Selene',
+          viewerName: '@luna',
+          hp: 24,
+          maxHp: 30,
+          shield: 4,
+          charge: 100
+        },
+        {
+          slot: 2,
+          name: 'Ripple',
+          viewerName: '@tide',
+          hp: 20,
+          maxHp: 30,
+          shield: 1,
+          charge: 50
+        }
+      ]
+    });
+    expect(document.getElementById('arena-lead').textContent).toContain('@luna');
+
+    await view.playAction({
+      rulesVersion: 8,
+      matchId: 'clarity',
+      eventId: 'clarity:event:1',
+      eventSequence: 1,
+      round: 4,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: {
+        name: 'Moonfall',
+        shortText: 'Deals damage, restores health and raises a shield.',
+        type: 'special',
+        element: 'Lunar',
+        vfxKey: 'selene:special'
+      },
+      hits: [
+        { index: 1, hpDamage: 0, shieldAbsorbed: 0, evaded: true },
+        { index: 2, hpDamage: 7, shieldAbsorbed: 1, evaded: false }
+      ],
+      outcomes: [
+        { type: 'heal', amount: 4 },
+        { type: 'shield', amount: 3 }
+      ],
+      actorState: { hp: 28, maxHp: 30, shield: 7, charge: 0 },
+      targetState: { hp: 13, maxHp: 30, shield: 0, charge: 75 }
+    });
+
+    expect(document.getElementById('arena-action-player').textContent).toBe('@luna');
+    expect(document.getElementById('arena-action-key').textContent).toBe('C');
+    expect(document.getElementById('arena-action-skill').textContent).toBe('Moonfall');
+    expect(document.getElementById('arena-action-copy').textContent)
+      .toContain('restores health');
+    const metrics = document.getElementById('arena-action-metrics').textContent;
+    for (const amount of ['7', '1', '3', '4']) expect(metrics).toContain(amount);
+    expect(metrics)
+      .toMatch(/evad|auswei/i);
+  });
+
+  test('renders one explicit stat allocation card for the sanitized player and monster', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+
+    expect(view.showStatPrompt({
+      playerName: '@luna',
+      monster: { name: 'Selene', level: 7 },
+      level: 7,
+      remainingUnspentPoints: 2
+    })).toBe(true);
+    expect(document.getElementById('arena-stat-title').textContent).toContain('@luna');
+    expect(document.getElementById('arena-stat-title').textContent).toContain('Selene');
+    expect(document.getElementById('arena-stat-meta').textContent).toContain('7');
+    expect(document.getElementById('arena-stat-meta').textContent).toContain('2');
+    expect(document.getElementById('arena-stat-choices').textContent)
+      .toMatch(/1.*\+1.*2.*\+1.*3.*\+1.*4.*\+1/s);
+
+    expect(view.showStatResult({
+      playerName: '@luna',
+      monster: { name: 'Selene', level: 7 },
+      stat: 'might',
+      remainingUnspentPoints: 1
+    })).toBe(true);
+    expect(document.getElementById('arena-stat-title').textContent).toContain('@luna');
+    expect(document.getElementById('arena-stat-title').textContent).toContain('Selene');
+  });
+
+  test('clears stale reconnect arena and reports the full battle-active lifecycle', async () => {
+    mountArena();
+    const battleStates = [];
+    const view = ArenaView.createArenaView({
+      document,
+      onBattleStateChange: state => battleStates.push(state),
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applySnapshot({
+      battle: {
+        matches: [{
+          matchId: 'reconnect-active',
+          state: 'action',
+          roundNumber: 3,
+          actionDeadlineMs: 8_000,
+          fighters: [
+            { slot: 1, name: 'Selene', hp: 20, maxHp: 30 },
+            { slot: 2, name: 'Ripple', hp: 18, maxHp: 30 }
+          ]
+        }]
+      }
+    });
+    expect(document.getElementById('battle').classList).toContain('visible');
+    expect(document.getElementById('streammonsters-overlay')?.dataset.battleActive)
+      .not.toBe('false');
+
+    expect(view.applySnapshot({ battle: { matches: [] } })).toBeNull();
+    expect(document.getElementById('battle').classList).not.toContain('visible');
+    expect(view.state().matchId).toBeNull();
+    expect(battleStates.at(-1)).toEqual(expect.objectContaining({ active: false }));
+
+    view.applyMatch({
+      matchId: 'terminal',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Selene', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Ripple', hp: 0, maxHp: 30 }
+      ]
+    });
+    await view.playEvent('battle_completed', {
+      eventId: 'terminal:event:done',
+      winnerSlot: 1,
+      winner: { viewerName: '@luna', name: 'Selene' },
+      terminalReason: 'knockout',
+      knockout: { round: 4, remainingHp: 20, maxHp: 30 }
+    });
+    expect(battleStates).toEqual(expect.arrayContaining([
+      expect.objectContaining({ active: true }),
+      expect.objectContaining({ active: false })
+    ]));
+  });
+
+  test('restores sealed choice facts and the active stat owner from a cold snapshot', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+
+    view.applySnapshot({
+      battle: {
+        statPrompt: {
+          promptId: 'cold-stat',
+          deadlineMs: 12_000,
+          playerName: '@luna',
+          monster: { name: 'Selene', level: 7 },
+          level: 7,
+          remainingUnspentPoints: 2,
+          choices: ['1', '2', '3', '4']
+        },
+        matches: [{
+          matchId: 'cold-lock',
+          state: 'action',
+          roundNumber: 2,
+          actionDeadlineMs: 12_000,
+          choiceLocks: [{
+            round: 2,
+            slot: 1,
+            locked: true,
+            source: 'viewer',
+            deadlineMs: 12_000
+          }],
+          fighters: [
+            { slot: 1, name: 'Ashfang', viewerName: '@ash', hp: 20, maxHp: 30 },
+            { slot: 2, name: 'Selene', viewerName: '@luna', hp: 22, maxHp: 30 }
+          ]
+        }]
+      }
+    });
+
+    const sealed = document.querySelector('#arena-fighter-1');
+    expect(sealed.classList).toContain('choice-locked');
+    expect(sealed.dataset.choice).toBeUndefined();
+    expect(document.getElementById('arena-stat-title').textContent).toContain('@luna');
+    expect(document.getElementById('arena-stat-title').textContent).toContain('Selene');
+  });
+
+  test('restores jointly revealed choices from a cinematic reconnect snapshot', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+
+    view.applySnapshot({
+      battle: {
+        matches: [{
+          matchId: 'cold-reveal',
+          state: 'action',
+          roundNumber: 2,
+          actionDeadlineMs: null,
+          revealedChoices: {
+            round: 1,
+            choices: [
+              { slot: 1, choice: 'A', source: 'viewer' },
+              { slot: 2, choice: 'B', source: 'timeout' }
+            ]
+          },
+          fighters: [
+            { slot: 1, name: 'Ashfang', hp: 20, maxHp: 30 },
+            { slot: 2, name: 'Selene', hp: 22, maxHp: 30 }
+          ]
+        }]
+      }
+    });
+
+    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBe('A');
+    expect(document.querySelector('#arena-fighter-2').dataset.choice).toBe('B');
   });
 
   test('keeps sealed locks choice-free until the ordered reveal event arrives', () => {
@@ -354,6 +813,46 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('100%');
     expect(document.querySelector('[data-slot="1"] [data-skill="C"]').classList)
       .toContain('ready');
+  });
+
+  test('keeps projected Special charge capped during a longer bilingual choice window', () => {
+    mountArena();
+    let currentTime = 8_000;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { now: () => currentTime }
+    });
+    const special = {
+      choice: 'C',
+      name: 'Inferno',
+      chargeRequired: 100,
+      available: false
+    };
+
+    view.openChoice({
+      matchId: 'match-bilingual-charge-cap',
+      round: 1,
+      deadlineMs: 11_000,
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 11_000,
+        passivePerSecond: 5,
+        maxGain: 30
+      },
+      fighters: [
+        { slot: 1, name: 'Ashfang', charge: 60, skills: [special] },
+        { slot: 2, name: 'Ripple', charge: 60, skills: [special] }
+      ]
+    });
+
+    for (const elapsedSeconds of [7, 8, 9, 10]) {
+      currentTime = 1_000 + (elapsedSeconds * 1_000);
+      view.renderCountdown();
+      const specialCard = document.querySelector('[data-slot="1"] [data-skill="C"]');
+      expect(specialCard.querySelector('.skill-charge').textContent).toBe('90%');
+      expect(specialCard.classList).toContain('charging');
+      expect(specialCard.classList).not.toContain('ready');
+    }
   });
 
   test('shows a sealed lock without selecting a skill until both choices are revealed', () => {
@@ -556,6 +1055,161 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     })).toBe(true);
   });
 
+  test.each([
+    [477, 829],
+    [1080, 1920]
+  ])('keeps chat detail above the complete egg shelf lane at %sx%s', (_width, height) => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const detailBottoms = rules
+      .filter(rule => rule.selectorText === '#chat-detail')
+      .map(rule => rule.style.getPropertyValue('bottom'))
+      .filter(Boolean);
+
+    expect(detailBottoms).not.toContain('28%');
+    expect(detailBottoms).toContain(
+      'calc(26% + var(--egg-shelf-lane-height))'
+    );
+    const shelfTop = (height * 0.74) - 112;
+    const detailBottomEdge = (height * 0.74) - 124;
+    expect(detailBottomEdge).toBeLessThanOrEqual(shelfTop);
+  });
+
+  test('uses one shared portrait choice surface with readable paired A B C skills', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const choiceSurface = dom.window.document.getElementById(
+      'arena-choice-surface'
+    );
+
+    expect(choiceSurface).not.toBeNull();
+    expect(choiceSurface.querySelectorAll('[data-skill-deck]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-skill="A"]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-skill="B"]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-skill="C"]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-choice-owner]')).toHaveLength(2);
+    expect(html).toMatch(
+      /@media \(orientation: portrait\)[\s\S]*#arena-choice-surface[\s\S]*font-size:clamp\(16px/
+    );
+    expect(html).toMatch(
+      /@media \(orientation: portrait\)[\s\S]*#arena-choice-surface[\s\S]*font-size:clamp\(14px/
+    );
+    expect(html).not.toMatch(
+      /@media \(orientation: portrait\)[\s\S]*\.skill-copy\s*\{[^}]*clamp\(10px/
+    );
+  });
+
+  test('ships a short portrait battle layout with non-overlapping HUD action deck and feed bands', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const compactMedia = rules.find(rule => (
+      rule.parentRule?.conditionText?.includes('max-height: 900px') &&
+      rule.selectorText === '#arena-action-card'
+    ))?.parentRule;
+    const portraitChoiceFeed = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText === '#battle[data-phase="choice"] #arena-feed'
+    ));
+
+    expect(compactMedia).toBeDefined();
+    expect(portraitChoiceFeed?.style.getPropertyValue('display')).toBe('none');
+    const styles = new Map([...compactMedia.cssRules]
+      .filter(rule => rule.selectorText)
+      .map(rule => [rule.selectorText, rule.style]));
+    expect(styles.get('#arena-action-card').getPropertyValue('top')).toBe('20%');
+    expect(styles.get('#arena-action-card').getPropertyValue('min-height')).toBe('0px');
+    expect(styles.get('#arena-action-card').getPropertyValue('max-height')).toBe('');
+    expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('top'))
+      .toBe('43%');
+    expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('height'))
+      .toBe('55%');
+    expect(styles.get('#battle[data-phase="choice"] #arena-feed').getPropertyValue('display'))
+      .toBe('none');
+    expect(styles.get('#arena-choice-surface').getPropertyValue('bottom')).toBe('1%');
+    expect(styles.get('#battle-effects-canvas').getPropertyValue('z-index')).toBe('3');
+    expect(styles.get('.arena-skill-card .skill-copy').getPropertyValue('text-overflow'))
+      .not.toBe('ellipsis');
+  });
+
+  test('updates shelf, meter, and skill-deck accessibility labels with the presentation locale', () => {
+    mountArena();
+    const shelf = document.createElement('section');
+    shelf.id = 'egg-shelf';
+    document.body.prepend(shelf);
+    const translations = {
+      de: {
+        eggShelfAria: 'Lebende Eierablage',
+        arenaHpAria: '{monster}: Lebenspunkte',
+        arenaShieldAria: '{monster}: Schild',
+        arenaSpecialAria: '{monster}: Spezialladung',
+        arenaSkillDeckAria: '{monster}: Fähigkeiten'
+      },
+      fr: {
+        eggShelfAria: 'Étagère des œufs',
+        arenaHpAria: '{monster} : points de vie',
+        arenaShieldAria: '{monster} : bouclier',
+        arenaSpecialAria: '{monster} : charge spéciale',
+        arenaSkillDeckAria: '{monster} : compétences'
+      }
+    };
+    const localize = (key, params, locale) => (
+      translations[locale]?.[key] || ''
+    ).replace(/\{(\w+)\}/g, (_match, name) => params[name] || '');
+    const view = ArenaView.createArenaView({ document, localize });
+
+    view.setLocale('de');
+    view.applyMatch({
+      matchId: 'aria-match',
+      fighters: [
+        { slot: 1, name: 'Ashfang', hp: 40, maxHp: 40, skills: [] },
+        { slot: 2, name: 'Ripple', hp: 40, maxHp: 40, skills: [] }
+      ]
+    });
+    expect(shelf.getAttribute('aria-label')).toBe('Lebende Eierablage');
+    expect(document.getElementById('arena-hp-1').getAttribute('aria-label'))
+      .toBe('Ashfang: Lebenspunkte');
+    expect(document.querySelector('[data-skill-deck="2"]').getAttribute('aria-label'))
+      .toBe('Ripple: Fähigkeiten');
+
+    view.setLocale('fr');
+    expect(shelf.getAttribute('aria-label')).toBe('Étagère des œufs');
+    expect(document.getElementById('arena-charge-2').getAttribute('aria-label'))
+      .toBe('Ripple : charge spéciale');
+    expect(document.querySelector('[data-skill-deck="1"]').getAttribute('aria-label'))
+      .toBe('Ashfang : compétences');
+  });
+
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
@@ -572,10 +1226,34 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(dom.window.document.querySelectorAll('.arena-skill-deck')).toHaveLength(2);
     expect(dom.window.document.querySelectorAll('.arena-skill-card')).toHaveLength(6);
     expect(dom.window.document.querySelector('#arena-chat-safe-zone')).not.toBeNull();
+    expect(dom.window.document.querySelector('#battle-effects-canvas')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-lead')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-card')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-copy')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-metrics')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-stat-card')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-ko')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-monster')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-summary')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-ratings')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-rating')).toBeNull();
     expect(html).toContain('--arena-gameplay-height:74%');
-    expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%/s);
+    expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%;[^}]*z-index:50/s);
+    expect(html).toMatch(
+      /#streammonsters-overlay\[data-battle-active="true"\][\s\S]*#egg-shelf[\s\S]*visibility:hidden/
+    );
+    expect(html).toMatch(/#battle-effects-canvas\s*\{[^}]*z-index:3/s);
+    expect(html).toContain('effectsRenderer.setQuality(rendererQuality)');
+    expect(html).toContain('battleEffectsRenderer.setQuality(rendererQuality)');
     expect(html).toMatch(
       /\.arena-sprite\s*\{[^}]*max-width:100%;[^}]*max-height:100%;[^}]*object-fit:contain/s
+    );
+    expect(html).toMatch(
+      /\.arena-skill-card \.skill-copy\s*\{[^}]*overflow:visible;[^}]*white-space:normal/s
+    );
+    expect(html).toMatch(/#arena-result\s*\{[^}]*min-height:/s);
+    expect(html).toMatch(
+      /if \(type === 'egg_hatched'\)[\s\S]*?presentation:'hatch',[\s\S]*?duration:12_000/
     );
     expect(html).toMatch(/@media \(orientation: landscape\)\s*\{[^}]*height:65%/s);
     expect(html).toMatch(/@media \(orientation: landscape\)[\s\S]*#arena-feed\s*\{[^}]*top:18%/);
@@ -649,6 +1327,22 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         'arenaCancelled',
         'arenaShieldLabel',
         'arenaSpecialLabel',
+        'arenaLeadLabel',
+        'arenaTiedLabel',
+        'arenaKnockoutResult',
+        'arenaForfeitResult',
+        'arenaResultSummary',
+        'arenaRatingChanged',
+        'arenaRatingUnchanged',
+        'arenaDamageMetric',
+        'arenaShieldAbsorbedMetric',
+        'arenaShieldGainMetric',
+        'arenaHealMetric',
+        'arenaEvadeMetric',
+        'monsterStatMeta',
+        'monsterStatChoices',
+        'monsterStatResult',
+        'arenaCollapseBanner',
         'skillCopyEmberAttack',
         'skillCopyEmberDefense',
         'skillCopyEmberSpecial',

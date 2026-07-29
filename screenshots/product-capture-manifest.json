@@ -587,8 +587,8 @@
       }
     },
     {
-      "id": "stream-monsters-arena-portrait-1.5",
-      "canonical": "/screenshots/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "canonical": "/screenshots/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": "default-demo",
       "viewport": {
@@ -598,8 +598,8 @@
       }
     },
     {
-      "id": "stream-monsters-creator-1.5",
-      "canonical": "/screenshots/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "canonical": "/screenshots/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": "default-demo",
       "viewport": {
@@ -840,8 +840,8 @@
       }
     }
   ],
-  "sourceUrl": "http://127.0.0.1:3128",
-  "capturedAt": "2026-07-11T19:05:37.295Z",
+  "sourceUrl": "isolated-local-process",
+  "capturedAt": "2026-07-29T06:47:08.964Z",
   "requestedLocales": [
     "de",
     "en",
@@ -1241,23 +1241,59 @@
     },
     {
       "locale": "de",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/de/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/de/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "de",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderedLocale": "de",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "de",
+          "locales": [
+            "de"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Runde 1",
+          "commandPrompt": "A Angriff  ·  B Verteidigung  ·  C Spezial"
+        },
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "element-signature",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "e79f76943518927ccf948d95b65ebdeb7c367936ede7d2f37a53a4db99bb6402",
+      "bytes": 1117592
     },
     {
       "locale": "de",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/de/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/de/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "de",
         "theme": "cid"
-      }
+      },
+      "sha256": "d5acf08401a8ab080d42a57b2a72c5309d4d8175c5b0fc5a35f37934a72feda1",
+      "bytes": 770115
     },
     {
       "locale": "de",
@@ -1821,23 +1857,59 @@
     },
     {
       "locale": "en",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "en",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderedLocale": "en",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "en",
+          "locales": [
+            "en"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Round 1",
+          "commandPrompt": "A Attack  ·  B Defense  ·  C Special"
+        },
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "element-signature",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "90c1a7dc93c13e5c3f97514a7bcbb3ca0a6cdbe58f440f06e06551ea8553b502",
+      "bytes": 1106416
     },
     {
       "locale": "en",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "en",
         "theme": "cid"
-      }
+      },
+      "sha256": "8f0bf8d6b6d98bd1876aae5ef81702f92e8b2d5007d792fed9a559bae2926dc3",
+      "bytes": 773309
     },
     {
       "locale": "en",
@@ -2401,23 +2473,59 @@
     },
     {
       "locale": "es",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/es/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/es/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "es",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderedLocale": "es",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "es",
+          "locales": [
+            "es"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Ronda 1",
+          "commandPrompt": "A Ataque  ·  B Defensa  ·  C Especial"
+        },
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "element-signature",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "dfd4a523ffb13810008a0925125d046286cd5022042fc6118303c98feb582e0a",
+      "bytes": 1125778
     },
     {
       "locale": "es",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/es/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/es/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "es",
         "theme": "cid"
-      }
+      },
+      "sha256": "e8d9f8a8a0cd3703bed3594c9b846c37fd3fa5f511c4ca75c70422d6047b7fd0",
+      "bytes": 781499
     },
     {
       "locale": "es",
@@ -2981,23 +3089,59 @@
     },
     {
       "locale": "fr",
-      "id": "stream-monsters-arena-portrait-1.5",
-      "path": "screenshots/fr/features/stream-monsters-arena-portrait-1.5.png",
+      "id": "stream-monsters-arena-portrait-1.11",
+      "path": "screenshots/fr/features/stream-monsters-arena-portrait-1.11.png",
       "route": "/streammonsters/overlay?layout=portrait",
       "state": {
         "lang": "fr",
-        "theme": "cid"
-      }
+        "theme": "cid",
+        "renderedLocale": "fr",
+        "localePhase": "stable",
+        "overlayLanguage": {
+          "primaryLocale": "fr",
+          "locales": [
+            "fr"
+          ],
+          "secondsPerLocale": 5
+        },
+        "battlePhase": "choice",
+        "readability": {
+          "roundVisible": true,
+          "commandPromptVisible": true,
+          "fighterCount": 2,
+          "statBlockCount": 2,
+          "skillCardCount": 6,
+          "roundLabel": "Manche 1",
+          "commandPrompt": "A Attaque  ·  B Défense  ·  C Spécial"
+        },
+        "renderer": {
+          "mode": "webgpu",
+          "backend": "webgpu",
+          "fallbackReason": ""
+        },
+        "effect": {
+          "active": true,
+          "source": "deterministic-capture-harness",
+          "scene": "special",
+          "phase": "element-signature",
+          "signature": "volt:special",
+          "motifs": "chain-lightning-storm,white-flash"
+        }
+      },
+      "sha256": "667cdfb24d3d48e59f701b2d3b69b8a289474e606a6c912b1db85fe3e0fa71e1",
+      "bytes": 1123454
     },
     {
       "locale": "fr",
-      "id": "stream-monsters-creator-1.5",
-      "path": "screenshots/fr/features/stream-monsters-creator-1.5.png",
+      "id": "stream-monsters-creator-1.11",
+      "path": "screenshots/fr/features/stream-monsters-creator-1.11.png",
       "route": "/streammonsters/ui",
       "state": {
         "lang": "fr",
         "theme": "cid"
-      }
+      },
+      "sha256": "9a723c26be55a06c6c99211412c91cc9e486cd2073247c783da5d0b6abce4ea8",
+      "bytes": 775979
     },
     {
       "locale": "fr",
@@ -3890,5 +4034,9 @@
       }
     }
   ],
-  "failures": []
+  "failures": [],
+  "requestedIds": [
+    "stream-monsters-creator-1.11",
+    "stream-monsters-arena-portrait-1.11"
+  ]
 }

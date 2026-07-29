@@ -9,7 +9,7 @@ const {
   getEvolutionAssetPath,
   resolveStageSkill
 } = require('./catalog');
-const { V7_RULES_VERSION } = require('./battle-rules-v5');
+const { V8_RULES_VERSION } = require('./battle-rules-v5');
 const EggStageProjector = require('./egg-stage-projector');
 const {
   avatarUrlFromToken,
@@ -175,7 +175,9 @@ class StreamMonstersRoutes {
         battle: this.battleMatchService?.getPublicSnapshot?.({
           restoreReconnect: true
         }) || {
-          rulesVersion: V7_RULES_VERSION,
+          rulesVersion: this.currentRulesVersion(config),
+          gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+          portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
           matches: []
         },
         recentEvents,
@@ -183,8 +185,11 @@ class StreamMonstersRoutes {
       });
     });
     this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
+      const config = this.configProvider.getConfig().streamMonsters;
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: V7_RULES_VERSION,
+        rulesVersion: this.currentRulesVersion(config),
+        gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
         matches: []
       };
       res.json({ success: true, ...snapshot });
@@ -214,7 +219,9 @@ class StreamMonstersRoutes {
       const overlayDiagnostics = this.getOverlayDiagnostics();
       const gcce = this.gcceStateProvider();
       const battle = this.battleMatchService?.getPublicSnapshot?.() || {
-        rulesVersion: V7_RULES_VERSION,
+        rulesVersion: this.currentRulesVersion(config),
+        gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
         matches: []
       };
       res.json({
@@ -420,7 +427,7 @@ class StreamMonstersRoutes {
             template.templateId,
             choice,
             evolutionStage,
-            V7_RULES_VERSION
+            this.currentRulesVersion(config)
           );
           const chargeRequired = choice === 'C'
             ? Math.max(1, Number(skill.chargeRequired) || 100)
@@ -464,7 +471,7 @@ class StreamMonstersRoutes {
           selectedTemplate.templateId,
           unlockedChoice,
           evolutionStage,
-          V7_RULES_VERSION
+          this.currentRulesVersion(config)
         )
       };
       const rounds = [
@@ -1221,11 +1228,50 @@ class StreamMonstersRoutes {
       : 86_400;
   }
 
+  normalizeAutoHatchActiveWindowSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
+      ? Math.round(seconds)
+      : 300;
+  }
+
   normalizeTutorialHintIntervalSeconds(value) {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 300
       ? Math.round(seconds)
       : 90;
+  }
+
+  normalizeOverlayLanguage(input = {}) {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requested = Array.isArray(candidate.locales) ? candidate.locales : [];
+    const locales = [...new Set(requested
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => supported.includes(locale)))]
+      .slice(0, 2);
+    const rawPrimary = String(candidate.primaryLocale || '').trim().toLowerCase();
+    if (!rawPrimary && !requested.length) {
+      return {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      };
+    }
+    const primaryLocale = supported.includes(rawPrimary)
+      ? rawPrimary
+      : (locales[0] || 'de');
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: [primaryLocale, ...locales.filter(locale => locale !== primaryLocale)]
+        .slice(0, 2),
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : 5
+    };
   }
 
   validateRetentionConfigUpdate(input = {}) {
@@ -1243,6 +1289,18 @@ class StreamMonstersRoutes {
       }
     }
     if (
+      Object.prototype.hasOwnProperty.call(input, 'autoHatchActiveViewers') &&
+      typeof input.autoHatchActiveViewers !== 'boolean'
+    ) {
+      throw new Error('STREAM_MONSTERS_AUTO_HATCH_ENABLED_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'autoHatchActiveWindowSeconds')) {
+      const seconds = Number(input.autoHatchActiveWindowSeconds);
+      if (!Number.isFinite(seconds) || seconds < 30 || seconds > 900) {
+        throw new Error('STREAM_MONSTERS_AUTO_HATCH_WINDOW_INVALID');
+      }
+    }
+    if (
       Object.prototype.hasOwnProperty.call(input, 'tutorialHintsEnabled') &&
       typeof input.tutorialHintsEnabled !== 'boolean'
     ) {
@@ -1253,6 +1311,44 @@ class StreamMonstersRoutes {
       if (!Number.isFinite(seconds) || seconds < 60 || seconds > 300) {
         throw new Error('STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID');
       }
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'overlayLanguage')) {
+      const language = input.overlayLanguage;
+      if (!language || typeof language !== 'object' || Array.isArray(language)) {
+        throw new Error('STREAM_MONSTERS_OVERLAY_LANGUAGE_INVALID');
+      }
+      const supported = new Set(['de', 'en', 'es', 'fr']);
+      const primary = String(language.primaryLocale || '').trim().toLowerCase();
+      const locales = Array.isArray(language.locales) ? language.locales : [];
+      const normalizedLocales = locales
+        .map(locale => String(locale || '').trim().toLowerCase());
+      const seconds = Number(language.secondsPerLocale);
+      if (
+        !supported.has(primary) ||
+        normalizedLocales.length < 1 ||
+        normalizedLocales.length > 2 ||
+        new Set(normalizedLocales).size !== normalizedLocales.length ||
+        normalizedLocales.some(locale => !supported.has(locale)) ||
+        !normalizedLocales.includes(primary) ||
+        !Number.isFinite(seconds) ||
+        seconds < 4 ||
+        seconds > 6
+      ) {
+        throw new Error('STREAM_MONSTERS_OVERLAY_LANGUAGE_INVALID');
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'gameplayPace') &&
+      input.gameplayPace !== 'arcade-rally'
+    ) {
+      throw new Error('STREAM_MONSTERS_GAMEPLAY_PACE_INVALID');
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'portraitBattleMode') &&
+      input.portraitBattleMode !== true &&
+      input.portraitBattleMode !== 'takeover-74'
+    ) {
+      throw new Error('STREAM_MONSTERS_PORTRAIT_BATTLE_MODE_INVALID');
     }
   }
 
@@ -1527,6 +1623,14 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (typeof input.autoHatchActiveViewers === 'boolean') {
+      safe.autoHatchActiveViewers = input.autoHatchActiveViewers;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'autoHatchActiveWindowSeconds')) {
+      safe.autoHatchActiveWindowSeconds = this.normalizeAutoHatchActiveWindowSeconds(
+        input.autoHatchActiveWindowSeconds
+      );
+    }
     if (typeof input.tutorialHintsEnabled === 'boolean') {
       safe.tutorialHintsEnabled = input.tutorialHintsEnabled;
     }
@@ -1535,7 +1639,16 @@ class StreamMonstersRoutes {
         input.tutorialHintIntervalSeconds
       );
     }
-    const allowedHatchDurations = new Set([30_000, 60_000, 2, 5, 10, 30].map(value => (
+    if (Object.prototype.hasOwnProperty.call(input, 'overlayLanguage')) {
+      safe.overlayLanguage = this.normalizeOverlayLanguage(input.overlayLanguage);
+    }
+    if (input.gameplayPace === 'arcade-rally') {
+      safe.gameplayPace = 'arcade-rally';
+    }
+    if (input.portraitBattleMode === true || input.portraitBattleMode === 'takeover-74') {
+      safe.portraitBattleMode = 'takeover-74';
+    }
+    const allowedHatchDurations = new Set([30_000, 60_000, 90_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
     )));
     const hatchDurationMs = Number(input.hatchDurationMs);
@@ -1692,12 +1805,42 @@ class StreamMonstersRoutes {
     };
   }
 
+  currentRulesVersion(config = {}) {
+    const candidate = Number(
+      this.battleMatchService?.rulesVersion ?? config.rulesVersion
+    );
+    if (candidate >= V8_RULES_VERSION) return V8_RULES_VERSION;
+    if (candidate >= 7) return 7;
+    if (candidate >= 6) return 6;
+    if (candidate >= 5) return 5;
+    return V8_RULES_VERSION;
+  }
+
+  normalizeGameplayPace(value) {
+    return value === 'arcade-rally' ? value : 'arcade-rally';
+  }
+
+  normalizePortraitBattleMode(value) {
+    if (value === true) return 'takeover-74';
+    return value === 'takeover-74' ? value : 'takeover-74';
+  }
+
   publicConfig(config = {}, { includeCreator = false } = {}) {
     const result = {
       enabled: Boolean(config.enabled),
-      rulesVersion: V7_RULES_VERSION,
-      hatchDurationMs: config.hatchDurationMs,
-      incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
+      rulesVersion: this.currentRulesVersion(config),
+      hatchDurationMs: config.hatchDurationMs ?? 90_000,
+      incubationPresetsMs: [
+        30_000,
+        60_000,
+        90_000,
+        120_000,
+        300_000,
+        600_000,
+        1_800_000
+      ],
+      gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+      portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
       eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(
         Number(config.eggExpiryMs)
       ) ? Number(config.eggExpiryMs) : 86_400_000,
@@ -1709,6 +1852,7 @@ class StreamMonstersRoutes {
       elementRules: config.elementRules || 'deterministic',
       giftMappingCustomized: Boolean(config.giftMappingCustomized),
       visualPack: 'furry',
+      overlayLanguage: this.normalizeOverlayLanguage(config.overlayLanguage),
       commandAliases: config.commandAliases || {},
       layouts: config.layouts || {
         portrait: { anchor: 'top-center', scale: 100 },
@@ -1725,6 +1869,10 @@ class StreamMonstersRoutes {
       result.freeEggDropsEnabled = config.freeEggDropsEnabled !== false;
       result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
         config.freeEggCooldownSeconds
+      );
+      result.autoHatchActiveViewers = config.autoHatchActiveViewers !== false;
+      result.autoHatchActiveWindowSeconds = this.normalizeAutoHatchActiveWindowSeconds(
+        config.autoHatchActiveWindowSeconds
       );
       result.tutorialHintsEnabled = config.tutorialHintsEnabled !== false;
       result.tutorialHintIntervalSeconds = this.normalizeTutorialHintIntervalSeconds(

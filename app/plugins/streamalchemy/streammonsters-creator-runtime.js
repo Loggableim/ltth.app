@@ -9,10 +9,26 @@
     Object.freeze({ id: 'live-center', titleKey: 'liveCenterTitle' }),
     Object.freeze({ id: 'gameplay', titleKey: 'gameplayTitle' }),
     Object.freeze({ id: 'gifts-chat', titleKey: 'giftsChatTitle' }),
+    Object.freeze({ id: 'languages', titleKey: 'overlayLanguagesTitle' }),
     Object.freeze({ id: 'overlay-studio', titleKey: 'overlayStudioTitle' }),
     Object.freeze({ id: 'asset-library', titleKey: 'assetLibraryTitle' }),
     Object.freeze({ id: 'community-seasons', titleKey: 'communitySeasonsTitle' })
   ]);
+  const PORTRAIT_PREVIEW_ZONES = Object.freeze({
+    logo: Object.freeze({ x: 4, y: 2, width: 24, height: 6 }),
+    music: Object.freeze({ x: 5, y: 14.5, width: 58, height: 4.5 }),
+    notification: Object.freeze({ x: 4, y: 20, width: 92, height: 5 }),
+    avatar: Object.freeze({ x: 2, y: 26.5, width: 96, height: 31 }),
+    likes: Object.freeze({ x: 2, y: 58.5, width: 96, height: 6 }),
+    shelf: Object.freeze({ x: 3, y: 66.5, width: 94, height: 7 }),
+    xp: Object.freeze({ x: 4, y: 82.5, width: 92, height: 11 }),
+    battle: Object.freeze({ x: 0, y: 0, width: 100, height: 74 }),
+    safe: Object.freeze({ x: 0, y: 74, width: 100, height: 26 })
+  });
+  const LANDSCAPE_PREVIEW_ZONES = Object.freeze({
+    battle: Object.freeze({ x: 0, y: 0, width: 100, height: 74 }),
+    safe: Object.freeze({ x: 0, y: 74, width: 100, height: 26 })
+  });
   const COMMAND_ACTIONS = Object.freeze([
     'eggs',
     'adopt',
@@ -27,6 +43,28 @@
     'rank',
     'quests',
     'monstershelp'
+  ]);
+  const COMMAND_GROUPS = Object.freeze([
+    Object.freeze({
+      id: 'eggs',
+      titleKey: 'commandGroupEggs',
+      commands: Object.freeze(['eggs', 'hatch', 'adopt'])
+    }),
+    Object.freeze({
+      id: 'collection',
+      titleKey: 'commandGroupCollection',
+      commands: Object.freeze(['inventory', 'monsters', 'monster', 'evolve'])
+    }),
+    Object.freeze({
+      id: 'arena',
+      titleKey: 'commandGroupArena',
+      commands: Object.freeze(['choose', 'battle', 'leavebattle'])
+    }),
+    Object.freeze({
+      id: 'progress',
+      titleKey: 'commandGroupProgress',
+      commands: Object.freeze(['rank', 'quests', 'monstershelp'])
+    })
   ]);
   const DEMO_SCENES = Object.freeze([
     'spawn',
@@ -53,7 +91,17 @@
     'role_trickster',
     'role_sustain'
   ]);
-  const HATCH_PRESETS = Object.freeze([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
+  const HATCH_PRESETS = Object.freeze([
+    30_000,
+    60_000,
+    90_000,
+    120_000,
+    300_000,
+    600_000,
+    1_800_000
+  ]);
+  const GAMEPLAY_PACES = Object.freeze(['arcade-rally']);
+  const PORTRAIT_BATTLE_MODES = Object.freeze(['takeover-74']);
   const EGG_EXPIRY_PRESETS = Object.freeze([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
   const SEASON_DURATIONS = Object.freeze([7, 14, 28, 60, 90]);
   const RENDERER_QUALITIES = Object.freeze(['auto', 'high', 'medium', 'low']);
@@ -69,15 +117,78 @@
     })
   });
 
+  function normalizeOverlayLanguage(input = {}) {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const candidate = input && typeof input === 'object' && !Array.isArray(input)
+      ? input
+      : {};
+    const requested = Array.isArray(candidate.locales) ? candidate.locales : [];
+    const locales = [...new Set(requested
+      .map(locale => String(locale || '').trim().toLowerCase())
+      .filter(locale => supported.includes(locale)))]
+      .slice(0, 2);
+    const rawPrimary = String(candidate.primaryLocale || '').trim().toLowerCase();
+    if (!rawPrimary && !requested.length) {
+      return {
+        primaryLocale: 'de',
+        locales: ['de', 'en'],
+        secondsPerLocale: 5
+      };
+    }
+    const primaryLocale = supported.includes(rawPrimary)
+      ? rawPrimary
+      : (locales[0] || 'de');
+    const seconds = Number(candidate.secondsPerLocale);
+    return {
+      primaryLocale,
+      locales: [primaryLocale, ...locales.filter(locale => locale !== primaryLocale)]
+        .slice(0, 2),
+      secondsPerLocale: Number.isFinite(seconds) && seconds >= 4 && seconds <= 6
+        ? Math.round(seconds)
+        : 5
+    };
+  }
+
+  function hydrateHatchPresetControl(select, hatchDurationMs, {
+    label = 'Legacy Custom'
+  } = {}) {
+    if (!select?.options || !select?.ownerDocument?.createElement) {
+      throw new Error('STREAM_MONSTERS_HATCH_PRESET_CONTROL_INVALID');
+    }
+    for (const option of [...select.options]) {
+      if (option.dataset?.legacyCustom === 'true') option.remove();
+    }
+    const storedDuration = Number(hatchDurationMs);
+    const value = Number.isFinite(storedDuration) && storedDuration > 0
+      ? Math.round(storedDuration)
+      : 90_000;
+    const legacyCustom = !HATCH_PRESETS.includes(value);
+    if (legacyCustom) {
+      const option = select.ownerDocument.createElement('option');
+      option.value = String(value);
+      option.dataset.legacyCustom = 'true';
+      option.textContent = String(label || 'Legacy Custom');
+      select.append(option);
+    }
+    select.value = String(value);
+    return { value, legacyCustom };
+  }
+
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
     const freeEggCooldownSeconds = Number(values.freeEggCooldownSeconds);
     const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
-    return {
+    const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
+    const requestedHatchDurationMs = Number(values.hatchDurationMs);
+    const storedHatchDurationMs = Number(currentConfig.hatchDurationMs);
+    const payload = {
       creatorName: String(values.creatorName || '').trim(),
-      hatchDurationMs: HATCH_PRESETS.includes(Number(values.hatchDurationMs))
-        ? Number(values.hatchDurationMs)
-        : 120_000,
+      gameplayPace: GAMEPLAY_PACES.includes(values.gameplayPace)
+        ? values.gameplayPace
+        : 'arcade-rally',
+      portraitBattleMode: PORTRAIT_BATTLE_MODES.includes(values.portraitBattleMode)
+        ? values.portraitBattleMode
+        : 'takeover-74',
       eggExpiryMs: EGG_EXPIRY_PRESETS.includes(Number(values.eggExpiryMs))
         ? Number(values.eggExpiryMs)
         : 86_400_000,
@@ -107,16 +218,31 @@
         freeEggCooldownSeconds <= 31_536_000
         ? Math.round(freeEggCooldownSeconds)
         : 86_400,
+      autoHatchActiveViewers: values.autoHatchActiveViewers !== false,
+      autoHatchActiveWindowSeconds: Number.isFinite(autoHatchActiveWindowSeconds) &&
+        autoHatchActiveWindowSeconds >= 30 &&
+        autoHatchActiveWindowSeconds <= 900
+        ? Math.round(autoHatchActiveWindowSeconds)
+        : 300,
       tutorialHintsEnabled: values.tutorialHintsEnabled !== false,
       tutorialHintIntervalSeconds: Number.isFinite(tutorialHintIntervalSeconds) &&
         tutorialHintIntervalSeconds >= 60 &&
         tutorialHintIntervalSeconds <= 300
         ? Math.round(tutorialHintIntervalSeconds)
         : 90,
+      overlayLanguage: normalizeOverlayLanguage(
+        values.overlayLanguage || currentConfig.overlayLanguage
+      ),
       commandAliases: values.commandAliases || currentConfig.commandAliases || {},
       audioChannels: values.audioChannels || currentConfig.audioChannels || {},
       giftMappingCustomized: Boolean(currentConfig.giftMappingCustomized)
     };
+    if (HATCH_PRESETS.includes(requestedHatchDurationMs)) {
+      payload.hatchDurationMs = requestedHatchDurationMs;
+    } else if (!Number.isFinite(storedHatchDurationMs) || storedHatchDurationMs <= 0) {
+      payload.hatchDurationMs = 90_000;
+    }
+    return payload;
   }
 
   function buildAliasDiagnostics(commandAliases = {}, gcce = {}) {
@@ -221,6 +347,67 @@
     });
   }
 
+  function buildCommandGroups({ gcce = {}, commandAliases = {} } = {}) {
+    const prefix = typeof gcce.commandPrefix === 'string' && gcce.commandPrefix
+      ? gcce.commandPrefix
+      : '!';
+    const policies = new Map(
+      buildCommandDiagnostics(gcce).map(policy => [policy.command, policy])
+    );
+    const conflicts = Array.isArray(gcce.registrationConflicts)
+      ? gcce.registrationConflicts
+      : [];
+    const tiktokFilter = gcce.tiktokFilter && typeof gcce.tiktokFilter === 'object'
+      ? gcce.tiktokFilter
+      : {};
+    const conflictsWith = (command, aliases) => conflicts.some(conflict => {
+      const serialized = typeof conflict === 'string'
+        ? conflict.toLowerCase()
+        : JSON.stringify(conflict || {}).toLowerCase();
+      return serialized.includes(command.toLowerCase()) ||
+        aliases.some(alias => serialized.includes(alias.toLowerCase()));
+    });
+    return COMMAND_GROUPS.map(group => ({
+      id: group.id,
+      titleKey: group.titleKey,
+      commands: group.commands.map(command => {
+        const policy = policies.get(command) || {
+          command,
+          reference: '',
+          enabled: false,
+          enabledAliases: [],
+          registeredAliases: [],
+          userCooldownMs: 0,
+          globalCooldownMs: 0
+        };
+        const configured = commandAliases?.[command] || {};
+        const enabledAliases = policy.enabledAliases.length
+          ? [...policy.enabledAliases]
+          : (Array.isArray(configured.enabled) ? [...configured.enabled] : []);
+        const disabledAliases = Array.isArray(configured.disabled)
+          ? [...configured.disabled]
+          : [];
+        const primaryAlias = String(policy.reference || '').startsWith(prefix)
+          ? String(policy.reference).slice(prefix.length).split(/\s+/)[0]
+          : (enabledAliases[0] || '');
+        return {
+          ...policy,
+          prefix,
+          primaryAlias,
+          enabledAliases,
+          disabledAliases,
+          gcceConflict: conflictsWith(command, [...enabledAliases, ...disabledAliases]),
+          tiktokFilterStatus: String(tiktokFilter.status || 'unavailable'),
+          tiktokFilterProbeable: Boolean(tiktokFilter.probeable),
+          tiktokFilterRecommendation: String(
+            tiktokFilter.recommendation || 'use_custom_aliases'
+          ),
+          outcomeKey: `commandOutcome${command.charAt(0).toUpperCase()}${command.slice(1)}`
+        };
+      })
+    }));
+  }
+
   const LIVE_STATUS_TRANSLATIONS = Object.freeze({
     connected: 'statusConnected',
     disconnected: 'statusDisconnected',
@@ -299,11 +486,50 @@
 
   function previewGeometry(layout) {
     const portrait = layout === 'portrait';
+    const sourceZones = portrait ? PORTRAIT_PREVIEW_ZONES : LANDSCAPE_PREVIEW_ZONES;
     return {
       width: portrait ? 1080 : 1920,
       height: portrait ? 1920 : 1080,
       gameplayPercent: 74,
-      chatPercent: 26
+      chatPercent: 26,
+      zones: Object.fromEntries(
+        Object.entries(sourceZones).map(([name, rectangle]) => [name, { ...rectangle }])
+      )
+    };
+  }
+
+  function previewComposition(layout, state) {
+    const geometry = previewGeometry(layout);
+    const mode = state === 'battle' ? 'battle' : 'normal';
+    const sourceOrder = [
+      'stream-monsters-takeover',
+      'avatar-likes-music',
+      'base-scene'
+    ];
+    const visibleZones = mode === 'battle'
+      ? ['battle', 'safe']
+      : [
+          'logo',
+          'music',
+          'notification',
+          'avatar',
+          'likes',
+          'shelf',
+          'xp',
+          'safe'
+        ].filter(zone => geometry.zones[zone]);
+    return {
+      mode,
+      width: geometry.width,
+      height: geometry.height,
+      gameplayPercent: geometry.gameplayPercent,
+      chatPercent: geometry.chatPercent,
+      visibleZones,
+      battleTakeover: mode === 'battle',
+      externalSources: mode === 'battle'
+        ? 'move_or_disable_below_takeover'
+        : 'visible',
+      sourceOrder
     };
   }
 
@@ -504,17 +730,21 @@
 
   return {
     COMMAND_ACTIONS,
+    COMMAND_GROUPS,
     CREATOR_SECTIONS,
     DEMO_SCENES,
+    GAMEPLAY_PACES,
     HATCH_PRESETS,
     EGG_EXPIRY_PRESETS,
     MASTERY_THRESHOLDS,
+    PORTRAIT_BATTLE_MODES,
     REPAIR_ACTIONS,
     RENDERER_QUALITIES,
     SEASON_DURATIONS,
     buildAliasDiagnostics,
     buildAssetStageEntries,
     buildCommandDiagnostics,
+    buildCommandGroups,
     buildConfigPayload,
     buildCreatorLiveView,
     buildEggShelfDiagnostics,
@@ -522,9 +752,12 @@
     buildRepairRequest,
     demoTranslationKey,
     eggReadinessCounts,
+    hydrateHatchPresetControl,
     leaderboardDisplayName,
     liveStatusTranslationKey,
     normalizeDemoRequest,
+    normalizeOverlayLanguage,
+    previewComposition,
     previewGeometry,
     resolveCommandReference,
     summarizeRepairResult,
