@@ -451,6 +451,7 @@
           "durationMinutes": "{minutes} minutos",
           "duration1Minute": "1 minuto",
           "duration90Seconds": "90 segundos",
+          "legacyCustomHatchDuration": "Personalizado heredado · {duration}",
           "duration2Minutes": "2 minutos",
           "duration5Minutes": "5 minutos",
           "duration10Minutes": "10 minutos",

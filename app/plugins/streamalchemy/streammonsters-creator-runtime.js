@@ -149,16 +149,40 @@
     };
   }
 
+  function hydrateHatchPresetControl(select, hatchDurationMs, {
+    label = 'Legacy Custom'
+  } = {}) {
+    if (!select?.options || !select?.ownerDocument?.createElement) {
+      throw new Error('STREAM_MONSTERS_HATCH_PRESET_CONTROL_INVALID');
+    }
+    for (const option of [...select.options]) {
+      if (option.dataset?.legacyCustom === 'true') option.remove();
+    }
+    const storedDuration = Number(hatchDurationMs);
+    const value = Number.isFinite(storedDuration) && storedDuration > 0
+      ? Math.round(storedDuration)
+      : 90_000;
+    const legacyCustom = !HATCH_PRESETS.includes(value);
+    if (legacyCustom) {
+      const option = select.ownerDocument.createElement('option');
+      option.value = String(value);
+      option.dataset.legacyCustom = 'true';
+      option.textContent = String(label || 'Legacy Custom');
+      select.append(option);
+    }
+    select.value = String(value);
+    return { value, legacyCustom };
+  }
+
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
     const freeEggCooldownSeconds = Number(values.freeEggCooldownSeconds);
     const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
     const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
-    return {
+    const requestedHatchDurationMs = Number(values.hatchDurationMs);
+    const storedHatchDurationMs = Number(currentConfig.hatchDurationMs);
+    const payload = {
       creatorName: String(values.creatorName || '').trim(),
-      hatchDurationMs: HATCH_PRESETS.includes(Number(values.hatchDurationMs))
-        ? Number(values.hatchDurationMs)
-        : 90_000,
       gameplayPace: GAMEPLAY_PACES.includes(values.gameplayPace)
         ? values.gameplayPace
         : 'arcade-rally',
@@ -213,6 +237,12 @@
       audioChannels: values.audioChannels || currentConfig.audioChannels || {},
       giftMappingCustomized: Boolean(currentConfig.giftMappingCustomized)
     };
+    if (HATCH_PRESETS.includes(requestedHatchDurationMs)) {
+      payload.hatchDurationMs = requestedHatchDurationMs;
+    } else if (!Number.isFinite(storedHatchDurationMs) || storedHatchDurationMs <= 0) {
+      payload.hatchDurationMs = 90_000;
+    }
+    return payload;
   }
 
   function buildAliasDiagnostics(commandAliases = {}, gcce = {}) {
@@ -722,6 +752,7 @@
     buildRepairRequest,
     demoTranslationKey,
     eggReadinessCounts,
+    hydrateHatchPresetControl,
     leaderboardDisplayName,
     liveStatusTranslationKey,
     normalizeDemoRequest,

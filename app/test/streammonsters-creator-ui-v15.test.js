@@ -237,6 +237,7 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       'statusActive',
       'statusIdle',
       'duration90Seconds',
+      'legacyCustomHatchDuration',
       'gameplayPace',
       'gameplayPaceArcadeRally',
       'portraitBattleMode',

@@ -1,6 +1,8 @@
 'use strict';
 
 const Database = require('better-sqlite3');
+const fs = require('fs');
+const path = require('path');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
@@ -12,7 +14,8 @@ const {
   GAMEPLAY_PACES,
   HATCH_PRESETS,
   PORTRAIT_BATTLE_MODES,
-  buildConfigPayload
+  buildConfigPayload,
+  hydrateHatchPresetControl
 } = require('../plugins/streamalchemy/streammonsters-creator-runtime');
 
 function response() {
@@ -82,6 +85,54 @@ function createConfigRouteSubject(stored = {}) {
   };
 }
 
+function creatorHatchPresetControl() {
+  const html = fs.readFileSync(
+    path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'),
+    'utf8'
+  );
+  const markup = html.match(/<select id="hatchPreset">([\s\S]*?)<\/select>/)?.[1] || '';
+  const options = [...markup.matchAll(/<option value="(\d+)"/g)].map(match => ({
+    value: match[1],
+    dataset: {},
+    textContent: '',
+    selected: false,
+    remove() {
+      const index = options.indexOf(this);
+      if (index >= 0) options.splice(index, 1);
+    }
+  }));
+  const select = {
+    options,
+    ownerDocument: {
+      createElement: () => ({
+        value: '',
+        dataset: {},
+        textContent: '',
+        selected: false,
+        remove() {
+          const index = options.indexOf(this);
+          if (index >= 0) options.splice(index, 1);
+        }
+      })
+    },
+    append(option) {
+      options.push(option);
+    }
+  };
+  Object.defineProperty(select, 'value', {
+    get: () => options.find(option => option.selected)?.value || '',
+    set: value => {
+      options.forEach(option => {
+        option.selected = option.value === String(value);
+      });
+    }
+  });
+  Object.defineProperty(select, 'selectedOptions', {
+    get: () => options.filter(option => option.selected)
+  });
+  return select;
+}
+
 describe('Stream Monsters 1.11 creator configuration contract', () => {
   test('defaults only fresh setups to 90 seconds and preserves every stored creator duration', () => {
     const plugin = new StreamAlchemyPlugin({
@@ -110,6 +161,88 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       streamMonsters: { hatchDurationMs: 1_800_000 }
     }).streamMonsters.hatchDurationMs).toBe(1_800_000);
   });
+
+  test.each([75_000, 240_000])(
+    'round-trips legacy custom duration %i while saving only presentation changes',
+    async hatchDurationMs => {
+      const select = creatorHatchPresetControl();
+      const hydrated = hydrateHatchPresetControl(select, hatchDurationMs, {
+        label: `Legacy Custom · ${hatchDurationMs} ms`
+      });
+
+      expect(hydrated).toEqual({
+        value: hatchDurationMs,
+        legacyCustom: true
+      });
+      expect(select.value).toBe(String(hatchDurationMs));
+      expect(select.selectedOptions[0]).toEqual(expect.objectContaining({
+        value: String(hatchDurationMs)
+      }));
+      expect(select.selectedOptions[0].dataset.legacyCustom).toBe('true');
+      expect(select.selectedOptions[0].textContent).toContain('Legacy Custom');
+
+      const payload = buildConfigPayload({
+        currentConfig: {
+          hatchDurationMs,
+          gameplayPace: 'arcade-rally',
+          portraitBattleMode: 'takeover-74'
+        },
+        values: {
+          hatchDurationMs: select.value,
+          gameplayPace: 'arcade-rally',
+          portraitBattleMode: 'takeover-74'
+        }
+      });
+      expect(payload).not.toHaveProperty('hatchDurationMs');
+      expect(payload).toEqual(expect.objectContaining({
+        gameplayPace: 'arcade-rally',
+        portraitBattleMode: 'takeover-74'
+      }));
+
+      const sqlite = new Database(':memory:');
+      const store = new StreamMonstersDatabase(sqlite);
+      store.initialize();
+      store.createEgg({
+        eggId: `legacy-custom-${hatchDurationMs}`,
+        userId: 'viewer-custom',
+        giftId: 1,
+        giftName: 'Team Heart',
+        element: 'Volt',
+        eggColor: '#fff',
+        seed: `seed-${hatchDurationMs}`,
+        state: 'incubating',
+        createdAtMs: 1_000,
+        hatchDurationMs,
+        readyAtMs: 1_000 + hatchDurationMs
+      });
+      const eggBefore = store.getEgg(`legacy-custom-${hatchDurationMs}`);
+      const subject = createConfigRouteSubject({
+        streamMonsters: {
+          hatchDurationMs,
+          gameplayPace: 'arcade-rally',
+          portraitBattleMode: 'takeover-74'
+        }
+      });
+      const res = response();
+
+      await subject.find('POST', '/api/streammonsters/config')(
+        localRequest(payload),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const reloaded = new StreamAlchemyPlugin({
+        getConfig: jest.fn(),
+        setConfig: jest.fn()
+      }).loadConfig(subject.persisted());
+      expect(reloaded.streamMonsters.hatchDurationMs).toBe(hatchDurationMs);
+      expect(store.getEgg(eggBefore.egg_id)).toEqual(expect.objectContaining({
+        hatch_duration_ms: hatchDurationMs,
+        ready_at_ms: eggBefore.ready_at_ms
+      }));
+      sqlite.close();
+    }
+  );
 
   test('uses the fresh 90-second default in the standalone game engine', () => {
     const sqlite = new Database(':memory:');
@@ -313,6 +446,16 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       hatchDurationMs: 90_000,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74'
+    }));
+    expect(buildConfigPayload({
+      currentConfig: {},
+      values: {
+        hatchDurationMs: '',
+        gameplayPace: 'arcade-rally',
+        portraitBattleMode: 'takeover-74'
+      }
+    })).toEqual(expect.objectContaining({
+      hatchDurationMs: 90_000
     }));
   });
 });

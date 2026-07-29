@@ -45,6 +45,8 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('streammonsters-creator-runtime.js');
     expect(html).toContain('giftMappingCustomized');
     expect(html).toContain('buildConfigPayload');
+    expect(html).toContain('hydrateHatchPresetControl');
+    expect(html).toContain('legacyCustomHatchDuration');
     expect(html).toContain('safeZoneCollisions');
     expect(html).toContain('buildDexSlots');
     expect(html).toContain('/api/streammonsters/creator-catalog');

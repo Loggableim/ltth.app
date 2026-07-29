@@ -1587,7 +1587,16 @@
       ...(state.config || {}),
       giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
     };
-    byId('hatchPreset').value = String(state.config?.hatchDurationMs ?? 90000);
+    const storedHatchDurationMs = Number(state.config?.hatchDurationMs ?? 90000);
+    creatorRuntime.hydrateHatchPresetControl(
+      byId('hatchPreset'),
+      storedHatchDurationMs,
+      {
+        label:text('legacyCustomHatchDuration', 'Legacy Custom · {duration}', {
+          duration:formatDuration(storedHatchDurationMs)
+        })
+      }
+    );
     byId('gameplayPace').value = state.config?.gameplayPace || 'arcade-rally';
     byId('portraitBattleMode').value =
       state.config?.portraitBattleMode || 'takeover-74';
