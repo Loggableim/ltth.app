@@ -247,8 +247,8 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_arena_collapse', {
       eventId: 'match-collapse:event:22',
       matchId: 'match-collapse',
-      round: 5,
-      damage: 1,
+      round: 4,
+      damage: 2,
       fighters: [
         { slot: 1, shieldReduced: 3, hpDamage: 0, hp: 1, shield: 5 },
         { slot: 2, shieldReduced: 2, hpDamage: 1, hp: 7, shield: 2 }
@@ -263,6 +263,10 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       'collapse_damage',
       'collapse_hud'
     ]);
+    expect(timeline.beats[0]).toEqual(expect.objectContaining({
+      round: 4,
+      damage: 2
+    }));
     expect(timeline.beats[3]).toEqual(expect.objectContaining({
       slot: 2,
       hpDamage: 1,

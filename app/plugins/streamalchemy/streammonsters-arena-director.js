@@ -8,6 +8,7 @@
   const QUALITY_MODES = new Set(['auto', 'high', 'medium', 'low']);
   const ELEMENTS = Object.freeze(['Ember', 'Tide', 'Grove', 'Gale', 'Lunar', 'Volt']);
   const EVOLUTION_STATS = Object.freeze(['vitality', 'might', 'guard', 'agility']);
+  const ARENA_COLLAPSE_ROUND = 4;
   const CRITICAL_EVENT_TYPES = new Set([
     'egg_spawned',
     'hatch_started',
@@ -983,7 +984,10 @@
         type: 'collapse_banner',
         atMs: 0,
         durationMs: 620,
-        round: Math.max(5, numeric(payload.round, 5)),
+        round: Math.max(
+          ARENA_COLLAPSE_ROUND,
+          numeric(payload.round, ARENA_COLLAPSE_ROUND)
+        ),
         damage: Math.max(1, numeric(payload.damage, 1)),
         effect: {
           scene: 'special',
@@ -1164,6 +1168,7 @@
   }
 
   return {
+    ARENA_COLLAPSE_ROUND,
     ELEMENTS,
     createArenaGeometry,
     canonicalImageUrl,
