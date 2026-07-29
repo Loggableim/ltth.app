@@ -113,7 +113,45 @@ Keep `submitChoice()` authoritative. Convert eligible rejection outcomes into ha
 
 Run GCCE raw-response, battle-match, public-projector, overlay-language, TTS-consumption, and exactly-once suites. Commit only Task 2 files.
 
-### Task 3: Integrated Browser and Live-Safe Verification
+### Task 3: Faster Rules-v8 Match Pace
+
+**Files:**
+- Modify: `app/plugins/streamalchemy/backend/streammonsters/battle-match-service.js`
+- Modify: `app/plugins/streamalchemy/backend/streammonsters/battle-rules-v8.js`
+- Modify: `app/plugins/streamalchemy/streammonsters-arena-director.js`
+- Test: `app/test/streammonsters-battle-rules-v8.test.js`
+- Test: `app/test/streammonsters-arena-director-v15.test.js`
+- Test: the closest existing battle-simulator suite
+
+**Interfaces:**
+- Consumes: Rules-v8 roster/action deadlines, deterministic action timelines, and Arena Collapse.
+- Produces: six-second action windows independent of overlay language count, six-second roster fallback, a maximum roughly 3.2-second two-action cinematic pause, and symmetric nonlethal anti-stall pressure from round four.
+
+- [ ] **Step 1: Write failing timing and anti-stall tests**
+
+Prove that one and two active overlay languages both yield a six-second input
+deadline, both early choices resolve immediately, the two-action cinematic
+pause is no longer than 3.2 seconds, and the deterministic timeout-heavy path
+does not retain the old 119–183-second pace.
+
+- [ ] **Step 2: Write failing Arena Collapse tests**
+
+Prove that Collapse starts in round four, applies symmetric escalating pressure,
+reduces shield/heal recovery in deterministic phases, locks defense by round
+eight, and can never directly reduce a living monster below one HP.
+
+- [ ] **Step 3: Implement the minimum pace changes**
+
+Keep K.-o.-only, sealed choices, replay determinism, passive Special charge, and
+the complete visible action choreography. Do not accept late input or add
+pay-to-win effects.
+
+- [ ] **Step 4: Run focused tests and commit**
+
+Run battle rules, simulator, director, replay, sealed-choice, and public-event
+suites. Commit only Task 3 files.
+
+### Task 4: Integrated Browser and Live-Safe Verification
 
 **Files:**
 - Test only; no new production files unless a failing verification exposes a scoped defect.
