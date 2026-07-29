@@ -1400,22 +1400,33 @@ class StreamAlchemyPlugin {
     return result;
   }
 
-  streamMonstersBattleViewerIds(payload = {}) {
+  streamMonstersBattleViewerIds(payload = {}, { requireCompleted = false } = {}) {
     const viewerIds = new Set();
     const matchId = String(payload.matchId || '').trim();
     if (matchId) {
       const match = this.streamMonstersBattleMatchService?.getMatch?.(matchId);
-      (match?.participants || []).forEach(participant => {
-        if (participant?.viewerId) viewerIds.add(String(participant.viewerId));
-      });
+      const completed = (
+        match?.state === 'completed' &&
+        Number.isFinite(Number(match?.completedAtMs)) &&
+        match?.result &&
+        typeof match.result === 'object'
+      );
+      if (!requireCompleted || completed) {
+        (match?.participants || []).forEach(participant => {
+          if (participant?.viewerId) viewerIds.add(String(participant.viewerId));
+        });
+      }
     }
     const battleId = String(
       payload.battleId || payload.battle?.battleId || ''
     ).trim();
     if (battleId) {
       const battle = this.streamMonstersStore?.getBattle?.(battleId);
-      if (battle?.user_a_id) viewerIds.add(String(battle.user_a_id));
-      if (battle?.user_b_id) viewerIds.add(String(battle.user_b_id));
+      const completed = battle?.result && typeof battle.result === 'object';
+      if (!requireCompleted || completed) {
+        if (battle?.user_a_id) viewerIds.add(String(battle.user_a_id));
+        if (battle?.user_b_id) viewerIds.add(String(battle.user_b_id));
+      }
     }
     return [...viewerIds];
   }
@@ -1423,6 +1434,7 @@ class StreamAlchemyPlugin {
   recordStreamMonstersOnboardingEvent(eventType, payload = {}) {
     const directSteps = {
       'streammonsters:egg_spawned': 'egg_received',
+      'streammonsters:free_egg_claimed': 'egg_received',
       'streammonsters:egg_hatched': 'egg_hatched'
     };
     const directStep = directSteps[eventType];
@@ -1435,7 +1447,9 @@ class StreamAlchemyPlugin {
       return [String(payload.userId)];
     }
     if (eventType !== 'streammonsters:battle_completed') return [];
-    const viewerIds = this.streamMonstersBattleViewerIds(payload);
+    const viewerIds = this.streamMonstersBattleViewerIds(payload, {
+      requireCompleted: true
+    });
     viewerIds.forEach(viewerId => {
       this.streamMonstersOnboarding?.recordStep?.(
         viewerId,

@@ -271,19 +271,35 @@ describe('Stream Monsters authoritative onboarding wiring', () => {
     plugin.streamMonstersBattleMatchService = {
       getMatch: matchId => matchId === 'match-real'
         ? {
+          state: 'completed',
+          completedAtMs: 9_000,
+          result: { terminalReason: 'knockout' },
           participants: [
             { viewerId: 'viewer-private-a' },
             { viewerId: '998877665544' }
           ]
         }
+        : matchId === 'match-pending'
+          ? {
+            state: 'action',
+            result: null,
+            participants: [{ viewerId: 'viewer-pending' }]
+          }
         : null
     };
     plugin.streamMonstersStore = {
       getBattle: battleId => battleId === 'battle-real'
         ? {
           user_a_id: 'viewer-legacy-a',
-          user_b_id: 'viewer-legacy-b'
+          user_b_id: 'viewer-legacy-b',
+          result: { terminalReason: 'knockout' }
         }
+        : battleId === 'battle-pending'
+          ? {
+            user_a_id: 'viewer-legacy-pending',
+            user_b_id: 'viewer-legacy-pending-b',
+            result: null
+          }
         : null
     };
     plugin.streamMonstersPublicEventProjector = {
@@ -306,6 +322,10 @@ describe('Stream Monsters authoritative onboarding wiring', () => {
       userId: 'viewer-private-a',
       egg: { egg_id: 'egg-private' }
     });
+    plugin.emitStreamMonsters('streammonsters:free_egg_claimed', {
+      userId: 'viewer-adopter',
+      egg: { egg_id: 'egg-adopted' }
+    });
     plugin.emitStreamMonsters('streammonsters:battle_completed', {
       matchId: 'match-real'
     });
@@ -316,12 +336,19 @@ describe('Stream Monsters authoritative onboarding wiring', () => {
       userId: 'viewer-spoofed',
       matchId: 'match-missing'
     });
+    plugin.emitStreamMonsters('streammonsters:battle_completed', {
+      matchId: 'match-pending'
+    });
+    plugin.emitStreamMonsters('streammonsters:battle_completed', {
+      battleId: 'battle-pending'
+    });
 
     expect(plugin.streamMonstersOnboarding.recordStep.mock.calls.map(call => (
       call.slice(0, 2)
     ))).toEqual([
       ['viewer-private-a', 'egg_received'],
       ['viewer-private-a', 'egg_hatched'],
+      ['viewer-adopter', 'egg_received'],
       ['viewer-private-a', 'battle_completed'],
       ['998877665544', 'battle_completed'],
       ['viewer-legacy-a', 'battle_completed'],
