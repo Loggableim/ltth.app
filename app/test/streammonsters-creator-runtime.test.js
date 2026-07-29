@@ -128,10 +128,21 @@ describe('Stream Monsters creator controls', () => {
         landscape: { anchor: 'middle-right', scale: 110 },
         portrait: { anchor: 'center', scale: 90 }
       },
+      overlayProfiles: {
+        portrait: {
+          preset: 'tiktok-live-studio-1080x1920',
+          width: 1080,
+          height: 1920,
+          gameplayHeightPercent: 74,
+          chatSafeZone: { x: 0, y: 74, width: 100, height: 26 },
+          contentInsetPercent: { top: 0, right: 0, bottom: 26, left: 0 }
+        }
+      },
       rendererQuality: 'low',
       notificationDurationMs: 12_000,
       freeEggDropsEnabled: true,
       freeEggCooldownSeconds: 86_400,
+      ownedReadyEggRescueGraceSeconds: 600,
       autoHatchActiveViewers: true,
       autoHatchActiveWindowSeconds: 300,
       tutorialHintsEnabled: true,
@@ -144,6 +155,36 @@ describe('Stream Monsters creator controls', () => {
       commandAliases: { eggs: { enabled: ['eier'], disabled: ['eggs'] } },
       audioChannels: { master: { enabled: true, volume: 0.8 } },
       giftMappingCustomized: true
+    });
+  });
+
+  test('persists the fixed TikTok Studio portrait profile independently of creator anchors and scales', () => {
+    const payload = buildConfigPayload({
+      currentConfig: {
+        layouts: { portrait: { anchor: 'top-left', scale: 70 } },
+        overlayProfiles: { portrait: { preset: 'untrusted' } }
+      },
+      values: {
+        portraitAnchor: 'bottom-right',
+        portraitScale: '130',
+        landscapeAnchor: 'middle-left',
+        landscapeScale: '70'
+      }
+    });
+
+    expect(payload.layouts).toEqual({
+      portrait: { anchor: 'bottom-right', scale: 130 },
+      landscape: { anchor: 'middle-left', scale: 70 }
+    });
+    expect(payload.overlayProfiles).toEqual({
+      portrait: {
+        preset: 'tiktok-live-studio-1080x1920',
+        width: 1080,
+        height: 1920,
+        gameplayHeightPercent: 74,
+        chatSafeZone: { x: 0, y: 74, width: 100, height: 26 },
+        contentInsetPercent: { top: 0, right: 0, bottom: 26, left: 0 }
+      }
     });
   });
 

@@ -19,6 +19,7 @@ const {
   evolutionStatGrant,
   applyEvolutionGrant
 } = require('./evolution-rules');
+const { readWebpMetadata } = require('./asset-registry');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -45,6 +46,27 @@ const ART_LAB_ROUTES = Object.freeze([
   ['POST', '/api/streammonsters/local-runtime/stop'],
   ['POST', '/api/streammonsters/local-runtime/verify']
 ]);
+const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
+  preset: 'tiktok-live-studio-1080x1920',
+  width: 1080,
+  height: 1920,
+  gameplayHeightPercent: 74,
+  chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
+  contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
+});
+
+function fixedOverlayProfiles() {
+  return {
+    portrait: {
+      preset: PORTRAIT_OVERLAY_PROFILE.preset,
+      width: PORTRAIT_OVERLAY_PROFILE.width,
+      height: PORTRAIT_OVERLAY_PROFILE.height,
+      gameplayHeightPercent: PORTRAIT_OVERLAY_PROFILE.gameplayHeightPercent,
+      chatSafeZone: { ...PORTRAIT_OVERLAY_PROFILE.chatSafeZone },
+      contentInsetPercent: { ...PORTRAIT_OVERLAY_PROFILE.contentInsetPercent }
+    }
+  };
+}
 
 class StreamMonstersRoutes {
   constructor({
@@ -55,7 +77,9 @@ class StreamMonstersRoutes {
     engine,
     progression = null,
     collection = null,
+    onboarding = null,
     battleMatchService = null,
+    ownedReadyEggRescueService = null,
     giftCatalogProvider,
     configProvider,
     now = () => Date.now(),
@@ -76,7 +100,9 @@ class StreamMonstersRoutes {
       new EggStageProjector({ store, now });
     this.progression = progression;
     this.collection = collection;
+    this.onboarding = onboarding;
     this.battleMatchService = battleMatchService;
+    this.ownedReadyEggRescueService = ownedReadyEggRescueService;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.now = now;
@@ -161,13 +187,13 @@ class StreamMonstersRoutes {
           queued: 0,
           ready: 0
         },
-        eggStage: this.eggStageProjector.snapshot(this.engine.streamKey || 'offline'),
+        eggStage: this.eggStageSnapshot(this.engine.streamKey || 'offline'),
         hype: this.publicHype(this.store.getStreamHype(this.engine.streamKey)),
         heartChain: this.publicHeartChain(
           this.collection?.getHeartChain(this.engine.streamKey || 'offline')
         ),
         streamMission: this.publicStreamMission(
-          this.collection?.getStreamMission(this.engine.streamKey || 'offline')
+          this.collection?.peekStreamMission?.(this.engine.streamKey || 'offline')
         ),
         visualPack: 'furry',
         season,
@@ -234,13 +260,13 @@ class StreamMonstersRoutes {
           queued: 0,
           ready: 0
         },
-        eggStage: this.eggStageProjector.snapshot(this.engine.streamKey || 'offline'),
+        eggStage: this.eggStageSnapshot(this.engine.streamKey || 'offline'),
         viewer: userId ? this.viewerState(userId) : null,
         giftMappings: this.store.getGiftMappings(),
         hype: this.store.getStreamHype(this.engine.streamKey),
         dex: userId ? (this.collection?.getCatalogState(userId).dex || null) : null,
         heartChain: this.collection?.getHeartChain(this.engine.streamKey || 'offline') || null,
-        streamMission: this.collection?.getStreamMission(this.engine.streamKey || 'offline') || null,
+        streamMission: this.collection?.peekStreamMission?.(this.engine.streamKey || 'offline') || null,
         visualPack: 'furry',
         season: this.progression?.getCurrentSeason?.() || null,
         gcce,
@@ -1252,6 +1278,31 @@ class StreamMonstersRoutes {
       : 86_400;
   }
 
+  normalizeOwnedReadyEggRescueGraceSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 0 && seconds <= 86_400
+      ? Math.round(seconds)
+      : 600;
+  }
+
+  eggStageSnapshot(streamKey = 'offline') {
+    const byVisualId = new Map(
+      this.eggStageProjector.snapshot(streamKey)
+        .map(stage => [stage.visualId, stage])
+    );
+    const publicRescues = this.ownedReadyEggRescueService?.listPublic?.(
+      this.now()
+    ) || [];
+    publicRescues.forEach(stage => {
+      if (stage?.visualId) byVisualId.set(stage.visualId, stage);
+    });
+    return [...byVisualId.values()].sort((left, right) => (
+      (Number(left.timing?.landedAtMs) || 0) -
+        (Number(right.timing?.landedAtMs) || 0) ||
+      String(left.visualId).localeCompare(String(right.visualId))
+    ));
+  }
+
   normalizeAutoHatchActiveWindowSeconds(value) {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
@@ -1310,6 +1361,15 @@ class StreamMonstersRoutes {
       const seconds = Number(input.freeEggCooldownSeconds);
       if (!Number.isFinite(seconds) || seconds < 60 || seconds > 31_536_000) {
         throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(
+      input,
+      'ownedReadyEggRescueGraceSeconds'
+    )) {
+      const seconds = Number(input.ownedReadyEggRescueGraceSeconds);
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 86_400) {
+        throw new Error('STREAM_MONSTERS_RESCUE_GRACE_INVALID');
       }
     }
     if (
@@ -1498,10 +1558,13 @@ class StreamMonstersRoutes {
     } catch (_) {
       parsed = null;
     }
+    const isLegacyPngManifest = parsed?.schemaVersion === 2 &&
+      parsed?.assetVersion === 'furry-1.5.0';
+    const isWebpManifest = parsed?.schemaVersion === 3 &&
+      parsed?.assetVersion === FURRY_ASSET_VERSION;
     if (
-      parsed?.schemaVersion !== 2 ||
+      (!isLegacyPngManifest && !isWebpManifest) ||
       parsed?.productionMode !== 'bundled-only' ||
-      parsed?.assetVersion !== FURRY_ASSET_VERSION ||
       !Array.isArray(parsed.assets)
     ) {
       return { byTemplate, available: 0, assetVersion: null };
@@ -1523,7 +1586,10 @@ class StreamMonstersRoutes {
       if (
         !getTemplate(templateId) ||
         ![1, 2, 3].includes(stage) ||
-        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath) ||
+        !(isLegacyPngManifest
+          ? /^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath)
+          : /^assets\/streammonsters\/furry\/[a-z0-9/-]+\.webp$/.test(relativePath) &&
+            asset?.mediaType === 'image/webp') ||
         dimensions[0] !== 1024 ||
         dimensions[1] !== 1024 ||
         !/^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))
@@ -1588,18 +1654,18 @@ class StreamMonstersRoutes {
       } catch (_) {
         return;
       }
-      if (
-        fileBuffer.length < 24 ||
-        !fileBuffer.subarray(0, 8).equals(
+      const webp = isWebpManifest ? readWebpMetadata(fileBuffer) : null;
+      const validImage = isLegacyPngManifest
+        ? fileBuffer.length >= 24 && fileBuffer.subarray(0, 8).equals(
           Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
-        ) ||
-        fileBuffer.readUInt32BE(8) !== 13 ||
-        fileBuffer.subarray(12, 16).toString('ascii') !== 'IHDR' ||
-        fileBuffer.readUInt32BE(16) !== dimensions[0] ||
-        fileBuffer.readUInt32BE(20) !== dimensions[1] ||
-        crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
-          String(asset.sha256).toLocaleLowerCase()
-      ) {
+        ) && fileBuffer.readUInt32BE(8) === 13 &&
+          fileBuffer.subarray(12, 16).toString('ascii') === 'IHDR' &&
+          fileBuffer.readUInt32BE(16) === dimensions[0] &&
+          fileBuffer.readUInt32BE(20) === dimensions[1]
+        : webp?.width === dimensions[0] && webp?.height === dimensions[1] &&
+          webp?.hasAlpha;
+      if (!validImage || crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
+        String(asset.sha256).toLocaleLowerCase()) {
         return;
       }
       if (!byTemplate.has(templateId)) byTemplate.set(templateId, []);
@@ -1610,6 +1676,7 @@ class StreamMonstersRoutes {
         element: asset.element,
         species: asset.species,
         assetPath: `/plugins/streamalchemy/${relativePath}`,
+        mediaType: isWebpManifest ? 'image/webp' : 'image/png',
         dimensions,
         sha256: String(asset.sha256).toLocaleLowerCase(),
         trimRect: asset.trimRect || null,
@@ -1647,6 +1714,15 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (Object.prototype.hasOwnProperty.call(
+      input,
+      'ownedReadyEggRescueGraceSeconds'
+    )) {
+      safe.ownedReadyEggRescueGraceSeconds =
+        this.normalizeOwnedReadyEggRescueGraceSeconds(
+          input.ownedReadyEggRescueGraceSeconds
+        );
+    }
     if (typeof input.autoHatchActiveViewers === 'boolean') {
       safe.autoHatchActiveViewers = input.autoHatchActiveViewers;
     }
@@ -1671,6 +1747,9 @@ class StreamMonstersRoutes {
     }
     if (input.portraitBattleMode === true || input.portraitBattleMode === 'takeover-74') {
       safe.portraitBattleMode = 'takeover-74';
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'overlayProfiles')) {
+      safe.overlayProfiles = fixedOverlayProfiles();
     }
     const allowedHatchDurations = new Set([30_000, 60_000, 90_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
@@ -1825,7 +1904,12 @@ class StreamMonstersRoutes {
         titleKey: this.progression?.achievementTitleKey?.(achievement.achievement_key) || 'achievementUnknown'
       })),
       rank: this.progression?.getViewerSeason?.(resolvedUserId) || null,
-      dex: this.collection?.getCatalogState(resolvedUserId).dex || null
+      dex: this.collection?.getCatalogState(resolvedUserId).dex || null,
+      onboarding: this.onboarding?.getJourney?.(resolvedUserId) || {
+        completedSteps: [],
+        nextStep: 'egg_received',
+        complete: false
+      }
     };
   }
 
@@ -1882,6 +1966,7 @@ class StreamMonstersRoutes {
         portrait: { anchor: 'top-center', scale: 100 },
         landscape: { anchor: 'bottom-center', scale: 100 }
       },
+      overlayProfiles: fixedOverlayProfiles(),
       rendererQuality: ['auto', 'high', 'medium', 'low'].includes(config.rendererQuality)
         ? config.rendererQuality
         : 'auto',
@@ -1894,6 +1979,10 @@ class StreamMonstersRoutes {
       result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
         config.freeEggCooldownSeconds
       );
+      result.ownedReadyEggRescueGraceSeconds =
+        this.normalizeOwnedReadyEggRescueGraceSeconds(
+          config.ownedReadyEggRescueGraceSeconds
+        );
       result.autoHatchActiveViewers = config.autoHatchActiveViewers !== false;
       result.autoHatchActiveWindowSeconds = this.normalizeAutoHatchActiveWindowSeconds(
         config.autoHatchActiveWindowSeconds
@@ -1939,10 +2028,27 @@ class StreamMonstersRoutes {
 
   publicStreamMission(mission = null) {
     if (!mission) return null;
+    const missionKey = String(mission.mission_key || 'unknown');
+    const keySuffix = missionKey
+      .split('_')
+      .filter(Boolean)
+      .map(part => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+      .join('');
+    const populationBand = ['solo', 'party', 'rally'].includes(mission.population_band)
+      ? mission.population_band
+      : null;
+    const bandSuffix = populationBand
+      ? `${populationBand.charAt(0).toUpperCase()}${populationBand.slice(1)}`
+      : null;
     return {
+      missionKey,
+      titleKey: `mission${keySuffix || 'Unknown'}`,
+      explanationKey: bandSuffix ? `missionPopulation${bandSuffix}` : null,
       target: Math.max(0, Number(mission.target) || 0),
       progress: Math.max(0, Number(mission.progress) || 0),
-      completed: Boolean(mission.completed_at_ms)
+      completed: Boolean(mission.completed_at_ms),
+      populationBand,
+      populationPeak: Math.max(0, Number(mission.population_peak) || 0)
     };
   }
 

@@ -1,4 +1,37 @@
 'use strict';
+// BEGIN STREAM MONSTERS PRODUCT PROJECTION
+const PRODUCT_PROJECTION = Object.freeze({
+  "contractVersion": 1,
+  "id": "streamalchemy",
+  "name": "Stream Monsters",
+  "version": "1.11.1",
+  "nextVersion": "1.12.0",
+  "packageFilename": "streamalchemy-1.11.1.zip",
+  "rulesVersion": 8,
+  "arenaLabel": "Arcade Clash",
+  "access": {
+    "type": "subscriber",
+    "badge": "subscriber-only",
+    "description": {
+      "de": "In einem aktiven LTTH-Abonnement enthalten. Kein separater Plugin-Kauf.",
+      "en": "Included with an active LTTH subscription. No separate plugin purchase.",
+      "es": "Incluido con una suscripción LTTH activa. No requiere comprar el plugin por separado.",
+      "fr": "Inclus avec un abonnement LTTH actif. Aucun achat séparé du plugin."
+    }
+  },
+  "defaults": {
+    "hatchDurationMs": 90000,
+    "portraitBattleMode": "takeover-74",
+    "portraitProfile": "tiktok-live-studio-1080x1920"
+  },
+  "locales": [
+    "de",
+    "en",
+    "es",
+    "fr"
+  ]
+});
+// END STREAM MONSTERS PRODUCT PROJECTION
 
 const UI_ROUTE = '/streammonsters/ui';
 const OVERLAY_ROUTE = '/streammonsters/overlay';
@@ -63,6 +96,7 @@ function readOnlyStep(id, selector, copy) {
 // workflow remains read-only so documentation captures cannot change a
 // viewer's permanent collection or a creator's live configuration.
 module.exports = Object.freeze({
+  product: PRODUCT_PROJECTION,
   id: 'streamalchemy',
   route: UI_ROUTE,
   topic: {
@@ -83,7 +117,7 @@ module.exports = Object.freeze({
     es: 'se ven el mapeo de regalos, el catálogo de 72 formas, la arena A/B/C y el overlay vertical',
     fr: 'le mappage des cadeaux, le catalogue de 72 formes, l’arène A/B/C et l’overlay portrait sont visibles'
   },
-  requirement: 'standard',
+  requirement: 'subscriber',
   safety: 'local',
   mode: 'ui',
   overlay: OVERLAY_ROUTE,
@@ -95,36 +129,36 @@ module.exports = Object.freeze({
   copy: {
     de: {
       title: 'Stream Monsters',
-      summary: 'Stream Monsters 1.11 verbindet Gift- und optionale Gratis-Eier, 72 gebündelte Furry-Formen, zweisprachige Overlay-Führung und K.-o.-Duelle nach Rules v8 in einer TikTok-sicheren 74/26-Portrait-Arena.',
+      summary: `Stream Monsters 1.11 verbindet Gift- und optionale Gratis-Eier, 72 gebündelte Furry-Formen, zweisprachige Overlay-Führung und K.-o.-Duelle nach Rules v8 in der TikTok-sicheren 74/26-Portrait-Arena ${PRODUCT_PROJECTION.arenaLabel}.`,
       firstResult: 'Der Creator zeigt Live-Bereitschaft, Gift- und Gratis-Eier, alle 72 Formen, die verdeckte A/B/C-Arena und die OBS-Browserquelle, ohne eine LIVE-Aktion auszulösen.',
-      requirements: 'LTTH 1.4.1 mit Stream Monsters 1.11. Für den lokalen Aufbau genügt der Creator; TikTok, GCCE und OBS werden erst für den Sendebetrieb benötigt.',
+      requirements: `LTTH 1.4.1 mit Stream Monsters 1.11. Für den lokalen Aufbau genügt der Creator; TikTok, GCCE und OBS werden erst für den Sendebetrieb benötigt. ${PRODUCT_PROJECTION.access.description.de}`,
       safety: 'Verwende nur lokale Vorschauen. Gratis-Eier und Gifts verändern keine Kampfwerte oder Gewinnchancen. Stream Monsters 1.11 enthält kein Art Lab, keine Bildgenerierung und keinen Modell-Installer.',
       troubleshooting: 'Wenn Gifts, 72 Formen oder die A/B/C-Vorschau fehlen, prüfe den Plugin-Status, öffne /streammonsters/ui neu und kontrolliere die Hinweise im Live Center.',
       related: ['gcce', 'gift-catalog']
     },
     en: {
       title: 'Stream Monsters',
-      summary: 'Stream Monsters 1.11 combines gift and optional free eggs, 72 bundled Furry forms, bilingual overlay guidance, and sealed Rules v8 K.O. battles in a TikTok-safe 74/26 portrait arena.',
+      summary: `Stream Monsters 1.11 combines gift and optional free eggs, 72 bundled Furry forms, bilingual overlay guidance, and sealed Rules v8 K.O. battles in the TikTok-safe 74/26 portrait ${PRODUCT_PROJECTION.arenaLabel} arena.`,
       firstResult: 'The Creator shows live readiness, gift and free eggs, all 72 forms, the sealed A/B/C arena, and the OBS browser source without triggering a LIVE action.',
-      requirements: 'LTTH 1.4.1 with Stream Monsters 1.11. The Creator is enough for local setup; TikTok, GCCE, and OBS are needed only for broadcast operation.',
+      requirements: `LTTH 1.4.1 with Stream Monsters 1.11. The Creator is enough for local setup; TikTok, GCCE, and OBS are needed only for broadcast operation. ${PRODUCT_PROJECTION.access.description.en}`,
       safety: 'Use local previews only while checking the setup. Free eggs and gifts never change combat stats or win odds. Stream Monsters 1.11 includes no Art Lab, image generation, or model installer.',
       troubleshooting: 'If gifts, the 72 forms, or the A/B/C preview are missing, check the plugin status, reopen /streammonsters/ui, and review the Live Center warnings.',
       related: ['gcce', 'gift-catalog']
     },
     es: {
       title: 'Stream Monsters',
-      summary: 'Stream Monsters 1.11 combina huevos por regalos y gratis opcionales, 72 formas Furry, guía bilingüe y combates Rules v8 hasta K.O. en una arena vertical 74/26 segura para TikTok.',
+      summary: `Stream Monsters 1.11 combina huevos por regalos y gratis opcionales, 72 formas Furry, guía bilingüe y combates Rules v8 hasta K.O. en la arena vertical 74/26 ${PRODUCT_PROJECTION.arenaLabel}, segura para TikTok.`,
       firstResult: 'Creator muestra la preparación, los huevos por regalos y gratis, las 72 formas, la arena A/B/C sellada y la fuente de navegador de OBS sin activar ninguna acción LIVE.',
-      requirements: 'LTTH 1.4.1 con Stream Monsters 1.11. Creator basta para la configuración local; TikTok, GCCE y OBS solo son necesarios para emitir.',
+      requirements: `LTTH 1.4.1 con Stream Monsters 1.11. Creator basta para la configuración local; TikTok, GCCE y OBS solo son necesarios para emitir. ${PRODUCT_PROJECTION.access.description.es}`,
       safety: 'Usa únicamente vistas previas locales. Los huevos gratis y los regalos nunca cambian estadísticas ni probabilidades de victoria. Stream Monsters 1.11 no incluye Art Lab, generación de imágenes ni instalador de modelos.',
       troubleshooting: 'Si faltan los regalos, las 72 formas o la vista previa A/B/C, comprueba el estado del plugin, vuelve a abrir /streammonsters/ui y revisa los avisos de Live Center.',
       related: ['gcce', 'gift-catalog']
     },
     fr: {
       title: 'Stream Monsters',
-      summary: 'Stream Monsters 1.11 réunit les œufs-cadeaux et gratuits facultatifs, 72 formes Furry, un guide bilingue et des combats Rules v8 jusqu’au K.-O. dans une arène portrait TikTok 74/26.',
+      summary: `Stream Monsters 1.11 réunit les œufs-cadeaux et gratuits facultatifs, 72 formes Furry, un guide bilingue et des combats Rules v8 jusqu’au K.-O. dans l’arène portrait TikTok 74/26 ${PRODUCT_PROJECTION.arenaLabel}.`,
       firstResult: 'Le Creator affiche la préparation, les œufs par cadeaux et gratuits, les 72 formes, l’arène A/B/C scellée et la source navigateur OBS sans déclencher d’action LIVE.',
-      requirements: 'LTTH 1.4.1 avec Stream Monsters 1.11. Le Creator suffit pour la configuration locale ; TikTok, GCCE et OBS ne sont nécessaires que pour la diffusion.',
+      requirements: `LTTH 1.4.1 avec Stream Monsters 1.11. Le Creator suffit pour la configuration locale ; TikTok, GCCE et OBS ne sont nécessaires que pour la diffusion. ${PRODUCT_PROJECTION.access.description.fr}`,
       safety: 'Utilisez uniquement les aperçus locaux. Les œufs gratuits et cadeaux ne modifient jamais les statistiques ni les chances de victoire. Stream Monsters 1.11 ne comprend ni Art Lab, ni génération d’images, ni installateur de modèles.',
       troubleshooting: 'Si les cadeaux, les 72 formes ou l’aperçu A/B/C manquent, vérifiez l’état du plugin, rouvrez /streammonsters/ui et consultez les avertissements du Live Center.',
       related: ['gcce', 'gift-catalog']

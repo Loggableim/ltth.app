@@ -489,6 +489,37 @@
       display:block; margin-top:8px; color:#e5f5ff; font-size:clamp(15px,1.9vw,23px);
       font-weight:900; font-variant-numeric:tabular-nums; line-height:1.3;
     }
+    #arena-result-report {
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;
+      width:100%; margin-top:7px; font-variant-numeric:tabular-nums;
+    }
+    #arena-result-report[hidden] { display:none; }
+    .arena-result-decisive {
+      grid-column:1 / -1; padding:6px 10px; overflow:hidden;
+      border:1px solid #ffe67b8c; border-radius:999px; color:#fff2a8;
+      background:#22163fe8; box-shadow:0 0 20px #ffe46d25;
+      font-size:clamp(13px,1.5vw,18px); line-height:1.15;
+      text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-result-fighter {
+      display:grid; min-width:0; gap:5px; padding:8px 10px;
+      border:1px solid #ffffff24; border-radius:13px; background:#071126bd;
+      text-align:left;
+    }
+    .arena-result-fighter.is-decisive {
+      border-color:#ffe67b9e; box-shadow:inset 0 0 18px #ffdf6d17,0 0 14px #ffdf6d17;
+    }
+    .arena-result-fighter-name {
+      overflow:hidden; color:#f8fbff; font-size:clamp(12px,1.45vw,17px);
+      line-height:1.15; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-result-metrics {
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px 8px;
+    }
+    .arena-result-metrics span {
+      min-width:0; overflow:hidden; color:#cfe5ff; font-size:clamp(10px,1.18vw,14px);
+      font-weight:850; line-height:1.15; text-overflow:ellipsis; white-space:nowrap;
+    }
     #arena-stat-card {
       position:absolute; top:17%; left:50%; z-index:60; display:grid; gap:8px;
       width:min(90%,760px); min-height:210px; padding:22px 26px;
@@ -1036,7 +1067,20 @@
       }
       #arena-feed { top:auto; bottom:1.5%; width:86%; }
       #arena-action-card { top:8.5%; width:94%; min-height:130px; }
-      #arena-result { top:8%; width:94%; min-height:360px; }
+      #arena-result {
+        top:3%; width:94%; min-height:0; max-height:90%; padding:14px 16px;
+        gap:2px; overflow:hidden;
+      }
+      #arena-result-ko { font-size:clamp(30px,8vw,58px); }
+      #arena-result-winner { font-size:clamp(23px,5.5vw,40px); }
+      #arena-result-monster { font-size:clamp(17px,4vw,28px); }
+      #arena-result-summary { font-size:clamp(13px,3.1vw,20px); }
+      #arena-result-report { gap:5px; margin-top:4px; }
+      .arena-result-decisive { padding:5px 8px; font-size:clamp(11px,2.7vw,15px); }
+      .arena-result-fighter { gap:4px; padding:6px 7px; }
+      .arena-result-fighter-name { font-size:clamp(11px,2.65vw,15px); }
+      .arena-result-metrics { gap:2px 5px; }
+      .arena-result-metrics span { font-size:clamp(9px,2.2vw,12px); }
       #arena-stat-card { top:14%; width:92%; min-height:260px; }
       #arena-impact { top:49%; }
       #chat-card { left:16px; bottom:calc(26% + var(--egg-shelf-lane-height)); max-width:calc(100vw - 32px); }
@@ -1079,6 +1123,11 @@
       #arena-action-skill { font-size:17px; }
       #arena-action-copy { font-size:11px; line-height:1.08; }
       #arena-action-metrics { font-size:13px; line-height:1.2; }
+      #arena-result { top:2%; max-height:94%; padding:9px 10px; }
+      #arena-result-report { gap:3px; margin-top:2px; }
+      .arena-result-decisive { padding:3px 6px; }
+      .arena-result-fighter { gap:2px; padding:4px 5px; }
+      .arena-result-metrics { gap:1px 4px; }
       #battle[data-phase="action"] .arena-fighter {
         top:43%; height:55%;
       }
@@ -1383,6 +1432,7 @@
       <span id="arena-result-monster"></span>
       <span id="arena-result-summary"></span>
       <div id="arena-result-ratings"></div>
+      <section id="arena-result-report" hidden></section>
     </div>
   </section>
   <section id="arena-stat-card" aria-live="polite">
@@ -1612,7 +1662,7 @@
     playArcadeEvent(type, data),
     Promise.resolve(presentation)
   ]);
-  const layoutConfig = {};
+    const layoutConfig = { overlayProfiles:{} };
   const layoutController = window.StreamMonstersOverlayRuntime.createLayoutController({
     window,
     stage: node('reveal-stage'),
@@ -1632,7 +1682,8 @@
       ready:text('eggShelfReady', 'Bereit · {command}'),
       expired:text('eggShelfExpired', 'Verrottet'),
       reserved:text('eggShelfReserved', 'Reserviert · {time}'),
-      public:text('eggShelfPublicCountdown', 'Gratis · {time}'),
+      public:text('eggShelfPublicCountdown', 'Gratis · {time} · {command}'),
+      rescuePublic:text('eggShelfRescuePublicCountdown', 'Adoptierbar · {time} · {command}'),
       adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · nur berechtigt · {command}'),
       eggFocusOwner:text('eggFocusOwner', 'Besitzer: {owner}'),
       eggFocusPosition:text('eggFocusPosition', '{position} / {total}'),
@@ -2198,6 +2249,10 @@
     eggLifecycleFreePublicCopy:'The first viewer currently eligible for a free egg gets it.',
     eggLifecycleFreeClaimedTitle:'Free egg adopted',
     eggLifecycleFreeClaimedCopy:'The egg is now safe in the inventory.',
+    eggLifecycleRescuePublicTitle:'Ready egg needs a new home',
+    eggLifecycleRescuePublicCopy:'Adopt it with {command} before the rot timer reaches zero.',
+    eggLifecycleRescueClaimedTitle:'Ready egg rescued',
+    eggLifecycleRescueClaimedCopy:'The same egg now belongs to its rescuer and is ready to hatch.',
     eggLifecycleWaitTitle:'The egg is still incubating',
     eggLifecycleWaitCopy:'{time} remains before it can hatch.',
     eggLifecycleWaitQueuedCopy:'Queue #{position} · {time} remaining.',
@@ -2234,7 +2289,11 @@
       progress:notice.kind === 'ready' ? 100 : 35,
       presentation:'egg-offer',
       duration:notice.durationMs,
-      ...(['free_reserved', 'free_public'].includes(notice.kind) ? {
+      ...([
+        'free_reserved',
+        'free_public',
+        'owned_ready_rescue_public'
+      ].includes(notice.kind) ? {
         deadlineMs:Date.now() + Math.max(1, Number(notice.durationMs) || 5_000)
       } : {})
     }
@@ -2313,7 +2372,8 @@
       landscapeAnchor: layouts?.landscape?.anchor || data?.config?.landscapeAnchor || 'bottom-center',
       landscapeScale: layouts?.landscape?.scale || data?.config?.landscapeScale || 100,
       portraitAnchor: layouts?.portrait?.anchor || data?.config?.portraitAnchor || 'top-center',
-      portraitScale: layouts?.portrait?.scale || data?.config?.portraitScale || 100
+      portraitScale: layouts?.portrait?.scale || data?.config?.portraitScale || 100,
+      overlayProfiles: data?.config?.overlayProfiles || {}
     });
     audioEngine.configure(data?.config?.audioChannels || {});
     layoutController.apply();
@@ -2664,6 +2724,9 @@
         rosterDeadlineMs:data?.deadlineMs,
         fighters:Array.isArray(data?.fighters) ? data.fighters : []
       });
+    }
+    if (type === 'battle_roster_locked') {
+      return arenaView.lockRoster(data);
     }
     if (type === 'battle_choice_opened') {
       startBattleLocaleSequence(data);
@@ -3184,6 +3247,8 @@
     'streammonsters:free_egg_reserved':'free_egg_reserved',
     'streammonsters:free_egg_public':'free_egg_public',
     'streammonsters:free_egg_claimed':'free_egg_claimed',
+    'streammonsters:owned_ready_egg_public':'owned_ready_egg_public',
+    'streammonsters:owned_ready_egg_claimed':'owned_ready_egg_claimed',
     'streammonsters:egg_stage_removed':'egg_stage_removed',
     'streammonsters:egg_expired':'egg_expired',
     'streammonsters:egg_boosted':'egg_boosted',
@@ -3200,6 +3265,7 @@
     'streammonsters:monster_visual_evolved':'monster_visual_evolved',
     'streammonsters:battle_started':'battle_started',
     'streammonsters:battle_match_found':'battle_match_found',
+    'streammonsters:battle_roster_locked':'battle_roster_locked',
     'streammonsters:battle_choice_opened':'battle_choice_opened',
     'streammonsters:battle_skill_prompt':'battle_choice_opened',
     'streammonsters:battle_choice_locked':'battle_choice_locked',

@@ -9,11 +9,17 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const OwnedReadyEggRescueService = require(
+  './backend/streammonsters/owned-ready-egg-rescue-service'
+);
 const StreamMonstersViewerActivityTracker = require(
   './backend/streammonsters/viewer-activity-tracker'
 );
 const { normalizeIngressEventId } = require('./backend/streammonsters/ingress-event-id');
 const TutorialHintDirector = require('./backend/streammonsters/tutorial-hint-director');
+const ViewerOnboardingService = require(
+  './backend/streammonsters/viewer-onboarding-service'
+);
 const StreamMonstersPublicEventProjector = require(
   './backend/streammonsters/public-event-projector'
 );
@@ -23,16 +29,30 @@ const StreamMonstersAssetRegistry = require('./backend/streammonsters/asset-regi
 const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
 const { normalizeGiftName, isHeartMeGift } = require('./backend/streammonsters/gift-name');
 const { avatarProxyReference } = require('./backend/streammonsters/avatar-proxy');
+const PRODUCT_CONTRACT = require('./product-contract.json');
+const { OUTGOING_SOCKET_EVENTS } = require('../../modules/public-overlay-registry');
+
+const HOT_RELOAD_PUBLIC_EVENTS = Object.freeze([
+  'streammonsters:owned_ready_egg_public',
+  'streammonsters:owned_ready_egg_claimed'
+]);
+
+function ensureHotReloadPublicEvents() {
+  HOT_RELOAD_PUBLIC_EVENTS.forEach(eventName => {
+    OUTGOING_SOCKET_EVENTS.add(eventName);
+  });
+}
 
 const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 8;
-const DEFAULT_HATCH_DURATION_MS = 90_000;
+const STREAM_MONSTERS_RULES_VERSION = PRODUCT_CONTRACT.rules.version;
+const DEFAULT_HATCH_DURATION_MS = PRODUCT_CONTRACT.defaults.hatchDurationMs;
 const DEFAULT_GAMEPLAY_PACE = 'arcade-rally';
-const DEFAULT_PORTRAIT_BATTLE_MODE = 'takeover-74';
+const DEFAULT_PORTRAIT_BATTLE_MODE =
+  PRODUCT_CONTRACT.defaults.portraitBattleMode;
 const INCUBATION_PRESETS_MS = Object.freeze([
   30_000,
   60_000,
@@ -56,6 +76,16 @@ const BATTLE_SOCKET_ALIASES = Object.freeze({
 const DEFAULT_LAYOUTS = Object.freeze({
   portrait: Object.freeze({ anchor: 'top-center', scale: 100 }),
   landscape: Object.freeze({ anchor: 'bottom-center', scale: 100 })
+});
+const DEFAULT_OVERLAY_PROFILES = Object.freeze({
+  portrait: Object.freeze({
+    preset: 'tiktok-live-studio-1080x1920',
+    width: 1080,
+    height: 1920,
+    gameplayHeightPercent: 74,
+    chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
+    contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
+  })
 });
 const DEFAULT_AUDIO_CHANNELS = Object.freeze({
   master: Object.freeze({ enabled: true, volume: 1 }),
@@ -108,6 +138,7 @@ class StreamAlchemyPlugin {
   }
 
   async init() {
+    ensureHotReloadPublicEvents();
     this.api.log('[STREAM MONSTERS] Initializing Portrait Arcade Rally runtime', 'info');
     const storedConfig = this.api.getConfig('streamalchemy_config');
     this.config = this.loadConfig(storedConfig);
@@ -135,6 +166,9 @@ class StreamAlchemyPlugin {
       assetRegistry: this.streamMonstersAssetRegistry
     });
     this.streamMonstersStore.initialize();
+    this.streamMonstersOnboarding = new ViewerOnboardingService({
+      store: this.streamMonstersStore
+    });
     this.streamMonstersPublicEventProjector =
       new StreamMonstersPublicEventProjector({ store: this.streamMonstersStore });
     this.streamMonstersProgression = new StreamMonstersProgressionService({
@@ -146,7 +180,16 @@ class StreamAlchemyPlugin {
       store: this.streamMonstersStore,
       progression: this.streamMonstersProgression,
       assetRegistry: this.streamMonstersAssetRegistry,
-      emit: (event, payload) => this.emitStreamMonsters(event, payload)
+      emit: (event, payload) => this.emitStreamMonsters(event, payload),
+      getActiveViewerCount: streamKey => (
+        this.streamMonstersViewerActivity?.countActiveViewers?.({ streamKey }) || 0
+      ),
+      hasQualifyingHeartGift: () => this.streamMonstersStore
+        .getGiftMappings()
+        .some(mapping => (
+          mapping.enabled !== 0 &&
+          isHeartMeGift(mapping.gift_name)
+        ))
     });
     this.streamMonstersEngine = new StreamMonstersEngine({
       store: this.streamMonstersStore,
@@ -163,6 +206,17 @@ class StreamAlchemyPlugin {
       store: this.streamMonstersStore,
       engine: this.streamMonstersEngine,
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
+      config: this.config.streamMonsters
+    });
+    this.streamMonstersOwnedReadyEggRescues = new OwnedReadyEggRescueService({
+      store: this.streamMonstersStore,
+      progression: this.streamMonstersProgression,
+      emit: (event, payload) => this.emitStreamMonsters(event, payload),
+      logger: (action, fields, level) => this.logStructured(
+        action,
+        fields,
+        level
+      ),
       config: this.config.streamMonsters
     });
     this.ensureDefaultStreamMonstersGiftMapping();
@@ -208,6 +262,7 @@ class StreamAlchemyPlugin {
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
       freeEggDropService: this.streamMonstersFreeEggDrops,
+      ownedReadyEggRescueService: this.streamMonstersOwnedReadyEggRescues,
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       getCommandReference: command => this.getStreamMonstersCommandReference(command)
     });
@@ -220,10 +275,13 @@ class StreamAlchemyPlugin {
     this.streamMonstersGCCELifecycleListeners = [];
     this.streamMonstersTutorialHintDirector = new TutorialHintDirector({
       getCommandReference: command => this.getStreamMonstersCommandReference(command),
+      getJourney: viewerId => this.streamMonstersOnboarding.getJourney(viewerId),
       intervalSeconds: this.config.streamMonsters.tutorialHintIntervalSeconds
     });
     this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
-      execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
+      execute: (context, commandName, args) => (
+        this.executeStreamMonstersOnboardingCommand(context, commandName, args)
+      ),
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       commandPrefix: this.streamMonstersCommandPrefix,
       resolveUserId: data => this.resolveStreamMonstersViewerId({
@@ -265,7 +323,9 @@ class StreamAlchemyPlugin {
       engine: this.streamMonstersEngine,
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
+      onboarding: this.streamMonstersOnboarding,
       battleMatchService: this.streamMonstersBattleMatchService,
+      ownedReadyEggRescueService: this.streamMonstersOwnedReadyEggRescues,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
       gcceStateProvider: () => this.getStreamMonstersGCCEState(),
       hintStateProvider: () => ({
@@ -332,6 +392,7 @@ class StreamAlchemyPlugin {
         seasonDurationDays: 28,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        ownedReadyEggRescueGraceSeconds: 600,
         autoHatchActiveViewers: true,
         autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
@@ -339,6 +400,7 @@ class StreamAlchemyPlugin {
         overlayLanguage: this.normalizeOverlayLanguage(),
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
+        overlayProfiles: this.normalizeOverlayProfiles(),
         rendererQuality: 'auto',
         notificationDurationMs: 12_000,
         audioChannels: this.normalizeAudioChannels(),
@@ -363,6 +425,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
         ),
+        ownedReadyEggRescueGraceSeconds:
+          this.normalizeOwnedReadyEggRescueGraceSeconds(
+            storedStreamMonsters.ownedReadyEggRescueGraceSeconds
+          ),
         autoHatchActiveViewers: storedStreamMonsters.autoHatchActiveViewers !== false,
         autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
           storedStreamMonsters.autoHatchActiveWindowSeconds
@@ -376,6 +442,7 @@ class StreamAlchemyPlugin {
         ),
         commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
+        overlayProfiles: this.normalizeOverlayProfiles(storedStreamMonsters.overlayProfiles),
         rendererQuality: this.normalizeRendererQuality(storedStreamMonsters.rendererQuality),
         notificationDurationMs: this.normalizeNotificationDuration(
           storedStreamMonsters.notificationDurationMs
@@ -495,6 +562,10 @@ class StreamAlchemyPlugin {
       : 86_400;
   }
 
+  normalizeOwnedReadyEggRescueGraceSeconds(value) {
+    return OwnedReadyEggRescueService.normalizeGraceSeconds(value);
+  }
+
   normalizeGameplayPace(value) {
     return value === DEFAULT_GAMEPLAY_PACE ? value : DEFAULT_GAMEPLAY_PACE;
   }
@@ -592,6 +663,20 @@ class StreamAlchemyPlugin {
     };
   }
 
+  normalizeOverlayProfiles() {
+    const portrait = DEFAULT_OVERLAY_PROFILES.portrait;
+    return {
+      portrait: {
+        preset: portrait.preset,
+        width: portrait.width,
+        height: portrait.height,
+        gameplayHeightPercent: portrait.gameplayHeightPercent,
+        chatSafeZone: { ...portrait.chatSafeZone },
+        contentInsetPercent: { ...portrait.contentInsetPercent }
+      }
+    };
+  }
+
   normalizeAudioChannels(input = {}) {
     return Object.fromEntries(Object.entries(DEFAULT_AUDIO_CHANNELS).map(([name, defaults]) => {
       const channel = input?.[name];
@@ -680,6 +765,10 @@ class StreamAlchemyPlugin {
         currentStreamMonsters.layouts,
         streamMonstersUpdates.layouts
       ),
+      overlayProfiles: mergeNamedObjects(
+        currentStreamMonsters.overlayProfiles,
+        streamMonstersUpdates.overlayProfiles
+      ),
       audioChannels: mergeNamedObjects(
         currentStreamMonsters.audioChannels,
         streamMonstersUpdates.audioChannels
@@ -716,6 +805,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
         ),
+        ownedReadyEggRescueGraceSeconds:
+          this.normalizeOwnedReadyEggRescueGraceSeconds(
+            mergedStreamMonsters.ownedReadyEggRescueGraceSeconds
+          ),
         autoHatchActiveViewers: mergedStreamMonsters.autoHatchActiveViewers !== false,
         autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
           mergedStreamMonsters.autoHatchActiveWindowSeconds
@@ -729,6 +822,7 @@ class StreamAlchemyPlugin {
         ),
         commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
+        overlayProfiles: this.normalizeOverlayProfiles(mergedStreamMonsters.overlayProfiles),
         rendererQuality: this.normalizeRendererQuality(mergedStreamMonsters.rendererQuality),
         notificationDurationMs: this.normalizeNotificationDuration(
           mergedStreamMonsters.notificationDurationMs
@@ -752,6 +846,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
       });
     }
+    this.streamMonstersOwnedReadyEggRescues?.setConfig?.({
+      ownedReadyEggRescueGraceSeconds:
+        this.config.streamMonsters.ownedReadyEggRescueGraceSeconds
+    });
     this.streamMonstersViewerActivity?.setActiveWindowMs?.(
       this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
     );
@@ -830,6 +928,11 @@ class StreamAlchemyPlugin {
         status: 'ready_active_viewer'
       });
     }
+    const remainingReadyEggs = this.streamMonstersStore?.getReadyEggs?.() || [];
+    remainingReadyEggs.forEach(egg => {
+      this.streamMonstersOwnedReadyEggRescues?.observeReadyEgg?.(egg.egg_id);
+    });
+    this.streamMonstersOwnedReadyEggRescues?.sweep?.();
     return hatched;
   }
 
@@ -1324,10 +1427,115 @@ class StreamAlchemyPlugin {
     return correlationId;
   }
 
+  async executeStreamMonstersOnboardingCommand(context, commandName, args) {
+    const result = await this.streamMonstersChatCommands.execute(
+      context,
+      commandName,
+      args
+    );
+    const viewerId = context?.userId || context?.uniqueId || context?.username;
+    const command = String(commandName || '').trim().toLowerCase();
+    const status = String(result?.status || '').trim().toLowerCase();
+    let step = null;
+    if (
+      result?.success === true &&
+      command === 'choose' &&
+      ['selected', 'roster_locked'].includes(status)
+    ) {
+      step = 'monster_selected';
+    } else if (
+      result?.success === true &&
+      command === 'battle' &&
+      ['queued', 'reserved', 'active', 'started'].includes(status)
+    ) {
+      step = 'battle_joined';
+    }
+    if (step) {
+      this.streamMonstersOnboarding?.recordStep?.(
+        viewerId,
+        step,
+        Date.now()
+      );
+    }
+    return result;
+  }
+
+  streamMonstersBattleViewerIds(payload = {}, { requireCompleted = false } = {}) {
+    const viewerIds = new Set();
+    const matchId = String(payload.matchId || '').trim();
+    if (matchId) {
+      const match = this.streamMonstersBattleMatchService?.getMatch?.(matchId);
+      const completed = (
+        match?.state === 'completed' &&
+        Number.isFinite(Number(match?.completedAtMs)) &&
+        match?.result &&
+        typeof match.result === 'object'
+      );
+      if (!requireCompleted || completed) {
+        (match?.participants || []).forEach(participant => {
+          if (participant?.viewerId) viewerIds.add(String(participant.viewerId));
+        });
+      }
+    }
+    const battleId = String(
+      payload.battleId || payload.battle?.battleId || ''
+    ).trim();
+    if (battleId) {
+      const battle = this.streamMonstersStore?.getBattle?.(battleId);
+      const completed = battle?.result && typeof battle.result === 'object';
+      if (!requireCompleted || completed) {
+        if (battle?.user_a_id) viewerIds.add(String(battle.user_a_id));
+        if (battle?.user_b_id) viewerIds.add(String(battle.user_b_id));
+      }
+    }
+    return [...viewerIds];
+  }
+
+  recordStreamMonstersOnboardingEvent(eventType, payload = {}) {
+    const directSteps = {
+      'streammonsters:egg_spawned': 'egg_received',
+      'streammonsters:free_egg_claimed': 'egg_received',
+      'streammonsters:egg_hatched': 'egg_hatched'
+    };
+    const directStep = directSteps[eventType];
+    if (directStep && payload.userId) {
+      this.streamMonstersOnboarding?.recordStep?.(
+        payload.userId,
+        directStep,
+        Date.now()
+      );
+      return [String(payload.userId)];
+    }
+    if (eventType !== 'streammonsters:battle_completed') return [];
+    const viewerIds = this.streamMonstersBattleViewerIds(payload, {
+      requireCompleted: true
+    });
+    viewerIds.forEach(viewerId => {
+      this.streamMonstersOnboarding?.recordStep?.(
+        viewerId,
+        'battle_completed',
+        Date.now()
+      );
+    });
+    return viewerIds;
+  }
+
+  streamMonstersTutorialViewerId(eventType, payload = {}) {
+    if (payload.userId) return String(payload.userId);
+    if (
+      eventType === 'streammonsters:battle_match_found' ||
+      eventType === 'streammonsters:battle_completed'
+    ) {
+      return this.streamMonstersBattleViewerIds(payload)[0] || null;
+    }
+    return null;
+  }
+
   emitStreamMonsters(eventType, inputPayload = {}) {
     const payload = inputPayload && typeof inputPayload === 'object'
       ? inputPayload
       : {};
+    this.recordStreamMonstersOnboardingEvent(eventType, payload);
     const projector = this.streamMonstersPublicEventProjector ||
       new StreamMonstersPublicEventProjector({
         store: this.streamMonstersStore || null
@@ -1376,7 +1584,11 @@ class StreamAlchemyPlugin {
       ) {
         this.api.emit('streammonsters:battle_knockout', emitted);
       }
-      this.emitStreamMonstersTutorialHint(eventType, projector.isCritical(eventType));
+      this.emitStreamMonstersTutorialHint(
+        eventType,
+        projector.isCritical(eventType),
+        payload
+      );
     }
     this.logStructured('socket_emit', diagnostic, 'debug');
     const domainEvents = {
@@ -1397,13 +1609,18 @@ class StreamAlchemyPlugin {
     return emitted;
   }
 
-  emitStreamMonstersTutorialHint(eventType, critical) {
+  emitStreamMonstersTutorialHint(eventType, critical, payload = {}) {
     const director = this.streamMonstersTutorialHintDirector;
     if (!director || eventType === 'streammonsters:tutorial_hint') return null;
     if (this.config?.streamMonsters?.tutorialHintsEnabled === false) return null;
     director.setIntervalSeconds(this.config?.streamMonsters?.tutorialHintIntervalSeconds);
     const criticalSequence = Boolean(critical || this.streamMonstersTutorialHintFlushTimer);
-    const hint = director.nextHint({ eventType, criticalSequence }, Date.now());
+    const viewerId = this.streamMonstersTutorialViewerId(eventType, payload);
+    const hint = director.nextHint({
+      eventType,
+      criticalSequence,
+      ...(viewerId ? { viewerId } : {})
+    }, Date.now());
     if (hint) this.api.emit('streammonsters:tutorial_hint', hint);
     if (critical) this.scheduleStreamMonstersTutorialHintFlush();
     return hint;
@@ -1679,3 +1896,4 @@ class StreamAlchemyPlugin {
 }
 
 module.exports = StreamAlchemyPlugin;
+module.exports.ensureHotReloadPublicEvents = ensureHotReloadPublicEvents;

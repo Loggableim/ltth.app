@@ -51,6 +51,7 @@ function mountArena() {
         <span id="arena-result-monster"></span>
         <span id="arena-result-summary"></span>
         <div id="arena-result-ratings"></div>
+        <div id="arena-result-report" hidden></div>
         <span id="arena-result-rating"></span>
       </div>
       <article id="arena-fighter-1" data-slot="1">
@@ -75,6 +76,42 @@ function mountArena() {
 }
 
 describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
+  test('renders a localized sole-roster lock inside the live arena', () => {
+    mountArena();
+    const localize = jest.fn((key, params) => ({
+      arenaRosterAutoTitle: 'Fighter selected automatically',
+      arenaRosterAutoBody: `${params.name} fights immediately`
+    }[key] || key));
+    const view = ArenaView.createArenaView({ document, localize });
+    view.applyMatch({
+      matchId: 'match-auto-roster',
+      state: 'roster',
+      rosterDeadlineMs: 7_000,
+      fighters: []
+    });
+
+    expect(view.lockRoster({
+      matchId: 'match-auto-roster',
+      slot: 1,
+      selectionSource: 'sole_eligible',
+      titleKey: 'arenaRosterAutoTitle',
+      bodyKey: 'arenaRosterAutoBody',
+      params: { name: 'Ashfang' },
+      fighter: {
+        slot: 1,
+        locked: true,
+        name: 'Ashfang',
+        viewerName: '@pupcid',
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        hp: 40,
+        maxHp: 40
+      }
+    })).toBe(true);
+    expect(document.getElementById('arena-name-1').textContent).toBe('Ashfang');
+    expect(document.getElementById('arena-feed').textContent)
+      .toBe('Fighter selected automatically · Ashfang fights immediately');
+  });
+
   test('rehydrates both full furry fighters and renders an action through one deterministic timeline', async () => {
     mountArena();
     const waited = [];
@@ -369,7 +406,107 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-result-ratings').textContent).toContain('900');
     expect(document.getElementById('arena-result-ratings').textContent).toContain('916');
     expect(document.getElementById('arena-result-ratings').textContent).toMatch(/unchanged|unverändert/i);
+    expect(document.getElementById('arena-result-report').hidden).toBe(true);
+    expect(document.getElementById('arena-result-report').textContent).toBe('');
     await playback;
+  });
+
+  test('shows a compact two-fighter combat report and highlights the decisive skill for eight seconds', async () => {
+    mountArena();
+    const waited = [];
+    let finishResult;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: milliseconds => {
+          waited.push(milliseconds);
+          return new Promise(resolve => { finishResult = resolve; });
+        },
+        now: () => 1_000
+      }
+    });
+    view.applyMatch({
+      matchId: 'combat-report',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@alpha', hp: 18, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@beta', hp: 0, maxHp: 30 }
+      ]
+    });
+
+    const completion = view.complete({
+      eventId: 'combat-report:completed',
+      matchId: 'combat-report',
+      winnerSlot: 1,
+      terminalReason: 'knockout',
+      winner: { name: 'Ashfang', viewerName: '@alpha' },
+      knockout: { round: 6, remainingHp: 18, maxHp: 30 },
+      ratingChanges: [
+        { slot: 1, before: 1000, after: 1016, delta: 16 },
+        { slot: 2, before: 1000, after: 984, delta: -16 }
+      ],
+      combatReport: {
+        roundCount: 6,
+        durationMs: 42_000,
+        decisiveSkill: {
+          round: 6,
+          ownerSlot: 1,
+          choice: 'C',
+          skillName: 'Inferno Crown',
+          skillIcon: '🔥'
+        },
+        fighters: [{
+          slot: 1,
+          playerName: '@alpha',
+          monsterName: 'Ashfang',
+          damageDealt: 29,
+          damageBlocked: 7,
+          healingDone: 4,
+          shieldGained: 6,
+          specialsUsed: 2,
+          xpAwarded: 35,
+          rating: { before: 1000, after: 1016, delta: 16, eligible: true }
+        }, {
+          slot: 2,
+          playerName: '@beta',
+          monsterName: 'Ripple',
+          damageDealt: 12,
+          damageBlocked: 3,
+          healingDone: 8,
+          shieldGained: 10,
+          specialsUsed: 1,
+          xpAwarded: 18,
+          rating: { before: 1000, after: 984, delta: -16, eligible: true }
+        }]
+      }
+    });
+
+    const report = document.getElementById('arena-result-report');
+    expect(report.hidden).toBe(false);
+    expect(report.querySelectorAll('[data-report-fighter]')).toHaveLength(2);
+    expect(report.querySelector('[data-report-fighter="1"]').classList)
+      .toContain('is-decisive');
+    expect(report.querySelector('.arena-result-decisive').textContent)
+      .toContain('🔥 Inferno Crown');
+    expect(report.querySelector('.arena-result-decisive').textContent)
+      .toContain('C');
+    expect(report.querySelector('[data-report-fighter="1"]').textContent)
+      .toContain('@alpha');
+    expect(report.querySelector('[data-report-fighter="1"]').textContent)
+      .toContain('Ashfang');
+    for (const metric of ['damage', 'defense', 'healing', 'specials', 'xp', 'elo']) {
+      expect(report.querySelectorAll(`[data-report-metric="${metric}"]`))
+        .toHaveLength(2);
+    }
+    for (const value of ['29', '7', '6', '35', '1016']) {
+      expect(report.querySelector('[data-report-fighter="1"]').textContent)
+        .toContain(value);
+    }
+    expect(document.getElementById('arena-result-ratings').textContent).toBe('');
+    expect(waited).toEqual([8_000]);
+
+    finishResult();
+    await completion;
   });
 
   test('renders a backend double knockout as a draw with one Elo block', async () => {
@@ -1323,6 +1460,31 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toBe('Ashfang : compétences');
   });
 
+  test.each(['de', 'en', 'es', 'fr'])(
+    'ships complete combat report labels in %s',
+    locale => {
+      const catalog = JSON.parse(fs.readFileSync(path.join(
+        process.cwd(),
+        'plugins',
+        'streamalchemy',
+        'locales',
+        `${locale}.json`
+      ), 'utf8')).plugins.streamalchemy.ui.monsters;
+      for (const key of [
+        'arenaCombatReportDecisive',
+        'arenaCombatReportDamage',
+        'arenaCombatReportDefense',
+        'arenaCombatReportHealing',
+        'arenaCombatReportSpecials',
+        'arenaCombatReportXp',
+        'arenaCombatReportElo'
+      ]) {
+        expect(catalog[key]).toEqual(expect.any(String));
+        expect(catalog[key].trim()).not.toBe('');
+      }
+    }
+  );
+
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
@@ -1349,6 +1511,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(dom.window.document.querySelector('#arena-result-monster')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-summary')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-ratings')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-report')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-rating')).toBeNull();
     expect(html).toContain('--arena-gameplay-height:74%');
     expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%;[^}]*z-index:50/s);
@@ -1365,6 +1528,12 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       /\.arena-skill-card \.skill-copy\s*\{[^}]*overflow:visible;[^}]*white-space:normal/s
     );
     expect(html).toMatch(/#arena-result\s*\{[^}]*min-height:/s);
+    expect(html).toMatch(
+      /#arena-result-report\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/s
+    );
+    expect(html).toMatch(
+      /@media \(orientation: portrait\)[\s\S]*#arena-result\s*\{[^}]*max-height:[^}]*overflow:hidden/s
+    );
     expect(html).toMatch(
       /if \(type === 'egg_hatched'\)[\s\S]*?presentation:'hatch',[\s\S]*?duration:12_000/
     );
@@ -1388,6 +1557,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(html).not.toContain('localStorage');
     for (const event of [
       'streammonsters:battle_match_found',
+      'streammonsters:battle_roster_locked',
       'streammonsters:battle_choice_opened',
       'streammonsters:battle_skill_prompt',
       'streammonsters:battle_choice_locked',

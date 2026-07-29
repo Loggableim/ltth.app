@@ -21,6 +21,80 @@
     return Math.max(0, Math.min(100, numeric(value)));
   }
 
+  function boundedReportInteger(value, minimum = 0) {
+    return Math.round(Math.max(
+      minimum,
+      Math.min(1_000_000, numeric(value))
+    ));
+  }
+
+  function boundedReportText(value, maximum = 80) {
+    return String(value ?? '')
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .trim()
+      .slice(0, maximum);
+  }
+
+  function normalizeCombatReport(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const seenSlots = new Set();
+    const fighters = (Array.isArray(value.fighters) ? value.fighters : [])
+      .map(fighter => {
+        if (!fighter || typeof fighter !== 'object' || Array.isArray(fighter)) {
+          return null;
+        }
+        const slot = boundedReportInteger(fighter.slot);
+        if (![1, 2].includes(slot) || seenSlots.has(slot)) return null;
+        seenSlots.add(slot);
+        const rating = fighter.rating && typeof fighter.rating === 'object'
+          ? fighter.rating
+          : {};
+        return {
+          slot,
+          playerName: boundedReportText(fighter.playerName),
+          monsterName: boundedReportText(fighter.monsterName),
+          damageDealt: boundedReportInteger(fighter.damageDealt),
+          damageBlocked: boundedReportInteger(fighter.damageBlocked),
+          healingDone: boundedReportInteger(fighter.healingDone),
+          shieldGained: boundedReportInteger(fighter.shieldGained),
+          specialsUsed: boundedReportInteger(fighter.specialsUsed),
+          xpAwarded: boundedReportInteger(fighter.xpAwarded),
+          rating: {
+            after: boundedReportInteger(rating.after),
+            delta: boundedReportInteger(rating.delta, -1_000_000)
+          }
+        };
+      })
+      .filter(Boolean)
+      .sort((left, right) => left.slot - right.slot);
+    if (
+      fighters.length !== 2 ||
+      fighters[0].slot !== 1 ||
+      fighters[1].slot !== 2
+    ) {
+      return null;
+    }
+    const skill = value.decisiveSkill;
+    const ownerSlot = boundedReportInteger(skill?.ownerSlot);
+    const choice = boundedReportText(skill?.choice, 1).toUpperCase();
+    const skillName = boundedReportText(skill?.skillName);
+    const decisiveSkill = (
+      skill &&
+      typeof skill === 'object' &&
+      [1, 2].includes(ownerSlot) &&
+      ['A', 'B', 'C'].includes(choice) &&
+      skillName
+    ) ? {
+        round: Math.max(1, boundedReportInteger(skill.round)),
+        ownerSlot,
+        choice,
+        skillName,
+        skillIcon: boundedReportText(skill.skillIcon, 16)
+      }
+      : null;
+    return { decisiveSkill, fighters };
+  }
+
   function unwrapAction(payload = {}) {
     const action = payload.action && typeof payload.action === 'object'
       ? payload.action
@@ -123,6 +197,13 @@
       resultSummary: 'Runde {round} · {hp}/{maxHp} HP übrig',
       ratingChanged: '{name}: {before} → {after} ({delta})',
       ratingUnchanged: '{name}: ELO unchanged ({after})',
+      combatReportDecisive: 'Entscheidender Skill: {icon}{skill} · {choice} · R{round}',
+      combatReportDamage: 'Schaden {amount}',
+      combatReportDefense: 'Block {blocked} · Schild +{shield}',
+      combatReportHealing: 'Heilung {amount}',
+      combatReportSpecials: 'Specials {count}',
+      combatReportXp: 'XP +{amount}',
+      combatReportElo: 'ELO {after} ({delta})',
       damageMetric: 'Schaden {amount}',
       shieldAbsorbedMetric: 'Schildtreffer {amount}',
       shieldGainMetric: 'Schild +{amount}',
@@ -168,6 +249,13 @@
       resultSummary: 'arenaResultSummary',
       ratingChanged: 'arenaRatingChanged',
       ratingUnchanged: 'arenaRatingUnchanged',
+      combatReportDecisive: 'arenaCombatReportDecisive',
+      combatReportDamage: 'arenaCombatReportDamage',
+      combatReportDefense: 'arenaCombatReportDefense',
+      combatReportHealing: 'arenaCombatReportHealing',
+      combatReportSpecials: 'arenaCombatReportSpecials',
+      combatReportXp: 'arenaCombatReportXp',
+      combatReportElo: 'arenaCombatReportElo',
       damageMetric: 'arenaDamageMetric',
       shieldAbsorbedMetric: 'arenaShieldAbsorbedMetric',
       shieldGainMetric: 'arenaShieldGainMetric',
@@ -265,6 +353,75 @@
         return String(fallback || formatLabel('viewer')).trim();
       }
       return normalized;
+    }
+
+    function renderCombatReport(value) {
+      const target = node('arena-result-report');
+      if (!target) return null;
+      target.replaceChildren();
+      const report = normalizeCombatReport(value);
+      if (!report) {
+        target.hidden = true;
+        return null;
+      }
+      const decisive = report.decisiveSkill;
+      if (decisive) {
+        const decisiveNode = documentLike.createElement('strong');
+        decisiveNode.className = 'arena-result-decisive';
+        decisiveNode.textContent = formatLabel('combatReportDecisive', {
+          icon: decisive.skillIcon ? `${decisive.skillIcon} ` : '',
+          skill: decisive.skillName,
+          choice: decisive.choice,
+          round: decisive.round
+        });
+        target.appendChild(decisiveNode);
+      }
+      report.fighters.forEach(fighter => {
+        const fighterState = stateBySlot.get(fighter.slot) || {};
+        const card = documentLike.createElement('article');
+        card.className = 'arena-result-fighter';
+        card.dataset.reportFighter = String(fighter.slot);
+        if (decisive?.ownerSlot === fighter.slot) card.classList.add('is-decisive');
+
+        const identity = documentLike.createElement('strong');
+        identity.className = 'arena-result-fighter-name';
+        const player = safeDisplayName(
+          fighter.playerName,
+          fighterState.viewerName || formatLabel('viewer')
+        );
+        const monster = safeDisplayName(
+          fighter.monsterName,
+          fighterState.name || formatLabel('monster', { slot:fighter.slot })
+        );
+        identity.textContent = `${player} · ${monster}`;
+        card.appendChild(identity);
+
+        const metrics = documentLike.createElement('div');
+        metrics.className = 'arena-result-metrics';
+        const delta = fighter.rating.delta > 0
+          ? `+${fighter.rating.delta}`
+          : String(fighter.rating.delta);
+        [
+          ['damage', 'combatReportDamage', { amount:fighter.damageDealt }],
+          ['defense', 'combatReportDefense', {
+            blocked:fighter.damageBlocked,
+            shield:fighter.shieldGained
+          }],
+          ['healing', 'combatReportHealing', { amount:fighter.healingDone }],
+          ['specials', 'combatReportSpecials', { count:fighter.specialsUsed }],
+          ['xp', 'combatReportXp', { amount:fighter.xpAwarded }],
+          ['elo', 'combatReportElo', { after:fighter.rating.after, delta }]
+        ].forEach(([metric, label, params]) => {
+          const metricNode = documentLike.createElement('span');
+          metricNode.dataset.reportMetric = metric;
+          metricNode.textContent = formatLabel(label, params);
+          metrics.appendChild(metricNode);
+        });
+        card.appendChild(metrics);
+        target.appendChild(card);
+      });
+      target.hidden = false;
+      return report;
     }
 
     function setBattleSurface(active, reason = '') {
@@ -805,6 +962,48 @@
       renderVisibleComposite = null;
       startCountdown(match.actionDeadlineMs || match.rosterDeadlineMs || 0);
       return match;
+    }
+
+    function lockRoster(payload = {}) {
+      const slot = numeric(payload.slot ?? payload.fighter?.slot);
+      if (![1, 2].includes(slot)) return false;
+      activateMatch(payload.matchId);
+      setBattleSurface(true, 'roster');
+      if (payload.fighter) renderFighters([payload.fighter]);
+      const fighter = fighterNode(slot);
+      fighter?.classList.add('roster-locked');
+      const params = {
+        ...(payload.params && typeof payload.params === 'object'
+          ? payload.params
+          : {}),
+        name: String(
+          payload.params?.name ||
+          payload.fighter?.name ||
+          stateBySlot.get(slot)?.name ||
+          formatLabel('monster', { slot })
+        )
+      };
+      const title = translate(
+        payload.titleKey,
+        params,
+        payload.selectionSource === 'sole_eligible'
+          ? 'Fighter selected automatically'
+          : formatLabel('roster')
+      );
+      const body = translate(
+        payload.bodyKey,
+        params,
+        payload.selectionSource === 'sole_eligible'
+          ? `${params.name} fights immediately`
+          : `${params.name} is locked`
+      );
+      const renderRosterLock = () => setText(
+        'arena-feed',
+        [title, body].filter(Boolean).join(' · ')
+      );
+      renderVisibleComposite = renderRosterLock;
+      renderRosterLock();
+      return true;
     }
 
     function openChoice(payload = {}) {
@@ -1459,6 +1658,7 @@
       const knockout = payload.knockout && typeof payload.knockout === 'object'
         ? payload.knockout
         : null;
+      const combatReport = normalizeCombatReport(payload.combatReport);
       const result = node('arena-result');
       if (result) result.classList.add('visible');
       setLabelText(
@@ -1494,7 +1694,8 @@
       } else {
         setText('arena-result-summary', '');
       }
-      setText('arena-result-ratings', canonicalRatingText);
+      renderCombatReport(combatReport);
+      setText('arena-result-ratings', combatReport ? '' : canonicalRatingText);
       if (winnerSlot) setLabelText('arena-feed', 'winner', { name:winnerName });
       else if (isDoubleKnockout) setLabelText('arena-feed', 'draw');
       else setLabelText('arena-feed', 'battleEnded');
@@ -1509,6 +1710,7 @@
           setLabelText('arena-result-winner', 'battleEnded');
           setLabelText('arena-feed', 'battleEnded');
         }
+        renderCombatReport(combatReport);
       };
       if (winnerSlot) {
         fire(audio, 'arena.victory', {
@@ -1599,6 +1801,7 @@
       applySnapshot,
       cancel,
       complete,
+      lockRoster,
       lockChoice,
       revealChoices,
       openChoice,

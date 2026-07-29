@@ -234,7 +234,7 @@ describe('Official plugin store registry', () => {
     );
   });
 
-  it('publishes Stream Monsters 1.11.1 stable for LTTH 1.4.1 with source-identical release assets and keeps earlier archives unchanged', async () => {
+  it('keeps Stream Monsters 1.11.1 stable for LTTH 1.4.1 while the next source release is prepared', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const releaseMap = JSON.parse(fs.readFileSync(
@@ -283,6 +283,11 @@ describe('Official plugin store registry', () => {
 
     const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.1.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
+    assert.strictEqual(
+      digest,
+      '46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60',
+      'the historical Stream Monsters 1.11.1 archive must remain byte-identical'
+    );
     assert.strictEqual(storePlugin.sha256, digest);
     assert.strictEqual(release.sha256, digest);
 
@@ -392,6 +397,22 @@ describe('Official plugin store registry', () => {
     assert(streamMonsters, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(streamMonsters.channel, 'stable');
     assert(streamMonsters.badges.includes('subscriber-only'));
+    assert.strictEqual(streamMonsters.access?.type, 'subscriber');
+    assert.deepStrictEqual(streamMonsters.pricing, {
+      type: 'free',
+      amount: 0,
+      currency: 'EUR'
+    });
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      assert(
+        streamMonsters.access?.description?.[locale],
+        `Stream Monsters must explain subscriber access in ${locale}`
+      );
+    }
+    assert.match(
+      streamMonsters.access.description.en,
+      /Included with an active LTTH subscription/
+    );
     assert(!streamMonsters.badges.includes('working-beta'));
   });
 

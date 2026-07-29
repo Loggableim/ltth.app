@@ -123,6 +123,18 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect(document.getElementById('obsExternalSourcesWarning').textContent).toContain('CSS');
   });
 
+  test('offers the fixed TikTok Studio profile as a read-only Overlay Studio calibration', () => {
+    const profile = document.getElementById('overlayProfile');
+    const summary = document.getElementById('overlayProfileSummary');
+    expect(profile).not.toBeNull();
+    expect(profile.value).toBe('tiktok-live-studio-1080x1920');
+    expect(summary).not.toBeNull();
+    expect(summary.textContent).toContain('1080');
+    expect(summary.textContent).toContain('1920');
+    expect(summary.textContent).toContain('74');
+    expect(summary.textContent).toContain('26');
+  });
+
   test('offers every v1.5 demo scene while retaining attack and defense compatibility', () => {
     const scenes = [...document.querySelectorAll('#demoScene option')].map(option => option.value);
     expect(scenes).toEqual([
@@ -241,7 +253,10 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       'gameplayPace',
       'gameplayPaceArcadeRally',
       'portraitBattleMode',
-      'portraitBattleModeTakeover74'
+      'portraitBattleModeTakeover74',
+      'overlayProfile',
+      'overlayProfileTikTokStudio',
+      'overlayProfileSummary'
     ]) {
       expect(translations[key]).toEqual(expect.any(String));
       expect(translations[key]).not.toHaveLength(0);

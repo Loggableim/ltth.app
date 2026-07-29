@@ -6,6 +6,7 @@ const { Worker } = require('worker_threads');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const FreeEggDropService = require('../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service');
+const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
 const StreamMonstersChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 const {
   normalizeIngressEventId
@@ -29,8 +30,13 @@ function createSubject({ now = 1_000, config = {} } = {}) {
   store.initialize();
   const emitted = [];
   let currentNow = now;
+  const progression = new ProgressionService({
+    store,
+    now: () => new Date(currentNow)
+  });
   const engine = new StreamMonstersEngine({
     store,
+    progression,
     now: () => currentNow,
     config: { hatchDurationMs: 120_000, eggExpiryMs: 86_400_000 }
   });
@@ -247,6 +253,42 @@ describe('Stream Monsters recurring free egg drops', () => {
     ]);
     expect(subject.emitted.at(-1).payload).toEqual(expect.objectContaining({
       removedEggStage: expect.objectContaining({ visualId: expect.any(String) })
+    }));
+  });
+
+  test('credits a successful free claim as one received egg without gift-only effects', () => {
+    const subject = createSubject({
+      now: Date.parse('2026-07-21T12:00:00Z')
+    });
+    const streamKey = 'creator:stream-1';
+
+    offer(subject, 'viewer-a', 'chat-a', subject.now());
+    const claimed = adopt(subject, 'viewer-a', 'adopt-a', subject.now());
+    const retried = adopt(subject, 'viewer-a', 'adopt-a', subject.now());
+
+    expect(claimed).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
+    expect(retried).toEqual(claimed);
+    expect(subject.store.getViewerQuests('viewer-a', '2026-07-21')).toEqual([
+      expect.objectContaining({
+        quest_key: 'daily:gift',
+        title: 'Receive an egg',
+        progress: 1,
+        completed: 1
+      })
+    ]);
+    expect(subject.store.getViewerQuests('viewer-a', '2026-W30')).toEqual([]);
+    expect(subject.store.getViewerProgress('viewer-a')).toEqual(expect.objectContaining({
+      gifts_sent: 0
+    }));
+    expect(subject.store.getStreamHype(streamKey)).toEqual(expect.objectContaining({
+      points: 0,
+      charged_eggs: 0
+    }));
+    expect(subject.store.getHeartChain(streamKey)).toEqual(expect.objectContaining({
+      chain_length: 0
+    }));
+    expect(subject.store.getStreamMetrics(streamKey)).toEqual(expect.objectContaining({
+      quest_completions: 1
     }));
   });
 

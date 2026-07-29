@@ -8,6 +8,34 @@ const { FURRY_ASSET_VERSION, getTemplate } = require('./catalog');
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const KENNEY_URL = /^\/api\/streammonsters\/art\/kenney-([a-f0-9]{16})\.svg$/;
 
+function readWebpMetadata(bytes) {
+  if (bytes.length < 30 || bytes.subarray(0, 4).toString('ascii') !== 'RIFF' ||
+    bytes.subarray(8, 12).toString('ascii') !== 'WEBP') return null;
+  for (let offset = 12; offset + 8 <= bytes.length;) {
+    const type = bytes.subarray(offset, offset + 4).toString('ascii');
+    const length = bytes.readUInt32LE(offset + 4);
+    const data = offset + 8;
+    if (data + length > bytes.length) return null;
+    if (type === 'VP8L' && length >= 5 && bytes[data] === 0x2f) {
+      const packed = bytes.readUInt32LE(data + 1);
+      return {
+        width: 1 + (packed & 0x3fff),
+        height: 1 + ((packed >>> 14) & 0x3fff),
+        hasAlpha: Boolean((packed >>> 28) & 1)
+      };
+    }
+    if (type === 'VP8X' && length >= 10) {
+      return {
+        width: 1 + bytes[data + 4] + (bytes[data + 5] << 8) + (bytes[data + 6] << 16),
+        height: 1 + bytes[data + 7] + (bytes[data + 8] << 8) + (bytes[data + 9] << 16),
+        hasAlpha: Boolean(bytes[data] & 0x10)
+      };
+    }
+    offset = data + length + (length % 2);
+  }
+  return null;
+}
+
 class StreamMonstersAssetRegistry {
   constructor({ pluginDir, kenneyBuilder = null, logger = null }) {
     this.pluginDir = path.resolve(pluginDir);
@@ -122,9 +150,12 @@ class StreamMonstersAssetRegistry {
       this.logInvalid(`manifest unavailable: ${error.message}`);
       return this.cacheAudit(this.emptyAudit());
     }
+    const isLegacyPngManifest = manifest?.schemaVersion === 2 &&
+      manifest?.assetVersion === 'furry-1.5.0';
+    const isWebpManifest = manifest?.schemaVersion === 3 &&
+      manifest?.assetVersion === FURRY_ASSET_VERSION;
     if (
-      manifest?.schemaVersion !== 2 ||
-      manifest?.assetVersion !== FURRY_ASSET_VERSION ||
+      (!isLegacyPngManifest && !isWebpManifest) ||
       manifest?.productionMode !== 'bundled-only' ||
       !Array.isArray(manifest.assets)
     ) {
@@ -140,7 +171,10 @@ class StreamMonstersAssetRegistry {
       if (
         !getTemplate(templateId) ||
         ![1, 2, 3].includes(stage) ||
-        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath) ||
+        !(isLegacyPngManifest
+          ? /^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath)
+          : /^assets\/streammonsters\/furry\/[a-z0-9/-]+\.webp$/.test(relativePath) &&
+            asset?.mediaType === 'image/webp') ||
         dimensions[0] !== 1024 ||
         dimensions[1] !== 1024 ||
         !/^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))
@@ -174,16 +208,15 @@ class StreamMonstersAssetRegistry {
       } catch (_) {
         return;
       }
-      if (
-        fileBuffer.length < 24 ||
-        !fileBuffer.subarray(0, 8).equals(PNG_SIGNATURE) ||
-        fileBuffer.readUInt32BE(8) !== 13 ||
-        fileBuffer.subarray(12, 16).toString('ascii') !== 'IHDR' ||
-        fileBuffer.readUInt32BE(16) !== 1024 ||
-        fileBuffer.readUInt32BE(20) !== 1024 ||
-        crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
-          candidate.expectedHash
-      ) {
+      const webp = isWebpManifest ? readWebpMetadata(fileBuffer) : null;
+      const validImage = isLegacyPngManifest
+        ? fileBuffer.length >= 24 && fileBuffer.subarray(0, 8).equals(PNG_SIGNATURE) &&
+          fileBuffer.readUInt32BE(8) === 13 &&
+          fileBuffer.subarray(12, 16).toString('ascii') === 'IHDR' &&
+          fileBuffer.readUInt32BE(16) === 1024 && fileBuffer.readUInt32BE(20) === 1024
+        : webp?.width === 1024 && webp?.height === 1024 && webp?.hasAlpha;
+      if (!validImage || crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
+        candidate.expectedHash) {
         return;
       }
       const key = `${candidate.templateId}:${candidate.stage}`;
@@ -263,3 +296,4 @@ class StreamMonstersAssetRegistry {
 }
 
 module.exports = StreamMonstersAssetRegistry;
+module.exports.readWebpMetadata = readWebpMetadata;

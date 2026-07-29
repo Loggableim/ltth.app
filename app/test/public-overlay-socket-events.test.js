@@ -123,6 +123,12 @@ describe('public overlay Socket.IO source contract', () => {
     ).toEqual([]);
   });
 
+  test('allows the Stream Monsters roster auto-lock event through the public tunnel', () => {
+    expect(isOutgoingSocketEventAllowed(
+      'streammonsters:battle_roster_locked'
+    )).toBe(true);
+  });
+
   test.each([
     'test:alert',
     'test:goal:increment',

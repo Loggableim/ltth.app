@@ -220,11 +220,11 @@ describe('Stream Monsters public catalog generator', () => {
     const baseWebps = fs.readdirSync(publicBaseDirectory)
       .filter(fileName => fileName.endsWith('.webp'));
     const evolutionWebps = recursivelyFind(publicEvolutionDirectory, '.webp');
-    const sourcePngs = recursivelyFind(runtimeEvolutionDirectory, '.png');
+    const runtimeWebps = recursivelyFind(runtimeEvolutionDirectory, '.webp');
 
     expect(baseWebps).toHaveLength(24);
     expect(evolutionWebps).toHaveLength(48);
-    expect(sourcePngs).toHaveLength(48);
+    expect(runtimeWebps).toHaveLength(48);
 
     let publicBytes = 0;
     let sourceBytes = 0;
@@ -241,7 +241,7 @@ describe('Stream Monsters public catalog generator', () => {
         const sourcePath = path.join(
           runtimeEvolutionDirectory,
           template.element.toLowerCase(),
-          `${template.templateId}-stage${stage.stage}.png`
+          `${template.templateId}-stage${stage.stage}.webp`
         );
         const publicSize = fs.statSync(publicPath).size;
         const sourceSize = fs.statSync(sourcePath).size;

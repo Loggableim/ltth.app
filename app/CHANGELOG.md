@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+<!-- BEGIN STREAM MONSTERS PRODUCT PROJECTION -->
+- **Stream Monsters product contract v1**: Stream Monsters 1.11.1 uses Rules v8, Arcade Clash, the 90-second fresh default, portrait profile `tiktok-live-studio-1080x1920`, and subscriber-only access. Current package: `streamalchemy-1.11.1.zip`; next release: `1.12.0`.
+<!-- END STREAM MONSTERS PRODUCT PROJECTION -->
 - **Stream Monsters 1.11.1 – Stable Portrait Arcade Rally**: The verified Stable package gives new setups a 90-second incubation default, while stored creator timings and existing egg readiness remain unchanged. German and English are active by default, with Spanish and French available for one- or two-language overlay sequencing.
 - **Rules v8 K.O. Arena**: Battles continue until K.O. or forfeit, sealed A/B/C choices resolve immediately when both fighters lock, passive Special charge is capped per round, and Arena Collapse accelerates living battles from round five.
 - **Element-specific broadcast effects**: The 74/26 portrait takeover uses readable player, monster, skill and result cards plus distinct Ember, Tide, Grove, Gale, Volt and Lunar WebGPU signatures with synchronized Canvas2D/CSS fallback.
@@ -23,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Verified plugin release**: Stream Monsters 1.11.1 is bound to its audited source commit and tree. The deterministic package and store checksum match, while every archive through 1.11.0 stays immutable.
 - **Stable hardening**: Provider event IDs are durably deduplicated across GCCE and fallback ingress, public events redact internal monster IDs, late Arena Collapse prevents defensive deadlocks, and all creator/overlay controls pass the four-language static i18n gate.
 - **Fair lifecycle and controls**: Gift eggs are owned immediately, only free offers are adoptable, Auto-Hatch respects current-stream activity, stat prompts identify the sanitized player and exact monster, and GCCE remains the sole command ingress while active.
-- **Jackpot Clash presentation**: Eight-second sealed A/B/C windows, deterministic passive Special charge, full-monster skill/HUD choreography, combo feedback, element lighting, and synchronized WebGPU or Canvas2D/CSS beats deepen battles without paid combat bonuses.
+- **Arcade Clash presentation**: Eight-second sealed A/B/C windows, deterministic passive Special charge, full-monster skill/HUD choreography, combo feedback, element lighting, and synchronized WebGPU or Canvas2D/CSS beats deepen battles without paid combat bonuses.
 - **Rules-v7 presentation and recovery**: Sealed A/B/C choices reveal simultaneously, interrupted reveals and decimal replay cursors recover deterministically, Elemental Hour explains its timing/Hype effect, and every creator demo scene completes the cinematic battle preview.
 - **Fair progression**: Only the first 10 legitimate daily battles alter Arena Rating and seasonal rewards, while every legitimate completion grants monster XP. Daily and weekly quests remain independent of gifts and wins.
 - **Overlay onboarding**: Contextual command hints use the active GCCE prefix and aliases, wait behind critical sequences, and never post automatic chat messages.

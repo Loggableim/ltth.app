@@ -19,6 +19,9 @@ const {
 const ArenaDirector = require(
   '../plugins/streamalchemy/streammonsters-arena-director'
 );
+const OverlayRuntime = require(
+  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+);
 const PublicEventProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
 );
@@ -254,6 +257,13 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       element: 'Tide',
       templateId: 'ripple'
     });
+    insertMonster(sqlite, {
+      id: 'roster-beta-choice',
+      userId: 'roster-viewer-b',
+      name: 'Brine',
+      element: 'Tide',
+      templateId: 'brine'
+    });
     const service = createService({
       store,
       now: () => nowMs
@@ -292,6 +302,42 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         }
       }
     ).result.rosterInstruction).toEqual(reserved.rosterInstruction);
+  });
+
+  test('returns an immediate skill instruction instead of choose-zero after both sole rosters auto-lock', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'instant-alpha',
+      userId: 'instant-viewer-a',
+      name: 'Ashfang'
+    });
+    insertMonster(sqlite, {
+      id: 'instant-beta',
+      userId: 'instant-viewer-b',
+      name: 'Ripple',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const service = createService({ store, now: () => 1_000 });
+    const commands = new ChatCommands({
+      store,
+      engine: { streamKey: 'stream-v8-instant' },
+      battleService: service.battleService,
+      battleMatchService: service,
+      now: () => 1_000,
+      getCommandReference: command => `!${command}`
+    });
+
+    commands.executeBattle('instant-viewer-a');
+    const started = commands.executeBattle('instant-viewer-b');
+
+    expect(started).toEqual(expect.objectContaining({
+      status: 'started',
+      match: expect.objectContaining({ state: 'action' })
+    }));
+    expect(started).not.toHaveProperty('rosterInstruction');
+    expect(started.message).toMatch(/A\s*\/\s*B\s*\/\s*C/i);
+    expect(started.message).not.toMatch(/!choose|<slot>|within 0 seconds/i);
   });
 
   test('caps time charge at thirty points even when locale presentation runs longer', () => {
@@ -486,6 +532,211 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       terminalReason: 'knockout',
       knockout: { round: 4, remainingHp: 10, maxHp: 45 }
     }));
+  });
+
+  test('persists an authoritative combat report and reconnects its completion once', async () => {
+    const {
+      sqlite,
+      store,
+      emit,
+      service,
+      matchId,
+      setNow
+    } = createLockedMatch();
+    sqlite.prepare(`
+      INSERT INTO streammonsters_viewer_identities (
+        platform_user_id, canonical_user_id, current_unique_id, updated_at_ms
+      ) VALUES
+        ('1111111111111111111', 'viewer-a', 'alpha_public', 1),
+        ('2222222222222222222', 'viewer-b', 'beta_public', 1)
+    `).run();
+    const activeMatch = service.getMatch(matchId);
+    const alpha = activeMatch.participants.find(participant => (
+      participant.lockedMonsterId === 'alpha-v8'
+    ));
+    const beta = activeMatch.participants.find(participant => (
+      participant.lockedMonsterId === 'beta-v8'
+    ));
+    const persistedAction = {
+      sequence: 1,
+      round: 1,
+      actorId: 'alpha-v8',
+      targetId: 'beta-v8',
+      choice: 'C',
+      skill: { name: 'Solar Bloom', icon: '☀️' },
+      hits: [{
+        hpDamage: 7,
+        shieldAbsorbed: 3,
+        evaded: false
+      }],
+      outcomes: [
+        { type: 'heal', amount: 2 },
+        { type: 'shield', amount: 4 }
+      ],
+      retaliations: [{
+        type: 'reflect',
+        hpDamage: 2,
+        shieldAbsorbed: 1
+      }],
+      statusEffects: [],
+      terminal: true
+    };
+    sqlite.prepare(`
+      INSERT INTO streammonsters_match_actions (
+        match_id, sequence, round_number, actor_participant_id,
+        event_id, event_sequence, action_json, created_at_ms
+      ) VALUES (?, 1, 1, ?, ?, NULL, ?, ?)
+    `).run(
+      matchId,
+      alpha.participantId,
+      'private-action-event',
+      JSON.stringify(persistedAction),
+      1_500
+    );
+    setNow(2_500);
+
+    service.finalize(matchId, activeMatch.phaseVersion, 'alpha-v8', {
+      completion: 'battle',
+      terminalReason: 'knockout',
+      knockout: {
+        round: 1,
+        remainingHp: 12,
+        maxHp: 62
+      }
+    });
+
+    const expectedCombatReport = {
+      roundCount: 1,
+      durationMs: 1_500,
+      decisiveSkill: {
+        round: 1,
+        ownerSlot: alpha.slot,
+        choice: 'C',
+        skillName: 'Solar Bloom',
+        skillIcon: '☀️'
+      },
+      fighters: [{
+        slot: alpha.slot,
+        playerName: '@alpha_public',
+        monsterName: 'Ashfang',
+        damageDealt: 7,
+        damageBlocked: 1,
+        healingDone: 2,
+        shieldGained: 4,
+        specialsUsed: 1,
+        hits: 1,
+        evades: 0,
+        xpAwarded: 15,
+        rating: {
+          before: 900,
+          after: 916,
+          delta: 16,
+          eligible: true
+        }
+      }, {
+        slot: beta.slot,
+        playerName: '@beta_public',
+        monsterName: 'Ripple',
+        damageDealt: 2,
+        damageBlocked: 3,
+        healingDone: 0,
+        shieldGained: 0,
+        specialsUsed: 0,
+        hits: 0,
+        evades: 0,
+        xpAwarded: 10,
+        rating: {
+          before: 900,
+          after: 884,
+          delta: -16,
+          eligible: true
+        }
+      }].sort((left, right) => left.slot - right.slot)
+    };
+    const completedMatch = service.getMatch(matchId);
+    const storedBattle = store.getBattle(`battle-${matchId}`);
+    const emittedCompletion = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_completed'
+    ))?.[1];
+    const replay = service.getPublicNormalizedReplay(matchId, 0, 100);
+    const completionEvent = replay.events.find(event => (
+      event.type === 'streammonsters:battle_completed'
+    ));
+
+    expect(completedMatch.result.combatReport).toEqual(expectedCombatReport);
+    expect(storedBattle.result.combatReport).toEqual(expectedCombatReport);
+    expect(emittedCompletion.combatReport).toEqual(expectedCombatReport);
+    expect(replay.result.combatReport).toEqual(expectedCombatReport);
+    expect(completionEvent.payload.combatReport).toEqual(expectedCombatReport);
+    expect(JSON.stringify({
+      emitted: emittedCompletion.combatReport,
+      result: replay.result.combatReport,
+      event: completionEvent.payload.combatReport
+    })).not.toMatch(
+      /viewer-a|viewer-b|alpha-v8|beta-v8|private-action-event|actorId|targetId|actions|seed/
+    );
+
+    const presented = [];
+    const synchronizer = OverlayRuntime.createBattleReplaySynchronizer({
+      loadPage: async ({ cursor, limit }) => (
+        service.getPublicNormalizedReplay(matchId, cursor, limit)
+      ),
+      present: async event => {
+        presented.push(event);
+      }
+    });
+    await synchronizer.sync({
+      battle: {
+        matches: [{
+          matchId,
+          cursor: completionEvent.sequence - 1
+        }]
+      }
+    });
+    await synchronizer.sync({ battle: { matches: [] } });
+    await synchronizer.sync({ battle: { matches: [] } });
+
+    expect(presented).toEqual([expect.objectContaining({
+      type: 'battle_completed',
+      data: expect.objectContaining({
+        eventId: completionEvent.eventId,
+        combatReport: expectedCombatReport
+      })
+    })]);
+    expect(synchronizer.hasSeen('battle_completed', {
+      ...completionEvent.payload,
+      eventId: completionEvent.eventId,
+      correlationId: completionEvent.correlationId,
+      sequence: completionEvent.sequence
+    })).toBe(true);
+  });
+
+  test('keeps legacy normalized replays report-free for safe UI fallback', () => {
+    const { store, service } = createLockedMatch();
+    store.createBattle({
+      battleId: 'legacy-no-combat-report',
+      seed: 'private-legacy-seed',
+      monsterAId: 'alpha-v8',
+      monsterBId: 'beta-v8',
+      winnerMonsterId: 'alpha-v8',
+      userAId: 'viewer-a',
+      userBId: 'viewer-b',
+      rulesVersion: 3,
+      result: {
+        rounds: []
+      },
+      createdAtMs: 1
+    });
+
+    const replay = service.getPublicNormalizedReplay(
+      'legacy-no-combat-report',
+      0,
+      100
+    );
+
+    expect(replay).not.toHaveProperty('combatReport');
+    expect(replay).not.toHaveProperty('result');
+    expect(JSON.stringify(replay)).not.toContain('private-legacy-seed');
   });
 
   test('keeps the normalized replay winner at its battle-time public snapshot', () => {

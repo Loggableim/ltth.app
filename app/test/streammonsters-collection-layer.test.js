@@ -5,6 +5,9 @@ const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/a
 const { TEMPLATE_CATALOG, getTemplatesForElement } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
+const ViewerActivityTracker = require(
+  '../plugins/streamalchemy/backend/streammonsters/viewer-activity-tracker'
+);
 
 function createCollection(options = {}) {
   const store = new StreamMonstersDatabase(new Database(':memory:'));
@@ -13,7 +16,11 @@ function createCollection(options = {}) {
   const collection = new CollectionService({
     store,
     emit: (event, payload) => emitted.push({ event, payload }),
-    now: () => options.now ?? 10_000
+    now: () => options.now ?? 10_000,
+    getActiveViewerCount: options.getActiveViewerCount || (() => (
+      Number(options.activeViewers) || 15
+    )),
+    hasQualifyingHeartGift: options.hasQualifyingHeartGift || (() => true)
   });
   return { store, collection, emitted };
 }
@@ -55,6 +62,239 @@ function findMissionStream(collection, missionKey, prefix = missionKey) {
 }
 
 describe('Stream Monsters 1.4 collection layer', () => {
+  test('counts unique viewers in a fixed five-minute population window', () => {
+    let nowMs = 1_000;
+    const tracker = new ViewerActivityTracker({
+      now: () => nowMs,
+      activeWindowMs: 30_000
+    });
+
+    tracker.observe({ userId: 'viewer-a', streamKey: 'stream-a', source: 'chat' });
+    tracker.observe({ userId: 'viewer-a', streamKey: 'stream-a', source: 'gift' });
+    tracker.observe({ userId: 'viewer-b', streamKey: 'stream-a', source: 'chat' });
+    tracker.observe({ userId: 'viewer-c', streamKey: 'stream-b', source: 'chat' });
+
+    nowMs = 31_001;
+    expect(tracker.isActive({ userId: 'viewer-a', streamKey: 'stream-a' })).toBe(false);
+    expect(tracker.countActiveViewers({ streamKey: 'stream-a' })).toBe(2);
+    expect(tracker.countActiveViewers({ streamKey: 'stream-b' })).toBe(1);
+
+    nowMs = 301_001;
+    expect(tracker.countActiveViewers({ streamKey: 'stream-a' })).toBe(0);
+    expect(tracker.countActiveViewers({ streamKey: 'stream-b' })).toBe(0);
+  });
+
+  test('chooses deterministic missions with exact targets for each population band', () => {
+    const expectations = [
+      {
+        activeViewers: 1,
+        band: 'solo',
+        targets: { six_hatches: 2, four_elements: 2, three_battles: 1 }
+      },
+      {
+        activeViewers: 5,
+        band: 'party',
+        targets: {
+          six_hatches: 4,
+          four_elements: 3,
+          three_battles: 2,
+          heart_chain_five: 3
+        }
+      },
+      {
+        activeViewers: 15,
+        band: 'rally',
+        targets: {
+          six_hatches: 6,
+          four_elements: 4,
+          three_battles: 3,
+          heart_chain_five: 5
+        }
+      }
+    ];
+
+    expectations.forEach(({ activeViewers, band, targets }) => {
+      const { collection } = createCollection({ activeViewers });
+      const missions = Array.from({ length: 128 }, (_, index) => (
+        collection.getStreamMission(`${band}-mission-${index}`)
+      ));
+      expect(new Set(missions.map(mission => mission.mission_key)))
+        .toEqual(new Set(Object.keys(targets)));
+      Object.entries(targets).forEach(([missionKey, target]) => {
+        expect(missions.find(mission => mission.mission_key === missionKey))
+          .toEqual(expect.objectContaining({
+            mission_key: missionKey,
+            target,
+            population_band: band,
+            population_peak: activeViewers
+          }));
+      });
+    });
+  });
+
+  test('keeps one mission, grows its zero-progress target, and freezes after progress', () => {
+    let activeViewers = 1;
+    const { store, collection } = createCollection({
+      getActiveViewerCount: () => activeViewers
+    });
+    const streamKey = findMissionStream(collection, 'six_hatches', 'scaling-mission');
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      mission_key: 'six_hatches',
+      target: 2,
+      population_band: 'solo',
+      population_peak: 1
+    }));
+
+    activeViewers = 5;
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      mission_key: 'six_hatches',
+      target: 4,
+      population_band: 'party',
+      population_peak: 5
+    }));
+
+    activeViewers = 2;
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      mission_key: 'six_hatches',
+      target: 4,
+      population_band: 'party',
+      population_peak: 5
+    }));
+
+    const monster = addMonster(store, { userId: 'viewer-a', templateId: 'ashfang' });
+    collection.recordMissionProgress(streamKey, 'hatch', {
+      userId: monster.user_id,
+      monster,
+      actionKey: 'hatch:freeze-target'
+    });
+    activeViewers = 15;
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      mission_key: 'six_hatches',
+      progress: 1,
+      target: 4,
+      population_band: 'party',
+      population_peak: 15
+    }));
+  });
+
+  test('scales a battle mission before its first batched result is recorded', () => {
+    let activeViewers = 1;
+    const { store, collection } = createCollection({
+      getActiveViewerCount: () => activeViewers
+    });
+    const left = addMonster(store, {
+      userId: 'left',
+      templateId: 'ashfang',
+      index: 1
+    });
+    const right = addMonster(store, {
+      userId: 'right',
+      templateId: 'ripple',
+      element: 'Tide',
+      index: 2
+    });
+    const streamKey = findMissionStream(
+      collection,
+      'three_battles',
+      'battle-scale'
+    );
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      target: 1,
+      population_band: 'solo'
+    }));
+
+    activeViewers = 5;
+    collection.recordBattleOutcome({
+      streamKey,
+      battleId: 'battle:first',
+      fighters: [
+        { monster: left, won: true },
+        { monster: right, won: false }
+      ]
+    });
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      target: 2,
+      progress: 1,
+      completed_at_ms: null,
+      population_band: 'party',
+      population_peak: 5
+    }));
+  });
+
+  test('offers Heart Chain only with a qualifying gift path and preserves legacy missions', () => {
+    const withoutHeart = createCollection({
+      activeViewers: 5,
+      hasQualifyingHeartGift: () => false
+    });
+    const partyMissions = Array.from({ length: 128 }, (_, index) => (
+      withoutHeart.collection.getStreamMission(`no-heart-${index}`)
+    ));
+    expect(partyMissions.map(mission => mission.mission_key))
+      .not.toContain('heart_chain_five');
+
+    const withHeart = createCollection({
+      activeViewers: 5,
+      hasQualifyingHeartGift: () => true
+    });
+    expect(Array.from({ length: 128 }, (_, index) => (
+      withHeart.collection.getStreamMission(`with-heart-${index}`)
+    )).find(mission => mission.mission_key === 'heart_chain_five'))
+      .toEqual(expect.objectContaining({
+        target: 3,
+        population_band: 'party'
+      }));
+
+    withHeart.store.db.prepare(`
+      INSERT INTO streammonsters_stream_missions (
+        stream_key, mission_key, target, progress, completed_at_ms
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run('legacy-mission', 'six_hatches', 17, 0, null);
+    expect(withHeart.collection.getStreamMission('legacy-mission'))
+      .toEqual(expect.objectContaining({
+        mission_key: 'six_hatches',
+        target: 17,
+        progress: 0,
+        population_band: null,
+        population_peak: null
+      }));
+  });
+
+  test('adds population columns without changing a persisted legacy mission', () => {
+    const sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE streammonsters_stream_missions (
+        stream_key TEXT PRIMARY KEY,
+        mission_key TEXT NOT NULL,
+        target INTEGER NOT NULL,
+        progress INTEGER NOT NULL DEFAULT 0,
+        completed_at_ms INTEGER
+      );
+      INSERT INTO streammonsters_stream_missions (
+        stream_key, mission_key, target, progress, completed_at_ms
+      ) VALUES ('legacy-before-migration', 'three_battles', 11, 2, NULL);
+    `);
+    const store = new StreamMonstersDatabase(sqlite);
+
+    store.initialize();
+
+    expect(
+      sqlite.prepare('PRAGMA table_info(streammonsters_stream_missions)').all()
+        .map(column => column.name)
+    ).toEqual(expect.arrayContaining(['population_band', 'population_peak']));
+    expect(store.getStreamMission('legacy-before-migration')).toEqual({
+      stream_key: 'legacy-before-migration',
+      mission_key: 'three_battles',
+      target: 11,
+      progress: 2,
+      completed_at_ms: null,
+      population_band: null,
+      population_peak: null
+    });
+  });
+
   test('ships the exact stable 24-template catalog with four templates per element', () => {
     expect(TEMPLATE_CATALOG).toHaveLength(24);
     expect(TEMPLATE_CATALOG.map(template => template.templateId)).toEqual([

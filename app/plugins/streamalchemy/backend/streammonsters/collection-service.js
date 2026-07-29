@@ -20,6 +20,25 @@ const MISSION_DEFINITIONS = Object.freeze([
   { key: 'three_battles', target: 3, event: 'battle' },
   { key: 'heart_chain_five', target: 5, event: 'heart_chain' }
 ]);
+const MISSION_TARGETS = Object.freeze({
+  solo: Object.freeze({
+    six_hatches: 2,
+    four_elements: 2,
+    three_battles: 1
+  }),
+  party: Object.freeze({
+    six_hatches: 4,
+    four_elements: 3,
+    three_battles: 2,
+    heart_chain_five: 3
+  }),
+  rally: Object.freeze({
+    six_hatches: 6,
+    four_elements: 4,
+    three_battles: 3,
+    heart_chain_five: 5
+  })
+});
 
 class CollectionService {
   constructor({
@@ -27,13 +46,17 @@ class CollectionService {
     progression = null,
     assetRegistry = null,
     emit = () => {},
-    now = () => Date.now()
+    now = () => Date.now(),
+    getActiveViewerCount = () => 1,
+    hasQualifyingHeartGift = () => false
   }) {
     this.store = store;
     this.progression = progression;
     this.assetRegistry = assetRegistry;
     this.emit = emit;
     this.now = now;
+    this.getActiveViewerCount = getActiveViewerCount;
+    this.hasQualifyingHeartGift = hasQualifyingHeartGift;
   }
 
   runAtomic(operation) {
@@ -124,6 +147,9 @@ class CollectionService {
         `battle:${battleId}:${fighter.monster.monster_id}`
       ));
       if (!streamKey || !validFighters.length) return null;
+      // Apply any zero-progress population growth before this batch records
+      // the mission's first progress and freezes its target.
+      this.getStreamMission(streamKey);
       const result = this.store.recordBattleMission({
         streamKey,
         battleId,
@@ -290,9 +316,56 @@ class CollectionService {
     });
   }
 
+  peekStreamMission(streamKey) {
+    return this.store.getStreamMission(streamKey || 'offline');
+  }
+
   getStreamMission(streamKey) {
-    const mission = MISSION_DEFINITIONS[hashNumber(streamKey || 'offline') % MISSION_DEFINITIONS.length];
-    return this.store.getOrCreateStreamMission(streamKey || 'offline', mission);
+    const key = streamKey || 'offline';
+    const population = Math.max(0, Math.round(
+      Number(this.getActiveViewerCount(key)) || 0
+    ));
+    const populationBand = this.populationBand(population);
+    const definitions = MISSION_DEFINITIONS.filter(definition => (
+      definition.key !== 'heart_chain_five' ||
+      (
+        populationBand !== 'solo' &&
+        this.hasQualifyingHeartGift(key)
+      )
+    ));
+    const definition = definitions[hashNumber(key) % definitions.length];
+    let mission = this.store.getOrCreateStreamMission(key, {
+      ...definition,
+      target: this.missionTarget(definition.key, populationBand),
+      populationBand,
+      populationPeak: population
+    });
+    if (!mission.population_band) return mission;
+    const populationPeak = Math.max(
+      population,
+      Number(mission.population_peak) || 0
+    );
+    const effectiveBand = this.populationBand(populationPeak);
+    const target = this.missionTarget(mission.mission_key, effectiveBand);
+    mission = this.store.updateStreamMissionPopulation(key, {
+      populationBand: effectiveBand,
+      populationPeak,
+      target
+    });
+    return mission;
+  }
+
+  populationBand(activeViewers) {
+    const population = Math.max(0, Number(activeViewers) || 0);
+    if (population >= 15) return 'rally';
+    if (population >= 5) return 'party';
+    return 'solo';
+  }
+
+  missionTarget(missionKey, populationBand) {
+    return MISSION_TARGETS[populationBand]?.[missionKey] ||
+      MISSION_DEFINITIONS.find(definition => definition.key === missionKey)?.target ||
+      1;
   }
 
   recordMissionProgress(streamKey, event, { userId = null, monster = null, value = null, actionKey = null } = {}) {
@@ -479,4 +552,5 @@ class CollectionService {
 }
 
 module.exports = CollectionService;
+module.exports.MISSION_TARGETS = MISSION_TARGETS;
 module.exports.MISSION_DEFINITIONS = MISSION_DEFINITIONS;

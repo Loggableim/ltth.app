@@ -1,5 +1,5 @@
 const ELEMENTS = Object.freeze(['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar']);
-const FURRY_ASSET_VERSION = 'furry-1.5.0';
+const FURRY_ASSET_VERSION = 'furry-1.12.0';
 const V6_ELEMENT_ADVANTAGE_PAIRS = Object.freeze([
   'Ember:Grove',
   'Ember:Gale',

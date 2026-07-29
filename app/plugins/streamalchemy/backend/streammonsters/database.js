@@ -147,6 +147,13 @@ class StreamMonstersDatabase {
         best_battle_win_streak INTEGER NOT NULL DEFAULT 0
       );
 
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_onboarding (
+        user_id TEXT NOT NULL,
+        step_key TEXT NOT NULL,
+        completed_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (user_id, step_key)
+      );
+
       CREATE TABLE IF NOT EXISTS streammonsters_battles (
         battle_id TEXT PRIMARY KEY,
         seed TEXT NOT NULL,
@@ -362,7 +369,8 @@ class StreamMonstersDatabase {
       );
       CREATE TABLE IF NOT EXISTS streammonsters_stream_missions (
         stream_key TEXT PRIMARY KEY, mission_key TEXT NOT NULL, target INTEGER NOT NULL,
-        progress INTEGER NOT NULL DEFAULT 0, completed_at_ms INTEGER
+        progress INTEGER NOT NULL DEFAULT 0, completed_at_ms INTEGER,
+        population_band TEXT, population_peak INTEGER
       );
       CREATE TABLE IF NOT EXISTS streammonsters_stream_mission_participants (
         stream_key TEXT NOT NULL, user_id TEXT NOT NULL, selected_monster_id TEXT,
@@ -697,6 +705,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'best_battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_stream_missions', 'population_band', 'TEXT');
+    this.ensureColumn('streammonsters_stream_missions', 'population_peak', 'INTEGER');
     this.db.prepare(`
       UPDATE streammonsters_eggs
       SET provenance = CASE
@@ -1263,6 +1273,7 @@ class StreamMonstersDatabase {
         SELECT user_id FROM streammonsters_eggs WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_monsters WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_viewer_progress WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_viewer_onboarding WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_quests WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_achievements WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_season_scores WHERE user_id = ?
@@ -1273,6 +1284,7 @@ class StreamMonstersDatabase {
       )
       LIMIT 1
     `).get(
+      userId,
       userId,
       userId,
       userId,
@@ -1666,9 +1678,29 @@ class StreamMonstersDatabase {
     return promotedIds.map(eggId => this.getEgg(eggId));
   }
 
-  createMonsterFromEgg(egg, monster) {
+  createMonsterFromEgg(egg, monster, {
+    requireReadyOwner = false,
+    claimAtMs = Date.now()
+  } = {}) {
     const monsterId = monster.monsterId || randomUUID();
     const transaction = this.db.transaction(() => {
+      if (requireReadyOwner) {
+        const claimed = this.db.prepare(`
+          UPDATE streammonsters_eggs
+          SET state = 'hatched', monster_id = ?
+          WHERE egg_id = ?
+            AND user_id = ?
+            AND state = 'ready'
+            AND monster_id IS NULL
+            AND expired_at_ms IS NULL
+            AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+        `).run(monsterId, egg.egg_id, egg.user_id, Number(claimAtMs) || 0);
+        if (claimed.changes !== 1) {
+          const error = new Error('STREAM_MONSTERS_EGG_NOT_READY');
+          error.code = 'STREAM_MONSTERS_EGG_NOT_READY';
+          throw error;
+        }
+      }
       const hasSelection = this.db.prepare(
         'SELECT 1 FROM streammonsters_monsters WHERE user_id = ? AND is_selected = 1'
       ).get(egg.user_id);
@@ -1687,12 +1719,23 @@ class StreamMonstersDatabase {
         monster.templateId || deterministicTemplateId(egg.element, egg.seed),
         hasSelection ? 0 : 1, monster.createdAtMs
       );
-      this.db.prepare(`
-        UPDATE streammonsters_eggs SET state = 'hatched', monster_id = ? WHERE egg_id = ?
-      `).run(monsterId, egg.egg_id);
+      if (!requireReadyOwner) {
+        this.db.prepare(`
+          UPDATE streammonsters_eggs
+          SET state = 'hatched', monster_id = ?
+          WHERE egg_id = ?
+        `).run(monsterId, egg.egg_id);
+      }
     });
     transaction();
     return this.getMonster(monsterId);
+  }
+
+  createMonsterFromReadyEgg(egg, monster, claimAtMs = Date.now()) {
+    return this.createMonsterFromEgg(egg, monster, {
+      requireReadyOwner: true,
+      claimAtMs
+    });
   }
 
   getMonster(monsterId) {
@@ -1939,9 +1982,18 @@ class StreamMonstersDatabase {
 
   getOrCreateStreamMission(streamKey, mission) {
     this.db.prepare(`
-      INSERT OR IGNORE INTO streammonsters_stream_missions (stream_key, mission_key, target)
-      VALUES (?, ?, ?)
-    `).run(streamKey, mission.key, mission.target);
+      INSERT OR IGNORE INTO streammonsters_stream_missions (
+        stream_key, mission_key, target, population_band, population_peak
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run(
+      streamKey,
+      mission.key,
+      mission.target,
+      mission.populationBand || null,
+      Number.isFinite(Number(mission.populationPeak))
+        ? Math.max(0, Math.round(Number(mission.populationPeak)))
+        : null
+    );
     return this.getStreamMission(streamKey);
   }
 
@@ -1955,6 +2007,36 @@ class StreamMonstersDatabase {
       SET progress = ?, completed_at_ms = COALESCE(completed_at_ms, ?)
       WHERE stream_key = ?
     `).run(progress, completedAtMs, streamKey);
+    return this.getStreamMission(streamKey);
+  }
+
+  updateStreamMissionPopulation(streamKey, {
+    populationBand,
+    populationPeak,
+    target
+  }) {
+    const normalizedPeak = Math.max(0, Math.round(Number(populationPeak) || 0));
+    const normalizedTarget = Math.max(1, Math.round(Number(target) || 1));
+    this.db.prepare(`
+      UPDATE streammonsters_stream_missions
+      SET population_peak = MAX(COALESCE(population_peak, 0), ?),
+        population_band = CASE
+          WHEN progress = 0 AND ? > target THEN ?
+          ELSE population_band
+        END,
+        target = CASE
+          WHEN progress = 0 AND ? > target THEN ?
+          ELSE target
+        END
+      WHERE stream_key = ? AND population_band IS NOT NULL
+    `).run(
+      normalizedPeak,
+      normalizedTarget,
+      populationBand,
+      normalizedTarget,
+      normalizedTarget,
+      streamKey
+    );
     return this.getStreamMission(streamKey);
   }
 
