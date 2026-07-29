@@ -27,6 +27,43 @@ padding is never used as an attachment position.
 The current head entries intentionally expose exactly `eyes` and `mouths`.
 There are no ear, hair, glasses, hat, or accessory assets in this lab yet.
 
+## TTS mouth families
+
+A persisted selection can use `{ "packId", "index" }` instead of a numeric
+cell index. A pack declares its atlas and items below the normal mouth layer.
+An item with `frames` is one visual mouth family: each pose swaps only the
+resolved atlas cell and keeps the family's `localBounds` and head slot. This
+prevents the mouth from jumping while TTS changes its visual pose.
+
+```json
+{
+  "mouths": {
+    "packs": {
+      "furry-muzzle-family": {
+        "atlasId": "furry-muzzle-family",
+        "items": [{
+          "cell": 0,
+          "localBounds": [0.1, 0.4, 0.8, 0.2],
+          "frames": {
+            "rest": { "cell": 0 },
+            "small": { "cell": 1 },
+            "wide": { "cell": 2 },
+            "round": { "cell": 3 },
+            "teeth": { "cell": 4 }
+          }
+        }]
+      }
+    }
+  }
+}
+```
+
+The persistent avatar record remains, for example,
+`{ "mouths": { "packId": "furry-muzzle-family", "index": 0 } }`.
+The renderer supplies `{ "frameByLayer": { "mouths": "wide" } }` only for
+the current draw. An absent or unsupported requested pose resolves to `rest`.
+Static mouth items have no `frames` and continue to render their selected cell.
+
 ## Adding a future layer
 
 A future layer requires atlas data, a named slot on each compatible anchor

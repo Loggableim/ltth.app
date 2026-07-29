@@ -68,6 +68,54 @@ function fitContain(source, slot) {
   };
 }
 
+function findPack(layer, packId) {
+  if (Array.isArray(layer.packs)) {
+    return layer.packs.find(pack => pack.id === packId || pack.packId === packId);
+  }
+  return layer.packs?.[packId];
+}
+
+function resolveSelection(layerId, layer, selected) {
+  if (Number.isInteger(selected)) {
+    return {
+      item: layer.items?.[selected],
+      atlasId: layer.atlasId || layerId
+    };
+  }
+
+  if (!selected || typeof selected !== 'object' || !Number.isInteger(selected.index)) {
+    return { item: undefined, atlasId: undefined };
+  }
+
+  const pack = findPack(layer, selected.packId);
+  if (pack) {
+    return {
+      item: pack.items?.[selected.index],
+      atlasId: pack.atlasId || layer.atlasId || selected.packId
+    };
+  }
+
+  if (layer.items && (selected.packId === layerId || selected.packId === 'default')) {
+    return {
+      item: layer.items[selected.index],
+      atlasId: layer.atlasId || layerId
+    };
+  }
+
+  return { item: undefined, atlasId: undefined };
+}
+
+function resolveFrame(item, frameId) {
+  if (!item?.frames) return item;
+
+  const requestedFrame = frameId || 'rest';
+  const frame = item.frames[requestedFrame] || item.frames.rest;
+  const cell = typeof frame === 'number' ? frame : frame?.cell;
+  if (!Number.isInteger(cell)) throw new Error(`Missing frame cell: ${requestedFrame}`);
+
+  return { ...item, cell };
+}
+
 function validateManifest(atlasManifest, rigManifest) {
   if (rigManifest?.version !== 2) throw new Error('Rig manifest version 2 is required');
   if (!Number.isFinite(rigManifest.canvas?.size) || rigManifest.canvas.size <= 0) {
@@ -81,7 +129,7 @@ function validateManifest(atlasManifest, rigManifest) {
   }
 }
 
-function buildDrawPlan(atlasManifest, rigManifest, selection) {
+function buildDrawPlan(atlasManifest, rigManifest, selection, renderState = {}) {
   validateManifest(atlasManifest, rigManifest);
 
   const canvasSize = rigManifest.canvas.size;
@@ -91,11 +139,11 @@ function buildDrawPlan(atlasManifest, rigManifest, selection) {
     .sort(([, left], [, right]) => left.z - right.z);
 
   return layers.map(([layerId, layer]) => {
-    const selectedId = selection[layerId];
-    const item = layer.items?.[selectedId];
-    if (!item) throw new RangeError(`Invalid ${layerId} selection: ${selectedId}`);
+    const selected = resolveSelection(layerId, layer, selection[layerId]);
+    const item = resolveFrame(selected.item, renderState.frameByLayer?.[layerId]);
+    if (!item) throw new RangeError(`Invalid ${layerId} selection`);
 
-    const atlas = atlasManifest.atlases?.[layerId];
+    const atlas = atlasManifest.atlases?.[selected.atlasId];
     if (!atlas) throw new Error(`Missing atlas for layer: ${layerId}`);
 
     let source;
@@ -135,11 +183,11 @@ function buildDrawPlan(atlasManifest, rigManifest, selection) {
   });
 }
 
-async function drawComposite(canvas, atlasManifest, rigManifest, selection) {
+async function drawComposite(canvas, atlasManifest, rigManifest, selection, renderState = {}) {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('A 2D canvas context is required');
 
-  const plan = buildDrawPlan(atlasManifest, rigManifest, selection);
+  const plan = buildDrawPlan(atlasManifest, rigManifest, selection, renderState);
   const canvasSize = rigManifest.canvas.size;
   canvas.width = canvasSize;
   canvas.height = canvasSize;
