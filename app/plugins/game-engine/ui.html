@@ -1727,6 +1727,17 @@
           <input type="number" id="roundWarningTime" value="10" min="3" max="30" step="1">
         </div>
 
+        <section class="card" id="connect4-timeout-lockout-card">
+          <h3 data-i18n="plugins.game-engine.ui.connect4.timeout_lockout_title">Timeout-Sperren</h3>
+          <div class="form-group">
+            <label for="connect4-timeout-lockout-minutes" data-i18n="plugins.game-engine.ui.connect4.timeout_lockout_minutes">Sperrdauer nach Timeout (Minuten):</label>
+            <input type="number" id="connect4-timeout-lockout-minutes" value="1440" min="0" max="10080" step="1">
+            <small data-i18n="plugins.game-engine.ui.connect4.timeout_lockout_hint">0 deaktiviert die Sperre nach einem Spieler-Timeout.</small>
+          </div>
+          <h4 data-i18n="plugins.game-engine.ui.connect4.timeout_lockout_active">Aktuell gesperrte Spieler</h4>
+          <div id="connect4-timeout-lockouts" aria-live="polite"></div>
+        </section>
+
         <h3 data-i18n="plugins.game-engine.labels.anzeigetexte_c8c652">📝 Anzeigetexte</h3>
         <p style="color: #888; font-size: 14px; margin-bottom: 15px;" data-i18n="plugins.game-engine.labels.diese_texte_werden_im_overlay_angezeigt_lass_das_d90f70">
           Diese Texte werden im Overlay angezeigt. Lass das Feld leer, um den Standardtext zu verwenden.
@@ -4574,6 +4585,7 @@
         roundTimerEnabled: document.getElementById('roundTimerEnabled').checked,
         roundTimeLimit: parseInt(document.getElementById('roundTimeLimit').value),
         roundWarningTime: parseInt(document.getElementById('roundWarningTime').value),
+        timeoutLockoutMinutes: Number(document.getElementById('connect4-timeout-lockout-minutes').value),
         displayTexts: {
           titleText:     getConnect4DisplayText('connect4-display-title')     || '🔵 CONNECT 4',
           labelPlayer1:  getConnect4DisplayText('connect4-display-player1')   || 'Spieler 1',
@@ -4594,6 +4606,7 @@
 
         if (res.ok) {
           showMessage('Einstellungen gespeichert!');
+          await loadConnect4TimeoutLockouts();
 
           // Trigger GCCE command re-registration by emitting socket event
           socket.emit('game-engine:config-updated', { gameType: 'connect4' });
@@ -4602,6 +4615,101 @@
         }
       } catch (error) {
         showMessage('Fehler: ' + error.message, 'error');
+      }
+    }
+
+    function renderConnect4TimeoutLockouts(lockouts) {
+      const container = document.getElementById('connect4-timeout-lockouts');
+      if (!container) return;
+      container.replaceChildren();
+
+      if (!Array.isArray(lockouts) || lockouts.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = runtimeText(
+          'plugins.game-engine.ui.runtime.dashboard.timeout_lockout_empty',
+          {},
+          'No active timeout lockouts.'
+        );
+        container.appendChild(empty);
+        return;
+      }
+
+      const list = document.createElement('div');
+      list.className = 'trigger-list';
+      for (const lockout of lockouts) {
+        const row = document.createElement('div');
+        row.className = 'trigger-item';
+        const details = document.createElement('div');
+        const username = document.createElement('strong');
+        username.textContent = lockout.username;
+        const reason = document.createElement('div');
+        reason.textContent = lockout.reason === 'viewer_timeout'
+          ? runtimeText(
+            'plugins.game-engine.ui.runtime.dashboard.timeout_lockout_reason_viewer_timeout',
+            {},
+            'Viewer timeout'
+          )
+          : String(lockout.reason || '');
+        const expires = document.createElement('div');
+        const expiresAt = Number(lockout.expiresAt);
+        const expiresText = Number.isFinite(expiresAt) ? new Date(expiresAt).toLocaleString() : '-';
+        expires.textContent = runtimeText(
+          'plugins.game-engine.ui.runtime.dashboard.timeout_lockout_expires',
+          { time: expiresText },
+          `Expires: ${expiresText}`
+        );
+        details.append(username, reason, expires);
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'secondary';
+        button.textContent = runtimeText(
+          'plugins.game-engine.ui.runtime.dashboard.timeout_lockout_unlock',
+          {},
+          'Unlock'
+        );
+        button.addEventListener('click', () => unlockConnect4Player(lockout.username));
+        row.append(details, button);
+        list.appendChild(row);
+      }
+      container.appendChild(list);
+    }
+
+    async function loadConnect4TimeoutLockouts() {
+      try {
+        const response = await fetch('/api/game-engine/connect4/lockouts');
+        const data = await response.json();
+        if (!response.ok || data.success !== true) throw new Error('lockout_list_failed');
+        renderConnect4TimeoutLockouts(data.lockouts || []);
+      } catch (error) {
+        console.error('Failed to load Connect4 timeout lockouts:', error);
+        const container = document.getElementById('connect4-timeout-lockouts');
+        if (!container) return;
+        const message = document.createElement('p');
+        message.textContent = runtimeText(
+          'plugins.game-engine.ui.runtime.dashboard.timeout_lockout_load_failed',
+          {},
+          'Could not load timeout lockouts.'
+        );
+        container.replaceChildren(message);
+      }
+    }
+
+    async function unlockConnect4Player(username) {
+      try {
+        const response = await fetch('/api/game-engine/connect4/lockouts/' + encodeURIComponent(username), {
+          method: 'DELETE'
+        });
+        const data = await response.json();
+        if (!response.ok || data.success !== true) throw new Error('lockout_unlock_failed');
+        renderConnect4TimeoutLockouts(data.lockouts || []);
+      } catch (error) {
+        console.error('Failed to unlock Connect4 player:', error);
+        showMessage(runtimeText(
+          'plugins.game-engine.ui.runtime.dashboard.timeout_lockout_unlock_failed',
+          {},
+          'Could not unlock player.'
+        ), 'error');
       }
     }
 
@@ -4645,6 +4753,10 @@
         if (config.roundTimerEnabled !== undefined) document.getElementById('roundTimerEnabled').checked = config.roundTimerEnabled;
         if (config.roundTimeLimit) document.getElementById('roundTimeLimit').value = config.roundTimeLimit;
         if (config.roundWarningTime) document.getElementById('roundWarningTime').value = config.roundWarningTime;
+        if (config.timeoutLockoutMinutes !== undefined) {
+          document.getElementById('connect4-timeout-lockout-minutes').value = config.timeoutLockoutMinutes;
+        }
+        await loadConnect4TimeoutLockouts();
 
         // Display texts
         const c4dt = (config.displayTexts && typeof config.displayTexts === 'object') ? config.displayTexts : {};
@@ -5727,6 +5839,7 @@
     }
 
     bindRuntimeI18nRerender(rerenderLocalizedAdminState);
+    bindRuntimeI18nRerender(loadConnect4TimeoutLockouts);
 
     // Socket events
     socket.on('game-engine:interactive-state', state => {

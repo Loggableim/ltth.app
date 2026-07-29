@@ -90,6 +90,19 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain("document.getElementById('connect4-sound-volume').value = config.soundVolume");
   });
 
+  test('renders Connect4 timeout lockout controls and server-backed unlock actions', () => {
+    expect(ui).toContain('id="connect4-timeout-lockout-minutes"');
+    expect(ui).toContain('id="connect4-timeout-lockouts"');
+    expect(ui).toContain('min="0" max="10080" step="1"');
+    expect(ui).toContain("timeoutLockoutMinutes: Number(document.getElementById('connect4-timeout-lockout-minutes').value)");
+    expect(ui).toContain("document.getElementById('connect4-timeout-lockout-minutes').value = config.timeoutLockoutMinutes");
+    expect(ui).toContain('async function loadConnect4TimeoutLockouts()');
+    expect(ui).toContain("fetch('/api/game-engine/connect4/lockouts')");
+    expect(ui).toContain("'/api/game-engine/connect4/lockouts/' + encodeURIComponent(username)");
+    expect(ui).toContain('username.textContent = lockout.username;');
+    expect(ui).toContain("button.addEventListener('click', () => unlockConnect4Player(lockout.username));");
+  });
+
   test('applies server-returned canonical timer values after save and renders timed and untimed states', () => {
     const functionSource = ui.match(/    function applyInteractiveSettings\(config\) \{[\s\S]*?\n    \}/)?.[0];
     expect(functionSource).toEqual(expect.any(String));

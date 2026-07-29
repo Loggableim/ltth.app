@@ -1040,6 +1040,10 @@
         },
         "connect4": {
           "game_finished": "Partie terminée",
+          "timeout_lockout_title": "Blocages apres expiration",
+          "timeout_lockout_minutes": "Duree du blocage apres expiration (minutes) :",
+          "timeout_lockout_hint": "0 desactive le blocage apres expiration du tour d'un spectateur.",
+          "timeout_lockout_active": "Joueurs actuellement bloques",
           "board_color": "Couleur du plateau :",
           "text_color": "Couleur du texte :",
           "font_family": "Police :",
@@ -1328,6 +1332,12 @@
           },
           "dashboard": {
             "add_gift": "Ajouter {gift}",
+            "timeout_lockout_empty": "Aucun blocage actif apres expiration.",
+            "timeout_lockout_reason_viewer_timeout": "Le tour du spectateur a expire",
+            "timeout_lockout_expires": "Expire : {time}",
+            "timeout_lockout_unlock": "Debloquer",
+            "timeout_lockout_unlock_failed": "Impossible de debloquer le joueur.",
+            "timeout_lockout_load_failed": "Impossible de charger les blocages apres expiration.",
             "active_summary": "Parties actives : {sessions} · tours de l’hôte en attente : {hostTurns}",
             "background_summary": "{game} · {host} contre {player} · {timer} · coups : {moves} · active il y a {age}",
             "board_unavailable": "Aucun plateau n’est disponible pour cet affichage.",

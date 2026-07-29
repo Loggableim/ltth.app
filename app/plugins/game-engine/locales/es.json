@@ -1040,6 +1040,10 @@
         },
         "connect4": {
           "game_finished": "Partida terminada",
+          "timeout_lockout_title": "Bloqueos por tiempo agotado",
+          "timeout_lockout_minutes": "Duracion del bloqueo tras tiempo agotado (minutos):",
+          "timeout_lockout_hint": "0 desactiva el bloqueo despues de que se agote el turno de un espectador.",
+          "timeout_lockout_active": "Jugadores bloqueados actualmente",
           "board_color": "Color del tablero:",
           "text_color": "Color del texto:",
           "font_family": "Familia tipográfica:",
@@ -1328,6 +1332,12 @@
           },
           "dashboard": {
             "add_gift": "Añadir {gift}",
+            "timeout_lockout_empty": "No hay bloqueos activos por tiempo agotado.",
+            "timeout_lockout_reason_viewer_timeout": "Se agoto el turno del espectador",
+            "timeout_lockout_expires": "Caduca: {time}",
+            "timeout_lockout_unlock": "Desbloquear",
+            "timeout_lockout_unlock_failed": "No se pudo desbloquear al jugador.",
+            "timeout_lockout_load_failed": "No se pudieron cargar los bloqueos por tiempo agotado.",
             "active_summary": "Partidas activas: {sessions} · turnos del anfitrión en cola: {hostTurns}",
             "background_summary": "{game} · {host} contra {player} · {timer} · jugadas: {moves} · activa hace {age}",
             "board_unavailable": "No hay ningún tablero disponible para esta vista.",

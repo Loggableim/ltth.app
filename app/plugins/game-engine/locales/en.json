@@ -1040,6 +1040,10 @@
         },
         "connect4": {
           "game_finished": "Game over",
+          "timeout_lockout_title": "Timeout lockouts",
+          "timeout_lockout_minutes": "Lockout duration after timeout (minutes):",
+          "timeout_lockout_hint": "0 disables the lockout after a viewer timeout.",
+          "timeout_lockout_active": "Currently locked players",
           "board_color": "Board color:",
           "text_color": "Text color:",
           "font_family": "Font family:",
@@ -1322,6 +1326,12 @@
           },
           "dashboard": {
             "add_gift": "Add {gift}",
+            "timeout_lockout_empty": "No active timeout lockouts.",
+            "timeout_lockout_reason_viewer_timeout": "Viewer turn timed out",
+            "timeout_lockout_expires": "Expires: {time}",
+            "timeout_lockout_unlock": "Unlock",
+            "timeout_lockout_unlock_failed": "Could not unlock player.",
+            "timeout_lockout_load_failed": "Could not load timeout lockouts.",
             "active_summary": "Active matches: {sessions} · host turns queued: {hostTurns}",
             "background_summary": "{game} · {host} vs. {player} · {timer} · moves: {moves} · active {age} ago",
             "board_unavailable": "No board is available for this display.",

@@ -1040,6 +1040,10 @@
         },
         "connect4": {
           "game_finished": "Spiel beendet",
+          "timeout_lockout_title": "Timeout-Sperren",
+          "timeout_lockout_minutes": "Sperrdauer nach Timeout (Minuten):",
+          "timeout_lockout_hint": "0 deaktiviert die Sperre nach einem Spieler-Timeout.",
+          "timeout_lockout_active": "Aktuell gesperrte Spieler",
           "board_color": "Spielfeld-Farbe:",
           "text_color": "Text-Farbe:",
           "font_family": "Schriftart:",
@@ -1328,6 +1332,12 @@
           },
           "dashboard": {
             "add_gift": "{gift} hinzufügen",
+            "timeout_lockout_empty": "Keine aktiven Timeout-Sperren.",
+            "timeout_lockout_reason_viewer_timeout": "Spieler-Zeit abgelaufen",
+            "timeout_lockout_expires": "Ablauf: {time}",
+            "timeout_lockout_unlock": "Entsperren",
+            "timeout_lockout_unlock_failed": "Spieler konnte nicht entsperrt werden.",
+            "timeout_lockout_load_failed": "Timeout-Sperren konnten nicht geladen werden.",
             "active_summary": "Aktive Partien: {sessions} · Host-Züge in der Queue: {hostTurns}",
             "background_summary": "{game} · {host} gegen {player} · {timer} · Züge: {moves} · aktiv vor {age}",
             "board_unavailable": "Für diese Anzeige ist kein Spielbrett verfügbar.",
