@@ -2155,9 +2155,11 @@
         const clipped = clipToArenaPlayfield();
         drawFood(now);
         drawMines(now);
+        drawBombs(now);
         drawWeaponPickups(now);
         drawTrails(players);
         players.forEach(player => drawPlayer(player, now));
+        drawAbilityLegend();
         drawEffects(now);
         restoreArenaPlayfieldClip(clipped);
       }
@@ -2192,11 +2194,13 @@
       const stage = app.stage;
       const foodLayer = new PIXI.Container();
       const pickupLayer = new PIXI.Container();
+      const bombLayer = new PIXI.Container();
       const playerLayer = new PIXI.Container();
       const effectLayer = new PIXI.Container();
+      const abilityLegend = new PIXI.Container();
       const playfieldMask = new PIXI.Graphics();
-      const clippedLayers = [foodLayer, pickupLayer, playerLayer, effectLayer];
-      stage.addChild(foodLayer, pickupLayer, playerLayer, effectLayer, playfieldMask);
+      const clippedLayers = [foodLayer, pickupLayer, bombLayer, playerLayer, effectLayer];
+      stage.addChild(foodLayer, pickupLayer, bombLayer, playerLayer, effectLayer, abilityLegend, playfieldMask);
 
       const collisionWorld = createRapierCollisionWorld(RAPIER);
       const playerNodes = new Map();
@@ -2246,9 +2250,10 @@
             avatar: null,
             fallback: new PIXI.Graphics(),
             chrome: new PIXI.Graphics(),
-            weapon: new PIXI.Graphics()
+            weapon: new PIXI.Graphics(),
+            abilityRings: new PIXI.Graphics()
           };
-          node.container.addChild(node.fallback, node.chrome, node.weapon);
+          node.container.addChild(node.fallback, node.chrome, node.weapon, node.abilityRings);
           playerLayer.addChild(node.container);
           playerNodes.set(player.username, node);
         }
@@ -2316,6 +2321,33 @@
             node.weapon.fill({ color, alpha: 0.92 });
           }
         }
+
+        node.abilityRings.clear();
+        const abilities = player.abilities || {};
+        [[abilities.boost, state.config?.boostColor || '#EF4444', 8], [abilities.shield, state.config?.shieldColor || '#3B82F6', 15]].forEach(([ability, color, offset]) => {
+          if (!ability) return;
+          const progress = Math.max(0, Math.min(1, Number(ability.chargeProgress) || 0));
+          if (progress <= 0) return;
+          const alpha = ability.ready ? 0.8 + Math.sin(now / 150) * 0.2 : 0.48;
+          node.abilityRings.arc(0, 0, point.radius + offset, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+          node.abilityRings.stroke({ color: cssHexToNumber(color, 0xffffff), alpha, width: Math.max(2, point.radius * 0.12) });
+        });
+      }
+
+      function drawPixiAbilityLegend() {
+        abilityLegend.removeChildren().forEach(child => child.destroy());
+        const panel = new PIXI.Graphics();
+        panel.roundRect(18, 18, 355, 38, 8);
+        panel.fill({ color: 0x050c1a, alpha: 0.78 });
+        abilityLegend.addChild(panel);
+        const textStyle = { fontFamily: 'Segoe UI, Arial', fontSize: 15, fontWeight: '600' };
+        const boost = new PIXI.Text({ text: '!boost Tempo', style: { ...textStyle, fill: state.config?.boostColor || '#EF4444' } });
+        const shield = new PIXI.Text({ text: '!shield Schutz', style: { ...textStyle, fill: state.config?.shieldColor || '#3B82F6' } });
+        const bomb = new PIXI.Text({ text: '!bomb Wurf', style: { ...textStyle, fill: '#fbbf24' } });
+        boost.x = 30; boost.y = 27;
+        shield.x = 148; shield.y = 27;
+        bomb.x = 270; bomb.y = 27;
+        abilityLegend.addChild(boost, shield, bomb);
       }
 
       return {
@@ -2334,7 +2366,9 @@
           updatePixiPlayfieldMask();
           clearLayer(foodLayer);
           clearLayer(pickupLayer);
+          clearLayer(bombLayer);
           clearLayer(effectLayer);
+          drawPixiAbilityLegend();
 
           const food = state.food || [];
           const configuredMax = Math.min(
@@ -2366,6 +2400,15 @@
             pickupGraphic.y = point.y;
             pickupGraphic.rotation = now / 700;
             pickupLayer.addChild(pickupGraphic);
+          }
+
+          for (const bomb of state.bombs || []) {
+            const point = project(bomb);
+            const graphic = circleGraphic(Math.max(7, point.radius || 8), 0xfbbf24, 0.88, 0xffffff, 1.5);
+            graphic.x = point.x;
+            graphic.y = point.y;
+            graphic.rotation = now / 180;
+            bombLayer.addChild(graphic);
           }
 
           const keep = new Set();
@@ -3177,6 +3220,7 @@
       ctx.globalAlpha = readableAlpha;
       drawAvatarChrome(player, point, hasAvatar);
       drawAnimatedWeaponAttachment(player, point, now);
+      drawAbilityRings(player, point, now);
 
       if (!hasAvatar) {
         const initials = (player.nickname || player.username || '?').trim().slice(0, 2).toUpperCase();
@@ -3200,6 +3244,64 @@
         ctx.fillText(name, point.x, point.y + point.radius + 4);
       }
       drawStrategyLabel(player, point);
+    }
+
+    function drawAbilityRings(player, point, now) {
+      const abilities = player.abilities || {};
+      const rings = [
+        [abilities.boost, state.config?.boostColor || '#EF4444', 8],
+        [abilities.shield, state.config?.shieldColor || '#3B82F6', 15]
+      ];
+      ctx.save();
+      rings.forEach(([ability, color, offset]) => {
+        if (!ability) return;
+        const progress = Math.max(0, Math.min(1, Number(ability.chargeProgress) || 0));
+        ctx.globalAlpha = ability.ready ? 0.8 + Math.sin(now / 150) * 0.2 : 0.48;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, point.radius * 0.12);
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + offset, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function drawBombs(now) {
+      const bombs = state.bombs || [];
+      if (!bombs.length) return;
+
+      ctx.save();
+      for (const bomb of bombs) {
+        const point = project(bomb);
+        const pulse = 1 + Math.sin(now / 110 + point.x * 0.02) * 0.1;
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(now / 180);
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = '#fbbf24';
+        ctx.strokeStyle = '#fff7ed';
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = renderStats.quality > 0.72 ? 10 : 0;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(7, point.radius || 8) * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawAbilityLegend() {
+      ctx.save();
+      ctx.font = '600 15px Segoe UI, Arial';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(5, 12, 26, 0.78)';
+      ctx.roundRect(18, 18, 355, 38, 8); ctx.fill();
+      ctx.fillStyle = state.config?.boostColor || '#EF4444'; ctx.fillText('!boost Tempo', 30, 37);
+      ctx.fillStyle = state.config?.shieldColor || '#3B82F6'; ctx.fillText('!shield Schutz', 148, 37);
+      ctx.fillStyle = '#fbbf24'; ctx.fillText('!bomb Wurf', 270, 37);
+      ctx.restore();
     }
 
     function pushEffect(effect) {
