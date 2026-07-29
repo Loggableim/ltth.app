@@ -45,6 +45,27 @@ const ART_LAB_ROUTES = Object.freeze([
   ['POST', '/api/streammonsters/local-runtime/stop'],
   ['POST', '/api/streammonsters/local-runtime/verify']
 ]);
+const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
+  preset: 'tiktok-live-studio-1080x1920',
+  width: 1080,
+  height: 1920,
+  gameplayHeightPercent: 74,
+  chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
+  contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
+});
+
+function fixedOverlayProfiles() {
+  return {
+    portrait: {
+      preset: PORTRAIT_OVERLAY_PROFILE.preset,
+      width: PORTRAIT_OVERLAY_PROFILE.width,
+      height: PORTRAIT_OVERLAY_PROFILE.height,
+      gameplayHeightPercent: PORTRAIT_OVERLAY_PROFILE.gameplayHeightPercent,
+      chatSafeZone: { ...PORTRAIT_OVERLAY_PROFILE.chatSafeZone },
+      contentInsetPercent: { ...PORTRAIT_OVERLAY_PROFILE.contentInsetPercent }
+    }
+  };
+}
 
 class StreamMonstersRoutes {
   constructor({
@@ -1882,6 +1903,7 @@ class StreamMonstersRoutes {
         portrait: { anchor: 'top-center', scale: 100 },
         landscape: { anchor: 'bottom-center', scale: 100 }
       },
+      overlayProfiles: fixedOverlayProfiles(),
       rendererQuality: ['auto', 'high', 'medium', 'low'].includes(config.rendererQuality)
         ? config.rendererQuality
         : 'auto',

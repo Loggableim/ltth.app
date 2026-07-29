@@ -3,6 +3,48 @@
 const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 describe('Stream Monsters overlay layout and critical queue', () => {
+  test('applies the immutable 1080 by 1920 portrait profile to CSS without letting it move battle placement', () => {
+    const setProperty = jest.fn();
+    const stage = { dataset: {}, style: { setProperty } };
+    const battle = { dataset: {} };
+    const controller = runtime.createLayoutController({
+      window: {
+        innerWidth: 1080,
+        innerHeight: 1920,
+        location: {
+          search: '?layout=portrait&portraitAnchor=top-right&portraitScale=130'
+        },
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      },
+      stage,
+      battle,
+      config: {
+        portraitAnchor: 'bottom-left',
+        portraitScale: 70,
+        overlayProfiles: {
+          portrait: { width: 1, height: 1, gameplayHeightPercent: 1 }
+        }
+      }
+    });
+
+    expect(controller.current()).toEqual(expect.objectContaining({
+      layout: 'portrait',
+      anchor: 'top-right',
+      scale: 130,
+      profile: expect.objectContaining({
+        preset: 'tiktok-live-studio-1080x1920',
+        width: 1080,
+        height: 1920,
+        gameplayHeightPercent: 74,
+        chatSafeZone: { x: 0, y: 74, width: 100, height: 26 }
+      })
+    }));
+    expect(setProperty).toHaveBeenCalledWith('--overlay-profile-width', '1080');
+    expect(setProperty).toHaveBeenCalledWith('--arena-gameplay-height', '74%');
+    expect(battle.dataset).toEqual({ layoutIndependent: 'true' });
+  });
+
   test('baselines the first battle snapshot without replaying an already-running fight', async () => {
     const loadPage = jest.fn();
     const present = jest.fn();

@@ -274,6 +274,25 @@
     [1_800_000, 'duration30Minutes']
   ]);
   const SUPPORTED_OVERLAY_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
+  const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
+    preset: 'tiktok-live-studio-1080x1920',
+    width: 1080,
+    height: 1920,
+    gameplayHeightPercent: 74,
+    chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
+    contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
+  });
+
+  function fixedPortraitOverlayProfile() {
+    return {
+      preset: PORTRAIT_OVERLAY_PROFILE.preset,
+      width: PORTRAIT_OVERLAY_PROFILE.width,
+      height: PORTRAIT_OVERLAY_PROFILE.height,
+      gameplayHeightPercent: PORTRAIT_OVERLAY_PROFILE.gameplayHeightPercent,
+      chatSafeZone: { ...PORTRAIT_OVERLAY_PROFILE.chatSafeZone },
+      contentInsetPercent: { ...PORTRAIT_OVERLAY_PROFILE.contentInsetPercent }
+    };
+  }
 
   function normalizeOverlayLanguage(input = {}) {
     const candidate = input && typeof input === 'object' && !Array.isArray(input)
@@ -1483,6 +1502,7 @@
       layout,
       anchor: ANCHOR_SET.has(urlAnchor) ? urlAnchor : configuredAnchor,
       scale: validScale(urlScale, configuredScale),
+      profile: fixedPortraitOverlayProfile(),
       source: ['landscape', 'portrait'].includes(requestedLayout) ? 'override' : 'auto'
     };
   }
@@ -1510,6 +1530,10 @@
       stage?.style?.setProperty?.('--reveal-align', placement.align);
       stage?.style?.setProperty?.('--reveal-justify', placement.justify);
       stage?.style?.setProperty?.('--reveal-scale', String(resolved.scale / 100));
+      stage?.style?.setProperty?.('--overlay-profile-width', String(resolved.profile.width));
+      stage?.style?.setProperty?.('--overlay-profile-height', String(resolved.profile.height));
+      stage?.style?.setProperty?.('--arena-gameplay-height', `${resolved.profile.gameplayHeightPercent}%`);
+      stage?.style?.setProperty?.('--arena-safe-zone-height', `${resolved.profile.chatSafeZone.height}%`);
       if (battle?.dataset) battle.dataset.layoutIndependent = 'true';
       return resolved;
     }
@@ -1638,6 +1662,7 @@
     normalizeVolume,
     normalizeBattleEventType,
     normalizeOverlayLanguage,
+    PORTRAIT_OVERLAY_PROFILE,
     notificationShelfLayout,
     overlayHeartbeatPayload,
     pendingCriticalLocales,

@@ -102,6 +102,14 @@
   ]);
   const GAMEPLAY_PACES = Object.freeze(['arcade-rally']);
   const PORTRAIT_BATTLE_MODES = Object.freeze(['takeover-74']);
+  const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
+    preset: 'tiktok-live-studio-1080x1920',
+    width: 1080,
+    height: 1920,
+    gameplayHeightPercent: 74,
+    chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
+    contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
+  });
   const EGG_EXPIRY_PRESETS = Object.freeze([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
   const SEASON_DURATIONS = Object.freeze([7, 14, 28, 60, 90]);
   const RENDERER_QUALITIES = Object.freeze(['auto', 'high', 'medium', 'low']);
@@ -204,6 +212,16 @@
         portrait: {
           anchor: values.portraitAnchor || 'top-center',
           scale: Number(values.portraitScale) || 100
+        }
+      },
+      overlayProfiles: {
+        portrait: {
+          preset: PORTRAIT_OVERLAY_PROFILE.preset,
+          width: PORTRAIT_OVERLAY_PROFILE.width,
+          height: PORTRAIT_OVERLAY_PROFILE.height,
+          gameplayHeightPercent: PORTRAIT_OVERLAY_PROFILE.gameplayHeightPercent,
+          chatSafeZone: { ...PORTRAIT_OVERLAY_PROFILE.chatSafeZone },
+          contentInsetPercent: { ...PORTRAIT_OVERLAY_PROFILE.contentInsetPercent }
         }
       },
       rendererQuality: RENDERER_QUALITIES.includes(values.rendererQuality)
@@ -738,6 +756,7 @@
     EGG_EXPIRY_PRESETS,
     MASTERY_THRESHOLDS,
     PORTRAIT_BATTLE_MODES,
+    PORTRAIT_OVERLAY_PROFILE,
     REPAIR_ACTIONS,
     RENDERER_QUALITIES,
     SEASON_DURATIONS,

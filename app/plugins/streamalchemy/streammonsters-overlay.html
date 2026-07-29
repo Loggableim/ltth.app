@@ -1612,7 +1612,7 @@
     playArcadeEvent(type, data),
     Promise.resolve(presentation)
   ]);
-  const layoutConfig = {};
+    const layoutConfig = { overlayProfiles:{} };
   const layoutController = window.StreamMonstersOverlayRuntime.createLayoutController({
     window,
     stage: node('reveal-stage'),
@@ -2313,7 +2313,8 @@
       landscapeAnchor: layouts?.landscape?.anchor || data?.config?.landscapeAnchor || 'bottom-center',
       landscapeScale: layouts?.landscape?.scale || data?.config?.landscapeScale || 100,
       portraitAnchor: layouts?.portrait?.anchor || data?.config?.portraitAnchor || 'top-center',
-      portraitScale: layouts?.portrait?.scale || data?.config?.portraitScale || 100
+      portraitScale: layouts?.portrait?.scale || data?.config?.portraitScale || 100,
+      overlayProfiles: data?.config?.overlayProfiles || {}
     });
     audioEngine.configure(data?.config?.audioChannels || {});
     layoutController.apply();

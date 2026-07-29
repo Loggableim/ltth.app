@@ -458,4 +458,52 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       hatchDurationMs: 90_000
     }));
   });
+
+  test('normalizes every persisted portrait profile to fixed TikTok Studio geometry without changing layouts', () => {
+    const subject = createConfigRouteSubject({
+      streamMonsters: {
+        layouts: {
+          portrait: { anchor: 'bottom-right', scale: 113 },
+          landscape: { anchor: 'middle-left', scale: 87 }
+        },
+        overlayProfiles: {
+          portrait: {
+            preset: 'custom',
+            width: 1,
+            height: 1,
+            gameplayHeightPercent: 50,
+            chatSafeZone: { x: 11, y: 11, width: 11, height: 11 },
+            contentInsetPercent: { top: 11, right: 11, bottom: 11, left: 11 }
+          }
+        }
+      }
+    });
+
+    expect(subject.plugin.config.streamMonsters).toEqual(expect.objectContaining({
+      layouts: {
+        portrait: { anchor: 'bottom-right', scale: 113 },
+        landscape: { anchor: 'middle-left', scale: 87 }
+      },
+      overlayProfiles: {
+        portrait: {
+          preset: 'tiktok-live-studio-1080x1920',
+          width: 1080,
+          height: 1920,
+          gameplayHeightPercent: 74,
+          chatSafeZone: { x: 0, y: 74, width: 100, height: 26 },
+          contentInsetPercent: { top: 0, right: 0, bottom: 26, left: 0 }
+        }
+      }
+    }));
+
+    subject.plugin.updateConfig({ streamMonsters: { overlayProfiles: { portrait: null } } });
+    expect(subject.persisted().streamMonsters.overlayProfiles.portrait).toEqual({
+      preset: 'tiktok-live-studio-1080x1920',
+      width: 1080,
+      height: 1920,
+      gameplayHeightPercent: 74,
+      chatSafeZone: { x: 0, y: 74, width: 100, height: 26 },
+      contentInsetPercent: { top: 0, right: 0, bottom: 26, left: 0 }
+    });
+  });
 });

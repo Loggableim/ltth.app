@@ -59,6 +59,16 @@ const DEFAULT_LAYOUTS = Object.freeze({
   portrait: Object.freeze({ anchor: 'top-center', scale: 100 }),
   landscape: Object.freeze({ anchor: 'bottom-center', scale: 100 })
 });
+const DEFAULT_OVERLAY_PROFILES = Object.freeze({
+  portrait: Object.freeze({
+    preset: 'tiktok-live-studio-1080x1920',
+    width: 1080,
+    height: 1920,
+    gameplayHeightPercent: 74,
+    chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
+    contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
+  })
+});
 const DEFAULT_AUDIO_CHANNELS = Object.freeze({
   master: Object.freeze({ enabled: true, volume: 1 }),
   ui: Object.freeze({ enabled: true, volume: 0.8 }),
@@ -341,6 +351,7 @@ class StreamAlchemyPlugin {
         overlayLanguage: this.normalizeOverlayLanguage(),
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
+        overlayProfiles: this.normalizeOverlayProfiles(),
         rendererQuality: 'auto',
         notificationDurationMs: 12_000,
         audioChannels: this.normalizeAudioChannels(),
@@ -378,6 +389,7 @@ class StreamAlchemyPlugin {
         ),
         commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
+        overlayProfiles: this.normalizeOverlayProfiles(storedStreamMonsters.overlayProfiles),
         rendererQuality: this.normalizeRendererQuality(storedStreamMonsters.rendererQuality),
         notificationDurationMs: this.normalizeNotificationDuration(
           storedStreamMonsters.notificationDurationMs
@@ -594,6 +606,20 @@ class StreamAlchemyPlugin {
     };
   }
 
+  normalizeOverlayProfiles() {
+    const portrait = DEFAULT_OVERLAY_PROFILES.portrait;
+    return {
+      portrait: {
+        preset: portrait.preset,
+        width: portrait.width,
+        height: portrait.height,
+        gameplayHeightPercent: portrait.gameplayHeightPercent,
+        chatSafeZone: { ...portrait.chatSafeZone },
+        contentInsetPercent: { ...portrait.contentInsetPercent }
+      }
+    };
+  }
+
   normalizeAudioChannels(input = {}) {
     return Object.fromEntries(Object.entries(DEFAULT_AUDIO_CHANNELS).map(([name, defaults]) => {
       const channel = input?.[name];
@@ -682,6 +708,10 @@ class StreamAlchemyPlugin {
         currentStreamMonsters.layouts,
         streamMonstersUpdates.layouts
       ),
+      overlayProfiles: mergeNamedObjects(
+        currentStreamMonsters.overlayProfiles,
+        streamMonstersUpdates.overlayProfiles
+      ),
       audioChannels: mergeNamedObjects(
         currentStreamMonsters.audioChannels,
         streamMonstersUpdates.audioChannels
@@ -731,6 +761,7 @@ class StreamAlchemyPlugin {
         ),
         commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
+        overlayProfiles: this.normalizeOverlayProfiles(mergedStreamMonsters.overlayProfiles),
         rendererQuality: this.normalizeRendererQuality(mergedStreamMonsters.rendererQuality),
         notificationDurationMs: this.normalizeNotificationDuration(
           mergedStreamMonsters.notificationDurationMs
