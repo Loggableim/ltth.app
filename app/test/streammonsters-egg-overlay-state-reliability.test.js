@@ -350,6 +350,60 @@ describe('Stream Monsters egg overlay state reliability', () => {
     }
   });
 
+  test('never drops the oldest claim when reconnect buffers more than 256 deltas', async () => {
+    const offer = freeEgg('offer-overflow-reconnect');
+    const olderSnapshot = {
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    };
+    let stateRequest = 0;
+    let resolveWarmSnapshot;
+    const harness = await createOverlayHarness(() => {
+      stateRequest += 1;
+      if (stateRequest === 1) return olderSnapshot;
+      return new Promise(resolve => {
+        resolveWarmSnapshot = resolve;
+      });
+    });
+    try {
+      const shelf = harness.dom.window.document.getElementById('egg-shelf');
+      const reconnect = harness.socketHandlers.get('connect')();
+      for (let attempt = 0; attempt < 10 && !resolveWarmSnapshot; attempt += 1) {
+        await flush();
+      }
+      expect(resolveWarmSnapshot).toEqual(expect.any(Function));
+
+      harness.socketHandlers.get('streammonsters:free_egg_claimed')({
+        eventId: 'oldest-overflow-claim',
+        correlationId: 'offer-overflow-reconnect',
+        removedEggStage: offer
+      });
+      for (let index = 0; index < 300; index += 1) {
+        harness.socketHandlers.get('streammonsters:egg_stage_updated')({
+          eventId: `overflow-update-${index}`,
+          correlationId: `overflow-egg-${index}`,
+          eggStage: freeEgg(`overflow-egg-${index}`, {
+            ownershipState: 'owned',
+            state: 'incubating',
+            adoptionStatus: 'owned',
+            adoptable: false
+          })
+        });
+      }
+
+      resolveWarmSnapshot(olderSnapshot);
+      await reconnect;
+      for (let attempt = 0; attempt < 10; attempt += 1) await flush();
+
+      expect(shelf.querySelector('[data-egg-id="offer-overflow-reconnect"]')).toBeNull();
+    } finally {
+      await harness.close();
+    }
+  });
+
   test('ignores owned free inventory eggs on live ready and boost events', () => {
     const document = eggShelfDocument();
     const cancelled = [];

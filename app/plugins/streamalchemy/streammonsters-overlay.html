@@ -1595,7 +1595,6 @@
   const seenStatPrompts = new Set();
   let queueRunning = false;
   let snapshotReady = false;
-  const MAX_RECONNECT_EGG_DELTAS = 256;
   const reconnectSnapshotCycles = new WeakMap();
   const reconnectEggDeltas = [];
   let activeReconnectCycle = 0;
@@ -1617,9 +1616,6 @@
   };
   const bufferReconnectEggDelta = (type, data) => {
     if (!reconnectEggSnapshotPending) return false;
-    if (reconnectEggDeltas.length >= MAX_RECONNECT_EGG_DELTAS) {
-      reconnectEggDeltas.shift();
-    }
     reconnectEggDeltas.push({ type, data });
     return true;
   };
