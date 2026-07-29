@@ -437,6 +437,7 @@ streammonsters:battle_choices_revealed
 streammonsters:battle_completed
 streammonsters:battle_knockout
 streammonsters:battle_match_found
+streammonsters:battle_roster_locked
 streammonsters:battle_round
 streammonsters:battle_skill_locked
 streammonsters:battle_skill_prompt

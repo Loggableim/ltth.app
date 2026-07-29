@@ -807,6 +807,48 @@
       return match;
     }
 
+    function lockRoster(payload = {}) {
+      const slot = numeric(payload.slot ?? payload.fighter?.slot);
+      if (![1, 2].includes(slot)) return false;
+      activateMatch(payload.matchId);
+      setBattleSurface(true, 'roster');
+      if (payload.fighter) renderFighters([payload.fighter]);
+      const fighter = fighterNode(slot);
+      fighter?.classList.add('roster-locked');
+      const params = {
+        ...(payload.params && typeof payload.params === 'object'
+          ? payload.params
+          : {}),
+        name: String(
+          payload.params?.name ||
+          payload.fighter?.name ||
+          stateBySlot.get(slot)?.name ||
+          formatLabel('monster', { slot })
+        )
+      };
+      const title = translate(
+        payload.titleKey,
+        params,
+        payload.selectionSource === 'sole_eligible'
+          ? 'Fighter selected automatically'
+          : formatLabel('roster')
+      );
+      const body = translate(
+        payload.bodyKey,
+        params,
+        payload.selectionSource === 'sole_eligible'
+          ? `${params.name} fights immediately`
+          : `${params.name} is locked`
+      );
+      const renderRosterLock = () => setText(
+        'arena-feed',
+        [title, body].filter(Boolean).join(' · ')
+      );
+      renderVisibleComposite = renderRosterLock;
+      renderRosterLock();
+      return true;
+    }
+
     function openChoice(payload = {}) {
       activateMatch(payload.matchId);
       setBattleSurface(true, 'choice');
@@ -1599,6 +1641,7 @@
       applySnapshot,
       cancel,
       complete,
+      lockRoster,
       lockChoice,
       revealChoices,
       openChoice,

@@ -2539,6 +2539,48 @@ describe('Stream Monsters durable BattleMatchService', () => {
     ]);
   });
 
+  test('startup sweep recovers and auto-locks a persisted sole-eligible Rules-v8 roster once', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'recovery-alpha', userId: 'viewer-recovery-a' });
+    insertMonster(sqlite, {
+      id: 'recovery-beta',
+      userId: 'viewer-recovery-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const creator = createMatchService({
+      store,
+      now: () => 5_000,
+      rulesVersion: 8
+    });
+    jest.spyOn(creator, 'rosterEligibility').mockReturnValue({
+      accepted: false,
+      reason: 'simulate_pre_upgrade_reservation'
+    });
+    creator.join({ userId: 'viewer-recovery-a' });
+    const reserved = creator.join({ userId: 'viewer-recovery-b' });
+    expect(creator.getMatch(reserved.match.matchId).state).toBe('roster');
+
+    const emit = jest.fn();
+    const recovered = createMatchService({
+      store,
+      now: () => 5_500,
+      emit,
+      rulesVersion: 8
+    });
+    recovered.start();
+    expect(recovered.getMatch(reserved.match.matchId).state).toBe('action');
+    expect(emit.mock.calls.map(([eventType]) => eventType)).toEqual([
+      'streammonsters:battle_roster_locked',
+      'streammonsters:battle_roster_locked',
+      'streammonsters:battle_choice_opened'
+    ]);
+
+    recovered.safeSweep();
+    expect(emit).toHaveBeenCalledTimes(3);
+    recovered.destroy();
+  });
+
   test('ships localized sole-eligible roster copy for every supported locale', () => {
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const translations = JSON.parse(fs.readFileSync(

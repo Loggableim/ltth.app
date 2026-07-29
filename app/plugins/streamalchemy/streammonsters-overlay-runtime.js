@@ -14,6 +14,7 @@
     'battle_round',
     'battle_completed',
     'battle_match_found',
+    'battle_roster_locked',
     'battle_choice_opened',
     'battle_choice_locked',
     'battle_choices_revealed',

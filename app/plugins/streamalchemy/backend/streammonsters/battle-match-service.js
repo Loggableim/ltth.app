@@ -626,23 +626,25 @@ class BattleMatchService {
   }
 
   autoLockSoleEligibleRosters(matchId) {
-    const match = this.getMatch(matchId);
-    if (!this.isRulesV8(match) || match?.state !== 'roster') return match;
-    const soleCandidates = match.participants
-      .filter(participant => !participant.lockedMonsterId)
-      .map(participant => ({
-        participant,
-        candidates: this.eligibleRosterMonsters(match, participant)
-      }))
-      .filter(entry => entry.candidates.length === 1);
-    for (const { participant, candidates } of soleCandidates) {
-      this.lockRoster({
-        userId: participant.viewerId,
-        monsterId: candidates[0].monster_id,
-        source: 'sole_eligible'
-      });
-    }
-    return this.getMatch(matchId);
+    return this.store.runInImmediateTransaction(() => {
+      const match = this.getMatch(matchId);
+      if (!this.isRulesV8(match) || match?.state !== 'roster') return match;
+      const soleCandidates = match.participants
+        .filter(participant => !participant.lockedMonsterId)
+        .map(participant => ({
+          participant,
+          candidates: this.eligibleRosterMonsters(match, participant)
+        }))
+        .filter(entry => entry.candidates.length === 1);
+      for (const { participant, candidates } of soleCandidates) {
+        this.lockRoster({
+          userId: participant.viewerId,
+          monsterId: candidates[0].monster_id,
+          source: 'sole_eligible'
+        });
+      }
+      return this.getMatch(matchId);
+    });
   }
 
   hasRecentOpponent(userAId, userBId, nowMs = this.now()) {
@@ -3845,6 +3847,7 @@ class BattleMatchService {
     const streamKey = this.currentStreamKey();
     const result = {
       matchesReserved: 0,
+      rostersAutoLocked: 0,
       rosterExpired: 0,
       actionsExpired: 0,
       statsExpired: 0,
@@ -3866,6 +3869,23 @@ class BattleMatchService {
         this.reportError(`battle recovery ${id}`, error);
       }
     };
+    this.db.prepare(`
+      SELECT match_id FROM streammonsters_matches
+      WHERE state = 'roster' AND rules_version >= 8
+      ORDER BY created_at_ms, match_id
+    `).all().forEach(({ match_id: matchId }) => {
+      try {
+        const before = this.getMatch(matchId)?.participants
+          .filter(participant => participant.lockedMonsterId).length || 0;
+        const recovered = this.autoLockSoleEligibleRosters(matchId);
+        const after = recovered?.participants
+          .filter(participant => participant.lockedMonsterId).length || 0;
+        result.rostersAutoLocked += Math.max(0, after - before);
+      } catch (error) {
+        result.errors += 1;
+        this.reportError(`battle sole-roster recovery ${matchId}`, error);
+      }
+    });
     this.db.prepare(`
       SELECT match_id FROM streammonsters_matches
       WHERE state = 'roster' AND roster_deadline_ms <= ?

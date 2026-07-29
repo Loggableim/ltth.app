@@ -371,6 +371,9 @@ class ChatCommands {
         stance: requestedStance || 'adaptive'
       });
       this.syncQueue();
+      const status = result.status === 'reserved' && result.match?.state === 'action'
+        ? 'started'
+        : result.status;
       const chooseReference = this.commandReference('choose');
       const rosterDeadlineMs = Number(result.match?.rosterDeadlineMs);
       const remainingSeconds = Number.isFinite(rosterDeadlineMs)
@@ -378,7 +381,7 @@ class ChatCommands {
         : Math.max(0, Math.ceil(
           Number(this.battleMatchService.rosterWindowMs?.(result.match)) / 1_000
         ));
-      const rosterInstruction = result.status === 'reserved'
+      const rosterInstruction = status === 'reserved'
         ? {
             deadlineMs: Number.isFinite(rosterDeadlineMs)
               ? rosterDeadlineMs
@@ -392,6 +395,7 @@ class ChatCommands {
         reserved: chooseReference
           ? `Match found. Use ${chooseReference} <slot> within ${remainingSeconds} seconds.`
           : `Match found. Your active monster locks in after ${remainingSeconds} seconds.`,
+        started: 'Match found. Your sole eligible monster is locked. Choose A / B / C now.',
         active: 'Your current match is still active.',
         no_monster: 'Hatch an egg first, then choose a monster.',
         cooldown: `Battle queue cooldown. Try again in ${Math.ceil(
@@ -399,10 +403,11 @@ class ChatCommands {
         )} seconds.`
       };
       return {
-        success: !['invalid', 'no_monster', 'cooldown'].includes(result.status),
+        success: !['invalid', 'no_monster', 'cooldown'].includes(status),
         ...result,
+        status,
         ...(rosterInstruction ? { rosterInstruction } : {}),
-        message: messages[result.status] || result.error || result.status
+        message: messages[status] || result.error || status
       };
     }
     try {

@@ -301,6 +301,42 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     ).result.rosterInstruction).toEqual(reserved.rosterInstruction);
   });
 
+  test('returns an immediate skill instruction instead of choose-zero after both sole rosters auto-lock', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'instant-alpha',
+      userId: 'instant-viewer-a',
+      name: 'Ashfang'
+    });
+    insertMonster(sqlite, {
+      id: 'instant-beta',
+      userId: 'instant-viewer-b',
+      name: 'Ripple',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const service = createService({ store, now: () => 1_000 });
+    const commands = new ChatCommands({
+      store,
+      engine: { streamKey: 'stream-v8-instant' },
+      battleService: service.battleService,
+      battleMatchService: service,
+      now: () => 1_000,
+      getCommandReference: command => `!${command}`
+    });
+
+    commands.executeBattle('instant-viewer-a');
+    const started = commands.executeBattle('instant-viewer-b');
+
+    expect(started).toEqual(expect.objectContaining({
+      status: 'started',
+      match: expect.objectContaining({ state: 'action' })
+    }));
+    expect(started).not.toHaveProperty('rosterInstruction');
+    expect(started.message).toMatch(/A\s*\/\s*B\s*\/\s*C/i);
+    expect(started.message).not.toMatch(/!choose|<slot>|within 0 seconds/i);
+  });
+
   test('caps time charge at thirty points even when locale presentation runs longer', () => {
     expect(MAX_PASSIVE_CHARGE_PER_ROUND).toBe(30);
     expect(projectPassiveCharge({

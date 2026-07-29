@@ -2666,6 +2666,9 @@
         fighters:Array.isArray(data?.fighters) ? data.fighters : []
       });
     }
+    if (type === 'battle_roster_locked') {
+      return arenaView.lockRoster(data);
+    }
     if (type === 'battle_choice_opened') {
       startBattleLocaleSequence(data);
       return arenaView.openChoice(data);
@@ -3201,6 +3204,7 @@
     'streammonsters:monster_visual_evolved':'monster_visual_evolved',
     'streammonsters:battle_started':'battle_started',
     'streammonsters:battle_match_found':'battle_match_found',
+    'streammonsters:battle_roster_locked':'battle_roster_locked',
     'streammonsters:battle_choice_opened':'battle_choice_opened',
     'streammonsters:battle_skill_prompt':'battle_choice_opened',
     'streammonsters:battle_choice_locked':'battle_choice_locked',

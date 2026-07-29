@@ -75,6 +75,42 @@ function mountArena() {
 }
 
 describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
+  test('renders a localized sole-roster lock inside the live arena', () => {
+    mountArena();
+    const localize = jest.fn((key, params) => ({
+      arenaRosterAutoTitle: 'Fighter selected automatically',
+      arenaRosterAutoBody: `${params.name} fights immediately`
+    }[key] || key));
+    const view = ArenaView.createArenaView({ document, localize });
+    view.applyMatch({
+      matchId: 'match-auto-roster',
+      state: 'roster',
+      rosterDeadlineMs: 7_000,
+      fighters: []
+    });
+
+    expect(view.lockRoster({
+      matchId: 'match-auto-roster',
+      slot: 1,
+      selectionSource: 'sole_eligible',
+      titleKey: 'arenaRosterAutoTitle',
+      bodyKey: 'arenaRosterAutoBody',
+      params: { name: 'Ashfang' },
+      fighter: {
+        slot: 1,
+        locked: true,
+        name: 'Ashfang',
+        viewerName: '@pupcid',
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        hp: 40,
+        maxHp: 40
+      }
+    })).toBe(true);
+    expect(document.getElementById('arena-name-1').textContent).toBe('Ashfang');
+    expect(document.getElementById('arena-feed').textContent)
+      .toBe('Fighter selected automatically · Ashfang fights immediately');
+  });
+
   test('rehydrates both full furry fighters and renders an action through one deterministic timeline', async () => {
     mountArena();
     const waited = [];
@@ -1388,6 +1424,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(html).not.toContain('localStorage');
     for (const event of [
       'streammonsters:battle_match_found',
+      'streammonsters:battle_roster_locked',
       'streammonsters:battle_choice_opened',
       'streammonsters:battle_skill_prompt',
       'streammonsters:battle_choice_locked',
