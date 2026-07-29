@@ -91,6 +91,26 @@ const V6_ELEMENT_DAMAGE_TUNING = Object.freeze({
   Lunar: 1,
   Volt: 1.5
 });
+const V8_NEUTRAL_ROLE_DAMAGE_TUNING = Object.freeze({
+  Tide: Object.freeze({
+    striker: 2,
+    guardian: 2,
+    trickster: 3,
+    sustain: 1.5
+  }),
+  Volt: Object.freeze({
+    striker: 2,
+    guardian: 2,
+    trickster: 1,
+    sustain: 1.5
+  }),
+  Lunar: Object.freeze({
+    striker: 2,
+    guardian: 0.5,
+    trickster: 0.4,
+    sustain: 1.5
+  })
+});
 
 const SKILL_PRESENTATION = Object.freeze({
   Ember: Object.freeze({
@@ -591,6 +611,15 @@ function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 8) {
     if (primary) adjustPower(effects, primary.type, secondary ? 1 : 2);
     if (secondary) adjustSecondary(effects, secondary.type, 1);
   }
+  const rulesV8DamageDelta = Number(rulesVersion) >= 8
+    ? Number(V8_NEUTRAL_ROLE_DAMAGE_TUNING[templateEntry.element]?.[templateEntry.role]) || 0
+    : 0;
+  if (
+    rulesV8DamageDelta &&
+    effects.some(effect => effect.type === 'damage')
+  ) {
+    adjustPower(effects, 'damage', rulesV8DamageDelta, 1);
+  }
   const nameKey = stageSkillKey(
     'skillName',
     templateId,
@@ -632,6 +661,7 @@ module.exports = {
   V6_TRICKSTER_TUNING,
   V6_GUARDIAN_TUNING,
   V6_ELEMENT_DAMAGE_TUNING,
+  V8_NEUTRAL_ROLE_DAMAGE_TUNING,
   TEMPLATE_CATALOG,
   getTemplate,
   getTemplatesForElement,

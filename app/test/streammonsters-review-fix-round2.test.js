@@ -169,13 +169,25 @@ async function createLiveOverlay(snapshot) {
     path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
     'utf8'
   );
-  const translations = JSON.parse(fs.readFileSync(
-    path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', 'en.json'),
-    'utf8'
-  )).plugins.streamalchemy.ui.monsters;
+  const localePayloads = Object.fromEntries(['de', 'en', 'es', 'fr'].map(locale => [
+    locale,
+    JSON.parse(fs.readFileSync(
+      path.join(
+        process.cwd(),
+        'plugins',
+        'streamalchemy',
+        'locales',
+        `${locale}.json`
+      ),
+      'utf8'
+    ))
+  ]));
+  const translations = localePayloads.en.plugins.streamalchemy.ui.monsters;
   const socketHandlers = new Map();
   const chatWaitResolvers = [];
+  const eggStageTimers = new Map();
   const playedEffects = [];
+  let nextEggStageTimerId = 1;
   let currentSnapshot = snapshot;
   let fetchFailure = null;
   const interpolate = (template, params = {}) => String(template).replace(
@@ -199,7 +211,16 @@ async function createLiveOverlay(snapshot) {
       window.io = () => ({
         on: (event, handler) => socketHandlers.set(event, handler)
       });
-      window.fetch = jest.fn(async () => {
+      window.fetch = jest.fn(async input => {
+        const localeMatch = String(input || '').match(
+          /\/plugins\/streamalchemy\/locales\/(de|en|es|fr)\.json(?:\?|$)/
+        );
+        if (localeMatch) {
+          return {
+            ok: true,
+            json: async () => localePayloads[localeMatch[1]]
+          };
+        }
         if (fetchFailure) throw fetchFailure;
         return {
           ok: true,
@@ -207,7 +228,19 @@ async function createLiveOverlay(snapshot) {
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
-      window.StreamMonstersEggStageView = eggStageView;
+      window.StreamMonstersEggStageView = {
+        ...eggStageView,
+        createEggStageView: options => eggStageView.createEggStageView({
+          ...options,
+          setTimeout: (callback, milliseconds) => {
+            const timerId = nextEggStageTimerId;
+            nextEggStageTimerId += 1;
+            eggStageTimers.set(timerId, { callback, milliseconds });
+            return timerId;
+          },
+          clearTimeout: timerId => eggStageTimers.delete(timerId)
+        })
+      };
       window.StreamMonstersChatView = {
         ...chatViewRuntime,
         createChatView: options => chatViewRuntime.createChatView({
@@ -247,6 +280,13 @@ async function createLiveOverlay(snapshot) {
     close: () => closeDom(dom),
     async releaseChat() {
       for (const resolve of chatWaitResolvers.splice(0)) resolve();
+      await flush();
+      await flush();
+    },
+    async settleEggAnimations() {
+      const pending = [...eggStageTimers.values()];
+      eggStageTimers.clear();
+      pending.forEach(timer => timer.callback());
       await flush();
       await flush();
     },
@@ -314,14 +354,14 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     expect(overlay.detail().dataset.placement).toBe('upper-third');
     expect(overlay.detail().dataset.kind).toBe('egg-wait');
     expect(overlay.detail().textContent).toContain('Public Hatcher');
-    expect(overlay.detail().textContent).toContain('The egg is still incubating');
-    expect(overlay.detail().textContent).toContain('Ready in 00:01');
+    expect(overlay.detail().textContent).toContain('Das Ei brütet noch');
+    expect(overlay.detail().textContent).toContain('Bereit in 00:01');
     expect(overlay.detail().textContent).not.toContain('viewer-a-secret');
     expect(overlay.chat().textContent).toBe('');
     await overlay.releaseChat();
 
     await overlay.emit('streammonsters:egg_ready', events.ready);
-    expect(overlay.hint().textContent).toBe('/schlupf [slot]');
+    expect(overlay.hint().textContent).toBe('/schlupf');
     expect(overlay.hint().textContent).not.toContain('/hatch');
 
     overlay.close();
@@ -364,7 +404,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     expect(shelfItem('egg-neighbour-stays')).not.toBeNull();
 
     await overlay.emit('streammonsters:egg_ready', events.ready);
-    expect(timing(visualId)).toBe('Ready · /schlupf');
+    expect(timing(visualId)).toBe('Bereit · /schlupf');
 
     await overlay.emit('streammonsters:hatch_started', events.hatchStarted);
     await overlay.emit('streammonsters:egg_hatched', events.hatched);
@@ -430,6 +470,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
       totalSpatialChoreographies: 1
     });
 
+    await overlay.settleEggAnimations();
     const effectCountBeforeReconnect = overlay.playedEffects.length;
     overlay.setSnapshot({
       hype: { points: 0 },
@@ -470,7 +511,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
       '[data-egg-id="egg-live-refresh"] [data-egg-timing]'
     )?.textContent;
 
-    expect(timing()).toBe('Queue #1');
+    expect(timing()).toBe('Warteschlange #1');
     expect(overlay.hasSocketHandler('streammonsters:egg_stage_updated')).toBe(true);
     expect(overlay.hasSocketHandler('streammonsters:egg_boosted')).toBe(true);
 
@@ -482,7 +523,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
         queuePosition: null
       }
     });
-    expect(timing()).toMatch(/^Hatches in 0[12]:\d{2}$/);
+    expect(timing()).toMatch(/^Schlüpft in 0[12]:\d{2}$/);
 
     await overlay.emit('streammonsters:egg_boosted', {
       eggStage: {
@@ -492,7 +533,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
         queuePosition: null
       }
     });
-    expect(timing()).toMatch(/^Hatches in 00:30$/);
+    expect(timing()).toMatch(/^Schlüpft in 00:30$/);
     overlay.close();
   });
 

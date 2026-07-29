@@ -1087,7 +1087,7 @@ class BattleMatchService {
     const templateId = String(monster?.templateId || '');
     return {
       slot: Number(monster?.slot) || 0,
-      viewerName: String(monster?.viewerName || '').slice(0, 80) || 'Viewer',
+      viewerName: this.publicViewerName(null, monster?.viewerName),
       name: String(monster?.name || '').slice(0, 80),
       element: String(monster?.element || '').slice(0, 16),
       templateId,
@@ -2890,6 +2890,104 @@ class BattleMatchService {
     return this.getPublicNormalizedReplay(battleOrMatchId, cursor, limit);
   }
 
+  projectSnapshotChoiceState(match) {
+    if (!match?.matchId || match.state !== 'action') {
+      return { choiceLocks: [] };
+    }
+    const choiceLocks = this.db.prepare(`
+      SELECT decision.window_sequence AS round_number,
+             participant.slot,
+             decision.source
+      FROM streammonsters_match_decisions decision
+      JOIN streammonsters_match_participants participant
+        ON participant.match_id = decision.match_id
+       AND participant.participant_id = decision.participant_id
+      WHERE decision.match_id = ?
+        AND decision.window_kind = 'action'
+        AND decision.window_sequence = ?
+      ORDER BY participant.slot
+    `).all(match.matchId, match.roundNumber).map(decision => ({
+      round: Math.max(1, Number(decision.round_number) || match.roundNumber),
+      slot: Number(decision.slot) || 0,
+      locked: true,
+      source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+      deadlineMs: Math.max(0, Number(match.actionDeadlineMs) || 0)
+    })).filter(decision => [1, 2].includes(decision.slot));
+
+    const state = { choiceLocks };
+    if (match.actionDeadlineMs != null) return state;
+    const reveal = this.db.prepare(`
+      SELECT public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ?
+        AND event_type = 'streammonsters:battle_choices_revealed'
+      ORDER BY sequence DESC
+      LIMIT 1
+    `).get(match.matchId);
+    const payload = parseJson(reveal?.public_payload_json, {});
+    const choices = projectBattleChoices(payload.choices);
+    const round = Math.max(0, Number(payload.round) || 0);
+    if (
+      choices.length === 2 &&
+      round > 0 &&
+      round >= Math.max(1, match.roundNumber - 1)
+    ) {
+      state.revealedChoices = { round, choices };
+    }
+    return state;
+  }
+
+  projectActiveStatPrompt() {
+    const prompt = this.db.prepare(`
+      SELECT 'match' AS prompt_kind,
+             prompt_id,
+             match_id,
+             participant_id,
+             viewer_id,
+             monster_id,
+             deadline_ms,
+             created_at_ms
+      FROM streammonsters_stat_prompts
+      WHERE status = 'open' AND deadline_ms > ?
+      UNION ALL
+      SELECT 'standalone' AS prompt_kind,
+             prompt_id,
+             NULL AS match_id,
+             NULL AS participant_id,
+             viewer_id,
+             monster_id,
+             deadline_ms,
+             created_at_ms
+      FROM streammonsters_stat_allocations
+      WHERE status = 'open' AND deadline_ms > ?
+      ORDER BY created_at_ms, prompt_id
+      LIMIT 1
+    `).get(this.now(), this.now());
+    if (!prompt) return null;
+    const match = prompt.match_id ? this.getMatch(prompt.match_id) : null;
+    const participant = match?.participants.find(candidate => (
+      candidate.participantId === prompt.participant_id
+    ));
+    const monster = this.store.getMonster(prompt.monster_id);
+    if (!monster) return null;
+    const publicParticipant = {
+      viewerId: prompt.viewer_id,
+      slot: Number(participant?.slot) || 0
+    };
+    return {
+      promptId: String(prompt.prompt_id),
+      ...(prompt.match_id ? { matchId: String(prompt.match_id) } : {}),
+      ...(publicParticipant.slot ? { slot: publicParticipant.slot } : {}),
+      deadlineMs: Math.max(0, Number(prompt.deadline_ms) || 0),
+      choices: ['1', '2', '3', '4'],
+      ...this.statChoiceContext({
+        userId: prompt.viewer_id,
+        participant: publicParticipant,
+        monster
+      })
+    };
+  }
+
   getPublicSnapshot({ restoreReconnect = false } = {}) {
     const matchIds = this.db.prepare(`
       SELECT match_id FROM streammonsters_matches
@@ -2924,10 +3022,13 @@ class BattleMatchService {
           actionDeadlineMs: match.actionDeadlineMs,
           cursor,
           ...(chargeWindow ? { chargeWindow } : {}),
+          ...this.projectSnapshotChoiceState(match),
           fighters: this.projectPublicFighters(match)
         };
       })
     };
+    const statPrompt = this.projectActiveStatPrompt();
+    if (statPrompt) snapshot.statPrompt = statPrompt;
     return snapshot;
   }
 

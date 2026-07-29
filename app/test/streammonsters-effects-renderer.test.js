@@ -508,6 +508,13 @@ describe('Stream Monsters effects renderer', () => {
     const harness = createGpuHarness();
     harness.device.createShaderModule.mockImplementation(descriptor => {
       validateWgslUniformContract(descriptor.code);
+      expect(descriptor.code).toMatch(/let sceneCode = u\.frame\.z/);
+      expect(descriptor.code).toMatch(/if \(sceneCode == 1\.0\)/);
+      expect(descriptor.code).toMatch(/else if \(sceneCode == 2\.0\)/);
+      expect(descriptor.code).toMatch(/else if \(sceneCode == 3\.0\)/);
+      expect(descriptor.code).toMatch(/phaseCode == 3\.0/);
+      expect(descriptor.code).toMatch(/phaseCode == 4\.0/);
+      expect(descriptor.code).toMatch(/phaseCode == 5\.0/);
       return { shader: true };
     });
     const renderer = createEffectsRenderer({
@@ -549,6 +556,39 @@ describe('Stream Monsters effects renderer', () => {
       active: false
     }));
     expect(renderer.mode()).not.toBe('webgpu');
+  });
+
+  test('play after destroy is terminal and cannot initialize or schedule work', async () => {
+    const harness = createGpuHarness();
+    const scheduleFrame = jest.fn(callback => setTimeout(() => callback(Date.now()), 16));
+    const setTimer = jest.fn(setTimeout);
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: scheduleFrame,
+      cancelAnimationFrame: clearTimeout,
+      setTimeout: setTimer,
+      clearTimeout
+    });
+
+    renderer.destroy();
+    await expect(renderer.play('hatch', { element: 'Grove' })).resolves.toEqual(
+      expect.objectContaining({
+        scene: 'hatch',
+        mode: 'destroyed',
+        destroyed: true,
+        skipped: true
+      })
+    );
+    expect(harness.gpu.requestAdapter).not.toHaveBeenCalled();
+    expect(scheduleFrame).not.toHaveBeenCalled();
+    expect(setTimer).not.toHaveBeenCalled();
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      mode: 'destroyed',
+      active: false,
+      destroyed: true
+    }));
   });
 
   test('caps the backing store and destroys owned GPU resources without later submits', async () => {
@@ -600,8 +640,20 @@ describe('Stream Monsters effects renderer', () => {
       now: () => Date.now()
     });
     await renderer.init();
+    const activeShader = harness.device.createShaderModule.mock.calls.at(-1)[0].code;
+    expect(activeShader).toMatch(/sceneCode == 1\.0/);
+    expect(activeShader).toMatch(/sceneCode == 2\.0/);
+    expect(activeShader).toMatch(/sceneCode == 3\.0/);
+
+    const portal = renderer.play('portal', { element: 'Ember' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][2]).toBe(1);
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.portal);
+    await portal;
+
     const spawn = renderer.play('spawn', { element: 'Volt' });
     await jest.advanceTimersByTimeAsync(32);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][2]).toBe(2);
     expect(harness.canvas.dataset.effectPhase).toBe('element-portal');
     expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][16]).toBe(1);
     await jest.advanceTimersByTimeAsync(600);
@@ -616,6 +668,7 @@ describe('Stream Monsters effects renderer', () => {
 
     const hatch = renderer.play('hatch', { element: 'Lunar' });
     await jest.advanceTimersByTimeAsync(32);
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][2]).toBe(3);
     expect(harness.canvas.dataset.effectPhase).toBe('pulse');
     await jest.advanceTimersByTimeAsync(600);
     expect(harness.canvas.dataset.effectPhase).toBe('cracks');

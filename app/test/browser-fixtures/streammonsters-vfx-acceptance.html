@@ -52,6 +52,17 @@ async function bootstrap() {
   setText('#arena-name-2', 'Selene Eclipse');
   setText('#arena-owner-1', '@CaptainVeryLongViewerName');
   setText('#arena-owner-2', '@MoonlightChampionViewer');
+  setText('#arena-action-player', '@CaptainVeryLongViewerNameThatMustNotPushTheSkillAway');
+  setText('#arena-action-key', 'C');
+  setText('#arena-action-skill', 'Kristalliner Mondfinsternis-Schlag');
+  setText(
+    '#arena-action-copy',
+    'Verursacht 12 Schaden, durchdringt 4 Schild und heilt den Angreifer um 6.'
+  );
+  setText(
+    '#arena-action-metrics',
+    'Schaden 12 · Schild absorbiert 4 · Heilung 6 · Mondbrand'
+  );
   document.querySelector('#arena-action-card')?.classList.add('visible');
 
   const canvas = document.querySelector('#battle-effects-canvas');
@@ -117,6 +128,10 @@ function layoutMetrics() {
   const fighterPanels = [...document.querySelectorAll('.arena-fighter')];
   const canvasRect = canvas.getBoundingClientRect();
   const actionRect = action.getBoundingClientRect();
+  const actionPlayer = document.querySelector('#arena-action-player');
+  const actionCopy = document.querySelector('#arena-action-copy');
+  const actionMetrics = document.querySelector('#arena-action-metrics');
+  const fighterRects = fighterPanels.map(panel => panel.getBoundingClientRect());
   const intersects = (left, right) => !(
     left.right <= right.left ||
     right.right <= left.left ||
@@ -149,6 +164,16 @@ function layoutMetrics() {
     actionHudOverlap: fighterPanels.some(panel => (
       intersects(actionRect, panel.getBoundingClientRect())
     )),
+    actionHudGap: Math.min(...fighterRects.map(rect => rect.top)) - actionRect.bottom,
+    actionText: {
+      playerConstrained: actionPlayer.scrollWidth > actionPlayer.clientWidth,
+      copyUnclipped: actionCopy.scrollHeight <= actionCopy.clientHeight + 1,
+      metricsUnclipped: actionMetrics.scrollHeight <= actionMetrics.clientHeight + 1,
+      copyHeight: [actionCopy.clientHeight, actionCopy.scrollHeight],
+      metricsHeight: [actionMetrics.clientHeight, actionMetrics.scrollHeight],
+      copy: actionCopy.textContent,
+      metrics: actionMetrics.textContent
+    },
     z: {
       canvas: Number(getComputedStyle(canvas).zIndex),
       action: Number(getComputedStyle(action).zIndex),

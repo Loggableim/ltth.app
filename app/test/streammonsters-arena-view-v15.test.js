@@ -586,6 +586,78 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     ]));
   });
 
+  test('restores sealed choice facts and the active stat owner from a cold snapshot', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+
+    view.applySnapshot({
+      battle: {
+        statPrompt: {
+          promptId: 'cold-stat',
+          deadlineMs: 12_000,
+          playerName: '@luna',
+          monster: { name: 'Selene', level: 7 },
+          level: 7,
+          remainingUnspentPoints: 2,
+          choices: ['1', '2', '3', '4']
+        },
+        matches: [{
+          matchId: 'cold-lock',
+          state: 'action',
+          roundNumber: 2,
+          actionDeadlineMs: 12_000,
+          choiceLocks: [{
+            round: 2,
+            slot: 1,
+            locked: true,
+            source: 'viewer',
+            deadlineMs: 12_000
+          }],
+          fighters: [
+            { slot: 1, name: 'Ashfang', viewerName: '@ash', hp: 20, maxHp: 30 },
+            { slot: 2, name: 'Selene', viewerName: '@luna', hp: 22, maxHp: 30 }
+          ]
+        }]
+      }
+    });
+
+    const sealed = document.querySelector('#arena-fighter-1');
+    expect(sealed.classList).toContain('choice-locked');
+    expect(sealed.dataset.choice).toBeUndefined();
+    expect(document.getElementById('arena-stat-title').textContent).toContain('@luna');
+    expect(document.getElementById('arena-stat-title').textContent).toContain('Selene');
+  });
+
+  test('restores jointly revealed choices from a cinematic reconnect snapshot', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+
+    view.applySnapshot({
+      battle: {
+        matches: [{
+          matchId: 'cold-reveal',
+          state: 'action',
+          roundNumber: 2,
+          actionDeadlineMs: null,
+          revealedChoices: {
+            round: 1,
+            choices: [
+              { slot: 1, choice: 'A', source: 'viewer' },
+              { slot: 2, choice: 'B', source: 'timeout' }
+            ]
+          },
+          fighters: [
+            { slot: 1, name: 'Ashfang', hp: 20, maxHp: 30 },
+            { slot: 2, name: 'Selene', hp: 22, maxHp: 30 }
+          ]
+        }]
+      }
+    });
+
+    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBe('A');
+    expect(document.querySelector('#arena-fighter-2').dataset.choice).toBe('B');
+  });
+
   test('keeps sealed locks choice-free until the ordered reveal event arrives', () => {
     mountArena();
     const view = ArenaView.createArenaView({ document });
@@ -1077,12 +1149,65 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .map(rule => [rule.selectorText, rule.style]));
     expect(styles.get('#arena-action-card').getPropertyValue('top')).toBe('20%');
     expect(styles.get('#arena-action-card').getPropertyValue('min-height')).toBe('0px');
+    expect(styles.get('#arena-action-card').getPropertyValue('max-height')).toBe('');
+    expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('top'))
+      .toBe('43%');
+    expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('height'))
+      .toBe('55%');
     expect(styles.get('#battle[data-phase="choice"] #arena-feed').getPropertyValue('display'))
       .toBe('none');
     expect(styles.get('#arena-choice-surface').getPropertyValue('bottom')).toBe('1%');
     expect(styles.get('#battle-effects-canvas').getPropertyValue('z-index')).toBe('3');
     expect(styles.get('.arena-skill-card .skill-copy').getPropertyValue('text-overflow'))
       .not.toBe('ellipsis');
+  });
+
+  test('updates shelf, meter, and skill-deck accessibility labels with the presentation locale', () => {
+    mountArena();
+    const shelf = document.createElement('section');
+    shelf.id = 'egg-shelf';
+    document.body.prepend(shelf);
+    const translations = {
+      de: {
+        eggShelfAria: 'Lebende Eierablage',
+        arenaHpAria: '{monster}: Lebenspunkte',
+        arenaShieldAria: '{monster}: Schild',
+        arenaSpecialAria: '{monster}: Spezialladung',
+        arenaSkillDeckAria: '{monster}: Fähigkeiten'
+      },
+      fr: {
+        eggShelfAria: 'Étagère des œufs',
+        arenaHpAria: '{monster} : points de vie',
+        arenaShieldAria: '{monster} : bouclier',
+        arenaSpecialAria: '{monster} : charge spéciale',
+        arenaSkillDeckAria: '{monster} : compétences'
+      }
+    };
+    const localize = (key, params, locale) => (
+      translations[locale]?.[key] || ''
+    ).replace(/\{(\w+)\}/g, (_match, name) => params[name] || '');
+    const view = ArenaView.createArenaView({ document, localize });
+
+    view.setLocale('de');
+    view.applyMatch({
+      matchId: 'aria-match',
+      fighters: [
+        { slot: 1, name: 'Ashfang', hp: 40, maxHp: 40, skills: [] },
+        { slot: 2, name: 'Ripple', hp: 40, maxHp: 40, skills: [] }
+      ]
+    });
+    expect(shelf.getAttribute('aria-label')).toBe('Lebende Eierablage');
+    expect(document.getElementById('arena-hp-1').getAttribute('aria-label'))
+      .toBe('Ashfang: Lebenspunkte');
+    expect(document.querySelector('[data-skill-deck="2"]').getAttribute('aria-label'))
+      .toBe('Ripple: Fähigkeiten');
+
+    view.setLocale('fr');
+    expect(shelf.getAttribute('aria-label')).toBe('Étagère des œufs');
+    expect(document.getElementById('arena-charge-2').getAttribute('aria-label'))
+      .toBe('Ripple : charge spéciale');
+    expect(document.querySelector('[data-skill-deck="1"]').getAttribute('aria-label'))
+      .toBe('Ashfang : compétences');
   });
 
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {

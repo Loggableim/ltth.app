@@ -28,6 +28,98 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     ]);
   });
 
+  test('restores sealed locks and an active stat prompt on the first cursor baseline', async () => {
+    const shown = [];
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage: jest.fn(),
+      present: async event => shown.push(event)
+    });
+
+    const result = await synchronizer.sync({
+      rulesVersion: 8,
+      statPrompt: {
+        promptId: 'allocation-safe',
+        deadlineMs: 20_000,
+        choices: ['1', '2', '3', '4'],
+        playerName: '@luna',
+        monster: { name: 'Selene', viewerName: '@luna' },
+        level: 7,
+        remainingUnspentPoints: 2
+      },
+      matches: [{
+        matchId: 'match-cold',
+        cursor: 7,
+        roundNumber: 3,
+        choiceLocks: [{
+          round: 3,
+          slot: 1,
+          locked: true,
+          source: 'viewer',
+          deadlineMs: 20_000
+        }]
+      }]
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      baseline: true,
+      restored: 2
+    }));
+    expect(shown.map(event => event.type)).toEqual([
+      'battle_choice_locked',
+      'monster_stat_prompt'
+    ]);
+    expect(shown[0].data.decision).toEqual({
+      round: 3,
+      slot: 1,
+      locked: true,
+      source: 'viewer',
+      deadlineMs: 20_000
+    });
+    expect(shown[0].data.decision).not.toHaveProperty('choice');
+    expect(shown[1].data).toEqual(expect.objectContaining({
+      promptId: 'allocation-safe',
+      playerName: '@luna',
+      monster: { name: 'Selene', viewerName: '@luna' }
+    }));
+  });
+
+  test('restores A/B/C only from a joint reveal in the first cursor baseline', async () => {
+    const shown = [];
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage: jest.fn(),
+      present: async event => shown.push(event)
+    });
+
+    await synchronizer.sync({
+      matches: [{
+        matchId: 'match-revealed',
+        cursor: 9,
+        roundNumber: 2,
+        choiceLocks: [],
+        revealedChoices: {
+          round: 1,
+          choices: [
+            { slot: 1, choice: 'A', source: 'viewer' },
+            { slot: 2, choice: 'B', source: 'timeout' }
+          ]
+        }
+      }]
+    });
+
+    expect(shown).toHaveLength(1);
+    expect(shown[0]).toEqual(expect.objectContaining({
+      type: 'battle_choices_revealed',
+      data: expect.objectContaining({
+        matchId: 'match-revealed',
+        round: 1,
+        choices: [
+          { slot: 1, choice: 'A', source: 'viewer' },
+          { slot: 2, choice: 'B', source: 'timeout' }
+        ]
+      })
+    }));
+  });
+
   test('replays missed rules-v5 events once in sequence across bounded pages', async () => {
     const pages = new Map([
       [4, {

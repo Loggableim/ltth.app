@@ -144,6 +144,19 @@ async function captureCase(browser, port, viewport, testCase) {
       `${filename} crosses the 74% gameplay boundary`
     );
     assert.equal(layout.actionHudOverlap, false, `${filename} overlaps action and fighter HUDs`);
+    assert.ok(layout.actionHudGap >= 4, `${filename} leaves no readable action/HUD gap`);
+    assert.equal(
+      layout.actionText.copyUnclipped,
+      true,
+      `${filename} clips the skill description: ${JSON.stringify(layout.actionText)}`
+    );
+    assert.equal(
+      layout.actionText.metricsUnclipped,
+      true,
+      `${filename} clips the action metrics: ${JSON.stringify(layout.actionText)}`
+    );
+    assert.match(layout.actionText.copy, /durchdringt 4 Schild/);
+    assert.match(layout.actionText.metrics, /Heilung 6/);
     assert.ok(layout.z.canvas < layout.z.action, `${filename} can obscure the action card`);
     assert.ok(
       layout.z.fighters.every(value => !Number.isFinite(value) || layout.z.canvas < value),

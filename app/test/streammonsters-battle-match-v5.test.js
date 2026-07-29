@@ -2106,6 +2106,120 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(serialized).not.toContain('stats');
   });
 
+  test('restores sealed lock facts without revealing A/B/C on a cold snapshot', () => {
+    const { service, matchId } = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+
+    expect(service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'A',
+      eventId: 'snapshot-one-sealed'
+    })).toEqual(expect.objectContaining({ handled: true, waiting: true }));
+
+    const match = service.getPublicSnapshot().matches[0];
+    const viewerSlot = service.getMatch(matchId).participants
+      .find(participant => participant.viewerId === 'viewer-a').slot;
+    expect(match.choiceLocks).toEqual([{
+      round: 1,
+      slot: viewerSlot,
+      locked: true,
+      source: 'viewer',
+      deadlineMs: 18_000
+    }]);
+    expect(match).not.toHaveProperty('revealedChoices');
+    expect(JSON.stringify(match.choiceLocks)).not.toMatch(/"choice"|requestedChoice|viewerId/);
+  });
+
+  test('restores only jointly revealed choices during the reconnect cinematic', () => {
+    const { service, matchId } = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+    service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'A',
+      eventId: 'snapshot-reveal-a'
+    });
+    service.submitChoice({
+      userId: 'viewer-b',
+      choice: 'B',
+      eventId: 'snapshot-reveal-b'
+    });
+
+    const match = service.getPublicSnapshot().matches[0];
+    expect(match.roundNumber).toBe(2);
+    expect(match.actionDeadlineMs).toBeNull();
+    expect(match.choiceLocks).toEqual([]);
+    const privateMatch = service.getMatch(matchId);
+    const alphaSlot = privateMatch.participants
+      .find(participant => participant.viewerId === 'viewer-a').slot;
+    const betaSlot = privateMatch.participants
+      .find(participant => participant.viewerId === 'viewer-b').slot;
+    expect(match.revealedChoices).toEqual({
+      round: 1,
+      choices: [
+        { slot: alphaSlot, choice: 'A', source: 'viewer' },
+        { slot: betaSlot, choice: 'B', source: 'viewer' }
+      ].sort((left, right) => left.slot - right.slot)
+    });
+  });
+
+  test('restores one active stat prompt with only public owner and monster context', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'numeric-owner-monster',
+      userId: '7392847109283746102',
+      name: 'Ashfang'
+    });
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters
+      SET unspent_stat_points = 1
+      WHERE monster_id = 'numeric-owner-monster'
+    `).run();
+    const service = createMatchService({ store, now: () => 5_000, rulesVersion: 8 });
+    const prompt = service.createStandaloneStatPrompt({
+      userId: '7392847109283746102',
+      monsterId: 'numeric-owner-monster',
+      sourceKey: 'snapshot-stat'
+    });
+
+    expect(prompt).not.toBeNull();
+    const snapshot = service.getPublicSnapshot();
+    expect(snapshot.statPrompt).toEqual(expect.objectContaining({
+      promptId: prompt.prompt_id,
+      deadlineMs: 15_000,
+      choices: ['1', '2', '3', '4'],
+      playerName: 'Viewer',
+      monster: expect.objectContaining({
+        name: 'Ashfang',
+        viewerName: 'Viewer',
+        unspentStatPoints: 1
+      }),
+      level: 1,
+      remainingUnspentPoints: 1
+    }));
+    expect(JSON.stringify(snapshot.statPrompt)).not.toContain('7392847109283746102');
+  });
+
+  test('redacts numeric viewer names from legacy persisted public monsters', () => {
+    const { store } = createStore();
+    const service = createMatchService({ store, now: () => 1_000 });
+
+    expect(service.sanitizePublicMonster({
+      viewerName: '@7392847109283746102',
+      name: 'Legacy',
+      templateId: 'ashfang',
+      evolutionStage: 1
+    })).toEqual(expect.objectContaining({
+      viewerName: 'Viewer',
+      name: 'Legacy'
+    }));
+  });
+
   test('opens the live skill window with both safe visual fighters for the OBS arena', () => {
     const { sqlite, store } = createStore();
     insertMonster(sqlite, { id: 'alpha', userId: 'viewer-private-a' });

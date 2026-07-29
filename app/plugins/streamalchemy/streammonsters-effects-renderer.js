@@ -222,6 +222,11 @@
     'lunar:defense': Object.freeze([2, 6, 0.46, 0.22, 0.9, 1.28, 3, 0.6]),
     'lunar:special': Object.freeze([3, 6, 0.9, 0.52, 0.78, 1.92, 10, 0.82])
   });
+  const SCENE_PARTICLE_PROFILES = Object.freeze({
+    portal: Object.freeze([4, 6, 0.8, 0.72, 0.34, 1.5, 8, 0.18]),
+    spawn: Object.freeze([4, 2, 0.64, 0.82, 0.26, 1.35, 6, 0.32]),
+    hatch: Object.freeze([4, 3, 0.76, 0.94, 0.2, 1.7, 10, 0.48])
+  });
   const QUALITY_BUDGETS = Object.freeze({
     auto: Object.freeze({ particles: 72, trailSegments: 22, layers: 3, bloom: 0.82 }),
     high: Object.freeze({ particles: 112, trailSegments: 32, layers: 4, bloom: 1 }),
@@ -274,11 +279,11 @@
   });
   const SCENE_CODES = Object.freeze({
     portal: 1,
-    spawn: 1,
-    hatch: 2,
-    attack: 3,
-    defense: 4,
-    special: 5
+    spawn: 2,
+    hatch: 3,
+    attack: 4,
+    defense: 5,
+    special: 6
   });
   const CHOREOGRAPHY = Object.freeze({
     portal: Object.freeze(['element-portal', 'particle-swirl']),
@@ -469,14 +474,103 @@ fn vertexMain(
   let lane = (index + 0.5) / count;
   let jitter = hash11(index + 3.0) - 0.5;
   let phase = fract(lane + u.frame.y * (0.42 + hash11(index + 9.0) * 0.58));
-  let motionCode = u.motion.x;
-  let shapeCode = u.motion.y;
+  let sceneCode = u.frame.z;
+  let phaseCode = u.effect.x;
+  var motionCode = u.motion.x;
+  var shapeCode = u.motion.y;
   let curvature = u.motion.z;
   let turbulence = u.motion.w;
   var center = u.placement.xy;
   var size = (0.009 + hash11(index + 21.0) * 0.014) *
     (0.82 + min(3.0, u.effect.x) * 0.08);
-  if (motionCode == 1.0) {
+  if (sceneCode == 1.0) {
+    let angle = lane * 6.283185 +
+      u.frame.x * (0.85 + turbulence * 0.35) + u.shape.w;
+    let spiral = fract(lane + u.frame.y * (0.5 + turbulence * 0.2));
+    let radius = 0.075 + spiral * (0.17 + curvature * 0.1);
+    center += vec2<f32>(cos(angle), sin(angle)) * radius;
+    size *= 0.8 + (1.0 - spiral) * 0.75;
+    shapeCode = 6.0;
+  } else if (sceneCode == 2.0) {
+    if (phaseCode == 1.0 || phaseCode == 2.0) {
+      let angle = lane * 6.283185 +
+        u.frame.x * (0.78 + turbulence * 0.32) + u.shape.w;
+      let radius = 0.08 + fract(lane + u.frame.y * 0.65) *
+        (0.16 + curvature * 0.08);
+      center += vec2<f32>(cos(angle), sin(angle)) * radius;
+      shapeCode = 6.0;
+    } else if (phaseCode == 3.0) {
+      let flight = clamp(u.frame.y * 4.0 - 2.0, 0.0, 1.0);
+      let eased = 1.0 - pow(1.0 - flight, 3.0);
+      center = mix(vec2<f32>(u.placement.x, -0.1), u.placement.xy, eased);
+      center.y -= sin(flight * 3.141593) * 0.12;
+      let eggAngle = lane * 6.283185;
+      let eggRadius = sqrt(hash11(index + 37.0)) * 0.052;
+      center += vec2<f32>(
+        cos(eggAngle) * eggRadius * 0.68,
+        sin(eggAngle) * eggRadius
+      );
+      size *= 1.12;
+      shapeCode = 2.0;
+    } else {
+      let landing = clamp(u.frame.y * 4.0 - 3.0, 0.0, 1.0);
+      let bounce = abs(sin(landing * 9.424778)) *
+        (1.0 - landing) * 0.075;
+      center = u.placement.xy - vec2<f32>(0.0, bounce);
+      let eggAngle = lane * 6.283185;
+      let eggRadius = sqrt(hash11(index + 37.0)) * 0.052;
+      center += vec2<f32>(
+        cos(eggAngle) * eggRadius * (0.68 + landing * 0.12),
+        sin(eggAngle) * eggRadius * (1.0 - landing * 0.08)
+      );
+      size *= 1.08;
+      shapeCode = 2.0;
+    }
+  } else if (sceneCode == 3.0) {
+    let phaseProgress = clamp(
+      u.frame.y * 5.0 - max(0.0, phaseCode - 1.0),
+      0.0,
+      1.0
+    );
+    if (phaseCode == 1.0) {
+      let angle = lane * 6.283185 + u.frame.x * 0.65;
+      let radius = 0.105 + 0.04 * sin(phaseProgress * 3.141593);
+      center += vec2<f32>(cos(angle), sin(angle)) * radius;
+      shapeCode = 6.0;
+    } else if (phaseCode == 2.0) {
+      let ray = floor(lane * 8.0);
+      let rayLane = fract(lane * 8.0);
+      let angle = ray * 0.785398 + jitter * 0.18;
+      let radius = 0.025 + rayLane * (0.16 + phaseProgress * 0.1);
+      center += vec2<f32>(cos(angle), sin(angle)) * radius;
+      size *= 0.72 + rayLane * 0.55;
+      shapeCode = 5.0;
+    } else if (phaseCode == 3.0) {
+      let angle = lane * 12.566371 -
+        u.frame.x * (1.1 + turbulence * 0.3);
+      let radius = mix(0.25, 0.035, phaseProgress) *
+        (0.7 + hash11(index + 5.0) * 0.3);
+      center += vec2<f32>(cos(angle), sin(angle)) * radius;
+      size *= 0.9 + phaseProgress * 0.8;
+      shapeCode = 3.0;
+    } else if (phaseCode == 4.0) {
+      let angle = lane * 6.283185 + u.shape.w;
+      let radius = sqrt(hash11(index + 41.0)) *
+        (0.08 + phaseProgress * 0.4);
+      center += vec2<f32>(cos(angle), sin(angle)) * radius;
+      size *= 1.35 + (1.0 - phaseProgress) * 1.1;
+      shapeCode = 6.0;
+    } else {
+      let angle = lane * 6.283185;
+      let revealRadius = sqrt(hash11(index + 51.0)) * 0.12;
+      center += vec2<f32>(
+        cos(angle) * revealRadius,
+        sin(angle) * revealRadius - phaseProgress * 0.13
+      );
+      size *= 1.15 + phaseProgress * 0.5;
+      shapeCode = 3.0;
+    }
+  } else if (motionCode == 1.0) {
     center = mix(u.placement.xy, u.destination.xy, phase);
     let arc = sin(phase * 3.141593) * curvature * 0.075;
     let ripple = sin(phase * (5.0 + u.shape.z) + u.frame.x * 8.0 + u.shape.w);
@@ -530,7 +624,26 @@ fn vertexMain(
 @fragment
 fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
   let radius = length(input.local);
-  let shapeCode = u.motion.y;
+  let sceneCode = u.frame.z;
+  let phaseCode = u.effect.x;
+  var shapeCode = u.motion.y;
+  if (sceneCode == 1.0) {
+    shapeCode = 6.0;
+  } else if (sceneCode == 2.0) {
+    if (phaseCode == 3.0 || phaseCode == 4.0) {
+      shapeCode = 2.0;
+    } else {
+      shapeCode = 6.0;
+    }
+  } else if (sceneCode == 3.0) {
+    if (phaseCode == 2.0) {
+      shapeCode = 5.0;
+    } else if (phaseCode == 3.0 || phaseCode == 5.0) {
+      shapeCode = 3.0;
+    } else {
+      shapeCode = 6.0;
+    }
+  }
   let softDisc = 1.0 - smoothstep(0.25, 1.0, radius);
   let taper = clamp(u.shape.x, 0.05, 0.95);
   var shape = softDisc;
@@ -564,7 +677,19 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     (u.outcome.x + u.outcome.y + u.detail.x + u.detail.y) * 0.018 +
       u.outcome.z * 0.32
   );
-  let alpha = clamp(shape * cadence * (0.46 + outcomeEnergy), 0.0, 0.78);
+  var sceneEnergy = 1.0;
+  if (sceneCode == 1.0) {
+    sceneEnergy = 0.72 + 0.28 * sin(u.frame.x * 5.0 + radius * 8.0);
+  } else if (sceneCode == 2.0 && phaseCode == 4.0) {
+    sceneEnergy = 0.82 + 0.18 * sin(u.frame.y * 34.0);
+  } else if (sceneCode == 3.0 && phaseCode == 4.0) {
+    sceneEnergy = 1.35 - u.frame.y * 0.35;
+  }
+  let alpha = clamp(
+    shape * cadence * sceneEnergy * (0.46 + outcomeEnergy),
+    0.0,
+    0.86
+  );
   return vec4<f32>(input.tint.rgb * alpha, alpha);
 }`;
 
@@ -901,11 +1026,19 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     const progress = Math.max(0, Math.min(1, Number(frame.progress) || 0));
     const phaseCode = Math.max(0, Number(frame.phaseCode) || 0);
     const aspect = Math.max(0.1, Number(frame.aspect) || 1);
-    const recipe = scene.recipe || resolveEffectRecipe({
-      element: scene.element,
-      action: scene.scene,
-      vfxKey: scene.vfxKey
-    });
+    const isBattleScene = ['attack', 'defense', 'special'].includes(scene.scene);
+    const recipe = scene.recipe || (isBattleScene
+      ? resolveEffectRecipe({
+          element: scene.element,
+          action: scene.scene,
+          vfxKey: scene.vfxKey
+        })
+      : {
+          id: `scene:${scene.scene}`,
+          motifCode: 0,
+          palette: ELEMENT_PALETTES[scene.element] || ELEMENT_PALETTES.Lunar,
+          accentSeed: scene.vfx?.accentSeed || 0
+        });
     const palette = recipe.palette || ELEMENT_PALETTES[scene.element] ||
       ELEMENT_PALETTES.Lunar;
     const primary = hexColor(palette[0]);
@@ -919,10 +1052,13 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     const resolvedQuality = normalizeQuality(frame.quality || scene.effectiveQuality || scene.quality);
     const budget = QUALITY_BUDGETS[resolvedQuality];
     const accentSeed = Number(recipe.accentSeed) || scene.vfx?.accentSeed || 0;
-    const particleProfile = PARTICLE_PROFILES[recipe.id] ||
+    const particleProfile = SCENE_PARTICLE_PROFILES[scene.scene] ||
+      PARTICLE_PROFILES[recipe.id] ||
       PARTICLE_PROFILES['lunar:attack'];
     const semantic = {
       recipeId: recipe.id,
+      sceneCode: SCENE_CODES[scene.scene],
+      phaseCode,
       motifCode: recipe.motifCode,
       accentSeed,
       origin: { ...scene.origin },
@@ -1678,8 +1814,6 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     }
 
     async function play(sceneName, payload = {}) {
-      if (!initialization) initialization = initialize();
-      await initialization;
       const scene = sceneChoreography(sceneName, {
         ...payload,
         quality: payload.quality == null ? qualityMode : payload.quality,
@@ -1702,6 +1836,22 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         effectiveQuality: sceneEffectiveQuality(completedScene),
         ...extra
       });
+      if (destroyed) {
+        return completionRecord(scene, {
+          mode: 'destroyed',
+          destroyed: true,
+          skipped: true
+        });
+      }
+      if (!initialization) initialization = initialize();
+      await initialization;
+      if (destroyed) {
+        return completionRecord(scene, {
+          mode: 'destroyed',
+          destroyed: true,
+          skipped: true
+        });
+      }
       if (frameHandle != null) cancelFrame(frameHandle);
       if (activeScene?.timer != null) {
         clearTimer(activeScene.timer);

@@ -944,6 +944,96 @@
         .filter(match => match.matchId);
     }
 
+    function snapshotRestorationEvents(snapshot = {}) {
+      const battle = snapshot?.battle && typeof snapshot.battle === 'object'
+        ? snapshot.battle
+        : snapshot;
+      const battleMatches = Array.isArray(battle?.matches) ? battle.matches : [];
+      const events = [];
+      for (const match of battleMatches) {
+        const matchId = String(match?.matchId || '').trim();
+        if (!matchId) continue;
+        const cursor = Math.max(0, Number(match?.cursor) || 0);
+        const locks = Array.isArray(match?.choiceLocks) ? match.choiceLocks : [];
+        for (const lock of locks) {
+          const round = Math.max(1, Number(lock?.round) || Number(match?.roundNumber) || 1);
+          const slot = Number(lock?.slot);
+          if (![1, 2].includes(slot) || lock?.locked !== true) continue;
+          const eventId = `${matchId}:snapshot:${cursor}:lock:${round}:${slot}`;
+          events.push({
+            type: 'battle_choice_locked',
+            sequence: 0,
+            data: {
+              matchId,
+              correlationId: matchId,
+              eventId,
+              snapshotRestore: true,
+              decision: {
+                round,
+                slot,
+                locked: true,
+                source: lock?.source === 'timeout' ? 'timeout' : 'viewer',
+                deadlineMs: Math.max(0, Number(lock?.deadlineMs) || 0)
+              }
+            }
+          });
+        }
+        const reveal = match?.revealedChoices;
+        const choices = Array.isArray(reveal?.choices)
+          ? reveal.choices.map(choice => ({
+              slot: Number(choice?.slot),
+              choice: choice?.choice,
+              source: choice?.source === 'timeout' ? 'timeout' : 'viewer'
+            })).sort((left, right) => left.slot - right.slot)
+          : [];
+        if (
+          choices.length === 2 &&
+          choices[0].slot === 1 &&
+          choices[1].slot === 2 &&
+          choices.every(choice => ['A', 'B', 'C'].includes(choice.choice))
+        ) {
+          const round = Math.max(1, Number(reveal?.round) || 1);
+          const eventId = `${matchId}:snapshot:${cursor}:reveal:${round}`;
+          events.push({
+            type: 'battle_choices_revealed',
+            sequence: 0,
+            data: {
+              matchId,
+              correlationId: matchId,
+              eventId,
+              snapshotRestore: true,
+              round,
+              choices
+            }
+          });
+        }
+      }
+      const prompt = battle?.statPrompt;
+      if (prompt && typeof prompt === 'object') {
+        const promptId = String(prompt.promptId || '').trim();
+        const matchId = String(prompt.matchId || '').trim();
+        const deadlineMs = Number(prompt.deadlineMs);
+        const choices = Array.isArray(prompt.choices) ? prompt.choices : [];
+        if (
+          (promptId || matchId) &&
+          Number.isFinite(deadlineMs) &&
+          choices.length === 4 &&
+          choices.every((choice, index) => String(choice) === String(index + 1))
+        ) {
+          events.push({
+            type: 'monster_stat_prompt',
+            sequence: 0,
+            data: {
+              ...prompt,
+              eventId: `snapshot:stat:${promptId || `${matchId}:${prompt.slot || 0}`}:${deadlineMs}`,
+              snapshotRestore: true
+            }
+          });
+        }
+      }
+      return events;
+    }
+
     function eventMatchId(type, data = {}) {
       const normalizedType = normalizeRecentEventType(type);
       if (!normalizedType.startsWith('battle_') &&
@@ -1122,11 +1212,19 @@
             replayPending: false
           });
         }
+        let restored = 0;
+        for (const event of snapshotRestorationEvents(snapshot)) {
+          if (seenEventIds.has(event.data.eventId)) continue;
+          await present(event);
+          rememberEventId(event.data.eventId);
+          restored += 1;
+        }
         initialized = true;
         trimMatches();
         return {
           baseline: true,
           replayed: 0,
+          restored,
           caughtUp: true
         };
       }

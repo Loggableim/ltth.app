@@ -416,6 +416,16 @@ function runV8BalanceMatrix(options = {}) {
                 illegalChoiceFallbackCount += result.illegalChoiceFallbackCount;
                 if (!result.winnerTemplateId) {
                   guardBoundCount += 1;
+                  scoreDraw(
+                    templateScores,
+                    leftTemplate.templateId,
+                    rightTemplate.templateId
+                  );
+                  scoreDraw(
+                    elementScores,
+                    leftTemplate.element,
+                    rightTemplate.element
+                  );
                   continue;
                 }
                 const winnerTemplate = result.winnerTemplateId === leftTemplate.templateId
@@ -450,6 +460,7 @@ function runV8BalanceMatrix(options = {}) {
     battleCount,
     resolvedBattleCount,
     guardBoundCount,
+    guardBoundRate: battleCount ? guardBoundCount / battleCount : 0,
     participantSampleCount: battleCount * 2,
     mirroredBattleCount,
     illegalChoiceFallbackCount,
@@ -799,10 +810,18 @@ function emptyScore(key, label) {
     [key]: label,
     wins: 0,
     losses: 0,
+    draws: 0,
     samples: 0,
     winRate: 0,
     deviation: 0
   };
+}
+
+function scoreDraw(scores, leftKey, rightKey) {
+  scores.get(leftKey).draws += 1;
+  scores.get(leftKey).samples += 1;
+  scores.get(rightKey).draws += 1;
+  scores.get(rightKey).samples += 1;
 }
 
 function score(scores, winnerKey, loserKey) {
@@ -814,7 +833,9 @@ function score(scores, winnerKey, loserKey) {
 
 function finalizeScores(scores) {
   return [...scores.values()].map(row => {
-    const winRate = row.samples ? row.wins / row.samples : 0;
+    const winRate = row.samples
+      ? (row.wins + (row.draws * 0.5)) / row.samples
+      : 0;
     return {
       ...row,
       winRate,

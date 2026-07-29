@@ -345,7 +345,10 @@
       opacity:1; visibility:visible; transform:translate(-50%,0) scale(1);
       transition:opacity .2s,transform .24s;
     }
-    #arena-action-player { grid-area:player; color:#8feeff; font-size:clamp(15px,2vw,25px); font-weight:1000; }
+    #arena-action-player {
+      grid-area:player; max-width:min(31vw,250px); overflow:hidden; color:#8feeff;
+      font-size:clamp(15px,2vw,25px); font-weight:1000; text-overflow:ellipsis; white-space:nowrap;
+    }
     #arena-action-key {
       grid-area:key; display:grid; place-items:center; width:42px; height:42px;
       border:2px solid #fff5b7; border-radius:12px; color:#23143a; background:#ffe47d;
@@ -358,7 +361,7 @@
     }
     #arena-action-metrics {
       grid-area:metrics; color:#fff0a3; font-size:clamp(17px,2.2vw,28px); font-weight:1000;
-      line-height:1.15;
+      line-height:1.25;
     }
     #battle[data-phase="action"] #arena-skill-prompt,
     #battle[data-phase="action"] #arena-lead { opacity:0; }
@@ -1010,14 +1013,17 @@
       .fighter-owner,.fighter-level,.fighter-hp-row { font-size:10px; }
       .arena-meter { height:7px; margin-top:3px; }
       #arena-action-card {
-        top:20%; min-height:0; max-height:112px; padding:7px 10px;
+        top:20%; min-height:0; padding:7px 10px;
         gap:2px 7px; border-radius:14px;
       }
-      #arena-action-player { font-size:12px; }
+      #arena-action-player { max-width:128px; font-size:12px; }
       #arena-action-key { width:28px; height:28px; font-size:17px; }
       #arena-action-skill { font-size:17px; }
       #arena-action-copy { font-size:11px; line-height:1.08; }
-      #arena-action-metrics { font-size:13px; line-height:1.05; }
+      #arena-action-metrics { font-size:13px; line-height:1.2; }
+      #battle[data-phase="action"] .arena-fighter {
+        top:43%; height:55%;
+      }
       #arena-choice-surface {
         right:1.5%; bottom:1%; left:1.5%; gap:5px; padding:5px;
       }
@@ -2178,10 +2184,12 @@
         data?.config?.overlayLanguage
       );
       applyPresentationLocale(overlayLanguage.primaryLocale);
+      const coldBaseline = battleReplaySynchronizer?.state?.().initialized !== true;
+      if (coldBaseline) applySnapshot(data);
       try {
         await battleReplaySynchronizer?.sync(data?.battle || { matches:[] });
       } catch (_) {}
-      applySnapshot(data);
+      if (!coldBaseline) applySnapshot(data);
       if (Array.isArray(data?.recentEvents)) {
         const recentEvents = data.recentEvents;
         if (publicEventCursor !== null) {
@@ -2459,8 +2467,16 @@
       startBattleLocaleSequence(data);
       return arenaView.openChoice(data);
     }
-    if (type === 'battle_choice_locked') return playArcadeEvent(type, data);
-    if (type === 'battle_choices_revealed') return playArcadeEvent(type, data);
+    if (type === 'battle_choice_locked') {
+      return data?.snapshotRestore
+        ? arenaView.lockChoice?.(data)
+        : playArcadeEvent(type, data);
+    }
+    if (type === 'battle_choices_revealed') {
+      return data?.snapshotRestore
+        ? arenaView.revealChoices?.(data)
+        : playArcadeEvent(type, data);
+    }
     if (type === 'tutorial_hint') {
       if (data?.kind === 'adopt') return;
       return showCard({
@@ -2645,6 +2661,7 @@
       charged:true
     }));
     if (type === 'stat_choice_opened' || type === 'monster_stat_prompt') {
+      if (data?.snapshotRestore) return arenaView.showStatPrompt?.(data);
       if (!acceptStatPrompt(type, data)) return;
       const statContext = {
         player:publicDisplayName(data),

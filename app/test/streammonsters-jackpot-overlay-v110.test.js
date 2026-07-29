@@ -183,6 +183,12 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     now = 2_000;
     intervals.find(entry => entry.milliseconds === 1_000).callback();
     expect(label('owned-incubating')).toBe('Schlüpft in 00:03');
+    const landingEnd = new dom.window.Event('animationend');
+    Object.defineProperty(landingEnd, 'animationName', {
+      configurable: true,
+      value: 'egg-shelf-land'
+    });
+    item('fresh-landing').dispatchEvent(landingEnd);
     expect(item('fresh-landing').classList.contains('landing')).toBe(false);
 
     view.applySnapshot(view.model().visible);

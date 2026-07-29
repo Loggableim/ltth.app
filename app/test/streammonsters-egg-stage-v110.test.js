@@ -20,6 +20,13 @@ const StreamMonstersPublicEventProjector = require(
 );
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
+const activeFreeEggServices = new Set();
+
+afterEach(() => {
+  for (const service of activeFreeEggServices) service.destroy();
+  activeFreeEggServices.clear();
+});
+
 function createSubject({
   now = 1_000,
   hatchDurationMs = 120_000,
@@ -50,6 +57,7 @@ function createSubject({
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow
   });
+  activeFreeEggServices.add(freeEggs);
   return {
     sqlite,
     store,

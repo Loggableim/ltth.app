@@ -255,7 +255,7 @@ describe('Stream Monsters runtime asset registry', () => {
     }));
   });
 
-  test('uses Kenney for a corrupt evolution asset without changing identity, stats or ownership', () => {
+  test('uses Kenney for a corrupt evolution asset while preserving identity and applying evolution stats', () => {
     const basePath = path.join(
       realPluginDir,
       'assets',
@@ -301,15 +301,24 @@ describe('Stream Monsters runtime asset registry', () => {
     store.setElementEssence('viewer-a', 'Ember', 3, []);
 
     const result = collection.evolveMonster('viewer-a', 'monster-ashfang');
+    const stageTwoStats = {
+      vitality: 7,
+      might: 10,
+      guard: 6,
+      agility: 8
+    };
     expect(result).toEqual(expect.objectContaining({
       evolutionStage: 2,
       spentEssence: 3,
+      statsBefore: original.stats,
+      statsAfter: stageTwoStats,
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
       monster: expect.objectContaining({
         monster_id: original.monster_id,
         user_id: original.user_id,
         name: original.name,
         level: original.level,
-        stats: original.stats,
+        stats: stageTwoStats,
         evolution_stage: 2,
         image_url: expect.stringMatching(
           /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/
@@ -326,12 +335,23 @@ describe('Stream Monsters runtime asset registry', () => {
     store.setTemplateMastery('viewer-a', 'ashfang', 50, []);
     store.setElementEssence('viewer-a', 'Ember', 5, []);
     const stageThree = collection.evolveMonster('viewer-a', 'monster-ashfang');
+    const stageThreeStats = {
+      vitality: 7,
+      might: 12,
+      guard: 6,
+      agility: 9
+    };
+    expect(stageThree).toEqual(expect.objectContaining({
+      statsBefore: stageTwoStats,
+      statsAfter: stageThreeStats,
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 }
+    }));
     expect(stageThree.monster).toEqual(expect.objectContaining({
       monster_id: original.monster_id,
       user_id: original.user_id,
       name: original.name,
       level: original.level,
-      stats: original.stats,
+      stats: stageThreeStats,
       evolution_stage: 3,
       visual_source: 'kenney',
       asset_version: 'kenney-cc0-v1'

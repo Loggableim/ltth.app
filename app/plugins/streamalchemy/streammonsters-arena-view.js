@@ -133,6 +133,11 @@
       statChoices: '1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1',
       statResult: '{stat} +1',
       collapse: 'ARENA COLLAPSE · Runde {round}',
+      eggShelfAria: 'Living egg shelf',
+      hpAria: '{monster}: HP',
+      shieldAria: '{monster}: shield',
+      specialAria: '{monster}: special charge',
+      skillDeckAria: '{monster}: skills',
       ...arenaLabels
     };
     const catalogKeys = {
@@ -170,6 +175,11 @@
       statChoices: 'monsterStatChoices',
       statResult: 'monsterStatResult',
       collapse: 'arenaCollapseBanner',
+      eggShelfAria: 'eggShelfAria',
+      hpAria: 'arenaHpAria',
+      shieldAria: 'arenaShieldAria',
+      specialAria: 'arenaSpecialAria',
+      skillDeckAria: 'arenaSkillDeckAria',
       ...labelKeys
     };
 
@@ -366,6 +376,33 @@
         } catch (_) {}
         target.textContent = formatLabel(target.dataset.arenaLabelKey, params);
       });
+    }
+
+    function refreshLocalizedAccessibility() {
+      node('egg-shelf')?.setAttribute('aria-label', formatLabel('eggShelfAria'));
+      for (const slot of [1, 2]) {
+        const state = stateBySlot.get(slot) || {};
+        const monster = safeDisplayName(
+          state.name,
+          formatLabel('monster', { slot })
+        );
+        node(`arena-hp-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('hpAria', { monster })
+        );
+        node(`arena-shield-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('shieldAria', { monster })
+        );
+        node(`arena-charge-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('specialAria', { monster })
+        );
+        skillDeckNode(slot)?.setAttribute(
+          'aria-label',
+          formatLabel('skillDeckAria', { monster })
+        );
+      }
     }
 
     function setMeter(id, value) {
@@ -579,6 +616,7 @@
       }
       renderSkillDeck(slot);
       renderLead();
+      refreshLocalizedAccessibility();
       return state;
     }
 
@@ -807,6 +845,7 @@
       refreshLocalizedText();
       renderSkillDecks();
       renderVisibleComposite?.();
+      refreshLocalizedAccessibility();
       return activeLocale;
     }
 
@@ -1530,6 +1569,15 @@
           deadlineMs: match.actionDeadlineMs,
           choices: ['A', 'B', 'C']
         });
+      }
+      (Array.isArray(match.choiceLocks) ? match.choiceLocks : []).forEach(decision => {
+        lockChoice({ decision });
+      });
+      if (match.revealedChoices?.choices) {
+        revealChoices(match.revealedChoices);
+      }
+      if (battle.statPrompt) {
+        showStatPrompt(battle.statPrompt);
       }
       return match;
     }
