@@ -31,6 +31,7 @@ class ChatCommands {
     progression = null,
     collection = null,
     freeEggDropService = null,
+    ownedReadyEggRescueService = null,
     emit = () => {},
     now = () => Date.now(),
     queueTtlMs = 5 * 60 * 1000,
@@ -43,6 +44,7 @@ class ChatCommands {
     this.progression = progression;
     this.collection = collection;
     this.freeEggDropService = freeEggDropService;
+    this.ownedReadyEggRescueService = ownedReadyEggRescueService;
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
@@ -134,7 +136,7 @@ class ChatCommands {
   }
 
   adopt(userId, context = {}) {
-    if (!this.freeEggDropService) {
+    if (!this.freeEggDropService && !this.ownedReadyEggRescueService) {
       return {
         success: false,
         status: 'ignored'
@@ -179,14 +181,40 @@ class ChatCommands {
         message: rawData.comment || rawData.message || rawData.text || 'adopt'
       }
     });
-    const result = this.freeEggDropService.adopt({
+    const input = {
       userId,
       streamKey,
       eventId,
       displayName,
       avatarRef,
       nowMs: this.now()
-    });
+    };
+    const personal = this.freeEggDropService?.adopt({
+      ...input,
+      offerScope: 'reserved',
+      recordFailure: false
+    }) || { success: false, status: 'no_offer' };
+    if (personal.success) {
+      if (personal.adoptionSource === 'rescue') {
+        return this.rescueAdoptionResult(personal);
+      }
+      return {
+        ...personal,
+        message: 'You adopted a free egg. Check your eggs to follow incubation.'
+      };
+    }
+    const rescue = this.ownedReadyEggRescueService?.adopt(input) || {
+      success: false,
+      status: 'no_rescue'
+    };
+    if (rescue.success) {
+      return this.rescueAdoptionResult(rescue);
+    }
+    const result = this.freeEggDropService?.adopt({
+      ...input,
+      offerScope: 'public',
+      recordFailure: true
+    }) || rescue;
     if (result.success) {
       return {
         ...result,
@@ -204,6 +232,16 @@ class ChatCommands {
       ...result,
       ...(result.status === 'cooldown' ? { cooldownKind: 'free_egg' } : {}),
       message: messages[result.status] || 'Free egg adoption is unavailable.'
+    };
+  }
+
+  rescueAdoptionResult(result) {
+    const hatchCommand = this.commandReference('hatch') || '!hatch';
+    return {
+      ...result,
+      messageKey: 'ownedReadyEggRescueClaimed',
+      params: { command: hatchCommand },
+      message: `Ready egg rescued. Use ${hatchCommand} before it expires.`
     };
   }
 

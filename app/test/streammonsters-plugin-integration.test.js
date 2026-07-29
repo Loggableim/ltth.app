@@ -326,6 +326,54 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersViewerActivity).toBeNull();
   });
 
+  test('runs owned-ready rescue after owner auto-hatch and keeps config dependencies synced', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    expect(plugin.config.streamMonsters.ownedReadyEggRescueGraceSeconds).toBe(600);
+    expect(plugin.streamMonstersOwnedReadyEggRescues).toBeDefined();
+    expect(plugin.streamMonstersChatCommands.ownedReadyEggRescueService)
+      .toBe(plugin.streamMonstersOwnedReadyEggRescues);
+    expect(plugin.streamMonstersRoutes.ownedReadyEggRescueService)
+      .toBe(plugin.streamMonstersOwnedReadyEggRescues);
+
+    const order = [];
+    jest.spyOn(plugin.streamMonstersEngine, 'markReadyEggs')
+      .mockImplementation(() => {
+        order.push('mark');
+        return [];
+      });
+    jest.spyOn(plugin.streamMonstersEngine, 'autoHatchReadyEggs')
+      .mockImplementation(() => {
+        order.push('auto-hatch');
+        return [];
+      });
+    jest.spyOn(plugin.streamMonstersStore, 'getReadyEggs')
+      .mockReturnValue([{ egg_id: 'remaining-ready' }]);
+    jest.spyOn(plugin.streamMonstersOwnedReadyEggRescues, 'observeReadyEgg')
+      .mockImplementation(() => {
+        order.push('observe');
+        return null;
+      });
+    jest.spyOn(plugin.streamMonstersOwnedReadyEggRescues, 'sweep')
+      .mockImplementation(() => {
+        order.push('sweep');
+        return { published: [], closed: [] };
+      });
+
+    plugin.runStreamMonstersReadyTimer();
+    expect(order).toEqual(['mark', 'auto-hatch', 'observe', 'sweep']);
+
+    plugin.updateConfig({
+      streamMonsters: {
+        ownedReadyEggRescueGraceSeconds: 60
+      }
+    });
+    expect(plugin.streamMonstersOwnedReadyEggRescues.graceSeconds).toBe(60);
+    await plugin.destroy();
+  });
+
   test('deduplicates retried provider gifts while processing each repeat in the event once', async () => {
     const { api, events } = createApi();
     const plugin = new StreamAlchemyPlugin(api);

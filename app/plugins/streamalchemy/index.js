@@ -9,6 +9,9 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const OwnedReadyEggRescueService = require(
+  './backend/streammonsters/owned-ready-egg-rescue-service'
+);
 const StreamMonstersViewerActivityTracker = require(
   './backend/streammonsters/viewer-activity-tracker'
 );
@@ -192,6 +195,17 @@ class StreamAlchemyPlugin {
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       config: this.config.streamMonsters
     });
+    this.streamMonstersOwnedReadyEggRescues = new OwnedReadyEggRescueService({
+      store: this.streamMonstersStore,
+      progression: this.streamMonstersProgression,
+      emit: (event, payload) => this.emitStreamMonsters(event, payload),
+      logger: (action, fields, level) => this.logStructured(
+        action,
+        fields,
+        level
+      ),
+      config: this.config.streamMonsters
+    });
     this.ensureDefaultStreamMonstersGiftMapping();
     this.streamMonstersBattleService = new StreamMonstersBattleService({ store: this.streamMonstersStore });
     this.streamMonstersBattleMatchService = new StreamMonstersBattleMatchService({
@@ -235,6 +249,7 @@ class StreamAlchemyPlugin {
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
       freeEggDropService: this.streamMonstersFreeEggDrops,
+      ownedReadyEggRescueService: this.streamMonstersOwnedReadyEggRescues,
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       getCommandReference: command => this.getStreamMonstersCommandReference(command)
     });
@@ -297,6 +312,7 @@ class StreamAlchemyPlugin {
       collection: this.streamMonstersCollection,
       onboarding: this.streamMonstersOnboarding,
       battleMatchService: this.streamMonstersBattleMatchService,
+      ownedReadyEggRescueService: this.streamMonstersOwnedReadyEggRescues,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
       gcceStateProvider: () => this.getStreamMonstersGCCEState(),
       hintStateProvider: () => ({
@@ -363,6 +379,7 @@ class StreamAlchemyPlugin {
         seasonDurationDays: 28,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
+        ownedReadyEggRescueGraceSeconds: 600,
         autoHatchActiveViewers: true,
         autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,
@@ -395,6 +412,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
         ),
+        ownedReadyEggRescueGraceSeconds:
+          this.normalizeOwnedReadyEggRescueGraceSeconds(
+            storedStreamMonsters.ownedReadyEggRescueGraceSeconds
+          ),
         autoHatchActiveViewers: storedStreamMonsters.autoHatchActiveViewers !== false,
         autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
           storedStreamMonsters.autoHatchActiveWindowSeconds
@@ -526,6 +547,10 @@ class StreamAlchemyPlugin {
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
       ? Math.round(seconds)
       : 86_400;
+  }
+
+  normalizeOwnedReadyEggRescueGraceSeconds(value) {
+    return OwnedReadyEggRescueService.normalizeGraceSeconds(value);
   }
 
   normalizeGameplayPace(value) {
@@ -767,6 +792,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
         ),
+        ownedReadyEggRescueGraceSeconds:
+          this.normalizeOwnedReadyEggRescueGraceSeconds(
+            mergedStreamMonsters.ownedReadyEggRescueGraceSeconds
+          ),
         autoHatchActiveViewers: mergedStreamMonsters.autoHatchActiveViewers !== false,
         autoHatchActiveWindowSeconds: this.normalizeAutoHatchActiveWindowSeconds(
           mergedStreamMonsters.autoHatchActiveWindowSeconds
@@ -804,6 +833,10 @@ class StreamAlchemyPlugin {
         freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
       });
     }
+    this.streamMonstersOwnedReadyEggRescues?.setConfig?.({
+      ownedReadyEggRescueGraceSeconds:
+        this.config.streamMonsters.ownedReadyEggRescueGraceSeconds
+    });
     this.streamMonstersViewerActivity?.setActiveWindowMs?.(
       this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
     );
@@ -882,6 +915,11 @@ class StreamAlchemyPlugin {
         status: 'ready_active_viewer'
       });
     }
+    const remainingReadyEggs = this.streamMonstersStore?.getReadyEggs?.() || [];
+    remainingReadyEggs.forEach(egg => {
+      this.streamMonstersOwnedReadyEggRescues?.observeReadyEgg?.(egg.egg_id);
+    });
+    this.streamMonstersOwnedReadyEggRescues?.sweep?.();
     return hatched;
   }
 

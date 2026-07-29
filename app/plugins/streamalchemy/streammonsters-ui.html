@@ -357,12 +357,14 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack"><option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry · bundled</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.ownedReadyEggRescueGraceSeconds">Ready-egg rescue grace (seconds)</span><input id="ownedReadyEggRescueGraceSeconds" type="number" min="0" max="86400" step="1" value="600"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveViewers">Auto-hatch active viewers</span><input id="autoHatchActiveViewers" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveWindowSeconds">Auto-hatch active window (seconds)</span><input id="autoHatchActiveWindowSeconds" type="number" min="30" max="900" step="1" value="300"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.ownedReadyEggRescueGraceHelp">After this grace, an unhatched owned egg becomes adoptable until its existing expiry. Set 0 to disable.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveHelp">Ready owned eggs hatch only after the viewer has recently interacted in this stream.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
         <div id="presentationModeStatus" class="badge" role="status" aria-live="polite"></div>
@@ -1517,6 +1519,8 @@
         notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
         freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
         freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
+        ownedReadyEggRescueGraceSeconds:
+          byId('ownedReadyEggRescueGraceSeconds').value,
         autoHatchActiveViewers:byId('autoHatchActiveViewers').checked,
         autoHatchActiveWindowSeconds:byId('autoHatchActiveWindowSeconds').value,
         tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
@@ -1631,6 +1635,9 @@
       state.config?.freeEggDropsEnabled !== false;
     byId('freeEggCooldownSeconds').value = String(
       state.config?.freeEggCooldownSeconds || 86400
+    );
+    byId('ownedReadyEggRescueGraceSeconds').value = String(
+      state.config?.ownedReadyEggRescueGraceSeconds ?? 600
     );
     byId('autoHatchActiveViewers').checked =
       state.config?.autoHatchActiveViewers !== false;
@@ -1799,12 +1806,18 @@
   };
   const renderRetentionTimerWarning = () => {
     const cooldown = Number(byId('freeEggCooldownSeconds').value);
+    const rescueGrace = Number(
+      byId('ownedReadyEggRescueGraceSeconds').value
+    );
     const activeWindow = Number(byId('autoHatchActiveWindowSeconds').value);
     const interval = Number(byId('tutorialHintIntervalSeconds').value);
     const warning = byId('retentionTimerWarning');
     const invalid = !Number.isFinite(cooldown) ||
       cooldown < 60 ||
       cooldown > 31536000 ||
+      !Number.isFinite(rescueGrace) ||
+      rescueGrace < 0 ||
+      rescueGrace > 86400 ||
       !Number.isFinite(activeWindow) ||
       activeWindow < 30 ||
       activeWindow > 900 ||
@@ -1923,6 +1936,7 @@
   for (const id of [
     'freeEggDropsEnabled',
     'freeEggCooldownSeconds',
+    'ownedReadyEggRescueGraceSeconds',
     'autoHatchActiveViewers',
     'autoHatchActiveWindowSeconds',
     'tutorialHintsEnabled',

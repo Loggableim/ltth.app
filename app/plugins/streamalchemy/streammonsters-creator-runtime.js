@@ -185,6 +185,9 @@
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
     const freeEggCooldownSeconds = Number(values.freeEggCooldownSeconds);
+    const ownedReadyEggRescueGraceSeconds = Number(
+      values.ownedReadyEggRescueGraceSeconds
+    );
     const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
     const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
     const requestedHatchDurationMs = Number(values.hatchDurationMs);
@@ -236,6 +239,12 @@
         freeEggCooldownSeconds <= 31_536_000
         ? Math.round(freeEggCooldownSeconds)
         : 86_400,
+      ownedReadyEggRescueGraceSeconds:
+        Number.isFinite(ownedReadyEggRescueGraceSeconds) &&
+        ownedReadyEggRescueGraceSeconds >= 0 &&
+        ownedReadyEggRescueGraceSeconds <= 86_400
+          ? Math.round(ownedReadyEggRescueGraceSeconds)
+          : 600,
       autoHatchActiveViewers: values.autoHatchActiveViewers !== false,
       autoHatchActiveWindowSeconds: Number.isFinite(autoHatchActiveWindowSeconds) &&
         autoHatchActiveWindowSeconds >= 30 &&

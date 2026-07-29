@@ -350,6 +350,10 @@
           "eggLifecycleFreePublicCopy": "The first viewer currently eligible for a free egg gets it.",
           "eggLifecycleFreeClaimedTitle": "Free egg adopted",
           "eggLifecycleFreeClaimedCopy": "The egg is now safe in the inventory.",
+          "eggLifecycleRescuePublicTitle": "Ready egg needs a new home",
+          "eggLifecycleRescuePublicCopy": "Adopt it with {{command}} before the rot timer reaches zero.",
+          "eggLifecycleRescueClaimedTitle": "Ready egg rescued",
+          "eggLifecycleRescueClaimedCopy": "The same egg now belongs to its rescuer and is ready to hatch.",
           "eggLifecycleWaitTitle": "The egg is still incubating",
           "eggLifecycleWaitCopy": "{time} remains before it can hatch.",
           "eggLifecycleWaitQueuedCopy": "Queue #{position} · {time} remaining.",
@@ -545,6 +549,8 @@
           "freeEggDropsEnabled": "Recurring free eggs",
           "freeEggCooldownSeconds": "Free egg cooldown (seconds)",
           "freeEggCooldownHelp": "Each viewer can claim one free egg after this cooldown.",
+          "ownedReadyEggRescueGraceSeconds": "Ready-egg rescue grace (seconds)",
+          "ownedReadyEggRescueGraceHelp": "After this grace, an unhatched owned egg becomes adoptable until its existing expiry. Set 0 to disable.",
           "autoHatchActiveViewers": "Auto-hatch active viewers",
           "autoHatchActiveWindowSeconds": "Auto-hatch active window (seconds)",
           "autoHatchActiveHelp": "Ready owned eggs hatch only after the viewer has recently interacted in this stream.",
@@ -554,7 +560,8 @@
           "eggShelfExpired": "Rotten",
           "eggShelfReserved": "Reserved · {time}",
           "eggShelfPublic": "Free · {command}",
-          "eggShelfPublicCountdown": "Free · {time}",
+          "eggShelfPublicCountdown": "Free · {time} · {command}",
+          "eggShelfRescuePublicCountdown": "Adoptable · {time} · {command}",
           "eggShelfAdoptSummary": "{count} free · eligible only · {command}",
           "eggFocusOwner": "Owner: {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -1018,7 +1025,8 @@
           "chatResultQuests": "Your quest status was updated.",
           "chatResultCommandDisabled": "That command is currently disabled.",
           "chatResultExecutionFailed": "The command could not be completed.",
-          "chatResultUnknown": "The command result is unavailable."
+          "chatResultUnknown": "The command result is unavailable.",
+          "ownedReadyEggRescueClaimed": "Ready egg rescued. Use {{command}} before it expires."
         }
       }
     }

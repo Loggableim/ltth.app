@@ -28,6 +28,8 @@
     'free_egg_reserved',
     'free_egg_public',
     'free_egg_claimed',
+    'owned_ready_egg_public',
+    'owned_ready_egg_claimed',
     'egg_stage_removed',
     'stat_choice_opened',
     'monster_stat_prompt',
@@ -41,6 +43,8 @@
     'free_egg_reserved',
     'free_egg_public',
     'free_egg_claimed',
+    'owned_ready_egg_public',
+    'owned_ready_egg_claimed',
     'egg_ready',
     'egg_stage_updated',
     'egg_boosted',
@@ -745,6 +749,8 @@
         'free_egg_reserved',
         'free_egg_public',
         'free_egg_claimed',
+        'owned_ready_egg_public',
+        'owned_ready_egg_claimed',
         'egg_stage_removed'
       ].includes(type)) {
         return `${targetGroupKey}:${type}`;

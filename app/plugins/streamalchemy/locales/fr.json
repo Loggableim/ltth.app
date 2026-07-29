@@ -350,6 +350,10 @@
           "eggLifecycleFreePublicCopy": "Le premier spectateur pouvant de nouveau recevoir un œuf gratuit le gagne.",
           "eggLifecycleFreeClaimedTitle": "Œuf gratuit adopté",
           "eggLifecycleFreeClaimedCopy": "L’œuf est maintenant dans l’inventaire.",
+          "eggLifecycleRescuePublicTitle": "Un œuf prêt cherche un nouveau foyer",
+          "eggLifecycleRescuePublicCopy": "Adoptez-le avec {{command}} avant que le compte à rebours n’arrive à zéro.",
+          "eggLifecycleRescueClaimedTitle": "Œuf prêt sauvé",
+          "eggLifecycleRescueClaimedCopy": "Le même œuf appartient maintenant à son sauveteur et peut éclore immédiatement.",
           "eggLifecycleWaitTitle": "L’œuf incube encore",
           "eggLifecycleWaitCopy": "Encore {time} avant l’éclosion.",
           "eggLifecycleWaitQueuedCopy": "File #{position} · encore {time}.",
@@ -545,6 +549,8 @@
           "freeEggDropsEnabled": "Œufs gratuits récurrents",
           "freeEggCooldownSeconds": "Délai de l’œuf gratuit (secondes)",
           "freeEggCooldownHelp": "Chaque spectateur peut réclamer un œuf gratuit après ce délai.",
+          "ownedReadyEggRescueGraceSeconds": "Délai de sauvetage des œufs prêts (secondes)",
+          "ownedReadyEggRescueGraceHelp": "Après ce délai, un œuf possédé non éclos peut être adopté jusqu’à son expiration actuelle. Utilisez 0 pour désactiver.",
           "autoHatchActiveViewers": "Éclosion automatique pour les spectateurs actifs",
           "autoHatchActiveWindowSeconds": "Fenêtre d’activité pour l’éclosion automatique (secondes)",
           "autoHatchActiveHelp": "Les œufs prêts n’éclosent que si le spectateur a récemment interagi dans ce live.",
@@ -554,7 +560,8 @@
           "eggShelfExpired": "Pourri",
           "eggShelfReserved": "Réservé · {time}",
           "eggShelfPublic": "Gratuit · {command}",
-          "eggShelfPublicCountdown": "Libre · {time}",
+          "eggShelfPublicCountdown": "Libre · {time} · {command}",
+          "eggShelfRescuePublicCountdown": "Adoptable · {time} · {command}",
           "eggShelfAdoptSummary": "{count} gratuits · éligibles uniquement · {command}",
           "eggFocusOwner": "Propriétaire : {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -1018,7 +1025,8 @@
           "chatResultQuests": "L’état de vos quêtes a été mis à jour.",
           "chatResultCommandDisabled": "Cette commande est actuellement désactivée.",
           "chatResultExecutionFailed": "La commande n’a pas pu être exécutée.",
-          "chatResultUnknown": "Le résultat de la commande est indisponible."
+          "chatResultUnknown": "Le résultat de la commande est indisponible.",
+          "ownedReadyEggRescueClaimed": "Œuf prêt sauvé. Utilisez {{command}} avant son expiration."
         }
       }
     }

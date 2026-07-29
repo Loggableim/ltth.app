@@ -417,7 +417,7 @@ class StreamMonstersEngine {
   }
 
   hatchEgg(userId, slot = null, { autoHatch = false } = {}) {
-    return this.store.runInTransaction(() => {
+    return this.store.runInImmediateTransaction(() => {
       const visibleEggs = this.store.getViewerEggs(userId)
         .filter(egg => ['incubating', 'queued', 'ready'].includes(egg.state));
       const hasExplicitSlot = slot !== null &&
@@ -478,7 +478,11 @@ class StreamMonstersEngine {
       });
       const currentMs = this.now();
       const reservation = this.collection?.reserveTemplateForEgg(egg);
-      const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
+      const monster = this.store.createMonsterFromReadyEgg(
+        egg,
+        this.createMonster(egg, currentMs, reservation?.template),
+        currentMs
+      );
       const removedEggStage = this.eggStageProjector.projectEgg({
         ...egg,
         state: 'hatched'

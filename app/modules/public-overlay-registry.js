@@ -456,6 +456,8 @@ streammonsters:elemental_hour
 streammonsters:free_egg_claimed
 streammonsters:free_egg_public
 streammonsters:free_egg_reserved
+streammonsters:owned_ready_egg_claimed
+streammonsters:owned_ready_egg_public
 streammonsters:gift_combo
 streammonsters:hatch_started
 streammonsters:hype_changed

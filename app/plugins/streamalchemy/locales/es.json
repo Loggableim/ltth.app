@@ -350,6 +350,10 @@
           "eggLifecycleFreePublicCopy": "El primer espectador que pueda volver a recibir un huevo gratis se lo lleva.",
           "eggLifecycleFreeClaimedTitle": "Huevo gratis adoptado",
           "eggLifecycleFreeClaimedCopy": "El huevo ya está seguro en el inventario.",
+          "eggLifecycleRescuePublicTitle": "Un huevo listo busca un nuevo hogar",
+          "eggLifecycleRescuePublicCopy": "Adóptalo con {{command}} antes de que el temporizador llegue a cero.",
+          "eggLifecycleRescueClaimedTitle": "Huevo listo rescatado",
+          "eggLifecycleRescueClaimedCopy": "El mismo huevo ahora pertenece a quien lo rescató y está listo para eclosionar.",
           "eggLifecycleWaitTitle": "El huevo sigue incubando",
           "eggLifecycleWaitCopy": "Faltan {time} para que pueda eclosionar.",
           "eggLifecycleWaitQueuedCopy": "Cola #{position} · faltan {time}.",
@@ -545,6 +549,8 @@
           "freeEggDropsEnabled": "Huevos gratis recurrentes",
           "freeEggCooldownSeconds": "Espera del huevo gratis (segundos)",
           "freeEggCooldownHelp": "Cada espectador puede reclamar un huevo gratis después de esta espera.",
+          "ownedReadyEggRescueGraceSeconds": "Gracia de rescate para huevos listos (segundos)",
+          "ownedReadyEggRescueGraceHelp": "Tras esta gracia, un huevo propio sin eclosionar se puede adoptar hasta su caducidad actual. Usa 0 para desactivarlo.",
           "autoHatchActiveViewers": "Eclosión automática para espectadores activos",
           "autoHatchActiveWindowSeconds": "Ventana de actividad para eclosión automática (segundos)",
           "autoHatchActiveHelp": "Los huevos propios listos solo eclosionan si el espectador interactuó recientemente en esta transmisión.",
@@ -554,7 +560,8 @@
           "eggShelfExpired": "Podrido",
           "eggShelfReserved": "Reservado · {time}",
           "eggShelfPublic": "Gratis · {command}",
-          "eggShelfPublicCountdown": "Libre · {time}",
+          "eggShelfPublicCountdown": "Libre · {time} · {command}",
+          "eggShelfRescuePublicCountdown": "Adoptable · {time} · {command}",
           "eggShelfAdoptSummary": "{count} gratis · solo aptos · {command}",
           "eggFocusOwner": "Dueño: {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -1018,7 +1025,8 @@
           "chatResultQuests": "Se actualizó el estado de tus misiones.",
           "chatResultCommandDisabled": "Ese comando está desactivado.",
           "chatResultExecutionFailed": "No se pudo completar el comando.",
-          "chatResultUnknown": "El resultado del comando no está disponible."
+          "chatResultUnknown": "El resultado del comando no está disponible.",
+          "ownedReadyEggRescueClaimed": "Huevo listo rescatado. Usa {{command}} antes de que caduque."
         }
       }
     }

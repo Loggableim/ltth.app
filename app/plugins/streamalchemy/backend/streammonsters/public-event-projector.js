@@ -8,6 +8,8 @@ const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:free_egg_reserved',
   'streammonsters:free_egg_public',
   'streammonsters:free_egg_claimed',
+  'streammonsters:owned_ready_egg_public',
+  'streammonsters:owned_ready_egg_claimed',
   'streammonsters:egg_stage_removed',
   'streammonsters:hatch_started',
   'streammonsters:egg_hatched',
@@ -29,6 +31,8 @@ const PRIVATE_KEYS = new Set([
   'platformuserid',
   'platform_user_id',
   'current_unique_id',
+  'originalownerid',
+  'original_owner_id',
   'seed',
   'giftid',
   'gift_id',
@@ -459,11 +463,23 @@ function projectChatResult(result = {}) {
       rank: boundedText(result.collector.rank, 32) || 'Bronze'
     }
     : null;
+  const params = result.params && typeof result.params === 'object'
+    ? Object.fromEntries(
+        Object.entries(result.params)
+          .slice(0, 8)
+          .map(([key, value]) => [
+            boundedText(key, 48),
+            boundedText(value, 160)
+          ])
+          .filter(([key, value]) => key && value !== null)
+      )
+    : null;
   return {
     success: Boolean(result.success),
     status: boundedText(result.status, 48) || 'unknown',
     messageKey: boundedText(result.messageKey, 96) || 'chatResultUnknown',
     hint: boundedText(result.hint, 160),
+    ...(params && Object.keys(params).length ? { params } : {}),
     ...(wait ? { wait } : {}),
     ...(rosterInstruction ? { rosterInstruction } : {}),
     ...(result.card ? { card: projectCard(result.card) } : {}),

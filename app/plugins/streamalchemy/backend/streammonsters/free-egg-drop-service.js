@@ -112,7 +112,9 @@ class FreeEggDropService {
     eventId,
     displayName = null,
     avatarRef = null,
-    nowMs = this.now()
+    nowMs = this.now(),
+    offerScope = 'any',
+    recordFailure = true
   } = {}) {
     const result = this.store.runInImmediateTransaction(() => {
       const input = this.normalizeInput({ userId, streamKey, eventId, nowMs });
@@ -120,23 +122,41 @@ class FreeEggDropService {
       if (duplicate) return duplicate;
       this.releaseExpiredOffers(input.streamKey, input.nowMs);
       if (!this.config.freeEggDropsEnabled) {
-        return this.recordEvent(input, 'adopt', { success: false, status: 'disabled' });
+        const disabled = { success: false, status: 'disabled' };
+        return recordFailure
+          ? this.recordEvent(input, 'adopt', disabled)
+          : disabled;
       }
       const latestClaim = this.store.getLatestFreeEggClaim(input.userId);
       const cooldownMs = this.config.freeEggCooldownSeconds * 1_000;
       if (latestClaim && input.nowMs - latestClaim.claimed_at_ms < cooldownMs) {
-        return this.recordEvent(input, 'adopt', {
+        const cooldown = {
           success: false,
           status: 'cooldown',
           remainingMs: cooldownMs - (input.nowMs - latestClaim.claimed_at_ms)
-        });
+        };
+        return recordFailure
+          ? this.recordEvent(input, 'adopt', cooldown)
+          : cooldown;
       }
-      const offer = this.store.getReservedFreeEggOffer(
-        input.streamKey,
-        input.userId,
-        input.nowMs
-      ) || this.store.getOldestPublicFreeEggOffer(input.streamKey);
-      if (!offer) return this.recordEvent(input, 'adopt', { success: false, status: 'no_offer' });
+      const reserved = offerScope === 'public'
+        ? null
+        : this.store.getReservedFreeEggOffer(
+            input.streamKey,
+            input.userId,
+            input.nowMs
+          );
+      const offer = reserved || (
+        offerScope === 'reserved'
+          ? null
+          : this.store.getOldestPublicFreeEggOffer(input.streamKey)
+      );
+      if (!offer) {
+        const unavailable = { success: false, status: 'no_offer' };
+        return recordFailure
+          ? this.recordEvent(input, 'adopt', unavailable)
+          : unavailable;
+      }
 
       const claimedOffer = this.store.claimFreeEggOffer({
         offerId: offer.offer_id,

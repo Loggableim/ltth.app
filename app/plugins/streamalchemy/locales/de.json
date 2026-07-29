@@ -350,6 +350,10 @@
           "eggLifecycleFreePublicCopy": "Wer aktuell wieder ein Gratis-Ei erhalten darf und zuerst adoptiert, bekommt das Ei.",
           "eggLifecycleFreeClaimedTitle": "Gratis-Ei adoptiert",
           "eggLifecycleFreeClaimedCopy": "Das Ei liegt jetzt sicher im Inventar.",
+          "eggLifecycleRescuePublicTitle": "Brutbereites Ei sucht ein neues Zuhause",
+          "eggLifecycleRescuePublicCopy": "Adoptiere es mit {{command}}, bevor der Verfalls-Timer null erreicht.",
+          "eggLifecycleRescueClaimedTitle": "Brutbereites Ei gerettet",
+          "eggLifecycleRescueClaimedCopy": "Dasselbe Ei gehört jetzt dem Retter und kann sofort ausgebrütet werden.",
           "eggLifecycleWaitTitle": "Das Ei brütet noch",
           "eggLifecycleWaitCopy": "Noch {time} bis zum Schlüpfen.",
           "eggLifecycleWaitQueuedCopy": "Warteschlange #{position} · noch {time}.",
@@ -545,6 +549,8 @@
           "freeEggDropsEnabled": "Wiederkehrende Gratis-Eier",
           "freeEggCooldownSeconds": "Gratis-Ei-Cooldown (Sekunden)",
           "freeEggCooldownHelp": "Jeder Zuschauer kann nach diesem Cooldown ein Gratis-Ei beanspruchen.",
+          "ownedReadyEggRescueGraceSeconds": "Rettungsfrist für brutbereite Eier (Sekunden)",
+          "ownedReadyEggRescueGraceHelp": "Nach dieser Frist kann ein nicht ausgebrütetes eigenes Ei bis zu seinem bestehenden Verfallszeitpunkt adoptiert werden. 0 deaktiviert die Funktion.",
           "autoHatchActiveViewers": "Aktive Zuschauer automatisch schlüpfen lassen",
           "autoHatchActiveWindowSeconds": "Aktivitätsfenster für Auto-Schlüpfen (Sekunden)",
           "autoHatchActiveHelp": "Bereite eigene Eier schlüpfen nur, wenn der Zuschauer kürzlich in diesem Stream interagiert hat.",
@@ -554,7 +560,8 @@
           "eggShelfExpired": "Verrottet",
           "eggShelfReserved": "Reserviert · {time}",
           "eggShelfPublic": "Gratis · {command}",
-          "eggShelfPublicCountdown": "Frei · {time}",
+          "eggShelfPublicCountdown": "Frei · {time} · {command}",
+          "eggShelfRescuePublicCountdown": "Adoptierbar · {time} · {command}",
           "eggShelfAdoptSummary": "{count} frei · nur berechtigt · {command}",
           "eggFocusOwner": "Besitzer: {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -1018,7 +1025,8 @@
           "chatResultQuests": "Dein Queststatus wurde aktualisiert.",
           "chatResultCommandDisabled": "Dieser Befehl ist derzeit deaktiviert.",
           "chatResultExecutionFailed": "Der Befehl konnte nicht abgeschlossen werden.",
-          "chatResultUnknown": "Das Befehlsergebnis ist nicht verfügbar."
+          "chatResultUnknown": "Das Befehlsergebnis ist nicht verfügbar.",
+          "ownedReadyEggRescueClaimed": "Brutbereites Ei gerettet. Nutze {{command}}, bevor es verfällt."
         }
       }
     }

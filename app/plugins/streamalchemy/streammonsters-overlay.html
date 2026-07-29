@@ -1632,7 +1632,8 @@
       ready:text('eggShelfReady', 'Bereit · {command}'),
       expired:text('eggShelfExpired', 'Verrottet'),
       reserved:text('eggShelfReserved', 'Reserviert · {time}'),
-      public:text('eggShelfPublicCountdown', 'Gratis · {time}'),
+      public:text('eggShelfPublicCountdown', 'Gratis · {time} · {command}'),
+      rescuePublic:text('eggShelfRescuePublicCountdown', 'Adoptierbar · {time} · {command}'),
       adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · nur berechtigt · {command}'),
       eggFocusOwner:text('eggFocusOwner', 'Besitzer: {owner}'),
       eggFocusPosition:text('eggFocusPosition', '{position} / {total}'),
@@ -2198,6 +2199,10 @@
     eggLifecycleFreePublicCopy:'The first viewer currently eligible for a free egg gets it.',
     eggLifecycleFreeClaimedTitle:'Free egg adopted',
     eggLifecycleFreeClaimedCopy:'The egg is now safe in the inventory.',
+    eggLifecycleRescuePublicTitle:'Ready egg needs a new home',
+    eggLifecycleRescuePublicCopy:'Adopt it with {command} before the rot timer reaches zero.',
+    eggLifecycleRescueClaimedTitle:'Ready egg rescued',
+    eggLifecycleRescueClaimedCopy:'The same egg now belongs to its rescuer and is ready to hatch.',
     eggLifecycleWaitTitle:'The egg is still incubating',
     eggLifecycleWaitCopy:'{time} remains before it can hatch.',
     eggLifecycleWaitQueuedCopy:'Queue #{position} · {time} remaining.',
@@ -2234,7 +2239,11 @@
       progress:notice.kind === 'ready' ? 100 : 35,
       presentation:'egg-offer',
       duration:notice.durationMs,
-      ...(['free_reserved', 'free_public'].includes(notice.kind) ? {
+      ...([
+        'free_reserved',
+        'free_public',
+        'owned_ready_rescue_public'
+      ].includes(notice.kind) ? {
         deadlineMs:Date.now() + Math.max(1, Number(notice.durationMs) || 5_000)
       } : {})
     }
@@ -3188,6 +3197,8 @@
     'streammonsters:free_egg_reserved':'free_egg_reserved',
     'streammonsters:free_egg_public':'free_egg_public',
     'streammonsters:free_egg_claimed':'free_egg_claimed',
+    'streammonsters:owned_ready_egg_public':'owned_ready_egg_public',
+    'streammonsters:owned_ready_egg_claimed':'owned_ready_egg_claimed',
     'streammonsters:egg_stage_removed':'egg_stage_removed',
     'streammonsters:egg_expired':'egg_expired',
     'streammonsters:egg_boosted':'egg_boosted',

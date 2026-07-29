@@ -79,6 +79,7 @@ class StreamMonstersRoutes {
     collection = null,
     onboarding = null,
     battleMatchService = null,
+    ownedReadyEggRescueService = null,
     giftCatalogProvider,
     configProvider,
     now = () => Date.now(),
@@ -101,6 +102,7 @@ class StreamMonstersRoutes {
     this.collection = collection;
     this.onboarding = onboarding;
     this.battleMatchService = battleMatchService;
+    this.ownedReadyEggRescueService = ownedReadyEggRescueService;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.now = now;
@@ -185,7 +187,7 @@ class StreamMonstersRoutes {
           queued: 0,
           ready: 0
         },
-        eggStage: this.eggStageProjector.snapshot(this.engine.streamKey || 'offline'),
+        eggStage: this.eggStageSnapshot(this.engine.streamKey || 'offline'),
         hype: this.publicHype(this.store.getStreamHype(this.engine.streamKey)),
         heartChain: this.publicHeartChain(
           this.collection?.getHeartChain(this.engine.streamKey || 'offline')
@@ -258,7 +260,7 @@ class StreamMonstersRoutes {
           queued: 0,
           ready: 0
         },
-        eggStage: this.eggStageProjector.snapshot(this.engine.streamKey || 'offline'),
+        eggStage: this.eggStageSnapshot(this.engine.streamKey || 'offline'),
         viewer: userId ? this.viewerState(userId) : null,
         giftMappings: this.store.getGiftMappings(),
         hype: this.store.getStreamHype(this.engine.streamKey),
@@ -1276,6 +1278,31 @@ class StreamMonstersRoutes {
       : 86_400;
   }
 
+  normalizeOwnedReadyEggRescueGraceSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 0 && seconds <= 86_400
+      ? Math.round(seconds)
+      : 600;
+  }
+
+  eggStageSnapshot(streamKey = 'offline') {
+    const byVisualId = new Map(
+      this.eggStageProjector.snapshot(streamKey)
+        .map(stage => [stage.visualId, stage])
+    );
+    const publicRescues = this.ownedReadyEggRescueService?.listPublic?.(
+      this.now()
+    ) || [];
+    publicRescues.forEach(stage => {
+      if (stage?.visualId) byVisualId.set(stage.visualId, stage);
+    });
+    return [...byVisualId.values()].sort((left, right) => (
+      (Number(left.timing?.landedAtMs) || 0) -
+        (Number(right.timing?.landedAtMs) || 0) ||
+      String(left.visualId).localeCompare(String(right.visualId))
+    ));
+  }
+
   normalizeAutoHatchActiveWindowSeconds(value) {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
@@ -1334,6 +1361,15 @@ class StreamMonstersRoutes {
       const seconds = Number(input.freeEggCooldownSeconds);
       if (!Number.isFinite(seconds) || seconds < 60 || seconds > 31_536_000) {
         throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(
+      input,
+      'ownedReadyEggRescueGraceSeconds'
+    )) {
+      const seconds = Number(input.ownedReadyEggRescueGraceSeconds);
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 86_400) {
+        throw new Error('STREAM_MONSTERS_RESCUE_GRACE_INVALID');
       }
     }
     if (
@@ -1678,6 +1714,15 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (Object.prototype.hasOwnProperty.call(
+      input,
+      'ownedReadyEggRescueGraceSeconds'
+    )) {
+      safe.ownedReadyEggRescueGraceSeconds =
+        this.normalizeOwnedReadyEggRescueGraceSeconds(
+          input.ownedReadyEggRescueGraceSeconds
+        );
+    }
     if (typeof input.autoHatchActiveViewers === 'boolean') {
       safe.autoHatchActiveViewers = input.autoHatchActiveViewers;
     }
@@ -1934,6 +1979,10 @@ class StreamMonstersRoutes {
       result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
         config.freeEggCooldownSeconds
       );
+      result.ownedReadyEggRescueGraceSeconds =
+        this.normalizeOwnedReadyEggRescueGraceSeconds(
+          config.ownedReadyEggRescueGraceSeconds
+        );
       result.autoHatchActiveViewers = config.autoHatchActiveViewers !== false;
       result.autoHatchActiveWindowSeconds = this.normalizeAutoHatchActiveWindowSeconds(
         config.autoHatchActiveWindowSeconds

@@ -17,8 +17,11 @@
   }
 
   function isPublicFreeEgg(egg = {}) {
-    return egg.provenance === 'free' &&
-      egg.state === 'public' &&
+    return egg.provenance === 'free' && isPublicAdoptableEgg(egg);
+  }
+
+  function isPublicAdoptableEgg(egg = {}) {
+    return egg.state === 'public' &&
       egg.adoptionStatus === 'public' &&
       egg.adoptable === true;
   }
@@ -71,14 +74,17 @@
         time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(nowMs)))
       });
     }
-    if (isPublicFreeEgg(egg)) {
+    if (isPublicAdoptableEgg(egg)) {
       const time = formatCountdown(Math.max(
         0,
         Number(timing.expiresAtMs ?? timing.expiryAtMs) - Number(nowMs)
       ));
-      return replaceTokens(labels.public || 'Free · {time}', {
+      const template = isPublicFreeEgg(egg)
+        ? labels.public || 'Free · {time} · {command}'
+        : labels.rescuePublic || 'Adoptable · {time} · {command}';
+      return replaceTokens(template, {
         time,
-        command: time
+        command: adoptReference
       });
     }
     return replaceTokens(labels.incubating || 'Hatches in {time}', {
@@ -102,7 +108,10 @@
         durationMs: 5_000
       };
     }
-    if (type === 'free_egg_public' && isPublicFreeEgg(egg)) {
+    if (
+      ['free_egg_public', 'owned_ready_egg_public'].includes(type) &&
+      isPublicAdoptableEgg(egg)
+    ) {
       return {
         kind: 'public',
         viewer: egg.displayName,
@@ -225,17 +234,22 @@
       };
     }
 
-    if (normalizedType === 'free_egg_public') {
+    if (['free_egg_public', 'owned_ready_egg_public'].includes(normalizedType)) {
       if (
-        egg.provenance === 'gift' ||
         (egg.state && egg.state !== 'public') ||
         (egg.adoptionStatus && egg.adoptionStatus !== 'public')
       ) return null;
       return {
         ...common,
-        kind: 'free_public',
-        titleKey: 'eggLifecycleFreePublicTitle',
-        copyKey: 'eggLifecycleFreePublicCopy',
+        kind: normalizedType === 'owned_ready_egg_public'
+          ? 'owned_ready_rescue_public'
+          : 'free_public',
+        titleKey: normalizedType === 'owned_ready_egg_public'
+          ? 'eggLifecycleRescuePublicTitle'
+          : 'eggLifecycleFreePublicTitle',
+        copyKey: normalizedType === 'owned_ready_egg_public'
+          ? 'eggLifecycleRescuePublicCopy'
+          : 'eggLifecycleFreePublicCopy',
         durationMs: readableDuration(
           nowMs,
           timing.expiresAtMs ?? timing.expiryAtMs
@@ -244,13 +258,18 @@
       };
     }
 
-    if (normalizedType === 'free_egg_claimed') {
-      if (egg.provenance === 'gift') return null;
+    if (['free_egg_claimed', 'owned_ready_egg_claimed'].includes(normalizedType)) {
       return {
         ...common,
-        kind: 'free_claimed',
-        titleKey: 'eggLifecycleFreeClaimedTitle',
-        copyKey: 'eggLifecycleFreeClaimedCopy',
+        kind: normalizedType === 'owned_ready_egg_claimed'
+          ? 'owned_ready_rescue_claimed'
+          : 'free_claimed',
+        titleKey: normalizedType === 'owned_ready_egg_claimed'
+          ? 'eggLifecycleRescueClaimedTitle'
+          : 'eggLifecycleFreeClaimedTitle',
+        copyKey: normalizedType === 'owned_ready_egg_claimed'
+          ? 'eggLifecycleRescueClaimedCopy'
+          : 'eggLifecycleFreeClaimedCopy',
         commands: ownedEggCommands()
       };
     }
@@ -370,7 +389,7 @@
   }
 
   function priority(egg = {}) {
-    if (isPublicFreeEgg(egg)) return 0;
+    if (isPublicAdoptableEgg(egg)) return 0;
     if (egg.state === 'ready') return 1;
     if (egg.state === 'incubating' || egg.state === 'queued') return 2;
     return 3;
@@ -418,6 +437,37 @@
     };
   }
 
+  function reduceEggStage(eggStage = [], type, payload = {}) {
+    const eggsById = new Map(
+      (Array.isArray(eggStage) ? eggStage : [])
+        .map(normalizeEgg)
+        .filter(Boolean)
+        .map(egg => [egg.visualId, egg])
+    );
+    const egg = normalizeEgg(
+      payload.eggStage || payload.egg_stage || payload.egg
+    );
+    const visualId = boundedText(
+      egg?.visualId ||
+      payload.removedEggStage?.visualId ||
+      payload.visualId,
+      64
+    );
+    if (!visualId) return [...eggsById.values()];
+    if (
+      type === 'free_egg_claimed' ||
+      type === 'egg_stage_removed' ||
+      type === 'egg_expired' ||
+      isClaimedFreeInventoryEgg(egg) ||
+      egg?.state === 'claimed'
+    ) {
+      eggsById.delete(visualId);
+    } else if (egg) {
+      eggsById.set(visualId, { ...egg, visualId });
+    }
+    return [...eggsById.values()];
+  }
+
   function orderedStageEggs(eggStage = [], reducedMotion = false) {
     return (Array.isArray(eggStage) ? eggStage : [])
       .map(egg => normalizeEgg(egg))
@@ -446,11 +496,11 @@
   } = {}) {
     const eggs = orderedStageEggs(eggStage, reducedMotion);
     const freeOfferEggs = eggs.filter(egg => (
-      isPublicFreeEgg(egg) || isReservedFreeEgg(egg)
+      isPublicAdoptableEgg(egg) || isReservedFreeEgg(egg)
     ));
     const activeEggs = eggs
       .filter(egg => (
-        !isPublicFreeEgg(egg) &&
+        !isPublicAdoptableEgg(egg) &&
         !isReservedFreeEgg(egg) &&
         ['ready', 'incubating', 'queued', 'reserved'].includes(egg.state)
       ))
@@ -504,7 +554,7 @@
           }
         : null,
       total: normalized.length,
-      adoptable: normalized.filter(isPublicFreeEgg).length,
+      adoptable: normalized.filter(isPublicAdoptableEgg).length,
       ready: normalized.filter(egg => egg.state === 'ready').length,
       incubating: normalized.filter(egg => (
         egg.state === 'incubating' || egg.state === 'queued'
@@ -575,7 +625,7 @@
       item.dataset.state = boundedText(egg.state, 24);
       item.dataset.provenance = boundedText(egg.provenance, 24);
       item.dataset.element = egg.element.toLowerCase();
-      item.dataset.adoptable = String(isPublicFreeEgg(egg));
+      item.dataset.adoptable = String(isPublicAdoptableEgg(egg));
       item.style.setProperty('--egg-lane', String(egg.motion.lane));
       item.style.setProperty('--egg-fly-x', `${egg.motion.flyFromX}vw`);
       item.style.setProperty('--egg-bounce', `${egg.motion.bounceHeight}px`);
@@ -608,7 +658,7 @@
       });
       item.appendChild(timing);
 
-      if (isPublicFreeEgg(egg)) {
+      if (isPublicAdoptableEgg(egg)) {
         item.classList.add('gold-ring', 'public-free');
       }
       return item;
@@ -652,7 +702,7 @@
       item.dataset.state = boundedText(egg.state, 24);
       item.dataset.provenance = boundedText(egg.provenance, 24);
       item.dataset.element = egg.element.toLowerCase();
-      item.dataset.adoptable = String(isPublicFreeEgg(egg));
+      item.dataset.adoptable = String(isPublicAdoptableEgg(egg));
       item.style.setProperty('--egg-lane', String(egg.motion.lane));
       item.style.setProperty('--egg-fly-x', `${egg.motion.flyFromX}vw`);
       item.style.setProperty('--egg-bounce', `${egg.motion.bounceHeight}px`);
@@ -675,7 +725,7 @@
           adoptReference: getAdoptReference()
         });
       }
-      const publicEgg = isPublicFreeEgg(egg);
+      const publicEgg = isPublicAdoptableEgg(egg);
       item.classList.toggle('gold-ring', publicEgg);
       item.classList.toggle('public-free', publicEgg);
       return item;
@@ -731,7 +781,7 @@
     function focusTiming(egg) {
       const labels = currentLabels();
       const timing = egg.timing || {};
-      if (isPublicFreeEgg(egg)) {
+      if (isPublicAdoptableEgg(egg)) {
         return replaceTokens(labels.eggFocusPublic || labels.public || 'Free egg · {time} · {command}', {
           time: formatCountdown(Math.max(
             0,
@@ -776,7 +826,7 @@
       focusCard.dataset.state = boundedText(egg.state, 24);
       focusCard.dataset.provenance = boundedText(egg.provenance, 24);
       focusCard.dataset.element = egg.element.toLowerCase();
-      focusCard.dataset.adoptable = String(isPublicFreeEgg(egg));
+      focusCard.dataset.adoptable = String(isPublicAdoptableEgg(egg));
 
       let art = focusCard.querySelector('[data-egg-focus-art]');
       if (!art) {
@@ -812,7 +862,7 @@
         return line;
       };
       const ownerLine = ensureLine('owner', 'egg-focus-owner');
-      ownerLine.textContent = isPublicFreeEgg(egg)
+      ownerLine.textContent = isPublicAdoptableEgg(egg)
         ? currentLabels().eggFocusOpenOwner || 'Open to eligible viewers'
         : replaceTokens(
             currentLabels().eggFocusOwner || 'Owner: {owner}',
@@ -975,8 +1025,10 @@
     deterministicEggMotion,
     formatCountdown,
     isClaimedFreeInventoryEgg,
+    isPublicAdoptableEgg,
     isPublicFreeEgg,
     isReservedFreeEgg,
+    reduceEggStage,
     shelfTiming,
     visibleCapacity
   };

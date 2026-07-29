@@ -1678,9 +1678,29 @@ class StreamMonstersDatabase {
     return promotedIds.map(eggId => this.getEgg(eggId));
   }
 
-  createMonsterFromEgg(egg, monster) {
+  createMonsterFromEgg(egg, monster, {
+    requireReadyOwner = false,
+    claimAtMs = Date.now()
+  } = {}) {
     const monsterId = monster.monsterId || randomUUID();
     const transaction = this.db.transaction(() => {
+      if (requireReadyOwner) {
+        const claimed = this.db.prepare(`
+          UPDATE streammonsters_eggs
+          SET state = 'hatched', monster_id = ?
+          WHERE egg_id = ?
+            AND user_id = ?
+            AND state = 'ready'
+            AND monster_id IS NULL
+            AND expired_at_ms IS NULL
+            AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+        `).run(monsterId, egg.egg_id, egg.user_id, Number(claimAtMs) || 0);
+        if (claimed.changes !== 1) {
+          const error = new Error('STREAM_MONSTERS_EGG_NOT_READY');
+          error.code = 'STREAM_MONSTERS_EGG_NOT_READY';
+          throw error;
+        }
+      }
       const hasSelection = this.db.prepare(
         'SELECT 1 FROM streammonsters_monsters WHERE user_id = ? AND is_selected = 1'
       ).get(egg.user_id);
@@ -1699,12 +1719,23 @@ class StreamMonstersDatabase {
         monster.templateId || deterministicTemplateId(egg.element, egg.seed),
         hasSelection ? 0 : 1, monster.createdAtMs
       );
-      this.db.prepare(`
-        UPDATE streammonsters_eggs SET state = 'hatched', monster_id = ? WHERE egg_id = ?
-      `).run(monsterId, egg.egg_id);
+      if (!requireReadyOwner) {
+        this.db.prepare(`
+          UPDATE streammonsters_eggs
+          SET state = 'hatched', monster_id = ?
+          WHERE egg_id = ?
+        `).run(monsterId, egg.egg_id);
+      }
     });
     transaction();
     return this.getMonster(monsterId);
+  }
+
+  createMonsterFromReadyEgg(egg, monster, claimAtMs = Date.now()) {
+    return this.createMonsterFromEgg(egg, monster, {
+      requireReadyOwner: true,
+      claimAtMs
+    });
   }
 
   getMonster(monsterId) {

@@ -142,6 +142,7 @@ describe('Stream Monsters creator controls', () => {
       notificationDurationMs: 12_000,
       freeEggDropsEnabled: true,
       freeEggCooldownSeconds: 86_400,
+      ownedReadyEggRescueGraceSeconds: 600,
       autoHatchActiveViewers: true,
       autoHatchActiveWindowSeconds: 300,
       tutorialHintsEnabled: true,
