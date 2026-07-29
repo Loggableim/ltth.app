@@ -82,6 +82,31 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getActiveGamePlayerLockout('slow-viewer', 86402000)).toBeNull();
   });
 
+  test('lists only active game lockouts and removes expired rows', () => {
+    database.setGamePlayerLockout('active-viewer', 'viewer_timeout', 60000, 1000);
+    database.setGamePlayerLockout('expired-viewer', 'viewer_timeout', 1000, 1000);
+
+    expect(database.listActiveGamePlayerLockouts(3000)).toEqual([
+      expect.objectContaining({
+        username: 'active-viewer',
+        reason: 'viewer_timeout',
+        expiresAt: 61000,
+        remainingMs: 58000
+      })
+    ]);
+    expect(database.getActiveGamePlayerLockout('expired-viewer', 3000)).toBeNull();
+  });
+
+  test('clears one persisted game lockout by username', () => {
+    database.setGamePlayerLockout('unlock-me', 'viewer_timeout', 60000, 1000);
+    database.setGamePlayerLockout('keep-me', 'viewer_timeout', 60000, 1000);
+
+    expect(database.clearGamePlayerLockout('unlock-me')).toBe(true);
+    expect(database.clearGamePlayerLockout('unlock-me')).toBe(false);
+    expect(database.getActiveGamePlayerLockout('unlock-me', 1001)).toBeNull();
+    expect(database.getActiveGamePlayerLockout('keep-me', 1001)).toEqual(expect.any(Object));
+  });
+
   test('migrates the released challenge schema without losing history or sequence state', () => {
     sqlite.close();
     sqlite = new Database(':memory:');

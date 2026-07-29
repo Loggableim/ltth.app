@@ -1957,6 +1957,36 @@ class GameEngineDatabase {
     };
   }
 
+  listActiveGamePlayerLockouts(now = Date.now()) {
+    const currentTime = Number.isFinite(Number(now)) ? Math.floor(Number(now)) : Date.now();
+
+    this.db.prepare(`
+      DELETE FROM game_player_lockouts
+      WHERE expires_at <= ?
+    `).run(currentTime);
+
+    return this.db.prepare(`
+      SELECT username, reason, expires_at
+      FROM game_player_lockouts
+      ORDER BY expires_at ASC, username ASC
+    `).all().map((row) => ({
+      username: row.username,
+      reason: row.reason,
+      expiresAt: Number(row.expires_at),
+      remainingMs: Number(row.expires_at) - currentTime
+    }));
+  }
+
+  clearGamePlayerLockout(username) {
+    const normalizedUsername = this._normalizeGameAudioIdentifier(username);
+    if (!normalizedUsername) return false;
+
+    return this.db.prepare(`
+      DELETE FROM game_player_lockouts
+      WHERE username = ?
+    `).run(normalizedUsername).changes > 0;
+  }
+
   getGameMedia(gameType, mediaEvent = null) {
     if (mediaEvent) {
       const stmt = this.db.prepare(`
