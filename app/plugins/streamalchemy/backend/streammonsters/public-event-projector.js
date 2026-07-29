@@ -542,7 +542,8 @@ class StreamMonstersPublicEventProjector {
         displayName: owner.displayName,
         owner,
         egg: projectEgg(payload.egg),
-        monster: projectMonster(payload.monster)
+        monster: projectMonster(payload.monster),
+        ...(payload.autoHatch === true ? { autoHatch: true } : {})
       };
     }
     if (eventType === 'streammonsters:monster_discovered') {

@@ -142,6 +142,57 @@ describe('Stream Monsters 1.11 living egg shelf and active-owner loop', () => {
     ]);
   });
 
+  test('preserves automatic hatch provenance through the public projector only', () => {
+    const automatic = createSubject();
+    const manual = createSubject();
+    gift(automatic, 'viewer-active', 'gift-auto-public');
+    gift(manual, 'viewer-active', 'gift-manual-public');
+    automatic.setNow(1_100);
+    manual.setNow(1_100);
+    automatic.engine.markReadyEggs();
+    manual.engine.markReadyEggs();
+
+    automatic.engine.autoHatchReadyEggs({ isViewerActive: () => true });
+    manual.engine.hatchEgg('viewer-active', 1);
+
+    const automaticRaw = automatic.emitted.find(entry => (
+      entry.event === 'streammonsters:egg_hatched'
+    )).payload;
+    const manualRaw = manual.emitted.find(entry => (
+      entry.event === 'streammonsters:egg_hatched'
+    )).payload;
+    const automaticPublic = new StreamMonstersPublicEventProjector({
+      store: automatic.store
+    }).project('streammonsters:egg_hatched', automaticRaw);
+    const manualPublic = new StreamMonstersPublicEventProjector({
+      store: manual.store
+    }).project('streammonsters:egg_hatched', manualRaw);
+
+    expect(automaticPublic).toEqual(expect.objectContaining({
+      autoHatch: true,
+      displayName: '@Active Viewer',
+      owner: expect.objectContaining({
+        displayName: '@Active Viewer',
+        initials: 'AV'
+      }),
+      egg: expect.objectContaining({ element: 'Ember' }),
+      monster: expect.objectContaining({
+        name: expect.any(String),
+        element: 'Ember'
+      })
+    }));
+    expect(manualPublic.autoHatch).toBeUndefined();
+    for (const [raw, projected] of [
+      [automaticRaw, automaticPublic],
+      [manualRaw, manualPublic]
+    ]) {
+      const publicJson = JSON.stringify(projected);
+      expect(publicJson).not.toContain(raw.userId);
+      expect(publicJson).not.toContain(raw.egg.egg_id);
+      expect(publicJson).not.toContain(raw.monster.monster_id);
+    }
+  });
+
   test('projects ready and hatch removal transitions without exposing ownership ids', () => {
     const subject = createSubject();
     const spawned = gift(subject, 'viewer-active', 'gift-stage');
