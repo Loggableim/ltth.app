@@ -268,3 +268,65 @@ Plugin-scoped ESLint passed
 CSS build passed (only the pre-existing caniuse-lite warning)
 git diff --check passed
 ```
+
+## Independent review fix round 2
+
+A later isolated hardware-WebGPU capture reached Dawn's real WGSL compiler
+and rejected the active particle shader because `target` is a reserved WGSL
+identifier. The no-adapter test doubles used before this round accepted the
+invalid shader module and therefore did not expose the production fallback.
+
+### RED
+
+The new regression validates the `Uniforms` fields and every `u.<field>`
+reference in the exact shader string passed to `GPUDevice.createShaderModule`.
+Its strict compiler double rejects the observed reserved identifier.
+
+```powershell
+& 'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe' `
+  'node_modules\jest\bin\jest.js' --runTestsByPath `
+  'test/streammonsters-effects-renderer.test.js' --runInBand `
+  -t 'active particle shader compiles without reserved or dangling uniform identifiers'
+```
+
+Observed before the production rename:
+
+```text
+1 suite failed
+1 test failed, 22 skipped
+Expected renderer init "webgpu"; received "fallback"
+```
+
+### Fix and GREEN
+
+Both WGSL `Uniforms` declarations now call the semantic slot `destination`,
+and all shader member reads use `u.destination`. The uniform field order,
+48-float JavaScript payload, 192-byte buffer layout, and draw path are
+unchanged.
+
+The exact RED command then passed:
+
+```text
+1 suite passed
+1 test passed, 22 skipped
+```
+
+Focused Node 22 VFX verification:
+
+```powershell
+& 'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe' `
+  'node_modules\jest\bin\jest.js' --runTestsByPath `
+  'test/streammonsters-effects-renderer.test.js' `
+  'test/streammonsters-effects-signatures-v111.test.js' `
+  --runInBand --silent
+```
+
+```text
+2/2 suites passed
+40/40 tests passed
+```
+
+The shared worktree's new 1.11 hardware capture and capture script belong to
+the parallel package-fix task and were intentionally neither run nor changed
+in this scoped round. The capture agent must repeat its exact hardware smoke
+against this commit; this report does not claim that retest prematurely.

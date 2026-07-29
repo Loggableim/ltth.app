@@ -15,6 +15,23 @@ function deferred() {
   return { promise, resolve };
 }
 
+function validateWgslUniformContract(code) {
+  const uniformStruct = /struct Uniforms\s*\{([\s\S]*?)\};/.exec(code);
+  if (!uniformStruct) throw new Error('missing Uniforms struct');
+  const fields = [...uniformStruct[1].matchAll(/^\s*([A-Za-z_]\w*)\s*:/gm)]
+    .map(match => match[1]);
+  const reservedFields = fields.filter(field => field === 'target');
+  if (reservedFields.length) {
+    throw new Error(`reserved WGSL uniform identifier: ${reservedFields.join(', ')}`);
+  }
+  const unknownReferences = [...code.matchAll(/\bu\.([A-Za-z_]\w*)/g)]
+    .map(match => match[1])
+    .filter(field => !fields.includes(field));
+  if (unknownReferences.length) {
+    throw new Error(`unknown WGSL uniform reference: ${unknownReferences.join(', ')}`);
+  }
+}
+
 function createGpuHarness() {
   const lost = deferred();
   const pass = {
@@ -484,6 +501,25 @@ describe('Stream Monsters effects renderer', () => {
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.special);
     await expect(completion).resolves.toEqual(expect.objectContaining({
       scene: 'special'
+    }));
+  });
+
+  test('active particle shader compiles without reserved or dangling uniform identifiers', async () => {
+    const harness = createGpuHarness();
+    harness.device.createShaderModule.mockImplementation(descriptor => {
+      validateWgslUniformContract(descriptor.code);
+      return { shader: true };
+    });
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false })
+    });
+
+    await expect(renderer.init()).resolves.toBe('webgpu');
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      renderer: 'webgpu',
+      fallbackReason: null
     }));
   });
 

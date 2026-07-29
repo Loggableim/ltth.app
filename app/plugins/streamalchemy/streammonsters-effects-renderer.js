@@ -296,7 +296,7 @@ struct Uniforms {
   effect: vec4<f32>,
   placement: vec4<f32>,
   signature: vec4<f32>,
-  target: vec4<f32>,
+  destination: vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> u: Uniforms;
 
@@ -338,8 +338,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
   let element = u.signature.x;
   let quality = max(0.32, u.signature.y / 3.0);
   let targetPoint = vec2<f32>(
-    (u.target.x - u.placement.x) * u.frame.w,
-    u.target.y - u.placement.y
+    (u.destination.x - u.placement.x) * u.frame.w,
+    u.destination.y - u.placement.y
   ) / effectScale;
   let pulse = 0.5 + 0.5 * sin(u.frame.x * (5.0 + variant) + angle * (6.0 + twist));
   var alpha = ring(centered, 0.1 + u.frame.y * 0.34 + spread * 0.025, 0.018 + phase * 0.003);
@@ -433,7 +433,7 @@ struct Uniforms {
   effect: vec4<f32>,
   placement: vec4<f32>,
   basis: vec4<f32>,
-  target: vec4<f32>,
+  destination: vec4<f32>,
   outcome: vec4<f32>,
   detail: vec4<f32>,
   motion: vec4<f32>,
@@ -477,7 +477,7 @@ fn vertexMain(
   var size = (0.009 + hash11(index + 21.0) * 0.014) *
     (0.82 + min(3.0, u.effect.x) * 0.08);
   if (motionCode == 1.0) {
-    center = mix(u.placement.xy, u.target.xy, phase);
+    center = mix(u.placement.xy, u.destination.xy, phase);
     let arc = sin(phase * 3.141593) * curvature * 0.075;
     let ripple = sin(phase * (5.0 + u.shape.z) + u.frame.x * 8.0 + u.shape.w);
     center += u.basis.zw * (arc + ripple * turbulence * 0.018);
@@ -557,7 +557,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     shape = max(outer * (1.0 - cutout), star * 0.74);
   }
   let cadence = 0.72 + 0.28 * sin(
-    u.frame.x * 12.0 + u.target.z * 2.1 + u.target.w + u.outcome.w
+    u.frame.x * 12.0 + u.destination.z * 2.1 + u.destination.w + u.outcome.w
   );
   let outcomeEnergy = min(
     1.0,
