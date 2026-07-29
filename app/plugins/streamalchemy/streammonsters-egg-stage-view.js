@@ -545,13 +545,17 @@
       return item;
     }
 
-    function settleLanding(visualId, item) {
-      if (!item || item.dataset.eggId !== visualId) return;
-      item.classList.remove('landing');
+    function cancelPendingLanding(visualId) {
       pendingLandingIds.delete(visualId);
       const handle = landingTimers.get(visualId);
       if (handle != null) cancel(handle);
       landingTimers.delete(visualId);
+    }
+
+    function settleLanding(visualId, item) {
+      if (!item || item.dataset.eggId !== visualId) return;
+      item.classList.remove('landing');
+      cancelPendingLanding(visualId);
     }
 
     function createKeyedEggNode(egg, index) {
@@ -711,6 +715,7 @@
         );
         if (!removedId) return false;
         eggsById.delete(removedId);
+        cancelPendingLanding(removedId);
         render();
         return true;
       }
@@ -730,6 +735,7 @@
         egg?.state === 'claimed'
       ) {
         eggsById.delete(visualId);
+        cancelPendingLanding(visualId);
       } else {
         eggsById.set(visualId, { ...egg, visualId });
         if (isNewLanding) {

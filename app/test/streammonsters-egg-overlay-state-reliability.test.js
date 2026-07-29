@@ -404,39 +404,52 @@ describe('Stream Monsters egg overlay state reliability', () => {
     }
   });
 
-  test('ignores owned free inventory eggs on live ready and boost events', () => {
+  test('removes owned free eggs and cancels their live landing timers', () => {
     const document = eggShelfDocument();
     const cancelled = [];
+    const activeTimers = new Set();
     let timerId = 0;
     const view = EggStageView.createEggStageView({
       document,
       now: () => 1_000,
       setInterval: () => 1,
       clearInterval: () => {},
-      setTimeout: () => ++timerId,
-      clearTimeout: handle => cancelled.push(handle)
+      setTimeout: () => {
+        const handle = ++timerId;
+        activeTimers.add(handle);
+        return handle;
+      },
+      clearTimeout: handle => {
+        cancelled.push(handle);
+        activeTimers.delete(handle);
+      }
     });
-    const offer = freeEgg('owned-free');
-    const owned = freeEgg('owned-free', {
-      ownershipState: 'owned',
-      adoptionStatus: 'owned',
-      adoptable: false,
-      state: 'ready'
+    [
+      ['egg_ready', 'ready'],
+      ['egg_boosted', 'incubating']
+    ].forEach(([type, state]) => {
+      const offer = freeEgg(`owned-free-${type}`);
+      const owned = freeEgg(offer.visualId, {
+        ownershipState: 'owned',
+        adoptionStatus: 'owned',
+        adoptable: false,
+        state
+      });
+
+      expect(view.applyEvent('egg_landed', { eggStage: offer })).toBe(true);
+      expect(view.model().total).toBe(1);
+      expect(activeTimers.size).toBe(1);
+      const landingHandle = [...activeTimers][0];
+
+      expect(view.applyEvent(type, { eggStage: owned })).toBe(true);
+      expect(view.model().total).toBe(0);
+      expect(activeTimers.size).toBe(0);
+      expect(cancelled.filter(handle => handle === landingHandle)).toHaveLength(1);
     });
 
-    view.applySnapshot([offer]);
-    cancelled.length = 0;
-    expect(view.applyEvent('egg_ready', { eggStage: owned })).toBe(true);
-    expect(view.model().total).toBe(0);
-    expect(cancelled).not.toHaveLength(0);
-
-    view.applySnapshot([offer]);
-    cancelled.length = 0;
-    expect(view.applyEvent('egg_boosted', {
-      eggStage: { ...owned, state: 'incubating' }
-    })).toBe(true);
-    expect(view.model().total).toBe(0);
-    expect(cancelled).not.toHaveLength(0);
+    const cancellationsBeforeDestroy = cancelled.length;
+    view.destroy();
+    expect(cancelled).toHaveLength(cancellationsBeforeDestroy);
   });
 
   test('coalesces repeated free-offer prompts without delaying shelf state', () => {
