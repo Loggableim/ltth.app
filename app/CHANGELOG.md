@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Stream Monsters 1.11.0 – Portrait Arcade Rally**: The verified Open Beta package gives new setups a 90-second incubation default, while stored creator timings and existing egg readiness remain unchanged. German and English are active by default, with Spanish and French available for one- or two-language overlay sequencing.
+- **Stream Monsters 1.11.1 – Stable Portrait Arcade Rally**: The verified Stable package gives new setups a 90-second incubation default, while stored creator timings and existing egg readiness remain unchanged. German and English are active by default, with Spanish and French available for one- or two-language overlay sequencing.
 - **Rules v8 K.O. Arena**: Battles continue until K.O. or forfeit, sealed A/B/C choices resolve immediately when both fighters lock, passive Special charge is capped per round, and Arena Collapse accelerates living battles from round five.
 - **Element-specific broadcast effects**: The 74/26 portrait takeover uses readable player, monster, skill and result cards plus distinct Ember, Tide, Grove, Gale, Volt and Lunar WebGPU signatures with synchronized Canvas2D/CSS fallback.
 - **Stream Monsters 1.10.0 – Jackpot Arena & Living Egg Shelf**: Gift eggs are owned immediately, public free offers alone use `!adopt`, and the reconnect-safe portrait shelf animates eight eggs plus prioritized overflow above the chat-safe boundary.
@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Verified plugin release**: Stream Monsters 1.11.0 is bound to its audited source commit and tree. The deterministic package and store checksum match, while every archive through 1.10.0 stays immutable.
+- **Verified plugin release**: Stream Monsters 1.11.1 is bound to its audited source commit and tree. The deterministic package and store checksum match, while every archive through 1.11.0 stays immutable.
+- **Stable hardening**: Provider event IDs are durably deduplicated across GCCE and fallback ingress, public events redact internal monster IDs, late Arena Collapse prevents defensive deadlocks, and all creator/overlay controls pass the four-language static i18n gate.
 - **Fair lifecycle and controls**: Gift eggs are owned immediately, only free offers are adoptable, Auto-Hatch respects current-stream activity, stat prompts identify the sanitized player and exact monster, and GCCE remains the sole command ingress while active.
 - **Jackpot Clash presentation**: Eight-second sealed A/B/C windows, deterministic passive Special charge, full-monster skill/HUD choreography, combo feedback, element lighting, and synchronized WebGPU or Canvas2D/CSS beats deepen battles without paid combat bonuses.
 - **Rules-v7 presentation and recovery**: Sealed A/B/C choices reveal simultaneously, interrupted reveals and decimal replay cursors recover deterministically, Elemental Hour explains its timing/Hype effect, and every creator demo scene completes the cinematic battle preview.

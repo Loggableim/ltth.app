@@ -628,22 +628,21 @@
         "es": "Portrait Arcade Rally con 90 segundos por defecto en configuraciones nuevas, guía bilingüe, arena 74/26 segura para TikTok, combates Rules v8 hasta K.O., Arena Collapse, efectos WebGPU elementales, 72 formas Furry y progreso permanente justo.",
         "fr": "Portrait Arcade Rally avec 90 secondes par défaut pour les nouvelles configurations, guide bilingue, arène TikTok 74/26, combats Rules v8 jusqu’au K.-O., Arena Collapse, effets WebGPU élémentaires, 72 formes Furry et progression permanente équitable."
       },
-      "version": "1.11.0",
+      "version": "1.11.1",
       "author": "Pup Cid",
       "category": "plugin",
-      "channel": "open-beta",
+      "channel": "stable",
       "minLtthVersion": "1.4.1",
       "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
       "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
       "badges": [
-        "working-beta",
         "subscriber-only"
       ],
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip",
-      "sha256": "837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip",
+      "sha256": "46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60",
       "pricing": {
         "type": "free",
         "amount": 0,

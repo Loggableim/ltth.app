@@ -126,12 +126,12 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     );
 
     expect(currentRelease.version).toBe('1.4.1');
-    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.11\.0/);
-    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.11\.0/);
+    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.11\.1/);
+    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.11\.1/);
     expect(publicRelease.changelog['1.4.1'].changes.join('\n')).toMatch(
       /Stream Monsters 1\.5\.0/
     );
-    expect(bundleSource).toContain('"1.4.1": "1.5.0"');
+    expect(bundleSource).toContain('"1.4.1": "1.11.1"');
   });
 
   test('keeps 1.8.0 registered as an immutable historical Open Beta release', () => {

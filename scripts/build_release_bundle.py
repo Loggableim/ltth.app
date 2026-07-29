@@ -73,7 +73,7 @@ RELEASE_ASSET_ZIP_NAME = "ltth_latest.zip"
 RELEASE_ASSET_MANIFEST_NAME = "ltth_latest.json"
 SEMANTIC_VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 STREAM_MONSTERS_RELEASES = {
-    "1.4.1": "1.5.0",
+    "1.4.1": "1.11.1",
 }
 
 
@@ -206,9 +206,15 @@ def validate_stream_monsters_release(
             "plugin-store.json streamalchemy.packageUrl must be "
             f"{expected_package_url}."
         )
-    if store_entry.get("channel") != "open-beta":
+    expected_channel = (
+        "stable"
+        if plugin_manifest.get("devStatus") == "stable"
+        else "open-beta"
+    )
+    if store_entry.get("channel") != expected_channel:
         raise ValueError(
-            "plugin-store.json streamalchemy.channel must be open-beta."
+            "plugin-store.json streamalchemy.channel must be "
+            f"{expected_channel}."
         )
     if store_entry.get("minLtthVersion") != ltth_version:
         raise ValueError(

@@ -369,7 +369,7 @@ class PluginStore {
           version: manifest.version || '0.0.0',
           author: manifest.author || '',
           category: getCategoryFromType(manifest.type),
-          channel: 'open-beta',
+          channel: manifest.devStatus === 'stable' ? 'stable' : 'open-beta',
           pricing: { type: 'free', amount: 0, currency: 'EUR' },
           badges: PREINSTALLED_PLUGIN_IDS.has(id) ? ['preinstalled'] : [],
           packageUrl: '',

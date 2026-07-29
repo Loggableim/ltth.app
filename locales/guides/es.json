@@ -16547,7 +16547,7 @@
   "docs.plugin.streamalchemy.requirements": "LTTH 1.4.1 con Stream Monsters 1.11. Creator basta para la configuración local; TikTok, GCCE y OBS solo son necesarios para emitir.",
   "docs.plugin.streamalchemy.safety": "Usa únicamente vistas previas locales. Los huevos gratis y los regalos nunca cambian estadísticas ni probabilidades de victoria. Stream Monsters 1.11 no incluye Art Lab, generación de imágenes ni instalador de modelos.",
   "docs.plugin.streamalchemy.troubleshooting": "Si faltan los regalos, las 72 formas o la vista previa A/B/C, comprueba el estado del plugin, vuelve a abrir /streammonsters/ui y revisa los avisos de Live Center.",
-  "docs.plugin.streamalchemy.status": "Beta funcional",
+  "docs.plugin.streamalchemy.status": "Estable",
   "docs.plugin.streamalchemy.overlay.url": "/streammonsters/overlay",
   "docs.plugin.streamalchemy.purpose": "Stream Monsters 1.11 combina huevos por regalos y gratis opcionales, 72 formas Furry, guía bilingüe y combates Rules v8 hasta K.O. en una arena vertical 74/26 segura para TikTok.",
   "docs.plugin.streamalchemy.audience": "Streamers que quieren configurar primero huevos por regalos, 72 formas y la arena interactiva A/B/C sin impacto LIVE.",

@@ -197,7 +197,17 @@ describe('Official plugin store registry', () => {
     );
   });
 
-  it('publishes Stream Monsters 1.11.0 for LTTH 1.4.1 with source-identical release assets and keeps historical archives unchanged', async () => {
+  it('keeps the historical Stream Monsters 1.11.0 package byte-for-byte unchanged', () => {
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.0.zip');
+
+    assert(fs.existsSync(packagePath), 'streamalchemy-1.11.0.zip must remain available');
+    assert.strictEqual(
+      crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex'),
+      '837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4'
+    );
+  });
+
+  it('publishes Stream Monsters 1.11.1 stable for LTTH 1.4.1 with source-identical release assets and keeps earlier archives unchanged', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
@@ -205,12 +215,14 @@ describe('Official plugin store registry', () => {
 
     assert(storePlugin, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
-    assert.strictEqual(sourceManifest.version, '1.11.0');
+    assert.strictEqual(sourceManifest.version, '1.11.1');
+    assert.strictEqual(sourceManifest.devStatus, 'stable');
     assert.strictEqual(storePlugin.version, sourceManifest.version);
     assert.strictEqual(storePlugin.minLtthVersion, '1.4.1');
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip');
-    assert.strictEqual(storePlugin.channel, 'open-beta');
-    assert(storePlugin.badges.includes('working-beta'));
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip');
+    assert.strictEqual(storePlugin.channel, 'stable');
+    assert(storePlugin.badges.includes('subscriber-only'));
+    assert(!storePlugin.badges.includes('working-beta'));
     const legacyPackages = new Map([
       ['streamalchemy-1.2.0.zip', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
       ['streamalchemy-1.3.0.zip', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf'],
@@ -225,7 +237,7 @@ describe('Official plugin store registry', () => {
       assert.strictEqual(legacyDigest, expectedHash, `${fileName} must remain byte-for-byte unchanged`);
     }
 
-    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.0.zip');
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.1.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
     assert.strictEqual(storePlugin.sha256, digest);
 
@@ -327,12 +339,25 @@ describe('Official plugin store registry', () => {
     }
   });
 
-  it('marks all official LTTH plugins as open beta and free for the initial store', () => {
+  it('marks Stream Monsters as the stable official store release', () => {
+    const registryPath = path.join(repoRoot, 'plugin-store.json');
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    const streamMonsters = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
+
+    assert(streamMonsters, 'Stream Monsters must exist in the official store registry');
+    assert.strictEqual(streamMonsters.channel, 'stable');
+    assert(streamMonsters.badges.includes('subscriber-only'));
+    assert(!streamMonsters.badges.includes('working-beta'));
+  });
+
+  it('keeps every other official LTTH plugin open beta and all official plugins free', () => {
     const registryPath = path.join(repoRoot, 'plugin-store.json');
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 
     for (const plugin of registry.plugins) {
-      assert.strictEqual(plugin.channel, 'open-beta', `${plugin.id} must be open beta`);
+      if (plugin.id !== 'streamalchemy') {
+        assert.strictEqual(plugin.channel, 'open-beta', `${plugin.id} must be open-beta`);
+      }
       assert.strictEqual(plugin.pricing?.type, 'free', `${plugin.id} must be free`);
       assert.strictEqual(plugin.pricing?.amount, 0, `${plugin.id} free price amount must be 0`);
       assert.strictEqual(plugin.pricing?.currency, 'EUR', `${plugin.id} free price currency must be EUR`);

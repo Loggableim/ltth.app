@@ -172,8 +172,8 @@ http://localhost:3000/gcce-hud/overlay
 ---
 
 ### 4. Stream Monsters
-**Estado:** 🟡 Working / Open Beta
-**Versión:** 1.11.0
+**Estado:** 🟢 Estable
+**Versión:** 1.11.1
 **Autor:** Pup Cid
 
 **Descripción:**

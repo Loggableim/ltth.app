@@ -207,7 +207,7 @@ The workspace currently contains 37 plugin manifests in `app/plugins/`:
 - schnorrbecher
 - soundboard
 - spotlight
-- streamalchemy (Stream Monsters 1.9.0, Open Beta)
+- streamalchemy (Stream Monsters 1.11.1, Stable)
 - stt-ticker
 - talking-heads
 - thermal-printer

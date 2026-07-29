@@ -553,12 +553,12 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     const storeEntry = registry.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(manifest.id).toBe('streamalchemy');
-    expect(manifest.version).toBe('1.11.0');
-    expect(manifest.devStatus).toBe('working-beta');
-    expect(storeEntry.version).toBe('1.11.0');
-    expect(storeEntry.channel).toBe('open-beta');
-    expect(storeEntry.badges).toContain('working-beta');
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip');
+    expect(manifest.version).toBe('1.11.1');
+    expect(manifest.devStatus).toBe('stable');
+    expect(storeEntry.version).toBe('1.11.1');
+    expect(storeEntry.channel).toBe('stable');
+    expect(storeEntry.badges).toEqual(['subscriber-only']);
+    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip');
 
     const expectedTerms = {
       en: [/90-second/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /portrait/i],

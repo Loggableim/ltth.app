@@ -48,14 +48,14 @@ describe('Stream Monsters current 1.11 release', () => {
     expect(manifest).toEqual(expect.objectContaining({
       id: 'streamalchemy',
       name: 'Stream Monsters',
-      version: '1.11.0',
-      devStatus: 'working-beta'
+      version: '1.11.1',
+      devStatus: 'stable'
     }));
     expect(storeEntry).toEqual(expect.objectContaining({
-      version: '1.11.0',
-      channel: 'open-beta',
+      version: '1.11.1',
+      channel: 'stable',
       minLtthVersion: '1.4.1',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       screenshots: [
         '/screenshots/features/stream-monsters-creator-1.11.png',
@@ -96,7 +96,7 @@ describe('Stream Monsters current 1.11 release', () => {
       repoRoot,
       'plugin-store',
       'packages',
-      'streamalchemy-1.11.0.zip'
+      'streamalchemy-1.11.1.zip'
     );
     const manifest = readJson('app/plugins/streamalchemy/assets/streammonsters/furry/manifest.json');
     const audio = readJson('app/plugins/streamalchemy/assets/audio/manifest.json');

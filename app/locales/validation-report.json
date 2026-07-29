@@ -168,7 +168,7 @@
     {
       "label": "plugin:streamalchemy",
       "directory": "app/plugins/streamalchemy/locales",
-      "keys": 538
+      "keys": 983
     },
     {
       "label": "plugin:stt-ticker",

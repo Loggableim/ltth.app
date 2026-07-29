@@ -17,7 +17,7 @@ function sha256(relativePath) {
 }
 
 describe('Stream Monsters 1.11 source-release contract', () => {
-  test('binds the verified 1.11.0 Open Beta source without changing LTTH 1.4.1', () => {
+  test('preserves the verified 1.11.0 source while promoting 1.11.1 Stable without changing LTTH 1.4.1', () => {
     const manifest = readJson('app/plugins/streamalchemy/plugin.json');
     const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
     const appPackage = readJson('app/package.json');
@@ -28,8 +28,8 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     expect(manifest).toEqual(expect.objectContaining({
       id: 'streamalchemy',
       name: 'Stream Monsters',
-      version: '1.11.0',
-      devStatus: 'working-beta'
+      version: '1.11.1',
+      devStatus: 'stable'
     }));
     expect(releaseMap).not.toHaveProperty('stagedRelease');
     expect(releaseMap.releases['1.11.0']).toEqual({
@@ -46,18 +46,20 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     expect(currentRelease.version).toBe('1.4.1');
   });
 
-  test('publishes the verified package and hash in the Open Beta store', () => {
+  test('publishes the verified 1.11.1 package and hash in the Stable store', () => {
     const store = readJson('plugin-store.json');
+    const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
+    const release = releaseMap.releases['1.11.1'];
     const entry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(entry).toEqual(expect.objectContaining({
-      version: '1.11.0',
-      channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
-      sha256: '837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4'
+      version: '1.11.1',
+      channel: 'stable',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
+      sha256: release.sha256
     }));
-    expect(fs.existsSync(path.join(packageDir, 'streamalchemy-1.11.0.zip'))).toBe(true);
-    expect(sha256('plugin-store/packages/streamalchemy-1.11.0.zip'))
+    expect(fs.existsSync(path.join(packageDir, 'streamalchemy-1.11.1.zip'))).toBe(true);
+    expect(sha256('plugin-store/packages/streamalchemy-1.11.1.zip'))
       .toBe(entry.sha256);
   });
 
@@ -65,7 +67,8 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     ['1.2.0', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
     ['1.3.0', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf'],
     ['1.4.0', 'ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0'],
-    ['1.10.0', '232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626']
+    ['1.10.0', '232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626'],
+    ['1.11.0', '837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4']
   ])('preserves the published %s archive byte-for-byte', (release, expectedHash) => {
     expect(sha256(`plugin-store/packages/streamalchemy-${release}.zip`))
       .toBe(expectedHash);
@@ -108,12 +111,13 @@ describe('Stream Monsters 1.11 source-release contract', () => {
 
   test('marks release notes as verified without claiming an LTTH version bump', () => {
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
+    const release = readJson(
+      'app/scripts/streammonsters-release-map.json'
+    ).releases['1.11.1'];
 
-    expect(currentRelease.notes).toContain('Stream Monsters 1.11.0');
-    expect(currentRelease.notes).toContain('streamalchemy-1.11.0.zip');
-    expect(currentRelease.notes).toContain(
-      '837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4'
-    );
+    expect(currentRelease.notes).toContain('Stream Monsters 1.11.1');
+    expect(currentRelease.notes).toContain('streamalchemy-1.11.1.zip');
+    expect(currentRelease.notes).toContain(release.sha256);
     expect(currentRelease.notes).not.toMatch(/source candidate|package pending|Quellkandidat|Paket ausstehend/i);
     expect(currentRelease.version).toBe('1.4.1');
   });

@@ -29,15 +29,15 @@ describe('Stream Monsters 1.11 public branding', () => {
 
     expect(streamMonsters).toMatchObject({
       id: 'streamalchemy',
-      version: '1.11.0',
-      channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
+      version: '1.11.1',
+      channel: 'stable',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
       screenshots: [creatorScreenshot, arenaScreenshot]
     });
     expect(streamMonsters.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(pluginManifest.version).toBe(streamMonsters.version);
-    expect(pluginManifest.devStatus).toBe('working-beta');
-    expect(streamMonsters.badges).toEqual(expect.arrayContaining(['working-beta', 'subscriber-only']));
+    expect(pluginManifest.devStatus).toBe('stable');
+    expect(streamMonsters.badges).toEqual(['subscriber-only']);
     expect(streamMonsters.access).toEqual({ type: 'subscriber' });
 
     for (const locale of ['de', 'en', 'es', 'fr']) {

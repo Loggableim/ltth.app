@@ -16547,7 +16547,7 @@
   "docs.plugin.streamalchemy.requirements": "LTTH 1.4.1 with Stream Monsters 1.11. The Creator is enough for local setup; TikTok, GCCE, and OBS are needed only for broadcast operation.",
   "docs.plugin.streamalchemy.safety": "Use local previews only while checking the setup. Free eggs and gifts never change combat stats or win odds. Stream Monsters 1.11 includes no Art Lab, image generation, or model installer.",
   "docs.plugin.streamalchemy.troubleshooting": "If gifts, the 72 forms, or the A/B/C preview are missing, check the plugin status, reopen /streammonsters/ui, and review the Live Center warnings.",
-  "docs.plugin.streamalchemy.status": "Working beta",
+  "docs.plugin.streamalchemy.status": "Stable",
   "docs.plugin.streamalchemy.overlay.url": "/streammonsters/overlay",
   "docs.plugin.streamalchemy.purpose": "Stream Monsters 1.11 combines gift and optional free eggs, 72 bundled Furry forms, bilingual overlay guidance, and sealed Rules v8 K.O. battles in a TikTok-safe 74/26 portrait arena.",
   "docs.plugin.streamalchemy.audience": "Streamers who want to set up gift eggs, 72 forms, and the interactive A/B/C arena without LIVE impact first.",

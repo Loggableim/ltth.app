@@ -12,8 +12,8 @@ const {
 
 const repoRoot = path.join(__dirname, '..', '..');
 const packageDir = path.join(repoRoot, 'plugin-store', 'packages');
-const expectedSourceCommit = 'e242b808276366c2f804fdeb353d5cab9caeae98';
-const expectedSourceTree = '1478e82f9c1d0441a594a9537935e324da451692';
+const expectedSourceCommit = 'fd8583a2f04e377c88ebb7f5e5cd419fbcac64d4';
+const expectedSourceTree = 'b829b8e8b9b0d12fe0b61efb8f1fba8e2fb4ebdc';
 const canonicalTextExtensions = new Set([
   '.css',
   '.html',
@@ -27,7 +27,8 @@ const historicalArchives = new Map([
   ['1.2.0', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
   ['1.3.0', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf'],
   ['1.4.0', 'ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0'],
-  ['1.10.0', '232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626']
+  ['1.10.0', '232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626'],
+  ['1.11.0', '837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4']
 ]);
 
 function readJson(relativePath) {
@@ -113,10 +114,10 @@ function readZip(filename) {
 }
 
 describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
-  test('publishes the verified 1.11.0 Open Beta package without changing LTTH 1.4.1', () => {
+  test('publishes the verified 1.11.1 Stable package without changing LTTH 1.4.1', () => {
     const manifest = readJson('app/plugins/streamalchemy/plugin.json');
     const releaseMap = loadReleaseMap();
-    const release = releaseMap.releases['1.11.0'];
+    const release = releaseMap.releases['1.11.1'];
     const store = readJson('plugin-store.json');
     const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
 
@@ -124,21 +125,21 @@ describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
     expect(release).toEqual({
       sourceCommit: expectedSourceCommit,
       sourceTree: expectedSourceTree,
-      manifestVersion: '1.11.0',
-      package: 'plugin-store/packages/streamalchemy-1.11.0.zip',
+      manifestVersion: '1.11.1',
+      package: 'plugin-store/packages/streamalchemy-1.11.1.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
     });
     expect(manifest).toEqual(expect.objectContaining({
       id: 'streamalchemy',
       name: 'Stream Monsters',
-      version: '1.11.0',
-      devStatus: 'working-beta'
+      version: '1.11.1',
+      devStatus: 'stable'
     }));
     expect(storeEntry).toEqual(expect.objectContaining({
-      version: '1.11.0',
-      channel: 'open-beta',
+      version: '1.11.1',
+      channel: 'stable',
       minLtthVersion: '1.4.1',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
       sha256: release.sha256
     }));
     expect(readJson('package.json').version).toBe('1.4.1');
@@ -146,18 +147,18 @@ describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
     const version = readJson('version.json');
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
     expect(version.version).toBe('1.4.1');
-    expect(version.downloadNote).toContain('Stream Monsters 1.11.0');
+    expect(version.downloadNote).toContain('Stream Monsters 1.11.1');
     expect(version.downloadNote).not.toMatch(/pending|ausstehend|source candidate/i);
     expect(currentRelease.version).toBe('1.4.1');
-    expect(currentRelease.notes).toContain('streamalchemy-1.11.0.zip');
+    expect(currentRelease.notes).toContain('streamalchemy-1.11.1.zip');
     expect(currentRelease.notes).toContain(release.sha256);
     expect(currentRelease.notes).not.toMatch(/pending|ausstehend|source candidate/i);
     expect(fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8'))
-      .toMatch(/current published Stream Monsters release is \*\*1\.11\.0/i);
+      .toMatch(/current published Stream Monsters release is \*\*1\.11\.1/i);
   });
 
   test('ships a path-safe, source-identical package with current assets, locales and licenses', async () => {
-    const release = loadReleaseMap().releases['1.11.0'];
+    const release = loadReleaseMap().releases['1.11.1'];
     const archive = path.join(repoRoot, release.package);
     const entries = await readZip(archive);
     const expectedFiles = git(
@@ -205,25 +206,25 @@ describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
       'assets/audio/LICENSE-CC0-1.0.txt',
       'assets/kenney-monster-builder/License.txt'
     ]));
-    expect(JSON.parse(entries.get('plugin.json').toString('utf8')).version).toBe('1.11.0');
+    expect(JSON.parse(entries.get('plugin.json').toString('utf8')).version).toBe('1.11.1');
   });
 
   test('rebuilds byte-identically from the recorded source commit and tree', async () => {
-    const release = loadReleaseMap().releases['1.11.0'];
+    const release = loadReleaseMap().releases['1.11.1'];
     const archive = path.join(repoRoot, release.package);
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-v111-rebuild-'));
 
     try {
-      const rebuilt = path.join(tempDir, 'streamalchemy-1.11.0.zip');
+      const rebuilt = path.join(tempDir, 'streamalchemy-1.11.1.zip');
       const result = await buildReleaseFromGit({
         repoRoot,
-        version: '1.11.0',
+        version: '1.11.1',
         outputPath: rebuilt
       });
       expect(result).toEqual(expect.objectContaining({
         sourceCommit: expectedSourceCommit,
         sourceTree: expectedSourceTree,
-        manifestVersion: '1.11.0',
+        manifestVersion: '1.11.1',
         sha256: release.sha256
       }));
       expect(sha256(rebuilt)).toBe(sha256(archive));

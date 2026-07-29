@@ -16547,7 +16547,7 @@
   "docs.plugin.streamalchemy.requirements": "LTTH 1.4.1 mit Stream Monsters 1.11. Für den lokalen Aufbau genügt der Creator; TikTok, GCCE und OBS werden erst für den Sendebetrieb benötigt.",
   "docs.plugin.streamalchemy.safety": "Verwende nur lokale Vorschauen. Gratis-Eier und Gifts verändern keine Kampfwerte oder Gewinnchancen. Stream Monsters 1.11 enthält kein Art Lab, keine Bildgenerierung und keinen Modell-Installer.",
   "docs.plugin.streamalchemy.troubleshooting": "Wenn Gifts, 72 Formen oder die A/B/C-Vorschau fehlen, prüfe den Plugin-Status, öffne /streammonsters/ui neu und kontrolliere die Hinweise im Live Center.",
-  "docs.plugin.streamalchemy.status": "Funktionsfähige Beta",
+  "docs.plugin.streamalchemy.status": "Stabil",
   "docs.plugin.streamalchemy.overlay.url": "/streammonsters/overlay",
   "docs.plugin.streamalchemy.purpose": "Stream Monsters 1.11 verbindet Gift- und optionale Gratis-Eier, 72 gebündelte Furry-Formen, zweisprachige Overlay-Führung und K.-o.-Duelle nach Rules v8 in einer TikTok-sicheren 74/26-Portrait-Arena.",
   "docs.plugin.streamalchemy.audience": "Streamer:innen, die Geschenk-Eier, 72 Formen und interaktive A/B/C-Arena zuerst ohne LIVE-Auswirkung einrichten möchten.",

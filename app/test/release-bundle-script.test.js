@@ -314,7 +314,7 @@ describe('Release bundle script', () => {
     }
   });
 
-  it('enforces the Stream Monsters 1.5 store contract for LTTH 1.4.1', () => {
+  it('enforces the Stream Monsters 1.11.1 Stable store contract for LTTH 1.4.1', () => {
     const python = findPythonCommand();
     tempRoot = createTempRepo();
 
@@ -336,10 +336,22 @@ describe('Release bundle script', () => {
     lock.packages[''].version = '1.4.1';
     fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2));
 
+    const manifestPath = path.join(
+      tempRoot,
+      'app',
+      'plugins',
+      'streamalchemy',
+      'plugin.json'
+    );
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest.version = '1.11.1';
+    manifest.devStatus = 'stable';
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
     const packageDir = path.join(tempRoot, 'plugin-store', 'packages');
     fs.mkdirSync(packageDir, { recursive: true });
-    const packagePath = path.join(packageDir, 'streamalchemy-1.5.0.zip');
-    fs.writeFileSync(packagePath, Buffer.from('stream-monsters-1.5-package'));
+    const packagePath = path.join(packageDir, 'streamalchemy-1.11.1.zip');
+    fs.writeFileSync(packagePath, Buffer.from('stream-monsters-1.11.1-package'));
 
     fs.writeFileSync(
       path.join(tempRoot, 'plugin-store.json'),
@@ -352,10 +364,10 @@ describe('Release bundle script', () => {
             es: 'Stream Monsters',
             fr: 'Stream Monsters'
           },
-          version: '1.4.9',
+          version: '1.11.0',
           minLtthVersion: '1.4.1',
-          channel: 'open-beta',
-          packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip',
+          channel: 'stable',
+          packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
           sha256: sha256(packagePath)
         }]
       }, null, 2)
@@ -374,11 +386,11 @@ describe('Release bundle script', () => {
     const rejected = runBuilder();
     expect(rejected.status).not.toBe(0);
     expect(rejected.stderr).toContain(
-      'plugin-store.json streamalchemy.version must be 1.5.0 for LTTH 1.4.1'
+      'plugin-store.json streamalchemy.version must be 1.11.1 for LTTH 1.4.1'
     );
 
     const store = JSON.parse(fs.readFileSync(path.join(tempRoot, 'plugin-store.json'), 'utf8'));
-    store.plugins[0].version = '1.5.0';
+    store.plugins[0].version = '1.11.1';
     store.plugins[0].minLtthVersion = '1.4.0';
     fs.writeFileSync(path.join(tempRoot, 'plugin-store.json'), JSON.stringify(store, null, 2));
 
@@ -389,6 +401,16 @@ describe('Release bundle script', () => {
     );
 
     store.plugins[0].minLtthVersion = '1.4.1';
+    store.plugins[0].channel = 'open-beta';
+    fs.writeFileSync(path.join(tempRoot, 'plugin-store.json'), JSON.stringify(store, null, 2));
+
+    const channelRejected = runBuilder();
+    expect(channelRejected.status).not.toBe(0);
+    expect(channelRejected.stderr).toContain(
+      'plugin-store.json streamalchemy.channel must be stable'
+    );
+
+    store.plugins[0].channel = 'stable';
     fs.writeFileSync(path.join(tempRoot, 'plugin-store.json'), JSON.stringify(store, null, 2));
 
     const accepted = runBuilder();

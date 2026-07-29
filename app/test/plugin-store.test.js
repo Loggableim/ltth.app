@@ -7,7 +7,7 @@ const { archiveFolder } = require('zip-lib');
 
 const { PluginStore, compareVersions, ensureUrlAllowed } = require('../modules/plugin-store');
 
-function writePlugin(root, id, version = '1.0.0') {
+function writePlugin(root, id, version = '1.0.0', manifestOverrides = {}) {
   const pluginDir = path.join(root, id);
   fs.mkdirSync(pluginDir, { recursive: true });
   fs.writeFileSync(path.join(pluginDir, 'index.js'), 'module.exports = class TestPlugin {};\n');
@@ -16,7 +16,8 @@ function writePlugin(root, id, version = '1.0.0') {
     name: id,
     version,
     entry: 'index.js',
-    enabled: true
+    enabled: true,
+    ...manifestOverrides
   }, null, 2));
 }
 
@@ -426,6 +427,28 @@ describe('PluginStore', () => {
     assert.strictEqual(emojiRain.installed, true);
     assert(emojiRain.packageUrl.startsWith('https://ltth.app/plugin-store/packages/'));
     assert.deepStrictEqual(emojiRain.pricing, { type: 'free', amount: 0, currency: 'EUR' });
+  });
+
+  it('preserves stable manifest status when generating the local fallback registry', () => {
+    writePlugin(tempDir, 'streamalchemy', '1.11.1', { devStatus: 'stable' });
+    writePlugin(tempDir, 'tts', '1.0.0', { devStatus: 'working-beta' });
+    const store = createStore(tempDir, { schemaVersion: 1, plugins: [] });
+    const bundledRegistryPath = path.resolve(__dirname, '..', '..', 'plugin-store.json');
+    const realExistsSync = fs.existsSync;
+    const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => (
+      path.resolve(filePath) === bundledRegistryPath ? false : realExistsSync(filePath)
+    ));
+
+    try {
+      const registry = store.buildBundledOfficialRegistry();
+      const byId = new Map(registry.plugins.map((plugin) => [plugin.id, plugin]));
+
+      assert.strictEqual(registry.generatedFrom, 'local-manifests');
+      assert.strictEqual(byId.get('streamalchemy').channel, 'stable');
+      assert.strictEqual(byId.get('tts').channel, 'open-beta');
+    } finally {
+      existsSyncSpy.mockRestore();
+    }
   });
 
   it('keeps community sources hidden until opt-in', async () => {
