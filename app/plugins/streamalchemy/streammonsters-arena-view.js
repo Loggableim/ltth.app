@@ -1392,6 +1392,7 @@
 
     async function complete(payload = {}) {
       stopCountdown();
+      node('arena-action-card')?.classList.remove('visible');
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
       const terminalReason = String(payload.terminalReason || '').toLowerCase();
@@ -1526,6 +1527,7 @@
 
     async function cancel(payload = {}) {
       stopCountdown();
+      node('arena-action-card')?.classList.remove('visible');
       const terminalVersion = surfaceVersion;
       if (arena) {
         arena.classList.add('visible');

@@ -315,6 +315,48 @@ describe('Stream Monsters targeted demo API', () => {
     }
   );
 
+  test('emits a canonical redacted completion payload for the K.O. preview', () => {
+    const { demo, emitted } = harness();
+    const res = response();
+
+    demo(localRequest({
+      scene: 'ko',
+      templateId: 'ashfang',
+      layout: 'portrait'
+    }), res);
+
+    const completed = emitted.find(entry => (
+      entry.event === 'streammonsters:battle_completed'
+    ))?.payload;
+    expect(completed).toEqual(expect.objectContaining({
+      eventId: 'demo-match:ko:completed',
+      sequence: 5,
+      matchId: 'demo-match',
+      winnerSlot: 1,
+      terminalReason: 'knockout',
+      knockout: {
+        round: 1,
+        remainingHp: 50,
+        maxHp: 50
+      },
+      winner: expect.objectContaining({
+        slot: 1,
+        viewerName: '@demo-viewer',
+        name: 'Ashfang',
+        element: 'Ember',
+        templateId: 'ashfang',
+        evolutionStage: 1,
+        level: 4
+      }),
+      ratingChanges: [
+        { slot: 1, before: 900, after: 916, delta: 16 },
+        { slot: 2, before: 900, after: 884, delta: -16 }
+      ]
+    }));
+    expect(completed.winner).not.toHaveProperty('monster_id');
+    expect(completed.winner).not.toHaveProperty('user_id');
+  });
+
   test.each([
     [{ scene: 'unknown' }, 'STREAM_MONSTERS_DEMO_SCENE_INVALID'],
     [{ scene: 'attack', templateId: 'missing' }, 'STREAM_MONSTERS_DEMO_TEMPLATE_INVALID'],

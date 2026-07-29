@@ -507,6 +507,111 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toMatch(/evad|auswei/i);
   });
 
+  test('clears the last action card before the result and keeps the next roster clean', async () => {
+    mountArena();
+    let finishResult;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: milliseconds => (
+          milliseconds === 8_000
+            ? new Promise(resolve => { finishResult = resolve; })
+            : Promise.resolve()
+        ),
+        now: () => 1_000
+      }
+    });
+    view.applyMatch({
+      matchId: 'terminal-action',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Selene', viewerName: '@luna', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 0, maxHp: 30 }
+      ]
+    });
+    await view.playAction({
+      rulesVersion: 8,
+      matchId: 'terminal-action',
+      eventId: 'terminal-action:event:1',
+      eventSequence: 1,
+      round: 4,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'A',
+      skill: { name: 'Moon Strike', shortText: 'Deals 8 damage.', type: 'attack' },
+      hits: [{ index: 1, hpDamage: 8, shieldAbsorbed: 0, evaded: false }],
+      terminal: true
+    });
+    expect(document.getElementById('arena-action-card').classList).toContain('visible');
+
+    const completion = view.complete({
+      eventId: 'terminal-action:event:completed',
+      matchId: 'terminal-action',
+      winnerSlot: 1,
+      winner: { viewerName: '@luna', name: 'Selene' },
+      terminalReason: 'knockout',
+      knockout: { round: 4, remainingHp: 20, maxHp: 30 }
+    });
+
+    expect(document.getElementById('arena-result').classList).toContain('visible');
+    expect(document.getElementById('arena-action-card').classList).not.toContain('visible');
+    finishResult();
+    await completion;
+
+    view.applyMatch({
+      matchId: 'next-roster',
+      state: 'roster',
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@ember', hp: 30, maxHp: 30 },
+        { slot: 2, name: 'Oakheart', viewerName: '@grove', hp: 30, maxHp: 30 }
+      ]
+    });
+    expect(document.getElementById('arena-action-card').classList).not.toContain('visible');
+  });
+
+  test('clears the last action card immediately when a battle is cancelled', async () => {
+    mountArena();
+    let finishCancellation;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: milliseconds => (
+          milliseconds === 3_000
+            ? new Promise(resolve => { finishCancellation = resolve; })
+            : Promise.resolve()
+        ),
+        now: () => 1_000
+      }
+    });
+    view.applyMatch({
+      matchId: 'cancel-action',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Selene', viewerName: '@luna', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 20, maxHp: 30 }
+      ]
+    });
+    await view.playAction({
+      rulesVersion: 8,
+      matchId: 'cancel-action',
+      eventId: 'cancel-action:event:1',
+      eventSequence: 1,
+      round: 2,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'B',
+      skill: { name: 'Moon Guard', shortText: 'Raises a shield.', type: 'defense' },
+      outcomes: [{ type: 'shield', amount: 5 }]
+    });
+    expect(document.getElementById('arena-action-card').classList).toContain('visible');
+
+    const cancellation = view.cancel({ matchId: 'cancel-action', reason: 'forfeit' });
+
+    expect(document.getElementById('arena-action-card').classList).not.toContain('visible');
+    finishCancellation();
+    await cancellation;
+  });
+
   test('renders one explicit stat allocation card for the sanitized player and monster', () => {
     mountArena();
     const view = ArenaView.createArenaView({ document });

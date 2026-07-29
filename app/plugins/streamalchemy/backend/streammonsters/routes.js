@@ -527,6 +527,7 @@ class StreamMonstersRoutes {
             slot: 1,
             locked: true,
             name: monster.name,
+            viewerName: '@demo-viewer',
             element: monster.element,
             templateId: monster.template_id,
             evolutionStage: 1,
@@ -542,6 +543,7 @@ class StreamMonstersRoutes {
             slot: 2,
             locked: true,
             name: opponent.name,
+            viewerName: '@demo-rival',
             element: opponent.element,
             templateId: opponent.template_id,
             evolutionStage: 1,
@@ -787,7 +789,29 @@ class StreamMonstersRoutes {
           });
           emit('streammonsters:battle_completed', {
             matchId: 'demo-match',
-            winnerSlot: 1
+            eventId: 'demo-match:ko:completed',
+            sequence: 5,
+            winnerSlot: 1,
+            terminalReason: 'knockout',
+            knockout: {
+              round: 1,
+              remainingHp: 50,
+              maxHp: 50
+            },
+            winner: {
+              slot: 1,
+              viewerName: '@demo-viewer',
+              name: monster.name,
+              element: monster.element,
+              templateId: monster.template_id,
+              evolutionStage: 1,
+              imageUrl: monster.image_url,
+              level: monster.level
+            },
+            ratingChanges: [
+              { slot: 1, before: 900, after: 916, delta: 16 },
+              { slot: 2, before: 900, after: 884, delta: -16 }
+            ]
           });
         } else if (preview.scene === 'xp') {
           emit('streammonsters:monster_xp_awarded', {
