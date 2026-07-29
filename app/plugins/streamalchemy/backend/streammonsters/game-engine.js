@@ -214,7 +214,9 @@ class StreamMonstersEngine {
       avatarRef: safeAssetReference(avatarRef)
     });
     this.store.incrementViewer(userId, 'gifts_sent');
-    this.progression?.recordGift(userId, this.streamKey);
+    this.progression?.recordGift(userId, this.streamKey, {
+      eventId: normalizedEventKey || egg.egg_id
+    });
     this.store.incrementStreamMetric(this.streamKey, 'eggs_spawned');
     const combo = this.applyGiftCombo(userId, gift, createdAtMs);
     this.addHype(10 + (combo ? 20 : 0) + (elementalHourMatch ? 10 : 0), {

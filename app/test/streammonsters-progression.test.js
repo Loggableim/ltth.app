@@ -66,6 +66,43 @@ describe('Stream Monsters progression', () => {
     ]));
   });
 
+  test('records each received egg once while reserving weekly event credit for gifts', () => {
+    const { store, progression } = createProgression();
+    const streamKey = 'creator:egg-receipt';
+
+    const first = progression.recordEggReceived('viewer-a', streamKey, {
+      source: 'free',
+      eventId: 'free-claim-1'
+    });
+    const retry = progression.recordEggReceived('viewer-a', streamKey, {
+      source: 'free',
+      eventId: 'free-claim-1'
+    });
+
+    expect(first).toEqual(expect.objectContaining({ recorded: true, source: 'free' }));
+    expect(retry).toEqual(expect.objectContaining({ recorded: false, source: 'free' }));
+    expect(store.getViewerQuests('viewer-a', '2026-07-21')).toEqual([
+      expect.objectContaining({
+        quest_key: 'daily:gift',
+        title: 'Receive an egg',
+        progress: 1,
+        completed: 1
+      })
+    ]);
+    expect(store.getViewerQuests('viewer-a', '2026-W30')).toEqual([]);
+
+    progression.recordGift('viewer-a', streamKey, { eventId: 'gift-1' });
+    progression.recordGift('viewer-a', streamKey, { eventId: 'gift-1' });
+
+    expect(store.getViewerQuests('viewer-a', '2026-W30')).toEqual([
+      expect.objectContaining({
+        quest_key: 'weekly:event',
+        progress: 1,
+        completed: 0
+      })
+    ]);
+  });
+
   test('allows prestige only after collecting every original element and never deletes monsters', () => {
     const { store, progression } = createProgression();
     const elements = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];

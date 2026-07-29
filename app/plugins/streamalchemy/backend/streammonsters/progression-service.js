@@ -58,6 +58,10 @@ class ProgressionService {
     this.store.afterCommit(() => this.emit(event, payload));
   }
 
+  runAtomic(operation) {
+    return this.store.runInTransaction(operation);
+  }
+
   startStreamSession({ streamKey }) {
     const source = String(streamKey || this.dateKey());
     const index = this.hashNumber(source) % ELEMENTS.length;
@@ -70,11 +74,56 @@ class ProgressionService {
     });
   }
 
-  recordGift(userId, streamKey = null) {
-    if (streamKey) this.store.markViewerStream(userId, streamKey);
-    this.recordFirstAction(userId, streamKey);
-    this.incrementQuest(userId, this.dateKey(), 'daily:gift', 'Receive an egg', 1, 1, streamKey, 15, 5);
-    this.incrementQuest(userId, this.weekKey(), 'weekly:event', 'Help the stream event', 3, 1, streamKey, 50, 20);
+  recordEggReceived(userId, streamKey = null, { source = 'gift', eventId = null } = {}) {
+    return this.runAtomic(() => {
+      const normalizedSource = String(source || 'gift').trim() || 'gift';
+      const normalizedEventId = String(eventId || '').trim();
+      if (
+        normalizedEventId &&
+        !this.store.claimCollectionAction(
+          `progression:egg-received:${normalizedSource}:${normalizedEventId}`,
+          this.currentMs()
+        )
+      ) {
+        return { recorded: false, source: normalizedSource };
+      }
+      if (streamKey) this.store.markViewerStream(userId, streamKey);
+      this.recordFirstAction(userId, streamKey);
+      const quest = this.incrementQuest(
+        userId,
+        this.dateKey(),
+        'daily:gift',
+        'Receive an egg',
+        1,
+        1,
+        streamKey,
+        15,
+        5
+      );
+      return { recorded: true, source: normalizedSource, quest };
+    });
+  }
+
+  recordGift(userId, streamKey = null, { eventId = null } = {}) {
+    return this.runAtomic(() => {
+      const received = this.recordEggReceived(userId, streamKey, {
+        source: 'gift',
+        eventId
+      });
+      if (!received.recorded) return received;
+      const weeklyEvent = this.incrementQuest(
+        userId,
+        this.weekKey(),
+        'weekly:event',
+        'Help the stream event',
+        3,
+        1,
+        streamKey,
+        50,
+        20
+      );
+      return { ...received, weeklyEvent };
+    });
   }
 
   recordHatch(userId, streamKey = null, monster = null) {

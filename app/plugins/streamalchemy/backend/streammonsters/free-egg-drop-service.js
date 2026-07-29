@@ -162,6 +162,14 @@ class FreeEggDropService {
         claimEventId: input.eventId,
         claimedAtMs: input.nowMs
       });
+      this.engine.progression?.recordEggReceived(
+        input.userId,
+        input.streamKey,
+        {
+          source: 'free',
+          eventId: input.eventId
+        }
+      );
       const result = this.recordEvent(input, 'adopt', {
         success: true,
         status: 'claimed',
