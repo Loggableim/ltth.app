@@ -60,7 +60,6 @@ class ChatConsumptionRegistry {
       success: decision.success === true,
       consumed: (
         decision.pluginId === 'streamalchemy' &&
-        decision.success === true &&
         decision.handled !== false
       )
     });

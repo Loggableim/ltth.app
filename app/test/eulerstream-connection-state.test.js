@@ -143,6 +143,44 @@ describe('Eulerstream quota-safe connection state', () => {
     expect(adapter.stats.likes).toBe(0);
   });
 
+  test('keeps the first canonical session when one active connection reports a second room id without a new start', async () => {
+    const { adapter, db } = createAdapter();
+    const sessionStarted = jest.fn();
+    adapter.on('streamSessionStarted', sessionStarted);
+
+    const confirmCandidate = async (source, payload) => {
+      const roomId = adapter._captureRoomIdFromPayload(payload, source);
+      return adapter._confirmLive({
+        generation: 1,
+        roomId,
+        source,
+        payload
+      });
+    };
+
+    const initial = await confirmCandidate('LiveIntro', { roomId: '111' });
+    adapter.stats.likes = 34;
+    const canonicalSessionId = adapter.streamSessionId;
+
+    const refinement = await confirmCandidate('RoomMessage', { roomId: '222' });
+
+    expect(initial).toMatchObject({ isNewStream: true, isReconnect: false });
+    expect(refinement).toMatchObject({
+      isNewStream: false,
+      isReconnect: true,
+      streamSessionId: canonicalSessionId
+    });
+    expect(adapter).toMatchObject({
+      roomId: '111',
+      confirmedRoomId: '111',
+      streamIdentity: 'streamer:111',
+      streamSessionId: canonicalSessionId
+    });
+    expect(adapter.stats.likes).toBe(34);
+    expect(db.resetStreamStats).toHaveBeenCalledTimes(1);
+    expect(sessionStarted).toHaveBeenCalledTimes(1);
+  });
+
   test('same room after a terminal LIVE end starts a new session', async () => {
     const saved = {
       viewers: 12,

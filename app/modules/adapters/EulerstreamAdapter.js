@@ -1022,14 +1022,23 @@ class EulerstreamAdapter extends BaseAdapter {
         const hasDifferentConfirmedStart = Number.isFinite(confirmedStartTime) &&
             Number.isFinite(this._persistedStreamStart) &&
             confirmedStartTime !== this._persistedStreamStart;
+        const sameConfirmedCreator = !!previousIdentity &&
+            this._normalizeUsername(previousUsername) === this._normalizeUsername(this.currentUsername);
+        const isActiveSessionRefinement = !this.forceNewStreamOnNextConfirmation &&
+            !hasDifferentConfirmedStart &&
+            sameConfirmedCreator &&
+            previousIdentity !== nextIdentity &&
+            (this.connectionState === 'live' || this._resumeConfirmedSession);
         const isReconnect = !this.forceNewStreamOnNextConfirmation &&
-            !!previousIdentity && previousIdentity === nextIdentity && !hasDifferentConfirmedStart;
+            !!previousIdentity &&
+            (previousIdentity === nextIdentity || isActiveSessionRefinement) &&
+            !hasDifferentConfirmedStart;
         const isNewStream = !isReconnect;
 
-        this.roomId = roomId;
-        this.confirmedRoomId = roomId;
+        this.roomId = isActiveSessionRefinement ? previousRoomId : roomId;
+        this.confirmedRoomId = this.roomId;
         this.confirmedUsername = this.currentUsername;
-        this.streamIdentity = nextIdentity;
+        this.streamIdentity = isActiveSessionRefinement ? previousIdentity : nextIdentity;
         this.forceNewStreamOnNextConfirmation = false;
 
         if (isNewStream) {

@@ -2793,7 +2793,7 @@ class TTSPlugin {
                 if (await this._isConsumedStreamMonstersChat(data)) {
                     this._logDebug(
                         'TIKTOK_EVENT',
-                        'Skipping successfully handled Stream Monsters command',
+                        'Skipping consumed Stream Monsters command',
                         { username }
                     );
                     return;
@@ -2848,7 +2848,6 @@ class TTSPlugin {
             timeoutMs: 2_000
         });
         return decision?.pluginId === 'streamalchemy' &&
-            decision?.success === true &&
             decision?.consumed === true;
     }
 

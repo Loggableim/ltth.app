@@ -104,7 +104,7 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
     });
   });
 
-  test('keeps failed Stream Monsters commands and normal chat audible', async () => {
+  test('suppresses handled Stream Monsters domain failures while leaving other chat audible', async () => {
     const api = createGCCEApi();
     gcce = new GCCE(api);
     await gcce.init();
@@ -124,27 +124,56 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
     await Promise.resolve();
     await gcce.handleChatMessage(failed);
     await failedTtsFirst;
-    await chatHandler({
+    const normalChat = {
       eventId: 'evt-chat',
       timestamp: '2026-01-01T00:00:02.000Z',
       comment: 'hello stream',
       uniqueId: 'viewer_one'
-    });
-    await gcce.handleChatMessage({
-      eventId: 'evt-chat',
-      timestamp: '2026-01-01T00:00:02.000Z',
-      comment: 'hello stream',
+    };
+    await chatHandler(normalChat);
+    await gcce.handleChatMessage(normalChat);
+    const unknownCommand = {
+      eventId: 'evt-unknown',
+      timestamp: '2026-01-01T00:00:03.000Z',
+      comment: '/unknown',
       uniqueId: 'viewer_one'
-    });
+    };
+    const unknownTtsFirst = chatHandler(unknownCommand);
+    await Promise.resolve();
+    await gcce.handleChatMessage(unknownCommand);
+    await unknownTtsFirst;
+    const unhandledRaw = {
+      eventId: 'evt-raw',
+      timestamp: '2026-01-01T00:00:04.000Z',
+      comment: 'A',
+      uniqueId: 'viewer_one'
+    };
+    const rawTtsFirst = chatHandler(unhandledRaw);
+    await Promise.resolve();
+    await gcce.handleChatMessage(unhandledRaw);
+    await rawTtsFirst;
 
     expect(plugin.speak).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      text: '/hatch',
-      source: 'chat'
-    }));
-    expect(plugin.speak).toHaveBeenNthCalledWith(2, expect.objectContaining({
       text: 'hello stream',
       source: 'chat'
     }));
+    expect(plugin.speak).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      text: '/unknown',
+      source: 'chat'
+    }));
+    expect(plugin.speak).toHaveBeenNthCalledWith(3, expect.objectContaining({
+      text: 'A',
+      source: 'chat'
+    }));
+    expect(api.emitted).toContainEqual({
+      event: 'gcce:chat_consumed',
+      data: expect.objectContaining({
+        correlationId: 'tiktok:evt-failed',
+        pluginId: 'streamalchemy',
+        success: false,
+        consumed: true
+      })
+    });
     expect(api.emitted).not.toContainEqual({
       event: 'gcce:chat_consumed',
       data: expect.objectContaining({ correlationId: 'tiktok:evt-chat' })
