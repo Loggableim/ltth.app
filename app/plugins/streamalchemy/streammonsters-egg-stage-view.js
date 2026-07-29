@@ -104,6 +104,192 @@
     return null;
   }
 
+  function safeViewerName(value) {
+    const normalized = boundedText(value, 64);
+    if (
+      !normalized ||
+      /^(?:unknown|unbekannt|viewer)$/i.test(normalized) ||
+      /^@?\d{5,}$/.test(normalized)
+    ) return '';
+    return normalized;
+  }
+
+  function readableDuration(nowMs, deadlineMs, minimumMs = 12_000) {
+    const remaining = Number(deadlineMs) - Number(nowMs);
+    return Number.isFinite(remaining) && remaining > 0
+      ? Math.min(Math.max(1, Number(minimumMs) || 12_000), remaining)
+      : Math.max(1, Number(minimumMs) || 12_000);
+  }
+
+  function buildLifecycleNotice(type, payload = {}, {
+    commands = {},
+    nowMs = Date.now()
+  } = {}) {
+    const normalizedType = String(type || '')
+      .replace(/^streammonsters:/, '')
+      .toLowerCase();
+    const source = payload.eggStage || payload.egg_stage || payload.egg ||
+      payload.removedEggStage || payload.removed_egg_stage;
+    const egg = normalizeEgg(source);
+    if (!egg) return null;
+    const timing = egg.timing || {};
+    const viewer = safeViewerName(
+      payload.displayName || payload.viewerName || egg.displayName
+    );
+    const command = key => boundedText(commands[key], 48);
+    const commandList = (...keys) => [...new Set(
+      keys.map(command).filter(Boolean)
+    )].slice(0, 2);
+    const common = {
+      viewer,
+      placement: 'upper-third',
+      size: 'large-readable',
+      durationMs: 12_000,
+      visualId: egg.visualId,
+      element: egg.element,
+      queuePosition: Math.max(0, Number(egg.queuePosition) || 0),
+      params: {
+        viewer,
+        element: egg.element,
+        position: Math.max(0, Number(egg.queuePosition) || 0)
+      },
+      sideEffectKey: boundedText(
+        payload.eventId || payload.correlationId ||
+          `${normalizedType}:${egg.visualId}`,
+        160
+      )
+    };
+
+    if (
+      ['egg_landed', 'egg_spawned'].includes(normalizedType) &&
+      egg.provenance === 'gift' &&
+      egg.ownershipState === 'owned'
+    ) {
+      return {
+        ...common,
+        kind: 'gift_owned',
+        titleKey: 'eggLifecycleGiftOwnedTitle',
+        copyKey: 'eggLifecycleGiftOwnedCopy',
+        commands: commandList('eggs', 'hatch')
+      };
+    }
+
+    if (normalizedType === 'free_egg_reserved') {
+      if (
+        egg.provenance === 'gift' ||
+        (egg.state && egg.state !== 'reserved') ||
+        (egg.adoptionStatus && egg.adoptionStatus !== 'reserved')
+      ) return null;
+      return {
+        ...common,
+        kind: 'free_reserved',
+        titleKey: 'eggLifecycleFreeReservedTitle',
+        copyKey: 'eggLifecycleFreeReservedCopy',
+        durationMs: readableDuration(nowMs, timing.publicAtMs),
+        commands: commandList('adopt')
+      };
+    }
+
+    if (normalizedType === 'free_egg_public') {
+      if (
+        egg.provenance === 'gift' ||
+        (egg.state && egg.state !== 'public') ||
+        (egg.adoptionStatus && egg.adoptionStatus !== 'public')
+      ) return null;
+      return {
+        ...common,
+        kind: 'free_public',
+        titleKey: 'eggLifecycleFreePublicTitle',
+        copyKey: 'eggLifecycleFreePublicCopy',
+        durationMs: readableDuration(
+          nowMs,
+          timing.expiresAtMs ?? timing.expiryAtMs
+        ),
+        commands: commandList('adopt')
+      };
+    }
+
+    if (normalizedType === 'free_egg_claimed') {
+      if (egg.provenance === 'gift') return null;
+      return {
+        ...common,
+        kind: 'free_claimed',
+        titleKey: 'eggLifecycleFreeClaimedTitle',
+        copyKey: 'eggLifecycleFreeClaimedCopy',
+        commands: commandList('eggs', 'hatch')
+      };
+    }
+
+    if (['hatch_not_ready', 'egg_not_ready'].includes(normalizedType)) {
+      const remainingMs = Math.max(
+        0,
+        Number(payload.remainingMs ?? payload.remaining_ms) ||
+          (Number(timing.readyAtMs) - Number(nowMs)) ||
+          0
+      );
+      const remaining = formatCountdown(remainingMs);
+      return {
+        ...common,
+        kind: 'hatch_wait',
+        titleKey: 'eggLifecycleWaitTitle',
+        copyKey: common.queuePosition > 0
+          ? 'eggLifecycleWaitQueuedCopy'
+          : 'eggLifecycleWaitCopy',
+        remaining,
+        durationMs: readableDuration(nowMs, Number(nowMs) + remainingMs),
+        params: {
+          ...common.params,
+          time: remaining
+        },
+        commands: commandList('eggs')
+      };
+    }
+
+    if (normalizedType === 'egg_ready') {
+      return {
+        ...common,
+        kind: 'ready',
+        titleKey: 'eggLifecycleReadyTitle',
+        copyKey: 'eggLifecycleReadyCopy',
+        durationMs: readableDuration(
+          nowMs,
+          timing.expiresAtMs ?? timing.expiryAtMs
+        ),
+        commands: commandList('hatch')
+      };
+    }
+
+    if (['egg_auto_hatched', 'auto_hatch_completed'].includes(normalizedType)) {
+      const monster = boundedText(payload.monster?.name, 64);
+      return {
+        ...common,
+        kind: 'auto_hatched',
+        titleKey: 'eggLifecycleAutoHatchedTitle',
+        copyKey: 'eggLifecycleAutoHatchedCopy',
+        params: {
+          ...common.params,
+          monster
+        },
+        commands: commandList('monsters')
+      };
+    }
+
+    if (
+      ['egg_expired', 'egg_rotted'].includes(normalizedType) ||
+      (normalizedType === 'egg_stage_removed' && egg.state === 'expired')
+    ) {
+      return {
+        ...common,
+        kind: 'expired',
+        titleKey: 'eggLifecycleExpiredTitle',
+        copyKey: 'eggLifecycleExpiredCopy',
+        commands: commandList('eggs')
+      };
+    }
+
+    return null;
+  }
+
   function priority(egg = {}) {
     if (isPublicFreeEgg(egg)) return 0;
     if (egg.state === 'ready') return 1;
@@ -120,8 +306,8 @@
     return hash >>> 0;
   }
 
-  function deterministicEggMotion(visualId, index = 0, reducedMotion = false) {
-    const hash = hashText(`${visualId}:${index}`);
+  function deterministicEggMotion(visualId, _index = 0, reducedMotion = false) {
+    const hash = hashText(visualId);
     return {
       phase: 'settled',
       lane: hash % 4,
@@ -131,6 +317,14 @@
       delayMs: reducedMotion ? 0 : (hash >>> 23) % 240,
       durationMs: reducedMotion ? 0 : 760 + ((hash >>> 8) % 280)
     };
+  }
+
+  function visibleCapacity(width) {
+    const viewportWidth = Math.max(0, Number(width) || 0);
+    if (viewportWidth > 0 && viewportWidth <= 520) return 5;
+    if (viewportWidth > 0 && viewportWidth <= 760) return 6;
+    if (viewportWidth > 0 && viewportWidth <= 920) return 7;
+    return MAX_VISIBLE_EGGS;
   }
 
   function normalizeEgg(egg = {}) {
@@ -206,6 +400,8 @@
     const reducedMotion = Boolean(options.reducedMotion);
     const calloutDeadlineById = new Map();
     const calloutTimers = new Map();
+    const landingTimers = new Map();
+    const landingStartedAtById = new Map();
     const eggsById = new Map();
     const pendingLandingIds = new Set();
     let rotationIndex = 0;
@@ -299,22 +495,139 @@
       return item;
     }
 
+    function settleLanding(visualId, item) {
+      if (!item || item.dataset.eggId !== visualId) return;
+      item.classList.remove('landing');
+      pendingLandingIds.delete(visualId);
+      landingStartedAtById.delete(visualId);
+      const handle = landingTimers.get(visualId);
+      if (handle != null) cancel(handle);
+      landingTimers.delete(visualId);
+    }
+
+    function createKeyedEggNode(egg, index) {
+      const item = createEggNode(egg, index);
+      item.style.setProperty(
+        '--egg-public-jump-delay',
+        `${egg.motion.delayMs + egg.motion.durationMs + 80}ms`
+      );
+      item.addEventListener('animationend', event => {
+        if (event.animationName && event.animationName !== 'egg-shelf-land') return;
+        settleLanding(egg.visualId, item);
+      });
+      if (item.classList.contains('landing')) {
+        const existing = landingTimers.get(egg.visualId);
+        if (existing != null) cancel(existing);
+        landingTimers.set(egg.visualId, schedule(
+          () => settleLanding(egg.visualId, item),
+          egg.motion.delayMs + egg.motion.durationMs + 180
+        ));
+      }
+      return item;
+    }
+
+    function updateKeyedEggNode(item, egg, index) {
+      const landingStartedAt = landingStartedAtById.get(egg.visualId);
+      if (
+        item.classList.contains('landing') &&
+        Number.isFinite(Number(landingStartedAt)) &&
+        now() - Number(landingStartedAt) >= 900
+      ) {
+        settleLanding(egg.visualId, item);
+      }
+      item.dataset.state = boundedText(egg.state, 24);
+      item.dataset.provenance = boundedText(egg.provenance, 24);
+      item.dataset.element = egg.element.toLowerCase();
+      item.dataset.adoptable = String(isPublicFreeEgg(egg));
+      item.style.setProperty('--egg-lane', String(egg.motion.lane));
+      item.style.setProperty('--egg-fly-x', `${egg.motion.flyFromX}vw`);
+      item.style.setProperty('--egg-bounce', `${egg.motion.bounceHeight}px`);
+      item.style.setProperty('--egg-settle-rotation', `${egg.motion.settleRotation}deg`);
+      item.style.setProperty('--egg-motion-delay', `${egg.motion.delayMs}ms`);
+      item.style.setProperty('--egg-motion-duration', `${egg.motion.durationMs}ms`);
+      item.style.setProperty(
+        '--egg-public-jump-delay',
+        item.classList.contains('landing')
+          ? `${egg.motion.delayMs + egg.motion.durationMs + 80}ms`
+          : '80ms'
+      );
+      item.style.setProperty('--egg-index', String(index));
+      const timing = item.querySelector('[data-egg-timing]');
+      if (timing) {
+        timing.textContent = shelfTiming(egg, {
+          nowMs: now(),
+          labels,
+          hatchReference: getHatchReference(),
+          adoptReference: getAdoptReference()
+        });
+      }
+      const publicEgg = isPublicFreeEgg(egg);
+      item.classList.toggle('gold-ring', publicEgg);
+      item.classList.toggle('public-free', publicEgg);
+      if (publicEgg) {
+        let deadline = calloutDeadlineById.get(egg.visualId);
+        if (deadline == null) {
+          deadline = now() + ADOPT_CALLOUT_MS;
+          calloutDeadlineById.set(egg.visualId, deadline);
+        }
+        let callout = item.querySelector('[data-adopt-callout]');
+        if (deadline > now() && !callout) {
+          callout = documentLike.createElement('span');
+          callout.dataset.adoptCallout = '';
+          callout.textContent = '!adopt';
+          item.appendChild(callout);
+        }
+        const existing = calloutTimers.get(egg.visualId);
+        if (existing != null) cancel(existing);
+        if (deadline > now()) {
+          calloutTimers.set(egg.visualId, schedule(
+            () => removeCallout(egg.visualId),
+            Math.max(0, deadline - now())
+          ));
+        }
+      } else {
+        calloutDeadlineById.delete(egg.visualId);
+        removeCallout(egg.visualId);
+      }
+      return item;
+    }
+
     function render() {
+      const viewportWidth = Number(
+        options.viewportWidth?.() ||
+        root.clientWidth ||
+        documentLike.defaultView?.innerWidth
+      );
       const model = buildShelfModel([...eggsById.values()], {
+        maxVisible: visibleCapacity(viewportWidth),
         rotationIndex,
         reducedMotion
       });
       if (slots) {
-        slots.replaceChildren(
-          ...model.visible.map((egg, index) => createEggNode(egg, index))
-        );
+        const visibleIds = new Set(model.visible.map(egg => egg.visualId));
+        slots.querySelectorAll('[data-egg-id]').forEach(item => {
+          if (!visibleIds.has(item.dataset.eggId)) item.remove();
+        });
+        model.visible.forEach((egg, index) => {
+          const current = [...slots.children].find(item => (
+            item.dataset?.eggId === egg.visualId
+          ));
+          slots.appendChild(
+            current
+              ? updateKeyedEggNode(current, egg, index)
+              : createKeyedEggNode(egg, index)
+          );
+        });
       }
       if (overflow) {
         overflow.replaceChildren();
         overflow.hidden = !model.overflow;
         if (model.overflow) {
           overflow.dataset.previewEggId = model.overflow.preview.visualId;
+          const pendingPreview = pendingLandingIds.delete(model.overflow.preview.visualId);
           const preview = createEggNode(model.overflow.preview, MAX_VISIBLE_EGGS);
+          if (pendingPreview) pendingLandingIds.add(model.overflow.preview.visualId);
+          preview.classList.remove('landing');
           preview.classList.add('egg-overflow-preview');
           const label = documentLike.createElement('strong');
           label.textContent = model.overflow.label;
@@ -327,13 +640,13 @@
       root.dataset.adoptable = String(model.adoptable);
       root.dataset.ready = String(model.ready);
       root.dataset.incubating = String(model.incubating);
-      pendingLandingIds.clear();
       return model;
     }
 
     function applySnapshot(eggStage = []) {
       eggsById.clear();
       pendingLandingIds.clear();
+      landingStartedAtById.clear();
       for (const egg of Array.isArray(eggStage) ? eggStage : []) {
         const visualId = boundedText(egg?.visualId, 64);
         if (visualId && !isClaimedFreeInventoryEgg(egg)) eggsById.set(visualId, egg);
@@ -360,6 +673,11 @@
       const visualId = boundedText(egg?.visualId || payload.visualId, 64);
       if (!visualId) return false;
       const isNewLanding = type === 'egg_landed' && !eggsById.has(visualId);
+      if (type === 'egg_landed' && !isNewLanding) {
+        const current = [...root.querySelectorAll('[data-egg-id]')]
+          .find(item => item.dataset.eggId === visualId);
+        settleLanding(visualId, current);
+      }
       if (
         type === 'egg_stage_removed' ||
         egg?.state === 'claimed'
@@ -369,7 +687,10 @@
         removeCallout(visualId);
       } else {
         eggsById.set(visualId, { ...egg, visualId });
-        if (isNewLanding) pendingLandingIds.add(visualId);
+        if (isNewLanding) {
+          pendingLandingIds.add(visualId);
+          landingStartedAtById.set(visualId, now());
+        }
       }
       render();
       return true;
@@ -397,6 +718,9 @@
       destroy() {
         for (const handle of calloutTimers.values()) cancel(handle);
         calloutTimers.clear();
+        for (const handle of landingTimers.values()) cancel(handle);
+        landingTimers.clear();
+        landingStartedAtById.clear();
         if (rotationTimer != null && typeof options.clearInterval === 'function') {
           options.clearInterval(rotationTimer);
         }
@@ -414,12 +738,14 @@
     COUNTDOWN_INTERVAL_MS,
     MAX_VISIBLE_EGGS,
     buildAdoptionNotice,
+    buildLifecycleNotice,
     buildShelfModel,
     createEggStageView,
     deterministicEggMotion,
     formatCountdown,
     isClaimedFreeInventoryEgg,
     isPublicFreeEgg,
-    shelfTiming
+    shelfTiming,
+    visibleCapacity
   };
 }));

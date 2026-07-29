@@ -512,7 +512,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
     expect(document.getElementById('tutorialHintIntervalSeconds').min).toBe('60');
     expect(document.getElementById('tutorialHintIntervalSeconds').max).toBe('300');
     expect(document.querySelector('[data-command-alias="adopt"]')).not.toBeNull();
-    expect(document.body.textContent).toContain('Rules v7');
+    expect(document.body.textContent).toContain('Rules v8');
   });
 
   test('ships creator copy for all new controls and live diagnostics in four locales', () => {
@@ -548,7 +548,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
         expect(translations[key]).toEqual(expect.any(String));
         expect(translations[key].trim()).not.toHaveLength(0);
       }
-      expect(translations.rulesDynamic).toContain('v7');
+      expect(translations.rulesDynamic).toContain('v8');
     }
   });
 

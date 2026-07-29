@@ -9,10 +9,26 @@
     Object.freeze({ id: 'live-center', titleKey: 'liveCenterTitle' }),
     Object.freeze({ id: 'gameplay', titleKey: 'gameplayTitle' }),
     Object.freeze({ id: 'gifts-chat', titleKey: 'giftsChatTitle' }),
+    Object.freeze({ id: 'languages', titleKey: 'overlayLanguagesTitle' }),
     Object.freeze({ id: 'overlay-studio', titleKey: 'overlayStudioTitle' }),
     Object.freeze({ id: 'asset-library', titleKey: 'assetLibraryTitle' }),
     Object.freeze({ id: 'community-seasons', titleKey: 'communitySeasonsTitle' })
   ]);
+  const PORTRAIT_PREVIEW_ZONES = Object.freeze({
+    logo: Object.freeze({ x: 4, y: 2, width: 24, height: 6 }),
+    music: Object.freeze({ x: 5, y: 14.5, width: 58, height: 4.5 }),
+    notification: Object.freeze({ x: 4, y: 20, width: 92, height: 5 }),
+    avatar: Object.freeze({ x: 2, y: 26.5, width: 96, height: 31 }),
+    likes: Object.freeze({ x: 2, y: 58.5, width: 96, height: 6 }),
+    shelf: Object.freeze({ x: 3, y: 66.5, width: 94, height: 7 }),
+    xp: Object.freeze({ x: 4, y: 82.5, width: 92, height: 11 }),
+    battle: Object.freeze({ x: 0, y: 0, width: 100, height: 74 }),
+    safe: Object.freeze({ x: 0, y: 74, width: 100, height: 26 })
+  });
+  const LANDSCAPE_PREVIEW_ZONES = Object.freeze({
+    battle: Object.freeze({ x: 0, y: 0, width: 100, height: 74 }),
+    safe: Object.freeze({ x: 0, y: 74, width: 100, height: 26 })
+  });
   const COMMAND_ACTIONS = Object.freeze([
     'eggs',
     'adopt',
@@ -424,11 +440,15 @@
 
   function previewGeometry(layout) {
     const portrait = layout === 'portrait';
+    const sourceZones = portrait ? PORTRAIT_PREVIEW_ZONES : LANDSCAPE_PREVIEW_ZONES;
     return {
       width: portrait ? 1080 : 1920,
       height: portrait ? 1920 : 1080,
       gameplayPercent: 74,
-      chatPercent: 26
+      chatPercent: 26,
+      zones: Object.fromEntries(
+        Object.entries(sourceZones).map(([name, rectangle]) => [name, { ...rectangle }])
+      )
     };
   }
 

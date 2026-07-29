@@ -324,6 +324,50 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(cancelled.shift(3).type).toBe('battle_cancelled');
   });
 
+  test('suspends every non-battle surface for the full active match and releases it after result', () => {
+    const queue = runtime.createPriorityQueue();
+    queue.enqueue('battle_match_found', {
+      matchId: 'takeover',
+      correlationId: 'takeover',
+      eventId: 'takeover:found'
+    }, 1);
+    queue.enqueue('egg_landed', {
+      eventId: 'egg:during-battle',
+      eggStage: { visualId: 'egg-during-battle' }
+    }, 2);
+    queue.enqueue('monster_xp_awarded', {
+      matchId: 'takeover',
+      eventId: 'takeover:xp'
+    }, 3);
+    queue.enqueue('chat_result', {
+      eventId: 'chat:during-battle'
+    }, 4);
+    queue.enqueue('battle_choice_opened', {
+      matchId: 'takeover',
+      correlationId: 'takeover',
+      eventId: 'takeover:choice'
+    }, 5);
+    queue.enqueue('battle_completed', {
+      matchId: 'takeover',
+      correlationId: 'takeover',
+      eventId: 'takeover:completed'
+    }, 6);
+
+    queue.setBattleActive(true, 'takeover');
+    expect(queue.shift(10).type).toBe('battle_match_found');
+    expect(queue.shift(10).type).toBe('battle_choice_opened');
+    expect(queue.shift(10).type).toBe('battle_completed');
+    expect(queue.shift(10)).toBeNull();
+    expect(queue.snapshot().map(entry => entry.type)).toEqual(expect.arrayContaining([
+      'egg_landed',
+      'monster_xp_awarded',
+      'chat_result'
+    ]));
+
+    queue.setBattleActive(false);
+    expect(queue.shift(11).type).toBe('egg_landed');
+  });
+
   test('coalesces hype/chat, drops stale noncritical events, and never partially trims hatch groups', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 4, staleAfterMs: 10, maxCriticalOverflow: 8 });
     queue.enqueue('hype_changed', { points: 10 }, 1);

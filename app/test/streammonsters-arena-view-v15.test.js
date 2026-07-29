@@ -29,10 +29,33 @@ function mountArena() {
       <div id="arena-skill-prompt"></div>
       <div id="arena-special"></div>
       <div id="arena-impact"></div>
+      <div id="arena-combo"></div>
       <div id="arena-feed"></div>
-      <div id="arena-result"><strong id="arena-result-winner"></strong><span id="arena-result-rating"></span></div>
+      <div id="arena-lead"></div>
+      <div id="arena-action-card">
+        <span id="arena-action-player"></span>
+        <span id="arena-action-key"></span>
+        <strong id="arena-action-skill"></strong>
+        <span id="arena-action-copy"></span>
+        <span id="arena-action-metrics"></span>
+      </div>
+      <div id="arena-stat-card">
+        <span id="arena-stat-kicker"></span>
+        <strong id="arena-stat-title"></strong>
+        <span id="arena-stat-meta"></span>
+        <div id="arena-stat-choices"></div>
+      </div>
+      <div id="arena-result">
+        <span id="arena-result-ko"></span>
+        <strong id="arena-result-winner"></strong>
+        <span id="arena-result-monster"></span>
+        <span id="arena-result-summary"></span>
+        <div id="arena-result-ratings"></div>
+        <span id="arena-result-rating"></span>
+      </div>
       <article id="arena-fighter-1" data-slot="1">
         <img id="arena-image-1"><div id="arena-name-1"></div>
+        <div id="arena-owner-1"></div>
         <div id="arena-level-1"></div><div id="arena-hp-text-1"></div>
         <div id="arena-hp-1"></div><div id="arena-shield-1"></div><div id="arena-charge-1"></div>
         <span id="arena-shield-label-1"></span><span id="arena-special-label-1"></span>
@@ -40,6 +63,7 @@ function mountArena() {
       </article>
       <article id="arena-fighter-2" data-slot="2">
         <img id="arena-image-2"><div id="arena-name-2"></div>
+        <div id="arena-owner-2"></div>
         <div id="arena-level-2"></div><div id="arena-hp-text-2"></div>
         <div id="arena-hp-2"></div><div id="arena-shield-2"></div><div id="arena-charge-2"></div>
         <span id="arena-shield-label-2"></span><span id="arena-special-label-2"></span>
@@ -115,7 +139,15 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(waited.length).toBeGreaterThan(4);
     expect(effects.play).toHaveBeenCalledWith('special', expect.objectContaining({
       element: 'Tide',
-      vfxKey: 'ripple:special'
+      vfxKey: 'ripple:special',
+      actorSlot: 2,
+      targetSlot: 1,
+      hitCount: 2,
+      hits: [
+        { index: 1, hpDamage: 4, shieldAbsorbed: 0, evaded: false },
+        { index: 2, hpDamage: 3, shieldAbsorbed: 0, evaded: false }
+      ],
+      outcomes: [{ type: 'heal', amount: 5 }]
     }));
     expect(audio.play).toHaveBeenCalledWith('arena.hit', expect.objectContaining({
       eventId: expect.stringContaining('hit')
@@ -123,6 +155,51 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-hp-text-1').textContent).toBe('45 / 52');
     expect(document.querySelector('#arena-hp-text-2').textContent).toBe('52 / 52');
     expect(document.querySelector('#arena-feed').textContent).toContain('Tidal Renewal');
+  });
+
+  test('keeps battle effects inside the takeover and presentation effects on the global layer', async () => {
+    mountArena();
+    const battleEffects = {
+      play: jest.fn(async () => true),
+      status: jest.fn(() => ({ backend: 'webgpu' }))
+    };
+    const presentationEffects = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      effects: battleEffects,
+      presentationEffects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+
+    await view.playEvent('egg_spawned', {
+      eventId: 'egg-spawn-1',
+      egg: { element: 'Volt', variant: 'standard' }
+    });
+    expect(presentationEffects.play).toHaveBeenCalledWith(
+      'portal',
+      expect.objectContaining({ element: 'Volt' })
+    );
+    expect(battleEffects.play).not.toHaveBeenCalled();
+
+    view.applyMatch({
+      matchId: 'match-effects',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Pulse', element: 'Volt', hp: 40, maxHp: 40 },
+        { slot: 2, name: 'Ripple', element: 'Tide', hp: 40, maxHp: 40 }
+      ]
+    });
+    await view.playAction({
+      matchId: 'match-effects',
+      eventId: 'battle-effect-1',
+      round: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'A',
+      skill: { name: 'Arc Flash', type: 'attack', element: 'Volt' },
+      hits: [{ index: 1, hpDamage: 5 }]
+    });
+    expect(battleEffects.play).toHaveBeenCalled();
   });
 
   test('keeps each fighter owner readable beside the monster name', () => {
@@ -162,7 +239,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     await view.complete({ winnerSlot: 1 });
     expect(document.querySelector('#arena-fighter-1').classList.contains('winner')).toBe(true);
     expect(document.querySelector('#battle').dataset.terminal).toBe('winner');
-    expect(waited).toContain(4_000);
+    expect(waited).toContain(8_000);
     expect(document.querySelector('#battle').classList.contains('visible')).toBe(false);
     view.cancel({ reason: 'roster_unavailable' });
     expect(document.querySelector('#battle').dataset.terminal).toBe('cancelled');
@@ -183,20 +260,179 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       ]
     });
 
-    await view.complete({
+    const playback = view.playEvent('battle_completed', {
+      eventId: 'result-a:event:completed',
+      matchId: 'result-a',
       winnerSlot: 1,
-      winnerViewerName: '@pupcid',
+      terminalReason: 'knockout',
+      knockout: { round: 7, remainingHp: 9, maxHp: 20 },
+      winner: { name: 'Ashfang', viewerName: '@pupcid' },
       ratingChanges: [
         { slot: 1, before: 900, after: 916, delta: 16 },
-        { slot: 2, before: 900, after: 884, delta: -16 }
+        { slot: 2, before: 900, after: 900, delta: 0 }
       ]
     });
 
+    expect(document.getElementById('arena-result').classList).toContain('visible');
+    expect(document.getElementById('arena-result-ko').textContent).toContain('K');
     expect(document.getElementById('arena-result-winner').textContent).toContain('@pupcid');
-    expect(document.getElementById('arena-result-rating').textContent)
-      .toContain('+16');
-    expect(document.getElementById('arena-result-rating').textContent)
-      .toContain('-16');
+    expect(document.getElementById('arena-result-monster').textContent).toContain('Ashfang');
+    expect(document.getElementById('arena-result-summary').textContent).toContain('7');
+    expect(document.getElementById('arena-result-summary').textContent).toContain('9');
+    expect(document.getElementById('arena-result-ratings').textContent).toContain('900');
+    expect(document.getElementById('arena-result-ratings').textContent).toContain('916');
+    expect(document.getElementById('arena-result-ratings').textContent).toMatch(/unchanged|unverändert/i);
+    await playback;
+  });
+
+  test('keeps a readable action card and visible lead from public combat state', async () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'clarity',
+      state: 'action',
+      fighters: [
+        {
+          slot: 1,
+          name: 'Selene',
+          viewerName: '@luna',
+          hp: 24,
+          maxHp: 30,
+          shield: 4,
+          charge: 100
+        },
+        {
+          slot: 2,
+          name: 'Ripple',
+          viewerName: '@tide',
+          hp: 20,
+          maxHp: 30,
+          shield: 1,
+          charge: 50
+        }
+      ]
+    });
+    expect(document.getElementById('arena-lead').textContent).toContain('@luna');
+
+    await view.playAction({
+      rulesVersion: 8,
+      matchId: 'clarity',
+      eventId: 'clarity:event:1',
+      eventSequence: 1,
+      round: 4,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: {
+        name: 'Moonfall',
+        shortText: 'Deals damage, restores health and raises a shield.',
+        type: 'special',
+        element: 'Lunar',
+        vfxKey: 'selene:special'
+      },
+      hits: [
+        { index: 1, hpDamage: 0, shieldAbsorbed: 0, evaded: true },
+        { index: 2, hpDamage: 7, shieldAbsorbed: 1, evaded: false }
+      ],
+      outcomes: [
+        { type: 'heal', amount: 4 },
+        { type: 'shield', amount: 3 }
+      ],
+      actorState: { hp: 28, maxHp: 30, shield: 7, charge: 0 },
+      targetState: { hp: 13, maxHp: 30, shield: 0, charge: 75 }
+    });
+
+    expect(document.getElementById('arena-action-player').textContent).toBe('@luna');
+    expect(document.getElementById('arena-action-key').textContent).toBe('C');
+    expect(document.getElementById('arena-action-skill').textContent).toBe('Moonfall');
+    expect(document.getElementById('arena-action-copy').textContent)
+      .toContain('restores health');
+    const metrics = document.getElementById('arena-action-metrics').textContent;
+    for (const amount of ['7', '1', '3', '4']) expect(metrics).toContain(amount);
+    expect(metrics)
+      .toMatch(/evad|auswei/i);
+  });
+
+  test('renders one explicit stat allocation card for the sanitized player and monster', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+
+    expect(view.showStatPrompt({
+      playerName: '@luna',
+      monster: { name: 'Selene', level: 7 },
+      level: 7,
+      remainingUnspentPoints: 2
+    })).toBe(true);
+    expect(document.getElementById('arena-stat-title').textContent).toContain('@luna');
+    expect(document.getElementById('arena-stat-title').textContent).toContain('Selene');
+    expect(document.getElementById('arena-stat-meta').textContent).toContain('7');
+    expect(document.getElementById('arena-stat-meta').textContent).toContain('2');
+    expect(document.getElementById('arena-stat-choices').textContent)
+      .toMatch(/1.*\+1.*2.*\+1.*3.*\+1.*4.*\+1/s);
+
+    expect(view.showStatResult({
+      playerName: '@luna',
+      monster: { name: 'Selene', level: 7 },
+      stat: 'might',
+      remainingUnspentPoints: 1
+    })).toBe(true);
+    expect(document.getElementById('arena-stat-title').textContent).toContain('@luna');
+    expect(document.getElementById('arena-stat-title').textContent).toContain('Selene');
+  });
+
+  test('clears stale reconnect arena and reports the full battle-active lifecycle', async () => {
+    mountArena();
+    const battleStates = [];
+    const view = ArenaView.createArenaView({
+      document,
+      onBattleStateChange: state => battleStates.push(state),
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applySnapshot({
+      battle: {
+        matches: [{
+          matchId: 'reconnect-active',
+          state: 'action',
+          roundNumber: 3,
+          actionDeadlineMs: 8_000,
+          fighters: [
+            { slot: 1, name: 'Selene', hp: 20, maxHp: 30 },
+            { slot: 2, name: 'Ripple', hp: 18, maxHp: 30 }
+          ]
+        }]
+      }
+    });
+    expect(document.getElementById('battle').classList).toContain('visible');
+    expect(document.getElementById('streammonsters-overlay')?.dataset.battleActive)
+      .not.toBe('false');
+
+    expect(view.applySnapshot({ battle: { matches: [] } })).toBeNull();
+    expect(document.getElementById('battle').classList).not.toContain('visible');
+    expect(view.state().matchId).toBeNull();
+    expect(battleStates.at(-1)).toEqual(expect.objectContaining({ active: false }));
+
+    view.applyMatch({
+      matchId: 'terminal',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Selene', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Ripple', hp: 0, maxHp: 30 }
+      ]
+    });
+    await view.playEvent('battle_completed', {
+      eventId: 'terminal:event:done',
+      winnerSlot: 1,
+      winner: { viewerName: '@luna', name: 'Selene' },
+      terminalReason: 'knockout',
+      knockout: { round: 4, remainingHp: 20, maxHp: 30 }
+    });
+    expect(battleStates).toEqual(expect.arrayContaining([
+      expect.objectContaining({ active: true }),
+      expect.objectContaining({ active: false })
+    ]));
   });
 
   test('keeps sealed locks choice-free until the ordered reveal event arrives', () => {
@@ -612,10 +848,33 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(dom.window.document.querySelectorAll('.arena-skill-deck')).toHaveLength(2);
     expect(dom.window.document.querySelectorAll('.arena-skill-card')).toHaveLength(6);
     expect(dom.window.document.querySelector('#arena-chat-safe-zone')).not.toBeNull();
+    expect(dom.window.document.querySelector('#battle-effects-canvas')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-lead')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-card')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-copy')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-metrics')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-stat-card')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-ko')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-monster')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-summary')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-ratings')).not.toBeNull();
     expect(html).toContain('--arena-gameplay-height:74%');
-    expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%/s);
+    expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%;[^}]*z-index:50/s);
+    expect(html).toMatch(
+      /#streammonsters-overlay\[data-battle-active="true"\][\s\S]*#egg-shelf[\s\S]*visibility:hidden/
+    );
+    expect(html).toMatch(/#battle-effects-canvas\s*\{[^}]*z-index:3/s);
+    expect(html).toContain('effectsRenderer.setQuality(rendererQuality)');
+    expect(html).toContain('battleEffectsRenderer.setQuality(rendererQuality)');
     expect(html).toMatch(
       /\.arena-sprite\s*\{[^}]*max-width:100%;[^}]*max-height:100%;[^}]*object-fit:contain/s
+    );
+    expect(html).toMatch(
+      /\.arena-skill-card \.skill-copy\s*\{[^}]*overflow:visible;[^}]*white-space:normal/s
+    );
+    expect(html).toMatch(/#arena-result\s*\{[^}]*min-height:/s);
+    expect(html).toMatch(
+      /if \(type === 'egg_hatched'\)[\s\S]*?presentation:'hatch',[\s\S]*?duration:12_000/
     );
     expect(html).toMatch(/@media \(orientation: landscape\)\s*\{[^}]*height:65%/s);
     expect(html).toMatch(/@media \(orientation: landscape\)[\s\S]*#arena-feed\s*\{[^}]*top:18%/);
@@ -689,6 +948,22 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         'arenaCancelled',
         'arenaShieldLabel',
         'arenaSpecialLabel',
+        'arenaLeadLabel',
+        'arenaTiedLabel',
+        'arenaKnockoutResult',
+        'arenaForfeitResult',
+        'arenaResultSummary',
+        'arenaRatingChanged',
+        'arenaRatingUnchanged',
+        'arenaDamageMetric',
+        'arenaShieldAbsorbedMetric',
+        'arenaShieldGainMetric',
+        'arenaHealMetric',
+        'arenaEvadeMetric',
+        'monsterStatMeta',
+        'monsterStatChoices',
+        'monsterStatResult',
+        'arenaCollapseBanner',
         'skillCopyEmberAttack',
         'skillCopyEmberDefense',
         'skillCopyEmberSpecial',

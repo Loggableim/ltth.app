@@ -9,12 +9,13 @@ const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'ut
 const document = new JSDOM(html).window.document;
 
 describe('Stream Monsters 1.5 creator workspace', () => {
-  test('renders exactly the six approved creator areas in order', () => {
+  test('renders exactly the seven approved creator areas in order', () => {
     const areas = [...document.querySelectorAll('section[data-creator-area]')];
     expect(areas.map(area => area.id)).toEqual([
       'live-center',
       'gameplay',
       'gifts-chat',
+      'languages',
       'overlay-studio',
       'asset-library',
       'community-seasons'
@@ -23,10 +24,14 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       'Live Center',
       'Gameplay',
       'Gifts & Chat',
+      'Languages',
       'Overlay Studio',
       'Monster & Asset Library',
       'Community & Seasons'
     ]);
+    expect(document.querySelector('nav a[href="#languages"]')).not.toBeNull();
+    expect(document.getElementById('gameplay').textContent).not.toContain('Rules v7');
+    expect(document.getElementById('gameplay').textContent).toContain('Rules v8');
   });
 
   test('shows every required live diagnostic without exposing unrelated machine data', () => {
@@ -46,6 +51,10 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       expect(document.getElementById(id)).not.toBeNull();
     }
     expect(document.getElementById('liveWarnings').getAttribute('aria-live')).toBe('polite');
+    expect(html).toContain('const refreshLiveCenterState = async () =>');
+    expect(html).toContain(
+      'const liveStateRefreshTimer = setInterval(refreshLiveCenterState, 5_000)'
+    );
   });
 
   test('offers all command alias actions with conflict feedback and full catalog mapping', () => {
@@ -91,6 +100,18 @@ describe('Stream Monsters 1.5 creator workspace', () => {
       expect(preview.querySelector('[data-gameplay-percent="74"]')).not.toBeNull();
       expect(preview.querySelector('[data-chat-safe-percent="26"]')).not.toBeNull();
     }
+    expect([...portrait.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
+      .toEqual([
+        'logo',
+        'music',
+        'notification',
+        'avatar',
+        'likes',
+        'shelf',
+        'xp',
+        'battle',
+        'safe'
+      ]);
   });
 
   test('offers every v1.5 demo scene while retaining attack and defense compatibility', () => {
@@ -178,7 +199,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
 });
 
 describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', locale => {
-  test('contains the six 1.5 area labels and no retired hero copy', () => {
+  test('contains the seven creator area labels and no retired hero copy', () => {
     const translations = JSON.parse(
       fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
     ).plugins.streamalchemy.ui.monsters;
@@ -186,6 +207,7 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       translations.liveCenterTitle,
       translations.gameplayTitle,
       translations.giftsChatTitle,
+      translations.overlayLanguagesTitle,
       translations.overlayStudioTitle,
       translations.assetLibraryTitle,
       translations.communitySeasonsTitle

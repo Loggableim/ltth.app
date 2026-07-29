@@ -9,6 +9,7 @@
     'battle_started',
     'stance_revealed',
     'battle_skill_used',
+    'battle_arena_collapse',
     'battle_special_charged',
     'battle_round',
     'battle_completed',
@@ -594,6 +595,9 @@
     let activeGroupKey = null;
     let activeGroupDeadlineMs = 0;
     let durableTurn = false;
+    let battleActive = false;
+    let activeBattleId = null;
+    let activeGroupBattleId = null;
 
     function priority(type) {
       if (type === 'state_snapshot') return 4;
@@ -603,6 +607,8 @@
 
     function groupKey(type, data = {}) {
       if (!CRITICAL_TYPES.has(type)) return null;
+      const battleId = data.battleId || data.matchId ||
+        data.battle?.battleId || data.battle?.battle_id;
       const correlationId = String(
         data.correlationId ||
         data.correlation_id ||
@@ -623,9 +629,28 @@
         const monsterId = data.monster?.monster_id || data.monsterId;
         return monsterId ? `evolution:${monsterId}` : null;
       }
-      const battleId = data.battleId || data.matchId ||
-        data.battle?.battleId || data.battle?.battle_id;
       return battleId ? `battle:${battleId}` : null;
+    }
+
+    function battleIdForEntry(entry = {}) {
+      if (
+        entry.type !== 'stance_revealed' &&
+        entry.type !== 'battle_started' &&
+        !String(entry.type || '').startsWith('battle_')
+      ) return null;
+      const data = entry.data || {};
+      return String(
+        data.battleId ||
+        data.matchId ||
+        data.battle?.battleId ||
+        data.battle?.battle_id ||
+        ''
+      ).trim() || null;
+    }
+
+    function isActiveBattleEntry(entry) {
+      const battleId = battleIdForEntry(entry);
+      return Boolean(battleId) && (!activeBattleId || battleId === activeBattleId);
     }
 
     function totalSize() {
@@ -704,6 +729,7 @@
 
     function activateCriticalGroup(entry, now) {
       activeGroupKey = entry.groupKey;
+      activeGroupBattleId = battleIdForEntry(entry);
       activeGroupDeadlineMs = Math.max(
         Number(now) || 0,
         Number(entry.enqueuedAt) || 0
@@ -712,11 +738,13 @@
 
     function finishCriticalGroup() {
       activeGroupKey = null;
+      activeGroupBattleId = null;
       activeGroupDeadlineMs = 0;
       durableTurn = true;
     }
 
     function releaseDelay(now = Date.now()) {
+      if (battleActive && !entries.some(isActiveBattleEntry)) return null;
       if (!activeGroupKey || activeGroupDeadlineMs <= 0) return null;
       return Math.max(0, activeGroupDeadlineMs - (Number(now) || 0));
     }
@@ -810,6 +838,17 @@
         finishCriticalGroup();
       }
 
+      if (battleActive) {
+        const battleIndex = entries.findIndex(isActiveBattleEntry);
+        if (battleIndex < 0) return null;
+        const next = entries.splice(battleIndex, 1)[0];
+        if (next.groupKey) {
+          activateCriticalGroup(next, now);
+          if (closesCriticalGroup(next.type, next.data)) finishCriticalGroup();
+        }
+        return next;
+      }
+
       if (durableTurn) {
         const durableIndex = entries.findIndex(entry => entry.priority === 2);
         durableTurn = false;
@@ -840,8 +879,21 @@
       entries.length = 0;
       seenFingerprints.clear();
       activeGroupKey = null;
+      activeGroupBattleId = null;
       activeGroupDeadlineMs = 0;
       durableTurn = false;
+    }
+
+    function setBattleActive(active, matchId = null) {
+      battleActive = Boolean(active);
+      activeBattleId = battleActive && String(matchId || '').trim()
+        ? String(matchId).trim()
+        : null;
+      if (!battleActive && (activeGroupKey?.startsWith('battle:') || activeGroupBattleId)) {
+        finishCriticalGroup();
+      }
+      if (!battleActive) durableTurn = false;
+      return battleActive;
     }
 
     return {
@@ -849,9 +901,11 @@
       beginSnapshot,
       prependSnapshot,
       releaseDelay,
+      setBattleActive,
       shift,
       snapshot: orderedEntries,
-      size: totalSize
+      size: totalSize,
+      battleActive: () => battleActive
     };
   }
 

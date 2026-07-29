@@ -382,11 +382,22 @@ describe('Stream Monsters effects renderer', () => {
       'monster-reveal'
     ]);
     expect(sceneChoreography('attack', { vfxKey: 'ashfang:attack', element: 'Ember' }))
-      .toEqual(expect.objectContaining({ steps: ['vfx-trail'], vfxKey: 'ashfang:attack', color: '#ff7043' }));
+      .toEqual(expect.objectContaining({
+        steps: ['telegraph', 'element-strike', 'impact'],
+        vfxKey: 'ashfang:attack',
+        color: '#ff7043'
+      }));
     expect(sceneChoreography('defense', { vfxKey: 'ripple:defense', element: 'Tide' }))
-      .toEqual(expect.objectContaining({ steps: ['shield-burst'], vfxKey: 'ripple:defense' }));
+      .toEqual(expect.objectContaining({
+        steps: ['guard-rise', 'element-barrier', 'guard-pulse'],
+        vfxKey: 'ripple:defense'
+      }));
     expect(sceneChoreography('special', { vfxKey: 'selene:special', element: 'Lunar' }))
-      .toEqual(expect.objectContaining({ steps: ['element-color-special'], vfxKey: 'selene:special', color: '#c7a4ff' }));
+      .toEqual(expect.objectContaining({
+        steps: ['charge', 'element-signature', 'finisher'],
+        vfxKey: 'selene:special',
+        color: '#c7a4ff'
+      }));
   });
 
   test('advances real spawn and hatch phases in WebGPU uniforms and the canvas DOM contract', async () => {

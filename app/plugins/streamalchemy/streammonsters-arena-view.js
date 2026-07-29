@@ -40,12 +40,14 @@
     document: documentLike,
     audio = SILENT_OUTPUT,
     effects = SILENT_OUTPUT,
+    presentationEffects = effects,
     clock = {},
     choiceLabels = {},
     choiceKeys = {},
     labels: arenaLabels = {},
     labelKeys = {},
-    localize = null
+    localize = null,
+    onBattleStateChange = null
   } = {}) {
     if (!documentLike) throw new Error('STREAM_MONSTERS_ARENA_DOCUMENT_REQUIRED');
     const wait = typeof clock.wait === 'function'
@@ -78,6 +80,7 @@
     let lastEventSequence = 0;
     let countdownHandle = null;
     let surfaceVersion = 0;
+    let battleSurfaceActive = false;
     let activeLocale = null;
     let renderVisibleComposite = null;
     const acceptedEventIds = new Set();
@@ -109,6 +112,23 @@
       cancelled: 'Kampf abgebrochen',
       shield: 'Schild',
       special: 'Special',
+      lead: '{name} führt',
+      tied: 'Gleichstand',
+      knockoutResult: 'K.-O.',
+      forfeitResult: 'Aufgabe',
+      resultSummary: 'Runde {round} · {hp}/{maxHp} HP übrig',
+      ratingChanged: '{name}: {before} → {after} ({delta})',
+      ratingUnchanged: '{name}: ELO unchanged ({after})',
+      damageMetric: 'Schaden {amount}',
+      shieldAbsorbedMetric: 'Schildtreffer {amount}',
+      shieldGainMetric: 'Schild +{amount}',
+      healMetric: 'Heilung {amount}',
+      evadeMetric: 'Ausweichen',
+      statTitle: '{player}: {monster}',
+      statMeta: 'Level {level} · {remaining} Punkte übrig',
+      statChoices: '1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1',
+      statResult: '{stat} +1',
+      collapse: 'ARENA COLLAPSE · Runde {round}',
       ...arenaLabels
     };
     const catalogKeys = {
@@ -126,6 +146,23 @@
       cancelled: 'arenaCancelled',
       shield: 'arenaShieldLabel',
       special: 'arenaSpecialLabel',
+      lead: 'arenaLeadLabel',
+      tied: 'arenaTiedLabel',
+      knockoutResult: 'arenaKnockoutResult',
+      forfeitResult: 'arenaForfeitResult',
+      resultSummary: 'arenaResultSummary',
+      ratingChanged: 'arenaRatingChanged',
+      ratingUnchanged: 'arenaRatingUnchanged',
+      damageMetric: 'arenaDamageMetric',
+      shieldAbsorbedMetric: 'arenaShieldAbsorbedMetric',
+      shieldGainMetric: 'arenaShieldGainMetric',
+      healMetric: 'arenaHealMetric',
+      evadeMetric: 'arenaEvadeMetric',
+      statTitle: 'monsterStatTitle',
+      statMeta: 'monsterStatMeta',
+      statChoices: 'monsterStatChoices',
+      statResult: 'monsterStatResult',
+      collapse: 'arenaCollapseBanner',
       ...labelKeys
     };
 
@@ -144,9 +181,10 @@
       const normalizedKey = String(catalogKey || '').trim();
       if (typeof localize === 'function' && normalizedKey) {
         try {
-          return String(localize(normalizedKey, params, activeLocale) || '');
+          const translated = String(localize(normalizedKey, params, activeLocale) || '');
+          return translated || interpolate(fallback, params);
         } catch (_) {
-          return '';
+          return interpolate(fallback, params);
         }
       }
       return interpolate(fallback, params);
@@ -164,7 +202,7 @@
     const localizedSkillText = (key, fallback = '') => {
       const normalizedKey = String(key || '').trim();
       if (!normalizedKey) {
-        return typeof localize === 'function' ? '' : String(fallback || '');
+        return String(fallback || '');
       }
       if (
         typeof localize !== 'function' &&
@@ -189,6 +227,128 @@
       target.dataset.arenaLabelKey = String(key || '');
       target.dataset.arenaLabelParams = JSON.stringify(params);
       target.textContent = formatLabel(key, params);
+    }
+
+    function safeDisplayName(value, fallback = '') {
+      const normalized = String(value || '')
+        .replace(/[\u0000-\u001f\u007f]/g, '')
+        .trim()
+        .slice(0, 64);
+      if (
+        !normalized ||
+        /^(?:unknown|unbekannt|viewer)$/i.test(normalized) ||
+        /^@?\d{5,}$/.test(normalized)
+      ) {
+        return String(fallback || formatLabel('viewer')).trim();
+      }
+      return normalized;
+    }
+
+    function setBattleSurface(active, reason = '') {
+      const normalized = Boolean(active);
+      if (surface?.dataset) {
+        surface.dataset.battleActive = String(normalized);
+        if (reason) surface.dataset.battleReason = String(reason);
+        else delete surface.dataset.battleReason;
+      }
+      if (battleSurfaceActive === normalized) return normalized;
+      battleSurfaceActive = normalized;
+      if (typeof onBattleStateChange === 'function') {
+        try {
+          onBattleStateChange({
+            active: normalized,
+            reason: String(reason || ''),
+            matchId: activeMatchId
+          });
+        } catch (_) {}
+      }
+      return normalized;
+    }
+
+    function renderLead() {
+      const left = stateBySlot.get(1);
+      const right = stateBySlot.get(2);
+      if (!left || !right) {
+        setText('arena-lead', '');
+        return null;
+      }
+      const leftVisible = numeric(left.hp) + numeric(left.shield);
+      const rightVisible = numeric(right.hp) + numeric(right.shield);
+      if (leftVisible === rightVisible) {
+        setLabelText('arena-lead', 'tied');
+        return { slot: 0, value: leftVisible };
+      }
+      const slot = leftVisible > rightVisible ? 1 : 2;
+      const fighter = stateBySlot.get(slot) || {};
+      setLabelText('arena-lead', 'lead', {
+        name: safeDisplayName(fighter.viewerName, fighter.name)
+      });
+      return { slot, value: Math.max(leftVisible, rightVisible) };
+    }
+
+    function actionMetrics(action = {}) {
+      const hits = Array.isArray(action.hits) ? action.hits : [];
+      const outcomes = Array.isArray(action.outcomes) ? action.outcomes : [];
+      const damage = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.hpDamage)))
+      ), 0);
+      const absorbed = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.shieldAbsorbed)))
+      ), 0);
+      const shield = outcomes
+        .filter(outcome => outcome?.type === 'shield')
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const heal = outcomes
+        .filter(outcome => ['heal', 'lifesteal'].includes(outcome?.type))
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const metrics = [];
+      if (damage > 0) metrics.push(formatLabel('damageMetric', { amount:damage }));
+      if (absorbed > 0) metrics.push(formatLabel('shieldAbsorbedMetric', { amount:absorbed }));
+      if (shield > 0) metrics.push(formatLabel('shieldGainMetric', { amount:shield }));
+      if (heal > 0) metrics.push(formatLabel('healMetric', { amount:heal }));
+      if (hits.some(hit => hit?.evaded)) metrics.push(formatLabel('evadeMetric'));
+      return metrics;
+    }
+
+    function renderActionCard(action = {}) {
+      const actor = stateBySlot.get(numeric(action.actorSlot)) || {};
+      const skillName = action.skill?.nameKey
+        ? localizedSkillText(action.skill.nameKey, action.skill?.name)
+        : String(action.skill?.name || formatLabel('skill'));
+      const skillCopy = action.skill?.shortTextKey
+        ? localizedSkillText(action.skill.shortTextKey, action.skill?.shortText)
+        : String(action.skill?.shortText || '');
+      setText('arena-action-player', safeDisplayName(actor.viewerName, actor.name));
+      setText('arena-action-key', String(action.choice || '').toUpperCase());
+      setText('arena-action-skill', skillName);
+      setText('arena-action-copy', skillCopy);
+      setText('arena-action-metrics', actionMetrics(action).join(' · '));
+      node('arena-action-card')?.classList.add('visible');
+    }
+
+    function showStatPrompt(payload = {}) {
+      const player = safeDisplayName(payload.playerName || payload.displayName);
+      const monster = safeDisplayName(payload.monster?.name, formatLabel('monster', { slot:1 }));
+      const level = Math.max(1, numeric(payload.level ?? payload.monster?.level, 1));
+      const remaining = Math.max(0, numeric(
+        payload.remainingUnspentPoints ??
+        payload.monster?.unspentStatPoints ??
+        payload.monster?.unspent_stat_points
+      ));
+      setLabelText('arena-stat-title', 'statTitle', { player, monster });
+      setLabelText('arena-stat-meta', 'statMeta', { level, remaining });
+      setLabelText('arena-stat-choices', 'statChoices');
+      node('arena-stat-card')?.classList.add('visible', 'prompt');
+      return true;
+    }
+
+    function showStatResult(payload = {}) {
+      showStatPrompt(payload);
+      const stat = String(payload.stat || '').trim() || formatLabel('skill');
+      setLabelText('arena-stat-meta', 'statResult', { stat });
+      node('arena-stat-card')?.classList.remove('prompt');
+      node('arena-stat-card')?.classList.add('result');
+      return true;
     }
 
     function refreshLocalizedText() {
@@ -403,6 +563,7 @@
         fighter.dataset.slot = String(slot);
       }
       renderSkillDeck(slot);
+      renderLead();
       return state;
     }
 
@@ -514,14 +675,38 @@
       return { renderer, fallbackReason };
     }
 
-    function fireTimelineOutputs(beat, payload = {}) {
+    function fireTimelineOutputs(beat, payload = {}, effectOutput = effects) {
       if (beat.effect?.scene) {
-        fire(effects, beat.effect.scene, {
+        const hits = Array.isArray(beat.hits)
+          ? beat.hits
+          : (Array.isArray(payload.hits) ? payload.hits : []);
+        const outcomes = Array.isArray(beat.outcomes)
+          ? beat.outcomes
+          : (Array.isArray(payload.outcomes) ? payload.outcomes : []);
+        const statusEffects = Array.isArray(beat.statusEffects)
+          ? beat.statusEffects
+          : (Array.isArray(payload.statusEffects) ? payload.statusEffects : []);
+        fire(effectOutput, beat.effect.scene, {
           ...beat.effect,
           eventId: beat.eventId,
           beatId: beat.beatId,
           correlationId: payload.correlationId || null,
-          motion: beat.motion
+          motion: beat.motion,
+          actorSlot: numeric(beat.actorSlot ?? payload.actorSlot) || null,
+          targetSlot: numeric(beat.targetSlot ?? payload.targetSlot) || null,
+          hitIndex: numeric(beat.hitIndex ?? payload.hitIndex) || 1,
+          hitCount: Math.max(
+            1,
+            numeric(beat.hitCount ?? payload.hitCount) || hits.length || 1
+          ),
+          hits,
+          outcomes,
+          statusEffects,
+          hpDamage: numeric(beat.hpDamage ?? payload.hpDamage),
+          shieldAbsorbed: numeric(beat.shieldAbsorbed ?? payload.shieldAbsorbed),
+          shieldGain: numeric(beat.shieldGain ?? payload.shieldGain),
+          healing: numeric(beat.healing ?? payload.healing),
+          evaded: Boolean(beat.evaded ?? payload.evaded)
         });
       }
       if (beat.audioCue) {
@@ -535,6 +720,7 @@
 
     function applyMatch(match = {}) {
       activateMatch(match.matchId);
+      setBattleSurface(true, match.state || 'match');
       activeChargeWindow = normalizeChargeWindow(match);
       lastEventSequence = Math.max(
         lastEventSequence,
@@ -561,6 +747,7 @@
 
     function openChoice(payload = {}) {
       activateMatch(payload.matchId);
+      setBattleSurface(true, 'choice');
       activeChargeWindow = normalizeChargeWindow(payload);
       if (payload.fighters) renderFighters(payload.fighters);
       const round = Math.max(1, numeric(payload.round ?? payload.roundNumber, 1));
@@ -581,6 +768,7 @@
         arena.classList.add('visible');
         arena.dataset.phase = 'choice';
       }
+      node('arena-action-card')?.classList.remove('visible');
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.remove('choice-locked');
@@ -910,6 +1098,8 @@
       stopCountdown();
       setText('arena-countdown', '');
       if (arena) arena.dataset.phase = 'action';
+      setBattleSurface(true, 'action');
+      renderActionCard(action);
       const arcadeTimeline = ArenaDirector.buildArcadeTimeline('battle_skill_used', {
         ...payload,
         eventId: action.eventId,
@@ -1025,6 +1215,40 @@
         case 'evolution_peak':
           if (rootDataset) rootDataset.evolutionStage = String(beat.evolutionStage);
           break;
+        case 'collapse_banner':
+          setLabelText('arena-feed', 'collapse', { round:beat.round });
+          if (arena) {
+            arena.dataset.phase = 'collapse';
+            arena.classList.add('arena-collapse');
+          }
+          break;
+        case 'collapse_shield':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.shieldReduced))} 🛡`);
+          node('arena-impact')?.classList.add('visible', 'shield-number');
+          fighterNode(beat.slot)?.classList.add('shielding');
+          break;
+        case 'collapse_damage':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.hpDamage))}`);
+          node('arena-impact')?.classList.add('visible', 'damage-number');
+          fighterNode(beat.slot)?.classList.add('hit');
+          break;
+        case 'collapse_hud':
+          for (const fighter of Array.isArray(beat.fighters) ? beat.fighters : []) {
+            const current = stateBySlot.get(fighter.slot) || {};
+            renderState(fighter.slot, {
+              ...current,
+              hp: fighter.hp,
+              shield: fighter.shield
+            });
+            fighterNode(fighter.slot)?.classList.remove('hit', 'shielding');
+          }
+          node('arena-impact')?.classList.remove(
+            'visible',
+            'damage-number',
+            'shield-number'
+          );
+          arena?.classList.remove('arena-collapse');
+          break;
         case 'winner_frame':
           if (beat.winnerSlot) {
             for (const slot of [1, 2]) {
@@ -1066,7 +1290,11 @@
         default:
           break;
       }
-      fireTimelineOutputs(beat, payload);
+      fireTimelineOutputs(
+        beat,
+        payload,
+        timeline.scene === 'arena_collapse' ? effects : presentationEffects
+      );
     }
 
     async function playEvent(eventType, payload = {}) {
@@ -1082,6 +1310,10 @@
       }
       const timeline = ArenaDirector.buildArcadeTimeline(normalized, payload);
       if (!timeline.beats.length || !rememberTimelineEvent(timeline.eventId)) return false;
+      if (normalized === 'battle_completed') return complete(payload);
+      if (normalized === 'battle_arena_collapse') {
+        setBattleSurface(true, 'collapse');
+      }
       transientPresentationClasses.forEach(className => surface?.classList.remove(className));
       resetChoreography();
       syncRendererStatus();
@@ -1093,9 +1325,6 @@
       }
       await wait(Math.max(0, timeline.durationMs - cursor));
       resetChoreography();
-      if (timeline.type === 'battle_completed') {
-        arena?.classList.remove('visible');
-      }
       return true;
     }
 
@@ -1103,6 +1332,7 @@
       stopCountdown();
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
+      setBattleSurface(true, 'result');
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.toggle('winner', slot === winnerSlot);
@@ -1118,12 +1348,16 @@
       const winner = payload.winner && typeof payload.winner === 'object'
         ? payload.winner
         : {};
-      const winnerName = String(
+      const winnerName = safeDisplayName(
         payload.winnerViewerName || winner.viewerName ||
         stateBySlot.get(winnerSlot)?.viewerName ||
-        stateBySlot.get(winnerSlot)?.name ||
-        formatLabel('monster', { slot: winnerSlot })
-      ).trim();
+        stateBySlot.get(winnerSlot)?.name,
+        formatLabel('viewer')
+      );
+      const winnerMonster = safeDisplayName(
+        winner.name || stateBySlot.get(winnerSlot)?.name,
+        formatLabel('monster', { slot:winnerSlot })
+      );
       const ratingText = (Array.isArray(payload.ratingChanges) ? payload.ratingChanges : [])
         .map(change => {
           const slot = numeric(change?.slot);
@@ -1132,14 +1366,52 @@
           const sign = delta >= 0 ? '+' : '';
           return `${name} ${sign}${delta} ELO · ${Math.round(numeric(change?.after))}`;
         }).join('   ');
+      const canonicalRatingText = (Array.isArray(payload.ratingChanges)
+        ? payload.ratingChanges
+        : []
+      ).map(change => {
+        const slot = numeric(change?.slot);
+        const fighter = stateBySlot.get(slot) || {};
+        const name = safeDisplayName(fighter.viewerName, fighter.name);
+        const before = Math.max(0, Math.round(numeric(change?.before)));
+        const after = Math.max(0, Math.round(numeric(change?.after)));
+        const delta = Math.round(numeric(change?.delta));
+        return before === after || delta === 0
+          ? formatLabel('ratingUnchanged', { name, before, after, delta:0 })
+          : formatLabel('ratingChanged', {
+              name,
+              before,
+              after,
+              delta:delta > 0 ? `+${delta}` : delta
+            });
+      }).join('   ') || ratingText;
+      const knockout = payload.knockout && typeof payload.knockout === 'object'
+        ? payload.knockout
+        : null;
+      const terminalReason = String(payload.terminalReason || '').toLowerCase();
       const result = node('arena-result');
       if (result) result.classList.add('visible');
+      setLabelText(
+        'arena-result-ko',
+        terminalReason === 'forfeit' ? 'forfeitResult' : 'knockoutResult'
+      );
       if (winnerSlot) {
         setLabelText('arena-result-winner', 'winner', { name:winnerName });
       } else {
         setLabelText('arena-result-winner', 'battleEnded');
       }
-      setText('arena-result-rating', ratingText);
+      setText('arena-result-monster', winnerMonster);
+      if (knockout) {
+        setLabelText('arena-result-summary', 'resultSummary', {
+          round:Math.max(1, numeric(knockout.round, 1)),
+          hp:Math.max(0, numeric(knockout.remainingHp)),
+          maxHp:Math.max(1, numeric(knockout.maxHp, 1))
+        });
+      } else {
+        setText('arena-result-summary', '');
+      }
+      setText('arena-result-ratings', canonicalRatingText);
+      setText('arena-result-rating', canonicalRatingText);
       if (winnerSlot) setLabelText('arena-feed', 'winner', { name:winnerName });
       else setLabelText('arena-feed', 'battleEnded');
       renderVisibleComposite = () => {
@@ -1154,10 +1426,12 @@
       fire(audio, 'arena.victory', {
         eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
       });
-      await wait(4_000);
+      await wait(8_000);
       if (terminalVersion === surfaceVersion) {
         result?.classList.remove('visible');
         arena?.classList.remove('visible');
+        activeMatchId = null;
+        setBattleSurface(false, 'result_complete');
       }
       return true;
     }
@@ -1178,7 +1452,11 @@
       setLabelText('arena-feed', cancellationLabel);
       renderVisibleComposite = () => setLabelText('arena-feed', cancellationLabel);
       await wait(3_000);
-      if (terminalVersion === surfaceVersion) arena?.classList.remove('visible');
+      if (terminalVersion === surfaceVersion) {
+        arena?.classList.remove('visible');
+        activeMatchId = null;
+        setBattleSurface(false, 'cancelled');
+      }
       return true;
     }
 
@@ -1188,7 +1466,19 @@
       const match = matches.find(candidate => (
         ['roster', 'action', 'finalizing'].includes(candidate?.state)
       ));
-      if (!match) return null;
+      if (!match) {
+        stopCountdown();
+        surfaceVersion += 1;
+        activeMatchId = null;
+        activeDeadlineMs = 0;
+        resetFighters();
+        arena?.classList.remove('visible');
+        node('arena-result')?.classList.remove('visible');
+        node('arena-action-card')?.classList.remove('visible');
+        setText('arena-countdown', '');
+        setBattleSurface(false, 'snapshot_empty');
+        return null;
+      }
       applyMatch(match);
       if (
         match.state === 'action' &&
@@ -1216,12 +1506,15 @@
       playEvent,
       playAction,
       renderCountdown,
+      showStatPrompt,
+      showStatResult,
       setLocale,
       destroy: stopCountdown,
       state: () => ({
         matchId: activeMatchId,
         deadlineMs: activeDeadlineMs,
-        eventSequence: lastEventSequence
+        eventSequence: lastEventSequence,
+        battleActive: battleSurfaceActive
       })
     };
   }

@@ -151,6 +151,17 @@
       linear-gradient(180deg,#17213b,#0a1020); box-shadow:inset 0 0 60px #0008; }
     .stage-preview.portrait { max-width:300px; aspect-ratio:9/16; }
     .stage-preview.landscape { aspect-ratio:16/9; }
+    .preview-zone {
+      position:absolute; z-index:4; left:var(--x); top:var(--y); width:var(--w); height:var(--h);
+      display:grid; place-items:center; overflow:hidden; border:1px dashed #7ceaff8c;
+      border-radius:5px; color:#e9fbff; background:#132b3b61; font-size:8px;
+      font-weight:900; line-height:1; text-transform:uppercase; pointer-events:none;
+    }
+    .preview-zone[data-preview-zone="notification"] { border-color:#ffd76f; background:#563f1f70; }
+    .preview-zone[data-preview-zone="avatar"] { border-color:#a984ff; background:#38275d45; }
+    .preview-zone[data-preview-zone="likes"],
+    .preview-zone[data-preview-zone="shelf"],
+    .preview-zone[data-preview-zone="xp"] { border-color:#6ef1b8; background:#193f3561; }
     .stage-gameplay { position:absolute; inset:0 0 26% 0; overflow:hidden; background:
       radial-gradient(ellipse at 50% 84%,#6652bb59,transparent 45%),
       linear-gradient(180deg,transparent,#141a35b8); }
@@ -245,9 +256,10 @@
     <a href="#live-center" data-i18n="plugins.streamalchemy.ui.monsters.navLiveCenter">1 · Live Center</a>
     <a href="#gameplay" data-i18n="plugins.streamalchemy.ui.monsters.navGameplay">2 · Gameplay</a>
     <a href="#gifts-chat" data-i18n="plugins.streamalchemy.ui.monsters.navGiftsChat">3 · Gifts &amp; Chat</a>
-    <a href="#overlay-studio" data-i18n="plugins.streamalchemy.ui.monsters.navOverlayStudio">4 · Overlay Studio</a>
-    <a href="#asset-library" data-i18n="plugins.streamalchemy.ui.monsters.navAssetLibrary">5 · Monster &amp; Assets</a>
-    <a href="#community-seasons" data-i18n="plugins.streamalchemy.ui.monsters.navCommunitySeasons">6 · Community &amp; Seasons</a>
+    <a href="#languages" data-i18n="plugins.streamalchemy.ui.monsters.navLanguages">4 · Languages</a>
+    <a href="#overlay-studio" data-i18n="plugins.streamalchemy.ui.monsters.navOverlayStudio">5 · Overlay Studio</a>
+    <a href="#asset-library" data-i18n="plugins.streamalchemy.ui.monsters.navAssetLibrary">6 · Monster &amp; Assets</a>
+    <a href="#community-seasons" data-i18n="plugins.streamalchemy.ui.monsters.navCommunitySeasons">7 · Community &amp; Seasons</a>
   </nav>
   <div id="notice" class="notice" role="status" data-i18n="plugins.streamalchemy.ui.monsters.loading">Stream Monsters wird geladen …</div>
 
@@ -301,7 +313,7 @@
   </section>
 
   <section id="gameplay" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v7</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v8</span></div>
     <div class="grid">
       <article class="card wide">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTiming">Eggs &amp; seasons</h3>
@@ -348,28 +360,6 @@
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.communityMomentum">Community momentum</h3>
         <div id="heartChainStatus" class="badge">Heart Chain · 0</div>
         <div id="streamMissionStatus" class="badge">Mission · —</div>
-      </article>
-      <article class="card">
-        <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Overlay languages</h3>
-        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p>
-        <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayPrimaryLocale">Primary language</span><select id="overlayPrimaryLocale">
-          <option value="de">Deutsch</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-        </select></label>
-        <span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayActiveLocales">Active overlay languages</span>
-        <div class="language-toggles">
-          <label><input id="overlayLocaleDe" type="checkbox" value="de" checked>DE</label>
-          <label><input id="overlayLocaleEn" type="checkbox" value="en" checked>EN</label>
-          <label><input id="overlayLocaleEs" type="checkbox" value="es">ES</label>
-          <label><input id="overlayLocaleFr" type="checkbox" value="fr">FR</label>
-        </div>
-        <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlaySecondsPerLocale">Seconds per language</span><select id="overlaySecondsPerLocale">
-          <option value="4">4</option>
-          <option value="5" selected>5</option>
-          <option value="6">6</option>
-        </select></label>
       </article>
     </div>
   </section>
@@ -481,9 +471,39 @@
     </article>
   </section>
 
+  <section id="languages" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Languages</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p></div><span class="badge">DE · EN · ES · FR</span></div>
+    <div class="grid">
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Overlay languages</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayPrimaryLocale">Primary language</span><select id="overlayPrimaryLocale">
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlaySecondsPerLocale">Seconds per language</span><select id="overlaySecondsPerLocale">
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select></label>
+        </div>
+        <span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayActiveLocales">Active overlay languages</span>
+        <div class="language-toggles">
+          <label><input id="overlayLocaleDe" type="checkbox" value="de" checked>DE</label>
+          <label><input id="overlayLocaleEn" type="checkbox" value="en" checked>EN</label>
+          <label><input id="overlayLocaleEs" type="checkbox" value="es">ES</label>
+          <label><input id="overlayLocaleFr" type="checkbox" value="fr">FR</label>
+        </div>
+      </article>
+    </div>
+  </section>
+
 
   <section id="overlay-studio" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge">Portrait first · 74/26</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge">Portrait first · 74/26</span></div>
     <div class="grid">
       <article class="card full">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLayoutTitle">Layout, readability &amp; quality</h3>
@@ -506,8 +526,15 @@
         </div>
         <div class="preview-grid">
           <div id="portraitStagePreview" class="stage-preview portrait" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 portrait stage preview">
-            <div class="stage-gameplay" data-gameplay-percent="74"><div class="stage-hud"><span>HP · 100%</span><span>ROUND 1</span><span>SPECIAL · 50%</span></div><div class="stage-callout">A · B · C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
-            <div class="stage-chat-safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
+            <div class="preview-zone" data-preview-zone="logo" style="--x:4%;--y:2%;--w:24%;--h:6%">Logo</div>
+            <div class="preview-zone" data-preview-zone="music" style="--x:5%;--y:14.5%;--w:58%;--h:4.5%">Music</div>
+            <div class="preview-zone" data-preview-zone="notification" style="--x:4%;--y:20%;--w:92%;--h:5%">Info</div>
+            <div class="preview-zone" data-preview-zone="avatar" style="--x:2%;--y:26.5%;--w:96%;--h:31%">Avatar</div>
+            <div class="preview-zone" data-preview-zone="likes" style="--x:2%;--y:58.5%;--w:96%;--h:6%">Likes</div>
+            <div class="preview-zone" data-preview-zone="shelf" style="--x:3%;--y:66.5%;--w:94%;--h:7%">Egg shelf</div>
+            <div class="preview-zone" data-preview-zone="xp" style="--x:4%;--y:82.5%;--w:92%;--h:11%">XP</div>
+            <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span>HP · 100%</span><span>ROUND 1</span><span>SPECIAL · 50%</span></div><div class="stage-callout">A · B · C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
+            <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
           </div>
           <div id="landscapeStagePreview" class="stage-preview landscape" data-width="1920" data-height="1080" role="img" aria-label="1920 by 1080 landscape stage preview">
             <div class="stage-gameplay" data-gameplay-percent="74"><div class="stage-hud"><span>HP · 100%</span><span>ROUND 1</span><span>SPECIAL · 50%</span></div><div class="stage-callout">A · B · C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
@@ -573,7 +600,7 @@
   </section>
 
   <section id="asset-library" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
     <div class="asset-summary">
       <div class="asset-stat"><strong>24</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetTemplates">Templates</span></div>
       <div class="asset-stat"><strong>3</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetStages">Stages each</span></div>
@@ -603,7 +630,7 @@
   </section>
 
   <section id="community-seasons" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsTitle">Community &amp; Seasons</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsCopy">Search collections and compare competitive Arena Rating with permanent Collector Score.</p></div><span id="seasonCountdown" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.seasonLoading">Loading season</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area7">Area 7</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsTitle">Community &amp; Seasons</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsCopy">Search collections and compare competitive Arena Rating with permanent Collector Score.</p></div><span id="seasonCountdown" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.seasonLoading">Loading season</span></div>
     <div id="visual-library" class="grid">
       <article class="card">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.findViewer">Find viewer</h3>
@@ -723,6 +750,7 @@
   let currentLiveStatus = {};
   let currentCreatorState = {};
   let currentStateConfig = {};
+  let liveRefreshInFlight = false;
   const repairPreviews = { eggs:null, matches:null };
   const repairSuffixes = Object.freeze({ eggs:'Eggs', matches:'Matches' });
   const CATALOG_PAGE_SIZE = 100;
@@ -1659,6 +1687,21 @@
       });
     }
   };
+  const refreshLiveCenterState = async () => {
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+    try {
+      const [status, state] = await Promise.all([
+        request('/api/status'),
+        request('/api/streammonsters/creator-state')
+      ]);
+      renderLiveCenter(status, state);
+    } catch (_) {
+      // Keep the last verified live snapshot visible during a transient poll failure.
+    } finally {
+      liveRefreshInFlight = false;
+    }
+  };
   const renderRetentionTimerWarning = () => {
     const cooldown = Number(byId('freeEggCooldownSeconds').value);
     const activeWindow = Number(byId('autoHatchActiveWindowSeconds').value);
@@ -1825,7 +1868,11 @@
   loadCatalog().catch(() => {});
   loadLeaderboards().catch(() => {});
   const liveCountdownTimer = setInterval(() => renderLiveCenter(), 1000);
-  window.addEventListener('pagehide', () => clearInterval(liveCountdownTimer), { once:true });
+  const liveStateRefreshTimer = setInterval(refreshLiveCenterState, 5_000);
+  window.addEventListener('pagehide', () => {
+    clearInterval(liveCountdownTimer);
+    clearInterval(liveStateRefreshTimer);
+  }, { once:true });
   if (window.i18n?.onLanguageChange) {
     window.i18n.onLanguageChange(() => {
       Promise.allSettled([
