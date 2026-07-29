@@ -1,0 +1,10 @@
+{
+  "columns": 3,
+  "rows": 4,
+  "keyColor": "#00ff00",
+  "atlases": {
+    "heads": "heads-atlas.png",
+    "eyes": "eyes-atlas.png",
+    "mouths": "mouths-atlas.png"
+  }
+}
