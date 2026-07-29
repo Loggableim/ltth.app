@@ -11,6 +11,8 @@ describe('Stream Monsters creator UI presentation controls', () => {
 
     for (const id of [
       'hatchPreset',
+      'gameplayPace',
+      'portraitBattleMode',
       'visualPack',
       'landscapeAnchor',
       'landscapeScale',
@@ -28,9 +30,11 @@ describe('Stream Monsters creator UI presentation controls', () => {
     ]) {
       expect(html).toContain(`id="${id}"`);
     }
-    for (const duration of ['30000', '60000', '120000', '300000', '600000', '1800000']) {
+    for (const duration of ['30000', '60000', '90000', '120000', '300000', '600000', '1800000']) {
       expect(html).toContain(`value="${duration}"`);
     }
+    expect(html).toContain('value="arcade-rally"');
+    expect(html).toContain('value="takeover-74"');
     expect(html).toContain('value="furry"');
     expect(html).not.toContain('value="art_lab"');
     expect(html).not.toContain('value="kenney"');

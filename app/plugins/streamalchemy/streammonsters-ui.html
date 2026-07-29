@@ -331,10 +331,17 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.hatchPreset">Hatch preset</span><select id="hatchPreset">
             <option value="30000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Seconds">30 seconds</option>
             <option value="60000" data-i18n="plugins.streamalchemy.ui.monsters.duration1Minute">1 minute</option>
+            <option value="90000" data-i18n="plugins.streamalchemy.ui.monsters.duration90Seconds">90 seconds</option>
             <option value="120000" data-i18n="plugins.streamalchemy.ui.monsters.duration2Minutes">2 minutes</option>
             <option value="300000" data-i18n="plugins.streamalchemy.ui.monsters.duration5Minutes">5 minutes</option>
             <option value="600000" data-i18n="plugins.streamalchemy.ui.monsters.duration10Minutes">10 minutes</option>
             <option value="1800000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Minutes">30 minutes</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.gameplayPace">Gameplay pace</span><select id="gameplayPace">
+            <option value="arcade-rally" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceArcadeRally">Arcade Rally</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleMode">Portrait battle mode</span><select id="portraitBattleMode">
+            <option value="takeover-74" data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleModeTakeover74">74% arena takeover</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.eggExpiry">Egg expiry</span><select id="eggExpiry">
             <option value="21600000" data-i18n="plugins.streamalchemy.ui.monsters.duration6Hours">6 hours</option><option value="43200000" data-i18n="plugins.streamalchemy.ui.monsters.duration12Hours">12 hours</option>
@@ -355,6 +362,7 @@
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveHelp">Ready owned eggs hatch only after the viewer has recently interacted in this stream.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
+        <div id="presentationModeStatus" class="badge" role="status" aria-live="polite"></div>
         <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
         <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">No stream data yet</div>
       </article>
@@ -1488,6 +1496,8 @@
       values: {
         creatorName:byId('creatorName').value,
         hatchDurationMs:byId('hatchPreset').value,
+        gameplayPace:byId('gameplayPace').value,
+        portraitBattleMode:byId('portraitBattleMode').value,
         eggExpiryMs:byId('eggExpiry').value,
         seasonDurationDays:byId('seasonDuration').value,
         landscapeAnchor:byId('landscapeAnchor').value,
@@ -1577,7 +1587,18 @@
       ...(state.config || {}),
       giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
     };
-    byId('hatchPreset').value = String(state.config?.hatchDurationMs || 120000);
+    byId('hatchPreset').value = String(state.config?.hatchDurationMs ?? 90000);
+    byId('gameplayPace').value = state.config?.gameplayPace || 'arcade-rally';
+    byId('portraitBattleMode').value =
+      state.config?.portraitBattleMode || 'takeover-74';
+    byId('presentationModeStatus').textContent = text(
+      'presentationModeStatus',
+      '{pace} · {mode}',
+      {
+        pace:text('gameplayPaceArcadeRally', 'Arcade Rally'),
+        mode:text('portraitBattleModeTakeover74', '74% arena takeover')
+      }
+    );
     byId('visualPack').value = 'furry';
     byId('eggExpiry').value = String(state.config?.eggExpiryMs || 86400000);
     byId('seasonDuration').value = String(state.config?.seasonDurationDays || 28);

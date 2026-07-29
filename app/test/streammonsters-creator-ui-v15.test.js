@@ -32,6 +32,9 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect(document.querySelector('nav a[href="#languages"]')).not.toBeNull();
     expect(document.getElementById('gameplay').textContent).not.toContain('Rules v7');
     expect(document.getElementById('gameplay').textContent).toContain('Rules v8');
+    expect(document.getElementById('gameplayPace').value).toBe('arcade-rally');
+    expect(document.getElementById('portraitBattleMode').value).toBe('takeover-74');
+    expect(document.querySelector('#hatchPreset option[value="90000"]')).not.toBeNull();
   });
 
   test('shows every required live diagnostic without exposing unrelated machine data', () => {
@@ -232,7 +235,12 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       'statusConnected',
       'statusDisconnected',
       'statusActive',
-      'statusIdle'
+      'statusIdle',
+      'duration90Seconds',
+      'gameplayPace',
+      'gameplayPaceArcadeRally',
+      'portraitBattleMode',
+      'portraitBattleModeTakeover74'
     ]) {
       expect(translations[key]).toEqual(expect.any(String));
       expect(translations[key]).not.toHaveLength(0);

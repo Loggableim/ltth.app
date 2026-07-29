@@ -39,7 +39,7 @@ class StreamMonstersEngine {
     this.getCommandReference = getCommandReference;
     this.eggStageProjector = new EggStageProjector({ store, now });
     this.config = {
-      hatchDurationMs: 2 * 60 * 1000,
+      hatchDurationMs: 90_000,
       eggExpiryMs: 24 * 60 * 60 * 1000,
       chargedHatchMultiplier: 0.75,
       maxUnhatchedEggs: 3,

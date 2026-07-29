@@ -100,7 +100,7 @@ function createMonster(store, {
 }
 
 describe('Stream Monsters current rules migration', () => {
-  test('migrates only the missing-version legacy default and persists the current rules version', () => {
+  test('preserves a missing-version creator duration while persisting current rules defaults', () => {
     const setConfig = jest.fn();
     const plugin = new StreamAlchemyPlugin({
       getConfig: jest.fn(),
@@ -118,7 +118,7 @@ describe('Stream Monsters current rules migration', () => {
 
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
       rulesVersion: 8,
-      hatchDurationMs: 120_000
+      hatchDurationMs: 1_800_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
     expect(setConfig).toHaveBeenCalledWith('streamalchemy_config', plugin.config);
@@ -285,7 +285,7 @@ describe('Stream Monsters current rules migration', () => {
     }));
   });
 
-  test('accepts only the creator incubation choices from 30 seconds through 30 minutes', () => {
+  test('accepts only the creator incubation choices from 30 seconds through 30 minutes including 90 seconds', () => {
     const routes = new StreamMonstersRoutes({
       api: {},
       pluginDir: __dirname,
@@ -298,10 +298,9 @@ describe('Stream Monsters current rules migration', () => {
       configProvider: {}
     });
 
-    expect([0.5, 1, 2, 5, 10, 30].map(minutes => (
+    expect([0.5, 1, 1.5, 2, 5, 10, 30].map(minutes => (
       routes.sanitizeConfigUpdate({ hatchDurationMs: minutes * 60_000 }).hatchDurationMs
-    ))).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
-    expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 90_000 })).toEqual({});
+    ))).toEqual([30_000, 60_000, 90_000, 120_000, 300_000, 600_000, 1_800_000]);
     expect(routes.sanitizeConfigUpdate({ maxUnhatchedEggs: 0 })).toEqual({});
     expect(routes.sanitizeConfigUpdate({ maxUnhatchedEggs: 99 })).toEqual({});
     expect(routes.publicConfig({ rulesVersion: 2, hatchDurationMs: 300_000 })).toEqual(

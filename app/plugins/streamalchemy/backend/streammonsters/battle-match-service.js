@@ -86,6 +86,8 @@ class BattleMatchService {
     rulesVersion = 5,
     localeCount = 1,
     secondsPerLocale = 6,
+    gameplayPace = 'arcade-rally',
+    portraitBattleMode = 'takeover-74',
     sweepIntervalMs = 1_000,
     autoStart = true
   }) {
@@ -114,6 +116,12 @@ class BattleMatchService {
       4,
       Math.min(6, Number(secondsPerLocale) || 6)
     );
+    this.gameplayPace = gameplayPace === 'arcade-rally'
+      ? gameplayPace
+      : 'arcade-rally';
+    this.portraitBattleMode = portraitBattleMode === 'takeover-74'
+      ? portraitBattleMode
+      : 'takeover-74';
     this.sweepIntervalMs = Math.max(250, Number(sweepIntervalMs) || 1_000);
     this.sweepTimer = null;
     this.pauseActiveChargesForReconnect();
@@ -148,6 +156,19 @@ class BattleMatchService {
     return {
       localeCount: this.localeCount,
       secondsPerLocale: this.secondsPerLocale
+    };
+  }
+
+  setPresentationConfig({ gameplayPace, portraitBattleMode } = {}) {
+    this.gameplayPace = gameplayPace === 'arcade-rally'
+      ? gameplayPace
+      : 'arcade-rally';
+    this.portraitBattleMode = portraitBattleMode === 'takeover-74'
+      ? portraitBattleMode
+      : 'takeover-74';
+    return {
+      gameplayPace: this.gameplayPace,
+      portraitBattleMode: this.portraitBattleMode
     };
   }
 
@@ -2885,6 +2906,8 @@ class BattleMatchService {
     }
     const snapshot = {
       rulesVersion: this.rulesVersion,
+      gameplayPace: this.gameplayPace,
+      portraitBattleMode: this.portraitBattleMode,
       matches: matchIds.map(({ match_id: matchId }) => {
         const match = this.getMatch(matchId);
         const cursor = this.db.prepare(`

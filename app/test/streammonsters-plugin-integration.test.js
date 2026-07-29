@@ -106,6 +106,8 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersBattleMatchService.getPublicSnapshot())
       .toEqual(expect.objectContaining({
         rulesVersion: 8,
+        gameplayPace: 'arcade-rally',
+        portraitBattleMode: 'takeover-74',
         matches: []
       }));
     await plugin.destroy();

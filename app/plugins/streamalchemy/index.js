@@ -30,11 +30,13 @@ const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
 const STREAM_MONSTERS_RULES_VERSION = 8;
-const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
-const DEFAULT_HATCH_DURATION_MS = 2 * 60 * 1000;
+const DEFAULT_HATCH_DURATION_MS = 90_000;
+const DEFAULT_GAMEPLAY_PACE = 'arcade-rally';
+const DEFAULT_PORTRAIT_BATTLE_MODE = 'takeover-74';
 const INCUBATION_PRESETS_MS = Object.freeze([
   30_000,
   60_000,
+  90_000,
   120_000,
   300_000,
   600_000,
@@ -169,6 +171,8 @@ class StreamAlchemyPlugin {
       seasonDurationDays: this.config.streamMonsters.seasonDurationDays,
       localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
       secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale,
+      gameplayPace: this.config.streamMonsters.gameplayPace,
+      portraitBattleMode: this.config.streamMonsters.portraitBattleMode,
       rulesVersion: STREAM_MONSTERS_RULES_VERSION
     });
     this.streamMonstersProgression.setMonsterProgressHandler(({
@@ -298,11 +302,8 @@ class StreamAlchemyPlugin {
     this.retiredConfigArchive = this.extractRetiredConfig(storedConfig);
     const stored = this.sanitizeConfig(storedConfig);
     const storedStreamMonsters = stored.streamMonsters || {};
-    const rulesVersionMissing = storedStreamMonsters.rulesVersion == null;
-    const hatchDurationMs = rulesVersionMissing &&
-      storedStreamMonsters.hatchDurationMs === LEGACY_HATCH_DURATION_MS
-      ? DEFAULT_HATCH_DURATION_MS
-      : (storedStreamMonsters.hatchDurationMs ?? DEFAULT_HATCH_DURATION_MS);
+    const hatchDurationMs = storedStreamMonsters.hatchDurationMs ??
+      DEFAULT_HATCH_DURATION_MS;
     return {
       enabled: true,
       ...stored,
@@ -311,6 +312,8 @@ class StreamAlchemyPlugin {
         creatorName: '',
         hatchDurationMs: DEFAULT_HATCH_DURATION_MS,
         incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        gameplayPace: DEFAULT_GAMEPLAY_PACE,
+        portraitBattleMode: DEFAULT_PORTRAIT_BATTLE_MODE,
         eggExpiryMs: 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: 28,
@@ -334,6 +337,10 @@ class StreamAlchemyPlugin {
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         hatchDurationMs,
         incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        gameplayPace: this.normalizeGameplayPace(storedStreamMonsters.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(
+          storedStreamMonsters.portraitBattleMode
+        ),
         eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(storedStreamMonsters.eggExpiryMs))
           ? Number(storedStreamMonsters.eggExpiryMs)
           : 86_400_000,
@@ -473,6 +480,17 @@ class StreamAlchemyPlugin {
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
       ? Math.round(seconds)
       : 86_400;
+  }
+
+  normalizeGameplayPace(value) {
+    return value === DEFAULT_GAMEPLAY_PACE ? value : DEFAULT_GAMEPLAY_PACE;
+  }
+
+  normalizePortraitBattleMode(value) {
+    if (value === true) return DEFAULT_PORTRAIT_BATTLE_MODE;
+    return value === DEFAULT_PORTRAIT_BATTLE_MODE
+      ? value
+      : DEFAULT_PORTRAIT_BATTLE_MODE;
   }
 
   normalizeAutoHatchActiveWindowSeconds(value) {
@@ -672,6 +690,10 @@ class StreamAlchemyPlugin {
         ...mergedStreamMonsters,
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        gameplayPace: this.normalizeGameplayPace(mergedStreamMonsters.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(
+          mergedStreamMonsters.portraitBattleMode
+        ),
         eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(mergedStreamMonsters.eggExpiryMs))
           ? Number(mergedStreamMonsters.eggExpiryMs)
           : 86_400_000,
@@ -729,6 +751,10 @@ class StreamAlchemyPlugin {
     this.streamMonstersBattleMatchService?.setLanguageTiming?.({
       localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
       secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale
+    });
+    this.streamMonstersBattleMatchService?.setPresentationConfig?.({
+      gameplayPace: this.config.streamMonsters.gameplayPace,
+      portraitBattleMode: this.config.streamMonsters.portraitBattleMode
     });
     if (
       this.streamMonstersCommandIngress &&

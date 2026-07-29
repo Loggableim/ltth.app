@@ -176,6 +176,8 @@ class StreamMonstersRoutes {
           restoreReconnect: true
         }) || {
           rulesVersion: this.currentRulesVersion(config),
+          gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+          portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
           matches: []
         },
         recentEvents,
@@ -186,6 +188,8 @@ class StreamMonstersRoutes {
       const config = this.configProvider.getConfig().streamMonsters;
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
         rulesVersion: this.currentRulesVersion(config),
+        gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
         matches: []
       };
       res.json({ success: true, ...snapshot });
@@ -216,6 +220,8 @@ class StreamMonstersRoutes {
       const gcce = this.gcceStateProvider();
       const battle = this.battleMatchService?.getPublicSnapshot?.() || {
         rulesVersion: this.currentRulesVersion(config),
+        gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+        portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
         matches: []
       };
       res.json({
@@ -1331,6 +1337,19 @@ class StreamMonstersRoutes {
         throw new Error('STREAM_MONSTERS_OVERLAY_LANGUAGE_INVALID');
       }
     }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'gameplayPace') &&
+      input.gameplayPace !== 'arcade-rally'
+    ) {
+      throw new Error('STREAM_MONSTERS_GAMEPLAY_PACE_INVALID');
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'portraitBattleMode') &&
+      input.portraitBattleMode !== true &&
+      input.portraitBattleMode !== 'takeover-74'
+    ) {
+      throw new Error('STREAM_MONSTERS_PORTRAIT_BATTLE_MODE_INVALID');
+    }
   }
 
   getEggRepairPlan() {
@@ -1623,7 +1642,13 @@ class StreamMonstersRoutes {
     if (Object.prototype.hasOwnProperty.call(input, 'overlayLanguage')) {
       safe.overlayLanguage = this.normalizeOverlayLanguage(input.overlayLanguage);
     }
-    const allowedHatchDurations = new Set([30_000, 60_000, 2, 5, 10, 30].map(value => (
+    if (input.gameplayPace === 'arcade-rally') {
+      safe.gameplayPace = 'arcade-rally';
+    }
+    if (input.portraitBattleMode === true || input.portraitBattleMode === 'takeover-74') {
+      safe.portraitBattleMode = 'takeover-74';
+    }
+    const allowedHatchDurations = new Set([30_000, 60_000, 90_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
     )));
     const hatchDurationMs = Number(input.hatchDurationMs);
@@ -1791,12 +1816,31 @@ class StreamMonstersRoutes {
     return V8_RULES_VERSION;
   }
 
+  normalizeGameplayPace(value) {
+    return value === 'arcade-rally' ? value : 'arcade-rally';
+  }
+
+  normalizePortraitBattleMode(value) {
+    if (value === true) return 'takeover-74';
+    return value === 'takeover-74' ? value : 'takeover-74';
+  }
+
   publicConfig(config = {}, { includeCreator = false } = {}) {
     const result = {
       enabled: Boolean(config.enabled),
       rulesVersion: this.currentRulesVersion(config),
-      hatchDurationMs: config.hatchDurationMs,
-      incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
+      hatchDurationMs: config.hatchDurationMs ?? 90_000,
+      incubationPresetsMs: [
+        30_000,
+        60_000,
+        90_000,
+        120_000,
+        300_000,
+        600_000,
+        1_800_000
+      ],
+      gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
+      portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
       eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(
         Number(config.eggExpiryMs)
       ) ? Number(config.eggExpiryMs) : 86_400_000,

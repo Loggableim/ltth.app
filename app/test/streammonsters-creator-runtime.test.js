@@ -4,8 +4,10 @@ const {
   COMMAND_ACTIONS,
   CREATOR_SECTIONS,
   DEMO_SCENES,
+  GAMEPLAY_PACES,
   HATCH_PRESETS,
   EGG_EXPIRY_PRESETS,
+  PORTRAIT_BATTLE_MODES,
   REPAIR_ACTIONS,
   RENDERER_QUALITIES,
   SEASON_DURATIONS,
@@ -81,7 +83,17 @@ describe('Stream Monsters creator controls', () => {
   });
 
   test('offers Rules v5 presets, canonical Furry and preserves mapping customization', () => {
-    expect(HATCH_PRESETS).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
+    expect(HATCH_PRESETS).toEqual([
+      30_000,
+      60_000,
+      90_000,
+      120_000,
+      300_000,
+      600_000,
+      1_800_000
+    ]);
+    expect(GAMEPLAY_PACES).toEqual(['arcade-rally']);
+    expect(PORTRAIT_BATTLE_MODES).toEqual(['takeover-74']);
     expect(EGG_EXPIRY_PRESETS).toEqual([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
     expect(SEASON_DURATIONS).toEqual([7, 14, 28, 60, 90]);
     expect(RENDERER_QUALITIES).toEqual(['auto', 'high', 'medium', 'low']);
@@ -90,6 +102,8 @@ describe('Stream Monsters creator controls', () => {
       values: {
         creatorName: 'Creator',
         hatchDurationMs: '300000',
+        gameplayPace: 'arcade-rally',
+        portraitBattleMode: 'takeover-74',
         eggExpiryMs: '86400000',
         seasonDurationDays: '60',
         visualPack: 'art_lab',
@@ -105,6 +119,8 @@ describe('Stream Monsters creator controls', () => {
     })).toEqual({
       creatorName: 'Creator',
       hatchDurationMs: 300_000,
+      gameplayPace: 'arcade-rally',
+      portraitBattleMode: 'takeover-74',
       eggExpiryMs: 86_400_000,
       seasonDurationDays: 60,
       visualPack: 'furry',
