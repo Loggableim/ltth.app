@@ -24,6 +24,38 @@ function createRuntime() {
 }
 
 describe('Stream Monsters v1.5 public event projection and reconnect outbox', () => {
+  test('projects a charged special without exposing the internal monster database id', () => {
+    const projector = new StreamMonstersPublicEventProjector();
+    const projected = projector.project('streammonsters:battle_special_charged', {
+      matchId: 'match-public-1',
+      round: 3,
+      slot: 1,
+      charge: 100,
+      monsterId: 'private-monster-id',
+      monster: {
+        monster_id: 'private-monster-id',
+        name: 'Ashfang',
+        element: 'Ember',
+        template_id: 'ashfang',
+        level: 4
+      }
+    });
+
+    expect(projected).toEqual({
+      matchId: 'match-public-1',
+      round: 3,
+      slot: 1,
+      charge: 100,
+      monster: expect.objectContaining({
+        name: 'Ashfang',
+        element: 'Ember',
+        templateId: 'ashfang',
+        level: 4
+      })
+    });
+    expect(JSON.stringify(projected)).not.toContain('private-monster-id');
+  });
+
   test('redacts compound private identifiers while preserving public gameplay keys', () => {
     const projector = new StreamMonstersPublicEventProjector();
     const projected = projector.project('streammonsters:achievement_unlocked', {

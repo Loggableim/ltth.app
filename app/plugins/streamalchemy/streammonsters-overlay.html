@@ -1109,7 +1109,7 @@
             <span class="evolution-stat-label"></span>
             <span class="evolution-stat-values">
               <span class="evolution-stat-before"></span>
-              <span aria-hidden="true">&rarr;</span>
+              <span aria-hidden="true">→</span>
               <span class="evolution-stat-after"></span>
             </span>
             <span class="evolution-stat-delta"></span>
@@ -1120,7 +1120,7 @@
             <span class="evolution-stat-label"></span>
             <span class="evolution-stat-values">
               <span class="evolution-stat-before"></span>
-              <span aria-hidden="true">&rarr;</span>
+              <span aria-hidden="true">→</span>
               <span class="evolution-stat-after"></span>
             </span>
             <span class="evolution-stat-delta"></span>
@@ -1131,7 +1131,7 @@
             <span class="evolution-stat-label"></span>
             <span class="evolution-stat-values">
               <span class="evolution-stat-before"></span>
-              <span aria-hidden="true">&rarr;</span>
+              <span aria-hidden="true">→</span>
               <span class="evolution-stat-after"></span>
             </span>
             <span class="evolution-stat-delta"></span>
@@ -1142,7 +1142,7 @@
             <span class="evolution-stat-label"></span>
             <span class="evolution-stat-values">
               <span class="evolution-stat-before"></span>
-              <span aria-hidden="true">&rarr;</span>
+              <span aria-hidden="true">→</span>
               <span class="evolution-stat-after"></span>
             </span>
             <span class="evolution-stat-delta"></span>
@@ -1160,15 +1160,22 @@
     </div>
   </section>
   </div>
-  <section id="egg-shelf" data-gameplay-boundary="74" aria-label="Living egg shelf">
+  <section id="egg-shelf"
+    data-gameplay-boundary="74"
+    aria-label="Living egg shelf"
+    data-i18n-aria-label="plugins.streamalchemy.ui.monsters.eggShelfAria">
     <div data-egg-slots></div>
     <div data-egg-overflow hidden></div>
   </section>
-  <section id="battle" aria-label="Stream Monsters Arena" aria-live="polite">
+  <section id="battle"
+    aria-label="Stream Monsters Arena"
+    data-i18n-aria-label="plugins.streamalchemy.ui.monsters.battleArenaAria"
+    aria-live="polite">
     <canvas id="battle-effects-canvas" aria-hidden="true"></canvas>
     <div id="arena-element-light" aria-hidden="true"></div>
     <div id="arena-topline">
-      <span id="arena-round">Monsterwahl</span>
+      <span id="arena-round"
+        data-i18n="plugins.streamalchemy.ui.monsters.arenaRosterChoice">Monsterwahl</span>
       <span id="arena-countdown"></span>
     </div>
     <div id="arena-skill-prompt">A · Angriff&nbsp;&nbsp; B · Verteidigung&nbsp;&nbsp; C · Special</div>
@@ -1187,18 +1194,35 @@
       <div class="fighter-hud">
         <div class="fighter-heading">
           <div class="fighter-identity">
-            <span id="arena-name-1" class="fighter-name">Monster A</span>
-            <span id="arena-owner-1" class="fighter-owner">Viewer</span>
+            <span id="arena-name-1"
+              class="fighter-name"
+              data-i18n="plugins.streamalchemy.ui.monsters.arenaMonsterAFallback">Monster A</span>
+            <span id="arena-owner-1"
+              class="fighter-owner"
+              data-i18n="plugins.streamalchemy.ui.monsters.arenaViewerLabel">Viewer</span>
           </div>
-          <span id="arena-level-1" class="fighter-level">Lv. 1</span>
+          <span id="arena-level-1"
+            class="fighter-level"
+            data-i18n="plugins.streamalchemy.ui.monsters.arenaLevelOneFallback">Lv. 1</span>
         </div>
         <div class="fighter-hp-row"><span>HP</span><span id="arena-hp-text-1">0 / 0</span></div>
-        <div class="arena-meter arena-hp"><span id="arena-hp-1" role="progressbar" aria-label="HP Monster A"></span></div>
-        <div class="arena-meter arena-shield"><span id="arena-shield-1" role="progressbar" aria-label="Schild Monster A"></span></div>
-        <div class="arena-meter arena-charge"><span id="arena-charge-1" role="progressbar" aria-label="Special Monster A"></span></div>
+        <div class="arena-meter arena-hp"><span id="arena-hp-1"
+          role="progressbar"
+          aria-label="HP Monster A"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaHpMonsterAAria"></span></div>
+        <div class="arena-meter arena-shield"><span id="arena-shield-1"
+          role="progressbar"
+          aria-label="Schild Monster A"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaShieldMonsterAAria"></span></div>
+        <div class="arena-meter arena-charge"><span id="arena-charge-1"
+          role="progressbar"
+          aria-label="Special Monster A"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaSpecialMonsterAAria"></span></div>
         <div class="arena-meter-labels">
-          <span id="arena-shield-label-1">Schild</span>
-          <span id="arena-special-label-1">Special</span>
+          <span id="arena-shield-label-1"
+            data-i18n="plugins.streamalchemy.ui.monsters.arenaShieldLabel">Schild</span>
+          <span id="arena-special-label-1"
+            data-i18n="plugins.streamalchemy.ui.monsters.arenaSpecialLabel">Special</span>
         </div>
       </div>
     </article>
@@ -1209,25 +1233,45 @@
       <div class="fighter-hud">
         <div class="fighter-heading">
           <div class="fighter-identity">
-            <span id="arena-name-2" class="fighter-name">Monster B</span>
-            <span id="arena-owner-2" class="fighter-owner">Viewer</span>
+            <span id="arena-name-2"
+              class="fighter-name"
+              data-i18n="plugins.streamalchemy.ui.monsters.arenaMonsterBFallback">Monster B</span>
+            <span id="arena-owner-2"
+              class="fighter-owner"
+              data-i18n="plugins.streamalchemy.ui.monsters.arenaViewerLabel">Viewer</span>
           </div>
-          <span id="arena-level-2" class="fighter-level">Lv. 1</span>
+          <span id="arena-level-2"
+            class="fighter-level"
+            data-i18n="plugins.streamalchemy.ui.monsters.arenaLevelOneFallback">Lv. 1</span>
         </div>
         <div class="fighter-hp-row"><span>HP</span><span id="arena-hp-text-2">0 / 0</span></div>
-        <div class="arena-meter arena-hp"><span id="arena-hp-2" role="progressbar" aria-label="HP Monster B"></span></div>
-        <div class="arena-meter arena-shield"><span id="arena-shield-2" role="progressbar" aria-label="Schild Monster B"></span></div>
-        <div class="arena-meter arena-charge"><span id="arena-charge-2" role="progressbar" aria-label="Special Monster B"></span></div>
+        <div class="arena-meter arena-hp"><span id="arena-hp-2"
+          role="progressbar"
+          aria-label="HP Monster B"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaHpMonsterBAria"></span></div>
+        <div class="arena-meter arena-shield"><span id="arena-shield-2"
+          role="progressbar"
+          aria-label="Schild Monster B"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaShieldMonsterBAria"></span></div>
+        <div class="arena-meter arena-charge"><span id="arena-charge-2"
+          role="progressbar"
+          aria-label="Special Monster B"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaSpecialMonsterBAria"></span></div>
         <div class="arena-meter-labels">
-          <span id="arena-shield-label-2">Schild</span>
-          <span id="arena-special-label-2">Special</span>
+          <span id="arena-shield-label-2"
+            data-i18n="plugins.streamalchemy.ui.monsters.arenaShieldLabel">Schild</span>
+          <span id="arena-special-label-2"
+            data-i18n="plugins.streamalchemy.ui.monsters.arenaSpecialLabel">Special</span>
         </div>
       </div>
     </article>
     <section id="arena-choice-surface" aria-live="polite">
       <div class="arena-choice-player" data-choice-player="1">
         <strong id="arena-choice-owner-1" class="arena-choice-owner" data-choice-owner="1">Viewer · Monster A</strong>
-        <div class="arena-skill-deck" data-skill-deck="1" aria-label="Monster A skills">
+        <div class="arena-skill-deck"
+          data-skill-deck="1"
+          aria-label="Monster A skills"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaSkillDeckMonsterAAria">
           <div class="arena-skill-card" data-skill="A">
             <span class="skill-icon"></span><span class="skill-choice">A</span>
             <span class="skill-name"></span><span class="skill-copy"></span>
@@ -1247,7 +1291,10 @@
       </div>
       <div class="arena-choice-player" data-choice-player="2">
         <strong id="arena-choice-owner-2" class="arena-choice-owner" data-choice-owner="2">Viewer · Monster B</strong>
-        <div class="arena-skill-deck" data-skill-deck="2" aria-label="Monster B skills">
+        <div class="arena-skill-deck"
+          data-skill-deck="2"
+          aria-label="Monster B skills"
+          data-i18n-aria-label="plugins.streamalchemy.ui.monsters.arenaSkillDeckMonsterBAria">
           <div class="arena-skill-card" data-skill="A">
             <span class="skill-icon"></span><span class="skill-choice">A</span>
             <span class="skill-name"></span><span class="skill-copy"></span>

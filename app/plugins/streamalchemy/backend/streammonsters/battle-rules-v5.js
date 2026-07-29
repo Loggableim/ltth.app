@@ -9,7 +9,8 @@ const {
 } = require('./catalog');
 const { elementAdvantage } = require('./battle-rules-v3');
 const {
-  arenaCollapseRecoveryFactor
+  arenaCollapseRecoveryFactor,
+  isArenaCollapseDefenseLocked
 } = require('./battle-rules-v8');
 
 const RULES_VERSION = 5;
@@ -206,10 +207,20 @@ function applyRetaliation(actorState, type, amount, index) {
   return { type, ...hit };
 }
 
-function normalizeChoice(requestedChoice, state) {
+function normalizeChoice(requestedChoice, state, {
+  round = 1,
+  rulesVersion = RULES_VERSION
+} = {}) {
   const requested = String(requestedChoice || '').trim().toUpperCase();
   if (!CHOICES.includes(requested)) {
     return { choice: 'A', choiceFallback: 'invalid_choice' };
+  }
+  if (
+    rulesVersion >= V8_RULES_VERSION &&
+    requested === 'B' &&
+    isArenaCollapseDefenseLocked(round)
+  ) {
+    return { choice: 'A', choiceFallback: 'arena_collapse_defense_locked' };
   }
   if (requested === 'C' && state.charge < 100) {
     return { choice: 'A', choiceFallback: 'special_not_charged' };
@@ -229,7 +240,10 @@ function resolveAction({
   disableElementAdvantage = false,
   rulesVersion = RULES_VERSION
 }) {
-  const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState);
+  const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState, {
+    round,
+    rulesVersion
+  });
   const skill = rulesVersion >= V7_RULES_VERSION
     ? resolveStageSkill(
       actor.template_id,

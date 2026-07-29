@@ -10,6 +10,9 @@ const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammon
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const {
+  applyEvolutionGrant
+} = require('../plugins/streamalchemy/backend/streammonsters/evolution-rules');
 
 const temporaryDirectories = [];
 
@@ -319,10 +322,15 @@ describe('Stream Monsters review fix round 1', () => {
       spent: 16
     }));
     for (const before of original) {
+      const stageThreeStats = applyEvolutionGrant(
+        applyEvolutionGrant(before.stats, 'Ember', 2),
+        'Ember',
+        3
+      );
       expect(store.getMonster(before.monsterId)).toEqual(expect.objectContaining({
         evolution_stage: 3,
         evolution_essence_spent: 8,
-        stats: before.stats,
+        stats: stageThreeStats,
         xp: before.xp,
         level: before.level
       }));

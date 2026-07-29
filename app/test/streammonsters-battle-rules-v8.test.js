@@ -680,9 +680,9 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       },
       disableElementAdvantage: true,
       rulesVersion: 8
-    }).actions[0].outcomes;
+    }).actions[0];
 
-    expect(resolveDefenseRound(5)).toEqual(expect.arrayContaining([
+    expect(resolveDefenseRound(5).outcomes).toEqual(expect.arrayContaining([
       expect.objectContaining({
         type: 'shield',
         requested: 4,
@@ -696,7 +696,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         arenaCollapseFactor: 1
       })
     ]));
-    expect(resolveDefenseRound(8)).toEqual(expect.arrayContaining([
+    expect(resolveDefenseRound(8).outcomes).toEqual(expect.arrayContaining([
       expect.objectContaining({
         type: 'shield',
         requested: 4,
@@ -710,20 +710,11 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         arenaCollapseFactor: 0.5
       })
     ]));
-    expect(resolveDefenseRound(11)).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        type: 'shield',
-        requested: 4,
-        amount: 0,
-        arenaCollapseFactor: 0
-      }),
-      expect.objectContaining({
-        type: 'heal',
-        requested: 3,
-        amount: 0,
-        arenaCollapseFactor: 0
-      })
-    ]));
+    expect(resolveDefenseRound(11)).toEqual(expect.objectContaining({
+      requestedChoice: 'B',
+      choice: 'A',
+      choiceFallback: 'arena_collapse_defense_locked'
+    }));
   });
 
   test('ends a v8 knockout before a defeated defender can retaliate', () => {
@@ -922,6 +913,77 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       expect(choices).toContain('A');
       expect(choices.every(choice => choice === 'B')).toBe(false);
     }
+  });
+
+  test('locks defense from round 11 so a living v8 fight always progresses to K.O.', () => {
+    const direct = resolveInteractiveRound({
+      fighters: [
+        {
+          monster_id: 'collapse-alpha',
+          template_id: 'ashfang',
+          element: 'Ember',
+          level: 1,
+          stats: { vitality: 10, might: 10, guard: 10, agility: 20 }
+        },
+        {
+          monster_id: 'collapse-beta',
+          template_id: 'ripple',
+          element: 'Tide',
+          level: 1,
+          stats: { vitality: 10, might: 10, guard: 10, agility: 1 }
+        }
+      ],
+      choices: {
+        'collapse-alpha': 'B',
+        'collapse-beta': 'B'
+      },
+      seed: 'collapse-defense-lock',
+      round: 11,
+      state: {
+        'collapse-alpha': { hp: 1, shield: 0, charge: 0 },
+        'collapse-beta': { hp: 1, shield: 0, charge: 0 }
+      },
+      disableElementAdvantage: true,
+      rulesVersion: 8
+    });
+
+    expect(direct.terminal).toBe(true);
+    expect(direct.actions[0]).toEqual(expect.objectContaining({
+      requestedChoice: 'B',
+      choice: 'A',
+      choiceFallback: 'arena_collapse_defense_locked'
+    }));
+
+    const { sqlite, service, matchId } = createLockedMatch();
+    sqlite.prepare(`
+      UPDATE streammonsters_matches
+      SET round_number = 11
+      WHERE match_id = ?
+    `).run(matchId);
+    const match = service.getMatch(matchId);
+    const publicFighters = service.projectPublicFighters(match);
+
+    expect(publicFighters).toHaveLength(2);
+    for (const fighter of publicFighters) {
+      expect(fighter.skills.find(skill => skill.choice === 'B')).toEqual(
+        expect.objectContaining({
+          available: false,
+          unavailableReason: 'arena_collapse_defense_locked'
+        })
+      );
+      expect(service.deterministicTimeoutChoice(match, {
+        ...match.participants.find(participant => participant.slot === fighter.slot),
+        combatState: { charge: 0 }
+      })).toBe('A');
+    }
+    expect(service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'B',
+      eventId: 'late-defense'
+    })).toEqual({
+      handled: false,
+      reason: 'arena_collapse_defense_locked'
+    });
   });
 
   test('serializes stat windows and identifies the sanitized player and monster', () => {

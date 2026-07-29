@@ -78,7 +78,8 @@
     .card.full { grid-column:1/-1; }
     .card h3 { margin:0 0 6px; font-size:18px; }
     label { display:grid; gap:5px; margin-top:11px; color:var(--muted); font-size:13px; }
-    input,select { width:100%; min-height:42px; padding:9px 11px; color:var(--ink); border:1px solid #405076; border-radius:10px; background:#0b1120; }
+    input,select { width:100%; min-height:42px; padding:9px 11px; color:var(--ink); border:1px solid #405076; border-radius:10px; background:#0b1120; color-scheme:dark; }
+    select option { color:var(--ink); background:#0b1120; }
     button { min-height:40px; margin-top:11px; padding:9px 13px; border:0; border-radius:10px; color:white; background:linear-gradient(135deg,var(--violet),#6f54d9); font-weight:800; }
     button.secondary { color:#dfe8ff; background:#273654; }
     button.danger { background:#733548; }
@@ -274,14 +275,16 @@
   <div id="notice" class="notice" role="status" data-i18n="plugins.streamalchemy.ui.monsters.loading">Stream Monsters wird geladen …</div>
 
   <section id="live-center" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area1">Area 1</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.liveCenterTitle">Live Center</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.liveCenterCopy">One broadcast view for connection, command, arena, renderer and audio health.</p></div><span id="liveBadge" class="badge">● Offline</span></div>
-    <div class="status-grid" aria-label="Live diagnostics">
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area1">Area 1</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.liveCenterTitle">Live Center</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.liveCenterCopy">One broadcast view for connection, command, arena, renderer and audio health.</p></div><span id="liveBadge" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.liveOffline">● Offline</span></div>
+    <div class="status-grid"
+      aria-label="Live diagnostics"
+      data-i18n-aria-label="plugins.streamalchemy.ui.monsters.liveDiagnosticsAria">
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveTikTokLabel">TikTok</span><strong id="liveTikTok">disconnected</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveGcceLabel">GCCE</span><strong id="liveGcce">fallback</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveObsLabel">OBS</span><strong id="liveObs">configured</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.livePluginLabel">Plugin</span><strong id="livePlugin">enabled</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveQueueLabel">Egg queue</span><strong id="liveQueue">0</strong></div>
-      <div class="status-tile"><span>Living egg shelf</span><strong id="liveEggShelf">0 / 8 · +0</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveEggShelfLabel">Living egg shelf</span><strong id="liveEggShelf">0 / 8 · +0</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveHypeLabel">Hype</span><strong id="liveHype">0%</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveBattleLabel">Battle phase</span><strong id="liveBattlePhase">idle</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveCountdownLabel">Countdown</span><strong id="liveCountdown">—</strong></div>
@@ -323,7 +326,7 @@
   </section>
 
   <section id="gameplay" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge">Rules v8</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.rulesV8Badge">Rules v8</span></div>
     <div class="grid">
       <article class="card wide">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTiming">Eggs &amp; seasons</h3>
@@ -406,7 +409,11 @@
     <article class="card full" style="margin-top:14px">
       <div class="area-head">
         <div><h3 data-i18n="plugins.streamalchemy.ui.monsters.aliasTitle">Command aliases &amp; language variants</h3><p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.aliasCopy">Comma-separated active and disabled aliases are persisted per action. Locale switches move their suggested alias between the lists.</p></div>
-        <span id="aliasConflictStatus" class="badge" role="status" aria-live="polite">Checking conflicts…</span>
+        <span id="aliasConflictStatus"
+          class="badge"
+          role="status"
+          aria-live="polite"
+          data-i18n="plugins.streamalchemy.ui.monsters.aliasChecking">Checking conflicts…</span>
       </div>
       <div id="aliasGrid" class="alias-grid">
         <article class="alias-row" data-command-alias="eggs">
@@ -490,17 +497,17 @@
   </section>
 
   <section id="languages" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Languages</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p></div><span class="badge">DE · EN · ES · FR</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Languages</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.supportedLanguagesBadge">DE · EN · ES · FR</span></div>
     <div class="grid">
       <article class="card full">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Overlay languages</h3>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p>
         <div class="control-grid">
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayPrimaryLocale">Primary language</span><select id="overlayPrimaryLocale">
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
+            <option value="de" data-i18n="plugins.streamalchemy.ui.monsters.languageGerman">Deutsch</option>
+            <option value="en" data-i18n="plugins.streamalchemy.ui.monsters.languageEnglish">English</option>
+            <option value="es" data-i18n="plugins.streamalchemy.ui.monsters.languageSpanish">Español</option>
+            <option value="fr" data-i18n="plugins.streamalchemy.ui.monsters.languageFrench">Français</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlaySecondsPerLocale">Seconds per language</span><select id="overlaySecondsPerLocale">
             <option value="4">4</option>
@@ -521,7 +528,7 @@
 
 
   <section id="overlay-studio" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge">Portrait first · 74/26</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.portraitFirstBadge">Portrait first · 74/26</span></div>
     <div class="grid">
       <article class="card full">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLayoutTitle">Layout, readability &amp; quality</h3>
@@ -555,7 +562,7 @@
         <div class="preview-grid">
           <div class="preview-example" data-preview-example="normal">
             <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateNormal">Normal stream</h4>
-            <div id="portraitNormalPreview" class="stage-preview portrait" data-preview-mode="normal" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 normal portrait stage preview">
+            <div id="portraitNormalPreview" class="stage-preview portrait" data-preview-mode="normal" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 normal portrait stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.portraitNormalPreviewAria">
             <div class="preview-zone" data-preview-zone="logo" style="--x:4%;--y:2%;--w:24%;--h:6%">Logo</div>
             <div class="preview-zone" data-preview-zone="music" style="--x:5%;--y:14.5%;--w:58%;--h:4.5%">Music</div>
             <div class="preview-zone" data-preview-zone="notification" style="--x:4%;--y:20%;--w:92%;--h:5%">Info</div>
@@ -569,26 +576,26 @@
           </div>
           <div class="preview-example" data-preview-example="battle">
             <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
-            <div id="portraitBattlePreview" class="stage-preview portrait" data-preview-mode="battle" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 battle portrait stage preview">
-              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span>HP &middot; 100%</span><span>ROUND 1</span><span>SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
+            <div id="portraitBattlePreview" class="stage-preview portrait" data-preview-mode="battle" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 battle portrait stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.portraitBattlePreviewAria">
+              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span data-i18n="plugins.streamalchemy.ui.monsters.previewHpFull">HP &middot; 100%</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewRoundOne">ROUND 1</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewSpecialHalf">SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
               <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone &middot; lower 26%</div>
             </div>
             <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">The Stream Monsters source covers the upper 74%; the lower 26% stays clear for TikTok chat.</p>
           </div>
           <div class="preview-example" data-preview-example="landscape-battle">
             <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
-            <div id="landscapeStagePreview" class="stage-preview landscape" data-preview-mode="battle" data-width="1920" data-height="1080" role="img" aria-label="1920 by 1080 landscape stage preview">
-              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span>HP &middot; 100%</span><span>ROUND 1</span><span>SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
+            <div id="landscapeStagePreview" class="stage-preview landscape" data-preview-mode="battle" data-width="1920" data-height="1080" role="img" aria-label="1920 by 1080 landscape stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.landscapeBattlePreviewAria">
+              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span data-i18n="plugins.streamalchemy.ui.monsters.previewHpFull">HP &middot; 100%</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewRoundOne">ROUND 1</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewSpecialHalf">SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.png" alt=""></div>
               <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone &middot; lower 26%</div>
             </div>
             <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">The Stream Monsters source covers the upper 74%; the lower 26% stays clear for TikTok chat.</p>
           </div>
         </div>
-        <div id="creatorEggShelfPreview" class="creator-egg-shelf-preview" aria-label="Living egg shelf preview">
-          <span class="free" title="Public free egg">🥚</span><span>🥚</span><span>🥚</span>
+        <div id="creatorEggShelfPreview" class="creator-egg-shelf-preview" aria-label="Living egg shelf preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.eggShelfPreviewAria">
+          <span class="free" title="Public free egg" data-i18n-title="plugins.streamalchemy.ui.monsters.publicFreeEggTitle">🥚</span><span>🥚</span><span>🥚</span>
           <span>🥚</span><span>🥚</span><span>🥚</span><span>🥚</span><span>🥚</span><strong>+3</strong>
         </div>
-        <p id="elementalHourExplanation" class="muted">Elemental Hour shortens matching egg hatch time by 30 seconds and grants +10 Hype. It never changes combat stats or hatch quality.</p>
+        <p id="elementalHourExplanation" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.elementalHourGenericExplanation">Elemental Hour shortens matching egg hatch time by 30 seconds and grants +10 Hype. It never changes combat stats or hatch quality.</p>
         <div id="safeZonePreview" class="safe-zone portrait" role="img" aria-label="Anchor collision preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeZonePreviewLabel">
           <div id="safeLogo" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLogo">Logo</div>
           <div id="safeHype" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneHype">Hype</div>
@@ -643,7 +650,7 @@
   </section>
 
   <section id="asset-library" class="area" data-creator-area>
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge">checking integrity</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 templates and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.assetChecking">checking integrity</span></div>
     <div class="asset-summary">
       <div class="asset-stat"><strong>24</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetTemplates">Templates</span></div>
       <div class="asset-stat"><strong>3</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetStages">Stages each</span></div>
@@ -686,32 +693,32 @@
         <div id="viewerCollection" class="collection-list"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.viewerEmpty">Choose a viewer to inspect eggs and monsters.</span></div>
       </article>
     </div>
-    <div class="repair-grid" aria-label="Safe maintenance tools">
+    <div class="repair-grid" aria-label="Safe maintenance tools" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeMaintenanceAria">
       <article class="card repair-card" data-repair-kind="eggs">
-        <h3>Repair stuck eggs</h3>
-        <p class="muted">Preview eggs whose ready or expiry transition is overdue. No egg is changed during preview.</p>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.repairEggsTitle">Repair stuck eggs</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsCopy">Preview eggs whose ready or expiry transition is overdue. No egg is changed during preview.</p>
         <div class="repair-actions">
-          <button id="repairEggsPreview" class="secondary" type="button">Preview egg repair</button>
-          <button id="repairEggsExecute" class="danger" type="button" disabled>Execute egg repair</button>
+          <button id="repairEggsPreview" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsPreview">Preview egg repair</button>
+          <button id="repairEggsExecute" class="danger" type="button" disabled data-i18n="plugins.streamalchemy.ui.monsters.repairEggsExecute">Execute egg repair</button>
         </div>
         <label class="check-row repair-confirm">
           <input id="repairEggsConfirm" type="checkbox" disabled>
-          I reviewed the preview and want to reconcile these eggs.
+          <span data-i18n="plugins.streamalchemy.ui.monsters.repairEggsConfirm">I reviewed the preview and want to reconcile these eggs.</span>
         </label>
-        <p id="repairEggsResult" class="repair-result" role="status" aria-live="polite">Run a preview to inspect aggregate counts.</p>
+        <p id="repairEggsResult" class="repair-result" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.repairPreviewPrompt">Run a preview to inspect aggregate counts.</p>
       </article>
       <article class="card repair-card" data-repair-kind="matches">
-        <h3>Cancel stale matches</h3>
-        <p class="muted">Preview timed-out matches that are still open. Active matches inside the grace period are not candidates.</p>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesTitle">Cancel stale matches</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesCopy">Preview timed-out matches that are still open. Active matches inside the grace period are not candidates.</p>
         <div class="repair-actions">
-          <button id="repairMatchesPreview" class="secondary" type="button">Preview stale matches</button>
-          <button id="repairMatchesExecute" class="danger" type="button" disabled>Cancel stale matches</button>
+          <button id="repairMatchesPreview" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesPreview">Preview stale matches</button>
+          <button id="repairMatchesExecute" class="danger" type="button" disabled data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesTitle">Cancel stale matches</button>
         </div>
         <label class="check-row repair-confirm">
           <input id="repairMatchesConfirm" type="checkbox" disabled>
-          I reviewed the preview and want to cancel these stale matches.
+          <span data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesConfirm">I reviewed the preview and want to cancel these stale matches.</span>
         </label>
-        <p id="repairMatchesResult" class="repair-result" role="status" aria-live="polite">Run a preview to inspect aggregate counts.</p>
+        <p id="repairMatchesResult" class="repair-result" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.repairPreviewPrompt">Run a preview to inspect aggregate counts.</p>
       </article>
     </div>
     <div class="leaderboard-grid" style="margin-top:14px">

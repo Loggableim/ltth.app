@@ -1,6 +1,12 @@
 const RULES_VERSION = 8;
 const ARENA_COLLAPSE_ROUND = 5;
 const ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS = 3;
+const ARENA_COLLAPSE_DEFENSE_LOCK_ROUND = 11;
+
+function isArenaCollapseDefenseLocked(round) {
+  return Math.max(1, Math.round(Number(round) || 1)) >=
+    ARENA_COLLAPSE_DEFENSE_LOCK_ROUND;
+}
 
 function arenaCollapseRecoveryFactor(round, recoveryType) {
   const normalizedRound = Math.max(1, Math.round(Number(round) || 1));
@@ -83,6 +89,8 @@ module.exports = {
   RULES_VERSION,
   ARENA_COLLAPSE_ROUND,
   ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS,
+  ARENA_COLLAPSE_DEFENSE_LOCK_ROUND,
+  isArenaCollapseDefenseLocked,
   arenaCollapseRecoveryFactor,
   applyArenaCollapse
 };

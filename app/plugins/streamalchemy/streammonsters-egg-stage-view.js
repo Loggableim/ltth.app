@@ -506,7 +506,7 @@
         if (deadline > now()) {
           const callout = documentLike.createElement('span');
           callout.dataset.adoptCallout = '';
-          callout.textContent = '!adopt';
+          callout.textContent = getAdoptReference();
           item.appendChild(callout);
           const existing = calloutTimers.get(egg.visualId);
           if (existing != null) cancel(existing);
@@ -592,7 +592,7 @@
         if (deadline > now() && !callout) {
           callout = documentLike.createElement('span');
           callout.dataset.adoptCallout = '';
-          callout.textContent = '!adopt';
+          callout.textContent = getAdoptReference();
           item.appendChild(callout);
         }
         const existing = calloutTimers.get(egg.visualId);

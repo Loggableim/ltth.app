@@ -112,7 +112,7 @@
     document,
     detailElement,
     compactElement,
-    translate = key => key,
+    translate: localize = key => key,
     elementLabel = value => value,
     personalityLabel = value => value,
     getNotificationDurationMs = () => 12_000,
@@ -184,12 +184,12 @@
       copy.append(create(
         'span',
         'sm-collection-meta',
-        `${elementLabel(monster.element)} · ${translate('level', { level: monster.level })}`
+        `${elementLabel(monster.element)} · ${localize('level', { level: monster.level })}`
       ));
       copy.append(create(
         'span',
         'sm-collection-slot',
-        `#${index + 1} · ${translate('evolution', { stage: monster.evolutionStage })}`
+        `#${index + 1} · ${localize('evolution', { stage: monster.evolutionStage })}`
       ));
       card.append(copy);
       return card;
@@ -198,16 +198,16 @@
       clear(detailElement);
       detailElement.dataset.page = String(page + 1);
       appendHeader({
-        kicker: translate('collectionCount', { count: monsters.length }),
-        title: translate('collectionTitle', { viewer }),
-        meta: translate('collectionPage', { page: page + 1, pages: totalPages })
+        kicker: localize('collectionCount', { count: monsters.length }),
+        title: localize('collectionTitle', { viewer }),
+        meta: localize('collectionPage', { page: page + 1, pages: totalPages })
       });
       const grid = create('div', 'sm-collection-grid');
       const start = page * 6;
       const pageMonsters = monsters.slice(start, start + 6);
       grid.dataset.count = String(pageMonsters.length);
       if (!pageMonsters.length) {
-        grid.append(create('div', 'sm-collection-empty', translate('collectionEmpty')));
+        grid.append(create('div', 'sm-collection-empty', localize('collectionEmpty')));
       } else {
         pageMonsters.forEach((monster, index) => {
           grid.append(collectionCard(monster, start + index));
@@ -216,7 +216,7 @@
       detailElement.append(grid);
     };
     const showCollection = async (payload, result) => {
-      const viewer = displayName(payload, translate('viewer'));
+      const viewer = displayName(payload, localize('viewer'));
       const monsters = Array.isArray(result.monsters)
         ? result.monsters.map(normalizeMonster)
         : [];
@@ -235,23 +235,23 @@
       const mastery = Math.max(0, Math.trunc(safeNumber(card.mastery?.points, 0)));
       openDetail('monster');
       appendHeader({
-        kicker: translate('monsterCard'),
+        kicker: localize('monsterCard'),
         title: monster.name,
-        meta: `${displayName(payload, translate('viewer'))} · ${elementLabel(monster.element)} · ${personalityLabel(monster.personality)}`
+        meta: `${displayName(payload, localize('viewer'))} · ${elementLabel(monster.element)} · ${personalityLabel(monster.personality)}`
       });
       const body = create('div', 'sm-monster-detail');
       appendImage(body, monster, 'sm-monster');
       const copy = create('div', 'sm-monster-copy');
       const progression = create('div', 'sm-monster-progression');
-      progression.append(create('strong', '', translate('level', { level: monster.level })));
-      progression.append(create('span', '', translate('xp', { xp: monster.xp })));
-      progression.append(create('span', '', translate('evolution', { stage: monster.evolutionStage })));
-      progression.append(create('span', '', translate('mastery', { points: mastery })));
+      progression.append(create('strong', '', localize('level', { level: monster.level })));
+      progression.append(create('span', '', localize('xp', { xp: monster.xp })));
+      progression.append(create('span', '', localize('evolution', { stage: monster.evolutionStage })));
+      progression.append(create('span', '', localize('mastery', { points: mastery })));
       copy.append(progression);
       const stats = create('div', 'sm-monster-stats');
       for (const key of ['vitality', 'might', 'guard', 'agility']) {
         const stat = create('div', 'sm-monster-stat');
-        stat.append(create('span', '', translate(key)));
+        stat.append(create('span', '', localize(key)));
         stat.append(create('strong', '', String(monster.stats[key])));
         stats.append(stat);
       }
@@ -274,16 +274,16 @@
         placement: 'upper-third'
       });
       appendHeader({
-        kicker: displayName(payload, translate('viewer')),
-        title: queued ? translate('eggQueued') : translate('eggWait'),
+        kicker: displayName(payload, localize('viewer')),
+        title: queued ? localize('eggQueued') : localize('eggWait'),
         meta: queued && queuePosition > 0
-          ? translate('eggQueuePosition', { position: queuePosition })
+          ? localize('eggQueuePosition', { position: queuePosition })
           : ''
       });
       const body = create('div', 'sm-egg-wait');
       if (queued) {
         body.append(create('div', 'sm-egg-queue-position', `#${queuePosition || '—'}`));
-        body.append(create('p', 'sm-egg-wait-copy', translate('eggQueuePending')));
+        body.append(create('p', 'sm-egg-wait-copy', localize('eggQueuePending')));
       } else {
         const remaining = formatRemaining(
           waitState.remainingMs ?? waitState.remaining_ms
@@ -292,7 +292,7 @@
         body.append(create(
           'p',
           'sm-egg-wait-copy',
-          translate('eggWaitRemaining', { remaining })
+          localize('eggWaitRemaining', { remaining })
         ));
       }
       detailElement.append(body);
@@ -309,8 +309,8 @@
         : (result.score && typeof result.score === 'object' ? result.score : {});
       openDetail('rank');
       appendHeader({
-        kicker: translate('rankCard'),
-        title: displayName(payload, translate('viewer'))
+        kicker: localize('rankCard'),
+        title: displayName(payload, localize('viewer'))
       });
       const grid = create('div', 'sm-rank-grid');
       const appendRank = ({ label, tier, value }) => {
@@ -324,12 +324,12 @@
         grid.append(panel);
       };
       appendRank({
-        label: translate('arenaRating'),
+        label: localize('arenaRating'),
         tier: arena.tier,
         value: arena.rating
       });
       appendRank({
-        label: translate('collectorScore'),
+        label: localize('collectorScore'),
         tier: collector.rank,
         value: collector.points
       });
@@ -340,8 +340,12 @@
     };
     const showCompact = async (payload, result) => {
       hideDetail();
-      const viewer = displayName(payload, translate('viewer'));
-      const message = boundedText(translate(result.messageKey || 'commandUnavailable'), translate('commandUnavailable'), 220);
+      const viewer = displayName(payload, localize('viewer'));
+      const message = boundedText(
+        localize(result.messageKey || 'commandUnavailable'),
+        localize('commandUnavailable'),
+        220
+      );
       const hint = boundedText(result.hint, '', 120);
       compactElement.dataset.kind = 'compact';
       compactElement.textContent = `${viewer} · ${message}${hint ? ` · ${hint}` : ''}`;

@@ -521,6 +521,18 @@ class StreamMonstersDatabase {
       CREATE INDEX IF NOT EXISTS streammonsters_public_events_stream_cursor
         ON streammonsters_public_events(stream_key, sequence);
 
+      CREATE TABLE IF NOT EXISTS streammonsters_command_ingress_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        command_name TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        transport TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        expires_at_ms INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_command_ingress_events_expiry
+        ON streammonsters_command_ingress_events(expires_at_ms);
+
       CREATE TABLE IF NOT EXISTS streammonsters_match_rewards (
         match_id TEXT NOT NULL,
         participant_id TEXT NOT NULL,
@@ -2377,6 +2389,74 @@ class StreamMonstersDatabase {
       WHERE stream_key = ?
     `).run(updatedAtMs, key);
     return true;
+  }
+
+  claimCommandIngressEvent({
+    eventId,
+    commandName,
+    userId,
+    transport,
+    createdAtMs = Date.now(),
+    ttlMs = 21_600_000,
+    maxRows = 50_000
+  } = {}) {
+    const normalizedEventId = String(eventId || '').trim();
+    const normalizedCommand = String(commandName || '').trim().toLowerCase();
+    const normalizedUserId = String(userId || '').trim();
+    const normalizedTransport = String(transport || '').trim().toLowerCase();
+    if (!normalizedEventId || !normalizedCommand || !normalizedUserId || !normalizedTransport) {
+      throw new Error('STREAM_MONSTERS_COMMAND_EVENT_INVALID');
+    }
+    const timestamp = Number.isFinite(Number(createdAtMs))
+      ? Math.trunc(Number(createdAtMs))
+      : Date.now();
+    const retentionMs = Math.max(1_000, Math.min(
+      604_800_000,
+      Math.trunc(Number(ttlMs) || 21_600_000)
+    ));
+    const rowLimit = Math.max(1, Math.min(
+      100_000,
+      Math.trunc(Number(maxRows) || 50_000)
+    ));
+
+    return this.runInImmediateTransaction(() => {
+      this.db.prepare(`
+        DELETE FROM streammonsters_command_ingress_events
+        WHERE expires_at_ms <= ?
+      `).run(timestamp);
+      const insert = this.db.prepare(`
+        INSERT OR IGNORE INTO streammonsters_command_ingress_events (
+          event_id, command_name, user_id, transport, created_at_ms, expires_at_ms
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        normalizedEventId,
+        normalizedCommand,
+        normalizedUserId,
+        normalizedTransport,
+        timestamp,
+        timestamp + retentionMs
+      );
+      if (insert.changes > 0) {
+        const count = this.db.prepare(`
+          SELECT COUNT(*) AS count FROM streammonsters_command_ingress_events
+        `).get().count;
+        const excess = Math.max(0, Number(count) - rowLimit);
+        if (excess > 0) {
+          this.db.prepare(`
+            DELETE FROM streammonsters_command_ingress_events
+            WHERE sequence IN (
+              SELECT sequence FROM streammonsters_command_ingress_events
+              ORDER BY created_at_ms ASC, sequence ASC
+              LIMIT ?
+            )
+          `).run(excess);
+        }
+      }
+      return {
+        claimed: insert.changes > 0,
+        eventId: normalizedEventId
+      };
+    });
   }
 
   addArtPoolSkin(input) {

@@ -133,6 +133,9 @@
       statChoices: '1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1',
       statResult: '{stat} +1',
       collapse: 'ARENA COLLAPSE · Runde {round}',
+      collapseDefenseLocked: 'Arena Collapse: defense locks from round 11',
+      hit: 'HIT',
+      hitCombo: '{count} HIT COMBO',
       eggShelfAria: 'Living egg shelf',
       hpAria: '{monster}: HP',
       shieldAria: '{monster}: shield',
@@ -175,6 +178,9 @@
       statChoices: 'monsterStatChoices',
       statResult: 'monsterStatResult',
       collapse: 'arenaCollapseBanner',
+      collapseDefenseLocked: 'arenaCollapseDefenseLocked',
+      hit: 'arenaHit',
+      hitCombo: 'arenaHitCombo',
       eggShelfAria: 'eggShelfAria',
       hpAria: 'arenaHpAria',
       shieldAria: 'arenaShieldAria',
@@ -480,7 +486,9 @@
         );
         setSkillText(
           'skill-copy',
-          localizedSkillText(skill.shortTextKey, skill.shortText)
+          skill.unavailableReason === 'arena_collapse_defense_locked'
+            ? formatLabel('collapseDefenseLocked')
+            : localizedSkillText(skill.shortTextKey, skill.shortText)
         );
         if (choice !== 'C') {
           setSkillText('skill-charge', '');
@@ -987,7 +995,9 @@
           const combo = node('arena-combo');
           if (combo) {
             const hitIndex = Math.max(1, numeric(beat.hitIndex, 1));
-            combo.textContent = hitIndex > 1 ? `${hitIndex} HIT COMBO` : 'HIT';
+            combo.textContent = hitIndex > 1
+              ? formatLabel('hitCombo', { count: hitIndex })
+              : formatLabel('hit');
             combo.dataset.hits = String(hitIndex);
             combo.classList.add('visible');
           }

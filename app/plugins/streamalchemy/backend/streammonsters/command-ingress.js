@@ -1,3 +1,5 @@
+const { createHash } = require('crypto');
+
 const CHAT_RESULT_MESSAGE_KEYS = Object.freeze({
   help: 'chatResultHelp',
   invalid_arguments: 'chatResultInvalidArguments',
@@ -38,6 +40,9 @@ class StreamMonstersCommandIngress {
     now = () => Date.now(),
     commandPrefix = '!',
     resolveUserId = data => data.userId || data.uniqueId || data.username,
+    claimEvent = null,
+    eventTtlMs = 21_600_000,
+    eventMaxRows = 50_000,
     onResolved = () => {},
     onError = () => {}
   }) {
@@ -46,6 +51,9 @@ class StreamMonstersCommandIngress {
     this.now = now;
     this.commandPrefix = commandPrefix;
     this.resolveUserId = resolveUserId;
+    this.claimEvent = typeof claimEvent === 'function' ? claimEvent : null;
+    this.eventTtlMs = Math.max(1_000, Number(eventTtlMs) || 21_600_000);
+    this.eventMaxRows = Math.max(1, Number(eventMaxRows) || 50_000);
     this.onResolved = onResolved;
     this.onError = onError;
     this.commands = new Map();
@@ -112,6 +120,21 @@ class StreamMonstersCommandIngress {
       return result;
     }
 
+    const eventClaim = await this.claimProviderEvent(
+      command.commandName,
+      context,
+      'fallback'
+    );
+    if (eventClaim && !eventClaim.claimed) {
+      return {
+        success: true,
+        handled: true,
+        status: 'duplicate_event',
+        duplicate: true,
+        suppressed: true
+      };
+    }
+
     const cooldown = this.checkCooldown(command.commandName, context.userId);
     if (cooldown) {
       const result = {
@@ -125,10 +148,24 @@ class StreamMonstersCommandIngress {
       return result;
     }
 
-    return this.executeCommand(command.commandName, args, context, 'fallback', commandName);
+    return this.executeCommand(
+      command.commandName,
+      args,
+      context,
+      'fallback',
+      commandName,
+      eventClaim
+    );
   }
 
-  async executeCommand(commandName, args, context, transport, responseCommandName = commandName) {
+  async executeCommand(
+    commandName,
+    args,
+    context,
+    transport,
+    responseCommandName = commandName,
+    eventClaim = undefined
+  ) {
     if (transport === 'gcce') {
       this.onResolved({
         alias: responseCommandName,
@@ -136,6 +173,20 @@ class StreamMonstersCommandIngress {
         transport,
         userId: context.userId
       });
+    }
+    const resolvedEventClaim = eventClaim === undefined
+      ? await this.claimProviderEvent(commandName, context, transport)
+      : eventClaim;
+    if (resolvedEventClaim && !resolvedEventClaim.claimed) {
+      return {
+        success: true,
+        handled: true,
+        status: 'duplicate_event',
+        duplicate: true,
+        suppressed: true
+      };
+    }
+    if (transport === 'gcce') {
       try {
         const result = await this.execute(context, commandName, args);
         this.emitResult(responseCommandName, context, result, transport);
@@ -173,6 +224,35 @@ class StreamMonstersCommandIngress {
     if (result?.success) this.recordUsage(commandName, context.userId);
     this.emitResult(responseCommandName, context, result, transport);
     return result;
+  }
+
+  async claimProviderEvent(commandName, context = {}, transport = 'fallback') {
+    if (!this.claimEvent) return null;
+    const rawData = context.rawData || {};
+    const providerEventId = (
+      rawData.eventId ??
+      rawData.event_id ??
+      rawData.msgId ??
+      rawData.msg_id ??
+      rawData.logId ??
+      rawData.log_id
+    );
+    if (providerEventId === undefined || providerEventId === null || providerEventId === '') {
+      return null;
+    }
+    const provider = String(rawData.provider || rawData.source || context.provider || 'tiktok');
+    const eventId = `command:${createHash('sha256')
+      .update(`${provider}\0${String(providerEventId)}`)
+      .digest('hex')}`;
+    return this.claimEvent({
+      eventId,
+      commandName,
+      userId: context.userId || context.uniqueId || context.username,
+      transport,
+      createdAtMs: this.now(),
+      ttlMs: this.eventTtlMs,
+      maxRows: this.eventMaxRows
+    });
   }
 
   emitResult(commandName, context, result, transport) {

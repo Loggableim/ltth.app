@@ -5,7 +5,7 @@ routes, collections, eggs, monsters, ratings, configuration and legacy battle
 replays remain compatible. The visible product name is exclusively
 **Stream Monsters**.
 
-Version 1.11 is a bundled-only Open Beta. It ships no Art Lab, ComfyUI,
+Version 1.11.1 is a bundled-only stable release. It ships no Art Lab, ComfyUI,
 provider, model installer, generation pool or live image-generation path.
 Canonical Furry assets are packaged locally; Kenney is used only if a bundled
 asset is missing or damaged.

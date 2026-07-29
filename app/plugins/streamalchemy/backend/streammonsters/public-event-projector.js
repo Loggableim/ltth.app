@@ -207,13 +207,17 @@ function projectBattleSkill(skill = null) {
     ) ? skill.elementRelation : 'neutral',
     available: skill.available !== false
   };
+  if (!projected.available) {
+    projected.unavailableReason = boundedText(skill.unavailableReason, 64) ||
+      (choice === 'C'
+        ? 'special_requires_full_charge'
+        : 'skill_unavailable');
+  }
   if (choice === 'C') {
     projected.chargeRequired = Math.max(1, finiteNumber(skill.chargeRequired, 100));
     const readyAtMs = finiteNumber(skill.readyAtMs);
     if (readyAtMs !== null) projected.readyAtMs = Math.max(0, readyAtMs);
-    projected.unavailableReason = projected.available
-      ? null
-      : boundedText(skill.unavailableReason, 64) || 'special_requires_full_charge';
+    if (projected.available) projected.unavailableReason = null;
   }
   return projected;
 }
@@ -613,7 +617,6 @@ class StreamMonstersPublicEventProjector {
         round: Math.max(0, finiteNumber(payload.round, 0)),
         slot: Math.max(0, finiteNumber(payload.slot, 0)),
         charge: Math.max(0, Math.min(100, finiteNumber(payload.charge, 0))),
-        monsterId: boundedText(payload.monsterId, 160),
         monster: projectMonster(payload.monster)
       };
     }

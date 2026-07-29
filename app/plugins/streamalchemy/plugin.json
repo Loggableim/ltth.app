@@ -1,14 +1,14 @@
 {
   "id": "streamalchemy",
   "name": "Stream Monsters",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "Portrait Arcade Rally with a 90-second fresh default, bilingual overlay guidance, a 74/26 TikTok-safe arena, K.O.-only Rules v8 battles, Arena Collapse, element-specific WebGPU effects, 72 bundled Furry forms, and fair permanent progression.",
   "author": "Pup Cid",
   "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
   "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
   "entry": "index.js",
   "enabled": false,
-  "devStatus": "working-beta",
+  "devStatus": "stable",
   "dependencies": {
     "optional": [
       "gcce"

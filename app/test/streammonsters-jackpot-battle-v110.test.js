@@ -157,7 +157,7 @@ describe('Stream Monsters 1.10 Jackpot battle contract', () => {
     );
   });
 
-  test('routes a Rules-v7 battle_action through the Jackpot director timeline', () => {
+  test('normalizes a Rules-v7 battle_action through the current arcade director timeline', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_action', {
       eventId: 'action-7',
       matchId: 'match-7',
@@ -173,17 +173,16 @@ describe('Stream Monsters 1.10 Jackpot battle contract', () => {
 
     expect(timeline.scene).toBe('battle_action');
     expect(timeline.beats.map(beat => beat.type)).toEqual(expect.arrayContaining([
-      'entrance',
-      'anticipation',
-      'movement',
-      'projectile',
-      'hit',
-      'number_pop',
-      'hud_update',
-      'recoil',
-      'recovery',
+      'telegraph',
+      'advance',
+      'element_trail',
+      'impact',
+      'hit_stop',
+      'camera_impulse',
+      'damage_number',
+      'hud',
       'knockout',
-      'winner'
+      'recover'
     ]));
   });
 });

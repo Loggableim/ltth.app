@@ -769,7 +769,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         skillNameRippleBStage1: 'Ripple Mist Guard',
         skillEffectRippleBStage1: 'A cooling mist shield.',
         skillNameRippleCStage1: 'Ripple Renewal',
-        skillEffectRippleCStage1: 'A fully charged wave.'
+        skillEffectRippleCStage1: 'A fully charged wave.',
+        collapseDefenseLocked: 'Defense locks from round 11.'
       }
     });
     const skills = template => ['A', 'B', 'C'].map(choice => ({
@@ -779,7 +780,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       nameKey: `skillName${template}${choice}Stage1`,
       shortText: `${template} fallback copy ${choice}`,
       shortTextKey: `skillEffect${template}${choice}Stage1`,
-      available: choice !== 'C',
+      available: choice === 'A',
+      ...(choice === 'B' ? {
+        unavailableReason: 'arena_collapse_defense_locked'
+      } : {}),
       ...(choice === 'C' ? { chargeRequired: 100, readyAtMs: 2_000 } : {})
     }));
 
@@ -802,6 +806,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('Ashfang');
     expect(document.querySelector('[data-slot="1"] [data-skill="A"] .skill-copy').textContent)
       .toBe('A fast ember strike.');
+    expect(document.querySelector('[data-slot="1"] [data-skill="B"] .skill-copy').textContent)
+      .toBe('Defense locks from round 11.');
+    expect(document.querySelector('[data-slot="1"] [data-skill="B"]').classList)
+      .toContain('unavailable');
     expect(document.querySelector('[data-slot="1"] [data-skill="C"]').classList)
       .toContain('charging');
     expect(document.querySelector('[data-slot="1"] [data-skill="C"] .skill-charge').textContent)

@@ -14,7 +14,8 @@ const {
   projectPassiveCharge
 } = require('./battle-charge');
 const {
-  applyArenaCollapse: resolveArenaCollapse
+  applyArenaCollapse: resolveArenaCollapse,
+  isArenaCollapseDefenseLocked
 } = require('./battle-rules-v8');
 const {
   projectBattleFighter,
@@ -214,6 +215,17 @@ class BattleMatchService {
 
   isRulesV8(match) {
     return Number(match?.rulesVersion ?? this.rulesVersion) >= 8;
+  }
+
+  isDefenseLocked(match) {
+    return this.isRulesV8(match) &&
+      isArenaCollapseDefenseLocked(match?.roundNumber);
+  }
+
+  actionPromptChoices(match) {
+    return this.isDefenseLocked(match)
+      ? ['A', 'C']
+      : ['A', 'B', 'C'];
   }
 
   chargeWindow(match) {
@@ -904,6 +916,7 @@ class BattleMatchService {
         ? 'disadvantage'
         : 'neutral';
     const baseCharge = Math.max(0, Math.min(100, Number(charge) || 0));
+    const defenseLocked = this.isDefenseLocked(match);
     return ['A', 'B', 'C'].map((choice, index) => {
       const skill = roster.skills?.find(entry => entry?.choice === choice) ||
         roster.skills?.[index] ||
@@ -947,6 +960,9 @@ class BattleMatchService {
       const specialAvailability = choice === 'C'
         ? projectSpecialAvailability({ charge: baseCharge })
         : null;
+      const available = choice === 'B'
+        ? !defenseLocked
+        : choice !== 'C' || specialAvailability.available;
       return {
         choice,
         icon: skill.icon,
@@ -955,7 +971,10 @@ class BattleMatchService {
         shortText: skill.shortText,
         shortTextKey: skill.shortTextKey,
         elementRelation,
-        available: choice !== 'C' || specialAvailability.available,
+        available,
+        ...(choice === 'B' && defenseLocked ? {
+          unavailableReason: 'arena_collapse_defense_locked'
+        } : {}),
         ...(choice === 'C' ? {
           chargeRequired,
           ...(Number.isFinite(readyAtMs) ? { readyAtMs } : {}),
@@ -1328,17 +1347,18 @@ class BattleMatchService {
     if (!changed.changes) return this.getMatch(matchId);
     const match = this.getMatch(matchId);
     const chargeWindow = this.chargeWindow(match);
+    const choices = this.actionPromptChoices(match);
     this.appendEvent(matchId, 'streammonsters:battle_choice_opened', {
       matchId,
       round: match.roundNumber,
       deadlineMs: match.actionDeadlineMs,
-      choices: ['A', 'B', 'C'],
+      choices,
       ...(chargeWindow ? { chargeWindow } : {})
     }, {
       matchId,
       round: match.roundNumber,
       deadlineMs: match.actionDeadlineMs,
-      choices: ['A', 'B', 'C'],
+      choices,
       ...(chargeWindow ? { chargeWindow } : {}),
       fighters: this.projectPublicFighters(match)
     });
@@ -1362,6 +1382,12 @@ class BattleMatchService {
       const normalized = String(choice || '').trim().toUpperCase();
       if (!['A', 'B', 'C'].includes(normalized)) {
         return { handled: false, reason: 'invalid_choice' };
+      }
+      if (normalized === 'B' && this.isDefenseLocked(match)) {
+        return {
+          handled: false,
+          reason: 'arena_collapse_defense_locked'
+        };
       }
       const chargeAtChoice = this.isRulesV7(match)
         ? this.projectParticipantCharge(participant, match, nowMs)
@@ -2373,7 +2399,7 @@ class BattleMatchService {
         matchId: match.matchId,
         round: Number(payload.round) || 0,
         deadlineMs: Number(payload.deadlineMs) || 0,
-        choices: ['A', 'B', 'C'],
+        choices: this.actionPromptChoices(match),
         ...(chargeWindow ? { chargeWindow } : {}),
         fighters: this.sanitizeStoredPublicFighters(
           payload.fighters,
@@ -3093,7 +3119,9 @@ class BattleMatchService {
       ? this.projectParticipantCharge(participant, match, match.actionDeadlineMs)
       : participant.combatState?.charge;
     const state = { charge: Number(charge) || 0 };
-    const choices = state.charge >= 100 ? ['A', 'B', 'C'] : ['A', 'B'];
+    const choices = this.isDefenseLocked(match)
+      ? (state.charge >= 100 ? ['A', 'C'] : ['A'])
+      : (state.charge >= 100 ? ['A', 'B', 'C'] : ['A', 'B']);
     const personality = participant.roster?.personality || 'Adaptive';
     return choices[this.hashNumber(
       `${match.seed}:${match.roundNumber}:${participant.participantId}:${personality}`
@@ -3509,7 +3537,7 @@ class BattleMatchService {
         matchId,
         round: opened.roundNumber,
         deadlineMs,
-        choices: ['A', 'B', 'C'],
+        choices: this.actionPromptChoices(opened),
         ...(chargeWindow ? { chargeWindow } : {})
       };
       this.appendEvent(

@@ -222,6 +222,7 @@ class StreamAlchemyPlugin {
         platformUserId: data.userId,
         legacyUserId: data.uniqueId || data.username
       }),
+      claimEvent: input => this.streamMonstersStore.claimCommandIngressEvent(input),
       onResolved: entry => this.logStructured('alias_resolved', {
         viewerId: entry.userId,
         command: entry.commandName,
