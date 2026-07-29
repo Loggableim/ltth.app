@@ -22,18 +22,23 @@ function response() {
   };
 }
 
-function createRoutes() {
+function createRoutes(options = {}) {
   const registered = [];
   const emitted = [];
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
   const engine = new StreamMonstersEngine({ store });
-  engine.setStreamKey('creator:routes');
+  engine.setStreamKey(options.streamKey || 'creator:routes');
   const progression = new ProgressionService({
     store,
     now: () => new Date('2026-07-23T12:00:00Z')
   });
-  const collection = new CollectionService({ store, now: () => 1 });
+  const collection = new CollectionService({
+    store,
+    now: () => 1,
+    getActiveViewerCount: options.getActiveViewerCount,
+    hasQualifyingHeartGift: options.hasQualifyingHeartGift
+  });
   const catalog = Array.from({ length: 175 }, (_, index) => ({
     id: index + 1,
     name: index === 149 ? 'Crystal Comet' : `Gift ${index + 1}`,
@@ -224,6 +229,50 @@ describe('Stream Monsters 1.2 public API', () => {
     const leaderboard = response();
     find('GET', '/api/streammonsters/leaderboard')({ query: { limit: '10' } }, leaderboard);
     expect(leaderboard.body.entries).toEqual([]);
+  });
+
+  test('status reads do not lock a zero-viewer mission before party Heart activity', () => {
+    const streamKey = 'peek-heart-regression-3';
+    const activeViewers = new Set();
+    let qualifyingHeart = false;
+    const { find, store, collection } = createRoutes({
+      streamKey,
+      getActiveViewerCount: () => activeViewers.size,
+      hasQualifyingHeartGift: () => qualifyingHeart
+    });
+
+    const publicState = response();
+    find('GET', '/api/streammonsters/state')({ query: {} }, publicState);
+    expect(publicState.body.streamMission).toBeNull();
+    expect(store.getStreamMission(streamKey)).toBeNull();
+
+    const creatorState = response();
+    find('GET', '/api/streammonsters/creator-state')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, creatorState);
+    expect(creatorState.body.streamMission).toBeNull();
+    expect(store.getStreamMission(streamKey)).toBeNull();
+
+    ['viewer-a', 'viewer-b', 'viewer-c', 'viewer-d', 'viewer-e']
+      .forEach(viewerId => activeViewers.add(viewerId));
+    qualifyingHeart = true;
+    collection.recordHeartMe({
+      streamKey,
+      userId: 'viewer-a',
+      atMs: 1
+    });
+
+    expect(store.getStreamMission(streamKey)).toEqual(expect.objectContaining({
+      mission_key: 'heart_chain_five',
+      target: 3,
+      progress: 1,
+      completed_at_ms: null,
+      population_band: 'party',
+      population_peak: 5
+    }));
   });
 
   test('tombstones retired AI preparation without mutating mappings or Art Pool state', async () => {

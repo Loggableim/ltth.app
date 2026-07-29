@@ -316,6 +316,10 @@ class CollectionService {
     });
   }
 
+  peekStreamMission(streamKey) {
+    return this.store.getStreamMission(streamKey || 'offline');
+  }
+
   getStreamMission(streamKey) {
     const key = streamKey || 'offline';
     const population = Math.max(0, Math.round(

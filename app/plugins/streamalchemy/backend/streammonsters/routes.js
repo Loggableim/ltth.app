@@ -191,7 +191,7 @@ class StreamMonstersRoutes {
           this.collection?.getHeartChain(this.engine.streamKey || 'offline')
         ),
         streamMission: this.publicStreamMission(
-          this.collection?.getStreamMission(this.engine.streamKey || 'offline')
+          this.collection?.peekStreamMission?.(this.engine.streamKey || 'offline')
         ),
         visualPack: 'furry',
         season,
@@ -264,7 +264,7 @@ class StreamMonstersRoutes {
         hype: this.store.getStreamHype(this.engine.streamKey),
         dex: userId ? (this.collection?.getCatalogState(userId).dex || null) : null,
         heartChain: this.collection?.getHeartChain(this.engine.streamKey || 'offline') || null,
-        streamMission: this.collection?.getStreamMission(this.engine.streamKey || 'offline') || null,
+        streamMission: this.collection?.peekStreamMission?.(this.engine.streamKey || 'offline') || null,
         visualPack: 'furry',
         season: this.progression?.getCurrentSeason?.() || null,
         gcce,
