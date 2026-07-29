@@ -193,7 +193,8 @@ describe('Stream Monsters 1.5 League World runtime cleanup', () => {
         wait: {
           state: 'adopt_cooldown',
           remainingMs: 65_000
-        }
+        },
+        hint: '⏳ 01:05'
       }));
     }
     const ingressPayload = ingressPayloads[1];

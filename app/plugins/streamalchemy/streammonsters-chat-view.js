@@ -385,7 +385,9 @@
         localize('commandUnavailable'),
         220
       );
-      const hint = boundedText(result.hint, '', 120);
+      const hint = result.messageKey === 'chatResultAdoptCooldown'
+        ? ''
+        : boundedText(result.hint, '', 120);
       compactElement.dataset.kind = 'compact';
       compactElement.textContent = `${viewer} · ${message}${hint ? ` · ${hint}` : ''}`;
       compactElement.classList.add('visible');

@@ -33,6 +33,17 @@ const CHAT_RESULT_MESSAGE_KEYS = Object.freeze({
   execution_failed: 'chatResultExecutionFailed'
 });
 
+function formatCooldownHint(remainingMs) {
+  const totalSeconds = Math.max(1, Math.ceil(Number(remainingMs) / 1_000));
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  const clock = hours > 0
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return `⏳ ${clock}`;
+}
+
 class StreamMonstersCommandIngress {
   constructor({
     execute,
@@ -273,7 +284,8 @@ class StreamMonstersCommandIngress {
           wait: {
             state: 'adopt_cooldown',
             remainingMs: cooldownRemainingMs
-          }
+          },
+          hint: formatCooldownHint(cooldownRemainingMs)
         }
         : {})
     };
