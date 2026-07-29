@@ -33,8 +33,21 @@ function isPackageDirectory(packagePath) {
   }
 }
 
+function isPathWithin(directoryPath, candidatePath) {
+  const relativePath = path.relative(path.resolve(directoryPath), path.resolve(candidatePath));
+  return relativePath === ''
+    || (!path.isAbsolute(relativePath)
+      && relativePath !== '..'
+      && !relativePath.startsWith(`..${path.sep}`));
+}
+
 function smokeLoadDependency(projectRoot, dependency) {
+  const dependencyPath = path.join(projectRoot, 'node_modules', dependency);
   const entryPath = require.resolve(dependency, { paths: [projectRoot] });
+  if (!isPathWithin(dependencyPath, entryPath)) {
+    return false;
+  }
+
   const result = spawnSync(process.execPath, ['-e', 'require(process.argv[1])', entryPath], {
     cwd: projectRoot,
     stdio: 'ignore',

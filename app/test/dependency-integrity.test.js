@@ -101,6 +101,28 @@ describe('production dependency integrity', () => {
     });
   });
 
+  test('rejects a boot-critical import resolved from an ancestor node_modules tree', () => {
+    const parentRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-dependency-ancestor-'));
+    const projectRoot = path.join(parentRoot, 'app');
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'package.json'),
+      JSON.stringify({ dependencies: { '@deepgram/sdk': '5.5.0' } })
+    );
+    writeBootCriticalDependencies(projectRoot);
+
+    const localSdkRoot = path.join(projectRoot, 'node_modules', '@deepgram', 'sdk');
+    fs.rmSync(localSdkRoot, { recursive: true, force: true });
+    fs.mkdirSync(localSdkRoot, { recursive: true });
+    writeDependency(parentRoot, '@deepgram/sdk');
+
+    expect(verifyProductionDependencies(projectRoot)).toEqual({
+      valid: false,
+      missing: [],
+      errors: ['@deepgram/sdk']
+    });
+  });
+
   test('CLI returns failure with package names only for a partial SDK', () => {
     const projectRoot = createProject({ '@deepgram/sdk': '5.5.0' });
     writeBootCriticalDependencies(projectRoot);

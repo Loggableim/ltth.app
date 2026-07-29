@@ -214,6 +214,50 @@ describe('launcher runtime toolchain', () => {
     expect(launcher.verifyNativeModules).toHaveBeenCalledTimes(2);
   });
 
+  test('refuses server start when native dependency repair breaks production integrity', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-native-integrity-'));
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    writeDependencyPackageJson(projectRoot, { '@deepgram/sdk': '5.5.0' });
+    writeDependencyLockfile(projectRoot);
+
+    const launcher = createQuietLauncher(projectRoot);
+    const missingBindingError = new Error('native check failed');
+    missingBindingError.stderr = 'Error: Could not locate the bindings file. Tried: build\\Release\\better_sqlite3.node';
+    let dependenciesMutated = false;
+
+    launcher._loadEnvCache = jest.fn(() => null);
+    launcher.checkNode = jest.fn(async () => {});
+    launcher.checkNpm = jest.fn(async () => {});
+    launcher.checkUpdates = jest.fn(async () => ({}));
+    launcher.verifyCriticalDependencies = jest.fn(() => dependenciesMutated
+      ? { valid: false, missing: [], errors: ['@deepgram/sdk'] }
+      : { valid: true, missing: [], errors: [] });
+    launcher.verifyNativeModules = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        throw missingBindingError;
+      })
+      .mockReturnValueOnce('native-modules-ok');
+    launcher.installDependencies = jest.fn(async () => {
+      dependenciesMutated = true;
+    });
+    launcher.rebuildNativeModules = jest.fn();
+    launcher.startServer = jest.fn(async () => {});
+    launcher.waitForKey = jest.fn(async () => {});
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+
+    try {
+      await launcher.launch();
+    } finally {
+      exitSpy.mockRestore();
+    }
+
+    expect(launcher.installDependencies).toHaveBeenCalledTimes(1);
+    expect(launcher.verifyCriticalDependencies).toHaveBeenCalledTimes(2);
+    expect(launcher.rebuildNativeModules).not.toHaveBeenCalled();
+    expect(launcher.startServer).not.toHaveBeenCalled();
+  });
+
   test('auto-updates the launcher before the dependency check when a Git update is available', async () => {
     const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-update-'));
     fs.writeFileSync(path.join(projectRoot, 'package.json'), JSON.stringify({ version: '1.3.23' }, null, 2));
@@ -261,6 +305,11 @@ describe('launcher runtime toolchain', () => {
     launcher.checkUpdates = jest.fn(async () => ({}));
     launcher.checkDependencies = jest.fn(async () => {});
     launcher.checkNativeModules = jest.fn(async () => {});
+    launcher.verifyCriticalDependencies = jest.fn(() => ({
+      valid: true,
+      missing: [],
+      errors: []
+    }));
     launcher.startServer = jest.fn(async () => {});
 
     await launcher.launch();

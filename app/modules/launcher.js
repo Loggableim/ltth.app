@@ -198,6 +198,13 @@ class Launcher {
             await this.checkNativeModules();
             this.log.newLine();
 
+            const postNativeVerification = this.verifyCriticalDependencies();
+            if (!postNativeVerification.valid) {
+                const details = describeDependencyVerification(postNativeVerification);
+                this.log.error(`Dependency verification failed after native module repair: ${details}`);
+                throw new Error(`Dependency verification failed after native module repair: ${details}`);
+            }
+
             // 5. Server starten
             this.log.step(5, 5, 'Starte Server...');
             await this.startServer();
