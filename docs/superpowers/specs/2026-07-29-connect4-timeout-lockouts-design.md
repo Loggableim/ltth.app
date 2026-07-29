@@ -30,4 +30,3 @@ Nach einem Connect-4-Spieler-Timeout soll die Sperrdauer im Streamer-Dashboard f
 1. Datenbank: Ablaufbereinigung, aktive Liste und gezieltes Löschen.
 2. Plugin: Konfiguration `0..10080`, konfigurierte Dauer und deaktivierte Sperre.
 3. Route/UI: serverautoritatives Listen und Entsperren sowie DOM-sicheres Rendern.
-
