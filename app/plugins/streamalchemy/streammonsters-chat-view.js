@@ -26,6 +26,25 @@
     );
   }
 
+  function safeViewerName(payload = {}, fallback = '') {
+    const candidates = [
+      payload.displayName,
+      payload.viewerName,
+      payload.username,
+      payload.nickname,
+      payload.owner?.displayName
+    ];
+    for (const candidate of candidates) {
+      const value = boundedText(candidate, '', 64);
+      if (
+        value &&
+        !/^(?:unknown|unbekannt|viewer)$/i.test(value) &&
+        !/^@?\d{5,}$/.test(value)
+      ) return value;
+    }
+    return boundedText(fallback, '', 64);
+  }
+
   function safeNumber(input, fallback = 0) {
     const value = Number(input);
     return Number.isFinite(value) ? value : fallback;
@@ -274,7 +293,7 @@
         placement: 'upper-third'
       });
       appendHeader({
-        kicker: displayName(payload, localize('viewer')),
+        kicker: safeViewerName(payload, localize('viewer')),
         title: queued ? localize('eggQueued') : localize('eggWait'),
         meta: queued && queuePosition > 0
           ? localize('eggQueuePosition', { position: queuePosition })
@@ -283,6 +302,19 @@
       const body = create('div', 'sm-egg-wait');
       if (queued) {
         body.append(create('div', 'sm-egg-queue-position', `#${queuePosition || '—'}`));
+        const remainingMs = safeNumber(
+          waitState.remainingMs ?? waitState.remaining_ms,
+          0
+        );
+        if (remainingMs > 0) {
+          const remaining = formatRemaining(remainingMs);
+          body.append(create('div', 'sm-egg-countdown', remaining));
+          body.append(create(
+            'p',
+            'sm-egg-wait-copy',
+            localize('eggWaitRemaining', { remaining })
+          ));
+        }
         body.append(create('p', 'sm-egg-wait-copy', localize('eggQueuePending')));
       } else {
         const remaining = formatRemaining(
@@ -385,6 +417,7 @@
     formatRemaining,
     normalizeMonster,
     normalizeOwner,
+    safeViewerName,
     safeImageUrl
   };
 }));

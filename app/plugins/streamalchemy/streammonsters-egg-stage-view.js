@@ -66,8 +66,13 @@
       });
     }
     if (isPublicFreeEgg(egg)) {
-      return replaceTokens(labels.public || 'Free · {command}', {
-        command: adoptReference
+      const time = formatCountdown(Math.max(
+        0,
+        Number(timing.expiresAtMs ?? timing.expiryAtMs) - Number(nowMs)
+      ));
+      return replaceTokens(labels.public || 'Free · {time}', {
+        time,
+        command: time
       });
     }
     return replaceTokens(labels.incubating || 'Hatches in {time}', {
@@ -317,6 +322,47 @@
     return null;
   }
 
+  function buildEventPresentation(type, payload = {}, options = {}) {
+    const normalizedType = String(type || '')
+      .replace(/^streammonsters:/, '')
+      .toLowerCase();
+    if (normalizedType === 'egg_landed') return null;
+
+    const adoption = buildAdoptionNotice(normalizedType, payload);
+    if (adoption) {
+      const source = payload.eggStage || payload.egg_stage || payload.egg;
+      const egg = normalizeEgg(source);
+      const adoptCommand = boundedText(options.commands?.adopt, 48);
+      const reserved = adoption.kind === 'reserved';
+      return {
+        ...adoption,
+        kind: reserved ? 'free_reserved' : 'free_public',
+        viewer: safeViewerName(adoption.viewer),
+        visualId: egg?.visualId || '',
+        element: egg?.element || '',
+        titleKey: reserved
+          ? 'eggLifecycleFreeReservedTitle'
+          : 'eggLifecycleFreePublicTitle',
+        copyKey: reserved
+          ? 'eggLifecycleFreeReservedCopy'
+          : 'eggLifecycleFreePublicCopy',
+        params: {
+          viewer: safeViewerName(adoption.viewer),
+          element: egg?.element || '',
+          command: adoptCommand
+        },
+        commands: adoptCommand ? [adoptCommand] : [],
+        sideEffectKey: boundedText(
+          payload.eventId || payload.correlationId ||
+            `${normalizedType}:${egg?.visualId || 'egg'}`,
+          160
+        )
+      };
+    }
+
+    return buildLifecycleNotice(normalizedType, payload, options);
+  }
+
   function priority(egg = {}) {
     if (isPublicFreeEgg(egg)) return 0;
     if (egg.state === 'ready') return 1;
@@ -373,7 +419,11 @@
   } = {}) {
     const normalized = (Array.isArray(eggStage) ? eggStage : [])
       .map(egg => normalizeEgg(egg))
-      .filter(egg => egg && !isClaimedFreeInventoryEgg(egg))
+      .filter(egg => (
+        egg &&
+        egg.state !== 'expired' &&
+        !isClaimedFreeInventoryEgg(egg)
+      ))
       .sort((left, right) => (
         priority(left) - priority(right) ||
         (Number(left.queuePosition) || Number.MAX_SAFE_INTEGER) -
@@ -418,6 +468,13 @@
     if (!root) throw new Error('STREAM_MONSTERS_EGG_STAGE_ROOT_REQUIRED');
     const slots = root.querySelector('[data-egg-slots]');
     const overflow = root.querySelector('[data-egg-overflow]');
+    let adoptSummary = root.querySelector('[data-egg-adopt-summary]');
+    if (!adoptSummary) {
+      adoptSummary = documentLike.createElement('div');
+      adoptSummary.dataset.eggAdoptSummary = '';
+      adoptSummary.hidden = true;
+      root.appendChild(adoptSummary);
+    }
     const now = options.now || (() => Date.now());
     const schedule = options.setTimeout || setTimeout;
     const cancel = options.clearTimeout || clearTimeout;
@@ -425,8 +482,6 @@
     const getHatchReference = options.getHatchReference || (() => '!hatch');
     const getAdoptReference = options.getAdoptReference || (() => '!adopt');
     const reducedMotion = Boolean(options.reducedMotion);
-    const calloutDeadlineById = new Map();
-    const calloutTimers = new Map();
     const landingTimers = new Map();
     const eggsById = new Map();
     const pendingLandingIds = new Set();
@@ -439,17 +494,6 @@
       return /^\/plugins\/streamalchemy\/assets\/[a-z0-9./_-]+$/i.test(url)
         ? url
         : '';
-    }
-
-    function removeCallout(visualId) {
-      root.querySelectorAll('[data-egg-id]').forEach(item => {
-        if (item.dataset.eggId === visualId) {
-          item.querySelector('[data-adopt-callout]')?.remove();
-        }
-      });
-      const handle = calloutTimers.get(visualId);
-      if (handle != null) cancel(handle);
-      calloutTimers.delete(visualId);
     }
 
     function createEggNode(egg, index) {
@@ -497,26 +541,6 @@
 
       if (isPublicFreeEgg(egg)) {
         item.classList.add('gold-ring', 'public-free');
-        let deadline = calloutDeadlineById.get(egg.visualId);
-        if (deadline == null) {
-          deadline = now() + ADOPT_CALLOUT_MS;
-          calloutDeadlineById.set(egg.visualId, deadline);
-        }
-        if (deadline > now()) {
-          const callout = documentLike.createElement('span');
-          callout.dataset.adoptCallout = '';
-          callout.textContent = getAdoptReference();
-          item.appendChild(callout);
-          const existing = calloutTimers.get(egg.visualId);
-          if (existing != null) cancel(existing);
-          calloutTimers.set(egg.visualId, schedule(
-            () => removeCallout(egg.visualId),
-            Math.max(0, deadline - now())
-          ));
-        }
-      } else {
-        calloutDeadlineById.delete(egg.visualId);
-        removeCallout(egg.visualId);
       }
       return item;
     }
@@ -581,32 +605,54 @@
       const publicEgg = isPublicFreeEgg(egg);
       item.classList.toggle('gold-ring', publicEgg);
       item.classList.toggle('public-free', publicEgg);
-      if (publicEgg) {
-        let deadline = calloutDeadlineById.get(egg.visualId);
-        if (deadline == null) {
-          deadline = now() + ADOPT_CALLOUT_MS;
-          calloutDeadlineById.set(egg.visualId, deadline);
-        }
-        let callout = item.querySelector('[data-adopt-callout]');
-        if (deadline > now() && !callout) {
-          callout = documentLike.createElement('span');
-          callout.dataset.adoptCallout = '';
-          callout.textContent = getAdoptReference();
-          item.appendChild(callout);
-        }
-        const existing = calloutTimers.get(egg.visualId);
-        if (existing != null) cancel(existing);
-        if (deadline > now()) {
-          calloutTimers.set(egg.visualId, schedule(
-            () => removeCallout(egg.visualId),
-            Math.max(0, deadline - now())
-          ));
-        }
-      } else {
-        calloutDeadlineById.delete(egg.visualId);
-        removeCallout(egg.visualId);
-      }
       return item;
+    }
+
+    function updateOverflow(model) {
+      if (!overflow) return;
+      overflow.hidden = !model.overflow;
+      if (!model.overflow) {
+        overflow.replaceChildren();
+        delete overflow.dataset.previewEggId;
+        return;
+      }
+
+      const previewEgg = model.overflow.preview;
+      let preview = overflow.querySelector('.egg-overflow-preview');
+      if (preview?.dataset.eggId === previewEgg.visualId) {
+        updateKeyedEggNode(preview, previewEgg, MAX_VISIBLE_EGGS);
+      } else {
+        preview?.remove();
+        const pendingPreview = pendingLandingIds.delete(previewEgg.visualId);
+        preview = createEggNode(previewEgg, MAX_VISIBLE_EGGS);
+        if (pendingPreview) pendingLandingIds.add(previewEgg.visualId);
+        preview.classList.remove('landing');
+        preview.classList.add('egg-overflow-preview');
+        overflow.prepend(preview);
+      }
+      overflow.dataset.previewEggId = previewEgg.visualId;
+
+      let count = overflow.querySelector('[data-egg-overflow-count]');
+      if (!count) {
+        count = documentLike.createElement('strong');
+        count.dataset.eggOverflowCount = '';
+        overflow.appendChild(count);
+      }
+      count.textContent = model.overflow.label;
+    }
+
+    function updateAdoptSummary(model) {
+      if (!adoptSummary) return;
+      adoptSummary.hidden = model.adoptable < 1;
+      adoptSummary.textContent = model.adoptable > 0
+        ? replaceTokens(
+            labels.adoptSummary || '{count} free · {command}',
+            {
+              count: model.adoptable,
+              command: getAdoptReference()
+            }
+          )
+        : '';
     }
 
     function render() {
@@ -636,23 +682,8 @@
           );
         });
       }
-      if (overflow) {
-        overflow.replaceChildren();
-        overflow.hidden = !model.overflow;
-        if (model.overflow) {
-          overflow.dataset.previewEggId = model.overflow.preview.visualId;
-          const pendingPreview = pendingLandingIds.delete(model.overflow.preview.visualId);
-          const preview = createEggNode(model.overflow.preview, MAX_VISIBLE_EGGS);
-          if (pendingPreview) pendingLandingIds.add(model.overflow.preview.visualId);
-          preview.classList.remove('landing');
-          preview.classList.add('egg-overflow-preview');
-          const label = documentLike.createElement('strong');
-          label.textContent = model.overflow.label;
-          overflow.append(preview, label);
-        } else {
-          delete overflow.dataset.previewEggId;
-        }
-      }
+      updateOverflow(model);
+      updateAdoptSummary(model);
       root.dataset.total = String(model.total);
       root.dataset.adoptable = String(model.adoptable);
       root.dataset.ready = String(model.ready);
@@ -680,8 +711,6 @@
         );
         if (!removedId) return false;
         eggsById.delete(removedId);
-        calloutDeadlineById.delete(removedId);
-        removeCallout(removedId);
         render();
         return true;
       }
@@ -701,8 +730,6 @@
         egg?.state === 'claimed'
       ) {
         eggsById.delete(visualId);
-        calloutDeadlineById.delete(visualId);
-        removeCallout(visualId);
       } else {
         eggsById.set(visualId, { ...egg, visualId });
         if (isNewLanding) {
@@ -733,8 +760,6 @@
       render,
       rotateOverflow,
       destroy() {
-        for (const handle of calloutTimers.values()) cancel(handle);
-        calloutTimers.clear();
         for (const handle of landingTimers.values()) cancel(handle);
         landingTimers.clear();
         if (rotationTimer != null && typeof options.clearInterval === 'function') {
@@ -754,6 +779,7 @@
     COUNTDOWN_INTERVAL_MS,
     MAX_VISIBLE_EGGS,
     buildAdoptionNotice,
+    buildEventPresentation,
     buildHatchRevealNotice,
     buildLifecycleNotice,
     buildShelfModel,

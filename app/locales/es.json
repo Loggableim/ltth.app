@@ -841,6 +841,19 @@
     "play_mode_description_queue_all": "Todos los sonidos se reproducen uno tras otro.",
     "play_mode_description_queue_per_gift": "Los mismos tipos de regalos esperan, diferentes regalos pueden reproducirse simultáneamente."
   },
+  "streammonsters": {
+    "eggShelfPublicCountdown": "Libre · {time}",
+    "eggShelfAdoptSummary": "{count} gratis · {command}",
+    "eggLifecycleFreeReservedTitle": "Huevo gratis reservado",
+    "eggLifecycleFreeReservedCopy": "Solo {viewer} puede adoptarlo ahora con {command}.",
+    "eggLifecycleFreePublicTitle": "Huevo gratis disponible",
+    "eggLifecycleFreePublicCopy": "El primer espectador que escriba {command} recibe el huevo.",
+    "eggLifecycleExpiredTitle": "Huevo caducado",
+    "eggLifecycleExpiredCopy": "Este huevo ya no puede eclosionar.",
+    "eggLifecycleWaitTitle": "El huevo sigue incubando",
+    "eggLifecycleWaitCopy": "Faltan {time} para que pueda eclosionar.",
+    "eggLifecycleWaitQueuedCopy": "Cola #{position} · faltan {time}."
+  },
   "plugins": {
     "title": "App Store",
     "installed": "Instalados",

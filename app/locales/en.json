@@ -482,6 +482,19 @@
     "audio_debug_log": "Audio Debug Log",
     "sequential": "Sequential"
   },
+  "streammonsters": {
+    "eggShelfPublicCountdown": "Free · {time}",
+    "eggShelfAdoptSummary": "{count} free · {command}",
+    "eggLifecycleFreeReservedTitle": "Free egg reserved",
+    "eggLifecycleFreeReservedCopy": "Only {viewer} can adopt it now with {command}.",
+    "eggLifecycleFreePublicTitle": "Free egg available",
+    "eggLifecycleFreePublicCopy": "The first viewer to write {command} gets the egg.",
+    "eggLifecycleExpiredTitle": "Egg expired",
+    "eggLifecycleExpiredCopy": "This egg can no longer be hatched.",
+    "eggLifecycleWaitTitle": "The egg is still incubating",
+    "eggLifecycleWaitCopy": "{time} remains before it can hatch.",
+    "eggLifecycleWaitQueuedCopy": "Queue #{position} · {time} remaining."
+  },
   "plugins": {
     "title": "App Store",
     "installed": "Installed",

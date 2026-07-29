@@ -841,6 +841,19 @@
     "play_mode_description_queue_all": "Tous les sons sont joués les uns après les autres.",
     "play_mode_description_queue_per_gift": "Les mêmes types de cadeaux attendent, différents cadeaux peuvent être joués simultanément."
   },
+  "streammonsters": {
+    "eggShelfPublicCountdown": "Libre · {time}",
+    "eggShelfAdoptSummary": "{count} gratuits · {command}",
+    "eggLifecycleFreeReservedTitle": "Œuf gratuit réservé",
+    "eggLifecycleFreeReservedCopy": "Seul {viewer} peut l’adopter maintenant avec {command}.",
+    "eggLifecycleFreePublicTitle": "Œuf gratuit disponible",
+    "eggLifecycleFreePublicCopy": "Le premier viewer qui écrit {command} reçoit l’œuf.",
+    "eggLifecycleExpiredTitle": "Œuf expiré",
+    "eggLifecycleExpiredCopy": "Cet œuf ne peut plus éclore.",
+    "eggLifecycleWaitTitle": "L’œuf incube encore",
+    "eggLifecycleWaitCopy": "Encore {time} avant l’éclosion.",
+    "eggLifecycleWaitQueuedCopy": "File #{position} · encore {time}."
+  },
   "plugins": {
     "title": "App Store",
     "installed": "Installés",

@@ -606,12 +606,14 @@
         egg-free-jump 1.2s ease-in-out var(--egg-public-jump-delay,80ms) 3,
         egg-free-shake .34s ease-in-out calc(var(--egg-public-jump-delay,80ms) + 3.65s) 3;
     }
-    [data-adopt-callout] {
-      position:absolute; top:-18px; left:50%; padding:5px 9px; border:2px solid #fff2ad;
+    [data-egg-adopt-summary] {
+      position:absolute; top:-28px; left:50%; z-index:4; padding:5px 10px;
+      border:2px solid #fff2ad;
       border-radius:999px; color:#17101f; background:#ffd76f; box-shadow:0 4px 18px #0009;
       transform:translateX(-50%); font-size:clamp(11px,1.15vw,16px); font-weight:1000;
       letter-spacing:.04em; white-space:nowrap;
     }
+    [data-egg-adopt-summary][hidden] { display:none; }
     [data-egg-timing] {
       position:absolute; right:50%; bottom:-4px; left:50%; z-index:3;
       width:max-content; max-width:132px; padding:3px 7px; border-radius:999px;
@@ -924,15 +926,37 @@
       }
     }
     @media (orientation: portrait) {
+      :root { --egg-shelf-lane-height:66px; }
       #brand { top:20px; left:20px; width:210px; height:58px; }
       #hype { top:18px; right:20px; width:76px; height:76px; }
       #toast { top:104px; width:calc(100vw - 32px); }
       #reveal-stage { inset:0 0 calc(26% + var(--egg-shelf-lane-height)); padding:50px 16px; }
       #card { grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
-      #card:not([data-presentation="hatch"]) { min-height:250px; padding:22px 18px; }
-      #card:not([data-presentation="hatch"]) #title { font-size:clamp(34px,7vw,58px); }
-      #card:not([data-presentation="hatch"]) #subtitle { font-size:clamp(20px,3.7vw,30px); line-height:1.2; }
-      #card:not([data-presentation="hatch"]) #hint { font-size:clamp(17px,3vw,24px); }
+      #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) {
+        min-height:250px; padding:22px 18px;
+      }
+      #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) #title {
+        font-size:clamp(34px,7vw,58px);
+      }
+      #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) #subtitle {
+        font-size:clamp(20px,3.7vw,30px); line-height:1.2;
+      }
+      #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) #hint {
+        font-size:clamp(17px,3vw,24px);
+      }
+      #card[data-presentation="egg-offer"] {
+        top:7%; min-height:0; padding:14px 16px;
+      }
+      #card[data-presentation="egg-offer"] #title {
+        font-size:clamp(25px,5.5vw,38px);
+      }
+      #card[data-presentation="egg-offer"] #subtitle {
+        font-size:clamp(15px,3.2vw,22px); line-height:1.18;
+      }
+      #card[data-presentation="egg-offer"] #hint {
+        font-size:clamp(13px,2.8vw,19px);
+      }
+      #egg-shelf { bottom:26%; height:66px; }
       #art-wrap { width:160px; height:160px; margin:auto; }
       #card[data-presentation="hatch"] {
         top:clamp(92px,7vh,128px); right:auto; bottom:clamp(18px,2vh,34px); left:50%;
@@ -1166,6 +1190,7 @@
     data-i18n-aria-label="plugins.streamalchemy.ui.monsters.eggShelfAria">
     <div data-egg-slots></div>
     <div data-egg-overflow hidden></div>
+    <div data-egg-adopt-summary hidden></div>
   </section>
   <section id="battle"
     aria-label="Stream Monsters Arena"
@@ -1352,6 +1377,11 @@
 
   const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
+  const appText = (key, fallback, params = {}) => {
+    const fullKey = `streammonsters.${key}`;
+    const translated = window.i18n?.t?.(fullKey, params);
+    return translated && translated !== fullKey ? translated : fallback;
+  };
   const overlayLocaleResolver = window.StreamMonstersOverlayRuntime
     .createOverlayLocaleResolver({
       config:{},
@@ -1572,7 +1602,14 @@
       ready:text('eggShelfReady', 'Bereit · {command}'),
       expired:text('eggShelfExpired', 'Verrottet'),
       reserved:text('eggShelfReserved', 'Reserviert · {time}'),
-      public:text('eggShelfPublic', 'Gratis · {command}')
+      public:appText(
+        'eggShelfPublicCountdown',
+        text('eggShelfPublic', 'Gratis · {time}')
+      ),
+      adoptSummary:appText(
+        'eggShelfAdoptSummary',
+        '{count} gratis · {command}'
+      )
     },
     getHatchReference:() => commandReference('hatch'),
     getAdoptReference:() => commandReference('adopt')
@@ -2317,8 +2354,7 @@
         projectedEgg?.state === 'expired'
         ? 'egg_expired'
         : type;
-      const lifecycleNotice = window.StreamMonstersEggStageView
-        ?.buildLifecycleNotice?.(lifecycleType, data, {
+      const lifecycleOptions = {
           nowMs:Date.now(),
           commands:{
             adopt:commandReference('adopt'),
@@ -2326,7 +2362,11 @@
             hatch:commandReference('hatch'),
             monsters:commandReference('monster')
           }
-        });
+        };
+      const lifecycleNotice = window.StreamMonstersEggStageView
+        ?.buildEventPresentation?.(lifecycleType, data, lifecycleOptions) ??
+        window.StreamMonstersEggStageView
+          ?.buildLifecycleNotice?.(lifecycleType, data, lifecycleOptions);
       if (lifecycleNotice) {
         return showEggLifecycleNotice(type, data, lifecycleNotice);
       }

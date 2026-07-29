@@ -482,6 +482,19 @@
     "audio_debug_log": "Audio-Debug-Log",
     "sequential": "Sequenziell"
   },
+  "streammonsters": {
+    "eggShelfPublicCountdown": "Frei · {time}",
+    "eggShelfAdoptSummary": "{count} frei · {command}",
+    "eggLifecycleFreeReservedTitle": "Gratis-Ei reserviert",
+    "eggLifecycleFreeReservedCopy": "Nur {viewer} kann es jetzt mit {command} adoptieren.",
+    "eggLifecycleFreePublicTitle": "Gratis-Ei freigegeben",
+    "eggLifecycleFreePublicCopy": "Wer zuerst {command} schreibt, bekommt das Ei.",
+    "eggLifecycleExpiredTitle": "Ei verrottet",
+    "eggLifecycleExpiredCopy": "Dieses Ei kann nicht mehr ausgebrütet werden.",
+    "eggLifecycleWaitTitle": "Das Ei brütet noch",
+    "eggLifecycleWaitCopy": "Noch {time} bis zum Schlüpfen.",
+    "eggLifecycleWaitQueuedCopy": "Warteschlange #{position} · noch {time}."
+  },
   "plugins": {
     "title": "App Store",
     "installed": "Installiert",
