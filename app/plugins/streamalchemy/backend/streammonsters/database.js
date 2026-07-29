@@ -6,6 +6,8 @@ const {
   effectiveCombatPower
 } = require('./evolution-rules');
 
+const FREE_EGG_PUBLIC_WINDOW_MS = 300_000;
+
 class StreamMonstersDatabase {
   constructor(sqlite, { logger = null, assetRegistry = null } = {}) {
     this.db = sqlite?.db || sqlite;
@@ -195,6 +197,7 @@ class StreamMonstersDatabase {
         offer_event_id TEXT NOT NULL UNIQUE,
         offered_at_ms INTEGER NOT NULL,
         reserved_until_ms INTEGER NOT NULL,
+        public_expires_at_ms INTEGER,
         status TEXT NOT NULL CHECK (status IN ('reserved', 'public', 'claimed', 'expired')),
         claimed_by_user_id TEXT,
         claimed_at_ms INTEGER,
@@ -623,7 +626,29 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_free_egg_offers', 'image_url', 'TEXT');
     this.ensureColumn('streammonsters_free_egg_offers', 'source_avatar_ref', 'TEXT');
     this.ensureColumn('streammonsters_free_egg_offers', 'stage_state', "TEXT NOT NULL DEFAULT 'reserved'");
+    this.ensureColumn('streammonsters_free_egg_offers', 'public_expires_at_ms', 'INTEGER');
     this.migrateFreeEggOfferStatusConstraint();
+    this.db.prepare(`
+      UPDATE streammonsters_free_egg_offers
+      SET stage_state = status
+      WHERE status IN ('reserved', 'public', 'claimed', 'expired')
+        AND (stage_state IS NULL OR stage_state != status)
+    `).run();
+    this.db.prepare(`
+      UPDATE streammonsters_free_egg_offers
+      SET public_expires_at_ms = reserved_until_ms + ?
+      WHERE public_expires_at_ms IS NULL
+        OR public_expires_at_ms != reserved_until_ms + ?
+    `).run(FREE_EGG_PUBLIC_WINDOW_MS, FREE_EGG_PUBLIC_WINDOW_MS);
+    this.db.prepare(`
+      UPDATE streammonsters_eggs
+      SET provenance = 'free', ownership_state = 'owned'
+      WHERE free_offer_id IS NOT NULL
+        OR (
+          gift_id = ?
+          AND lower(trim(gift_name)) = ?
+        )
+    `).run(0, 'free egg drop');
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
@@ -817,6 +842,7 @@ class StreamMonstersDatabase {
         offer_event_id TEXT NOT NULL UNIQUE,
         offered_at_ms INTEGER NOT NULL,
         reserved_until_ms INTEGER NOT NULL,
+        public_expires_at_ms INTEGER,
         status TEXT NOT NULL CHECK (
           status IN ('reserved', 'public', 'claimed', 'expired')
         ),
@@ -831,13 +857,13 @@ class StreamMonstersDatabase {
       );
       INSERT INTO streammonsters_free_egg_offers_v110 (
         offer_id, stream_key, source_user_id, source_display_name,
-        offer_event_id, offered_at_ms, reserved_until_ms, status,
+        offer_event_id, offered_at_ms, reserved_until_ms, public_expires_at_ms, status,
         claimed_by_user_id, claimed_at_ms, element, variant, image_url,
         source_avatar_ref, stage_state
       )
       SELECT
         offer_id, stream_key, source_user_id, source_display_name,
-        offer_event_id, offered_at_ms, reserved_until_ms, status,
+        offer_event_id, offered_at_ms, reserved_until_ms, public_expires_at_ms, status,
         claimed_by_user_id, claimed_at_ms, element, variant, image_url,
         source_avatar_ref, stage_state
       FROM streammonsters_free_egg_offers;
@@ -1291,9 +1317,10 @@ class StreamMonstersDatabase {
     this.db.prepare(`
       INSERT INTO streammonsters_free_egg_offers (
         offer_id, stream_key, source_user_id, source_display_name, offer_event_id,
-        offered_at_ms, reserved_until_ms, status, element, variant, image_url,
+        offered_at_ms, reserved_until_ms, public_expires_at_ms, status,
+        element, variant, image_url,
         source_avatar_ref, stage_state
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'reserved', ?, ?, ?, ?, 'reserved')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'reserved', ?, ?, ?, ?, 'reserved')
     `).run(
       input.offerId,
       input.streamKey,
@@ -1302,6 +1329,9 @@ class StreamMonstersDatabase {
       input.offerEventId,
       input.offeredAtMs,
       input.reservedUntilMs,
+      input.publicExpiresAtMs ?? (
+        Number(input.reservedUntilMs) + FREE_EGG_PUBLIC_WINDOW_MS
+      ),
       input.element || null,
       input.variant || 'standard',
       input.imageUrl || null,
@@ -1347,18 +1377,53 @@ class StreamMonstersDatabase {
   }
 
   getNextFreeEggReservationDeadline(nowMs = Date.now()) {
+    return this.getNextFreeEggTransitionDeadline(nowMs);
+  }
+
+  expirePublicFreeEggOffers(streamKey, nowMs) {
+    const hasStreamKey = streamKey !== undefined && streamKey !== null;
+    const expired = this.db.prepare(`
+      UPDATE streammonsters_free_egg_offers
+      SET status = 'expired', stage_state = 'expired'
+      WHERE ${hasStreamKey ? 'stream_key = ? AND ' : ''}
+        status = 'public'
+        AND stage_state = 'public'
+        AND public_expires_at_ms <= ?
+      RETURNING *
+    `).all(...(hasStreamKey ? [streamKey, nowMs] : [nowMs]));
+    return expired.sort((left, right) => (
+      left.public_expires_at_ms - right.public_expires_at_ms ||
+      left.offer_id.localeCompare(right.offer_id)
+    ));
+  }
+
+  getNextFreeEggTransitionDeadline(nowMs = Date.now()) {
     const row = this.db.prepare(`
-      SELECT MIN(reserved_until_ms) AS reserved_until_ms
+      SELECT MIN(
+        CASE
+          WHEN status = 'reserved' AND stage_state = 'reserved'
+            THEN reserved_until_ms
+          WHEN status = 'public' AND stage_state = 'public'
+            THEN public_expires_at_ms
+          ELSE NULL
+        END
+      ) AS deadline_ms
       FROM streammonsters_free_egg_offers
-      WHERE status = 'reserved'
+      WHERE (
+        status = 'reserved'
         AND stage_state = 'reserved'
         AND reserved_until_ms > ?
-    `).get(Number(nowMs) || 0);
-    if (row?.reserved_until_ms === null || row?.reserved_until_ms === undefined) {
+      ) OR (
+        status = 'public'
+        AND stage_state = 'public'
+        AND public_expires_at_ms > ?
+      )
+    `).get(Number(nowMs) || 0, Number(nowMs) || 0);
+    if (row?.deadline_ms === null || row?.deadline_ms === undefined) {
       return null;
     }
-    return Number.isFinite(Number(row.reserved_until_ms))
-      ? Number(row.reserved_until_ms)
+    return Number.isFinite(Number(row.deadline_ms))
+      ? Number(row.deadline_ms)
       : null;
   }
 
@@ -1449,7 +1514,7 @@ class StreamMonstersDatabase {
             )
         ) ELSE NULL END AS queue_position
       FROM streammonsters_eggs eggs
-      WHERE eggs.state IN ('queued', 'incubating', 'ready', 'expired')
+      WHERE eggs.state IN ('queued', 'incubating', 'ready')
         AND COALESCE(eggs.provenance, 'legacy') <> 'free'
       ORDER BY eggs.created_at_ms ASC, eggs.egg_id ASC
     `).all();

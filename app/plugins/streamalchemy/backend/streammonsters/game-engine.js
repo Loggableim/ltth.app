@@ -166,7 +166,14 @@ class StreamMonstersEngine {
         eggStage,
         gift,
         event,
-        hint: this.getCommandReference('inventory')
+        hint: this.getCommandReference('inventory'),
+        ...this.eggStageProjector.eventIdentity(
+          'streammonsters:egg_boosted',
+          {
+            ...eggStage,
+            state: `boosted-${Number(egg.boost_ms) || 0}`
+          }
+        )
       });
       return { type: 'boosted', egg, gift };
     }
@@ -337,9 +344,15 @@ class StreamMonstersEngine {
       });
       const expired = this.store.expireReadyEggs(nowMs, this.config.eggExpiryMs);
       expired.forEach(egg => {
+        const eggStage = this.projectEggStage(egg);
         this.emitAfterCommit('streammonsters:egg_expired', {
           userId: egg.user_id,
-          egg
+          egg,
+          eggStage,
+          ...this.eggStageProjector.eventIdentity(
+            'streammonsters:egg_expired',
+            eggStage
+          )
         });
         this.emitEggStageUpdated(egg, 'expired');
       });

@@ -265,7 +265,7 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
     expect(JSON.stringify(expiredUpdates)).not.toContain(eggs[0].egg.egg_id);
   });
 
-  test('keeps safely expired gift eggs visible as rotten shelf entries', () => {
+  test('removes safely expired gift eggs from the active shelf snapshot', () => {
     const subject = createSubject({ hatchDurationMs: 100, eggExpiryMs: 200 });
     gift(subject, 'gift-rotten');
     const projector = new EggStageProjector({
@@ -278,14 +278,7 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
     subject.setNow(1_300);
     subject.engine.markReadyEggs();
 
-    expect(projector.snapshot('creator:stream-1')).toEqual([
-      expect.objectContaining({
-        provenance: 'gift',
-        state: 'expired',
-        adoptionStatus: 'owned',
-        adoptable: false
-      })
-    ]);
+    expect(projector.snapshot('creator:stream-1')).toEqual([]);
     expect(subject.emitted).toContainEqual({
       event: 'streammonsters:egg_stage_updated',
       payload: expect.objectContaining({

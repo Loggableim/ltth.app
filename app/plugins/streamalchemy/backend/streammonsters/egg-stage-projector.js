@@ -95,6 +95,7 @@ class EggStageProjector {
     return {
       visualId: this.visualId(...identity),
       provenance,
+      ownershipState: 'owned',
       element: boundedText(egg.element, 24),
       variant: boundedText(egg.variant, 24) || 'standard',
       state: boundedText(egg.state, 24) || 'incubating',
@@ -132,7 +133,7 @@ class EggStageProjector {
         landedAtMs: finiteNumber(offer.offered_at_ms),
         publicAtMs: finiteNumber(offer.reserved_until_ms),
         claimedAtMs: finiteNumber(offer.claimed_at_ms),
-        expiresAtMs: null
+        expiresAtMs: finiteNumber(offer.public_expires_at_ms)
       },
       queuePosition: null,
       adoptionStatus: state,

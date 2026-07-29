@@ -1,6 +1,7 @@
 const ALLOWED_HOST_SUFFIXES = Object.freeze([
   'tiktokcdn.com',
   'tiktokcdn-eu.com',
+  'tiktokcdn-us.com',
   'byteimg.com',
   'ibytedtos.com',
   'muscdn.com'

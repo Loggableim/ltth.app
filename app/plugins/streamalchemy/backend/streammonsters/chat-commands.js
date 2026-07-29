@@ -1,4 +1,6 @@
 const { normalizeIngressEventId } = require('./ingress-event-id');
+const { avatarProxyReference } = require('./avatar-proxy');
+const { publicViewerName } = require('./egg-stage-projector');
 
 class ChatCommands {
   constructor({
@@ -119,6 +121,32 @@ class ChatCommands {
       };
     }
     const rawData = context.rawData || {};
+    const displayName = [
+      context.nickname,
+      rawData.nickname,
+      context.displayName,
+      rawData.displayName,
+      context.username,
+      rawData.username,
+      context.uniqueId,
+      rawData.uniqueId
+    ].map(value => publicViewerName(value)).find(Boolean) || null;
+    const avatarRef = [
+      context.avatarRef,
+      rawData.avatarRef,
+      context.profilePictureUrl,
+      rawData.profilePictureUrl,
+      context.avatarThumb,
+      rawData.avatarThumb,
+      context.avatar,
+      rawData.avatar
+    ].map(value => {
+      const candidate = String(value || '').trim();
+      if (/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(candidate)) {
+        return candidate;
+      }
+      return avatarProxyReference(candidate);
+    }).find(Boolean) || null;
     const streamKey = this.engine.streamKey || 'offline';
     const eventId = normalizeIngressEventId({
       namespace: 'adopt',
@@ -135,6 +163,8 @@ class ChatCommands {
       userId,
       streamKey,
       eventId,
+      displayName,
+      avatarRef,
       nowMs: this.now()
     });
     if (result.success) {

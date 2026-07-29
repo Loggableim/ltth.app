@@ -1,6 +1,7 @@
 const { randomUUID } = require('crypto');
 
 const RESERVATION_MS = 60_000;
+const PUBLIC_WINDOW_MS = 300_000;
 const DEFAULT_COOLDOWN_SECONDS = 86_400;
 
 class FreeEggDropService {
@@ -15,13 +16,7 @@ class FreeEggDropService {
     this.engine = engine;
     this.emit = emit;
     this.now = now;
-    this.config = {
-      freeEggDropsEnabled: config.freeEggDropsEnabled !== false,
-      freeEggCooldownSeconds: Math.max(
-        1,
-        Number(config.freeEggCooldownSeconds) || DEFAULT_COOLDOWN_SECONDS
-      )
-    };
+    this.config = this.normalizeConfig(config);
     this.releaseTimer = null;
     this.destroyed = false;
     this.sweepAndRearm();
@@ -59,7 +54,17 @@ class FreeEggDropService {
           offerId: existing.offer_id
         });
       }
+      const latestClaim = this.store.getLatestFreeEggClaim(input.userId);
+      const cooldownMs = this.config.freeEggCooldownSeconds * 1_000;
+      if (latestClaim && input.nowMs - latestClaim.claimed_at_ms < cooldownMs) {
+        return this.recordEvent(input, 'first_chat', {
+          success: false,
+          status: 'cooldown',
+          remainingMs: cooldownMs - (input.nowMs - latestClaim.claimed_at_ms)
+        });
+      }
       const element = this.engine.selectRandomElement({ giftId: 0 });
+      const reservedUntilMs = input.nowMs + RESERVATION_MS;
       const offer = this.store.createFreeEggOffer({
         offerId: randomUUID(),
         streamKey: input.streamKey,
@@ -67,7 +72,8 @@ class FreeEggDropService {
         sourceDisplayName: displayName,
         offerEventId: input.eventId,
         offeredAtMs: input.nowMs,
-        reservedUntilMs: input.nowMs + RESERVATION_MS,
+        reservedUntilMs,
+        publicExpiresAtMs: reservedUntilMs + PUBLIC_WINDOW_MS,
         element,
         variant: 'standard',
         imageUrl: this.engine.createDefaultEggImage({ element }, 'standard'),
@@ -100,7 +106,14 @@ class FreeEggDropService {
     return result;
   }
 
-  adopt({ userId, streamKey, eventId, nowMs = this.now() } = {}) {
+  adopt({
+    userId,
+    streamKey,
+    eventId,
+    displayName = null,
+    avatarRef = null,
+    nowMs = this.now()
+  } = {}) {
     const result = this.store.runInImmediateTransaction(() => {
       const input = this.normalizeInput({ userId, streamKey, eventId, nowMs });
       const duplicate = this.store.getFreeEggEvent(input.eventId);
@@ -136,8 +149,10 @@ class FreeEggDropService {
         createdAtMs: input.nowMs,
         offerId: claimedOffer.offer_id,
         element: claimedOffer.element,
-        displayName: this.store.getViewerDisplayName?.(input.userId) || null,
-        avatarRef: null
+        displayName: displayName ||
+          this.store.getViewerDisplayName?.(input.userId) ||
+          null,
+        avatarRef
       });
       this.store.createFreeEggClaim({
         claimId: randomUUID(),
@@ -210,6 +225,17 @@ class FreeEggDropService {
         )
       });
     });
+    const expired = this.store.expirePublicFreeEggOffers(streamKey, nowMs);
+    expired.forEach(offer => {
+      const eggStage = this.engine.eggStageProjector.projectOffer(offer);
+      this.emitAfterCommit('streammonsters:egg_stage_removed', {
+        eggStage,
+        ...this.engine.eggStageProjector.eventIdentity(
+          'streammonsters:egg_stage_removed',
+          eggStage
+        )
+      });
+    });
     return released;
   }
 
@@ -228,7 +254,7 @@ class FreeEggDropService {
       this.releaseTimer = null;
     }
     if (this.destroyed) return;
-    const deadlineMs = this.store.getNextFreeEggReservationDeadline(Number(this.now()));
+    const deadlineMs = this.store.getNextFreeEggTransitionDeadline(Number(this.now()));
     if (deadlineMs === null) return;
     const delayMs = Math.max(0, deadlineMs - Number(this.now()));
     this.releaseTimer = setTimeout(() => {
@@ -244,6 +270,29 @@ class FreeEggDropService {
       clearTimeout(this.releaseTimer);
       this.releaseTimer = null;
     }
+  }
+
+  setConfig(config = {}) {
+    const wasEnabled = this.config.freeEggDropsEnabled;
+    this.config = this.normalizeConfig(config);
+    if (wasEnabled && !this.config.freeEggDropsEnabled) {
+      this.cleanupStream({
+        streamKey: this.normalizeStreamKey(this.engine?.streamKey)
+      });
+    } else {
+      this.rearmReleaseTimer();
+    }
+    return { ...this.config };
+  }
+
+  normalizeConfig(config = {}) {
+    return {
+      freeEggDropsEnabled: config.freeEggDropsEnabled !== false,
+      freeEggCooldownSeconds: Math.max(
+        1,
+        Number(config.freeEggCooldownSeconds) || DEFAULT_COOLDOWN_SECONDS
+      )
+    };
   }
 
   recordEvent(input, eventType, result) {
@@ -276,4 +325,5 @@ class FreeEggDropService {
 
 module.exports = FreeEggDropService;
 module.exports.DEFAULT_COOLDOWN_SECONDS = DEFAULT_COOLDOWN_SECONDS;
+module.exports.PUBLIC_WINDOW_MS = PUBLIC_WINDOW_MS;
 module.exports.RESERVATION_MS = RESERVATION_MS;

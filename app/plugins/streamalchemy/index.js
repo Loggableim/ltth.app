@@ -95,6 +95,7 @@ class StreamAlchemyPlugin {
     this.pluginDir = api.pluginDir || __dirname;
     this.config = null;
     this.retiredConfigArchive = {};
+    this.streamMonstersTerminalDisconnectTokens = new Set();
     this.streamMonstersPublicEventProjector =
       new StreamMonstersPublicEventProjector();
   }
@@ -286,6 +287,10 @@ class StreamAlchemyPlugin {
     this.api.registerTikTokEvent('streamSessionStarted', async data => {
       if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
       await this.handleStreamMonstersSession(data);
+    });
+    this.api.registerTikTokEvent('disconnected', async data => {
+      if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
+      this.handleStreamMonstersDisconnect(data);
     });
     this.streamMonstersReadyTimer = setInterval(() => {
       try {
@@ -735,10 +740,10 @@ class StreamAlchemyPlugin {
       };
     }
     if (this.streamMonstersFreeEggDrops) {
-      this.streamMonstersFreeEggDrops.config = {
+      this.streamMonstersFreeEggDrops.setConfig({
         freeEggDropsEnabled: this.config.streamMonsters.freeEggDropsEnabled,
         freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
-      };
+      });
     }
     this.streamMonstersViewerActivity?.setActiveWindowMs?.(
       this.config.streamMonsters.autoHatchActiveWindowSeconds * 1_000
@@ -788,6 +793,7 @@ class StreamAlchemyPlugin {
     this.streamMonstersCommandIngress?.clear();
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
+    this.streamMonstersTerminalDisconnectTokens.clear();
     this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime stopped', 'info');
   }
 
@@ -1614,6 +1620,28 @@ class StreamAlchemyPlugin {
       event
     });
     this.logStructured('stream_session_started', { status: 'ok' });
+  }
+
+  handleStreamMonstersDisconnect(data = {}) {
+    const terminal = data.wasLive === true &&
+      !data.isTransient &&
+      [1000, 4005, 4404].includes(Number(data.code));
+    if (!terminal) return false;
+    const streamKey = this.streamMonstersEngine?.streamKey;
+    if (!streamKey || streamKey === 'offline') return false;
+    if (data.streamIdentity && String(data.streamIdentity) !== String(streamKey)) {
+      return false;
+    }
+    const sessionToken = [
+      data.source || 'tiktok',
+      data.streamSessionId ?? data.streamIdentity ?? streamKey
+    ].map(value => String(value)).join(':');
+    if (this.streamMonstersTerminalDisconnectTokens.has(sessionToken)) {
+      return false;
+    }
+    this.streamMonstersTerminalDisconnectTokens.add(sessionToken);
+    this.streamMonstersFreeEggDrops?.cleanupStream({ streamKey });
+    return true;
   }
 
   selectStreamEvent(data = {}) {
