@@ -367,6 +367,26 @@ class OwnedReadyEggRescueService {
     `).all(nowMs, nowMs, nowMs);
   }
 
+  emitPublished(rows, nowMs) {
+    rows.forEach(row => {
+      const stage = this.projectPublicRescue(row.rescue_id, nowMs);
+      if (!stage) return;
+      this.emitAfterCommit('streammonsters:owned_ready_egg_public', {
+        rescue: stage,
+        eggStage: stage,
+        ...this.eggStageProjector.eventIdentity(
+          'streammonsters:owned_ready_egg_public',
+          stage
+        )
+      });
+      this.logAfterCommit('owned_ready_egg_rescue_public', {
+        status: 'public',
+        provenance: stage.provenance,
+        remainingMs: stage.remainingMs
+      });
+    });
+  }
+
   sweep(atMs = this.now()) {
     if (this.graceSeconds === 0) {
       return { published: [], closed: [] };
@@ -376,24 +396,7 @@ class OwnedReadyEggRescueService {
       closed: this.closeUnavailable(nowMs),
       published: this.publishEligible(nowMs)
     }));
-    result.published.forEach(row => {
-      const stage = this.projectPublicRescue(row.rescue_id, nowMs);
-      if (stage) {
-        this.emitAfterCommit('streammonsters:owned_ready_egg_public', {
-          rescue: stage,
-          eggStage: stage,
-          ...this.eggStageProjector.eventIdentity(
-            'streammonsters:owned_ready_egg_public',
-            stage
-          )
-        });
-        this.logAfterCommit('owned_ready_egg_rescue_public', {
-          status: 'public',
-          provenance: stage.provenance,
-          remainingMs: stage.remainingMs
-        });
-      }
-    });
+    this.emitPublished(result.published, nowMs);
     return result;
   }
 
@@ -438,8 +441,7 @@ class OwnedReadyEggRescueService {
       expiresAtMs: Number(row.expires_at_ms),
       remainingMs,
       adoptionStatus: 'public',
-      adoptable: true,
-      command: '!adopt'
+      adoptable: true
     };
   }
 
@@ -494,13 +496,14 @@ class OwnedReadyEggRescueService {
       return { success: false, status: 'invalid_request' };
     }
     const claimedAtMs = this.currentMs(nowMs);
-    return this.store.runInImmediateTransaction(() => {
+    let newlyPublished = [];
+    const result = this.store.runInImmediateTransaction(() => {
       const adoptionReceipt = this.store.getFreeEggEvent?.(normalizedEventId);
       if (adoptionReceipt) return adoptionReceipt;
       const duplicate = this.claimedRowByEvent(normalizedEventId);
       if (duplicate) return this.projectClaim(duplicate);
       this.closeUnavailable(claimedAtMs);
-      this.publishEligible(claimedAtMs);
+      newlyPublished = this.publishEligible(claimedAtMs);
       const candidate = this.db.prepare(`
         SELECT rescue.*, eggs.*
         FROM streammonsters_owned_ready_egg_rescues rescue
@@ -593,6 +596,8 @@ class OwnedReadyEggRescueService {
       });
       return result;
     });
+    this.emitPublished(newlyPublished, claimedAtMs);
+    return result;
   }
 }
 

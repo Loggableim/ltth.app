@@ -344,7 +344,6 @@ describe('Stream Monsters owned-ready egg rescue', () => {
         state: 'public',
         expiresAtMs: 700_000,
         remainingMs: 99_000,
-        command: '!adopt',
         owner: expect.objectContaining({
           displayName: 'Owner A'
         })
@@ -625,6 +624,56 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     expect(emitted.find(entry => (
       entry.event === 'streammonsters:egg_stage_removed'
     ))?.payload.eggStage.visualId).toBe(publicStage.visualId);
+  });
+
+  test('adopt-at-grace emits each other newly public rescue exactly once', () => {
+    const subject = createSubject({ graceSeconds: 1 });
+    if (!subject) return;
+    createReadyEgg(subject.store, {
+      eggId: 'egg-adopt-at-grace-first',
+      expiresAtMs: 50_000
+    });
+    createReadyEgg(subject.store, {
+      eggId: 'egg-adopt-at-grace-second',
+      userId: 'owner-b',
+      expiresAtMs: 60_000
+    });
+    subject.service.observeReadyEgg('egg-adopt-at-grace-first', {
+      observedAtMs: 1_000
+    });
+    subject.service.observeReadyEgg('egg-adopt-at-grace-second', {
+      observedAtMs: 1_000
+    });
+
+    const claimed = subject.service.adopt({
+      userId: 'rescuer-at-grace',
+      streamKey: 'creator:stream-1',
+      eventId: 'rescue-at-grace',
+      nowMs: 2_000
+    });
+    const remaining = subject.service.listPublic(2_000);
+    const publicEvents = () => subject.emitted.filter(entry => (
+      entry.event === 'streammonsters:owned_ready_egg_public'
+    ));
+
+    expect(claimed).toEqual(expect.objectContaining({
+      success: true,
+      adoptionSource: 'rescue'
+    }));
+    expect(remaining).toHaveLength(1);
+    expect(publicEvents()).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          eggStage: expect.objectContaining({
+            visualId: remaining[0].visualId,
+            state: 'public'
+          })
+        })
+      })
+    ]);
+
+    subject.service.sweep(2_001);
+    expect(publicEvents()).toHaveLength(1);
   });
 
   test('serializes a hatch-vs-adopt race so only one owner/state transition wins', async () => {
@@ -1004,6 +1053,73 @@ describe('Stream Monsters owned-ready egg rescue', () => {
         displayName: 'New Owner'
       })
     ]);
+  });
+
+  test('keeps free-provenance owned-ready rescues distinct in shelf and card copy', () => {
+    const freeRescueStage = {
+      rescueId: 'opaque-free-rescue',
+      visualId: 'egg-abcdef0123456789abcdef01',
+      provenance: 'free',
+      state: 'public',
+      displayName: 'Original Claimer',
+      timing: { expiresAtMs: 50_000, remainingMs: 48_000 },
+      adoptionStatus: 'public',
+      adoptable: true
+    };
+
+    expect(EggStageView.shelfTiming(freeRescueStage, {
+      nowMs: 2_000,
+      adoptReference: '$retten',
+      labels: {
+        public: 'FREE {time} {command}',
+        rescuePublic: 'RESCUE {time} {command}'
+      }
+    })).toBe('RESCUE 00:48 $retten');
+    expect(EggStageView.buildEventPresentation(
+      'owned_ready_egg_public',
+      { eggStage: freeRescueStage },
+      {
+        commands: { adopt: '$retten' },
+        nowMs: 2_000
+      }
+    )).toEqual(expect.objectContaining({
+      kind: 'owned_ready_rescue_public',
+      titleKey: 'eggLifecycleRescuePublicTitle',
+      copyKey: 'eggLifecycleRescuePublicCopy',
+      durationMs: 12_000,
+      commands: ['$retten']
+    }));
+  });
+
+  test('omits a hardcoded command and lets consumers use the active GCCE reference', () => {
+    const subject = createSubject({ graceSeconds: 1 });
+    if (!subject) return;
+    createReadyEgg(subject.store, {
+      eggId: 'egg-custom-adopt-reference',
+      expiresAtMs: 50_000
+    });
+    observeAndPublish(subject, 'egg-custom-adopt-reference', {
+      publishedAtMs: 2_000
+    });
+    const stage = subject.service.listPublic(2_000)[0];
+    const adoptReference = '?adoptieren';
+
+    expect(stage).not.toHaveProperty('command');
+    expect(EggStageView.shelfTiming(stage, {
+      nowMs: 2_000,
+      adoptReference
+    })).toContain(adoptReference);
+    expect(EggStageView.buildEventPresentation(
+      'owned_ready_egg_public',
+      { eggStage: stage },
+      {
+        commands: { adopt: adoptReference },
+        nowMs: 2_000
+      }
+    )).toEqual(expect.objectContaining({
+      kind: 'owned_ready_rescue_public',
+      commands: [adoptReference]
+    }));
   });
 
   test('adds each public rescue once to the state snapshot and hides claimed free rescues', () => {

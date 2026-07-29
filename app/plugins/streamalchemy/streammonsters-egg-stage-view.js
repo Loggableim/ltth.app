@@ -17,13 +17,19 @@
   }
 
   function isPublicFreeEgg(egg = {}) {
-    return egg.provenance === 'free' && isPublicAdoptableEgg(egg);
+    return egg.provenance === 'free' &&
+      !isOwnedReadyRescue(egg) &&
+      isPublicAdoptableEgg(egg);
   }
 
   function isPublicAdoptableEgg(egg = {}) {
     return egg.state === 'public' &&
       egg.adoptionStatus === 'public' &&
       egg.adoptable === true;
+  }
+
+  function isOwnedReadyRescue(egg = {}) {
+    return Boolean(boundedText(egg.rescueId ?? egg.rescue_id, 192));
   }
 
   function isReservedFreeEgg(egg = {}) {
@@ -94,7 +100,12 @@
 
   function buildAdoptionNotice(type, payload = {}) {
     const egg = normalizeEgg(payload.eggStage || payload.egg_stage || payload.egg);
-    if (!egg || egg.provenance !== 'free') return null;
+    if (
+      !egg ||
+      egg.provenance !== 'free' ||
+      type === 'owned_ready_egg_public' ||
+      isOwnedReadyRescue(egg)
+    ) return null;
     if (
       type === 'free_egg_reserved' &&
       egg.state === 'reserved' &&
