@@ -326,7 +326,7 @@
           "monsterStatChoices": "1 Vitalité +1 · 2 Force +1 · 3 Défense +1 · 4 Agilité +1",
           "monsterStatResult": "{stat} +1",
           "arenaCollapseBanner": "EFFONDREMENT DE L’ARÈNE · Manche {round}",
-          "arenaCollapseDefenseLocked": "Effondrement de l’arène : la défense est bloquée dès la manche 11 ; choisissez A ou un C chargé.",
+          "arenaCollapseDefenseLocked": "Effondrement de l’arène : la défense est bloquée dès la manche 8 ; choisissez A ou un C chargé.",
           "arenaChoiceSpecialNotCharged": "La capacité spéciale n’est pas encore complètement chargée.",
           "arenaChoiceAlreadyLocked": "Votre choix est déjà verrouillé et scellé.",
           "arenaChoiceWindowClosed": "La fenêtre de saisie est déjà fermée.",

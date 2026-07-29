@@ -959,7 +959,13 @@
         ? { ...payload.action, eventId: payload.eventId || payload.action.eventId }
         : payload;
       beats = numeric(action.rulesVersion ?? payload.rulesVersion) >= 7
-        ? compressArcadeActionBeats(buildArcadeActionBeats(action))
+        ? compressArcadeActionBeats(
+            buildArcadeActionBeats(action),
+            numeric(action.rulesVersion ?? payload.rulesVersion) >= 8 &&
+              !action.terminal
+              ? 1_500
+              : 2_800
+          )
         : buildArcadeActionBeats(action);
     } else if (type === 'battle_arena_collapse') {
       scene = 'arena_collapse';

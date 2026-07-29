@@ -14,6 +14,7 @@ const {
   projectPassiveCharge
 } = require('./battle-charge');
 const {
+  ARENA_COLLAPSE_ROUND,
   applyArenaCollapse: resolveArenaCollapse,
   isArenaCollapseDefenseLocked
 } = require('./battle-rules-v8');
@@ -26,7 +27,7 @@ const ArenaDirector = require('../../streammonsters-arena-director');
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
 const STAT_WINDOW_MS = 15_000;
-const RULES_V8_ROSTER_WINDOW_MS = 8_000;
+const RULES_V8_ROSTER_WINDOW_MS = 6_000;
 const RULES_V8_ACTION_WINDOW_MS = 6_000;
 const RULES_V8_STAT_WINDOW_MS = 10_000;
 const RULES_V5_ROSTER_WINDOW_MS = 15_000;
@@ -445,12 +446,7 @@ class BattleMatchService {
   }
 
   actionWindowMs(match = null) {
-    if (this.isRulesV8(match)) {
-      return Math.max(
-        RULES_V8_ACTION_WINDOW_MS,
-        Math.round(this.localeCount * this.secondsPerLocale * 1_000)
-      );
-    }
+    if (this.isRulesV8(match)) return RULES_V8_ACTION_WINDOW_MS;
     if (this.isRulesV7(match)) return RULES_V7_ACTION_WINDOW_MS;
     return this.isRulesV6(match) ? ACTION_WINDOW_MS : RULES_V5_ACTION_WINDOW_MS;
   }
@@ -1559,7 +1555,7 @@ class BattleMatchService {
         this.now()
       );
     });
-    if (this.isRulesV8(match) && match.roundNumber >= 5) {
+    if (this.isRulesV8(match) && match.roundNumber >= ARENA_COLLAPSE_ROUND) {
       outcome.state = this.applyArenaCollapse(
         match,
         outcome.state,
@@ -1594,6 +1590,17 @@ class BattleMatchService {
     }
     const nowMs = this.now();
     const cinematicPauseMs = outcome.actions.reduce((total, action) => {
+      if (this.isRulesV8(match)) {
+        return total + ArenaDirector.buildArcadeTimeline(
+          'battle_skill_used',
+          {
+            action: {
+              ...action,
+              rulesVersion: match.rulesVersion
+            }
+          }
+        ).durationMs;
+      }
       const timeline = ArenaDirector.buildJackpotActionTimeline({
         ...action,
         rulesVersion: match.rulesVersion

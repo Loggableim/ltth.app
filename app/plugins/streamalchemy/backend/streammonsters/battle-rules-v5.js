@@ -9,6 +9,7 @@ const {
 } = require('./catalog');
 const { elementAdvantage } = require('./battle-rules-v3');
 const {
+  ARENA_COLLAPSE_ROUND,
   arenaCollapseRecoveryFactor,
   isArenaCollapseDefenseLocked
 } = require('./battle-rules-v8');
@@ -397,14 +398,16 @@ function resolveAction({
         effect.power + Math.floor((Number(actor.stats?.guard) || 0) / 3),
         outcomes,
         {
-          arenaCollapseRound: rulesVersion >= V8_RULES_VERSION && round >= 5
+          arenaCollapseRound: rulesVersion >= V8_RULES_VERSION &&
+            round >= ARENA_COLLAPSE_ROUND
             ? round
             : 0
         }
       );
     } else if (effect.type === 'heal') {
       heal(actorState, effect.power, outcomes, 'heal', {
-        arenaCollapseRound: rulesVersion >= V8_RULES_VERSION && round >= 5
+        arenaCollapseRound: rulesVersion >= V8_RULES_VERSION &&
+          round >= ARENA_COLLAPSE_ROUND
           ? round
           : 0
       });
@@ -415,7 +418,8 @@ function resolveAction({
         outcomes,
         'lifesteal',
         {
-          arenaCollapseRound: rulesVersion >= V8_RULES_VERSION && round >= 5
+          arenaCollapseRound: rulesVersion >= V8_RULES_VERSION &&
+            round >= ARENA_COLLAPSE_ROUND
             ? round
             : 0
         }

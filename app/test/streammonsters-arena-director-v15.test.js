@@ -129,7 +129,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     })).toEqual(expect.objectContaining({ renderer: 'css', fallbackReason: 'reduced_motion' }));
   });
 
-  test('keeps every rules-v8 combat outcome in one two-to-three second arcade timeline', () => {
+  test('keeps every rules-v8 combat outcome in a readable sub-1.6-second action timeline', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_skill_used', {
       eventId: 'match-v8:event:17',
       matchId: 'match-v8',
@@ -164,13 +164,13 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
           shieldAbsorbed: 0,
           evaded: false
         }],
-        knockouts: [{ slot: 2, cause: 'skill' }],
-        terminal: true
+        knockouts: [],
+        terminal: false
       }
     });
 
-    expect(timeline.durationMs).toBeGreaterThanOrEqual(2_000);
-    expect(timeline.durationMs).toBeLessThanOrEqual(3_000);
+    expect(timeline.durationMs).toBeGreaterThanOrEqual(1_000);
+    expect(timeline.durationMs).toBeLessThanOrEqual(1_600);
     const types = timeline.beats.map(beat => beat.type);
     expect(types).toEqual(expect.arrayContaining([
       'telegraph',
@@ -184,7 +184,6 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       'shield_number',
       'retaliation',
       'retaliation_hud',
-      'knockout',
       'recover'
     ]));
     expect(timeline.beats.filter(beat => beat.type === 'impact')).toHaveLength(2);

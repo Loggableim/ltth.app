@@ -326,7 +326,7 @@
           "monsterStatChoices": "1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1",
           "monsterStatResult": "{stat} +1",
           "arenaCollapseBanner": "ARENA COLLAPSE · Runde {round}",
-          "arenaCollapseDefenseLocked": "Arena Collapse: Verteidigung ist ab Runde 11 gesperrt – wähle A oder ein geladenes C.",
+          "arenaCollapseDefenseLocked": "Arena Collapse: Verteidigung ist ab Runde 8 gesperrt – wähle A oder ein geladenes C.",
           "arenaChoiceSpecialNotCharged": "Special ist noch nicht vollständig geladen.",
           "arenaChoiceAlreadyLocked": "Deine Wahl ist bereits sicher versiegelt.",
           "arenaChoiceWindowClosed": "Das Eingabefenster ist bereits geschlossen.",

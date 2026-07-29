@@ -326,7 +326,7 @@
           "monsterStatChoices": "1 Vitalidad +1 · 2 Fuerza +1 · 3 Defensa +1 · 4 Agilidad +1",
           "monsterStatResult": "{stat} +1",
           "arenaCollapseBanner": "COLAPSO DE ARENA · Ronda {round}",
-          "arenaCollapseDefenseLocked": "Colapso de arena: la defensa se bloquea desde la ronda 11; elige A o una C cargada.",
+          "arenaCollapseDefenseLocked": "Colapso de arena: la defensa se bloquea desde la ronda 8; elige A o una C cargada.",
           "arenaChoiceSpecialNotCharged": "El especial todavía no está completamente cargado.",
           "arenaChoiceAlreadyLocked": "Tu elección ya está bloqueada y sellada.",
           "arenaChoiceWindowClosed": "La ventana de entrada ya está cerrada.",

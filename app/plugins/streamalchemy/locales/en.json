@@ -326,7 +326,7 @@
           "monsterStatChoices": "1 Vitality +1 · 2 Might +1 · 3 Guard +1 · 4 Agility +1",
           "monsterStatResult": "{stat} +1",
           "arenaCollapseBanner": "ARENA COLLAPSE · Round {round}",
-          "arenaCollapseDefenseLocked": "Arena Collapse: defense locks from round 11 – choose A or a charged C.",
+          "arenaCollapseDefenseLocked": "Arena Collapse: defense locks from round 8 – choose A or a charged C.",
           "arenaChoiceSpecialNotCharged": "Special is not fully charged yet.",
           "arenaChoiceAlreadyLocked": "Your choice is already locked and sealed.",
           "arenaChoiceWindowClosed": "The input window is already closed.",
