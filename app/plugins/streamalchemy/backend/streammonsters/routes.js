@@ -76,6 +76,7 @@ class StreamMonstersRoutes {
     engine,
     progression = null,
     collection = null,
+    onboarding = null,
     battleMatchService = null,
     giftCatalogProvider,
     configProvider,
@@ -97,6 +98,7 @@ class StreamMonstersRoutes {
       new EggStageProjector({ store, now });
     this.progression = progression;
     this.collection = collection;
+    this.onboarding = onboarding;
     this.battleMatchService = battleMatchService;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
@@ -1849,7 +1851,12 @@ class StreamMonstersRoutes {
         titleKey: this.progression?.achievementTitleKey?.(achievement.achievement_key) || 'achievementUnknown'
       })),
       rank: this.progression?.getViewerSeason?.(resolvedUserId) || null,
-      dex: this.collection?.getCatalogState(resolvedUserId).dex || null
+      dex: this.collection?.getCatalogState(resolvedUserId).dex || null,
+      onboarding: this.onboarding?.getJourney?.(resolvedUserId) || {
+        completedSteps: [],
+        nextStep: 'egg_received',
+        complete: false
+      }
     };
   }
 

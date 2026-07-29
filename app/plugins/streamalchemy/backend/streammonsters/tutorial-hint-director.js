@@ -28,12 +28,61 @@ const EVENT_KINDS = Object.freeze({
   'streammonsters:monster_stat_prompt': 'stats'
 });
 
+const JOURNEY_HINT_KINDS = Object.freeze({
+  egg_received: 'adopt',
+  egg_hatched: 'hatch',
+  monster_selected: 'roster',
+  battle_joined: 'battle',
+  battle_completed: 'skills'
+});
+
+const JOURNEY_HINT_COPY = Object.freeze({
+  egg_received: Object.freeze({
+    titleKey: 'onboardingHintEggReceivedTitle',
+    bodyKey: 'onboardingHintEggReceivedBody',
+    title: 'Claim your first egg',
+    body: 'Use the shown command to adopt your first egg.'
+  }),
+  egg_hatched: Object.freeze({
+    titleKey: 'onboardingHintEggHatchedTitle',
+    bodyKey: 'onboardingHintEggHatchedBody',
+    title: 'Hatch your egg',
+    body: 'Use the shown command and egg slot when it is ready.'
+  }),
+  monster_selected: Object.freeze({
+    titleKey: 'onboardingHintMonsterSelectedTitle',
+    bodyKey: 'onboardingHintMonsterSelectedBody',
+    title: 'Choose your fighter',
+    body: 'Use the shown command and monster slot.'
+  }),
+  battle_joined: Object.freeze({
+    titleKey: 'onboardingHintBattleJoinedTitle',
+    bodyKey: 'onboardingHintBattleJoinedBody',
+    title: 'Join your first battle',
+    body: 'Use the shown command to enter the battle queue.'
+  }),
+  battle_completed: Object.freeze({
+    titleKey: 'onboardingHintBattleCompletedTitle',
+    bodyKey: 'onboardingHintBattleCompletedBody',
+    title: 'Finish your first battle',
+    body: 'Reply A, B, or C when your skill window opens.'
+  })
+});
+
 class TutorialHintDirector {
-  constructor({ getCommandReference = () => '', intervalSeconds = DEFAULT_INTERVAL_SECONDS } = {}) {
+  constructor({
+    getCommandReference = () => '',
+    getJourney = null,
+    intervalSeconds = DEFAULT_INTERVAL_SECONDS
+  } = {}) {
     this.getCommandReference = getCommandReference;
+    this.getJourney = typeof getJourney === 'function' ? getJourney : null;
     this.intervalMs = DEFAULT_INTERVAL_SECONDS * 1000;
     this.nextAllowedAtMs = 0;
     this.pendingKind = null;
+    this.pendingViewerId = null;
+    this.pendingStepKey = null;
+    this.pendingContextual = false;
     this.setIntervalSeconds(intervalSeconds);
   }
 
@@ -47,13 +96,53 @@ class TutorialHintDirector {
   }
 
   nextHint(state = {}, nowMs = Date.now()) {
-    const kind = EVENT_KINDS[String(state?.eventType || '')] || null;
-    if (kind) this.pendingKind = kind;
+    const eventKind = EVENT_KINDS[String(state?.eventType || '')] || null;
+    const viewerId = String(state?.viewerId || '').trim() || null;
+    let kind = eventKind;
+    let stepKey = null;
+    let contextual = false;
+    if (viewerId && this.getJourney) {
+      const journey = this.getJourney(viewerId) || {};
+      if (journey.complete || !journey.nextStep) {
+        contextual = eventKind === 'stats';
+        kind = contextual ? eventKind : null;
+      } else {
+        stepKey = String(journey.nextStep);
+        kind = JOURNEY_HINT_KINDS[stepKey] || null;
+      }
+    }
+    if (kind) {
+      this.pendingKind = kind;
+      this.pendingViewerId = viewerId;
+      this.pendingStepKey = stepKey;
+      this.pendingContextual = contextual;
+    }
     if (state?.critical || state?.criticalSequence) return null;
     if (!this.pendingKind || nowMs < this.nextAllowedAtMs) return null;
+    if (this.pendingViewerId && this.getJourney && !this.pendingContextual) {
+      const journey = this.getJourney(this.pendingViewerId) || {};
+      if (journey.complete || !journey.nextStep) {
+        this.clearPending();
+        return null;
+      }
+      this.pendingStepKey = String(journey.nextStep);
+      this.pendingKind = JOURNEY_HINT_KINDS[this.pendingStepKey] || null;
+      if (!this.pendingKind) {
+        this.clearPending();
+        return null;
+      }
+    }
     const nextKind = this.pendingKind;
+    const nextStepKey = this.pendingStepKey;
+    const isContextual = this.pendingContextual;
     this.pendingKind = null;
-    const definition = HINTS[nextKind];
+    this.pendingViewerId = null;
+    this.pendingStepKey = null;
+    this.pendingContextual = false;
+    const definition = {
+      ...HINTS[nextKind],
+      ...(nextStepKey ? JOURNEY_HINT_COPY[nextStepKey] : null)
+    };
     const command = Array.isArray(definition.responses)
       ? definition.responses.join(' / ')
       : String(this.getCommandReference(definition.command) || '').trim();
@@ -68,8 +157,17 @@ class TutorialHintDirector {
       body: definition.body,
       command,
       commands: Object.freeze([command]),
-      params: Object.freeze({ command })
+      params: Object.freeze({ command }),
+      ...(nextStepKey ? { stepKey: nextStepKey } : {}),
+      ...(isContextual ? { contextual: true } : {})
     });
+  }
+
+  clearPending() {
+    this.pendingKind = null;
+    this.pendingViewerId = null;
+    this.pendingStepKey = null;
+    this.pendingContextual = false;
   }
 }
 

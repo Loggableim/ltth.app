@@ -491,6 +491,127 @@ describe('Stream Monsters Rules v6 retention creator runtime', () => {
     expect(emit).not.toHaveBeenCalled();
     jest.useRealTimers();
   });
+
+  test('coalesces viewer-aware hints to the latest next incomplete journey action', () => {
+    const journeys = new Map([
+      ['viewer-a', {
+        completedSteps: ['egg_received'],
+        nextStep: 'egg_hatched',
+        complete: false
+      }],
+      ['viewer-b', {
+        completedSteps: ['egg_received', 'egg_hatched', 'monster_selected'],
+        nextStep: 'battle_joined',
+        complete: false
+      }]
+    ]);
+    const director = new TutorialHintDirector({
+      getCommandReference: command => `!${command}`,
+      getJourney: viewerId => journeys.get(viewerId)
+    });
+
+    expect(director.nextHint({
+      eventType: 'streammonsters:egg_ready',
+      viewerId: 'viewer-a',
+      criticalSequence: true
+    }, 1_000)).toBeNull();
+    expect(director.nextHint({
+      eventType: 'streammonsters:battle_match_found',
+      viewerId: 'viewer-b',
+      criticalSequence: true
+    }, 1_001)).toBeNull();
+
+    const hint = director.nextHint({}, 1_002);
+    expect(hint).toEqual(expect.objectContaining({
+      kind: 'battle',
+      stepKey: 'battle_joined',
+      titleKey: 'onboardingHintBattleJoinedTitle',
+      command: '!battle'
+    }));
+    expect(JSON.stringify(hint)).not.toMatch(/viewer-a|viewer-b|viewerId|user_id/);
+  });
+
+  test('re-evaluates pending viewer progress so a delayed hint never regresses', () => {
+    let journey = {
+      completedSteps: ['egg_received'],
+      nextStep: 'egg_hatched',
+      complete: false
+    };
+    const director = new TutorialHintDirector({
+      getCommandReference: command => `!${command}`,
+      getJourney: () => journey
+    });
+    director.nextHint({
+      eventType: 'streammonsters:egg_hatched',
+      viewerId: 'viewer-a',
+      criticalSequence: true
+    }, 1_000);
+    journey = {
+      completedSteps: ['egg_received', 'egg_hatched'],
+      nextStep: 'monster_selected',
+      complete: false
+    };
+
+    expect(director.nextHint({}, 1_001)).toEqual(expect.objectContaining({
+      kind: 'roster',
+      stepKey: 'monster_selected',
+      command: '!choose'
+    }));
+  });
+
+  test('keeps stat prompts contextual after battle completion without extending the journey', () => {
+    const director = new TutorialHintDirector({
+      getCommandReference: command => `!${command}`,
+      getJourney: () => ({
+        completedSteps: [
+          'egg_received',
+          'egg_hatched',
+          'monster_selected',
+          'battle_joined',
+          'battle_completed'
+        ],
+        nextStep: null,
+        complete: true
+      })
+    });
+
+    expect(director.nextHint({
+      eventType: 'streammonsters:battle_completed',
+      viewerId: 'viewer-a'
+    }, 1_000)).toBeNull();
+    expect(director.nextHint({
+      eventType: 'streammonsters:monster_stat_prompt',
+      viewerId: 'viewer-a'
+    }, 1_001)).toEqual(expect.objectContaining({
+      kind: 'stats',
+      contextual: true
+    }));
+  });
+
+  test('ships localized first-session journey copy in all four locales', () => {
+    const keys = [
+      'onboardingHintEggReceivedTitle',
+      'onboardingHintEggReceivedBody',
+      'onboardingHintEggHatchedTitle',
+      'onboardingHintEggHatchedBody',
+      'onboardingHintMonsterSelectedTitle',
+      'onboardingHintMonsterSelectedBody',
+      'onboardingHintBattleJoinedTitle',
+      'onboardingHintBattleJoinedBody',
+      'onboardingHintBattleCompletedTitle',
+      'onboardingHintBattleCompletedBody'
+    ];
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const translations = JSON.parse(fs.readFileSync(
+        path.join(pluginDir, 'locales', `${locale}.json`),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters;
+      keys.forEach(key => {
+        expect(translations[key]).toEqual(expect.any(String));
+        expect(translations[key].trim()).not.toHaveLength(0);
+      });
+    }
+  });
 });
 
 describe('Stream Monsters Rules v6 retention creator UI and locales', () => {

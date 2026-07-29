@@ -147,6 +147,13 @@ class StreamMonstersDatabase {
         best_battle_win_streak INTEGER NOT NULL DEFAULT 0
       );
 
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_onboarding (
+        user_id TEXT NOT NULL,
+        step_key TEXT NOT NULL,
+        completed_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (user_id, step_key)
+      );
+
       CREATE TABLE IF NOT EXISTS streammonsters_battles (
         battle_id TEXT PRIMARY KEY,
         seed TEXT NOT NULL,
@@ -1263,6 +1270,7 @@ class StreamMonstersDatabase {
         SELECT user_id FROM streammonsters_eggs WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_monsters WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_viewer_progress WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_viewer_onboarding WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_quests WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_achievements WHERE user_id = ?
         UNION ALL SELECT user_id FROM streammonsters_season_scores WHERE user_id = ?
@@ -1273,6 +1281,7 @@ class StreamMonstersDatabase {
       )
       LIMIT 1
     `).get(
+      userId,
       userId,
       userId,
       userId,

@@ -14,6 +14,9 @@ const StreamMonstersViewerActivityTracker = require(
 );
 const { normalizeIngressEventId } = require('./backend/streammonsters/ingress-event-id');
 const TutorialHintDirector = require('./backend/streammonsters/tutorial-hint-director');
+const ViewerOnboardingService = require(
+  './backend/streammonsters/viewer-onboarding-service'
+);
 const StreamMonstersPublicEventProjector = require(
   './backend/streammonsters/public-event-projector'
 );
@@ -147,6 +150,9 @@ class StreamAlchemyPlugin {
       assetRegistry: this.streamMonstersAssetRegistry
     });
     this.streamMonstersStore.initialize();
+    this.streamMonstersOnboarding = new ViewerOnboardingService({
+      store: this.streamMonstersStore
+    });
     this.streamMonstersPublicEventProjector =
       new StreamMonstersPublicEventProjector({ store: this.streamMonstersStore });
     this.streamMonstersProgression = new StreamMonstersProgressionService({
@@ -232,10 +238,13 @@ class StreamAlchemyPlugin {
     this.streamMonstersGCCELifecycleListeners = [];
     this.streamMonstersTutorialHintDirector = new TutorialHintDirector({
       getCommandReference: command => this.getStreamMonstersCommandReference(command),
+      getJourney: viewerId => this.streamMonstersOnboarding.getJourney(viewerId),
       intervalSeconds: this.config.streamMonsters.tutorialHintIntervalSeconds
     });
     this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
-      execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
+      execute: (context, commandName, args) => (
+        this.executeStreamMonstersOnboardingCommand(context, commandName, args)
+      ),
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       commandPrefix: this.streamMonstersCommandPrefix,
       resolveUserId: data => this.resolveStreamMonstersViewerId({
@@ -277,6 +286,7 @@ class StreamAlchemyPlugin {
       engine: this.streamMonstersEngine,
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
+      onboarding: this.streamMonstersOnboarding,
       battleMatchService: this.streamMonstersBattleMatchService,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
       gcceStateProvider: () => this.getStreamMonstersGCCEState(),
@@ -1357,10 +1367,101 @@ class StreamAlchemyPlugin {
     return correlationId;
   }
 
+  async executeStreamMonstersOnboardingCommand(context, commandName, args) {
+    const result = await this.streamMonstersChatCommands.execute(
+      context,
+      commandName,
+      args
+    );
+    const viewerId = context?.userId || context?.uniqueId || context?.username;
+    const command = String(commandName || '').trim().toLowerCase();
+    const status = String(result?.status || '').trim().toLowerCase();
+    let step = null;
+    if (
+      result?.success === true &&
+      command === 'choose' &&
+      ['selected', 'roster_locked'].includes(status)
+    ) {
+      step = 'monster_selected';
+    } else if (
+      result?.success === true &&
+      command === 'battle' &&
+      ['queued', 'reserved', 'active', 'started'].includes(status)
+    ) {
+      step = 'battle_joined';
+    }
+    if (step) {
+      this.streamMonstersOnboarding?.recordStep?.(
+        viewerId,
+        step,
+        Date.now()
+      );
+    }
+    return result;
+  }
+
+  streamMonstersBattleViewerIds(payload = {}) {
+    const viewerIds = new Set();
+    const matchId = String(payload.matchId || '').trim();
+    if (matchId) {
+      const match = this.streamMonstersBattleMatchService?.getMatch?.(matchId);
+      (match?.participants || []).forEach(participant => {
+        if (participant?.viewerId) viewerIds.add(String(participant.viewerId));
+      });
+    }
+    const battleId = String(
+      payload.battleId || payload.battle?.battleId || ''
+    ).trim();
+    if (battleId) {
+      const battle = this.streamMonstersStore?.getBattle?.(battleId);
+      if (battle?.user_a_id) viewerIds.add(String(battle.user_a_id));
+      if (battle?.user_b_id) viewerIds.add(String(battle.user_b_id));
+    }
+    return [...viewerIds];
+  }
+
+  recordStreamMonstersOnboardingEvent(eventType, payload = {}) {
+    const directSteps = {
+      'streammonsters:egg_spawned': 'egg_received',
+      'streammonsters:egg_hatched': 'egg_hatched'
+    };
+    const directStep = directSteps[eventType];
+    if (directStep && payload.userId) {
+      this.streamMonstersOnboarding?.recordStep?.(
+        payload.userId,
+        directStep,
+        Date.now()
+      );
+      return [String(payload.userId)];
+    }
+    if (eventType !== 'streammonsters:battle_completed') return [];
+    const viewerIds = this.streamMonstersBattleViewerIds(payload);
+    viewerIds.forEach(viewerId => {
+      this.streamMonstersOnboarding?.recordStep?.(
+        viewerId,
+        'battle_completed',
+        Date.now()
+      );
+    });
+    return viewerIds;
+  }
+
+  streamMonstersTutorialViewerId(eventType, payload = {}) {
+    if (payload.userId) return String(payload.userId);
+    if (
+      eventType === 'streammonsters:battle_match_found' ||
+      eventType === 'streammonsters:battle_completed'
+    ) {
+      return this.streamMonstersBattleViewerIds(payload)[0] || null;
+    }
+    return null;
+  }
+
   emitStreamMonsters(eventType, inputPayload = {}) {
     const payload = inputPayload && typeof inputPayload === 'object'
       ? inputPayload
       : {};
+    this.recordStreamMonstersOnboardingEvent(eventType, payload);
     const projector = this.streamMonstersPublicEventProjector ||
       new StreamMonstersPublicEventProjector({
         store: this.streamMonstersStore || null
@@ -1409,7 +1510,11 @@ class StreamAlchemyPlugin {
       ) {
         this.api.emit('streammonsters:battle_knockout', emitted);
       }
-      this.emitStreamMonstersTutorialHint(eventType, projector.isCritical(eventType));
+      this.emitStreamMonstersTutorialHint(
+        eventType,
+        projector.isCritical(eventType),
+        payload
+      );
     }
     this.logStructured('socket_emit', diagnostic, 'debug');
     const domainEvents = {
@@ -1430,13 +1535,18 @@ class StreamAlchemyPlugin {
     return emitted;
   }
 
-  emitStreamMonstersTutorialHint(eventType, critical) {
+  emitStreamMonstersTutorialHint(eventType, critical, payload = {}) {
     const director = this.streamMonstersTutorialHintDirector;
     if (!director || eventType === 'streammonsters:tutorial_hint') return null;
     if (this.config?.streamMonsters?.tutorialHintsEnabled === false) return null;
     director.setIntervalSeconds(this.config?.streamMonsters?.tutorialHintIntervalSeconds);
     const criticalSequence = Boolean(critical || this.streamMonstersTutorialHintFlushTimer);
-    const hint = director.nextHint({ eventType, criticalSequence }, Date.now());
+    const viewerId = this.streamMonstersTutorialViewerId(eventType, payload);
+    const hint = director.nextHint({
+      eventType,
+      criticalSequence,
+      ...(viewerId ? { viewerId } : {})
+    }, Date.now());
     if (hint) this.api.emit('streammonsters:tutorial_hint', hint);
     if (critical) this.scheduleStreamMonstersTutorialHintFlush();
     return hint;
