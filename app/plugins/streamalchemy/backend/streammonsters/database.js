@@ -1367,9 +1367,12 @@ class StreamMonstersDatabase {
       UPDATE streammonsters_free_egg_offers
       SET status = 'public', stage_state = 'public'
       WHERE ${hasStreamKey ? 'stream_key = ? AND ' : ''}
-        status = 'reserved' AND stage_state = 'reserved' AND reserved_until_ms <= ?
+        status = 'reserved'
+        AND stage_state = 'reserved'
+        AND reserved_until_ms <= ?
+        AND public_expires_at_ms > ?
       RETURNING *
-    `).all(...(hasStreamKey ? [streamKey, nowMs] : [nowMs]));
+    `).all(...(hasStreamKey ? [streamKey, nowMs, nowMs] : [nowMs, nowMs]));
     return released.sort((left, right) => (
       left.offered_at_ms - right.offered_at_ms ||
       left.offer_id.localeCompare(right.offer_id)
@@ -1386,8 +1389,10 @@ class StreamMonstersDatabase {
       UPDATE streammonsters_free_egg_offers
       SET status = 'expired', stage_state = 'expired'
       WHERE ${hasStreamKey ? 'stream_key = ? AND ' : ''}
-        status = 'public'
-        AND stage_state = 'public'
+        (
+          (status = 'public' AND stage_state = 'public')
+          OR (status = 'reserved' AND stage_state = 'reserved')
+        )
         AND public_expires_at_ms <= ?
       RETURNING *
     `).all(...(hasStreamKey ? [streamKey, nowMs] : [nowMs]));

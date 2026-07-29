@@ -276,6 +276,29 @@ describe('Stream Monsters free egg lifecycle reliability', () => {
     expect(FreeEggDropService.PUBLIC_WINDOW_MS).toBe(300_000);
   });
 
+  test('expires an overdue reserved offer without briefly publishing it', () => {
+    const subject = createSubject({ now: 0 });
+    const offered = subject.service.onFirstChat({
+      userId: 'viewer-a',
+      streamKey: 'creator:stream-current',
+      eventId: 'chat-a',
+      nowMs: 0
+    });
+    subject.emitted.splice(0);
+
+    subject.service.sweepAndRearm(360_000);
+
+    expect(subject.store.getFreeEggOffer(offered.offerId)).toEqual(
+      expect.objectContaining({
+        status: 'expired',
+        stage_state: 'expired'
+      })
+    );
+    expect(subject.emitted.map(entry => entry.event)).toEqual([
+      'streammonsters:egg_stage_removed'
+    ]);
+  });
+
   test('terminal disconnect expires offers while transient disconnect preserves them', async () => {
     const harness = createPluginApi();
     const plugin = new StreamAlchemyPlugin(harness.api);
@@ -337,6 +360,100 @@ describe('Stream Monsters free egg lifecycle reliability', () => {
         'creator:stream-other',
         'viewer-other'
       ).status).toBe('reserved');
+    } finally {
+      await plugin.destroy();
+      harness.sqlite.close();
+    }
+  });
+
+  test('ignores a delayed terminal disconnect from an older session without stream identity', async () => {
+    const harness = createPluginApi();
+    const plugin = new StreamAlchemyPlugin(harness.api);
+    await plugin.init();
+    try {
+      const sessionStarted = harness.events.find(
+        entry => entry.event === 'streamSessionStarted'
+      ).handler;
+      const disconnected = harness.events.find(
+        entry => entry.event === 'disconnected'
+      ).handler;
+      await sessionStarted({
+        username: 'creator',
+        streamSessionId: 2
+      });
+      plugin.streamMonstersFreeEggDrops.onFirstChat({
+        userId: 'viewer-current',
+        streamKey: 'creator:2',
+        eventId: 'chat-current',
+        nowMs: 1_000
+      });
+
+      await disconnected({
+        code: 4005,
+        wasLive: true,
+        isTransient: false,
+        source: 'eulerstream-websocket',
+        streamSessionId: 1
+      });
+
+      expect(plugin.streamMonstersStore.getFreeEggOfferBySource(
+        'creator:2',
+        'viewer-current'
+      )).toEqual(expect.objectContaining({
+        status: 'reserved',
+        stage_state: 'reserved'
+      }));
+    } finally {
+      await plugin.destroy();
+      harness.sqlite.close();
+    }
+  });
+
+  test('cleans a matching terminal session without stream identity only once', async () => {
+    const harness = createPluginApi();
+    const plugin = new StreamAlchemyPlugin(harness.api);
+    await plugin.init();
+    try {
+      const sessionStarted = harness.events.find(
+        entry => entry.event === 'streamSessionStarted'
+      ).handler;
+      const disconnected = harness.events.find(
+        entry => entry.event === 'disconnected'
+      ).handler;
+      await sessionStarted({
+        username: 'creator',
+        streamSessionId: 3
+      });
+      plugin.streamMonstersFreeEggDrops.onFirstChat({
+        userId: 'viewer-current',
+        streamKey: 'creator:3',
+        eventId: 'chat-current',
+        nowMs: 1_000
+      });
+      const cleanup = jest.spyOn(
+        plugin.streamMonstersFreeEggDrops,
+        'cleanupStream'
+      );
+      const terminal = {
+        code: 4005,
+        wasLive: true,
+        isTransient: false,
+        source: 'eulerstream-websocket',
+        streamSessionId: 3
+      };
+
+      await disconnected(terminal);
+      await disconnected(terminal);
+
+      expect(cleanup).toHaveBeenCalledTimes(1);
+      expect(cleanup).toHaveBeenCalledWith({ streamKey: 'creator:3' });
+      expect(plugin.streamMonstersStore.getFreeEggOfferBySource(
+        'creator:3',
+        'viewer-current'
+      )).toEqual(expect.objectContaining({
+        status: 'expired',
+        stage_state: 'expired'
+      }));
     } finally {
       await plugin.destroy();
       harness.sqlite.close();

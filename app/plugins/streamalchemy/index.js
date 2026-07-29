@@ -95,6 +95,7 @@ class StreamAlchemyPlugin {
     this.pluginDir = api.pluginDir || __dirname;
     this.config = null;
     this.retiredConfigArchive = {};
+    this.streamMonstersCurrentSessionId = null;
     this.streamMonstersTerminalDisconnectTokens = new Set();
     this.streamMonstersPublicEventProjector =
       new StreamMonstersPublicEventProjector();
@@ -1614,6 +1615,10 @@ class StreamAlchemyPlugin {
     }
     const event = this.streamMonstersProgression.startStreamSession({ streamKey });
     this.streamMonstersEngine.setStreamKey(streamKey);
+    this.streamMonstersCurrentSessionId = data.streamSessionId === null ||
+      data.streamSessionId === undefined
+      ? null
+      : String(data.streamSessionId);
     this.streamMonstersViewerActivity?.clear?.();
     this.emitStreamMonsters('streammonsters:stream_started', {
       creatorName: this.config.streamMonsters.creatorName || 'Creator',
@@ -1630,6 +1635,14 @@ class StreamAlchemyPlugin {
     const streamKey = this.streamMonstersEngine?.streamKey;
     if (!streamKey || streamKey === 'offline') return false;
     if (data.streamIdentity && String(data.streamIdentity) !== String(streamKey)) {
+      return false;
+    }
+    if (
+      data.streamSessionId !== null &&
+      data.streamSessionId !== undefined &&
+      this.streamMonstersCurrentSessionId !== null &&
+      String(data.streamSessionId) !== this.streamMonstersCurrentSessionId
+    ) {
       return false;
     }
     const sessionToken = [
