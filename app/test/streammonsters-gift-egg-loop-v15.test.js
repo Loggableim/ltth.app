@@ -2,6 +2,9 @@ const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const PublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
 
 function createLoop({
   now = 1_000,
@@ -223,6 +226,80 @@ describe('Stream Monsters 1.5 durable gift and egg loop', () => {
         remainingMs: 120_000
       })
     });
+  });
+
+  test('estimates a queued hatch from active lanes and queued durations and boosts', () => {
+    const loop = createLoop({ now:1_000, hatchDurationMs:10_000 });
+    for (let index = 0; index < 6; index += 1) {
+      loop.setNow(1_000 + index);
+      loop.engine.processGift({
+        userId:'viewer-a',
+        giftId:77,
+        giftName:'Team Heart',
+        eventKey:`queue-eta-${index}`
+      });
+    }
+    loop.setNow(2_000);
+    const active = loop.store.getViewerEggs('viewer-a', 'incubating');
+    const queued = loop.store.getQueuedEggs('viewer-a');
+    const updateActive = loop.sqlite.prepare(
+      'UPDATE streammonsters_eggs SET ready_at_ms = ? WHERE egg_id = ?'
+    );
+    [3_000, 5_000, 7_000].forEach((readyAtMs, index) => {
+      updateActive.run(readyAtMs, active[index].egg_id);
+    });
+    const updateQueued = loop.sqlite.prepare(`
+      UPDATE streammonsters_eggs
+      SET hatch_duration_ms = ?, boost_ms = ?
+      WHERE egg_id = ?
+    `);
+    updateQueued.run(5_000, 1_000, queued[0].egg_id);
+    updateQueued.run(7_000, 2_000, queued[1].egg_id);
+    updateQueued.run(9_000, 1_000, queued[2].egg_id);
+
+    const targetSlot = loop.store.getViewerEggs('viewer-a')
+      .findIndex(egg => egg.egg_id === queued[2].egg_id) + 1;
+    const result = loop.commands.execute(
+      { userId:'viewer-a' },
+      'hatch',
+      [String(targetSlot)]
+    );
+
+    expect(result).toEqual(expect.objectContaining({
+      success:false,
+      status:'egg_not_ready',
+      wait:{
+        slot:targetSlot,
+        state:'queued',
+        readyAtMs:15_000,
+        remainingMs:13_000,
+        queuePosition:3,
+        queue_position:3,
+        estimated:true
+      },
+      card:expect.objectContaining({
+        readyAtMs:15_000,
+        remainingMs:13_000,
+        queuePosition:3,
+        estimated:true
+      })
+    }));
+    expect(PublicEventProjector.projectChatResult(result)).toEqual(
+      expect.objectContaining({
+        wait:expect.objectContaining({
+          readyAtMs:15_000,
+          remainingMs:13_000,
+          queuePosition:3,
+          estimated:true
+        }),
+        card:expect.objectContaining({
+          readyAtMs:15_000,
+          remainingMs:13_000,
+          queuePosition:3,
+          estimated:true
+        })
+      })
+    );
   });
 
   test('expires an unclaimed egg exactly 24 hours after ready_at and cannot hatch it', () => {

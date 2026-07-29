@@ -956,7 +956,26 @@
       #card[data-presentation="egg-offer"] #hint {
         font-size:clamp(13px,2.8vw,19px);
       }
-      #egg-shelf { bottom:26%; height:66px; }
+      #egg-shelf {
+        bottom:26%; height:66px; display:grid;
+        grid-template-columns:minmax(0,auto) auto; grid-template-rows:18px 48px;
+        align-items:end; column-gap:5px; row-gap:0;
+      }
+      #egg-shelf [data-egg-slots] {
+        grid-column:1; grid-row:2; height:48px; align-items:flex-end;
+      }
+      #egg-shelf [data-egg-adopt-summary] {
+        position:static; top:auto; left:auto; grid-column:1 / -1; grid-row:1;
+        align-self:stretch; justify-self:center; box-sizing:border-box; height:18px;
+        max-height:18px; padding:1px 7px; transform:none; font-size:10px; line-height:12px;
+      }
+      #egg-shelf .egg-shelf-item {
+        width:clamp(38px,9.2vw,44px); height:48px;
+      }
+      #egg-shelf [data-egg-timing] { bottom:0px; padding:2px 5px; font-size:9px; }
+      #egg-shelf [data-egg-overflow] {
+        grid-column:2; grid-row:2; width:44px; height:48px;
+      }
       #art-wrap { width:160px; height:160px; margin:auto; }
       #card[data-presentation="hatch"] {
         top:clamp(92px,7vh,128px); right:auto; bottom:clamp(18px,2vh,34px); left:50%;
@@ -1377,11 +1396,6 @@
 
   const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
-  const appText = (key, fallback, params = {}) => {
-    const fullKey = `streammonsters.${key}`;
-    const translated = window.i18n?.t?.(fullKey, params);
-    return translated && translated !== fullKey ? translated : fallback;
-  };
   const overlayLocaleResolver = window.StreamMonstersOverlayRuntime
     .createOverlayLocaleResolver({
       config:{},
@@ -1596,21 +1610,15 @@
     clearTimeout:window.clearTimeout.bind(window),
     setInterval:window.setInterval.bind(window),
     clearInterval:window.clearInterval.bind(window),
-    labels:{
+    getLabels:() => ({
       incubating:text('eggShelfIncubating', 'Schlüpft in {time}'),
       queued:text('eggShelfQueued', 'Warteschlange #{position}'),
       ready:text('eggShelfReady', 'Bereit · {command}'),
       expired:text('eggShelfExpired', 'Verrottet'),
       reserved:text('eggShelfReserved', 'Reserviert · {time}'),
-      public:appText(
-        'eggShelfPublicCountdown',
-        text('eggShelfPublic', 'Gratis · {time}')
-      ),
-      adoptSummary:appText(
-        'eggShelfAdoptSummary',
-        '{count} gratis · {command}'
-      )
-    },
+      public:text('eggShelfPublicCountdown', 'Gratis · {time}'),
+      adoptSummary:text('eggShelfAdoptSummary', '{count} gratis · {command}')
+    }),
     getHatchReference:() => commandReference('hatch'),
     getAdoptReference:() => commandReference('adopt')
   }) || {
@@ -1702,6 +1710,7 @@
     const selected = overlayLocaleResolver.setLocale(locale);
     arenaView?.setLocale?.(selected);
     document.documentElement.lang = selected;
+    eggStageView?.render?.();
     return selected;
   };
   const criticalLocaleSequencer = window.StreamMonstersOverlayRuntime
@@ -2100,17 +2109,20 @@
       resetEvolutionPanel();
     }
   };
-  const showCriticalCard = (type, data, build, stable = {}) => showCard({
-    ...stable,
-    localized:{
-      key:window.StreamMonstersOverlayRuntime.statSequenceKey(data) ||
-        `${type}:${data?.eventId || data?.correlationId || 'event'}`,
-      deadlineMs:type === 'monster_stat_prompt' || type === 'stat_choice_opened'
-        ? data?.deadlineMs
-        : null,
-      build
-    }
-  });
+  const showCriticalCard = (type, data, build, stable = {}) => {
+    const { deadlineMs:presentationDeadlineMs = null, ...card } = stable;
+    return showCard({
+      ...card,
+      localized:{
+        key:window.StreamMonstersOverlayRuntime.statSequenceKey(data) ||
+          `${type}:${data?.eventId || data?.correlationId || 'event'}`,
+        deadlineMs:type === 'monster_stat_prompt' || type === 'stat_choice_opened'
+          ? data?.deadlineMs
+          : presentationDeadlineMs,
+        build
+      }
+    });
+  };
   const lifecycleFallbacks = Object.freeze({
     eggLifecycleGiftOwnedTitle:'Gift egg in inventory',
     eggLifecycleGiftOwnedCopy:'It belongs to you immediately. No adoption needed.',
@@ -2155,7 +2167,10 @@
       element:notice.element,
       progress:notice.kind === 'ready' ? 100 : 35,
       presentation:'egg-offer',
-      duration:notice.durationMs
+      duration:notice.durationMs,
+      ...(['free_reserved', 'free_public'].includes(notice.kind) ? {
+        deadlineMs:Date.now() + Math.max(1, Number(notice.durationMs) || 5_000)
+      } : {})
     }
   );
   const showHype = async data => {
@@ -2363,9 +2378,11 @@
             monsters:commandReference('monster')
           }
         };
-      const lifecycleNotice = window.StreamMonstersEggStageView
-        ?.buildEventPresentation?.(lifecycleType, data, lifecycleOptions) ??
-        window.StreamMonstersEggStageView
+      const eventPresentationBuilder = window.StreamMonstersEggStageView
+        ?.buildEventPresentation;
+      const lifecycleNotice = typeof eventPresentationBuilder === 'function'
+        ? eventPresentationBuilder(lifecycleType, data, lifecycleOptions)
+        : window.StreamMonstersEggStageView
           ?.buildLifecycleNotice?.(lifecycleType, data, lifecycleOptions);
       if (lifecycleNotice) {
         return showEggLifecycleNotice(type, data, lifecycleNotice);
@@ -2382,7 +2399,9 @@
           hint:commandReference('adopt')
         }), {
           presentation:'egg-offer',
-          duration:Math.max(12_000, Number(adoptionNotice.durationMs) || 0)
+          duration:Math.max(1, Number(adoptionNotice.durationMs) || 5_000),
+          deadlineMs:Date.now() +
+            Math.max(1, Number(adoptionNotice.durationMs) || 5_000)
         });
       }
       if (adoptionNotice?.kind === 'public') {
@@ -2397,7 +2416,9 @@
           hint:commandReference('adopt')
         }), {
           presentation:'egg-offer',
-          duration:Math.max(12_000, Number(adoptionNotice.durationMs) || 0)
+          duration:Math.max(1, Number(adoptionNotice.durationMs) || 5_000),
+          deadlineMs:Date.now() +
+            Math.max(1, Number(adoptionNotice.durationMs) || 5_000)
         });
       }
       if (!['egg_ready', 'egg_boosted'].includes(type)) return;

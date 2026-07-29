@@ -9,6 +9,9 @@ const OverlayRuntime = require(
 const ArenaDirector = require(
   '../plugins/streamalchemy/streammonsters-arena-director'
 );
+const EggStageView = require(
+  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+);
 
 const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
 const overlayHtml = fs.readFileSync(
@@ -28,24 +31,31 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 async function createPresenterHarness({
   primaryLocale = 'de',
   locales = [primaryLocale],
-  secondsPerLocale = 5
+  secondsPerLocale = 5,
+  useRealEggStage = false
 } = {}) {
   const socketHandlers = new Map();
   const timers = new Map();
   let timerId = 0;
+  let currentNowMs = 1_000;
   const arenaLocales = [];
   const arenaEvents = [];
   const eggEvents = [];
   const schedule = (callback, milliseconds = 0) => {
     const id = ++timerId;
-    timers.set(id, { callback, milliseconds:Number(milliseconds) || 0 });
+    const delayMs = Math.max(0, Number(milliseconds) || 0);
+    timers.set(id, {
+      callback,
+      milliseconds:delayMs,
+      dueAtMs:currentNowMs + delayMs
+    });
     return id;
   };
   const dom = new JSDOM(overlayHtml, {
     url:'http://localhost:3000/plugins/streamalchemy/streammonsters-overlay.html',
     runScripts:'dangerously',
     beforeParse(window) {
-      window.Date.now = () => 1_000;
+      window.Date.now = () => currentNowMs;
       window.setTimeout = schedule;
       window.clearTimeout = id => timers.delete(id);
       window.setInterval = () => ++timerId;
@@ -139,25 +149,42 @@ async function createPresenterHarness({
           setLocale:locale => arenaLocales.push(locale)
         })
       };
-      window.StreamMonstersEggStageView = {
-        createEggStageView:() => ({
-          applyEvent:(type, payload) => {
-            eggEvents.push([type, payload?.eventId]);
-            return true;
-          },
-          applySnapshot:() => ({ total:0, visible:[], overflow:null }),
-          destroy:() => {}
-        }),
-        buildAdoptionNotice:(type, payload) => (
-          type === 'free_egg_public'
-            ? {
-              kind:'public',
-              viewer:payload.playerName || '@viewer',
-              durationMs:8_000
+      window.StreamMonstersEggStageView = useRealEggStage
+        ? {
+            ...EggStageView,
+            createEggStageView:options => {
+              const view = EggStageView.createEggStageView({
+                ...options,
+                now:() => window.Date.now()
+              });
+              return {
+                ...view,
+                applyEvent:(type, payload) => {
+                  eggEvents.push([type, payload?.eventId]);
+                  return view.applyEvent(type, payload);
+                }
+              };
             }
-            : null
-        )
-      };
+          }
+        : {
+            createEggStageView:() => ({
+              applyEvent:(type, payload) => {
+                eggEvents.push([type, payload?.eventId]);
+                return true;
+              },
+              applySnapshot:() => ({ total:0, visible:[], overflow:null }),
+              destroy:() => {}
+            }),
+            buildAdoptionNotice:(type, payload) => (
+              type === 'free_egg_public'
+                ? {
+                  kind:'public',
+                  viewer:payload.playerName || '@viewer',
+                  durationMs:8_000
+                }
+                : null
+            )
+          };
       window.StreamMonstersChatView = {
         createChatView:() => ({ show:async () => {} }),
         displayName:(payload, fallback) => (
@@ -184,10 +211,13 @@ async function createPresenterHarness({
     locale:dom.window.document.documentElement.lang
   });
   const runNextTimer = async () => {
-    const next = timers.entries().next().value;
+    const next = [...timers.entries()].sort((left, right) => (
+      left[1].dueAtMs - right[1].dueAtMs || left[0] - right[0]
+    ))[0];
     if (!next) return false;
     const [id, timer] = next;
     timers.delete(id);
+    currentNowMs = Math.max(currentNowMs, timer.dueAtMs);
     timer.callback();
     for (let attempt = 0; attempt < 5; attempt += 1) await flush();
     return true;
@@ -211,6 +241,16 @@ async function createPresenterHarness({
     arenaEvents,
     eggEvents,
     card,
+    now:() => currentNowMs,
+    shelf:() => ({
+      total:Number(
+        dom.window.document.getElementById('egg-shelf')?.dataset.total || 0
+      ),
+      timing:dom.window.document.querySelector('[data-egg-timing]')?.textContent || '',
+      summary:dom.window.document.querySelector(
+        '[data-egg-adopt-summary]:not([hidden])'
+      )?.textContent || ''
+    }),
     emit,
     advanceUntil,
     runNextTimer,
@@ -450,6 +490,122 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
       expect(result.title).toContain('@alpha');
       expect(result.title).toContain('Ashfang');
       expect(result.title).toContain('+1');
+    } finally {
+      harness.close();
+    }
+  });
+
+  test('keeps egg_landed on the shelf without opening a fallback card', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'de',
+      locales:['de', 'en'],
+      secondsPerLocale:5,
+      useRealEggStage:true
+    });
+    try {
+      const card = await harness.emit('streammonsters:egg_landed', {
+        eventId:'gift-landed-shelf-only',
+        eggStage:{
+          visualId:'gift-landed-shelf-only',
+          displayName:'@alpha',
+          element:'Ember',
+          variant:'standard',
+          provenance:'gift',
+          ownershipState:'owned',
+          adoptionStatus:'owned',
+          adoptable:false,
+          state:'incubating',
+          queuePosition:0,
+          timing:{ landedAtMs:1_000, readyAtMs:91_000 }
+        }
+      });
+
+      expect(harness.shelf().total).toBe(1);
+      expect(card.visible).toBe(false);
+    } finally {
+      harness.close();
+    }
+  });
+
+  test('updates the live shelf locale and shares one five-second egg-offer deadline', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'de',
+      locales:['de', 'en'],
+      secondsPerLocale:5,
+      useRealEggStage:true
+    });
+    const startedAtMs = harness.now();
+    try {
+      const first = await harness.emit('streammonsters:free_egg_public', {
+        eventId:'public-offer-five-seconds',
+        playerName:'@alpha',
+        eggStage:{
+          visualId:'public-offer-five-seconds',
+          displayName:'@alpha',
+          element:'Lunar',
+          variant:'standard',
+          provenance:'free',
+          ownershipState:'shared',
+          adoptionStatus:'public',
+          adoptable:true,
+          state:'public',
+          queuePosition:0,
+          timing:{ landedAtMs:1_000, expiresAtMs:61_000 }
+        }
+      });
+
+      expect(first.visible).toBe(true);
+      expect(first.locale).toBe('de');
+      expect(harness.shelf().timing).toMatch(/^Frei /);
+      expect(harness.shelf().summary).toMatch(/^1 frei /);
+
+      expect(await harness.advanceUntil(state => (
+        state.visible && state.locale === 'en'
+      ))).toBe(true);
+      expect(harness.shelf().timing).toMatch(/^Free /);
+      expect(harness.shelf().summary).toMatch(/^1 free /);
+
+      expect(await harness.advanceUntil(state => !state.visible)).toBe(true);
+      expect(harness.now() - startedAtMs).toBe(5_000);
+    } finally {
+      harness.close();
+    }
+  });
+
+  test('shares one five-second reserved-offer deadline across both locales', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'de',
+      locales:['de', 'en'],
+      secondsPerLocale:5,
+      useRealEggStage:true
+    });
+    const startedAtMs = harness.now();
+    try {
+      const first = await harness.emit('streammonsters:free_egg_reserved', {
+        eventId:'reserved-offer-five-seconds',
+        playerName:'@alpha',
+        eggStage:{
+          visualId:'reserved-offer-five-seconds',
+          displayName:'@alpha',
+          element:'Grove',
+          variant:'standard',
+          provenance:'free',
+          ownershipState:'shared',
+          adoptionStatus:'reserved',
+          adoptable:true,
+          state:'reserved',
+          queuePosition:0,
+          timing:{ landedAtMs:1_000, publicAtMs:61_000 }
+        }
+      });
+
+      expect(first.visible).toBe(true);
+      expect(first.locale).toBe('de');
+      expect(await harness.advanceUntil(state => (
+        state.visible && state.locale === 'en'
+      ))).toBe(true);
+      expect(await harness.advanceUntil(state => !state.visible)).toBe(true);
+      expect(harness.now() - startedAtMs).toBe(5_000);
     } finally {
       harness.close();
     }

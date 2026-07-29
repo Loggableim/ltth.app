@@ -478,7 +478,10 @@
     const now = options.now || (() => Date.now());
     const schedule = options.setTimeout || setTimeout;
     const cancel = options.clearTimeout || clearTimeout;
-    const labels = options.labels || {};
+    const staticLabels = options.labels || {};
+    const getLabels = typeof options.getLabels === 'function'
+      ? options.getLabels
+      : () => staticLabels;
     const getHatchReference = options.getHatchReference || (() => '!hatch');
     const getAdoptReference = options.getAdoptReference || (() => '!adopt');
     const reducedMotion = Boolean(options.reducedMotion);
@@ -488,6 +491,11 @@
     let rotationIndex = 0;
     let rotationTimer = null;
     let countdownTimer = null;
+
+    function currentLabels() {
+      const resolved = getLabels();
+      return resolved && typeof resolved === 'object' ? resolved : staticLabels;
+    }
 
     function safeImageUrl(value) {
       const url = boundedText(value, 512);
@@ -533,7 +541,7 @@
       timing.dataset.eggTiming = '';
       timing.textContent = shelfTiming(egg, {
         nowMs: now(),
-        labels,
+        labels:currentLabels(),
         hatchReference: getHatchReference(),
         adoptReference: getAdoptReference()
       });
@@ -601,7 +609,7 @@
       if (timing) {
         timing.textContent = shelfTiming(egg, {
           nowMs: now(),
-          labels,
+          labels:currentLabels(),
           hatchReference: getHatchReference(),
           adoptReference: getAdoptReference()
         });
@@ -650,7 +658,7 @@
       adoptSummary.hidden = model.adoptable < 1;
       adoptSummary.textContent = model.adoptable > 0
         ? replaceTokens(
-            labels.adoptSummary || '{count} free · {command}',
+            currentLabels().adoptSummary || '{count} free · {command}',
             {
               count: model.adoptable,
               command: getAdoptReference()

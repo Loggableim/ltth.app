@@ -544,6 +544,8 @@
           "eggShelfExpired": "Podrido",
           "eggShelfReserved": "Reservado · {time}",
           "eggShelfPublic": "Gratis · {command}",
+          "eggShelfPublicCountdown": "Libre · {time}",
+          "eggShelfAdoptSummary": "{count} gratis · {command}",
           "tutorialHintsEnabled": "Consejos tutoriales en el overlay",
           "tutorialHintIntervalSeconds": "Intervalo de consejos (segundos)",
           "tutorialHintHelp": "Los consejos aparecen solo en el overlay y usan el prefijo GCCE activo.",

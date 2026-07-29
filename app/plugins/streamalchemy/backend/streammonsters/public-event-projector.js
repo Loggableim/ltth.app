@@ -356,7 +356,8 @@ function projectWait(wait = null) {
     queuePosition: Math.max(
       0,
       finiteNumber(wait.queuePosition ?? wait.queue_position, 0)
-    )
+    ),
+    ...(wait.estimated === true ? { estimated:true } : {})
   };
 }
 

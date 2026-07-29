@@ -159,6 +159,48 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     dom.window.close();
   });
 
+  test('resolves shelf labels again on every render', () => {
+    const dom = new JSDOM(`
+      <section id="egg-shelf">
+        <div data-egg-slots></div>
+        <div data-egg-overflow hidden></div>
+        <div data-egg-adopt-summary hidden></div>
+      </section>
+    `);
+    let locale = 'de';
+    const labels = {
+      de:{ public:'Frei {time}', adoptSummary:'{count} frei {command}' },
+      en:{ public:'Free {time}', adoptSummary:'{count} free {command}' }
+    };
+    const view = EggStageView.createEggStageView({
+      document:dom.window.document,
+      now:() => 10_000,
+      viewportWidth:() => 477,
+      getLabels:() => labels[locale],
+      getAdoptReference:() => '!adopt'
+    });
+    view.applySnapshot([egg('dynamic-locale', {
+      provenance:'free',
+      state:'public',
+      adoptionStatus:'public',
+      adoptable:true,
+      timing:{ landedAtMs:1_000, expiresAtMs:70_000 }
+    })]);
+    expect(dom.window.document.querySelector('[data-egg-timing]').textContent)
+      .toBe('Frei 01:00');
+    expect(dom.window.document.querySelector('[data-egg-adopt-summary]').textContent)
+      .toBe('1 frei !adopt');
+
+    locale = 'en';
+    view.render();
+    expect(dom.window.document.querySelector('[data-egg-timing]').textContent)
+      .toBe('Free 01:00');
+    expect(dom.window.document.querySelector('[data-egg-adopt-summary]').textContent)
+      .toBe('1 free !adopt');
+    view.destroy();
+    dom.window.close();
+  });
+
   test('removes expired eggs from the shared model', () => {
     const model = EggStageView.buildShelfModel([
       egg('expired', { state: 'expired' }),
@@ -257,13 +299,39 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       rule.selector === '#card[data-presentation="egg-offer"]'
     ));
     const rootRule = portraitRules.find(rule => rule.selector === ':root');
+    const summaryRule = portraitRules.find(rule => (
+      rule.selector === '#egg-shelf [data-egg-adopt-summary]'
+    ));
+    const timingRule = portraitRules.find(rule => (
+      rule.selector === '#egg-shelf [data-egg-timing]'
+    ));
+    const slotsRule = portraitRules.find(rule => (
+      rule.selector === '#egg-shelf [data-egg-slots]'
+    ));
 
     expect(rootRule?.style.getPropertyValue('--egg-shelf-lane-height')).toBe('66px');
     expect(shelfRule?.style.bottom).toBe('26%');
     expect(shelfRule?.style.height).toBe('66px');
+    expect(shelfRule?.style.display).toBe('grid');
+    expect(shelfRule?.style['grid-template-rows']).toBe('18px 48px');
+    expect(slotsRule?.style['grid-row']).toBe('2');
+    expect(summaryRule?.style.position).toBe('static');
+    expect(summaryRule?.style.top).toBe('auto');
+    expect(summaryRule?.style.transform).toBe('none');
+    expect(summaryRule?.style['grid-row']).toBe('1');
+    expect(timingRule?.style.bottom).toBe('0px');
     expect(compactCardRule?.style['min-height']).toBe('250px');
     expect(offerRule?.style['min-height']).toBe('0px');
     expect(offerRule?.style.top).toBe('7%');
+
+    const viewport = { width:477, height:829 };
+    const shelfBottom = viewport.height * 0.74;
+    const shelfTop = shelfBottom - Number.parseFloat(shelfRule.style.height);
+    const chatSafeBoundary = viewport.height * 0.74;
+    expect(viewport.width).toBe(477);
+    expect(shelfTop).toBeCloseTo(547.46, 2);
+    expect(shelfBottom).toBeCloseTo(chatSafeBoundary, 5);
+    expect(shelfTop + 18 + 48).toBeCloseTo(chatSafeBoundary, 5);
 
     const battleRule = portraitRules.find(rule => rule.selector === '#battle');
     expect(battleRule?.style.inset).toBe('0 0 26%');
@@ -294,6 +362,18 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       ]) {
         expect(catalog?.[key]).toEqual(expect.any(String));
         expect(catalog[key].trim()).not.toBe('');
+      }
+
+      const pluginCatalog = JSON.parse(fs.readFileSync(path.join(
+        process.cwd(),
+        'plugins',
+        'streamalchemy',
+        'locales',
+        `${locale}.json`
+      ), 'utf8')).plugins.streamalchemy.ui.monsters;
+      for (const key of ['eggShelfPublicCountdown', 'eggShelfAdoptSummary']) {
+        expect(pluginCatalog?.[key]).toEqual(expect.any(String));
+        expect(pluginCatalog[key].trim()).not.toBe('');
       }
     }
   );

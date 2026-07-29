@@ -366,6 +366,54 @@ class StreamMonstersEngine {
     return ready;
   }
 
+  estimateQueuedEggWait(userId, targetEgg, {
+    nowMs = this.now(),
+    queuedEggs = null
+  } = {}) {
+    const currentMs = Number(nowMs) || 0;
+    const durationMs = egg => Math.max(
+      0,
+      (Number(egg?.hatch_duration_ms) || 0) -
+        (Number(egg?.boost_ms) || 0)
+    );
+    const activeReadyAtMs = egg => {
+      if (
+        egg?.ready_at_ms !== null &&
+        egg?.ready_at_ms !== undefined &&
+        Number.isFinite(Number(egg.ready_at_ms))
+      ) {
+        return Math.max(currentMs, Number(egg.ready_at_ms));
+      }
+      const startedAtMs = Number(
+        egg?.incubating_at_ms ?? egg?.created_at_ms
+      ) || currentMs;
+      return Math.max(currentMs, startedAtMs + durationMs(egg));
+    };
+    const lanes = this.store.getViewerEggs(userId, 'incubating')
+      .map(activeReadyAtMs)
+      .sort((left, right) => left - right)
+      .slice(0, ACTIVE_INCUBATOR_SLOTS);
+    while (lanes.length < ACTIVE_INCUBATOR_SLOTS) lanes.push(currentMs);
+
+    const queue = Array.isArray(queuedEggs)
+      ? queuedEggs
+      : this.store.getQueuedEggs(userId);
+    for (const queuedEgg of queue) {
+      lanes.sort((left, right) => left - right);
+      const availableAtMs = Math.max(currentMs, lanes.shift() ?? currentMs);
+      const readyAtMs = availableAtMs + durationMs(queuedEgg);
+      lanes.push(readyAtMs);
+      if (queuedEgg.egg_id === targetEgg?.egg_id) {
+        return {
+          readyAtMs,
+          remainingMs:Math.max(0, readyAtMs - currentMs),
+          estimated:true
+        };
+      }
+    }
+    return null;
+  }
+
   hatchEgg(userId, slot = null, { autoHatch = false } = {}) {
     return this.store.runInTransaction(() => {
       const visibleEggs = this.store.getViewerEggs(userId)
@@ -391,18 +439,28 @@ class StreamMonstersEngine {
         throw error;
       }
       if (egg.state !== 'ready') {
-        const queued = egg.state === 'queued'
-          ? this.store.getQueuedEggs(userId).find(entry => entry.egg_id === egg.egg_id)
+        const currentMs = this.now();
+        const queuedEggs = egg.state === 'queued'
+          ? this.store.getQueuedEggs(userId)
+          : [];
+        const queued = queuedEggs.find(entry => entry.egg_id === egg.egg_id);
+        const queuedWait = queued
+          ? this.estimateQueuedEggWait(userId, egg, {
+              nowMs:currentMs,
+              queuedEggs
+            })
           : null;
+        const readyAtMs = queuedWait?.readyAtMs ?? egg.ready_at_ms;
         const error = new Error('STREAM_MONSTERS_EGG_NOT_READY');
         error.code = 'STREAM_MONSTERS_EGG_NOT_READY';
         error.wait = {
           slot: index + 1,
           state: egg.state,
-          readyAtMs: egg.ready_at_ms,
-          remainingMs: egg.ready_at_ms === null
+          readyAtMs,
+          remainingMs: readyAtMs === null
             ? null
-            : Math.max(0, egg.ready_at_ms - this.now()),
+            : Math.max(0, readyAtMs - currentMs),
+          ...(queuedWait ? { estimated:true } : {}),
           ...(queued ? {
             queuePosition: Number(queued.queue_position) || 1,
             queue_position: Number(queued.queue_position) || 1

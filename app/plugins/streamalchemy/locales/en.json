@@ -544,6 +544,8 @@
           "eggShelfExpired": "Rotten",
           "eggShelfReserved": "Reserved · {time}",
           "eggShelfPublic": "Free · {command}",
+          "eggShelfPublicCountdown": "Free · {time}",
+          "eggShelfAdoptSummary": "{count} free · {command}",
           "tutorialHintsEnabled": "Overlay tutorial hints",
           "tutorialHintIntervalSeconds": "Hint interval (seconds)",
           "tutorialHintHelp": "Hints appear only in the overlay and use the active GCCE prefix.",
