@@ -239,6 +239,11 @@ describe('Official plugin store registry', () => {
 
     const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.11.1.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
+    assert.strictEqual(
+      digest,
+      '46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60',
+      'the historical Stream Monsters 1.11.1 archive must remain byte-identical'
+    );
     assert.strictEqual(storePlugin.sha256, digest);
 
     const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
