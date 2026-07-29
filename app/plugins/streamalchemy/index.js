@@ -23,16 +23,18 @@ const StreamMonstersAssetRegistry = require('./backend/streammonsters/asset-regi
 const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
 const { normalizeGiftName, isHeartMeGift } = require('./backend/streammonsters/gift-name');
 const { avatarProxyReference } = require('./backend/streammonsters/avatar-proxy');
+const PRODUCT_CONTRACT = require('./product-contract.json');
 
 const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 8;
-const DEFAULT_HATCH_DURATION_MS = 90_000;
+const STREAM_MONSTERS_RULES_VERSION = PRODUCT_CONTRACT.rules.version;
+const DEFAULT_HATCH_DURATION_MS = PRODUCT_CONTRACT.defaults.hatchDurationMs;
 const DEFAULT_GAMEPLAY_PACE = 'arcade-rally';
-const DEFAULT_PORTRAIT_BATTLE_MODE = 'takeover-74';
+const DEFAULT_PORTRAIT_BATTLE_MODE =
+  PRODUCT_CONTRACT.defaults.portraitBattleMode;
 const INCUBATION_PRESETS_MS = Object.freeze([
   30_000,
   60_000,

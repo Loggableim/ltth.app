@@ -207,7 +207,7 @@ describe('Official plugin store registry', () => {
     );
   });
 
-  it('publishes Stream Monsters 1.11.1 stable for LTTH 1.4.1 with source-identical release assets and keeps earlier archives unchanged', async () => {
+  it('keeps Stream Monsters 1.11.1 stable for LTTH 1.4.1 while the next source release is prepared', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
@@ -242,15 +242,17 @@ describe('Official plugin store registry', () => {
     assert.strictEqual(storePlugin.sha256, digest);
 
     const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
-    const sourceFiles = listSourceFiles(sourceDir).sort();
-    assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
+    assert(entries.includes('plugin.json'));
+    assert(!entries.includes('product-contract.json'), 'the historical archive must not be rewritten');
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
-    assert.deepStrictEqual(packagedManifest, sourceManifest);
-    await assertPackagedFilesMatchGitSource(
-      packagePath,
-      'app/plugins/streamalchemy',
-      sourceFiles
-    );
+    assert.strictEqual(packagedManifest.id, sourceManifest.id);
+    assert.strictEqual(packagedManifest.version, '1.11.1');
+    const productContract = JSON.parse(fs.readFileSync(
+      path.join(sourceDir, 'product-contract.json'),
+      'utf8'
+    ));
+    assert.strictEqual(productContract.product.currentVersion, packagedManifest.version);
+    assert.strictEqual(productContract.product.nextVersion, '1.12.0');
   });
 
   it('publishes the Schnorrbecher package with a matching manifest and checksum', async () => {
@@ -347,6 +349,22 @@ describe('Official plugin store registry', () => {
     assert(streamMonsters, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(streamMonsters.channel, 'stable');
     assert(streamMonsters.badges.includes('subscriber-only'));
+    assert.strictEqual(streamMonsters.access?.type, 'subscriber');
+    assert.deepStrictEqual(streamMonsters.pricing, {
+      type: 'free',
+      amount: 0,
+      currency: 'EUR'
+    });
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      assert(
+        streamMonsters.access?.description?.[locale],
+        `Stream Monsters must explain subscriber access in ${locale}`
+      );
+    }
+    assert.match(
+      streamMonsters.access.description.en,
+      /Included with an active LTTH subscription/
+    );
     assert(!streamMonsters.badges.includes('working-beta'));
   });
 

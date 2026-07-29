@@ -20,6 +20,22 @@ function renderGuide(locale = 'de') {
 }
 
 describe('Stream Monsters public Rules v8 tutorial', () => {
+  test.each(['de', 'en', 'es', 'fr'])(
+    'uses the Arcade Clash product label and subscriber positioning in %s',
+    (locale) => {
+      const document = renderGuide(locale);
+      const arena = document.getElementById('arena').textContent;
+      const page = document.body.textContent;
+
+      expect(arena).toContain('Arcade Clash');
+      expect(arena).not.toContain('Jackpot Clash');
+      expect(page).toContain(
+        JSON.parse(read('app/plugins/streamalchemy/product-contract.json'))
+          .copy.subscription[locale]
+      );
+    }
+  );
+
   test('explains the current incubation, free-egg and auto-hatch defaults', () => {
     const document = renderGuide('de');
     const rules = document.getElementById('rules').textContent;

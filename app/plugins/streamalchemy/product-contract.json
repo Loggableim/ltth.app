@@ -1,0 +1,49 @@
+{
+  "contractVersion": 1,
+  "product": {
+    "id": "streamalchemy",
+    "name": "Stream Monsters",
+    "currentVersion": "1.11.1",
+    "nextVersion": "1.12.0",
+    "packageFilename": "streamalchemy-1.11.1.zip",
+    "nextPackageFilename": "streamalchemy-1.12.0.zip"
+  },
+  "rules": {
+    "version": 8,
+    "arenaLabel": "Arcade Clash"
+  },
+  "access": {
+    "type": "subscriber",
+    "badge": "subscriber-only",
+    "pricing": {
+      "type": "free",
+      "amount": 0,
+      "currency": "EUR"
+    }
+  },
+  "defaults": {
+    "hatchDurationMs": 90000,
+    "portraitBattleMode": "takeover-74",
+    "portraitProfile": "tiktok-live-studio-1080x1920"
+  },
+  "locales": [
+    "de",
+    "en",
+    "es",
+    "fr"
+  ],
+  "copy": {
+    "description": {
+      "de": "Portrait Arcade Rally mit 90-Sekunden-Standard für neue Setups, zweisprachigen Overlay-Hinweisen, 74/26-TikTok-Safe-Arena, K.-o.-Kämpfen nach Rules v8, Arena Collapse, elementspezifischen WebGPU-Effekten, 72 gebündelten Furry-Formen und fairem permanentem Fortschritt.",
+      "en": "Portrait Arcade Rally with a 90-second fresh default, bilingual overlay guidance, a 74/26 TikTok-safe arena, K.O.-only Rules v8 battles, Arena Collapse, element-specific WebGPU effects, 72 bundled Furry forms, and fair permanent progression.",
+      "es": "Portrait Arcade Rally con 90 segundos por defecto en configuraciones nuevas, guía bilingüe, arena 74/26 segura para TikTok, combates Rules v8 hasta K.O., Arena Collapse, efectos WebGPU elementales, 72 formas Furry y progreso permanente justo.",
+      "fr": "Portrait Arcade Rally avec 90 secondes par défaut pour les nouvelles configurations, guide bilingue, arène TikTok 74/26, combats Rules v8 jusqu’au K.-O., Arena Collapse, effets WebGPU élémentaires, 72 formes Furry et progression permanente équitable."
+    },
+    "subscription": {
+      "de": "In einem aktiven LTTH-Abonnement enthalten. Kein separater Plugin-Kauf.",
+      "en": "Included with an active LTTH subscription. No separate plugin purchase.",
+      "es": "Incluido con una suscripción LTTH activa. No requiere comprar el plugin por separado.",
+      "fr": "Inclus avec un abonnement LTTH actif. Aucun achat séparé du plugin."
+    }
+  }
+}
