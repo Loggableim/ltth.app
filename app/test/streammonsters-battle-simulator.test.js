@@ -198,9 +198,14 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
     expect(first.templateResults).toHaveLength(24);
     expect(first.elementResults).toHaveLength(6);
     expect(first.battleCount).toBe(5_184);
-    expect(first.resolvedBattleCount + first.guardBoundCount).toBe(first.battleCount);
+    expect(
+      first.resolvedBattleCount +
+      first.doubleKnockoutCount +
+      first.guardBoundCount
+    ).toBe(first.battleCount);
     expect(first.illegalChoiceFallbackCount).toBe(0);
-    expect(first.guardBoundRate).toBeLessThanOrEqual(0.16);
+    expect(first.guardBoundRate).toBeLessThanOrEqual(0.05);
+    expect(first.doubleKnockoutRate).toBeLessThanOrEqual(0.05);
     first.templateResults.forEach(result => {
       expect(result.samples).toBeGreaterThan(0);
       expect(result.wins + result.losses + result.draws).toBe(result.samples);
@@ -226,12 +231,17 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
       battleCount: 20_736,
       participantSampleCount: 41_472
     }));
-    expect(report.resolvedBattleCount + report.guardBoundCount)
+    expect(
+      report.resolvedBattleCount +
+      report.doubleKnockoutCount +
+      report.guardBoundCount
+    )
       .toBe(report.battleCount);
     const sampleResolution = 0.5 / Math.min(
       ...report.templateResults.map(result => result.samples)
     );
-    expect(report.guardBoundRate).toBeLessThanOrEqual(0.16);
+    expect(report.guardBoundRate).toBeLessThanOrEqual(0.05);
+    expect(report.doubleKnockoutRate).toBeLessThanOrEqual(0.05);
     expect(report.maxTemplateDeviation).toBeLessThanOrEqual(
       0.05 + sampleResolution
     );

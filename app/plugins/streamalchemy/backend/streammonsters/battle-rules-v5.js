@@ -4,9 +4,13 @@ const {
   V6_ELEMENT_ADVANTAGE_PAIRS,
   V6_ELEMENT_ADVANTAGE_DAMAGE,
   V6_SKILL_CATALOG,
+  V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING,
   resolveStageSkill
 } = require('./catalog');
 const { elementAdvantage } = require('./battle-rules-v3');
+const {
+  arenaCollapseRecoveryFactor
+} = require('./battle-rules-v8');
 
 const RULES_VERSION = 5;
 const V6_RULES_VERSION = 6;
@@ -44,25 +48,50 @@ function addCharge(state, amount) {
   state.charge = Math.min(100, state.charge + Math.max(0, amount));
 }
 
-function addShield(state, amount, outcomes, { arenaCollapse = false } = {}) {
+function addShield(state, amount, outcomes, {
+  arenaCollapse = false,
+  arenaCollapseRound = 0
+} = {}) {
   const requested = Math.max(0, Math.round(amount));
-  const gained = arenaCollapse ? Math.floor(requested / 2) : requested;
+  const factor = arenaCollapseRound
+    ? arenaCollapseRecoveryFactor(arenaCollapseRound, 'shield')
+    : (arenaCollapse ? 0.5 : 1);
+  const gained = Math.floor(requested * factor);
   state.shield += gained;
   outcomes.push({
     type: 'shield',
     requested,
     amount: gained,
-    ...(arenaCollapse
-      ? { arenaCollapseReduction: requested - gained }
+    ...(factor < 1
+      ? {
+          arenaCollapseFactor: factor,
+          arenaCollapseReduction: requested - gained
+        }
       : {})
   });
 }
 
-function heal(state, amount, outcomes, type = 'heal') {
+function heal(state, amount, outcomes, type = 'heal', {
+  arenaCollapseRound = 0
+} = {}) {
   const requested = Math.max(0, Math.round(amount));
+  const factor = arenaCollapseRound
+    ? arenaCollapseRecoveryFactor(arenaCollapseRound, 'heal')
+    : 1;
+  const available = Math.round(requested * factor);
   const before = state.hp;
-  state.hp = Math.min(state.maxHp, state.hp + requested);
-  outcomes.push({ type, requested, amount: state.hp - before });
+  state.hp = Math.min(state.maxHp, state.hp + available);
+  outcomes.push({
+    type,
+    requested,
+    amount: state.hp - before,
+    ...(factor < 1
+      ? {
+          arenaCollapseFactor: factor,
+          arenaCollapseReduction: requested - available
+        }
+      : (arenaCollapseRound ? { arenaCollapseFactor: factor } : {}))
+  });
 }
 
 function damageFor(
@@ -70,7 +99,8 @@ function damageFor(
   target,
   effect,
   disableElementAdvantage = false,
-  rulesVersion = RULES_VERSION
+  rulesVersion = RULES_VERSION,
+  roundingRoll = null
 ) {
   const might = Math.max(0, Number(fighter.stats?.might) || 0);
   const guard = Math.max(0, Number(target.stats?.guard) || 0);
@@ -85,10 +115,22 @@ function damageFor(
         : 3
     )
     : 0;
-  return Math.max(
-    1,
-    Math.round(effect.power + (might * 0.6) - (guard * 0.25) - weakened + elementBonus)
-  );
+  const levelOneElementBonus = rulesVersion >= V8_RULES_VERSION &&
+    Math.max(1, Number(fighter.level) || 1) === 1
+    ? Number(V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING[fighter.element]) || 0
+    : 0;
+  const rawDamage = effect.power +
+    (might * 0.6) -
+    (guard * 0.25) -
+    weakened +
+    elementBonus +
+    levelOneElementBonus;
+  if (rulesVersion >= V8_RULES_VERSION && Number.isFinite(roundingRoll)) {
+    const floor = Math.floor(rawDamage);
+    const fraction = rawDamage - floor;
+    return Math.max(1, floor + (roundingRoll < fraction ? 1 : 0));
+  }
+  return Math.max(1, Math.round(rawDamage));
 }
 
 function applyDamage(target, requestedDamage, hitIndex, {
@@ -249,14 +291,29 @@ function resolveAction({
   if (choice === 'B') addCharge(actorState, 50);
   if (choice === 'C') actorState.charge = 0;
 
-  for (const effect of skill.effects) {
+  for (const [effectIndex, effect] of skill.effects.entries()) {
     if (effect.type === 'damage') {
+      const damageRoundingRoll = rulesVersion >= V8_RULES_VERSION
+        ? (
+            hashNumber(
+              `${seed}:round:${round}:sequence:${sequence}:effect:${effectIndex}:damage-rounding`
+            ) % 10_000
+          ) / 10_000
+        : null;
+      if (damageRoundingRoll != null) {
+        rolls.push({
+          purpose: 'damage_rounding',
+          effectIndex,
+          value: damageRoundingRoll
+        });
+      }
       const total = damageFor(
         { ...actor, weakened: actorState.weakened },
         target,
         effect,
         disableElementAdvantage,
-        rulesVersion
+        rulesVersion,
+        damageRoundingRoll
       );
       const count = Math.max(1, Number(effect.hits) || 1);
       if (count > 1) outcomes.push({ type: 'multihit', hits: count });
@@ -285,7 +342,14 @@ function resolveAction({
         });
         hits.push(hit);
         dealtHpDamage += hit.hpDamage;
-        if (hit.hpDamage > 0 && targetState.thorns > 0 && actorState.hp > 0) {
+        const defenderCanRetaliate = rulesVersion < V8_RULES_VERSION ||
+          targetState.hp > 0;
+        if (
+          defenderCanRetaliate &&
+          hit.hpDamage > 0 &&
+          targetState.thorns > 0 &&
+          actorState.hp > 0
+        ) {
           const thorns = targetState.thorns;
           targetState.thorns = 0;
           retaliations.push(applyRetaliation(
@@ -295,7 +359,12 @@ function resolveAction({
             retaliations.length + 1
           ));
         }
-        if (hit.hpDamage > 0 && targetState.reflect > 0 && actorState.hp > 0) {
+        if (
+          defenderCanRetaliate &&
+          hit.hpDamage > 0 &&
+          targetState.reflect > 0 &&
+          actorState.hp > 0
+        ) {
           const reflect = targetState.reflect;
           targetState.reflect = 0;
           retaliations.push(applyRetaliation(
@@ -314,13 +383,29 @@ function resolveAction({
         effect.power + Math.floor((Number(actor.stats?.guard) || 0) / 3),
         outcomes,
         {
-          arenaCollapse: rulesVersion >= V8_RULES_VERSION && round >= 5
+          arenaCollapseRound: rulesVersion >= V8_RULES_VERSION && round >= 5
+            ? round
+            : 0
         }
       );
     } else if (effect.type === 'heal') {
-      heal(actorState, effect.power, outcomes);
+      heal(actorState, effect.power, outcomes, 'heal', {
+        arenaCollapseRound: rulesVersion >= V8_RULES_VERSION && round >= 5
+          ? round
+          : 0
+      });
     } else if (effect.type === 'lifesteal') {
-      heal(actorState, Math.floor(dealtHpDamage * effect.ratio), outcomes, 'lifesteal');
+      heal(
+        actorState,
+        Math.floor(dealtHpDamage * effect.ratio),
+        outcomes,
+        'lifesteal',
+        {
+          arenaCollapseRound: rulesVersion >= V8_RULES_VERSION && round >= 5
+            ? round
+            : 0
+        }
+      );
     } else if (effect.type === 'burn') {
       const amount = Math.max(0, Number(effect.power) || 0);
       targetState.burn = Math.min(3, targetState.burn + amount);

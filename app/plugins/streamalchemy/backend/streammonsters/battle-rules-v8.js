@@ -1,5 +1,22 @@
 const RULES_VERSION = 8;
 const ARENA_COLLAPSE_ROUND = 5;
+const ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS = 3;
+
+function arenaCollapseRecoveryFactor(round, recoveryType) {
+  const normalizedRound = Math.max(1, Math.round(Number(round) || 1));
+  if (normalizedRound < ARENA_COLLAPSE_ROUND) return 1;
+  const phase = Math.floor(
+    (normalizedRound - ARENA_COLLAPSE_ROUND) /
+    ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS
+  );
+  if (recoveryType === 'shield') {
+    return [0.5, 0.25, 0][Math.min(2, phase)];
+  }
+  if (recoveryType === 'heal') {
+    return [1, 0.5, 0][Math.min(2, phase)];
+  }
+  return 1;
+}
 
 function applyArenaCollapse({
   fighters,
@@ -65,5 +82,7 @@ function applyArenaCollapse({
 module.exports = {
   RULES_VERSION,
   ARENA_COLLAPSE_ROUND,
+  ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS,
+  arenaCollapseRecoveryFactor,
   applyArenaCollapse
 };

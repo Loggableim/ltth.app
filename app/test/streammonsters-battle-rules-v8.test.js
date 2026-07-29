@@ -18,6 +18,9 @@ const PublicEventProjector = require(
 const ChatCommands = require(
   '../plugins/streamalchemy/backend/streammonsters/chat-commands'
 );
+const {
+  resolveInteractiveRound
+} = require('../plugins/streamalchemy/backend/streammonsters/battle-rules-v5');
 
 function createStore() {
   const sqlite = new Database(':memory:');
@@ -645,6 +648,280 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         shield: 3
       })
     ]));
+  });
+
+  test('progressively suppresses late collapse shield and healing loops', () => {
+    const fighters = [
+      {
+        monster_id: 'collapse-a',
+        template_id: 'brine',
+        element: 'Tide',
+        evolution_stage: 1,
+        level: 1,
+        stats: { vitality: 7, might: 7, guard: 0, agility: 8 }
+      },
+      {
+        monster_id: 'collapse-b',
+        template_id: 'brine',
+        element: 'Tide',
+        evolution_stage: 1,
+        level: 1,
+        stats: { vitality: 7, might: 7, guard: 0, agility: 7 }
+      }
+    ];
+    const resolveDefenseRound = round => resolveInteractiveRound({
+      fighters,
+      choices: { 'collapse-a': 'B', 'collapse-b': 'B' },
+      seed: 'progressive-collapse-recovery',
+      round,
+      state: {
+        'collapse-a': { hp: 20, shield: 0, charge: 0 },
+        'collapse-b': { hp: 20, shield: 0, charge: 0 }
+      },
+      disableElementAdvantage: true,
+      rulesVersion: 8
+    }).actions[0].outcomes;
+
+    expect(resolveDefenseRound(5)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'shield',
+        requested: 4,
+        amount: 2,
+        arenaCollapseFactor: 0.5
+      }),
+      expect.objectContaining({
+        type: 'heal',
+        requested: 3,
+        amount: 3,
+        arenaCollapseFactor: 1
+      })
+    ]));
+    expect(resolveDefenseRound(8)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'shield',
+        requested: 4,
+        amount: 1,
+        arenaCollapseFactor: 0.25
+      }),
+      expect.objectContaining({
+        type: 'heal',
+        requested: 3,
+        amount: 2,
+        arenaCollapseFactor: 0.5
+      })
+    ]));
+    expect(resolveDefenseRound(11)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'shield',
+        requested: 4,
+        amount: 0,
+        arenaCollapseFactor: 0
+      }),
+      expect.objectContaining({
+        type: 'heal',
+        requested: 3,
+        amount: 0,
+        arenaCollapseFactor: 0
+      })
+    ]));
+  });
+
+  test('ends a v8 knockout before a defeated defender can retaliate', () => {
+    const fighters = [
+      {
+        monster_id: 'finisher',
+        template_id: 'ashfang',
+        element: 'Ember',
+        evolution_stage: 1,
+        level: 1,
+        stats: { vitality: 7, might: 10, guard: 7, agility: 20 }
+      },
+      {
+        monster_id: 'defender',
+        template_id: 'pulse',
+        element: 'Volt',
+        evolution_stage: 1,
+        level: 1,
+        stats: { vitality: 7, might: 7, guard: 0, agility: 1 }
+      }
+    ];
+    const result = resolveInteractiveRound({
+      fighters,
+      choices: { finisher: 'A', defender: 'B' },
+      seed: 'v8-no-postmortem-retaliation',
+      round: 8,
+      state: {
+        finisher: {
+          hp: 1,
+          shield: 0,
+          charge: 0,
+          thorns: 0,
+          reflect: 0
+        },
+        defender: {
+          hp: 1,
+          shield: 0,
+          charge: 0,
+          thorns: 3,
+          reflect: 3
+        }
+      },
+      disableElementAdvantage: true,
+      rulesVersion: 8
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      terminal: true,
+      winnerId: 'finisher'
+    }));
+    expect(result.state).toEqual(expect.objectContaining({
+      finisher: expect.objectContaining({ hp: 1 }),
+      defender: expect.objectContaining({ hp: 0 })
+    }));
+    expect(result.actions[0].retaliations).toEqual([]);
+
+    const legacy = resolveInteractiveRound({
+      fighters,
+      choices: { finisher: 'A', defender: 'B' },
+      seed: 'v8-no-postmortem-retaliation',
+      round: 8,
+      state: {
+        finisher: {
+          hp: 1,
+          shield: 0,
+          charge: 0,
+          thorns: 0,
+          reflect: 0
+        },
+        defender: {
+          hp: 1,
+          shield: 0,
+          charge: 0,
+          thorns: 3,
+          reflect: 3
+        }
+      },
+      disableElementAdvantage: true,
+      rulesVersion: 7
+    });
+    expect(legacy).toEqual(expect.objectContaining({
+      terminal: true,
+      winnerId: null
+    }));
+    expect(legacy.actions[0].retaliations).toEqual([
+      expect.objectContaining({ type: 'thorns', hpAfter: 0 })
+    ]);
+  });
+
+  test('uses replayable seeded rounding for fractional v8 damage tuning only', () => {
+    const fighters = [
+      {
+        monster_id: 'fractional-a',
+        template_id: 'ashfang',
+        element: 'Ember',
+        evolution_stage: 1,
+        level: 1,
+        stats: { vitality: 7, might: 10, guard: 0, agility: 20 }
+      },
+      {
+        monster_id: 'fractional-b',
+        template_id: 'pulse',
+        element: 'Volt',
+        evolution_stage: 1,
+        level: 1,
+        stats: { vitality: 100, might: 0, guard: 0, agility: 1 }
+      }
+    ];
+    const resolve = (seed, rulesVersion = 8) => resolveInteractiveRound({
+      fighters,
+      choices: { 'fractional-a': 'A', 'fractional-b': 'B' },
+      seed,
+      round: 1,
+      state: {},
+      disableElementAdvantage: true,
+      rulesVersion
+    });
+    const first = resolve('fractional-v8-seed');
+    expect(resolve('fractional-v8-seed')).toEqual(first);
+    expect(first.actions[0].rolls).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        purpose: 'damage_rounding',
+        value: expect.any(Number)
+      })
+    ]));
+
+    const damageSamples = new Set(Array.from({ length: 64 }, (_, index) => (
+      resolve(`fractional-v8-seed-${index}`).actions[0].hits[0].requestedDamage
+    )));
+    expect([...damageSamples].sort((left, right) => left - right)).toEqual([11, 12]);
+    expect(resolve('fractional-v7-seed', 7).actions[0].rolls).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ purpose: 'damage_rounding' })
+      ])
+    );
+  });
+
+  test('applies the low-level Gale compensation to v8 without changing v7', () => {
+    const totalDamage = (level, rulesVersion) => Array.from(
+      { length: 64 },
+      (_, index) => {
+        const result = resolveInteractiveRound({
+          fighters: [
+            {
+              monster_id: 'gale-attacker',
+              template_id: 'skyrend',
+              element: 'Gale',
+              evolution_stage: 1,
+              level,
+              stats: { vitality: 7, might: 10, guard: 0, agility: 20 }
+            },
+            {
+              monster_id: 'gale-target',
+              template_id: 'ripple',
+              element: 'Tide',
+              evolution_stage: 1,
+              level: 1,
+              stats: { vitality: 100, might: 0, guard: 0, agility: 1 }
+            }
+          ],
+          choices: { 'gale-attacker': 'A', 'gale-target': 'B' },
+          seed: `gale-level-compensation-${index}`,
+          round: 1,
+          state: {},
+          disableElementAdvantage: true,
+          rulesVersion
+        });
+        return result.actions[0].hits
+          .reduce((sum, hit) => sum + hit.requestedDamage, 0);
+      }
+    ).reduce((sum, damage) => sum + damage, 0);
+
+    expect(totalDamage(1, 8)).toBeGreaterThan(totalDamage(5, 8));
+    expect(totalDamage(1, 7)).toBe(totalDamage(5, 7));
+  });
+
+  test('does not let deterministic timeout choices defend forever during collapse', () => {
+    const { store } = createStore();
+    const service = createService({ store });
+    for (const personality of ['Aggressive', 'Defensive', 'Adaptive']) {
+      const choices = Array.from({ length: 54 }, (_, index) => (
+        service.deterministicTimeoutChoice(
+          {
+            rulesVersion: 8,
+            seed: 'collapse-timeout-pacing',
+            roundNumber: index + 11,
+            actionDeadlineMs: 10_000
+          },
+          {
+            participantId: `timeout-${personality}`,
+            roster: { personality },
+            combatState: { charge: 0 }
+          }
+        )
+      ));
+      expect(choices).toContain('A');
+      expect(choices.every(choice => choice === 'B')).toBe(false);
+    }
   });
 
   test('serializes stat windows and identifies the sanitized player and monster', () => {

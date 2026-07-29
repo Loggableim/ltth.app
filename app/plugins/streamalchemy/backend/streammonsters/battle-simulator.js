@@ -370,6 +370,7 @@ function runV8BalanceMatrix(options = {}) {
   let battleCount = 0;
   let resolvedBattleCount = 0;
   let guardBoundCount = 0;
+  let doubleKnockoutCount = 0;
   let mirroredBattleCount = 0;
   let illegalChoiceFallbackCount = 0;
 
@@ -415,7 +416,11 @@ function runV8BalanceMatrix(options = {}) {
                 mirroredBattleCount += mirrored ? 1 : 0;
                 illegalChoiceFallbackCount += result.illegalChoiceFallbackCount;
                 if (!result.winnerTemplateId) {
-                  guardBoundCount += 1;
+                  if (result.terminal && result.terminalReason === 'double_knockout') {
+                    doubleKnockoutCount += 1;
+                  } else {
+                    guardBoundCount += 1;
+                  }
                   scoreDraw(
                     templateScores,
                     leftTemplate.templateId,
@@ -460,7 +465,9 @@ function runV8BalanceMatrix(options = {}) {
     battleCount,
     resolvedBattleCount,
     guardBoundCount,
+    doubleKnockoutCount,
     guardBoundRate: battleCount ? guardBoundCount / battleCount : 0,
+    doubleKnockoutRate: battleCount ? doubleKnockoutCount / battleCount : 0,
     participantSampleCount: battleCount * 2,
     mirroredBattleCount,
     illegalChoiceFallbackCount,
@@ -474,6 +481,204 @@ function runV8BalanceMatrix(options = {}) {
     elementResults,
     maxTemplateDeviation: Math.max(...templateResults.map(row => row.deviation)),
     maxElementDeviation: Math.max(...elementResults.map(row => row.deviation))
+  };
+}
+
+function finalizeDetailedScores(scores) {
+  return [...scores.values()].map(row => {
+    const resolvedSamples = row.wins + row.losses;
+    const resolvedWinRate = resolvedSamples
+      ? row.wins / resolvedSamples
+      : 0.5;
+    const drawInclusiveWinRate = row.samples
+      ? (row.wins + (row.draws * 0.5)) / row.samples
+      : 0.5;
+    return {
+      ...row,
+      resolvedSamples,
+      resolvedWinRate,
+      drawInclusiveWinRate,
+      winRate: drawInclusiveWinRate,
+      deviation: Math.abs(0.5 - drawInclusiveWinRate),
+      resolvedDeviation: Math.abs(0.5 - resolvedWinRate)
+    };
+  });
+}
+
+function runV8AllPairsNeutralMatrix(options = {}) {
+  const levels = options.levels || [1];
+  const stages = options.stages || [1];
+  const statProfiles = options.statProfiles || ['balanced'];
+  const skillSequences = (options.skillSequences || DEFAULT_SKILL_SEQUENCES)
+    .map(assertRulesV8Sequence);
+  const seeds = options.seeds || DEFAULT_V8_SEEDS;
+  const templates = options.templates || TEMPLATE_CATALOG;
+  const maxRounds = Math.max(1, Math.round(Number(options.maxRounds) || 64));
+  const templateScores = new Map(templates.map(template => [
+    template.templateId,
+    emptyScore('templateId', template.templateId)
+  ]));
+  const elementScores = new Map(ELEMENTS.map(element => [
+    element,
+    emptyScore('element', element)
+  ]));
+  const pairScores = new Map();
+  let battleCount = 0;
+  let resolvedBattleCount = 0;
+  let guardBoundCount = 0;
+  let doubleKnockoutCount = 0;
+  let mirroredBattleCount = 0;
+  let illegalChoiceFallbackCount = 0;
+
+  for (let leftIndex = 0; leftIndex < templates.length; leftIndex += 1) {
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < templates.length;
+      rightIndex += 1
+    ) {
+      const leftTemplate = templates[leftIndex];
+      const rightTemplate = templates[rightIndex];
+      const pairKey = `${leftTemplate.templateId}:${rightTemplate.templateId}`;
+      const pairScore = {
+        pair: pairKey,
+        leftTemplateId: leftTemplate.templateId,
+        rightTemplateId: rightTemplate.templateId,
+        leftWins: 0,
+        rightWins: 0,
+        draws: 0,
+        samples: 0
+      };
+      pairScores.set(pairKey, pairScore);
+
+      stages.forEach(stage => {
+        levels.forEach(level => {
+          statProfiles.forEach(statProfile => {
+            skillSequences.forEach((leftSequence, sequenceIndex) => {
+              seeds.forEach((baseSeed, seedIndex) => {
+                const rightSequence = skillSequences[
+                  (sequenceIndex + seedIndex + 1) % skillSequences.length
+                ];
+                const battleSeed = [
+                  baseSeed,
+                  'all-pairs-neutral',
+                  pairKey,
+                  stage,
+                  level,
+                  statProfile,
+                  sequenceIndex
+                ].join(':');
+                for (const mirrored of [false, true]) {
+                  const result = simulateRulesV8Match({
+                    leftTemplate,
+                    rightTemplate,
+                    level,
+                    leftSequence,
+                    rightSequence,
+                    seed: battleSeed,
+                    mirrored,
+                    statProfile,
+                    leftStage: stage,
+                    rightStage: stage,
+                    disableElementAdvantage: true,
+                    maxRounds
+                  });
+                  battleCount += 1;
+                  mirroredBattleCount += mirrored ? 1 : 0;
+                  pairScore.samples += 1;
+                  illegalChoiceFallbackCount += result.illegalChoiceFallbackCount;
+                  if (!result.winnerTemplateId) {
+                    if (result.terminal && result.terminalReason === 'double_knockout') {
+                      doubleKnockoutCount += 1;
+                    } else {
+                      guardBoundCount += 1;
+                    }
+                    pairScore.draws += 1;
+                    scoreDraw(
+                      templateScores,
+                      leftTemplate.templateId,
+                      rightTemplate.templateId
+                    );
+                    scoreDraw(
+                      elementScores,
+                      leftTemplate.element,
+                      rightTemplate.element
+                    );
+                    continue;
+                  }
+                  const leftWon = result.winnerTemplateId === leftTemplate.templateId;
+                  const winnerTemplate = leftWon ? leftTemplate : rightTemplate;
+                  const loserTemplate = leftWon ? rightTemplate : leftTemplate;
+                  if (leftWon) pairScore.leftWins += 1;
+                  else pairScore.rightWins += 1;
+                  score(
+                    templateScores,
+                    winnerTemplate.templateId,
+                    loserTemplate.templateId
+                  );
+                  score(
+                    elementScores,
+                    winnerTemplate.element,
+                    loserTemplate.element
+                  );
+                  resolvedBattleCount += 1;
+                }
+              });
+            });
+          });
+        });
+      });
+    }
+  }
+
+  const templateResults = finalizeDetailedScores(templateScores);
+  const elementResults = finalizeDetailedScores(elementScores);
+  const pairResults = [...pairScores.values()].map(row => {
+    const resolvedSamples = row.leftWins + row.rightWins;
+    return {
+      ...row,
+      resolvedSamples,
+      leftResolvedWinRate: resolvedSamples
+        ? row.leftWins / resolvedSamples
+        : 0.5,
+      leftDrawInclusiveWinRate: row.samples
+        ? (row.leftWins + (row.draws * 0.5)) / row.samples
+        : 0.5
+    };
+  });
+  return {
+    rulesVersion: 8,
+    knockoutOnly: true,
+    elementAdvantageDisabled: true,
+    arenaCollapseRound: ARENA_COLLAPSE_ROUND,
+    maxRounds,
+    allUnorderedTemplatePairs: true,
+    pairCount: pairResults.length,
+    battleCount,
+    resolvedBattleCount,
+    guardBoundCount,
+    doubleKnockoutCount,
+    guardBoundRate: battleCount ? guardBoundCount / battleCount : 0,
+    doubleKnockoutRate: battleCount ? doubleKnockoutCount / battleCount : 0,
+    participantSampleCount: battleCount * 2,
+    mirroredBattleCount,
+    illegalChoiceFallbackCount,
+    levels: [...levels],
+    stages: [...stages],
+    statProfiles: [...statProfiles],
+    skillSequences: [...skillSequences],
+    seeds: [...seeds],
+    templates: templates.map(template => template.templateId),
+    templateResults,
+    elementResults,
+    pairResults,
+    maxTemplateDeviation: Math.max(...templateResults.map(row => row.deviation)),
+    maxTemplateResolvedDeviation: Math.max(
+      ...templateResults.map(row => row.resolvedDeviation)
+    ),
+    maxElementDeviation: Math.max(...elementResults.map(row => row.deviation)),
+    maxElementResolvedDeviation: Math.max(
+      ...elementResults.map(row => row.resolvedDeviation)
+    )
   };
 }
 
@@ -941,6 +1146,7 @@ module.exports = {
   runV6BalanceMatrix,
   runV7EvolutionBalanceMatrix,
   runV8BalanceMatrix,
+  runV8AllPairsNeutralMatrix,
   simulateMatch,
   simulateRulesV8Match,
   tieBreakWinner,
