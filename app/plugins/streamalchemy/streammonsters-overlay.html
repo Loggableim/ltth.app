@@ -337,13 +337,25 @@
     }
     #battle[data-phase="action"] #arena-skill-prompt,
     #battle[data-phase="action"] #arena-lead { opacity:0; }
-    .arena-skill-deck {
-      position:absolute; top:22%; left:0; z-index:14; display:grid; gap:7px; width:100%;
-      opacity:0; transform:translateY(8px); transition:opacity .2s ease,transform .26s ease;
+    #arena-choice-surface {
+      position:absolute; right:3%; bottom:2%; left:3%; z-index:18;
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;
+      padding:10px; border:1px solid #aebaff59; border-radius:18px;
+      background:linear-gradient(145deg,#111a31f4,#080d1df2);
+      box-shadow:0 16px 42px #000c,0 0 30px #6ecfff20;
+      opacity:0; visibility:hidden; transform:translateY(12px);
+      transition:opacity .2s ease,transform .26s ease,visibility 0s linear .26s;
     }
-    #battle[data-phase="choice"] .arena-skill-deck {
-      opacity:1; transform:none;
+    #battle[data-phase="choice"] #arena-choice-surface {
+      opacity:1; visibility:visible; transform:none;
+      transition:opacity .2s ease,transform .26s ease;
     }
+    .arena-choice-player { display:grid; align-content:start; gap:6px; min-width:0; }
+    .arena-choice-owner {
+      overflow:hidden; color:#a9edff; font-size:clamp(14px,1.55vw,20px);
+      font-weight:1000; text-align:center; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-skill-deck { display:grid; gap:7px; min-width:0; }
     .arena-skill-card {
       display:grid; grid-template-columns:auto auto minmax(0,1fr) auto;
       grid-template-areas:"icon choice name charge" "icon choice copy charge";
@@ -440,12 +452,10 @@
     #arena-result-winner { display:block; color:#fff0a3; font-size:clamp(27px,4vw,52px); line-height:1.05; text-shadow:0 3px 0 #3d1b55,0 0 28px #ffe57e99; }
     #arena-result-monster { color:#d8c9ff; font-size:clamp(20px,2.7vw,34px); font-weight:950; }
     #arena-result-summary { color:#f0f6ff; font-size:clamp(16px,2vw,25px); font-weight:850; }
-    #arena-result-ratings,
-    #arena-result-rating {
+    #arena-result-ratings {
       display:block; margin-top:8px; color:#e5f5ff; font-size:clamp(15px,1.9vw,23px);
       font-weight:900; font-variant-numeric:tabular-nums; line-height:1.3;
     }
-    #arena-result-rating:empty { display:none; }
     #arena-stat-card {
       position:absolute; top:17%; left:50%; z-index:60; display:grid; gap:8px;
       width:min(90%,760px); min-height:210px; padding:22px 26px;
@@ -729,7 +739,8 @@
     }
     #chat-card.visible { opacity:1; transform:none; }
     #chat-detail {
-      position:absolute; z-index:22; top:max(112px,6%); right:4%; bottom:28%; left:4%;
+      position:absolute; z-index:22; top:max(112px,6%); right:4%;
+      bottom:calc(26% + var(--egg-shelf-lane-height)); left:4%;
       overflow:hidden; padding:clamp(18px,2.2vw,34px); border:2px solid #b9adff85; border-radius:32px;
       color:var(--ink); background:
         radial-gradient(circle at 14% 12%,#5bdcff1d,transparent 34%),
@@ -867,8 +878,9 @@
       #arena-fighter-1 { left:3%; bottom:4%; }
       #arena-fighter-2 { right:3%; bottom:4%; }
       .arena-sprite-wrap { inset:16% 0 0; }
+      #arena-choice-surface { right:2%; bottom:2%; left:2%; }
       .arena-skill-deck {
-        top:auto; bottom:4%; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;
+        grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;
       }
       .arena-skill-card {
         grid-template-columns:auto auto minmax(0,1fr);
@@ -878,7 +890,10 @@
       .arena-skill-card .skill-copy { display:block; font-size:clamp(10px,1vw,14px); }
       .arena-skill-card .skill-charge { min-width:0; text-align:center; }
       #arena-feed { top:18%; bottom:auto; }
-      #chat-detail { top:9%; right:5%; bottom:28%; left:5%; }
+      #chat-detail {
+        top:9%; right:5%;
+        bottom:calc(26% + var(--egg-shelf-lane-height)); left:5%;
+      }
     }
     @media (orientation: portrait) {
       #brand { top:20px; left:20px; width:210px; height:58px; }
@@ -909,20 +924,40 @@
       .arena-fighter { top:19%; bottom:auto; width:50%; height:78%; }
       #arena-fighter-1 { left:0; }
       #arena-fighter-2 { right:0; }
+      #battle[data-phase="choice"] .arena-fighter {
+        top:16%; width:50%; height:52%;
+      }
       .fighter-hud { top:0; left:4%; width:92%; padding:9px 10px; }
       .arena-sprite-wrap { inset:18% -2% 29%; }
       #arena-fighter-2 .arena-sprite-wrap { inset:18% -2% 29%; }
-      .arena-skill-deck { top:auto; bottom:0; gap:5px; }
-      .arena-skill-card { min-height:56px; padding:7px 8px; }
-      .arena-skill-card .skill-name { font-size:clamp(13px,2.7vw,21px); }
-      .arena-skill-card .skill-copy { font-size:clamp(10px,2.05vw,16px); line-height:1.14; }
+      #battle[data-phase="choice"] .arena-sprite-wrap,
+      #battle[data-phase="choice"] #arena-fighter-2 .arena-sprite-wrap {
+        inset:20% 2% 0;
+      }
+      #arena-choice-surface {
+        right:2.5%; bottom:2%; left:2.5%; gap:7px; padding:8px;
+      }
+      .arena-skill-deck { gap:5px; }
+      #arena-choice-surface .arena-skill-card {
+        min-height:64px; padding:8px 9px;
+      }
+      #arena-choice-surface .arena-skill-card .skill-name {
+        font-size:clamp(16px,3.35vw,22px);
+      }
+      #arena-choice-surface .arena-skill-card .skill-copy {
+        font-size:clamp(14px,2.85vw,18px); line-height:1.16;
+      }
       #arena-feed { top:auto; bottom:1.5%; width:86%; }
       #arena-action-card { top:8.5%; width:94%; min-height:130px; }
       #arena-result { top:8%; width:94%; min-height:360px; }
       #arena-stat-card { top:14%; width:92%; min-height:260px; }
       #arena-impact { top:49%; }
       #chat-card { left:16px; bottom:calc(26% + var(--egg-shelf-lane-height)); max-width:calc(100vw - 32px); }
-      #chat-detail { top:7%; right:3%; bottom:28%; left:3%; padding:20px 16px; }
+      #chat-detail {
+        top:7%; right:3%;
+        bottom:calc(26% + var(--egg-shelf-lane-height)); left:3%;
+        padding:20px 16px;
+      }
       .sm-collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .sm-collection-card { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; }
       .sm-collection-copy { gap:3px; padding:8px 3px 2px; text-align:center; }
@@ -1088,23 +1123,6 @@
           <span id="arena-special-label-1">Special</span>
         </div>
       </div>
-      <div class="arena-skill-deck" data-skill-deck="1" aria-label="Monster A skills">
-        <div class="arena-skill-card" data-skill="A">
-          <span class="skill-icon"></span><span class="skill-choice">A</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="B">
-          <span class="skill-icon"></span><span class="skill-choice">B</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="C">
-          <span class="skill-icon"></span><span class="skill-choice">C</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-      </div>
     </article>
     <article id="arena-fighter-2" class="arena-fighter" data-slot="2">
       <div class="arena-sprite-wrap">
@@ -1127,24 +1145,49 @@
           <span id="arena-special-label-2">Special</span>
         </div>
       </div>
-      <div class="arena-skill-deck" data-skill-deck="2" aria-label="Monster B skills">
-        <div class="arena-skill-card" data-skill="A">
-          <span class="skill-icon"></span><span class="skill-choice">A</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="B">
-          <span class="skill-icon"></span><span class="skill-choice">B</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
-        </div>
-        <div class="arena-skill-card" data-skill="C">
-          <span class="skill-icon"></span><span class="skill-choice">C</span>
-          <span class="skill-name"></span><span class="skill-copy"></span>
-          <span class="skill-charge"></span>
+    </article>
+    <section id="arena-choice-surface" aria-live="polite">
+      <div class="arena-choice-player" data-choice-player="1">
+        <strong id="arena-choice-owner-1" class="arena-choice-owner" data-choice-owner="1">Viewer · Monster A</strong>
+        <div class="arena-skill-deck" data-skill-deck="1" aria-label="Monster A skills">
+          <div class="arena-skill-card" data-skill="A">
+            <span class="skill-icon"></span><span class="skill-choice">A</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="B">
+            <span class="skill-icon"></span><span class="skill-choice">B</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="C">
+            <span class="skill-icon"></span><span class="skill-choice">C</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
         </div>
       </div>
-    </article>
+      <div class="arena-choice-player" data-choice-player="2">
+        <strong id="arena-choice-owner-2" class="arena-choice-owner" data-choice-owner="2">Viewer · Monster B</strong>
+        <div class="arena-skill-deck" data-skill-deck="2" aria-label="Monster B skills">
+          <div class="arena-skill-card" data-skill="A">
+            <span class="skill-icon"></span><span class="skill-choice">A</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="B">
+            <span class="skill-icon"></span><span class="skill-choice">B</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+          <div class="arena-skill-card" data-skill="C">
+            <span class="skill-icon"></span><span class="skill-choice">C</span>
+            <span class="skill-name"></span><span class="skill-copy"></span>
+            <span class="skill-charge"></span>
+          </div>
+        </div>
+      </div>
+    </section>
     <div id="arena-special" aria-hidden="true"></div>
     <div id="arena-impact" aria-hidden="true"></div>
     <div id="arena-combo" aria-hidden="true"></div>
@@ -1155,7 +1198,6 @@
       <span id="arena-result-monster"></span>
       <span id="arena-result-summary"></span>
       <div id="arena-result-ratings"></div>
-      <span id="arena-result-rating"></span>
     </div>
   </section>
   <section id="arena-stat-card" aria-live="polite">
@@ -2261,33 +2303,54 @@
       }),
       2_800
     ));
-    if (type === 'egg_hatched') return presentArcadeScene(
-      type,
-      data,
-      showCriticalCard(type, data, () => ({
-        kicker:text('monsterKicker', '{element} · {personality}', {
-          element:elementName(data?.monster?.element || data?.egg?.element),
-          personality:personalityName(data?.monster?.personality)
-        }),
-        title:text('hatchedTitle', '{name} ist da!', {
-          name:itemName(data?.monster)
-        }),
-        subtitle:text(
-          'hatchedCopy',
-          '28 faire Startpunkte · gehört {viewer} dauerhaft.',
-          { viewer:publicDisplayName(data) }
-        ),
-        hint:commandHint('monsterCardHint', '{monster} [slot] shows the card')
-      }), {
-      imageUrl:itemImageUrl(data?.monster) || itemImageUrl(data?.egg),
-      element:data?.monster?.element || data?.egg?.element,
-      charged:data?.egg?.variant === 'charged',
-      progress:100,
-      presentation:'hatch',
-      owner:data?.owner,
-      duration:12_000
-      })
-    );
+    if (type === 'egg_hatched') {
+      const hatchNotice = window.StreamMonstersEggStageView
+        ?.buildHatchRevealNotice?.(data, {
+          commands:{ monsters:commandReference('monster') }
+        });
+      const autoHatchNotice = hatchNotice?.automatic ? hatchNotice : null;
+      return presentArcadeScene(
+        type,
+        data,
+        showCriticalCard(type, data, () => ({
+          kicker:autoHatchNotice
+            ? text(
+              autoHatchNotice.titleKey,
+              lifecycleFallbacks[autoHatchNotice.titleKey],
+              autoHatchNotice.params
+            )
+            : text('monsterKicker', '{element} · {personality}', {
+              element:elementName(data?.monster?.element || data?.egg?.element),
+              personality:personalityName(data?.monster?.personality)
+            }),
+          title:text('hatchedTitle', '{name} ist da!', {
+            name:itemName(data?.monster)
+          }),
+          subtitle:autoHatchNotice
+            ? text(
+              autoHatchNotice.copyKey,
+              lifecycleFallbacks[autoHatchNotice.copyKey],
+              autoHatchNotice.params
+            )
+            : text(
+              'hatchedCopy',
+              '28 faire Startpunkte · gehört {viewer} dauerhaft.',
+              { viewer:publicDisplayName(data) }
+            ),
+          hint:autoHatchNotice
+            ? autoHatchNotice.commands.join(' · ')
+            : commandHint('monsterCardHint', '{monster} [slot] shows the card')
+        }), {
+          imageUrl:itemImageUrl(data?.monster) || itemImageUrl(data?.egg),
+          element:data?.monster?.element || data?.egg?.element,
+          charged:data?.egg?.variant === 'charged',
+          progress:100,
+          presentation:'hatch',
+          owner:data?.owner,
+          duration:12_000
+        })
+      );
+    }
     if (type === 'monster_discovered') return presentArcadeScene(
       type,
       data,
@@ -2471,9 +2534,8 @@
     }
     if (type === 'battle_completed') {
       clearBattleLocaleSequence(data?.matchId || data?.battleId);
-      const winnerId = itemMonsterId(data?.winner) ||
-        data?.battle?.winnerMonsterId || data?.battle?.winner_monster_id;
-      const winnerSlot = Number(data?.winnerSlot) || (winnerId === battleIds[1] ? 2 : 1);
+      const winnerSlot = window.StreamMonstersOverlayRuntime
+        .resolveBattleWinnerSlot(data, battleIds);
       return playArcadeEvent(type, { ...data, winnerSlot });
     }
     if (type === 'battle_cancelled') {

@@ -91,16 +91,19 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect(teamHeartHelp).not.toContain('Heart Me');
   });
 
-  test('renders real portrait and landscape stage previews with a lower 26 percent chat safe-zone', () => {
-    const portrait = document.getElementById('portraitStagePreview');
+  test('renders separate normal/battle portrait previews and a landscape battle stage', () => {
+    const portraitNormal = document.getElementById('portraitNormalPreview');
+    const portraitBattle = document.getElementById('portraitBattlePreview');
     const landscape = document.getElementById('landscapeStagePreview');
-    expect([portrait.dataset.width, portrait.dataset.height]).toEqual(['1080', '1920']);
+    expect([portraitNormal.dataset.width, portraitNormal.dataset.height]).toEqual(['1080', '1920']);
+    expect([portraitBattle.dataset.width, portraitBattle.dataset.height]).toEqual(['1080', '1920']);
     expect([landscape.dataset.width, landscape.dataset.height]).toEqual(['1920', '1080']);
-    for (const preview of [portrait, landscape]) {
+    for (const preview of [portraitBattle, landscape]) {
       expect(preview.querySelector('[data-gameplay-percent="74"]')).not.toBeNull();
       expect(preview.querySelector('[data-chat-safe-percent="26"]')).not.toBeNull();
     }
-    expect([...portrait.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
+    expect(portraitNormal.querySelector('[data-gameplay-percent="74"]')).toBeNull();
+    expect([...portraitNormal.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
       .toEqual([
         'logo',
         'music',
@@ -109,9 +112,12 @@ describe('Stream Monsters 1.5 creator workspace', () => {
         'likes',
         'shelf',
         'xp',
-        'battle',
         'safe'
       ]);
+    expect([...portraitBattle.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
+      .toEqual(['battle', 'safe']);
+    expect(document.getElementById('obsTakeoverSourceOrder')).not.toBeNull();
+    expect(document.getElementById('obsExternalSourcesWarning').textContent).toContain('CSS');
   });
 
   test('offers every v1.5 demo scene while retaining attack and defense compatibility', () => {

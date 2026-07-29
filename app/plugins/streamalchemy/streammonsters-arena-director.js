@@ -575,12 +575,7 @@
         expanded.push({
           ...beat,
           peak: true,
-          audioCue: 'arena.hit',
-          effect: {
-            scene: 'attack',
-            element: action.skill?.element || null,
-            vfxKey: beat.effectType
-          }
+          audioCue: 'arena.hit'
         });
         continue;
       }
@@ -588,12 +583,7 @@
         expanded.push({
           ...beat,
           peak: true,
-          audioCue: 'arena.hit',
-          effect: {
-            scene: 'attack',
-            element: action.skill?.element || null,
-            vfxKey: beat.retaliationType
-          }
+          audioCue: 'arena.hit'
         }, {
           type: 'camera_impulse',
           atMs: beat.atMs + 18,
@@ -627,18 +617,28 @@
         continue;
       }
       if (beat.type === 'advance') {
-        expanded.push(beat, {
-          type: 'element_trail',
-          atMs: beat.atMs + 60,
-          durationMs: beat.durationMs,
-          actorSlot: beat.actorSlot,
-          targetSlot: beat.targetSlot,
-          effect: {
-            scene: 'attack',
-            element: action.skill?.element || null,
-            vfxKey: action.skill?.vfxKey || null
-          }
-        });
+        expanded.push(beat);
+        const skillType = String(action.skill?.type || '').toLowerCase();
+        const semanticScene = skillType === 'defense' ? 'defense' : (
+          skillType === 'special' || String(action.choice || '').toLowerCase() === 'c'
+            ? 'special'
+            : 'attack'
+        );
+        if (semanticScene !== 'special') {
+          expanded.push({
+            type: 'element_trail',
+            atMs: beat.atMs + 60,
+            durationMs: beat.durationMs,
+            actorSlot: beat.actorSlot,
+            targetSlot: beat.targetSlot,
+            effect: {
+              scene: semanticScene,
+              semanticAction: true,
+              element: action.skill?.element || null,
+              vfxKey: action.skill?.vfxKey || null
+            }
+          });
+        }
         continue;
       }
       if (beat.type === 'special') {
@@ -649,6 +649,7 @@
           audioDucking: { amount: 0.32, durationMs: 1100 },
           effect: {
             scene: 'special',
+            semanticAction: true,
             element: beat.element,
             vfxKey: beat.vfxKey
           }

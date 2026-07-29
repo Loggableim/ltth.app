@@ -202,6 +202,60 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(battleEffects.play).toHaveBeenCalled();
   });
 
+  test.each([
+    ['attack', 'A'],
+    ['defense', 'B'],
+    ['special', 'C']
+  ])('launches one uninterrupted semantic %s scene for the action', async (scene, choice) => {
+    mountArena();
+    const effects = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      effects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: `single-scene-${scene}`,
+      fighters: [
+        { slot: 1, name: 'Pulse', element: 'Volt', hp: 40, maxHp: 40 },
+        { slot: 2, name: 'Ripple', element: 'Tide', hp: 40, maxHp: 40 }
+      ]
+    });
+
+    await view.playAction({
+      matchId: `single-scene-${scene}`,
+      eventId: `single-scene-${scene}:1`,
+      eventSequence: 1,
+      rulesVersion: 8,
+      round: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice,
+      skill: {
+        name: `${scene} skill`,
+        type: scene,
+        element: 'Volt',
+        vfxKey: `pulse:${scene}`
+      },
+      statusEffects: [{ type: 'burn', hpDamage: 1, remaining: 1 }],
+      hits: [],
+      retaliations: [{
+        type: 'thorns',
+        hpDamage: 1,
+        shieldAbsorbed: 0,
+        evaded: false
+      }]
+    });
+
+    expect(effects.play).toHaveBeenCalledTimes(1);
+    expect(effects.play).toHaveBeenCalledWith(scene, expect.objectContaining({
+      eventId: `single-scene-${scene}:1`,
+      element: 'Volt',
+      actorSlot: 1,
+      targetSlot: 2
+    }));
+  });
+
   test('keeps each fighter owner readable beside the monster name', () => {
     mountArena();
     for (const slot of [1, 2]) {
@@ -219,6 +273,33 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       ]
     });
     expect(document.getElementById('arena-owner-1').textContent).toBe('@pupcid');
+    expect(document.getElementById('arena-owner-2').textContent).toBe('@mark_teufel01');
+  });
+
+  test('sanitizes persistent HUD names and image alt text from legacy numeric ids', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    view.applyMatch({
+      matchId: 'legacy-private-hud',
+      fighters: [{
+        slot: 1,
+        name: '938475938475',
+        viewerName: '123456789012345678',
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        hp: 10,
+        maxHp: 10
+      }, {
+        slot: 2,
+        name: 'Selene',
+        viewerName: '@mark_teufel01',
+        hp: 10,
+        maxHp: 10
+      }]
+    });
+
+    expect(document.getElementById('arena-name-1').textContent).toBe('Monster 1');
+    expect(document.getElementById('arena-owner-1').textContent).toBe('Viewer');
+    expect(document.getElementById('arena-image-1').alt).toBe('Monster 1');
     expect(document.getElementById('arena-owner-2').textContent).toBe('@mark_teufel01');
   });
 
@@ -283,6 +364,70 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-result-ratings').textContent).toContain('916');
     expect(document.getElementById('arena-result-ratings').textContent).toMatch(/unchanged|unverändert/i);
     await playback;
+  });
+
+  test('renders a backend double knockout as a draw with one Elo block', async () => {
+    mountArena();
+    const audio = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      audio,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'double-ko',
+      roundNumber: 8,
+      fighters: [
+        {
+          slot: 1,
+          name: 'Ashfang',
+          viewerName: '@left',
+          hp: 0,
+          maxHp: 40
+        },
+        {
+          slot: 2,
+          name: 'Ripple',
+          viewerName: '@right',
+          hp: 0,
+          maxHp: 40
+        }
+      ]
+    });
+
+    await view.complete({
+      eventId: 'double-ko:done',
+      winnerSlot: 0,
+      winner: null,
+      terminalReason: 'double_knockout',
+      knockout: null,
+      ratingChanges: [
+        { slot: 1, before: 1040, after: 1040, delta: 0 },
+        { slot: 2, before: 1010, after: 1010, delta: 0 }
+      ]
+    });
+
+    expect(document.getElementById('battle').dataset.terminal).toBe('draw');
+    for (const slot of [1, 2]) {
+      expect(document.getElementById(`arena-fighter-${slot}`).classList)
+        .not.toContain('winner');
+      expect(document.getElementById(`arena-fighter-${slot}`).classList)
+        .not.toContain('defeated');
+    }
+    expect(document.getElementById('arena-result-ko').textContent)
+      .toBe('Doppel-K.-O.');
+    expect(document.getElementById('arena-result-winner').textContent)
+      .toBe('Unentschieden');
+    expect(document.getElementById('arena-result-monster').textContent).toBe('');
+    expect(document.getElementById('arena-result-summary').textContent)
+      .toContain('8');
+    expect(document.getElementById('arena-result-ratings').textContent)
+      .toContain('@left: ELO unchanged (1040)');
+    expect(document.getElementById('arena-result-rating').textContent).toBe('');
+    expect(audio.play).not.toHaveBeenCalledWith(
+      'arena.victory',
+      expect.any(Object)
+    );
   });
 
   test('keeps a readable action card and visible lead from public combat state', async () => {
@@ -832,6 +977,68 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     })).toBe(true);
   });
 
+  test.each([
+    [477, 829],
+    [1080, 1920]
+  ])('keeps chat detail above the complete egg shelf lane at %sx%s', (_width, height) => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const detailBottoms = rules
+      .filter(rule => rule.selectorText === '#chat-detail')
+      .map(rule => rule.style.getPropertyValue('bottom'))
+      .filter(Boolean);
+
+    expect(detailBottoms).not.toContain('28%');
+    expect(detailBottoms).toContain(
+      'calc(26% + var(--egg-shelf-lane-height))'
+    );
+    const shelfTop = (height * 0.74) - 112;
+    const detailBottomEdge = (height * 0.74) - 124;
+    expect(detailBottomEdge).toBeLessThanOrEqual(shelfTop);
+  });
+
+  test('uses one shared portrait choice surface with readable paired A B C skills', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const choiceSurface = dom.window.document.getElementById(
+      'arena-choice-surface'
+    );
+
+    expect(choiceSurface).not.toBeNull();
+    expect(choiceSurface.querySelectorAll('[data-skill-deck]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-skill="A"]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-skill="B"]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-skill="C"]')).toHaveLength(2);
+    expect(choiceSurface.querySelectorAll('[data-choice-owner]')).toHaveLength(2);
+    expect(html).toMatch(
+      /@media \(orientation: portrait\)[\s\S]*#arena-choice-surface[\s\S]*font-size:clamp\(16px/
+    );
+    expect(html).toMatch(
+      /@media \(orientation: portrait\)[\s\S]*#arena-choice-surface[\s\S]*font-size:clamp\(14px/
+    );
+    expect(html).not.toMatch(
+      /@media \(orientation: portrait\)[\s\S]*\.skill-copy\s*\{[^}]*clamp\(10px/
+    );
+  });
+
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
@@ -858,6 +1065,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(dom.window.document.querySelector('#arena-result-monster')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-summary')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-ratings')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-rating')).toBeNull();
     expect(html).toContain('--arena-gameplay-height:74%');
     expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%;[^}]*z-index:50/s);
     expect(html).toMatch(

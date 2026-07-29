@@ -1403,6 +1403,31 @@
       a.y + a.height > b.y;
   }
 
+  function resolveBattleWinnerSlot(payload = {}, battleIds = []) {
+    const explicit = payload.winnerSlot;
+    if (explicit !== null && explicit !== undefined && explicit !== '') {
+      const slot = Number(explicit);
+      if ([0, 1, 2].includes(slot)) return slot;
+    }
+    if (String(payload.terminalReason || '').toLowerCase() === 'double_knockout') {
+      return 0;
+    }
+    const winner = payload.winner && typeof payload.winner === 'object'
+      ? payload.winner
+      : {};
+    const winnerId = String(
+      winner.monsterId ?? winner.monster_id ??
+      payload.battle?.winnerMonsterId ?? payload.battle?.winner_monster_id ??
+      ''
+    ).trim();
+    if (!winnerId) return 0;
+    const normalizedIds = [battleIds[0], battleIds[1]]
+      .map(value => String(value ?? '').trim());
+    if (normalizedIds[0] && winnerId === normalizedIds[0]) return 1;
+    if (normalizedIds[1] && winnerId === normalizedIds[1]) return 2;
+    return 0;
+  }
+
   function notificationShelfLayout({
     width,
     height,
@@ -1470,6 +1495,7 @@
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
     replayableRecentEvents,
     rectanglesOverlap,
+    resolveBattleWinnerSlot,
     resolveLayoutSettings,
     safeZoneCollisions,
     statPromptKey,

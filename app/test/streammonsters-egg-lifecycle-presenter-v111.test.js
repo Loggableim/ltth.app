@@ -3,6 +3,12 @@
 const EggStageView = require(
   '../plugins/streamalchemy/streammonsters-egg-stage-view'
 );
+const EggStageProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/egg-stage-projector'
+);
+const PublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
 const fs = require('fs');
 const path = require('path');
 
@@ -19,16 +25,17 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
   );
 
   test('gift landings explicitly say that the egg is already owned', () => {
+    const eggStage = new EggStageProjector().projectEgg({
+      egg_id: 'gift-contract',
+      user_id: 'viewer-contract',
+      provenance: 'gift',
+      element: 'Volt',
+      state: 'incubating',
+      display_name: 'Luna',
+      ready_at_ms: 100_000
+    });
     expect(card('egg_landed', {
-      eggStage: {
-        visualId: 'gift-1',
-        provenance: 'gift',
-        ownershipState: 'owned',
-        displayName: 'Luna',
-        state: 'incubating',
-        queuePosition: 0,
-        timing: { readyAtMs: 100_000 }
-      }
+      eggStage
     })).toMatchObject({
       kind: 'gift_owned',
       viewer: 'Luna',
@@ -36,7 +43,7 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
       copyKey: 'eggLifecycleGiftOwnedCopy',
       placement: 'upper-third',
       durationMs: 12_000,
-      commands: ['!eier', '!hatch']
+      commands: ['!eier']
     });
   });
 
@@ -83,7 +90,35 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
     })).toMatchObject({
       kind: 'free_claimed',
       viewer: 'Nova',
-      commands: ['!eier', '!hatch']
+      commands: ['!eier']
+    });
+  });
+
+  test('derives NEXT from egg state instead of advertising an unavailable hatch', () => {
+    expect(card('egg_landed', {
+      eggStage: {
+        visualId: 'gift-ready',
+        provenance: 'gift',
+        ownershipState: 'owned',
+        state: 'ready',
+        displayName: 'Luna'
+      }
+    })).toMatchObject({
+      kind: 'gift_owned',
+      commands: ['!hatch']
+    });
+    expect(card('free_egg_claimed', {
+      eggStage: {
+        visualId: 'free-queued',
+        provenance: 'free',
+        state: 'queued',
+        queuePosition: 2,
+        displayName: 'Nova'
+      }
+    })).toMatchObject({
+      kind: 'free_claimed',
+      queuePosition: 2,
+      commands: ['!eier']
     });
   });
 
@@ -131,6 +166,58 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
       monster: { name: 'Ashfang' }
     })).toMatchObject({
       kind: 'auto_hatched',
+      params: expect.objectContaining({ monster: 'Ashfang' }),
+      commands: ['!monster']
+    });
+    const projectedAutoHatch = new PublicEventProjector().project(
+      'streammonsters:egg_hatched',
+      {
+        autoHatch: true,
+        displayName: 'Kris',
+        egg: {
+          egg_id: 'private-auto-egg',
+          state: 'hatched',
+          element: 'Ember'
+        },
+        monster: {
+          monster_id: 'private-auto-monster',
+          name: 'Ashfang',
+          element: 'Ember'
+        }
+      }
+    );
+    expect(projectedAutoHatch.egg.visualId).toBeUndefined();
+    expect(EggStageView.buildHatchRevealNotice(projectedAutoHatch, {
+      commands
+    })).toMatchObject({
+      automatic: true,
+      titleKey: 'eggLifecycleAutoHatchedTitle',
+      copyKey: 'eggLifecycleAutoHatchedCopy',
+      params: expect.objectContaining({ monster: 'Ashfang' }),
+      commands: ['!monster']
+    });
+    expect(EggStageView.buildHatchRevealNotice({
+      ...projectedAutoHatch,
+      autoHatch: false
+    }, {
+      commands
+    })).toMatchObject({
+      automatic: false,
+      titleKey: 'hatchedTitle',
+      copyKey: 'hatchedCopy',
+      commands: ['!monster']
+    });
+    expect(card('egg_hatched', {
+      autoHatch: true,
+      egg: {
+        visualId: 'egg-auto-real-event',
+        state: 'hatched',
+        displayName: 'Kris'
+      },
+      monster: { name: 'Ashfang' }
+    })).toMatchObject({
+      kind: 'auto_hatched',
+      titleKey: 'eggLifecycleAutoHatchedTitle',
       params: expect.objectContaining({ monster: 'Ashfang' }),
       commands: ['!monster']
     });

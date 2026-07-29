@@ -452,6 +452,41 @@
     };
   }
 
+  function previewComposition(layout, state) {
+    const geometry = previewGeometry(layout);
+    const mode = state === 'battle' ? 'battle' : 'normal';
+    const sourceOrder = [
+      'stream-monsters-takeover',
+      'avatar-likes-music',
+      'base-scene'
+    ];
+    const visibleZones = mode === 'battle'
+      ? ['battle', 'safe']
+      : [
+          'logo',
+          'music',
+          'notification',
+          'avatar',
+          'likes',
+          'shelf',
+          'xp',
+          'safe'
+        ].filter(zone => geometry.zones[zone]);
+    return {
+      mode,
+      width: geometry.width,
+      height: geometry.height,
+      gameplayPercent: geometry.gameplayPercent,
+      chatPercent: geometry.chatPercent,
+      visibleZones,
+      battleTakeover: mode === 'battle',
+      externalSources: mode === 'battle'
+        ? 'move_or_disable_below_takeover'
+        : 'visible',
+      sourceOrder
+    };
+  }
+
   function buildEggShelfDiagnostics(eggStage = []) {
     const eggs = Array.isArray(eggStage) ? eggStage : [];
     const publicFree = eggs.filter(egg => (
@@ -673,6 +708,7 @@
     liveStatusTranslationKey,
     normalizeDemoRequest,
     normalizeOverlayLanguage,
+    previewComposition,
     previewGeometry,
     resolveCommandReference,
     summarizeRepairResult,

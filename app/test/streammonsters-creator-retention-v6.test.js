@@ -500,7 +500,8 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
       'freeEggNextCleanup',
       'tutorialHintState',
       'retentionTimerWarning',
-      'portraitStagePreview'
+      'portraitNormalPreview',
+      'portraitBattlePreview'
     ]) {
       expect(document.getElementById(id)).not.toBeNull();
     }

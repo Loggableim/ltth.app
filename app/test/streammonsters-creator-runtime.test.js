@@ -20,6 +20,7 @@ const {
   leaderboardDisplayName,
   liveStatusTranslationKey,
   normalizeDemoRequest,
+  previewComposition,
   previewGeometry,
   resolveCommandReference,
   summarizeRepairResult,
@@ -473,6 +474,48 @@ describe('Stream Monsters creator controls', () => {
         battle: { x: 0, y: 0, width: 100, height: 74 },
         safe: { x: 0, y: 74, width: 100, height: 26 }
       }
+    });
+  });
+
+  test('models normal and battle portrait compositions without pretending to hide external OBS sources', () => {
+    expect(previewComposition('portrait', 'normal')).toEqual({
+      mode: 'normal',
+      width: 1080,
+      height: 1920,
+      gameplayPercent: 74,
+      chatPercent: 26,
+      visibleZones: [
+        'logo',
+        'music',
+        'notification',
+        'avatar',
+        'likes',
+        'shelf',
+        'xp',
+        'safe'
+      ],
+      battleTakeover: false,
+      externalSources: 'visible',
+      sourceOrder: [
+        'stream-monsters-takeover',
+        'avatar-likes-music',
+        'base-scene'
+      ]
+    });
+    expect(previewComposition('portrait', 'battle')).toEqual({
+      mode: 'battle',
+      width: 1080,
+      height: 1920,
+      gameplayPercent: 74,
+      chatPercent: 26,
+      visibleZones: ['battle', 'safe'],
+      battleTakeover: true,
+      externalSources: 'move_or_disable_below_takeover',
+      sourceOrder: [
+        'stream-monsters-takeover',
+        'avatar-likes-music',
+        'base-scene'
+      ]
     });
   });
 

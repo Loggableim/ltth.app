@@ -121,6 +121,22 @@
       : Math.max(1, Number(minimumMs) || 12_000);
   }
 
+  function buildHatchRevealNotice(payload = {}, { commands = {} } = {}) {
+    const automatic = payload.autoHatch === true;
+    const monster = boundedText(payload.monster?.name, 64);
+    const viewer = safeViewerName(
+      payload.displayName || payload.viewerName || payload.owner?.displayName
+    );
+    const monstersCommand = boundedText(commands.monsters, 48);
+    return {
+      automatic,
+      titleKey: automatic ? 'eggLifecycleAutoHatchedTitle' : 'hatchedTitle',
+      copyKey: automatic ? 'eggLifecycleAutoHatchedCopy' : 'hatchedCopy',
+      params: { monster, viewer },
+      commands: monstersCommand ? [monstersCommand] : []
+    };
+  }
+
   function buildLifecycleNotice(type, payload = {}, {
     commands = {},
     nowMs = Date.now()
@@ -140,6 +156,12 @@
     const commandList = (...keys) => [...new Set(
       keys.map(command).filter(Boolean)
     )].slice(0, 2);
+    const ownedEggCommands = () => {
+      const state = String(egg.state || '').toLowerCase();
+      if (state === 'ready') return commandList('hatch');
+      if (state === 'hatched') return commandList('monsters');
+      return commandList('eggs');
+    };
     const common = {
       viewer,
       placement: 'upper-third',
@@ -163,14 +185,17 @@
     if (
       ['egg_landed', 'egg_spawned'].includes(normalizedType) &&
       egg.provenance === 'gift' &&
-      egg.ownershipState === 'owned'
+      (
+        egg.ownershipState === 'owned' ||
+        (egg.adoptionStatus === 'owned' && egg.adoptable !== true)
+      )
     ) {
       return {
         ...common,
         kind: 'gift_owned',
         titleKey: 'eggLifecycleGiftOwnedTitle',
         copyKey: 'eggLifecycleGiftOwnedCopy',
-        commands: commandList('eggs', 'hatch')
+        commands: ownedEggCommands()
       };
     }
 
@@ -216,7 +241,7 @@
         kind: 'free_claimed',
         titleKey: 'eggLifecycleFreeClaimedTitle',
         copyKey: 'eggLifecycleFreeClaimedCopy',
-        commands: commandList('eggs', 'hatch')
+        commands: ownedEggCommands()
       };
     }
 
@@ -259,7 +284,10 @@
       };
     }
 
-    if (['egg_auto_hatched', 'auto_hatch_completed'].includes(normalizedType)) {
+    if (
+      ['egg_auto_hatched', 'auto_hatch_completed'].includes(normalizedType) ||
+      (normalizedType === 'egg_hatched' && payload.autoHatch === true)
+    ) {
       const monster = boundedText(payload.monster?.name, 64);
       return {
         ...common,
@@ -401,7 +429,6 @@
     const calloutDeadlineById = new Map();
     const calloutTimers = new Map();
     const landingTimers = new Map();
-    const landingStartedAtById = new Map();
     const eggsById = new Map();
     const pendingLandingIds = new Set();
     let rotationIndex = 0;
@@ -499,7 +526,6 @@
       if (!item || item.dataset.eggId !== visualId) return;
       item.classList.remove('landing');
       pendingLandingIds.delete(visualId);
-      landingStartedAtById.delete(visualId);
       const handle = landingTimers.get(visualId);
       if (handle != null) cancel(handle);
       landingTimers.delete(visualId);
@@ -527,14 +553,6 @@
     }
 
     function updateKeyedEggNode(item, egg, index) {
-      const landingStartedAt = landingStartedAtById.get(egg.visualId);
-      if (
-        item.classList.contains('landing') &&
-        Number.isFinite(Number(landingStartedAt)) &&
-        now() - Number(landingStartedAt) >= 900
-      ) {
-        settleLanding(egg.visualId, item);
-      }
       item.dataset.state = boundedText(egg.state, 24);
       item.dataset.provenance = boundedText(egg.provenance, 24);
       item.dataset.element = egg.element.toLowerCase();
@@ -646,7 +664,6 @@
     function applySnapshot(eggStage = []) {
       eggsById.clear();
       pendingLandingIds.clear();
-      landingStartedAtById.clear();
       for (const egg of Array.isArray(eggStage) ? eggStage : []) {
         const visualId = boundedText(egg?.visualId, 64);
         if (visualId && !isClaimedFreeInventoryEgg(egg)) eggsById.set(visualId, egg);
@@ -689,7 +706,6 @@
         eggsById.set(visualId, { ...egg, visualId });
         if (isNewLanding) {
           pendingLandingIds.add(visualId);
-          landingStartedAtById.set(visualId, now());
         }
       }
       render();
@@ -720,7 +736,6 @@
         calloutTimers.clear();
         for (const handle of landingTimers.values()) cancel(handle);
         landingTimers.clear();
-        landingStartedAtById.clear();
         if (rotationTimer != null && typeof options.clearInterval === 'function') {
           options.clearInterval(rotationTimer);
         }
@@ -738,6 +753,7 @@
     COUNTDOWN_INTERVAL_MS,
     MAX_VISIBLE_EGGS,
     buildAdoptionNotice,
+    buildHatchRevealNotice,
     buildLifecycleNotice,
     buildShelfModel,
     createEggStageView,

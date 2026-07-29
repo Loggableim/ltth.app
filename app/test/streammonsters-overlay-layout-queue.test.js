@@ -255,6 +255,29 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(runtime.statPromptKey({ ...canonical, deadlineMs: 123457 })).not.toBe(runtime.statPromptKey(canonical));
   });
 
+  test('preserves an explicit double-knockout draw and only infers exact legacy winners', () => {
+    expect(runtime.resolveBattleWinnerSlot({
+      winnerSlot: 0,
+      winner: null,
+      terminalReason: 'double_knockout'
+    }, ['monster-left', 'monster-right'])).toBe(0);
+    expect(runtime.resolveBattleWinnerSlot({
+      winnerSlot: 1
+    }, ['monster-left', 'monster-right'])).toBe(1);
+    expect(runtime.resolveBattleWinnerSlot({
+      winnerSlot: 2
+    }, ['monster-left', 'monster-right'])).toBe(2);
+    expect(runtime.resolveBattleWinnerSlot({
+      winner: { monsterId: 'monster-right' }
+    }, ['monster-left', 'monster-right'])).toBe(2);
+    expect(runtime.resolveBattleWinnerSlot({
+      winner: null
+    }, ['monster-left', 'monster-right'])).toBe(0);
+    expect(runtime.resolveBattleWinnerSlot({
+      winner: {}
+    }, [null, null])).toBe(0);
+  });
+
   test('keeps spawn, hatch and every battle skill event in indivisible critical groups', () => {
     for (const type of [
       'egg_spawned',

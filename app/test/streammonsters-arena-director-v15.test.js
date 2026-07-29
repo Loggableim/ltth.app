@@ -195,6 +195,36 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     expect(timeline.beats.filter(beat => beat.type === 'hud')).toHaveLength(2);
   });
 
+  test.each([
+    ['attack', 'A'],
+    ['defense', 'B'],
+    ['special', 'C']
+  ])('emits one authoritative %s element scene for a rules-v8 action', (scene, choice) => {
+    const timeline = ArenaDirector.buildArcadeTimeline('battle_skill_used', {
+      eventId: `semantic-${scene}`,
+      action: {
+        rulesVersion: 8,
+        eventId: `semantic-${scene}`,
+        round: 1,
+        actorSlot: 1,
+        targetSlot: 2,
+        choice,
+        skill: {
+          name: `${scene} skill`,
+          type: scene,
+          element: 'Volt',
+          vfxKey: `pulse:${scene}`
+        },
+        hits: []
+      }
+    });
+    const semanticScenes = timeline.beats
+      .filter(beat => beat.effect?.semanticAction === true)
+      .map(beat => beat.effect.scene);
+
+    expect(semanticScenes).toEqual([scene]);
+  });
+
   test('presents Arena Collapse as an ordered replayable HUD update', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_arena_collapse', {
       eventId: 'match-collapse:event:22',

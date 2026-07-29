@@ -83,6 +83,7 @@
     let battleSurfaceActive = false;
     let activeLocale = null;
     let renderVisibleComposite = null;
+    let lastRound = 1;
     const acceptedEventIds = new Set();
     const acceptedTimelineEventIds = new Set();
     const choicesByKey = {
@@ -116,6 +117,9 @@
       tied: 'Gleichstand',
       knockoutResult: 'K.-O.',
       forfeitResult: 'Aufgabe',
+      doubleKnockoutResult: 'Doppel-K.-O.',
+      draw: 'Unentschieden',
+      doubleKnockoutSummary: 'Runde {round} · Beide Monster sind K. O.',
       resultSummary: 'Runde {round} · {hp}/{maxHp} HP übrig',
       ratingChanged: '{name}: {before} → {after} ({delta})',
       ratingUnchanged: '{name}: ELO unchanged ({after})',
@@ -150,6 +154,9 @@
       tied: 'arenaTiedLabel',
       knockoutResult: 'arenaKnockoutResult',
       forfeitResult: 'arenaForfeitResult',
+      doubleKnockoutResult: 'arenaDoubleKnockoutResult',
+      draw: 'arenaDrawLabel',
+      doubleKnockoutSummary: 'arenaDoubleKnockoutSummary',
       resultSummary: 'arenaResultSummary',
       ratingChanged: 'arenaRatingChanged',
       ratingUnchanged: 'arenaRatingUnchanged',
@@ -540,9 +547,17 @@
       };
       stateBySlot.set(slot, state);
       const fallbackName = formatLabel('monster', { slot });
-      setText(`arena-name-${slot}`, state.name || fallbackName);
-      if (state.viewerName) setText(`arena-owner-${slot}`, state.viewerName);
-      else setLabelText(`arena-owner-${slot}`, 'viewer');
+      const publicMonsterName = safeDisplayName(state.name, fallbackName);
+      const publicViewerName = safeDisplayName(
+        state.viewerName,
+        formatLabel('viewer')
+      );
+      setText(`arena-name-${slot}`, publicMonsterName);
+      setText(`arena-owner-${slot}`, publicViewerName);
+      setText(
+        `arena-choice-owner-${slot}`,
+        `${publicViewerName} · ${publicMonsterName}`
+      );
       setLabelText(`arena-level-${slot}`, 'level', {
         level: Math.max(1, numeric(state.level, 1))
       });
@@ -555,7 +570,7 @@
       const image = node(`arena-image-${slot}`);
       if (image && state.imageUrl) {
         image.src = state.imageUrl;
-        image.alt = state.name || fallbackName;
+        image.alt = publicMonsterName;
       }
       const fighter = fighterNode(slot);
       if (fighter) {
@@ -734,8 +749,9 @@
         arena.removeAttribute('data-terminal');
       }
       if (match.roundNumber || match.round) {
+        lastRound = Math.max(1, numeric(match.roundNumber ?? match.round, lastRound));
         setLabelText('arena-round', 'round', {
-          round:numeric(match.roundNumber ?? match.round, 1)
+          round:lastRound
         });
       } else {
         setLabelText('arena-round', 'roster');
@@ -751,6 +767,7 @@
       activeChargeWindow = normalizeChargeWindow(payload);
       if (payload.fighters) renderFighters(payload.fighters);
       const round = Math.max(1, numeric(payload.round ?? payload.roundNumber, 1));
+      lastRound = round;
       const choices = Array.isArray(payload.choices) && payload.choices.length
         ? payload.choices
         : ['A', 'B', 'C'];
@@ -895,16 +912,6 @@
             elementLight.classList.add('visible');
           }
           if (arena) arena.dataset.element = String(action.skill?.element || '').toLowerCase();
-          const scene = String(action.skill?.type || '').toLowerCase();
-          if (scene && scene !== 'special') {
-            fire(effects, scene === 'defense' ? 'defense' : 'attack', {
-              eventId: action.eventId,
-              element: action.skill?.element,
-              vfxKey: action.skill?.vfxKey,
-              actorSlot: action.actorSlot,
-              targetSlot: action.targetSlot
-            });
-          }
           const cue = cueForSkill(action.skill);
           if (cue) fire(audio, cue, {
             eventId: beat.beatId || `${action.eventId || action.eventSequence}:skill`
@@ -1095,6 +1102,12 @@
     async function playAction(payload = {}) {
       const action = unwrapAction(payload);
       if (!acceptAction(action)) return false;
+      if (payload.round != null || payload.roundNumber != null || payload.action?.round != null) {
+        lastRound = Math.max(
+          1,
+          numeric(payload.round ?? payload.roundNumber ?? payload.action?.round, lastRound)
+        );
+      }
       stopCountdown();
       setText('arena-countdown', '');
       if (arena) arena.dataset.phase = 'action';
@@ -1332,6 +1345,8 @@
       stopCountdown();
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
+      const terminalReason = String(payload.terminalReason || '').toLowerCase();
+      const isDoubleKnockout = terminalReason === 'double_knockout';
       setBattleSurface(true, 'result');
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
@@ -1341,23 +1356,29 @@
       if (arena) {
         arena.classList.add('visible');
         arena.dataset.phase = 'completed';
-        arena.dataset.terminal = 'winner';
+        arena.dataset.terminal = isDoubleKnockout
+          ? 'draw'
+          : (winnerSlot ? 'winner' : 'ended');
       }
       setText('arena-skill-prompt', '');
       setText('arena-countdown', '');
       const winner = payload.winner && typeof payload.winner === 'object'
         ? payload.winner
         : {};
-      const winnerName = safeDisplayName(
-        payload.winnerViewerName || winner.viewerName ||
-        stateBySlot.get(winnerSlot)?.viewerName ||
-        stateBySlot.get(winnerSlot)?.name,
-        formatLabel('viewer')
-      );
-      const winnerMonster = safeDisplayName(
-        winner.name || stateBySlot.get(winnerSlot)?.name,
-        formatLabel('monster', { slot:winnerSlot })
-      );
+      const winnerName = winnerSlot
+        ? safeDisplayName(
+          payload.winnerViewerName || winner.viewerName ||
+          stateBySlot.get(winnerSlot)?.viewerName ||
+          stateBySlot.get(winnerSlot)?.name,
+          formatLabel('viewer')
+        )
+        : '';
+      const winnerMonster = winnerSlot
+        ? safeDisplayName(
+          winner.name || stateBySlot.get(winnerSlot)?.name,
+          formatLabel('monster', { slot:winnerSlot })
+        )
+        : '';
       const ratingText = (Array.isArray(payload.ratingChanges) ? payload.ratingChanges : [])
         .map(change => {
           const slot = numeric(change?.slot);
@@ -1388,20 +1409,33 @@
       const knockout = payload.knockout && typeof payload.knockout === 'object'
         ? payload.knockout
         : null;
-      const terminalReason = String(payload.terminalReason || '').toLowerCase();
       const result = node('arena-result');
       if (result) result.classList.add('visible');
       setLabelText(
         'arena-result-ko',
-        terminalReason === 'forfeit' ? 'forfeitResult' : 'knockoutResult'
+        isDoubleKnockout
+          ? 'doubleKnockoutResult'
+          : (terminalReason === 'forfeit' ? 'forfeitResult' : 'knockoutResult')
       );
       if (winnerSlot) {
         setLabelText('arena-result-winner', 'winner', { name:winnerName });
+      } else if (isDoubleKnockout) {
+        setLabelText('arena-result-winner', 'draw');
       } else {
         setLabelText('arena-result-winner', 'battleEnded');
       }
       setText('arena-result-monster', winnerMonster);
-      if (knockout) {
+      if (isDoubleKnockout) {
+        setLabelText('arena-result-summary', 'doubleKnockoutSummary', {
+          round:Math.max(
+            1,
+            numeric(
+              knockout?.round ?? payload.round ?? payload.roundNumber,
+              lastRound
+            )
+          )
+        });
+      } else if (knockout) {
         setLabelText('arena-result-summary', 'resultSummary', {
           round:Math.max(1, numeric(knockout.round, 1)),
           hp:Math.max(0, numeric(knockout.remainingHp)),
@@ -1411,21 +1445,26 @@
         setText('arena-result-summary', '');
       }
       setText('arena-result-ratings', canonicalRatingText);
-      setText('arena-result-rating', canonicalRatingText);
       if (winnerSlot) setLabelText('arena-feed', 'winner', { name:winnerName });
+      else if (isDoubleKnockout) setLabelText('arena-feed', 'draw');
       else setLabelText('arena-feed', 'battleEnded');
       renderVisibleComposite = () => {
         if (winnerSlot) {
           setLabelText('arena-result-winner', 'winner', { name:winnerName });
           setLabelText('arena-feed', 'winner', { name:winnerName });
+        } else if (isDoubleKnockout) {
+          setLabelText('arena-result-winner', 'draw');
+          setLabelText('arena-feed', 'draw');
         } else {
           setLabelText('arena-result-winner', 'battleEnded');
           setLabelText('arena-feed', 'battleEnded');
         }
       };
-      fire(audio, 'arena.victory', {
-        eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
-      });
+      if (winnerSlot) {
+        fire(audio, 'arena.victory', {
+          eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
+        });
+      }
       await wait(8_000);
       if (terminalVersion === surfaceVersion) {
         result?.classList.remove('visible');
