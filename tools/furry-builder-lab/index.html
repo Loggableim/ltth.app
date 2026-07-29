@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Furry Builder Lab</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="lab-shell">
+      <header class="lab-header">
+        <p class="eyebrow">LOKALES PROTOTYP-LAB</p>
+        <h1>Furry Builder <span>Lab</span></h1>
+        <p class="intro">Kombiniere Kopf, Augen und Mund. Jede Auswahl wird sofort in der Vorschau zusammengesetzt.</p>
+      </header>
+
+      <section class="preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">LIVE-VORSCHAU</p>
+            <h2 id="preview-title">Dein Furry</h2>
+          </div>
+          <button class="random-button" type="button" id="randomize">⚡ Zufall</button>
+        </div>
+        <div class="canvas-frame">
+          <canvas id="preview" width="1024" height="1024" aria-label="Zusammengesetzte Furry-Vorschau"></canvas>
+        </div>
+        <p class="selection-readout" id="selection-readout" aria-live="polite"></p>
+      </section>
+
+      <section class="controls-panel" aria-label="Furry-Bauteile auswählen">
+        <div class="part-card" data-part="heads">
+          <div class="part-heading"><div><p class="eyebrow">SCHICHT 01</p><h2>Kopf</h2></div><span>12 Varianten</span></div>
+          <div class="choice-grid" role="group" aria-label="Kopf auswählen"></div>
+          <div class="cycle-controls"><button type="button" data-action="previous">← Zurück</button><button type="button" data-action="next">Weiter →</button></div>
+        </div>
+        <div class="part-card" data-part="eyes">
+          <div class="part-heading"><div><p class="eyebrow">SCHICHT 02</p><h2>Augen</h2></div><span>12 Varianten</span></div>
+          <div class="choice-grid" role="group" aria-label="Augen auswählen"></div>
+          <div class="cycle-controls"><button type="button" data-action="previous">← Zurück</button><button type="button" data-action="next">Weiter →</button></div>
+        </div>
+        <div class="part-card" data-part="mouths">
+          <div class="part-heading"><div><p class="eyebrow">SCHICHT 03</p><h2>Mund</h2></div><span>12 Varianten</span></div>
+          <div class="choice-grid" role="group" aria-label="Mund auswählen"></div>
+          <div class="cycle-controls"><button type="button" data-action="previous">← Zurück</button><button type="button" data-action="next">Weiter →</button></div>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
