@@ -1,10 +1,14 @@
 'use strict';
 
 const {
+  EFFECT_RECIPES,
+  ELEMENT_PALETTES,
   ELEMENT_SIGNATURES,
   QUALITY_BUDGETS,
   SCENE_DURATIONS,
+  buildEffectUniforms,
   createEffectsRenderer,
+  resolveEffectRecipe,
   sceneChoreography
 } = require('../plugins/streamalchemy/streammonsters-effects-renderer');
 
@@ -113,34 +117,34 @@ describe('Stream Monsters 1.11 element effect signatures', () => {
   test('six elements expose distinct attack, defense and special motif signatures', () => {
     const expected = {
       Ember: {
-        attack: ['sparks', 'flames'],
-        defense: ['heat-ripple'],
-        special: ['sparks', 'flames', 'heat-ripple']
+        attack: ['flame-tongues', 'rising-sparks'],
+        defense: ['heat-distortion-rings', 'ember-guard'],
+        special: ['fire-vortex', 'radial-sparks', 'hot-core']
       },
       Tide: {
-        attack: ['water-arcs'],
-        defense: ['tide-rings', 'mist'],
-        special: ['water-arcs', 'tide-rings', 'mist']
+        attack: ['curved-water-ribbon', 'droplets'],
+        defense: ['concentric-tide-rings', 'mist'],
+        special: ['cresting-wave-arcs', 'foam-mist-burst']
       },
       Grove: {
-        attack: ['vines', 'leaves'],
-        defense: ['root-crystal'],
-        special: ['vines', 'leaves', 'root-crystal']
+        attack: ['winding-vine', 'leaf-shards'],
+        defense: ['root-crystal-barrier'],
+        special: ['root-eruption', 'leaf-spiral', 'crystal-bloom']
       },
       Gale: {
-        attack: ['wind-ribbons', 'feathers'],
+        attack: ['fast-wind-ribbons', 'feathers'],
         defense: ['pressure-rings'],
-        special: ['wind-ribbons', 'feathers', 'pressure-rings']
+        special: ['cyclone-ribbons', 'feather-burst']
       },
       Volt: {
         attack: ['branching-lightning', 'afterimage'],
-        defense: ['afterimage'],
-        special: ['branching-lightning', 'afterimage']
+        defense: ['static-afterimage-shell'],
+        special: ['chain-lightning-storm', 'white-flash']
       },
       Lunar: {
-        attack: ['crescents', 'stars'],
-        defense: ['shadow'],
-        special: ['crescents', 'shadow', 'stars']
+        attack: ['travelling-crescents', 'stars'],
+        defense: ['shadow-veil'],
+        special: ['eclipse-disc', 'crescents', 'orbiting-stars']
       }
     };
 
@@ -162,6 +166,184 @@ describe('Stream Monsters 1.11 element effect signatures', () => {
       ))
     ));
     expect(new Set(ids).size).toBe(18);
+  });
+
+  test('publishes the literal 18 semantic recipes and three-color element palettes', () => {
+    const expected = {
+      Ember: {
+        palette: ['#ff5a36', '#ffb347', '#fff2b0'],
+        attack: {
+          description: 'directional flame tongues + rising sparks',
+          motifs: ['flame-tongues', 'rising-sparks']
+        },
+        defense: {
+          description: 'heat-distortion rings + ember guard',
+          motifs: ['heat-distortion-rings', 'ember-guard']
+        },
+        special: {
+          description: 'fire vortex + radial sparks + hot core',
+          motifs: ['fire-vortex', 'radial-sparks', 'hot-core']
+        }
+      },
+      Tide: {
+        palette: ['#2bbcff', '#70f5ff', '#dffbff'],
+        attack: {
+          description: 'curved water ribbon + droplets',
+          motifs: ['curved-water-ribbon', 'droplets']
+        },
+        defense: {
+          description: 'concentric tide rings + mist',
+          motifs: ['concentric-tide-rings', 'mist']
+        },
+        special: {
+          description: 'cresting wave arcs + foam/mist burst',
+          motifs: ['cresting-wave-arcs', 'foam-mist-burst']
+        }
+      },
+      Grove: {
+        palette: ['#48d17c', '#a8e65c', '#f4ffb0'],
+        attack: {
+          description: 'winding vine + leaf shards',
+          motifs: ['winding-vine', 'leaf-shards']
+        },
+        defense: {
+          description: 'root/crystal barrier',
+          motifs: ['root-crystal-barrier']
+        },
+        special: {
+          description: 'root eruption + leaf spiral + crystal bloom',
+          motifs: ['root-eruption', 'leaf-spiral', 'crystal-bloom']
+        }
+      },
+      Gale: {
+        palette: ['#8ef3e2', '#d7ffff', '#b9cfff'],
+        attack: {
+          description: 'fast wind ribbons + feathers',
+          motifs: ['fast-wind-ribbons', 'feathers']
+        },
+        defense: {
+          description: 'pressure rings',
+          motifs: ['pressure-rings']
+        },
+        special: {
+          description: 'cyclone ribbons + feather burst',
+          motifs: ['cyclone-ribbons', 'feather-burst']
+        }
+      },
+      Volt: {
+        palette: ['#ffe45e', '#7efcff', '#ffffff'],
+        attack: {
+          description: 'branching lightning + afterimage',
+          motifs: ['branching-lightning', 'afterimage']
+        },
+        defense: {
+          description: 'static afterimage shell',
+          motifs: ['static-afterimage-shell']
+        },
+        special: {
+          description: 'chain-lightning storm + white flash',
+          motifs: ['chain-lightning-storm', 'white-flash']
+        }
+      },
+      Lunar: {
+        palette: ['#b98cff', '#6e5bff', '#f4e7ff'],
+        attack: {
+          description: 'travelling crescents + stars',
+          motifs: ['travelling-crescents', 'stars']
+        },
+        defense: {
+          description: 'shadow veil',
+          motifs: ['shadow-veil']
+        },
+        special: {
+          description: 'eclipse disc + crescents + orbiting stars',
+          motifs: ['eclipse-disc', 'crescents', 'orbiting-stars']
+        }
+      }
+    };
+
+    expect(ELEMENT_PALETTES).toEqual(Object.fromEntries(
+      Object.entries(expected).map(([element, recipe]) => [element, recipe.palette])
+    ));
+    for (const [element, elementExpected] of Object.entries(expected)) {
+      for (const action of ['attack', 'defense', 'special']) {
+        expect(EFFECT_RECIPES[element][action]).toEqual(expect.objectContaining({
+          id: `${element.toLowerCase()}:${action}`,
+          element,
+          action,
+          palette: elementExpected.palette,
+          description: elementExpected[action].description,
+          motifs: elementExpected[action].motifs
+        }));
+      }
+    }
+    expect(Object.values(EFFECT_RECIPES).flatMap(Object.values)).toHaveLength(18);
+    expect(new Set(Object.values(EFFECT_RECIPES)
+      .flatMap(Object.values)
+      .map(recipe => recipe.motifCode)).size).toBe(18);
+  });
+
+  test('element and action choose the recipe while vfxKey changes only its accent seed', () => {
+    const emberA = resolveEffectRecipe({
+      element: 'Ember',
+      action: 'attack',
+      vfxKey: 'ashfang:attack'
+    });
+    const emberB = resolveEffectRecipe({
+      element: 'Ember',
+      action: 'attack',
+      vfxKey: 'cinder:attack'
+    });
+    const tide = resolveEffectRecipe({
+      element: 'Tide',
+      action: 'attack',
+      vfxKey: 'ashfang:attack'
+    });
+
+    expect(emberA).toEqual(expect.objectContaining({
+      id: 'ember:attack',
+      motifCode: EFFECT_RECIPES.Ember.attack.motifCode
+    }));
+    expect(emberB).toEqual(expect.objectContaining({
+      id: 'ember:attack',
+      motifCode: EFFECT_RECIPES.Ember.attack.motifCode
+    }));
+    expect(emberA.accentSeed).not.toBe(emberB.accentSeed);
+    expect(tide.id).toBe('tide:attack');
+    expect(tide.motifCode).not.toBe(emberA.motifCode);
+  });
+
+  test('hit shield heal evade and primary status alter GPU particle semantics', () => {
+    const plain = buildEffectUniforms(sceneChoreography('attack', {
+      element: 'Volt',
+      actorSlot: 1,
+      targetSlot: 2,
+      vfxKey: 'pulse:attack'
+    }), { timestamp: 500, progress: 0.45, phaseCode: 2, aspect: 0.5625 });
+    const resolved = buildEffectUniforms(sceneChoreography('attack', {
+      element: 'Volt',
+      actorSlot: 1,
+      targetSlot: 2,
+      vfxKey: 'pulse:attack',
+      hitIndex: 2,
+      hitCount: 3,
+      shieldGain: 5,
+      healing: 4,
+      evaded: true,
+      statusEffects: [{ type: 'shock' }]
+    }), { timestamp: 500, progress: 0.45, phaseCode: 2, aspect: 0.5625 });
+
+    expect(resolved.semantic).toEqual(expect.objectContaining({
+      recipeId: 'volt:attack',
+      motifCode: EFFECT_RECIPES.Volt.attack.motifCode,
+      hitIndex: 2,
+      hitCount: 3,
+      shield: 5,
+      heal: 4,
+      evade: 1,
+      primaryStatus: 'shock'
+    }));
+    expect(resolved.values).not.toEqual(plain.values);
   });
 
   test('auto, high, medium and low expose bounded descending render budgets', () => {
@@ -298,7 +480,7 @@ describe('Stream Monsters 1.11 element effect signatures', () => {
     }));
     expect(harness.canvas.dataset.effectSignature).toBe('lunar:special');
     expect(harness.canvas.dataset.effectPhase).toBe('charge');
-    expect(harness.styleValues.get('--sm-effect-color')).toBe('#c7a4ff');
+    expect(harness.styleValues.get('--sm-effect-color')).toBe('#b98cff');
 
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.special);
     await completion;
@@ -331,13 +513,19 @@ describe('Stream Monsters 1.11 element effect signatures', () => {
     await jest.advanceTimersByTimeAsync(32);
 
     const uniforms = [...harness.calls.at(-1)[2]];
-    expect(uniforms.slice(16, 20)).toEqual([5, 3, 2, 3]);
-    expect(uniforms.slice(20, 24)).toEqual([
-      expect.closeTo(0.8),
-      expect.closeTo(0.4),
-      4,
+    expect(uniforms.slice(16, 20)).toEqual([
+      1,
+      expect.any(Number),
+      EFFECT_RECIPES.Volt.attack.motifCode,
       3
     ]);
+    expect(uniforms.slice(28, 32)).toEqual([
+      expect.closeTo(0.8),
+      expect.closeTo(0.4),
+      2,
+      3
+    ]);
+    expect(uniforms.slice(32, 34)).toEqual([4, 3]);
     expect(harness.canvas.dataset.effectSignature).toBe('volt:attack');
 
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);

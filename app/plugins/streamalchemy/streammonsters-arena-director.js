@@ -357,8 +357,14 @@
         type: 'special',
         atMs: offset + 1050,
         durationMs: 250,
+        actorSlot: numeric(action.actorSlot),
+        targetSlot: numeric(action.targetSlot),
         element: action.skill?.element || null,
-        vfxKey: action.skill?.vfxKey || null
+        vfxKey: action.skill?.vfxKey || null,
+        role: action.skill?.role || null,
+        skillEffects: Array.isArray(action.skill?.effects)
+          ? [...action.skill.effects]
+          : []
       });
     }
 
@@ -635,7 +641,12 @@
               scene: semanticScene,
               semanticAction: true,
               element: action.skill?.element || null,
-              vfxKey: action.skill?.vfxKey || null
+              vfxKey: action.skill?.vfxKey || null,
+              role: action.skill?.role || null,
+              skillEffects: Array.isArray(action.skill?.effects)
+                ? [...action.skill.effects]
+                : [],
+              durationMs: 1600
             }
           });
         }
@@ -651,7 +662,12 @@
             scene: 'special',
             semanticAction: true,
             element: beat.element,
-            vfxKey: beat.vfxKey
+            vfxKey: beat.vfxKey,
+            role: beat.role,
+            skillEffects: Array.isArray(beat.skillEffects)
+              ? [...beat.skillEffects]
+              : [],
+            durationMs: 2200
           }
         });
         continue;

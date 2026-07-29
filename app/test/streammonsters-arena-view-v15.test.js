@@ -234,8 +234,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       skill: {
         name: `${scene} skill`,
         type: scene,
+        role: 'striker',
         element: 'Volt',
-        vfxKey: `pulse:${scene}`
+        vfxKey: `pulse:${scene}`,
+        effects: [{ type: 'shock', amount: 2 }]
       },
       statusEffects: [{ type: 'burn', hpDamage: 1, remaining: 1 }],
       hits: [],
@@ -251,6 +253,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(effects.play).toHaveBeenCalledWith(scene, expect.objectContaining({
       eventId: `single-scene-${scene}:1`,
       element: 'Volt',
+      vfxKey: `pulse:${scene}`,
+      role: 'striker',
+      skillEffects: [{ type: 'shock', amount: 2 }],
+      durationMs: expect.any(Number),
       actorSlot: 1,
       targetSlot: 2
     }));
@@ -991,7 +997,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const rules = [];
     const collect = ruleList => {
       for (const rule of [...ruleList]) {
-        if (rule.cssRules) collect(rule.cssRules);
+        if (rule.cssRules?.length) collect(rule.cssRules);
         else rules.push(rule);
       }
     };
@@ -1037,6 +1043,46 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(html).not.toMatch(
       /@media \(orientation: portrait\)[\s\S]*\.skill-copy\s*\{[^}]*clamp\(10px/
     );
+  });
+
+  test('ships a short portrait battle layout with non-overlapping HUD action deck and feed bands', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const compactMedia = rules.find(rule => (
+      rule.parentRule?.conditionText?.includes('max-height: 900px') &&
+      rule.selectorText === '#arena-action-card'
+    ))?.parentRule;
+    const portraitChoiceFeed = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText === '#battle[data-phase="choice"] #arena-feed'
+    ));
+
+    expect(compactMedia).toBeDefined();
+    expect(portraitChoiceFeed?.style.getPropertyValue('display')).toBe('none');
+    const styles = new Map([...compactMedia.cssRules]
+      .filter(rule => rule.selectorText)
+      .map(rule => [rule.selectorText, rule.style]));
+    expect(styles.get('#arena-action-card').getPropertyValue('top')).toBe('20%');
+    expect(styles.get('#arena-action-card').getPropertyValue('min-height')).toBe('0px');
+    expect(styles.get('#battle[data-phase="choice"] #arena-feed').getPropertyValue('display'))
+      .toBe('none');
+    expect(styles.get('#arena-choice-surface').getPropertyValue('bottom')).toBe('1%');
+    expect(styles.get('#battle-effects-canvas').getPropertyValue('z-index')).toBe('3');
+    expect(styles.get('.arena-skill-card .skill-copy').getPropertyValue('text-overflow'))
+      .not.toBe('ellipsis');
   });
 
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {

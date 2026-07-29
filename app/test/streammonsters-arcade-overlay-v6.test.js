@@ -359,7 +359,6 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       'telegraph',
       'advance',
       'special',
-      'element_trail',
       'impact',
       'hit_stop',
       'camera_impulse',

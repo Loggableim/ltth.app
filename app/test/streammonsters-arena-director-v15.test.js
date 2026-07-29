@@ -212,8 +212,10 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
         skill: {
           name: `${scene} skill`,
           type: scene,
+          role: 'striker',
           element: 'Volt',
-          vfxKey: `pulse:${scene}`
+          vfxKey: `pulse:${scene}`,
+          effects: [{ type: 'shock', amount: 2 }]
         },
         hits: []
       }
@@ -223,6 +225,23 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       .map(beat => beat.effect.scene);
 
     expect(semanticScenes).toEqual([scene]);
+    const semanticBeat = timeline.beats.find(beat => beat.effect?.semanticAction === true);
+    expect(semanticBeat).toEqual(expect.objectContaining({
+      actorSlot: 1,
+      targetSlot: 2,
+      durationMs: expect.any(Number),
+      effect: expect.objectContaining({
+        scene,
+        semanticAction: true,
+        element: 'Volt',
+        vfxKey: `pulse:${scene}`,
+        role: 'striker',
+        skillEffects: [{ type: 'shock', amount: 2 }],
+        durationMs: expect.any(Number)
+      })
+    }));
+    expect(semanticBeat.effect.durationMs).toBeGreaterThanOrEqual(250);
+    expect(semanticBeat.effect.durationMs).toBeLessThanOrEqual(2_200);
   });
 
   test('presents Arena Collapse as an ordered replayable HUD update', () => {

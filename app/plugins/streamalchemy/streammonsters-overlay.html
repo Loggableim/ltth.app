@@ -15,7 +15,23 @@
     body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
     #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; isolation:isolate; }
     #effects-canvas { position:fixed; inset:0; z-index:0; width:100%; height:100%; background:transparent; }
-    #effects-canvas.effects-fallback { background:radial-gradient(circle at center,#a984ff20 0,transparent 38%); }
+    .effects-fallback[data-renderer-backend="css"][data-effect-scene="attack"] {
+      background:
+        radial-gradient(circle at calc(var(--sm-effect-target-x) * 100%) calc(var(--sm-effect-target-y) * 100%),var(--sm-effect-color-tertiary) 0 1.2%,transparent 5%),
+        linear-gradient(var(--sm-effect-angle),transparent 25%,var(--sm-effect-color) 48%,var(--sm-effect-color-secondary) 56%,transparent 74%);
+      opacity:.72;
+    }
+    .effects-fallback[data-renderer-backend="css"][data-effect-scene="defense"] {
+      background:
+        radial-gradient(circle at calc(var(--sm-effect-origin-x) * 100%) calc(var(--sm-effect-origin-y) * 100%),transparent 0 10%,var(--sm-effect-color-tertiary) 11% 12%,transparent 13% 17%,var(--sm-effect-color) 18% 20%,transparent 21%);
+      opacity:.62;
+    }
+    .effects-fallback[data-renderer-backend="css"][data-effect-scene="special"] {
+      background:
+        radial-gradient(circle at calc(var(--sm-effect-origin-x) * 100%) calc(var(--sm-effect-origin-y) * 100%),var(--sm-effect-color-tertiary) 0 3%,var(--sm-effect-color) 4% 10%,transparent 23%),
+        conic-gradient(from 20deg at calc(var(--sm-effect-origin-x) * 100%) calc(var(--sm-effect-origin-y) * 100%),transparent,var(--sm-effect-color-secondary),transparent,var(--sm-effect-color),transparent);
+      opacity:.68;
+    }
     #reveal-stage {
       position:fixed; inset:0 0 calc(var(--arena-safe-zone-height) + var(--egg-shelf-lane-height)); z-index:2; display:flex; align-items:var(--reveal-align,flex-end);
       justify-content:var(--reveal-justify,center); padding:38px; pointer-events:none;
@@ -937,6 +953,7 @@
       #arena-choice-surface {
         right:2.5%; bottom:2%; left:2.5%; gap:7px; padding:8px;
       }
+      #battle[data-phase="choice"] #arena-feed { display:none; }
       .arena-skill-deck { gap:5px; }
       #arena-choice-surface .arena-skill-card {
         min-height:64px; padding:8px 9px;
@@ -969,6 +986,52 @@
       .sm-monster-stat { padding:10px; }
       .sm-monster-stat span { font-size:clamp(12px,2.4vw,17px); }
       .sm-monster-stat strong { font-size:clamp(25px,6vw,42px); }
+    }
+    @media (orientation: portrait) and (max-height: 900px) {
+      #arena-topline { top:1%; padding:6px 12px; }
+      #arena-skill-prompt { top:6.5%; padding:7px 10px; font-size:15px; }
+      #arena-lead { top:12.5%; padding:4px 10px; }
+      .arena-fighter { top:34%; height:64%; }
+      #battle[data-phase="choice"] .arena-fighter {
+        top:14%; width:50%; height:52%;
+      }
+      .fighter-hud { padding:6px 7px; border-radius:12px; }
+      .fighter-heading { gap:5px; margin-bottom:3px; }
+      .fighter-name { font-size:14px; }
+      .fighter-owner,.fighter-level,.fighter-hp-row { font-size:10px; }
+      .arena-meter { height:7px; margin-top:3px; }
+      #arena-action-card {
+        top:20%; min-height:0; max-height:112px; padding:7px 10px;
+        gap:2px 7px; border-radius:14px;
+      }
+      #arena-action-player { font-size:12px; }
+      #arena-action-key { width:28px; height:28px; font-size:17px; }
+      #arena-action-skill { font-size:17px; }
+      #arena-action-copy { font-size:11px; line-height:1.08; }
+      #arena-action-metrics { font-size:13px; line-height:1.05; }
+      #arena-choice-surface {
+        right:1.5%; bottom:1%; left:1.5%; gap:5px; padding:5px;
+      }
+      .arena-choice-player { gap:3px; }
+      .arena-choice-owner { font-size:11px; }
+      .arena-skill-deck { gap:3px; }
+      #arena-choice-surface .arena-skill-card {
+        min-height:50px; padding:4px 5px; gap:1px 4px; border-radius:9px;
+      }
+      #arena-choice-surface .arena-skill-card .skill-icon { font-size:13px; }
+      #arena-choice-surface .arena-skill-card .skill-choice {
+        width:20px; height:20px; font-size:11px;
+      }
+      #arena-choice-surface .arena-skill-card .skill-name {
+        font-size:12px; line-height:1.05;
+      }
+      .arena-skill-card .skill-copy {
+        overflow:visible; font-size:10px; line-height:1.08;
+        text-overflow:clip; white-space:normal;
+      }
+      .arena-skill-card .skill-charge { min-width:31px; font-size:9px; }
+      #battle[data-phase="choice"] #arena-feed { display:none; }
+      #battle-effects-canvas { z-index:3; }
     }
     @media (prefers-reduced-motion: reduce) {
       .arena-skill-card.ready {
@@ -2839,6 +2902,8 @@
     }
     arenaView.destroy?.();
     eggStageView.destroy?.();
+    battleEffectsRenderer.destroy?.();
+    effectsRenderer.destroy?.();
   };
   window.addEventListener('pagehide', stopOverlayLifecycle, { once:true });
   window.addEventListener('beforeunload', stopOverlayLifecycle, { once:true });
