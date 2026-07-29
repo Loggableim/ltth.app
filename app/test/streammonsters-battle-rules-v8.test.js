@@ -254,6 +254,13 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       element: 'Tide',
       templateId: 'ripple'
     });
+    insertMonster(sqlite, {
+      id: 'roster-beta-choice',
+      userId: 'roster-viewer-b',
+      name: 'Brine',
+      element: 'Tide',
+      templateId: 'brine'
+    });
     const service = createService({
       store,
       now: () => nowMs

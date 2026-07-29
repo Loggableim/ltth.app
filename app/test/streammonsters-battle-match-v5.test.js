@@ -2374,6 +2374,189 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(JSON.stringify(opened)).not.toContain('viewer-private');
     expect(JSON.stringify(opened)).not.toContain('"stats"');
   });
+
+  test('auto-locks both sole eligible Rules-v8 monsters after match-found exactly once', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'sole-alpha', userId: 'viewer-sole-a' });
+    insertMonster(sqlite, {
+      id: 'sole-beta',
+      userId: 'viewer-sole-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const emit = jest.fn();
+    const service = createMatchService({
+      store,
+      now: () => 1_000,
+      emit,
+      rulesVersion: 8
+    });
+
+    service.join({ userId: 'viewer-sole-a' });
+    const joined = service.join({ userId: 'viewer-sole-b' });
+    const match = service.getMatch(joined.match.matchId);
+    const emittedTypes = emit.mock.calls.map(([eventType]) => eventType);
+
+    expect(match.state).toBe('action');
+    expect(match.participants.map(participant => participant.lockedMonsterId))
+      .toEqual(expect.arrayContaining(['sole-alpha', 'sole-beta']));
+    expect(match.participants).toHaveLength(2);
+    expect(emittedTypes).toEqual([
+      'streammonsters:battle_match_found',
+      'streammonsters:battle_roster_locked',
+      'streammonsters:battle_roster_locked',
+      'streammonsters:battle_choice_opened'
+    ]);
+    expect(emit.mock.calls
+      .filter(([eventType]) => eventType === 'streammonsters:battle_roster_locked')
+      .map(([, payload]) => payload.selectionSource))
+      .toEqual(['sole_eligible', 'sole_eligible']);
+    const replayRosterLocks = service.getPublicNormalizedReplay(match.matchId).events
+      .filter(event => event.type === 'streammonsters:battle_roster_locked');
+    expect(replayRosterLocks).toHaveLength(2);
+    expect(replayRosterLocks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          selectionSource: 'sole_eligible',
+          fighter: expect.objectContaining({ locked: true })
+        })
+      })
+    ]));
+    expect(JSON.stringify(replayRosterLocks)).not.toMatch(
+      /viewer-sole|participantId|monsterId/
+    );
+
+    service.autoLockSoleEligibleRosters(match.matchId);
+    expect(emit.mock.calls.map(([eventType]) => eventType)).toEqual(emittedTypes);
+    const reloadEmit = jest.fn();
+    const recovered = createMatchService({
+      store,
+      now: () => 1_500,
+      emit: reloadEmit,
+      rulesVersion: 8
+    });
+    recovered.autoLockSoleEligibleRosters(match.matchId);
+    expect(reloadEmit).not.toHaveBeenCalled();
+  });
+
+  test('auto-locks only a sole eligible Rules-v8 side and preserves the other choice window', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'single-alpha', userId: 'viewer-single-a' });
+    insertMonster(sqlite, {
+      id: 'choice-beta',
+      userId: 'viewer-choice-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    insertMonster(sqlite, {
+      id: 'choice-beta-two',
+      userId: 'viewer-choice-b',
+      element: 'Tide',
+      templateId: 'brine',
+      selected: false
+    });
+    const emit = jest.fn();
+    const service = createMatchService({
+      store,
+      now: () => 2_000,
+      emit,
+      rulesVersion: 8
+    });
+
+    service.join({ userId: 'viewer-single-a' });
+    const joined = service.join({ userId: 'viewer-choice-b' });
+    const match = service.getMatch(joined.match.matchId);
+
+    expect(match.state).toBe('roster');
+    expect(match.participants.find(entry => entry.viewerId === 'viewer-single-a'))
+      .toEqual(expect.objectContaining({ lockedMonsterId: 'single-alpha' }));
+    expect(match.participants.find(entry => entry.viewerId === 'viewer-choice-b'))
+      .toEqual(expect.objectContaining({ lockedMonsterId: null }));
+    expect(emit.mock.calls.map(([eventType]) => eventType)).toEqual([
+      'streammonsters:battle_match_found',
+      'streammonsters:battle_roster_locked'
+    ]);
+
+    expect(service.lockRoster({ userId: 'viewer-choice-b' })).toEqual(
+      expect.objectContaining({ accepted: true, selectionSource: 'viewer' })
+    );
+    expect(service.getMatch(match.matchId).state).toBe('action');
+  });
+
+  test('leaves zero-eligible and legacy matches on their existing roster path', () => {
+    const zero = createStore();
+    insertMonster(zero.sqlite, { id: 'zero-alpha', userId: 'viewer-zero-a' });
+    insertMonster(zero.sqlite, {
+      id: 'zero-beta',
+      userId: 'viewer-zero-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const zeroEmit = jest.fn();
+    const zeroService = createMatchService({
+      store: zero.store,
+      now: () => 3_000,
+      emit: zeroEmit,
+      rulesVersion: 8
+    });
+    jest.spyOn(zeroService, 'rosterEligibility').mockReturnValue({
+      accepted: false,
+      reason: 'test_ineligible'
+    });
+    zeroService.join({ userId: 'viewer-zero-a' });
+    const zeroJoined = zeroService.join({ userId: 'viewer-zero-b' });
+    expect(zeroService.getMatch(zeroJoined.match.matchId)).toEqual(
+      expect.objectContaining({
+        state: 'roster',
+        participants: expect.arrayContaining([
+          expect.objectContaining({ lockedMonsterId: null }),
+          expect.objectContaining({ lockedMonsterId: null })
+        ])
+      })
+    );
+    expect(zeroEmit).toHaveBeenCalledTimes(1);
+
+    const legacy = createStore();
+    insertMonster(legacy.sqlite, { id: 'legacy-alpha', userId: 'viewer-legacy-a' });
+    insertMonster(legacy.sqlite, {
+      id: 'legacy-beta',
+      userId: 'viewer-legacy-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const legacyEmit = jest.fn();
+    const legacyService = createMatchService({
+      store: legacy.store,
+      now: () => 4_000,
+      emit: legacyEmit,
+      rulesVersion: 7
+    });
+    legacyService.join({ userId: 'viewer-legacy-a' });
+    const legacyJoined = legacyService.join({ userId: 'viewer-legacy-b' });
+    expect(legacyService.getMatch(legacyJoined.match.matchId).state).toBe('roster');
+    expect(legacyEmit.mock.calls.map(([eventType]) => eventType)).toEqual([
+      'streammonsters:battle_match_found'
+    ]);
+  });
+
+  test('ships localized sole-eligible roster copy for every supported locale', () => {
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const translations = JSON.parse(fs.readFileSync(
+        path.join(
+          __dirname,
+          '..',
+          'plugins',
+          'streamalchemy',
+          'locales',
+          `${locale}.json`
+        ),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters;
+      expect(translations.arenaRosterAutoTitle).toEqual(expect.any(String));
+      expect(translations.arenaRosterAutoBody).toContain('{name}');
+      expect(translations.arenaRosterLockedBody).toEqual(expect.any(String));
+    }
+  });
 });
 
 describe('Stream Monsters v5 command composition', () => {

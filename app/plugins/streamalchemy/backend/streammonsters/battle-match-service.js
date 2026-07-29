@@ -612,7 +612,37 @@ class BattleMatchService {
       matchId,
       deadlineMs: match.rosterDeadlineMs
     });
-    return match;
+    this.autoLockSoleEligibleRosters(matchId);
+    return this.getMatch(matchId);
+  }
+
+  eligibleRosterMonsters(match, participant) {
+    if (!match || !participant?.viewerId) return [];
+    return this.store.getViewerMonsters(participant.viewerId)
+      .filter(monster => (
+        monster?.user_id === participant.viewerId &&
+        this.rosterEligibility(match, participant, monster).accepted
+      ));
+  }
+
+  autoLockSoleEligibleRosters(matchId) {
+    const match = this.getMatch(matchId);
+    if (!this.isRulesV8(match) || match?.state !== 'roster') return match;
+    const soleCandidates = match.participants
+      .filter(participant => !participant.lockedMonsterId)
+      .map(participant => ({
+        participant,
+        candidates: this.eligibleRosterMonsters(match, participant)
+      }))
+      .filter(entry => entry.candidates.length === 1);
+    for (const { participant, candidates } of soleCandidates) {
+      this.lockRoster({
+        userId: participant.viewerId,
+        monsterId: candidates[0].monster_id,
+        source: 'sole_eligible'
+      });
+    }
+    return this.getMatch(matchId);
   }
 
   hasRecentOpponent(userAId, userBId, nowMs = this.now()) {
@@ -769,13 +799,64 @@ class BattleMatchService {
         participant.participantId
       );
       if (!result.changes) return { accepted: false, reason: 'already_locked' };
+      const selectionSource = source === 'sole_eligible'
+        ? 'sole_eligible'
+        : source === 'timeout'
+          ? 'timeout'
+          : 'viewer';
+      const lockedMatch = this.getMatch(match.matchId);
+      const fighter = this.projectPublicFighters(lockedMatch)
+        .find(entry => entry.slot === participant.slot);
       const remaining = this.db.prepare(`
         SELECT COUNT(*) AS count FROM streammonsters_match_participants
         WHERE match_id = ? AND locked_monster_id IS NULL
       `).get(match.matchId).count;
-      if (remaining) return { accepted: true, source, waiting: true, match: this.getMatch(match.matchId) };
+      this.appendEvent(
+        match.matchId,
+        'streammonsters:battle_roster_locked',
+        {
+          matchId: match.matchId,
+          participantId: participant.participantId,
+          viewerId: participant.viewerId,
+          monsterId: monster.monster_id,
+          slot: participant.slot,
+          selectionSource,
+          waiting: Boolean(remaining)
+        },
+        {
+          matchId: match.matchId,
+          slot: participant.slot,
+          selectionSource,
+          waiting: Boolean(remaining),
+          titleKey: selectionSource === 'sole_eligible'
+            ? 'arenaRosterAutoTitle'
+            : 'arenaRosterChoice',
+          bodyKey: selectionSource === 'sole_eligible'
+            ? 'arenaRosterAutoBody'
+            : 'arenaRosterLockedBody',
+          params: {
+            name: fighter?.name || 'Monster'
+          },
+          fighter
+        }
+      );
+      if (remaining) {
+        return {
+          accepted: true,
+          source,
+          selectionSource,
+          waiting: true,
+          match: this.getMatch(match.matchId)
+        };
+      }
       const started = this.startActionWindow(match.matchId, match.phaseVersion);
-      return { accepted: true, source, waiting: false, match: started };
+      return {
+        accepted: true,
+        source,
+        selectionSource,
+        waiting: false,
+        match: started
+      };
     });
   }
 
@@ -2425,6 +2506,30 @@ class BattleMatchService {
       return {
         matchId: match.matchId,
         deadlineMs: Number(payload.deadlineMs) || match.rosterDeadlineMs
+      };
+    }
+    if (eventType === 'streammonsters:battle_roster_locked') {
+      const selectionSource = payload.selectionSource === 'sole_eligible'
+        ? 'sole_eligible'
+        : payload.selectionSource === 'timeout'
+          ? 'timeout'
+          : 'viewer';
+      return {
+        matchId: match.matchId,
+        slot: [1, 2].includes(Number(payload.slot)) ? Number(payload.slot) : 0,
+        selectionSource,
+        waiting: Boolean(payload.waiting),
+        titleKey: selectionSource === 'sole_eligible'
+          ? 'arenaRosterAutoTitle'
+          : 'arenaRosterChoice',
+        bodyKey: selectionSource === 'sole_eligible'
+          ? 'arenaRosterAutoBody'
+          : 'arenaRosterLockedBody',
+        params: {
+          name: String(payload.params?.name || payload.fighter?.name || 'Monster')
+            .slice(0, 80)
+        },
+        fighter: projectBattleFighter(payload.fighter)
       };
     }
     if (eventType === 'streammonsters:battle_choice_opened') {
