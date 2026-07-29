@@ -235,6 +235,13 @@ async function createPresenterHarness({
     for (let attempt = 0; attempt < 8; attempt += 1) await flush();
     return card();
   };
+  const emitBurst = async events => {
+    for (const [eventName, payload] of events) {
+      expect(socketHandlers.has(eventName)).toBe(true);
+      socketHandlers.get(eventName)(payload);
+    }
+    for (let attempt = 0; attempt < 8; attempt += 1) await flush();
+  };
 
   return {
     arenaLocales,
@@ -277,8 +284,13 @@ async function createPresenterHarness({
       )?.textContent || ''
     }),
     emit,
+    emitBurst,
     advanceUntil,
     runNextTimer,
+    pendingTimerDelays:() => [...timers.values()].map(timer => timer.milliseconds),
+    stopLifecycle:() => {
+      dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+    },
     close:() => dom.window.close()
   };
 }
@@ -343,6 +355,65 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
       visible:false,
       text:'Round 5 · choose your next skill'
     });
+    harness.close();
+  });
+
+  test('does not delay battle lock and reveal behind rejection feedback', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en']
+    });
+    harness.activateBattle();
+
+    await harness.emitBurst([
+      ['streammonsters:battle_choice_rejected', {
+        eventId:'rejection-before-lock',
+        matchId:'match-public',
+        round:4,
+        slot:1,
+        reason:'already_locked',
+        messageKey:'arenaChoiceAlreadyLocked'
+      }],
+      ['streammonsters:battle_choice_locked', {
+        eventId:'lock-after-rejection',
+        matchId:'match-public',
+        round:4,
+        slot:1
+      }],
+      ['streammonsters:battle_choices_revealed', {
+        eventId:'reveal-after-rejection',
+        matchId:'match-public',
+        round:4,
+        choices:[]
+      }]
+    ]);
+
+    expect(harness.arenaEvents).toEqual(expect.arrayContaining([
+      ['battle_choice_locked', 'lock-after-rejection'],
+      ['battle_choices_revealed', 'reveal-after-rejection']
+    ]));
+    harness.close();
+  });
+
+  test('clears the rejection feedback timer when the overlay lifecycle stops', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en']
+    });
+    harness.activateBattle();
+    await harness.emit('streammonsters:battle_choice_rejected', {
+      eventId:'rejection-before-stop',
+      matchId:'match-public',
+      round:4,
+      slot:1,
+      reason:'already_locked',
+      messageKey:'arenaChoiceAlreadyLocked'
+    });
+
+    expect(harness.pendingTimerDelays()).toContain(3_000);
+    harness.stopLifecycle();
+
+    expect(harness.pendingTimerDelays()).not.toContain(3_000);
     harness.close();
   });
 

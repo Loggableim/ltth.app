@@ -1947,26 +1947,46 @@
     await wait(250);
   };
   let battleChoiceFeedbackSequence = 0;
-  const showBattleChoiceFeedback = async data => {
+  let battleChoiceFeedbackTimer = null;
+  let battleChoiceFeedbackMessage = '';
+  let battleChoiceFeedbackRestoreText = '';
+  const showBattleChoiceFeedback = data => {
     const message = text(
       safeHint(data?.messageKey, 'arenaChoiceWindowClosed'),
       ''
     );
     if (node('streammonsters-overlay').dataset.battleActive !== 'true') {
-      return showToast(message);
+      showToast(message).catch(() => {});
+      return true;
     }
     const prompt = node('arena-skill-prompt');
-    const previous = prompt.textContent;
+    if (battleChoiceFeedbackTimer != null) {
+      window.clearTimeout(battleChoiceFeedbackTimer);
+      battleChoiceFeedbackTimer = null;
+    }
+    if (
+      prompt.dataset.choiceFeedback !== 'true' ||
+      prompt.textContent !== battleChoiceFeedbackMessage
+    ) {
+      battleChoiceFeedbackRestoreText = prompt.textContent;
+    }
     const feedbackId = String(++battleChoiceFeedbackSequence);
+    battleChoiceFeedbackMessage = message;
     prompt.textContent = message;
     prompt.dataset.choiceFeedback = 'true';
     prompt.dataset.choiceFeedbackId = feedbackId;
-    await wait(Math.min(3_000, notificationDurationMs));
-    if (prompt.dataset.choiceFeedbackId === feedbackId) {
-      if (prompt.textContent === message) prompt.textContent = previous;
+    battleChoiceFeedbackTimer = window.setTimeout(() => {
+      battleChoiceFeedbackTimer = null;
+      if (prompt.dataset.choiceFeedbackId !== feedbackId) return;
+      if (prompt.textContent === message) {
+        prompt.textContent = battleChoiceFeedbackRestoreText;
+      }
       delete prompt.dataset.choiceFeedback;
       delete prompt.dataset.choiceFeedbackId;
-    }
+      battleChoiceFeedbackMessage = '';
+      battleChoiceFeedbackRestoreText = '';
+    }, Math.min(3_000, notificationDurationMs));
+    return true;
   };
   const imageErrorFallback = element => {
     node('art-wrap').classList.add('image-fallback');
@@ -3114,6 +3134,11 @@
       window.clearTimeout(queueWakeTimer);
       queueWakeTimer = null;
       queueWakeDeadline = 0;
+    }
+    if (battleChoiceFeedbackTimer != null) {
+      window.clearTimeout(battleChoiceFeedbackTimer);
+      battleChoiceFeedbackTimer = null;
+      battleChoiceFeedbackSequence += 1;
     }
     clearReconnectEggSnapshot();
     activeReconnectCycle = 0;

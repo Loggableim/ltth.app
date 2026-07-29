@@ -323,4 +323,52 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
       source: 'chat'
     }));
   });
+
+  test.each([
+    {
+      label: 'eligible comment over unrelated message and text',
+      data: {
+        comment: 'A...',
+        message: 'unrelated message',
+        text: 'unrelated text'
+      },
+      expected: 'A...'
+    },
+    {
+      label: 'unrelated comment over eligible message and text',
+      data: {
+        comment: 'hello stream',
+        message: 'B!',
+        text: 'C?'
+      },
+      expected: 'hello stream'
+    }
+  ])('uses comment || message || text precedence for $label', async ({
+    data,
+    expected
+  }) => {
+    const api = createGCCEApi();
+    gcce = new GCCE(api);
+    await gcce.init();
+    gcce.registerRawResponseHandlerForPlugin('streamalchemy', () => ({
+      handled: false
+    }));
+    const { plugin, chatHandler } = createTtsSubject(gcce);
+    const event = {
+      eventId: `evt-precedence-${expected.replace(/\W+/g, '-')}`,
+      timestamp: '2026-01-01T00:00:07.000Z',
+      uniqueId: 'viewer_one',
+      ...data
+    };
+
+    const ttsFirst = chatHandler(event);
+    await Promise.resolve();
+    await gcce.handleChatMessage(event);
+    await ttsFirst;
+
+    expect(plugin.speak).toHaveBeenCalledWith(expect.objectContaining({
+      text: expected,
+      source: 'chat'
+    }));
+  });
 });
