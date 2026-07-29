@@ -96,7 +96,6 @@ const CONNECT4_AUDIO_TYPES_BY_EXTENSION = new Map([
   ['.m4a', 'audio/mp4'],
   ['.aac', 'audio/aac']
 ]);
-const GAME_TIMEOUT_LOCKOUT_MS = 24 * 60 * 60 * 1000;
 const CONNECT4_MATCHMAKING_DRAIN_RETRY_MS = 1000;
 
 class GameEnginePlugin {
@@ -179,6 +178,7 @@ class GameEnginePlugin {
         roundTimerEnabled: false,
         roundTimeLimit: 30, // seconds per move
         roundWarningTime: 10, // warning at X seconds
+        timeoutLockoutMinutes: 1440,
         chatCommand: 'c4start', // customizable chat command to start Connect4
         displayTexts: {
           titleText:     '🔵 CONNECT 4',
@@ -815,12 +815,23 @@ class GameEnginePlugin {
     if (!viewerId || this._isStreamerLockoutIdentity(viewerId)) return null;
     if (typeof this.db?.setGamePlayerLockout !== 'function') return null;
 
+    const connect4Config = this._getConfigWithDefaults(
+      'connect4',
+      this.db.getGameConfig?.('connect4') || {}
+    );
+    const lockoutMinutes = connect4Config.timeoutLockoutMinutes;
+    if (lockoutMinutes === 0) return null;
+
     const timedOutParticipant = Array.isArray(payload.participants)
       ? payload.participants.find(participant => participant.id === viewerId)
       : null;
 
     try {
-      const lockout = this.db.setGamePlayerLockout(viewerId, 'viewer_timeout', GAME_TIMEOUT_LOCKOUT_MS);
+      const lockout = this.db.setGamePlayerLockout(
+        viewerId,
+        'viewer_timeout',
+        lockoutMinutes * 60 * 1000
+      );
       if (lockout) {
         this.io.emit('game-engine:player-lockout', {
           username: viewerId,
@@ -830,7 +841,7 @@ class GameEnginePlugin {
           expiresAt: lockout.expiresAt,
           remainingMs: lockout.remainingMs
         });
-        this.logger.info(`[GAME LOCKOUT] ${viewerId} locked from games for 24h after interactive timeout`);
+        this.logger.info(`[GAME LOCKOUT] ${viewerId} locked from games for ${lockoutMinutes} minute(s) after interactive timeout`);
       }
       return lockout;
     } catch (error) {
@@ -1179,6 +1190,9 @@ class GameEnginePlugin {
       normalized.roundWarningTime <= normalized.roundTimeLimit
       ? normalized.roundWarningTime
       : defaults.roundWarningTime;
+    normalized.timeoutLockoutMinutes = validInteger(normalized.timeoutLockoutMinutes, 0, 10080)
+      ? normalized.timeoutLockoutMinutes
+      : defaults.timeoutLockoutMinutes;
     if (normalized.roundWarningTime > normalized.roundTimeLimit) {
       normalized.roundWarningTime = Math.min(defaults.roundWarningTime, normalized.roundTimeLimit);
     }
@@ -1207,6 +1221,7 @@ class GameEnginePlugin {
     if (has('roundTimerEnabled') && typeof config.roundTimerEnabled !== 'boolean') return false;
     if (has('roundTimeLimit') && !validInteger(config.roundTimeLimit, 5, 120)) return false;
     if (has('roundWarningTime') && !validInteger(config.roundWarningTime, 3, 30)) return false;
+    if (has('timeoutLockoutMinutes') && !validInteger(config.timeoutLockoutMinutes, 0, 10080)) return false;
     const timeLimit = has('roundTimeLimit') ? config.roundTimeLimit : this.defaultConfigs.connect4.roundTimeLimit;
     const warningTime = has('roundWarningTime') ? config.roundWarningTime : this.defaultConfigs.connect4.roundWarningTime;
     return warningTime <= timeLimit;
@@ -2350,6 +2365,27 @@ class GameEnginePlugin {
           : { success: true });
       } catch (error) {
         this.logger.error(`Error saving game config: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.api.registerRoute('GET', '/api/game-engine/connect4/lockouts', (req, res) => {
+      try {
+        const lockouts = this.db.listActiveGamePlayerLockouts();
+        res.json({ success: true, lockouts });
+      } catch (error) {
+        this.logger.error(`Error listing Connect4 timeout lockouts: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.api.registerRoute('DELETE', '/api/game-engine/connect4/lockouts/:username', (req, res) => {
+      try {
+        const removed = this.db.clearGamePlayerLockout(req.params.username);
+        const lockouts = this.db.listActiveGamePlayerLockouts();
+        res.json({ success: true, removed, lockouts });
+      } catch (error) {
+        this.logger.error(`Error clearing Connect4 timeout lockout: ${error.message}`);
         res.status(500).json({ error: error.message });
       }
     });

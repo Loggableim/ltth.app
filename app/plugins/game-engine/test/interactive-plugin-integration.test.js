@@ -276,6 +276,25 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 
+  test('normalizes Connect4 timeout lockout minutes and rejects invalid values', () => {
+    const { plugin } = createPlugin();
+
+    expect(plugin._getConfigWithDefaults('connect4', {})).toMatchObject({
+      timeoutLockoutMinutes: 1440
+    });
+    expect(plugin._getConfigWithDefaults('connect4', { timeoutLockoutMinutes: 15 })).toMatchObject({
+      timeoutLockoutMinutes: 15
+    });
+    expect(plugin._getConfigWithDefaults('connect4', { timeoutLockoutMinutes: 0 })).toMatchObject({
+      timeoutLockoutMinutes: 0
+    });
+    expect(plugin._isValidConnect4Config({ timeoutLockoutMinutes: 0 })).toBe(true);
+    expect(plugin._isValidConnect4Config({ timeoutLockoutMinutes: 10080 })).toBe(true);
+    expect(plugin._isValidConnect4Config({ timeoutLockoutMinutes: -1 })).toBe(false);
+    expect(plugin._isValidConnect4Config({ timeoutLockoutMinutes: 10081 })).toBe(false);
+    expect(plugin._isValidConnect4Config({ timeoutLockoutMinutes: '15' })).toBe(false);
+  });
+
   test('registers a real Connect4 audio upload and persists the uploaded file', () => {
     const { plugin, routes, io } = createPlugin();
     plugin.db = {
@@ -751,6 +770,9 @@ describe('GameEnginePlugin interactive controller integration', () => {
     { player2Color: '#GG0000' },
     { roundTimerEnabled: 'yes' },
     { roundTimeLimit: 5, roundWarningTime: 10 },
+    { timeoutLockoutMinutes: -1 },
+    { timeoutLockoutMinutes: 10081 },
+    { timeoutLockoutMinutes: '15' },
     { animationSpeed: 50 },
     { leaderboardTypes: ['daily', 'unknown'] },
     { leaderboardDisplayTime: 11 }
@@ -1200,10 +1222,11 @@ describe('GameEnginePlugin interactive controller integration', () => {
   test('locks the actual timed-out viewer in a two-viewer Connect4 session', () => {
     const { plugin, io } = createPlugin();
     plugin.db = {
+      getGameConfig: jest.fn(() => ({ timeoutLockoutMinutes: 15 })),
       setGamePlayerLockout: jest.fn(() => ({
         reason: 'viewer_timeout',
-        expiresAt: Date.now() + 86400000,
-        remainingMs: 86400000
+        expiresAt: Date.now() + 900000,
+        remainingMs: 900000
       }))
     };
 
@@ -1217,11 +1240,53 @@ describe('GameEnginePlugin interactive controller integration', () => {
       ]
     });
 
-    expect(plugin.db.setGamePlayerLockout).toHaveBeenCalledWith('viewer-two', 'viewer_timeout', 86400000);
+    expect(plugin.db.setGamePlayerLockout).toHaveBeenCalledWith('viewer-two', 'viewer_timeout', 900000);
     expect(io.emit).toHaveBeenCalledWith('game-engine:player-lockout', expect.objectContaining({
       username: 'viewer-two',
       nickname: 'Viewer Two'
     }));
+  });
+
+  test('does not persist a viewer timeout lockout when Connect4 lockouts are disabled', () => {
+    const { plugin, io } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(() => ({ timeoutLockoutMinutes: 0 })),
+      setGamePlayerLockout: jest.fn()
+    };
+
+    const result = plugin._applyViewerTimeoutLockout({
+      reason: 'viewer_timeout',
+      timedOutPlayerId: 'viewer-two'
+    });
+
+    expect(result).toBeNull();
+    expect(plugin.db.setGamePlayerLockout).not.toHaveBeenCalled();
+    expect(io.emit).not.toHaveBeenCalledWith('game-engine:player-lockout', expect.anything());
+  });
+
+  test('lists and clears Connect4 lockouts through dashboard routes', () => {
+    const { plugin, routes } = createPlugin();
+    const lockouts = [{ username: 'slow-viewer', reason: 'viewer_timeout', expiresAt: 5000, remainingMs: 2000 }];
+    plugin.db = {
+      listActiveGamePlayerLockouts: jest.fn(() => lockouts),
+      clearGamePlayerLockout: jest.fn(() => true)
+    };
+    plugin.registerRoutes();
+    const listRoute = routes.find(item => item.method === 'GET' && item.path === '/api/game-engine/connect4/lockouts');
+    const clearRoute = routes.find(item => item.method === 'DELETE' && item.path === '/api/game-engine/connect4/lockouts/:username');
+    const listResponse = { json: jest.fn(), status: jest.fn(() => listResponse) };
+    const clearResponse = { json: jest.fn(), status: jest.fn(() => clearResponse) };
+
+    expect(listRoute).toEqual(expect.objectContaining({ handler: expect.any(Function) }));
+    expect(clearRoute).toEqual(expect.objectContaining({ handler: expect.any(Function) }));
+
+    listRoute.handler({}, listResponse);
+    clearRoute.handler({ params: { username: 'slow-viewer' } }, clearResponse);
+
+    expect(plugin.db.clearGamePlayerLockout).toHaveBeenCalledWith('slow-viewer');
+    expect(plugin.db.listActiveGamePlayerLockouts).toHaveBeenCalledTimes(2);
+    expect(listResponse.json).toHaveBeenCalledWith({ success: true, lockouts });
+    expect(clearResponse.json).toHaveBeenCalledWith({ success: true, removed: true, lockouts });
   });
 
   test('keeps the persisted opener avatar through the real pending fallback path', async () => {
