@@ -14,6 +14,9 @@ const {
   projectPassiveCharge
 } = require('./battle-charge');
 const {
+  applyArenaCollapse: resolveArenaCollapse
+} = require('./battle-rules-v8');
+const {
   projectBattleFighter,
   projectBattleChoices
 } = require('./public-event-projector');
@@ -1535,54 +1538,32 @@ class BattleMatchService {
   }
 
   applyArenaCollapse(match, resolvedState, actions = []) {
-    const damage = Math.max(1, Math.round(Number(match.roundNumber) || 5) - 4);
-    const shieldReductions = new Map();
-    actions.forEach(action => {
-      const reduced = (Array.isArray(action?.outcomes) ? action.outcomes : [])
-        .filter(outcome => outcome?.type === 'shield')
-        .reduce((total, outcome) => (
-          total + Math.max(0, Number(outcome.arenaCollapseReduction) || 0)
-        ), 0);
-      if (reduced <= 0 || !action?.actorId) return;
-      shieldReductions.set(
-        action.actorId,
-        (shieldReductions.get(action.actorId) || 0) + reduced
-      );
+    const collapse = resolveArenaCollapse({
+      fighters: match.participants.map(participant => ({
+        monsterId: participant.lockedMonsterId,
+        slot: participant.slot
+      })),
+      state: resolvedState,
+      round: match.roundNumber,
+      actions
     });
-    const fighters = [];
-    const collapsedState = Object.fromEntries(match.participants.map(participant => {
-      const monsterId = participant.lockedMonsterId;
-      const after = { ...(resolvedState[monsterId] || {}) };
-      const shieldReduced = shieldReductions.get(monsterId) || 0;
-      const hp = Math.max(0, Math.round(Number(after.hp) || 0));
-      const hpDamage = hp > 0 ? Math.max(0, Math.min(damage, hp - 1)) : 0;
-      after.hp = hp > 0 ? Math.max(1, hp - hpDamage) : 0;
-      fighters.push({
-        slot: participant.slot,
-        shieldReduced,
-        hpDamage,
-        hp: after.hp,
-        shield: Math.max(0, Math.round(Number(after.shield) || 0))
-      });
-      return [monsterId, after];
-    }));
     this.appendEvent(
       match.matchId,
       'streammonsters:battle_arena_collapse',
       {
         matchId: match.matchId,
-        round: match.roundNumber,
-        damage,
-        state: collapsedState
+        round: collapse.round,
+        damage: collapse.damage,
+        state: collapse.state
       },
       {
         matchId: match.matchId,
-        round: match.roundNumber,
-        damage,
-        fighters: fighters.sort((left, right) => left.slot - right.slot)
+        round: collapse.round,
+        damage: collapse.damage,
+        fighters: collapse.fighters.map(({ monsterId: _monsterId, ...fighter }) => fighter)
       }
     );
-    return collapsedState;
+    return collapse.state;
   }
 
   tieBreakWinner(match, state) {
@@ -1645,10 +1626,13 @@ class BattleMatchService {
       );
       if (!changed.changes) return this.getMatch(matchId);
 
+      const rewardsEnabled = completion === 'battle';
       const season = this.getCurrentArenaSeason();
       const eligibility = Object.fromEntries(match.participants.map(participant => [
         participant.participantId,
-        isDraw ? false : this.claimArenaDailyBattle(participant.viewerId)
+        rewardsEnabled && !isDraw
+          ? this.claimArenaDailyBattle(participant.viewerId)
+          : false
       ]));
       const winnerParticipant = match.participants.find(
         participant => participant.lockedMonsterId === resolvedWinnerMonsterId
@@ -1663,7 +1647,7 @@ class BattleMatchService {
             participant.participantId === options.forfeitedParticipantId
           ))
         : null;
-      const ratingChanges = isDraw
+      const ratingChanges = !rewardsEnabled || isDraw
         ? {}
         : this.applyArenaElo({
             seasonId: season.seasonId,
@@ -1679,20 +1663,23 @@ class BattleMatchService {
           participant.lockedMonsterId === resolvedWinnerMonsterId
         );
         const before = this.store.getMonster(participant.lockedMonsterId);
-        const xpAwarded = (Number(before?.level) || 1) >= 20
+        const xpAwarded = !rewardsEnabled || (Number(before?.level) || 1) >= 20
           ? 0
           : 10 + (won ? 5 : 0);
-        const battleMonster = this.store.recordMonsterBattle(
-          participant.lockedMonsterId,
-          won
-        );
-        let monster = this.store.awardMonsterXp(participant.lockedMonsterId, xpAwarded);
-        this.progression?.recordBattleProgress?.(
-          participant.viewerId,
-          this.getStreamKey?.() || null,
-          { monster: battleMonster, won }
-        );
-        monster = this.store.getMonster(participant.lockedMonsterId) || monster;
+        let monster = before;
+        if (rewardsEnabled) {
+          const battleMonster = this.store.recordMonsterBattle(
+            participant.lockedMonsterId,
+            won
+          );
+          monster = this.store.awardMonsterXp(participant.lockedMonsterId, xpAwarded);
+          this.progression?.recordBattleProgress?.(
+            participant.viewerId,
+            this.getStreamKey?.() || null,
+            { monster: battleMonster, won }
+          );
+          monster = this.store.getMonster(participant.lockedMonsterId) || monster;
+        }
         const rating = ratingChanges[participant.participantId] || {
           before: participant.ratingBefore,
           after: participant.ratingBefore,
@@ -1703,37 +1690,41 @@ class BattleMatchService {
           SET rating_after = ?, active = 0
           WHERE match_id = ? AND participant_id = ?
         `).run(rating.after, matchId, participant.participantId);
-        this.db.prepare(`
-          INSERT INTO streammonsters_match_rewards (
-            match_id, participant_id, xp_awarded, arena_eligible,
-            rating_delta, claimed_at_ms
-          ) VALUES (?, ?, ?, ?, ?, ?)
-        `).run(
-          matchId,
-          participant.participantId,
-          xpAwarded,
-          eligibility[participant.participantId] ? 1 : 0,
-          rating.delta,
-          nowMs
-        );
+        if (rewardsEnabled) {
+          this.db.prepare(`
+            INSERT INTO streammonsters_match_rewards (
+              match_id, participant_id, xp_awarded, arena_eligible,
+              rating_delta, claimed_at_ms
+            ) VALUES (?, ?, ?, ?, ?, ?)
+          `).run(
+            matchId,
+            participant.participantId,
+            xpAwarded,
+            eligibility[participant.participantId] ? 1 : 0,
+            rating.delta,
+            nowMs
+          );
+        }
         const pointsGained = Math.max(
           0,
           (Number(monster?.unspent_stat_points) || 0) -
             (Number(before?.unspent_stat_points) || 0)
         );
         const publicMonster = this.projectPublicMonster(participant, monster);
-        this.appendEvent(matchId, 'streammonsters:monster_xp_awarded', {
-          matchId,
-          slot: participant.slot,
-          amount: xpAwarded,
-          won,
-          monster: publicMonster
-        });
+        if (rewardsEnabled) {
+          this.appendEvent(matchId, 'streammonsters:monster_xp_awarded', {
+            matchId,
+            slot: participant.slot,
+            amount: xpAwarded,
+            won,
+            monster: publicMonster
+          });
+        }
         const levelsGained = Math.max(
           0,
           (Number(monster?.level) || 1) - (Number(before?.level) || 1)
         );
-        if (levelsGained > 0) {
+        if (rewardsEnabled && levelsGained > 0) {
           this.appendEvent(matchId, 'streammonsters:monster_level_up', {
             matchId,
             slot: participant.slot,
@@ -1773,24 +1764,28 @@ class BattleMatchService {
             delta: rating.delta
           }
         });
-        if (pointsGained > 0) this.createStatPrompt(matchId, participant, pointsGained);
+        if (rewardsEnabled && pointsGained > 0) {
+          this.createStatPrompt(matchId, participant, pointsGained);
+        }
       });
-      if (winnerParticipant) {
+      if (rewardsEnabled && winnerParticipant) {
         this.store.incrementViewer(winnerParticipant.viewerId, 'battles_won');
       }
       const streamKey = this.getStreamKey?.() || null;
-      if (streamKey) this.store.incrementStreamMetric(streamKey, 'duels');
-      this.collection?.recordBattleOutcome?.({
-        streamKey,
-        battleId: `battle-${matchId}`,
-        fighters: match.participants.map(participant => ({
-          monster: this.store.getMonster(participant.lockedMonsterId),
-          won: Boolean(
-            winnerParticipant &&
-            participant.lockedMonsterId === resolvedWinnerMonsterId
-          )
-        }))
-      });
+      if (rewardsEnabled) {
+        if (streamKey) this.store.incrementStreamMetric(streamKey, 'duels');
+        this.collection?.recordBattleOutcome?.({
+          streamKey,
+          battleId: `battle-${matchId}`,
+          fighters: match.participants.map(participant => ({
+            monster: this.store.getMonster(participant.lockedMonsterId),
+            won: Boolean(
+              winnerParticipant &&
+              participant.lockedMonsterId === resolvedWinnerMonsterId
+            )
+          }))
+        });
+      }
 
       const winnerMonster = winnerParticipant
         ? this.store.getMonster(winnerParticipant.lockedMonsterId)
@@ -1804,7 +1799,7 @@ class BattleMatchService {
       const loserPublic = loserParticipant
         ? this.projectPublicMonster(loserParticipant, loserMonster)
         : null;
-      if (winnerParticipant && loserParticipant) {
+      if (rewardsEnabled && winnerParticipant && loserParticipant) {
         const winnerStreak = this.store.getViewerBattleStats(
           winnerParticipant.viewerId
         ).win_streak;

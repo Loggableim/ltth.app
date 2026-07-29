@@ -447,6 +447,7 @@ module.exports = {
   SKILL_CATALOG,
   V6_SKILL_CATALOG,
   maxHp,
+  initialFighterState,
   normalizeChoice,
   resolveInteractiveRound
 };

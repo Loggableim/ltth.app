@@ -155,6 +155,52 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     }));
   });
 
+  test('keeps cosmetic essence milestones based on lifetime earned after evolution spending', () => {
+    const { store, collection } = createCollection();
+    store.setTemplateMastery('viewer-a', 'ashfang', 50, []);
+
+    collection.addEssence('viewer-a', 'Ember', 3, 'lifetime:palette');
+    collection.evolveMonster('viewer-a', 'monster-a');
+    expect(collection.getEssence('viewer-a', 'Ember')).toEqual(
+      expect.objectContaining({
+        amount: 0,
+        spent: 3,
+        unlocks: ['palette']
+      })
+    );
+
+    collection.addEssence('viewer-a', 'Ember', 3, 'lifetime:aura');
+    collection.addEssence('viewer-a', 'Ember', 3, 'lifetime:aura');
+    expect(collection.getEssence('viewer-a', 'Ember')).toEqual(
+      expect.objectContaining({
+        amount: 3,
+        spent: 3,
+        unlocks: ['palette', 'hatch_aura']
+      })
+    );
+
+    collection.addEssence('viewer-a', 'Ember', 2, 'lifetime:stage-three');
+    collection.evolveMonster('viewer-a', 'monster-a');
+    collection.addEssence('viewer-a', 'Ember', 4, 'lifetime:badge');
+    expect(collection.getEssence('viewer-a', 'Ember')).toEqual(
+      expect.objectContaining({
+        amount: 4,
+        spent: 8,
+        unlocks: ['palette', 'hatch_aura', 'profile_badge']
+      })
+    );
+
+    store.setElementEssence('legacy-viewer', 'Tide', 1, ['palette'], 5);
+    collection.addEssence('legacy-viewer', 'Tide', 1, 'legacy:repair');
+    expect(collection.getEssence('legacy-viewer', 'Tide')).toEqual(
+      expect.objectContaining({
+        amount: 2,
+        spent: 5,
+        unlocks: ['palette', 'hatch_aura']
+      })
+    );
+  });
+
   test.each([
     ['Ember', { vitality: 0, might: 2, guard: 0, agility: 1 }],
     ['Tide', { vitality: 2, might: 0, guard: 1, agility: 0 }],
