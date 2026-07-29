@@ -532,6 +532,103 @@ describe('Stream Monsters 1.11 element effect signatures', () => {
     await completion;
   });
 
+  test('active WebGPU inputs keep all 18 recipe motion and shape profiles distinct', async () => {
+    const expectedProfiles = {
+      'ember:attack': [1, 1, 0.32, 0.78, 0.2, 1.65, 3, 0.12],
+      'ember:defense': [2, 1, 0.18, 0.54, 0.42, 1.3, 4, 0.28],
+      'ember:special': [3, 1, 0.72, 0.92, 0.16, 1.85, 6, 0.46],
+      'tide:attack': [1, 2, 0.86, 0.36, 0.48, 1.9, 2, 0.2],
+      'tide:defense': [2, 2, 0.52, 0.28, 0.64, 1.45, 5, 0.34],
+      'tide:special': [3, 2, 0.94, 0.48, 0.34, 2.05, 4, 0.58],
+      'grove:attack': [1, 3, 0.68, 0.44, 0.58, 1.5, 3, 0.26],
+      'grove:defense': [2, 3, 0.24, 0.18, 0.82, 1.18, 5, 0.4],
+      'grove:special': [3, 3, 0.58, 0.62, 0.72, 1.7, 7, 0.64],
+      'gale:attack': [1, 4, 0.42, 0.88, 0.3, 2.2, 2, 0.32],
+      'gale:defense': [2, 4, 0.36, 0.7, 0.54, 1.82, 4, 0.48],
+      'gale:special': [3, 4, 0.84, 0.96, 0.38, 2.35, 8, 0.7],
+      'volt:attack': [1, 5, 0.12, 1, 0.14, 2.45, 5, 0.38],
+      'volt:defense': [2, 5, 0.08, 0.84, 0.36, 2, 6, 0.54],
+      'volt:special': [3, 5, 0.28, 1, 0.2, 2.6, 9, 0.76],
+      'lunar:attack': [1, 6, 0.74, 0.3, 0.66, 1.62, 4, 0.44],
+      'lunar:defense': [2, 6, 0.46, 0.22, 0.9, 1.28, 3, 0.6],
+      'lunar:special': [3, 6, 0.9, 0.52, 0.78, 1.92, 10, 0.82]
+    };
+    const actualProfiles = {};
+
+    for (const [element, recipes] of Object.entries(EFFECT_RECIPES)) {
+      for (const action of Object.keys(recipes)) {
+        const uniforms = buildEffectUniforms(sceneChoreography(action, {
+          element,
+          actorSlot: 1,
+          targetSlot: 2
+        }), {
+          timestamp: 500,
+          progress: 0.45,
+          phaseCode: 2,
+          aspect: 0.5625
+        });
+        actualProfiles[`${element.toLowerCase()}:${action}`] = [
+          ...uniforms.values.slice(40, 48)
+        ].map(value => Number(value.toFixed(2)));
+      }
+    }
+
+    expect(actualProfiles).toEqual(expectedProfiles);
+    expect(new Set(Object.values(actualProfiles).map(profile => profile.join(','))).size).toBe(18);
+
+    const harness = createCanvasHarness({ webgpu: true });
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+    await renderer.init();
+    const completion = renderer.play('special', { element: 'Lunar' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect([...harness.calls.at(-1)[2]].slice(40, 48).map(value => Number(value.toFixed(2))))
+      .toEqual(expectedProfiles['lunar:special']);
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.special);
+    await completion;
+  });
+
+  test.each([
+    ['Ember', 1, 2, [475.2, 0]],
+    ['Tide', 1, 2, [475.2, 0]],
+    ['Grove', 1, 2, [475.2, 0]],
+    ['Gale', 2, 1, [-475.2, 0]],
+    ['Volt', 2, 1, [-475.2, 0]],
+    ['Lunar', 2, 1, [-475.2, 0]]
+  ])('Canvas %s attack consumes the canonical basis and reaches its target from slot %s to %s',
+    async (element, actorSlot, targetSlot, expectedEndpoint) => {
+      const harness = createCanvasHarness();
+      const renderer = createEffectsRenderer({
+        canvas: harness.canvas,
+        navigator: {},
+        matchMedia: () => ({ matches: false }),
+        requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+        cancelAnimationFrame: clearTimeout,
+        now: () => Date.now()
+      });
+
+      await renderer.init();
+      const completion = renderer.play('attack', {
+        element,
+        actorSlot,
+        targetSlot,
+        scale: 1
+      });
+      await jest.advanceTimersByTimeAsync(32);
+
+      expect(harness.context2d.rotate).toHaveBeenCalledWith(0);
+      expect(harness.context2d.lineTo).toHaveBeenCalledWith(...expectedEndpoint);
+
+      await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+      await completion;
+    });
+
   test('status exposes reduced motion, device loss and automatic low-FPS budgeting', async () => {
     const reduced = createCanvasHarness();
     const reducedRenderer = createEffectsRenderer({

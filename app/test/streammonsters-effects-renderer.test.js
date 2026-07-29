@@ -457,6 +457,7 @@ describe('Stream Monsters effects renderer', () => {
 
   test('falls back inside the active scene when a synchronous frame operation throws', async () => {
     const harness = createGpuHarness();
+    harness.device.destroy = jest.fn();
     harness.device.queue.writeBuffer.mockImplementationOnce(() => {
       throw new Error('surface changed');
     });
@@ -477,11 +478,41 @@ describe('Stream Monsters effects renderer', () => {
       fallbackReason: 'frame-error'
     }));
     expect(harness.canvas2d.stroke).toHaveBeenCalled();
+    renderer.destroy();
+    expect(harness.device.destroy).toHaveBeenCalledTimes(1);
 
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.special);
     await expect(completion).resolves.toEqual(expect.objectContaining({
       scene: 'special'
     }));
+  });
+
+  test('destroy during asynchronous device acquisition cannot resurrect WebGPU', async () => {
+    const harness = createGpuHarness();
+    const deviceGate = deferred();
+    const requestDevice = jest.fn(() => deviceGate.promise);
+    harness.device.destroy = jest.fn();
+    harness.gpu.requestAdapter = jest.fn(async () => ({ requestDevice }));
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false })
+    });
+
+    const initialization = renderer.init();
+    await Promise.resolve();
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    renderer.destroy();
+    deviceGate.resolve(harness.device);
+
+    await expect(initialization).resolves.not.toBe('webgpu');
+    expect(harness.device.destroy).toHaveBeenCalledTimes(1);
+    expect(harness.context.configure).not.toHaveBeenCalled();
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      destroyed: true,
+      active: false
+    }));
+    expect(renderer.mode()).not.toBe('webgpu');
   });
 
   test('caps the backing store and destroys owned GPU resources without later submits', async () => {
@@ -562,7 +593,7 @@ describe('Stream Monsters effects renderer', () => {
     await hatch;
   });
 
-  test('uses deterministic VFX-key variants in WebGPU uniforms and Canvas2D drawing', async () => {
+  test('uses deterministic VFX-key accents without changing the canonical Canvas attack basis', async () => {
     expect(phaseForProgress('spawn', 0.26).name).toBe('particle-swirl');
     expect(sceneChoreography('attack', { vfxKey: 'ashfang:attack' }).vfx)
       .not.toEqual(sceneChoreography('attack', { vfxKey: 'ripple:attack' }).vfx);
@@ -596,10 +627,16 @@ describe('Stream Monsters effects renderer', () => {
       cancelAnimationFrame: clearTimeout
     });
     await secondRenderer.init();
-    const secondPlay = secondRenderer.play('attack', { vfxKey: 'ripple:attack', element: 'Tide' });
+    const secondPlay = secondRenderer.play('attack', {
+      vfxKey: 'ripple:attack',
+      element: 'Tide',
+      actorSlot: 1,
+      targetSlot: 2
+    });
     await jest.advanceTimersByTimeAsync(32);
+    const secondVariant = second.canvas.dataset.vfxVariant;
     expect(second.canvas.dataset.vfxVariant).toMatch(/^v[0-9]+$/);
-    expect(second.canvas2d.rotate).toHaveBeenCalled();
+    expect(second.canvas2d.rotate).toHaveBeenCalledWith(0);
     expect(firstUniforms.slice(9, 11)).not.toEqual([0, 0]);
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await secondPlay;
@@ -613,10 +650,17 @@ describe('Stream Monsters effects renderer', () => {
       cancelAnimationFrame: clearTimeout
     });
     await thirdRenderer.init();
-    const thirdPlay = thirdRenderer.play('attack', { vfxKey: 'ashfang:attack', element: 'Ember' });
+    const thirdPlay = thirdRenderer.play('attack', {
+      vfxKey: 'ashfang:attack',
+      element: 'Ember',
+      actorSlot: 1,
+      targetSlot: 2
+    });
     await jest.advanceTimersByTimeAsync(32);
-    expect(third.canvas2d.rotate.mock.calls.at(-1)).not.toEqual(second.canvas2d.rotate.mock.calls.at(-1));
-    expect(third.canvas2d.lineTo.mock.calls.at(-1)).not.toEqual(second.canvas2d.lineTo.mock.calls.at(-1));
+    expect(third.canvas.dataset.vfxVariant).not.toBe(secondVariant);
+    expect(third.canvas2d.rotate.mock.calls.at(-1)).toEqual([0]);
+    expect(third.canvas2d.lineTo).toHaveBeenCalledWith(844.8, 0);
+    expect(second.canvas2d.lineTo).toHaveBeenCalledWith(844.8, 0);
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await thirdPlay;
   });

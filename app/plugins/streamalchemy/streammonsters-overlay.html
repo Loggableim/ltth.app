@@ -15,21 +15,30 @@
     body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
     #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; isolation:isolate; }
     #effects-canvas { position:fixed; inset:0; z-index:0; width:100%; height:100%; background:transparent; }
-    .effects-fallback[data-renderer-backend="css"][data-effect-scene="attack"] {
-      background:
-        radial-gradient(circle at calc(var(--sm-effect-target-x) * 100%) calc(var(--sm-effect-target-y) * 100%),var(--sm-effect-color-tertiary) 0 1.2%,transparent 5%),
-        linear-gradient(var(--sm-effect-angle),transparent 25%,var(--sm-effect-color) 48%,var(--sm-effect-color-secondary) 56%,transparent 74%);
+    #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="attack"] {
+      background-image:
+        radial-gradient(circle,var(--sm-effect-color-tertiary) 0 7%,transparent 18%),
+        linear-gradient(var(--sm-effect-angle),transparent 39%,var(--sm-effect-color) 46% 51%,var(--sm-effect-color-secondary) 54%,transparent 62%);
+      background-position:var(--sm-effect-target-x) var(--sm-effect-target-y),50% 52%;
+      background-size:18% 22%,58% 24%;
+      background-repeat:no-repeat;
       opacity:.72;
     }
-    .effects-fallback[data-renderer-backend="css"][data-effect-scene="defense"] {
-      background:
-        radial-gradient(circle at calc(var(--sm-effect-origin-x) * 100%) calc(var(--sm-effect-origin-y) * 100%),transparent 0 10%,var(--sm-effect-color-tertiary) 11% 12%,transparent 13% 17%,var(--sm-effect-color) 18% 20%,transparent 21%);
+    #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="defense"] {
+      background-image:
+        radial-gradient(circle,transparent 0 28%,var(--sm-effect-color-tertiary) 30% 34%,transparent 36% 48%,var(--sm-effect-color) 50% 56%,transparent 59%);
+      background-position:var(--sm-effect-origin-x) var(--sm-effect-origin-y);
+      background-size:34% 42%;
+      background-repeat:no-repeat;
       opacity:.62;
     }
-    .effects-fallback[data-renderer-backend="css"][data-effect-scene="special"] {
-      background:
-        radial-gradient(circle at calc(var(--sm-effect-origin-x) * 100%) calc(var(--sm-effect-origin-y) * 100%),var(--sm-effect-color-tertiary) 0 3%,var(--sm-effect-color) 4% 10%,transparent 23%),
-        conic-gradient(from 20deg at calc(var(--sm-effect-origin-x) * 100%) calc(var(--sm-effect-origin-y) * 100%),transparent,var(--sm-effect-color-secondary),transparent,var(--sm-effect-color),transparent);
+    #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="special"] {
+      background-image:
+        radial-gradient(circle,var(--sm-effect-color-tertiary) 0 12%,var(--sm-effect-color) 14% 31%,transparent 55%),
+        conic-gradient(from 20deg,transparent 0 8%,var(--sm-effect-color-secondary) 11% 15%,transparent 18% 34%,var(--sm-effect-color) 38% 43%,transparent 47% 100%);
+      background-position:var(--sm-effect-origin-x) var(--sm-effect-origin-y),var(--sm-effect-origin-x) var(--sm-effect-origin-y);
+      background-size:27% 34%,38% 46%;
+      background-repeat:no-repeat;
       opacity:.68;
     }
     #reveal-stage {

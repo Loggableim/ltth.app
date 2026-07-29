@@ -202,6 +202,26 @@
       })
     })
   });
+  const PARTICLE_PROFILES = Object.freeze({
+    'ember:attack': Object.freeze([1, 1, 0.32, 0.78, 0.2, 1.65, 3, 0.12]),
+    'ember:defense': Object.freeze([2, 1, 0.18, 0.54, 0.42, 1.3, 4, 0.28]),
+    'ember:special': Object.freeze([3, 1, 0.72, 0.92, 0.16, 1.85, 6, 0.46]),
+    'tide:attack': Object.freeze([1, 2, 0.86, 0.36, 0.48, 1.9, 2, 0.2]),
+    'tide:defense': Object.freeze([2, 2, 0.52, 0.28, 0.64, 1.45, 5, 0.34]),
+    'tide:special': Object.freeze([3, 2, 0.94, 0.48, 0.34, 2.05, 4, 0.58]),
+    'grove:attack': Object.freeze([1, 3, 0.68, 0.44, 0.58, 1.5, 3, 0.26]),
+    'grove:defense': Object.freeze([2, 3, 0.24, 0.18, 0.82, 1.18, 5, 0.4]),
+    'grove:special': Object.freeze([3, 3, 0.58, 0.62, 0.72, 1.7, 7, 0.64]),
+    'gale:attack': Object.freeze([1, 4, 0.42, 0.88, 0.3, 2.2, 2, 0.32]),
+    'gale:defense': Object.freeze([2, 4, 0.36, 0.7, 0.54, 1.82, 4, 0.48]),
+    'gale:special': Object.freeze([3, 4, 0.84, 0.96, 0.38, 2.35, 8, 0.7]),
+    'volt:attack': Object.freeze([1, 5, 0.12, 1, 0.14, 2.45, 5, 0.38]),
+    'volt:defense': Object.freeze([2, 5, 0.08, 0.84, 0.36, 2, 6, 0.54]),
+    'volt:special': Object.freeze([3, 5, 0.28, 1, 0.2, 2.6, 9, 0.76]),
+    'lunar:attack': Object.freeze([1, 6, 0.74, 0.3, 0.66, 1.62, 4, 0.44]),
+    'lunar:defense': Object.freeze([2, 6, 0.46, 0.22, 0.9, 1.28, 3, 0.6]),
+    'lunar:special': Object.freeze([3, 6, 0.9, 0.52, 0.78, 1.92, 10, 0.82])
+  });
   const QUALITY_BUDGETS = Object.freeze({
     auto: Object.freeze({ particles: 72, trailSegments: 22, layers: 3, bloom: 0.82 }),
     high: Object.freeze({ particles: 112, trailSegments: 32, layers: 4, bloom: 1 }),
@@ -416,6 +436,8 @@ struct Uniforms {
   target: vec4<f32>,
   outcome: vec4<f32>,
   detail: vec4<f32>,
+  motion: vec4<f32>,
+  shape: vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> u: Uniforms;
 
@@ -447,30 +469,52 @@ fn vertexMain(
   let lane = (index + 0.5) / count;
   let jitter = hash11(index + 3.0) - 0.5;
   let phase = fract(lane + u.frame.y * (0.42 + hash11(index + 9.0) * 0.58));
+  let motionCode = u.motion.x;
+  let shapeCode = u.motion.y;
+  let curvature = u.motion.z;
+  let turbulence = u.motion.w;
   var center = u.placement.xy;
   var size = (0.009 + hash11(index + 21.0) * 0.014) *
     (0.82 + min(3.0, u.effect.x) * 0.08);
-  if (u.frame.z == 3.0) {
+  if (motionCode == 1.0) {
     center = mix(u.placement.xy, u.target.xy, phase);
-    center += u.basis.zw * jitter * (0.045 + 0.025 * sin(u.effect.z));
-    center += u.basis.zw * sin(phase * 12.0 + u.frame.x * 8.0 + u.effect.z) * 0.018;
-    size *= 0.7 + 0.6 * (1.0 - abs(phase - 0.72));
-  } else if (u.frame.z == 4.0) {
-    let angle = lane * 6.283185 + u.frame.x * (0.6 + u.effect.z * 0.03);
-    let radius = 0.12 + 0.12 * hash11(index + 5.0) + u.outcome.x * 0.002;
+    let arc = sin(phase * 3.141593) * curvature * 0.075;
+    let ripple = sin(phase * (5.0 + u.shape.z) + u.frame.x * 8.0 + u.shape.w);
+    center += u.basis.zw * (arc + ripple * turbulence * 0.018);
+    center += u.basis.zw * jitter * turbulence * 0.04;
+    size *= (0.66 + 0.72 * (1.0 - abs(phase - 0.72))) * u.shape.y;
+  } else if (motionCode == 2.0) {
+    let angle = lane * 6.283185 + u.frame.x * (0.3 + turbulence) + u.shape.w;
+    let radius = 0.1 + 0.16 * curvature + 0.07 * hash11(index + 5.0) +
+      u.outcome.x * 0.002;
     center += vec2<f32>(cos(angle), sin(angle)) * radius;
-  } else if (u.frame.z == 5.0) {
-    let angle = lane * 12.56637 + u.frame.x * (0.8 + u.effect.z * 0.025);
-    let radius = 0.04 + 0.31 * phase;
+    size *= 0.72 + u.shape.x * 0.58;
+  } else if (motionCode == 3.0) {
+    let angle = lane * 6.283185 * max(1.0, u.shape.z * 0.5) +
+      u.frame.x * (0.65 + turbulence) + u.shape.w;
+    let radius = 0.035 + (0.18 + curvature * 0.17) * phase;
     center += vec2<f32>(cos(angle), sin(angle)) * radius;
-    size *= 0.8 + u.outcome.y * 0.025;
+    center += u.basis.zw * sin(angle * 0.5) * turbulence * 0.025;
+    size *= (0.78 + u.outcome.y * 0.025) * u.shape.y;
   } else {
     let angle = lane * 6.283185 + u.frame.x;
     center += vec2<f32>(cos(angle), sin(angle)) * (0.05 + phase * 0.26);
   }
   center.y = min(center.y, 0.735);
   let aspect = max(0.1, u.frame.w);
-  let local = corners[vertexIndex] * size;
+  var profileScale = vec2<f32>(1.0, 1.0);
+  if (shapeCode == 1.0) {
+    profileScale = vec2<f32>(0.72, 1.35);
+  } else if (shapeCode == 2.0) {
+    profileScale = vec2<f32>(0.78, 1.18);
+  } else if (shapeCode == 3.0) {
+    profileScale = vec2<f32>(1.0, 1.0 + u.shape.x * 0.24);
+  } else if (shapeCode == 4.0) {
+    profileScale = vec2<f32>(1.45, 0.48);
+  } else if (shapeCode == 5.0) {
+    profileScale = vec2<f32>(1.65, 0.34);
+  }
+  let local = corners[vertexIndex] * size * profileScale;
   let clip = vec2<f32>(
     (center.x + local.x / aspect) * 2.0 - 1.0,
     1.0 - (center.y + local.y) * 2.0
@@ -486,15 +530,31 @@ fn vertexMain(
 @fragment
 fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
   let radius = length(input.local);
+  let shapeCode = u.motion.y;
   let softDisc = 1.0 - smoothstep(0.25, 1.0, radius);
-  let branch = 1.0 - smoothstep(0.12, 0.38, abs(input.local.y));
-  let crescent = smoothstep(0.18, 0.62, radius) * (1.0 - smoothstep(0.62, 0.95, radius));
-  let family = f32(u32(u.effect.z) % 3u);
+  let taper = clamp(u.shape.x, 0.05, 0.95);
   var shape = softDisc;
-  if (family == 1.0) {
-    shape = max(branch, softDisc * 0.45);
-  } else if (family == 2.0) {
-    shape = crescent;
+  if (shapeCode == 1.0) {
+    let flameWidth = mix(0.68, 0.16, clamp((input.local.y + 1.0) * 0.5, 0.0, 1.0));
+    shape = 1.0 - smoothstep(flameWidth * 0.55, flameWidth, abs(input.local.x));
+    shape *= 1.0 - smoothstep(0.72, 1.0, abs(input.local.y));
+  } else if (shapeCode == 2.0) {
+    let droplet = length(vec2<f32>(input.local.x, input.local.y + taper * 0.35));
+    shape = 1.0 - smoothstep(0.42, 0.88, droplet);
+  } else if (shapeCode == 3.0) {
+    let crystal = abs(input.local.x) + abs(input.local.y) * mix(0.72, 1.2, taper);
+    shape = 1.0 - smoothstep(0.58, 0.96, crystal);
+  } else if (shapeCode == 4.0) {
+    let feather = 1.0 - smoothstep(0.1, 0.42, abs(input.local.y));
+    shape = feather * (1.0 - smoothstep(0.72, 1.0, abs(input.local.x)));
+  } else if (shapeCode == 5.0) {
+    let bolt = abs(input.local.y - sin(input.local.x * u.shape.z) * 0.18);
+    shape = 1.0 - smoothstep(0.08, 0.24, bolt);
+  } else if (shapeCode == 6.0) {
+    let outer = 1.0 - smoothstep(0.7, 0.96, radius);
+    let cutout = 1.0 - smoothstep(0.42, 0.7, length(input.local - vec2<f32>(0.28, 0.0)));
+    let star = 1.0 - smoothstep(0.14, 0.34, min(abs(input.local.x), abs(input.local.y)));
+    shape = max(outer * (1.0 - cutout), star * 0.74);
   }
   let cadence = 0.72 + 0.28 * sin(
     u.frame.x * 12.0 + u.target.z * 2.1 + u.target.w + u.outcome.w
@@ -859,6 +919,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     const resolvedQuality = normalizeQuality(frame.quality || scene.effectiveQuality || scene.quality);
     const budget = QUALITY_BUDGETS[resolvedQuality];
     const accentSeed = Number(recipe.accentSeed) || scene.vfx?.accentSeed || 0;
+    const particleProfile = PARTICLE_PROFILES[recipe.id] ||
+      PARTICLE_PROFILES['lunar:attack'];
     const semantic = {
       recipeId: recipe.id,
       motifCode: recipe.motifCode,
@@ -873,7 +935,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       evade: statuses.includes('evade') ? 1 : 0,
       primaryStatus,
       statusCode: primaryStatusCode(primaryStatus),
-      particleCount: budget.particles
+      particleCount: budget.particles,
+      particleProfile: [...particleProfile]
     };
     const values = new Float32Array([
       timestamp / 1000,
@@ -906,7 +969,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       scene.metadata.damage,
       scene.metadata.shieldAbsorbed,
       budget.particles,
-      0
+      0,
+      ...particleProfile
     ]);
     return { values, semantic };
   }
@@ -939,6 +1003,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     let reducedMotion = false;
     let deviceLost = false;
     let device = null;
+    let ownedDevice = null;
     let context = null;
     let canvas2d = null;
     let pipeline = null;
@@ -951,6 +1016,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     let measuredFps = null;
     let fpsSamples = [];
     let fpsDegraded = false;
+    let destroyed = false;
+    let initializationGeneration = 0;
 
     function effectiveQuality() {
       if (reducedMotion) return 'low';
@@ -1042,6 +1109,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     }
 
     function switchToFallback(reason) {
+      if (destroyed) return rendererMode;
       if (frameHandle != null) {
         cancelFrame(frameHandle);
         frameHandle = null;
@@ -1080,13 +1148,24 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     }
 
     async function initialize() {
+      const generation = ++initializationGeneration;
+      if (destroyed) return rendererMode;
       reducedMotion = Boolean(mediaQuery('(prefers-reduced-motion: reduce)')?.matches);
       if (reducedMotion) return switchToFallback('reduced-motion');
       if (!canvas || !navigatorLike?.gpu?.requestAdapter) return switchToFallback('webgpu-unavailable');
       try {
         const adapter = await navigatorLike.gpu.requestAdapter();
+        if (destroyed || generation !== initializationGeneration) return rendererMode;
         if (!adapter) return switchToFallback('adapter-unavailable');
-        device = await adapter.requestDevice();
+        const acquiredDevice = await adapter.requestDevice();
+        if (destroyed || generation !== initializationGeneration) {
+          try {
+            acquiredDevice?.destroy?.();
+          } catch (_) {}
+          return rendererMode;
+        }
+        ownedDevice = acquiredDevice;
+        device = acquiredDevice;
         context = canvas.getContext?.('webgpu');
         if (!device || !context) return switchToFallback('context-unavailable');
         const format = navigatorLike.gpu.getPreferredCanvasFormat?.() || 'bgra8unorm';
@@ -1116,7 +1195,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
           (globalThis.GPUBufferUsage?.COPY_DST || 0x0008);
         uniformBuffer = device.createBuffer({
           label: 'Stream Monsters effect uniforms',
-          size: 160,
+          size: 192,
           usage
         });
         bindGroup = device.createBindGroup({
@@ -1137,6 +1216,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         Promise.resolve(device.lost).then(handleDeviceLoss).catch(handleDeviceLoss);
         return rendererMode;
       } catch (_) {
+        if (destroyed || generation !== initializationGeneration) return rendererMode;
         return switchToFallback('initialization-failed');
       }
     }
@@ -1190,10 +1270,10 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       canvas.style?.setProperty?.('--sm-effect-color', scene.color);
       canvas.style?.setProperty?.('--sm-effect-color-secondary', scene.recipe?.palette?.[1] || scene.color);
       canvas.style?.setProperty?.('--sm-effect-color-tertiary', scene.recipe?.palette?.[2] || '#ffffff');
-      canvas.style?.setProperty?.('--sm-effect-origin-x', String(scene.origin.x));
-      canvas.style?.setProperty?.('--sm-effect-origin-y', String(scene.origin.y));
-      canvas.style?.setProperty?.('--sm-effect-target-x', String(scene.targetOrigin.x));
-      canvas.style?.setProperty?.('--sm-effect-target-y', String(scene.targetOrigin.y));
+      canvas.style?.setProperty?.('--sm-effect-origin-x', `${scene.origin.x * 100}%`);
+      canvas.style?.setProperty?.('--sm-effect-origin-y', `${scene.origin.y * 100}%`);
+      canvas.style?.setProperty?.('--sm-effect-target-x', `${scene.targetOrigin.x * 100}%`);
+      canvas.style?.setProperty?.('--sm-effect-target-y', `${scene.targetOrigin.y * 100}%`);
       canvas.style?.setProperty?.('--sm-effect-bloom', String(budget.bloom));
       canvas.style?.setProperty?.(
         '--sm-effect-angle',
@@ -1310,19 +1390,13 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       const resolvedQuality = sceneEffectiveQuality(scene);
       const budget = QUALITY_BUDGETS[resolvedQuality];
       const detail = Math.max(2, Math.ceil(budget.particles / 18));
-      const targetX = scene.scene === 'attack'
-        ? Math.hypot(
-            (scene.targetOrigin.x - scene.origin.x) * width,
-            (scene.targetOrigin.y - scene.origin.y) * height
-          ) / scene.scale
-        : (scene.targetOrigin.x - scene.origin.x) * width / scene.scale;
-      const targetY = scene.scene === 'attack'
-        ? 0
-        : (scene.targetOrigin.y - scene.origin.y) * height / scene.scale;
+      const basis = scene.basis || attackBasis(scene.origin, scene.targetOrigin);
+      const targetX = basis.longitudinal.x * basis.distance * width / scene.scale;
+      const targetY = basis.longitudinal.y * basis.distance * height / scene.scale;
       const hitOffset = (scene.hit.index - 1) / Math.max(1, scene.hit.count);
       context2d.lineWidth = Math.max(
         2,
-        Math.min(width, height) * (0.004 + budget.bloom * 0.004)
+        Math.min(width, height) * (0.007 + budget.bloom * 0.006)
       );
       context2d.setLineDash?.([]);
       context2d.beginPath();
@@ -1337,13 +1411,16 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         }
       }
       if (hasMotif('flame-tongues', 'fire-vortex', 'hot-core')) {
-        context2d.moveTo(0, radius * 0.5);
-        context2d.quadraticCurveTo?.(
-          radius * (0.2 + hitOffset),
-          -radius * 1.3,
-          targetX,
-          targetY
-        );
+        for (let tongue = -1; tongue <= 1; tongue += 1) {
+          const offset = tongue * radius * 0.22;
+          context2d.moveTo(0, radius * 0.5 + offset);
+          context2d.quadraticCurveTo?.(
+            targetX * (0.34 + tongue * 0.04) + radius * (0.2 + hitOffset),
+            -radius * (1.3 - Math.abs(tongue) * 0.22) + offset,
+            targetX,
+            targetY + offset * 0.18
+          );
+        }
       }
       if (hasMotif('heat-distortion-rings', 'ember-guard')) {
         for (let ring = 1; ring <= budget.layers; ring += 1) {
@@ -1524,13 +1601,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       canvas2d.save();
       canvas2d.translate(width * scene.origin.x, height * scene.origin.y);
       canvas2d.scale?.(scene.scale, scene.scale);
-      const attackAngle = scene.scene === 'attack'
-        ? Math.atan2(
-            (scene.targetOrigin.y - scene.origin.y) * height,
-            (scene.targetOrigin.x - scene.origin.x) * width
-          )
-        : 0;
-      canvas2d.rotate(attackAngle + (scene.vfx.twist - 3) * 0.018);
+      canvas2d.rotate(scene.scene === 'attack' ? 0 : (scene.vfx.twist - 3) * 0.018);
       canvas2d.globalAlpha = reducedMotion ? 0.35 : Math.max(0.12, 1 - progress);
       canvas2d.strokeStyle = scene.color;
       canvas2d.fillStyle = scene.color;
@@ -1569,12 +1640,11 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       } else if (scene.scene === 'hatch') {
         canvas2d.ellipse?.(0, 0, radius * 0.48, radius * 0.72, 0, 0, Math.PI * 2);
       } else if (scene.scene === 'attack') {
-        const attackDistance = Math.hypot(
-          (scene.targetOrigin.x - scene.origin.x) * width,
-          (scene.targetOrigin.y - scene.origin.y) * height
-        ) / scene.scale;
+        const basis = scene.basis || attackBasis(scene.origin, scene.targetOrigin);
+        const targetX = basis.longitudinal.x * basis.distance * width / scene.scale;
+        const targetY = basis.longitudinal.y * basis.distance * height / scene.scale;
         canvas2d.moveTo(0, radius * 0.08);
-        canvas2d.lineTo(attackDistance, -radius * 0.04);
+        canvas2d.lineTo(targetX, targetY);
       } else if (scene.scene === 'defense') {
         canvas2d.setLineDash?.([scene.vfx.variant * 2, scene.vfx.spread * 3]);
         canvas2d.arc(0, 0, radius * (0.75 + scene.vfx.spread * 0.04), Math.PI, Math.PI * 2);
@@ -1658,7 +1728,10 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     }
 
     function destroy() {
-      const ownedDevice = device;
+      if (destroyed) return;
+      destroyed = true;
+      initializationGeneration += 1;
+      const deviceToDestroy = ownedDevice;
       const interrupted = activeScene;
       if (frameHandle != null) cancelFrame(frameHandle);
       if (activeScene?.timer != null) clearTimer(activeScene.timer);
@@ -1682,11 +1755,12 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         });
       }
       try {
-        ownedDevice?.destroy?.();
+        deviceToDestroy?.destroy?.();
       } catch (_) {}
       frameHandle = null;
       activeScene = null;
       device = null;
+      ownedDevice = null;
       context = null;
       canvas2d = null;
       pipeline = null;
@@ -1694,6 +1768,13 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       bindGroup = null;
       lastFrameAt = null;
       fpsSamples = [];
+      rendererMode = 'destroyed';
+      fallbackReason = 'destroyed';
+      if (canvas?.dataset) {
+        canvas.dataset.renderer = 'destroyed';
+        canvas.dataset.rendererBackend = 'destroyed';
+        canvas.dataset.fallbackReason = 'destroyed';
+      }
     }
 
     return {
@@ -1721,7 +1802,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         reducedMotion,
         deviceLost,
         fpsDegraded,
-        active: Boolean(activeScene)
+        active: Boolean(activeScene),
+        destroyed
       })
     };
   }
@@ -1733,6 +1815,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     ELEMENT_PALETTES,
     ELEMENT_SIGNATURES,
     MAX_BACKING_PIXELS,
+    PARTICLE_PROFILES,
     QUALITY_BUDGETS,
     SCENE_DURATIONS,
     attackBasis,
