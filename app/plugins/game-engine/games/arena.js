@@ -208,7 +208,7 @@ const DEFAULT_CONFIG = {
   spawnThreatClearanceRatio: 1,
   baseMass: 18,
   minMass: 8,
-  maxMass: 260,
+  maxMass: 520,
   baseLives: 100,
   spawnDelayMs: 15000,
   spawnBaseLives: 45,
@@ -219,7 +219,17 @@ const DEFAULT_CONFIG = {
   spawnProtectionMs: 4500,
   respawnCooldownMs: 60000,
   minLives: 20,
-  maxLives: 22000,
+  maxLives: 88000,
+  directAbilitiesEnabled: true,
+  abilityChargeMs: 60000,
+  boostDurationMs: 6000,
+  shieldDurationMs: 8000,
+  boostColor: '#EF4444',
+  shieldColor: '#3B82F6',
+  bombCooldownMs: 15000,
+  bombSpeed: 650,
+  bombRange: 420,
+  bombBlastRadius: 92,
   likeLifeValue: 1,
   likeGrowthMaxMass: 42,
   giftLifePerCoin: 25,
@@ -286,7 +296,7 @@ const DEFAULT_CONFIG = {
     huntStrikeDistance: 260,
     huntStrikeBoost: 1.18,
     smallMassSpeedBoost: 0.35,
-    largeMassSpeedPenalty: 0.72,
+    largeMassSpeedPenalty: 1.5,
     minMassSpeedMultiplier: 0.38,
     maxMassSpeedMultiplier: 1.35,
     boundaryAvoidanceDistance: 90,
@@ -501,9 +511,11 @@ class ArenaGame {
     this.foodPool = [];
     this.weaponPickups = new Map();
     this.mines = new Map();
+    this.bombs = new Map();
     this.foodIdCounter = 0;
     this.weaponPickupIdCounter = 0;
     this.mineIdCounter = 0;
+    this.bombIdCounter = 0;
     this.lastFoodSpawnAt = 0;
     this.tickTimer = null;
     this.destroyed = false;
@@ -603,6 +615,7 @@ class ArenaGame {
     this.foodPool.length = 0;
     this.weaponPickups.clear();
     this.mines.clear();
+    this.bombs.clear();
     this.logger.info('Arena game destroyed');
   }
 
@@ -862,6 +875,26 @@ class ArenaGame {
     return { success: false, error: 'Unknown arena command' };
   }
 
+  handleAbilityCommand(data, abilityName) {
+    const config = this.getConfig();
+    if (!config.enabled || config.directAbilitiesEnabled === false) return { success: false, error: 'Arena abilities disabled' };
+    const viewer = this._normalizeViewer(data);
+    const username = this._resolvePlayerUsername(viewer);
+    const player = username ? this.players.get(username) : null;
+    if (!player) return { success: false, error: 'Join the Arena first' };
+    const ability = String(abilityName || '').trim().toLowerCase();
+    const now = this.now();
+    if (ability === 'bomb') return this._throwBomb(player, config, now);
+    if (!['boost', 'shield'].includes(ability)) return { success: false, error: 'Unknown arena ability' };
+    const state = this._abilityState(player, ability, config);
+    if (now < state.availableAt) return { success: false, error: `${ability} recharges in ${Math.ceil((state.availableAt - now) / 1000)}s` };
+    state.activeUntil = now + (ability === 'boost' ? config.boostDurationMs : config.shieldDurationMs);
+    state.availableAt = now + config.abilityChargeMs;
+    this.io.emit('arena:ability-activated', { username: player.username, nickname: player.nickname, ability, activeUntil: state.activeUntil, timestamp: now });
+    this.emitState(`ability-${ability}`, { force: true });
+    return { success: true, ability, activeUntil: state.activeUntil };
+  }
+
   setPlayerStrategy(viewer, strategy, options = {}) {
     const config = options.config || this.getConfig();
     const player = options.player || this._getOrCreatePlayer(this._normalizeViewer(viewer), config);
@@ -970,6 +1003,7 @@ class ArenaGame {
     this._updateFood(config);
     this._updateWeaponPickups(config);
     this._updateMines(config);
+    this._updateBombs(config, Math.max(deltaMs, 0) / 1000);
 
     const seconds = Math.max(deltaMs, 0) / 1000;
     this.aiSpatialIndex = this._buildSpatialIndex(config);
@@ -2350,6 +2384,17 @@ class ArenaGame {
         respawnCooldownMs: config.respawnCooldownMs,
         minLives: config.minLives,
         maxLives: config.maxLives,
+        maxMass: config.maxMass,
+        directAbilitiesEnabled: config.directAbilitiesEnabled,
+        abilityChargeMs: config.abilityChargeMs,
+        boostDurationMs: config.boostDurationMs,
+        shieldDurationMs: config.shieldDurationMs,
+        boostColor: config.boostColor,
+        shieldColor: config.shieldColor,
+        bombCooldownMs: config.bombCooldownMs,
+        bombSpeed: config.bombSpeed,
+        bombRange: config.bombRange,
+        bombBlastRadius: config.bombBlastRadius,
         likeLifeValue: config.likeLifeValue,
         likeGrowthMaxMass: config.likeGrowthMaxMass,
         maxLikeLifeBatch: config.maxLikeLifeBatch,
@@ -2391,6 +2436,7 @@ class ArenaGame {
       food: Array.from(this.food.values()),
       weaponPickups: Array.from(this.weaponPickups.values()).map(pickup => this._serializeWeaponPickup(pickup)),
       mines: Array.from(this.mines.values()).map(mine => this._serializeMine(mine)),
+      bombs: Array.from(this.bombs.values()).map(bomb => ({ ...bomb })),
       leaderboard: players.slice(0, 10).map((player, index) => ({
         rank: index + 1,
         username: player.username,
@@ -2656,6 +2702,7 @@ class ArenaGame {
     );
 
     if (!target) return;
+    if (this._isShieldActive(target)) return;
 
     const shieldMultiplier = target.weapon && target.weapon.type === 'shield' ? 0.35 : 1;
     const damage = (physics.laserDamagePerSecond + power * 1.5) * seconds * shieldMultiplier;
@@ -2695,6 +2742,7 @@ class ArenaGame {
     );
 
     if (!target) return;
+    if (this._isShieldActive(target)) return;
 
     const shieldMultiplier = target.weapon && target.weapon.type === 'shield' ? 0.45 : 1;
     const damage = (physics.missileDamagePerSecond + power * 1.8) * seconds * shieldMultiplier;
@@ -2728,6 +2776,7 @@ class ArenaGame {
     const radius = physics.pulseRadius + power * 18;
     for (const other of this.players.values()) {
       if (other.username === player.username) continue;
+      if (this._isShieldActive(other)) continue;
       const distance = this._distance(player, other);
       if (distance <= 0 || distance > radius) continue;
 
@@ -2802,6 +2851,7 @@ class ArenaGame {
 
     for (const other of this.players.values()) {
       if (other.username === player.username || other.mass >= player.mass) continue;
+      if (this._isShieldActive(other)) continue;
       const distance = this._distance(player, other);
       if (distance > radius || distance <= 0) continue;
 
@@ -2831,6 +2881,7 @@ class ArenaGame {
 
     for (const other of this.players.values()) {
       if (other.username === player.username) continue;
+      if (this._isShieldActive(other)) continue;
       const distance = this._distance(player, other);
       if (distance > radius) continue;
 
@@ -2869,6 +2920,7 @@ class ArenaGame {
 
     for (const other of this.players.values()) {
       if (other.username === player.username || other.mass >= player.mass * 0.96) continue;
+      if (this._isShieldActive(other)) continue;
       const distance = this._distance(player, other);
       if (distance > radius || distance <= 0) continue;
 
@@ -2892,6 +2944,7 @@ class ArenaGame {
       this._distance(player, other) <= range
     );
     if (!target) return;
+    if (this._isShieldActive(target)) return;
 
     const shieldMultiplier = target.weapon && target.weapon.type === 'shield' ? 0.4 : 1;
     const drain = (Number(physics.vampireDrainPerSecond) || 18) * (1 + power * 0.18) * seconds * shieldMultiplier;
@@ -2953,6 +3006,7 @@ class ArenaGame {
 
       for (const player of Array.from(this.players.values())) {
         if (player.username === mine.owner) continue;
+        if (this._isShieldActive(player)) continue;
         if (this._distance(player, mine) > mine.radius + player.radius * 0.35) continue;
 
         const applied = this._addLives(player, -mine.damage, config);
@@ -2981,6 +3035,51 @@ class ArenaGame {
           }
         }
         break;
+      }
+    }
+  }
+
+  _throwBomb(player, config, now) {
+    const cooldownUntil = Number(player.bombCooldownUntil) || 0;
+    if (now < cooldownUntil) return { success: false, error: `bomb recharges in ${Math.ceil((cooldownUntil - now) / 1000)}s` };
+    const directions = [
+      { name: 'east', x: 1, y: 0 }, { name: 'south', x: 0, y: 1 },
+      { name: 'west', x: -1, y: 0 }, { name: 'north', x: 0, y: -1 }
+    ];
+    const direction = directions[Math.min(directions.length - 1, Math.floor(this.random() * directions.length))];
+    const bomb = {
+      id: `bomb_${++this.bombIdCounter}`, owner: player.username, x: player.x, y: player.y,
+      vx: direction.x, vy: direction.y, radius: 12, travelled: 0, spawnedAt: now,
+      range: config.bombRange, speed: config.bombSpeed, blastRadius: config.bombBlastRadius
+    };
+    player.bombCooldownUntil = now + config.bombCooldownMs;
+    this.bombs.set(bomb.id, bomb);
+    this.io.emit('arena:bomb-thrown', { ...bomb, direction: direction.name, timestamp: now });
+    this.emitState('bomb-thrown', { force: true });
+    return { success: true, ability: 'bomb', direction: direction.name, bombId: bomb.id };
+  }
+
+  _updateBombs(config, seconds) {
+    for (const [id, bomb] of Array.from(this.bombs.entries())) {
+      const distance = bomb.speed * seconds;
+      bomb.x += bomb.vx * distance;
+      bomb.y += bomb.vy * distance;
+      bomb.travelled += distance;
+      const target = Array.from(this.players.values()).find(player =>
+        player.username !== bomb.owner && !this._isShieldActive(player) &&
+        this._distance(player, bomb) <= player.radius + bomb.blastRadius
+      );
+      if (target) {
+        const beforeMass = target.mass;
+        target.lives = config.minLives + 1;
+        this._syncRadius(target, config);
+        this._spawnFoodBurst(target, Math.max(18, Math.min(72, Math.floor(beforeMass / 3))), config, {
+          source: 'bomb', value: Math.max(config.foodValue * 2, beforeMass / 160), spread: bomb.blastRadius, ignoreCap: true
+        });
+        this.io.emit('arena:bomb-exploded', { bombId: id, owner: bomb.owner, target: target.username, x: target.x, y: target.y, timestamp: this.now() });
+        this.bombs.delete(id);
+      } else if (bomb.travelled >= bomb.range || bomb.x < 0 || bomb.y < 0 || bomb.x > config.arenaWidth || bomb.y > config.arenaHeight) {
+        this.bombs.delete(id);
       }
     }
   }
@@ -3475,6 +3574,7 @@ class ArenaGame {
 
   _tryResolveAbsorption(player, other, config) {
     if (!this.players.has(player.username) || !this.players.has(other.username)) return false;
+    if (this._isShieldActive(other)) return false;
     if (this._tryResolveChainsawCollision(player, other, config)) return true;
     if (this._tryResolveChainsawCollision(other, player, config)) return true;
 
@@ -3558,8 +3658,9 @@ class ArenaGame {
     const maxMass = Math.max(1, Number(config.maxMass) || DEFAULT_CONFIG.maxMass);
     const predatorMass = this._clamp(Number(player.mass) || Number(config.baseMass) || DEFAULT_CONFIG.baseMass, config.minMass, maxMass);
     const preyMass = Math.max(1, Number(other.mass) || Number(config.baseMass) || DEFAULT_CONFIG.baseMass);
-    const dominance = this._clamp((predatorMass - maxMass * 0.46) / Math.max(1, maxMass * 0.42), 0, 1);
-    const capPressure = this._clamp((predatorMass - maxMass * 0.82) / Math.max(1, maxMass * 0.18), 0, 1);
+    const balanceCap = Math.min(maxMass, 260);
+    const dominance = this._clamp((predatorMass - balanceCap * 0.46) / Math.max(1, balanceCap * 0.42), 0, 1);
+    const capPressure = this._clamp((predatorMass - balanceCap * 0.82) / Math.max(1, balanceCap * 0.18), 0, 1);
     const preyGap = this._clamp((predatorMass / preyMass - 1.7) / 3.5, 0, 1);
     const preyGapPressure = preyGap * Math.max(dominance, capPressure);
     const rewardDamping = this._clamp(dominance * 0.65 + capPressure * 0.45 + preyGapPressure * 0.18, 0, 0.86);
@@ -3621,6 +3722,7 @@ class ArenaGame {
     if (!weapon || weapon.type !== 'chainsaw' || (weapon.expiresAt && weapon.expiresAt <= this.now())) {
       return false;
     }
+    if (this._isShieldActive(other)) return false;
 
     const physics = config.weaponPhysics || DEFAULT_CONFIG.weaponPhysics;
     const absorbOverlapRatio = Number(config.playerAbsorbOverlapRatio) || DEFAULT_CONFIG.playerAbsorbOverlapRatio;
@@ -4300,6 +4402,11 @@ class ArenaGame {
       extraLives: Math.max(0, Math.floor(Number(spawnOptions.extraLives) || 0)),
       identityAliases: new Set(),
       effects: {},
+      abilities: {
+        boost: { availableAt: now + config.abilityChargeMs, activeUntil: 0 },
+        shield: { availableAt: now + config.abilityChargeMs, activeUntil: 0 }
+      },
+      bombCooldownUntil: 0,
       personality,
       behaviorMemory: null,
       aiStateMemory: null,
@@ -5079,6 +5186,22 @@ class ArenaGame {
 
       if (score > strongestScore) {
         strongestThreat = other;
+        strongestScore = score;
+      }
+    }
+
+    for (const bomb of this.bombs.values()) {
+      if (bomb.owner === player.username) continue;
+      const distance = this._distance(player, bomb);
+      const danger = bomb.blastRadius + player.radius + 90;
+      if (distance > danger) continue;
+      const away = this._normalizeVector({ x: player.x - bomb.x, y: player.y - bomb.y });
+      const score = (1 - distance / danger) * (8 + player.radius / 8) * personality.fear;
+      vector.x += away.x * score;
+      vector.y += away.y * score;
+      threatEntries.push({ target: bomb, future: bomb, distance, score, dynamicFleeDistance: danger });
+      if (score > strongestScore) {
+        strongestThreat = bomb;
         strongestScore = score;
       }
     }
@@ -6336,10 +6459,11 @@ class ArenaGame {
       maxMass
     );
     const smallness = this._clamp((baseMass - mass) / Math.max(1, baseMass - minMass), 0, 1);
-    const growth = mass <= baseMass ? 0 : this._clamp((mass - baseMass) / Math.max(1, maxMass - baseMass), 0, 1);
+    const behaviorCap = Math.min(maxMass, 260);
+    const growth = mass <= baseMass ? 0 : this._clamp((mass - baseMass) / Math.max(1, behaviorCap - baseMass), 0, 1);
     const largeStart = Math.min(maxMass * 0.34, baseMass * 3.2);
-    const large = this._clamp((mass - largeStart) / Math.max(1, maxMass - largeStart), 0, 1);
-    const giantStart = maxMass * 0.62;
+    const large = this._clamp((mass - largeStart) / Math.max(1, behaviorCap - largeStart), 0, 1);
+    const giantStart = Math.min(maxMass * 0.62, baseMass * 9);
     const giant = this._clamp((mass - giantStart) / Math.max(1, maxMass - giantStart), 0, 1);
     const activeWeapon = player && player.weapon && player.weapon.type &&
       (!player.weapon.expiresAt || player.weapon.expiresAt > this.now());
@@ -7270,6 +7394,7 @@ class ArenaGame {
       mass: Math.round(player.mass * 100) / 100,
       lives: Math.round((player.lives || 0) * 100) / 100,
       energy: Math.round(player.energy * 100) / 100,
+      abilities: this._serializeAbilities(player, config),
       score: Math.round(player.score * 100) / 100,
       kills: player.kills,
       extraLives: Math.max(0, Math.floor(Number(player.extraLives) || 0)),
@@ -7297,6 +7422,31 @@ class ArenaGame {
       spawnedAt: mine.spawnedAt,
       expiresAt: mine.expiresAt
     };
+  }
+
+  _abilityState(player, ability, config = this.getConfig()) {
+    if (!player.abilities || typeof player.abilities !== 'object') player.abilities = {};
+    if (!player.abilities[ability]) player.abilities[ability] = { availableAt: this.now() + config.abilityChargeMs, activeUntil: 0 };
+    return player.abilities[ability];
+  }
+
+  _serializeAbilities(player, config = this.getConfig()) {
+    const now = this.now();
+    const charge = Math.max(1, Number(config.abilityChargeMs) || 60000);
+    return Object.fromEntries(['boost', 'shield'].map(ability => {
+      const state = this._abilityState(player, ability, config);
+      return [ability, {
+        active: now < state.activeUntil,
+        ready: now >= state.availableAt,
+        activeUntil: state.activeUntil,
+        availableAt: state.availableAt,
+        chargeProgress: Math.round(this._clamp(1 - Math.max(0, state.availableAt - now) / charge, 0, 1) * 100) / 100
+      }];
+    }));
+  }
+
+  _isShieldActive(player, now = this.now()) {
+    return Boolean(player && this._abilityState(player, 'shield', this.getConfig()).activeUntil > now);
   }
 
   _serializeWeaponPickup(pickup) {
@@ -7363,7 +7513,9 @@ class ArenaGame {
 
   _addLives(player, amount, config) {
     const before = this._ensureLives(player, config);
-    player.lives = this._clamp(before + (Number(amount) || 0), config.minLives, config.maxLives);
+    const delta = Number(amount) || 0;
+    if (delta < 0 && this._isShieldActive(player)) return 0;
+    player.lives = this._clamp(before + delta, config.minLives, config.maxLives);
     this._syncRadius(player, config);
     return player.lives - before;
   }
@@ -7375,6 +7527,7 @@ class ArenaGame {
   }
 
   _applySlow(player, multiplier, durationMs, now = this.now()) {
+    if (this._isShieldActive(player, now)) return;
     if (!player.effects || typeof player.effects !== 'object') {
       player.effects = {};
     }
@@ -7410,6 +7563,9 @@ class ArenaGame {
   _statusSpeedMultiplier(player) {
     const now = this.now();
     let streamMultiplier = 1;
+    if (this._abilityState(player, 'boost', this.getConfig()).activeUntil > now) {
+      streamMultiplier *= 1.7;
+    }
     if (player.effects?.streamBoostUntil && now < player.effects.streamBoostUntil) {
       streamMultiplier = this._clamp(Number(player.effects.streamBoostMultiplier) || 1, 1, 1.35);
     }
@@ -7493,6 +7649,17 @@ class ArenaGame {
   }
 
   _normalizeConfig(config, stored) {
+    const validColor = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+    config.directAbilitiesEnabled = config.directAbilitiesEnabled !== false;
+    config.abilityChargeMs = this._clamp(Number(config.abilityChargeMs) || 60000, 10000, 300000);
+    config.boostDurationMs = this._clamp(Number(config.boostDurationMs) || 6000, 1000, 30000);
+    config.shieldDurationMs = this._clamp(Number(config.shieldDurationMs) || 8000, 1000, 30000);
+    config.boostColor = validColor(config.boostColor) ? config.boostColor.toUpperCase() : '#EF4444';
+    config.shieldColor = validColor(config.shieldColor) ? config.shieldColor.toUpperCase() : '#3B82F6';
+    config.bombCooldownMs = this._clamp(Number(config.bombCooldownMs) || 15000, 1000, 120000);
+    config.bombSpeed = this._clamp(Number(config.bombSpeed) || 650, 120, 1800);
+    config.bombRange = this._clamp(Number(config.bombRange) || 420, 80, 1200);
+    config.bombBlastRadius = this._clamp(Number(config.bombBlastRadius) || 92, 30, 260);
     if (
       Number(stored?.tickRateMs) === LEGACY_DEFAULT_TICK_RATE_MS ||
       Number(stored?.tickRateMs) === PREVIOUS_DEFAULT_TICK_RATE_MS
@@ -7678,7 +7845,7 @@ class ArenaGame {
         };
       }
 
-      if (Number(movement.largeMassSpeedPenalty) === 0.48 || Number(movement.largeMassSpeedPenalty) === 0.62) {
+      if ([0.48, 0.62, 0.72].includes(Number(movement.largeMassSpeedPenalty))) {
         config.movement = {
           ...config.movement,
           largeMassSpeedPenalty: DEFAULT_CONFIG.movement.largeMassSpeedPenalty

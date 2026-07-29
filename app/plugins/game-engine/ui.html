@@ -3242,6 +3242,12 @@
           </span></label>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+          <div class="form-group"><label><input type="checkbox" id="arena-direct-abilities-enabled" checked> Direkte Fähigkeiten aktiv</label></div>
+          <div class="form-group"><label>Fähigkeit laden (Sekunden):</label><input type="number" id="arena-ability-charge-seconds" min="10" max="300" step="1"></div>
+          <div class="form-group"><label>Boost-Dauer (Sekunden):</label><input type="number" id="arena-boost-duration-seconds" min="1" max="30" step="1"></div>
+          <div class="form-group"><label>Shield-Dauer (Sekunden):</label><input type="number" id="arena-shield-duration-seconds" min="1" max="30" step="1"></div>
+          <div class="form-group"><label>Boost-Farbe:</label><input type="color" id="arena-boost-color" value="#ef4444"></div>
+          <div class="form-group"><label>Shield-Farbe:</label><input type="color" id="arena-shield-color" value="#3b82f6"></div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.arena.field_size">Spielfeldgroesse:</label>
             <select id="arena-size-preset">
@@ -6567,6 +6573,12 @@
         setArenaField('arena-chat-strategy-cooldown', Math.round((config.chatStrategyCooldownMs !== undefined ? config.chatStrategyCooldownMs : 8000) / 1000));
         setArenaCheckbox('arena-chat-target-enabled', config.chatTargetCommandEnabled, true);
         setArenaCheckbox('arena-show-command-hints', config.topOverlayShowCommandHints, true);
+        setArenaCheckbox('arena-direct-abilities-enabled', config.directAbilitiesEnabled, true);
+        setArenaField('arena-ability-charge-seconds', Math.round((config.abilityChargeMs || 60000) / 1000));
+        setArenaField('arena-boost-duration-seconds', Math.round((config.boostDurationMs || 6000) / 1000));
+        setArenaField('arena-shield-duration-seconds', Math.round((config.shieldDurationMs || 8000) / 1000));
+        setArenaField('arena-boost-color', config.boostColor || '#EF4444');
+        setArenaField('arena-shield-color', config.shieldColor || '#3B82F6');
         setArenaField('arena-top-overlay-design', config.topOverlayDesign || 'framed-field');
         setArenaField('arena-top-overlay-position', config.topOverlayPosition || 'top-center');
         setArenaField('arena-top-overlay-density', config.topOverlayDensity || 'full');
@@ -6638,6 +6650,12 @@
         chatStrategyCooldownMs: getArenaNumber('arena-chat-strategy-cooldown', 8) * 1000,
         chatTargetCommandEnabled: document.getElementById('arena-chat-target-enabled')?.checked !== false,
         topOverlayShowCommandHints: document.getElementById('arena-show-command-hints')?.checked !== false,
+        directAbilitiesEnabled: document.getElementById('arena-direct-abilities-enabled')?.checked !== false,
+        abilityChargeMs: getArenaNumber('arena-ability-charge-seconds', 60) * 1000,
+        boostDurationMs: getArenaNumber('arena-boost-duration-seconds', 6) * 1000,
+        shieldDurationMs: getArenaNumber('arena-shield-duration-seconds', 8) * 1000,
+        boostColor: document.getElementById('arena-boost-color')?.value || '#EF4444',
+        shieldColor: document.getElementById('arena-shield-color')?.value || '#3B82F6',
         topOverlayDesign: document.getElementById('arena-top-overlay-design')?.value || base.topOverlayDesign || 'framed-field',
         topOverlayPosition: document.getElementById('arena-top-overlay-position')?.value || base.topOverlayPosition || 'top-center',
         topOverlayDensity: document.getElementById('arena-top-overlay-density')?.value || base.topOverlayDensity || 'full',

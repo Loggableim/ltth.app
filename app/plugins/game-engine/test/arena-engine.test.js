@@ -75,10 +75,90 @@ describe('ArenaGame', () => {
     const { arena } = createArena();
     const config = arena.getConfig();
 
+    expect(config.maxMass).toBe(520);
+    expect(config.maxLives).toBe(88000);
     expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
     expect(config.targetFps).toBeLessThanOrEqual(45);
     expect(config.maxRenderPlayers).toBeLessThanOrEqual(48);
     expect(config.maxFoodRender).toBeLessThanOrEqual(72);
+  });
+
+  it('charges boost and shield for sixty seconds before activating their direct effects', () => {
+    let now = 0;
+    const { arena } = createArena({}, { now: () => now });
+    const viewer = {
+      uniqueId: 'ability_viewer',
+      nickname: 'Ability Viewer',
+      profilePictureUrl: 'https://example.test/ability.png'
+    };
+
+    arena.handleActivity(viewer, 'chat');
+    let player = arena.getState().players[0];
+    expect(player.abilities.boost.ready).toBe(false);
+    expect(player.abilities.boost.chargeProgress).toBe(0);
+    expect(arena.handleAbilityCommand(viewer, 'boost').success).toBe(false);
+
+    now = 60000;
+    expect(arena.handleAbilityCommand(viewer, 'boost')).toMatchObject({ success: true, ability: 'boost' });
+    expect(arena.handleAbilityCommand(viewer, 'shield')).toMatchObject({ success: true, ability: 'shield' });
+
+    player = arena.getState().players[0];
+    expect(player.abilities.boost.active).toBe(true);
+    expect(player.abilities.shield.active).toBe(true);
+    expect(player.abilities.boost.ready).toBe(false);
+    expect(player.abilities.shield.ready).toBe(false);
+  });
+
+  it('throws a bomb in one random cardinal direction and bursts a large target into food', () => {
+    let now = 60000;
+    const { arena } = createArena({ maxFood: 0 }, { now: () => now, random: () => 0 });
+    const config = arena.getConfig();
+    const thrower = movementPlayer(arena, config, 'bomb_thrower', 40, { x: 120, y: 300, lives: 500, lastActivityAt: now });
+    const giant = movementPlayer(arena, config, 'bomb_giant', 220, { x: 290, y: 300, lives: 15000, lastActivityAt: now });
+    arena.players.set(thrower.username, thrower);
+    arena.players.set(giant.username, giant);
+
+    const result = arena.handleAbilityCommand({
+      uniqueId: thrower.username,
+      nickname: thrower.nickname,
+      profilePictureUrl: 'https://example.test/thrower.png'
+    }, 'bomb');
+    expect(result).toMatchObject({ success: true, ability: 'bomb', direction: 'east' });
+
+    now += 350;
+    arena.tick(350);
+
+    expect(arena.players.get(giant.username).mass).toBeLessThanOrEqual(config.minMass + 1);
+    expect(arena.food.size).toBeGreaterThan(0);
+  });
+
+  it('makes the direct shield block direct damage, pushes and slow effects', () => {
+    let now = 60000;
+    const { arena } = createArena({}, { now: () => now });
+    const config = arena.getConfig();
+    const protectedPlayer = movementPlayer(arena, config, 'protected_player', 45, {
+      lives: 900,
+      effects: {},
+      abilities: {
+        boost: { availableAt: now + config.abilityChargeMs, activeUntil: 0 },
+        shield: { availableAt: now + config.abilityChargeMs, activeUntil: now + config.shieldDurationMs }
+      }
+    });
+    const beforeLives = protectedPlayer.lives;
+    const beforePosition = { x: protectedPlayer.x, y: protectedPlayer.y };
+    arena.players.set(protectedPlayer.username, protectedPlayer);
+
+    expect(arena._addLives(protectedPlayer, -200, config)).toBe(0);
+    arena._applySlow(protectedPlayer, 0.3, 5000, now);
+    arena._applyPulseWeapon({
+      ...movementPlayer(arena, config, 'pulse_owner', 70, { x: 180, y: 300 }),
+      weapon: { type: 'pulse', power: 2 }
+    }, config, 1);
+
+    expect(protectedPlayer.lives).toBe(beforeLives);
+    expect(protectedPlayer.effects.slowedUntil).toBeUndefined();
+    expect(protectedPlayer.x).toBe(beforePosition.x);
+    expect(protectedPlayer.y).toBe(beforePosition.y);
   });
 
   it('makes small unarmed players flee larger nearby predators', () => {
@@ -135,6 +215,23 @@ describe('ArenaGame', () => {
 
     expect(decision.mode).toBe('hunt-player');
     expect(decision.target.username).toBe('small_prey');
+    expect(decision.vector.x).toBeGreaterThan(0);
+  });
+
+  it('makes large players treat incoming bombs as an urgent hazard', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
+    const config = arena.getConfig();
+    const giant = movementPlayer(arena, config, 'bomb_target', 220, { x: 430, y: 300, lives: 40000 });
+    arena.players.set(giant.username, giant);
+    arena.bombs.set('incoming_bomb', {
+      id: 'incoming_bomb', owner: 'other_player', x: 370, y: 300, vx: 1, vy: 0, radius: 12, blastRadius: config.bombBlastRadius
+    });
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(giant, config);
+
+    expect(decision.mode).toBe('flee');
+    expect(decision.target.id).toBe('incoming_bomb');
     expect(decision.vector.x).toBeGreaterThan(0);
   });
 
@@ -6688,6 +6785,19 @@ describe('GameEnginePlugin arena integration', () => {
     expect(plugin.api.registerTikTokEvent).toHaveBeenCalledWith('chat', expect.any(Function));
   });
 
+  it('routes direct arena ability commands through the fallback chat path', () => {
+    const { plugin } = createPlugin();
+    plugin.arenaGame.handleAbilityCommand = jest.fn(() => ({ success: true, ability: 'shield' }));
+
+    plugin.handleChatCommand({
+      uniqueId: 'viewer_ability', nickname: 'Ability Viewer', profilePictureUrl: 'https://example.test/avatar.png', comment: '!shield'
+    });
+
+    expect(plugin.arenaGame.handleAbilityCommand).toHaveBeenCalledWith(expect.objectContaining({
+      uniqueId: 'viewer_ability', nickname: 'Ability Viewer'
+    }), 'shield');
+  });
+
   it('passes completed gifts to the arena weapon handler before game-specific gift triggers', () => {
     const { plugin, handlers } = createPlugin();
 
@@ -6854,7 +6964,7 @@ describe('GameEnginePlugin arena integration', () => {
       huntDistance: 520,
       steeringStrength: 0.3,
       randomTurn: 0.032,
-      largeMassSpeedPenalty: 0.72,
+      largeMassSpeedPenalty: 1.5,
       fleeMassRatio: 0.98,
       huntMassRatio: 1.02,
       threatLookaheadSeconds: 0.9,
@@ -7007,6 +7117,21 @@ describe('Arena overlay rendering contract', () => {
     }
     expect(overlay).toContain('drawMines');
     expect(overlay).toContain('state.mines');
+  });
+
+  it('renders direct ability rings, a shared command legend, and flying bombs in both renderers', () => {
+    const overlay = readOverlay();
+
+    expect(overlay).toContain('function drawAbilityRings(player, point, now)');
+    expect(overlay).toContain('ability.chargeProgress');
+    expect(overlay).toContain('function drawAbilityLegend()');
+    expect(overlay).toContain('!boost Tempo');
+    expect(overlay).toContain('!shield Schutz');
+    expect(overlay).toContain('!bomb Wurf');
+    expect(overlay).toContain('function drawBombs(now)');
+    expect(overlay).toContain('node.abilityRings');
+    expect(overlay).toContain('function drawPixiAbilityLegend()');
+    expect(overlay).toContain('for (const bomb of state.bombs || [])');
   });
 
   it('draws chainsaw super weapon teeth around player avatars', () => {
@@ -7573,6 +7698,19 @@ describe('Arena admin and backend integration contract', () => {
     expect(ui).toContain('topOverlayShowCommandHints');
   });
 
+  it('adds configurable direct ability timing and colors to the arena dashboard', () => {
+    const ui = readUi();
+
+    expect(ui).toContain('id="arena-direct-abilities-enabled"');
+    expect(ui).toContain('id="arena-ability-charge-seconds"');
+    expect(ui).toContain('id="arena-boost-duration-seconds"');
+    expect(ui).toContain('id="arena-shield-duration-seconds"');
+    expect(ui).toContain('id="arena-boost-color"');
+    expect(ui).toContain('id="arena-shield-color"');
+    expect(ui).toContain('boostDurationMs: getArenaNumber');
+    expect(ui).toContain('shieldDurationMs: getArenaNumber');
+  });
+
   it('registers and dispatches the arena GCCE chat command', () => {
     const mainSource = readBackendSource('main.js');
 
@@ -7580,6 +7718,9 @@ describe('Arena admin and backend integration contract', () => {
     expect(mainSource).toContain('handleArenaCommand');
     expect(mainSource).toContain("message.match(/^!arena\\s+(.+)$/i)");
     expect(mainSource).toContain('this.arenaGame.handleChatStrategy');
+    expect(mainSource).toContain("['boost', 'shield', 'bomb']");
+    expect(mainSource).toContain('handleArenaAbilityCommand');
+    expect(mainSource).toContain('^!(boost|shield|bomb)$');
   });
 
   it('declares and serves PixiJS and Rapier vendor assets locally', () => {

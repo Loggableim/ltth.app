@@ -1249,10 +1249,10 @@ class GameEnginePlugin {
     if (Number(stored?.inactivityShrinkPerSecond) === 5) {
       config.inactivityShrinkPerSecond = this.defaultConfigs.arena.inactivityShrinkPerSecond;
     }
-    if (Number(stored?.maxMass) === 90 || Number(stored?.maxMass) === 140 || Number(stored?.maxMass) === 170) {
+    if ([90, 140, 170].includes(Number(stored?.maxMass))) {
       config.maxMass = this.defaultConfigs.arena.maxMass;
     }
-    if (Number(stored?.maxLives) === 2500 || Number(stored?.maxLives) === 6000 || Number(stored?.maxLives) === 9000) {
+    if ([2500, 6000, 9000].includes(Number(stored?.maxLives))) {
       config.maxLives = this.defaultConfigs.arena.maxLives;
     }
     if ([0.7, 0.42, 0.82, 0.9].includes(Number(stored?.playerAbsorbMassRatio))) {
@@ -1396,7 +1396,7 @@ class GameEnginePlugin {
         };
       }
 
-      if (Number(movement.largeMassSpeedPenalty) === 0.48 || Number(movement.largeMassSpeedPenalty) === 0.62) {
+      if ([0.48, 0.62, 0.72].includes(Number(movement.largeMassSpeedPenalty))) {
         config.movement = {
           ...config.movement,
           largeMassSpeedPenalty: this.defaultConfigs.arena.movement.largeMassSpeedPenalty
@@ -4686,6 +4686,20 @@ class GameEnginePlugin {
           category: 'Games',
           handler: async (args, context) => await this.handleArenaCommand(args, context)
         },
+        ...['boost', 'shield', 'bomb'].flatMap(ability => {
+          const existingOwner = getExistingCommandOwner(ability);
+          if (existingOwner) {
+            this.logger.warn(`[GAME ENGINE] Arena command "${ability}" is already owned by ${existingOwner}; GCCE registration skipped.`);
+            return [];
+          }
+          return [{
+            name: ability,
+            description: `Use the Live Arena ${ability} ability`,
+            syntax: `/${ability}`,
+            permission: 'all', enabled: true, minArgs: 0, maxArgs: 0, category: 'Games',
+            handler: async (_args, context) => await this.handleArenaAbilityCommand(ability, context)
+          }];
+        }),
       ];
 
       // Register slot machine chat commands (stored in game_slot_config, not game_triggers)
@@ -5523,6 +5537,13 @@ class GameEnginePlugin {
     // User role flags – used by slot cooldown adjuster
     const userRoles = { isModerator, isSubscriber, teamMemberLevel };
     const c4ChatCommand = this.getConnect4StartCommandName();
+    const arenaAbilityMatch = message.match(/^!(boost|shield|bomb)$/i);
+    if (arenaAbilityMatch) {
+      this.handleArenaAbilityCommand(arenaAbilityMatch[1].toLowerCase(), {
+        username: viewerNickname, userId: viewerId, nickname: viewerNickname, rawData: data, profilePictureUrl
+      });
+      return;
+    }
 
     // Matchmaking start aliases intentionally run before generic trigger and
     // GCCE fallback routing. This keeps `connect4`/`4gewinnt` reliable even
@@ -5748,6 +5769,17 @@ class GameEnginePlugin {
         message: 'Failed to update Arena strategy'
       };
     }
+  }
+
+  async handleArenaAbilityCommand(ability, context = {}) {
+    if (!this.arenaGame) return { success: false, message: 'Live Arena is not available.' };
+    const userId = context.userId || context.username;
+    const result = this.arenaGame.handleAbilityCommand({
+      ...(context.rawData || {}), uniqueId: userId, userId, username: userId,
+      nickname: context.nickname || context.username || userId,
+      profilePictureUrl: context.profilePictureUrl || context.rawData?.profilePictureUrl || ''
+    }, ability);
+    return { success: result.success, message: result.error || `Arena ${ability} activated.`, displayOverlay: true, result };
   }
 
   _arenaCommandMessage(result) {
