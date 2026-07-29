@@ -496,6 +496,26 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       }
     }));
 
+    expect(subject.routes.sanitizeConfigUpdate({
+      overlayProfiles: {
+        portrait: {
+          preset: 'untrusted',
+          width: 1,
+          height: 1,
+          gameplayHeightPercent: 50
+        }
+      }
+    }).overlayProfiles).toEqual({
+      portrait: {
+        preset: 'tiktok-live-studio-1080x1920',
+        width: 1080,
+        height: 1920,
+        gameplayHeightPercent: 74,
+        chatSafeZone: { x: 0, y: 74, width: 100, height: 26 },
+        contentInsetPercent: { top: 0, right: 0, bottom: 26, left: 0 }
+      }
+    });
+
     subject.plugin.updateConfig({ streamMonsters: { overlayProfiles: { portrait: null } } });
     expect(subject.persisted().streamMonsters.overlayProfiles.portrait).toEqual({
       preset: 'tiktok-live-studio-1080x1920',

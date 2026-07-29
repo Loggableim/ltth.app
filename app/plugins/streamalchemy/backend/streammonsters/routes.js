@@ -1693,6 +1693,9 @@ class StreamMonstersRoutes {
     if (input.portraitBattleMode === true || input.portraitBattleMode === 'takeover-74') {
       safe.portraitBattleMode = 'takeover-74';
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'overlayProfiles')) {
+      safe.overlayProfiles = fixedOverlayProfiles();
+    }
     const allowedHatchDurations = new Set([30_000, 60_000, 90_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
     )));
