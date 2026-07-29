@@ -376,6 +376,7 @@ class CommandParser {
             return {
                 success: true,
                 ...result,
+                handled: true,
                 commandName: commandDef.name,
                 pluginId: commandDef.pluginId
             };
@@ -393,6 +394,7 @@ class CommandParser {
                 error: errorObj.message,
                 displayOverlay: true,
                 errorCode: errorObj.code,
+                handled: true,
                 commandName: commandDef.name,
                 pluginId: commandDef.pluginId
             };

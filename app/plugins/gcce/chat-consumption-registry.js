@@ -60,7 +60,7 @@ class ChatConsumptionRegistry {
       success: decision.success === true,
       consumed: (
         decision.pluginId === 'streamalchemy' &&
-        decision.handled !== false
+        decision.handled === true
       )
     });
     this.results.set(correlationId, {

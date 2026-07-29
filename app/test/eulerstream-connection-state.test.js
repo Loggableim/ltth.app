@@ -158,11 +158,17 @@ describe('Eulerstream quota-safe connection state', () => {
       });
     };
 
-    const initial = await confirmCandidate('LiveIntro', { roomId: '111' });
+    const initial = await confirmCandidate('LiveIntro', {
+      roomId: '111',
+      createTime: 1700000000
+    });
     adapter.stats.likes = 34;
     const canonicalSessionId = adapter.streamSessionId;
 
-    const refinement = await confirmCandidate('RoomMessage', { roomId: '222' });
+    const refinement = await confirmCandidate('RoomMessage', {
+      roomId: '222',
+      createTime: 1700000010
+    });
 
     expect(initial).toMatchObject({ isNewStream: true, isReconnect: false });
     expect(refinement).toMatchObject({
@@ -179,6 +185,27 @@ describe('Eulerstream quota-safe connection state', () => {
     expect(adapter.stats.likes).toBe(34);
     expect(db.resetStreamStats).toHaveBeenCalledTimes(1);
     expect(sessionStarted).toHaveBeenCalledTimes(1);
+  });
+
+  test('uses roomInfo createTime as confirmed evidence for a restarted LIVE', async () => {
+    const saved = {
+      likes: 34,
+      username: 'streamer',
+      roomId: '111',
+      streamStartTime: 1700000000000
+    };
+    const { adapter, db } = createAdapter(saved);
+
+    const next = await adapter._confirmLive({
+      generation: 1,
+      roomId: '111',
+      source: 'roomInfo',
+      payload: { roomId: '111', createTime: 1800000000 }
+    });
+
+    expect(next).toMatchObject({ isNewStream: true, isReconnect: false });
+    expect(adapter.streamStartTime).toBe(1800000000000);
+    expect(db.resetStreamStats).toHaveBeenCalledTimes(1);
   });
 
   test('same room after a terminal LIVE end starts a new session', async () => {

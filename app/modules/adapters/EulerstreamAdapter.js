@@ -1018,7 +1018,7 @@ class EulerstreamAdapter extends BaseAdapter {
         const previousUsername = this.confirmedUsername;
         const previousRoomId = this.confirmedRoomId;
         const nextIdentity = this._buildStreamIdentity(this.currentUsername, roomId);
-        const confirmedStartTime = this._getConfirmedStreamStartTime(payload);
+        const confirmedStartTime = this._getConfirmedStreamStartTime(payload, source);
         const hasDifferentConfirmedStart = Number.isFinite(confirmedStartTime) &&
             Number.isFinite(this._persistedStreamStart) &&
             confirmedStartTime !== this._persistedStreamStart;
@@ -1105,13 +1105,18 @@ class EulerstreamAdapter extends BaseAdapter {
      * new same-room LIVE from a reconnect to the persisted session.
      *
      * @param {object} payload Eulerstream room payload
+     * @param {string} source Eulerstream message or resolver source
      * @returns {number|null} Milliseconds since epoch or null
      * @private
      */
-    _getConfirmedStreamStartTime(payload = {}) {
+    _getConfirmedStreamStartTime(payload = {}, source = '') {
         const root = payload && typeof payload === 'object' ? payload : {};
         const candidates = [root, root.room].filter(Boolean);
-        const fields = ['start_time', 'createTime', 'startTime', 'create_time', 'streamStartTime', 'stream_start_time'];
+        const sourceKey = String(source || '').replace(/[^a-z]/gi, '').toLowerCase();
+        const fields = ['start_time', 'startTime', 'streamStartTime', 'stream_start_time'];
+        if (sourceKey === 'roominfo' || sourceKey === 'roominfoapi') {
+            fields.splice(1, 0, 'createTime', 'create_time');
+        }
 
         for (const candidate of candidates) {
             for (const field of fields) {

@@ -101,6 +101,38 @@ describe('GCCE plugin command cooldown contract', () => {
     expect(handler).toHaveBeenCalledTimes(2);
   });
 
+  test('marks domain failures and thrown executions handled only after invoking the handler', async () => {
+    const { gcce, parser } = createHarness();
+    gcce.registerCommandsForPlugin('streamalchemy', [{
+      name: 'domainfail',
+      permission: 'all',
+      handler: () => ({ success: false, status: 'egg_not_ready' })
+    }, {
+      name: 'throws',
+      permission: 'all',
+      handler: () => {
+        throw new Error('handler exploded');
+      }
+    }]);
+
+    await expect(parser.parse('/domainfail', context('viewer-a'))).resolves.toEqual(
+      expect.objectContaining({
+        success: false,
+        handled: true,
+        status: 'egg_not_ready',
+        pluginId: 'streamalchemy'
+      })
+    );
+    await expect(parser.parse('/throws', context('viewer-a'))).resolves.toEqual(
+      expect.objectContaining({
+        success: false,
+        handled: true,
+        errorCode: 'EXECUTION_FAILED',
+        pluginId: 'streamalchemy'
+      })
+    );
+  });
+
   test('shares one canonical plugin cooldown across separately registered aliases', async () => {
     const { gcce, parser } = createHarness();
     const handler = jest.fn(() => ({ success: true }));

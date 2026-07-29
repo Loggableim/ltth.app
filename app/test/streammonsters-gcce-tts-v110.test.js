@@ -180,6 +180,74 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
     });
   });
 
+  test.each([
+    {
+      rejection: 'rate-limit',
+      command: {},
+      arrange: gcceInstance => {
+        gcceInstance.parser.rateLimiter.tryConsume = jest.fn(() => ({
+          allowed: false,
+          reason: 'user_limit',
+          retryAfter: 1
+        }));
+      }
+    },
+    {
+      rejection: 'permission',
+      command: { permission: 'moderator' },
+      arrange: gcceInstance => {
+        gcceInstance.permissionChecker.checkPermission = jest.fn(() => false);
+      }
+    },
+    {
+      rejection: 'validation',
+      command: { minArgs: 1, maxArgs: 1 },
+      arrange: () => {}
+    }
+  ])('keeps a Stream Monsters $rejection rejection audible before handler invocation', async ({
+    rejection,
+    command,
+    arrange
+  }) => {
+    const api = createGCCEApi();
+    gcce = new GCCE(api);
+    await gcce.init();
+    const handler = jest.fn(async () => ({ success: true, status: 'hatched' }));
+    gcce.registerCommandsForPlugin('streamalchemy', [{
+      name: 'hatch',
+      handler,
+      ...command
+    }]);
+    arrange(gcce);
+    const { plugin, chatHandler } = createTtsSubject(gcce);
+    const data = {
+      eventId: `evt-${rejection}`,
+      timestamp: '2026-01-01T00:00:01.000Z',
+      comment: '/hatch',
+      uniqueId: 'viewer_one'
+    };
+
+    const ttsFirst = chatHandler(data);
+    await Promise.resolve();
+    await gcce.handleChatMessage(data);
+    await ttsFirst;
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(plugin.speak).toHaveBeenCalledWith(expect.objectContaining({
+      text: '/hatch',
+      source: 'chat'
+    }));
+    expect(api.emitted).toContainEqual({
+      event: 'gcce:chat_consumed',
+      data: expect.objectContaining({
+        correlationId: `tiktok:evt-${rejection}`,
+        pluginId: 'streamalchemy',
+        success: false,
+        consumed: false
+      })
+    });
+  });
+
   test('uses a completed GCCE decision when GCCE listens before TTS', async () => {
     const api = createGCCEApi();
     gcce = new GCCE(api);
