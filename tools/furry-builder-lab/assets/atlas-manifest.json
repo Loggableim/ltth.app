@@ -1,7 +1,7 @@
 {
   "columns": 3,
   "rows": 4,
-  "keyColor": "#00ff00",
+  "renderMode": "alpha",
   "atlases": {
     "heads": "heads-atlas.png",
     "eyes": "eyes-atlas.png",
