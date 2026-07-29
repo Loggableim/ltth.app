@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stream Monsters · League World Hybrid</title>
+  <title>Stream Monsters · Portrait Arcade Rally</title>
   <style>
     :root {
       color-scheme: dark;
@@ -251,7 +251,7 @@
   <header class="hero">
     <div>
       <img class="hero-logo" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
-      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Jackpot Arena &amp; Living Egg Shelf · Version 1.10</div>
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Portrait Arcade Rally · Version 1.11</div>
       <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
       <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Portrait-first PvP, permanente Sammlung und 72 fertig gebündelte Furry-Formen. Geschenke kaufen Tempo und Show, niemals Kampfstärke.</p>
     </div>
@@ -1834,7 +1834,7 @@
       byId('readinessScore').textContent = `${readiness}/6`;
       const end = state.season?.ends_at_ms;
       if (end) byId('seasonCountdown').textContent = text('seasonEnds', 'Endet {date}', { date:new Date(end).toLocaleDateString() });
-      notice(text('arenaReady', 'League World Hybrid ready. Map gifts and test the overlay.'), 'success');
+          notice(text('arenaReady', 'Portrait Arcade Rally ready. Map gifts and test the overlay.'), 'success');
     } catch (error) {
       notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', {
         error:apiErrorText(error)

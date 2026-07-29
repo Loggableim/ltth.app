@@ -557,7 +557,7 @@ function stageSkillKey(prefix, templateId, choice, revision) {
   return `${prefix}${templateKey}${choice}Stage${revision}`;
 }
 
-function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 7) {
+function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 8) {
   const normalizedChoice = String(choice || '').trim().toUpperCase();
   const base = V6_SKILL_CATALOG[templateId]?.[normalizedChoice];
   if (!base) {

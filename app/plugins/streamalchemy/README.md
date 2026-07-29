@@ -1,108 +1,134 @@
-# Stream Monsters 1.10 – Jackpot Arena & Living Egg Shelf
+# Stream Monsters 1.11 – Portrait Arcade Rally
 
-Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installations, routes, player data, and legacy battle replays remain compatible. The public product name is exclusively **Stream Monsters**.
+Stream Monsters keeps the stable `streamalchemy` plugin ID so installations,
+routes, collections, eggs, monsters, ratings, configuration and legacy battle
+replays remain compatible. The visible product name is exclusively
+**Stream Monsters**.
 
-Version 1.10 is a bundled-only Open Beta. Creator-selected TikTok gifts create immediately owned eggs, while only optional recurring free-egg offers use `!adopt`. The portrait Living Egg Shelf animates up to eight eggs plus prioritized overflow without entering the lower 26 percent reserved for TikTok chat. Jackpot Clash keeps sealed Rules-v7 A/B/C PvP, eight-second action windows, deterministic passive Special charge, permanent progression, and synchronized WebGPU or Canvas2D/CSS presentation. It does not ship Art Lab, ComfyUI, model installation, provider routing, generation pools, or any live image-generation path.
+Version 1.11 is a bundled-only Open Beta. It ships no Art Lab, ComfyUI,
+provider, model installer, generation pool or live image-generation path.
+Canonical Furry assets are packaged locally; Kenney is used only if a bundled
+asset is missing or damaged.
 
-## Creator flow
+## Quick creator setup
 
 1. Open `/streammonsters/ui`.
-2. In **Gifts & Chat**, let normalized Team Heart or Heart Me title discovery find the default spawn gift without pinning a TikTok gift ID, or deliberately map another catalog gift. Only enabled mappings affect the game.
-3. Configure hatch time, recurring free eggs (60–31,536,000 seconds; default 86,400), overlay-only tutorial hints (60–300 seconds; default 90), editable GCCE aliases, season length, overlay layout and scale, renderer quality, notification duration, and the five persisted audio channels.
-4. In **Monster & Asset Library**, verify all 72 bundled Furry forms. Kenney Monster Builder is shown only as an emergency fallback for a missing verified asset.
-5. Add `/streammonsters/overlay` as an OBS browser source. Use the 1080×1920 portrait preview first, then tune the optional 1920×1080 landscape layout.
-6. Run deterministic creator demos for egg, hatch, collection, evolution, battle, XP, rank, audio, and renderer fallback before going live.
+2. Choose spawn and boost gifts from the complete TikTok catalog. Spawn gifts
+   may use one element or `Random`; only enabled mappings affect the game.
+3. Select incubation, egg expiry, season, commands, overlay languages,
+   portrait layout, renderer quality and audio.
+4. Verify all 24 templates and 72 bundled evolution forms.
+5. Add `/streammonsters/overlay` to OBS and preview 1080×1920 before going live.
+6. Run the deterministic egg, hatch, battle, K.O. and renderer-fallback demos.
 
-The Creator Live Center contains exactly six areas: Live Center, Gameplay, Gifts & Chat, Overlay Studio, Monster & Asset Library, and Community & Seasons.
+New configurations use a 90-second incubation default. Available presets are
+30, 60, 90, 120, 300, 600 and 1,800 seconds. Every stored creator duration and
+every existing egg `ready_at` remain unchanged.
 
-## Gift eggs and recurring free-egg adoption
+## Eggs, adoption and retention
 
-- Gift-spawned eggs are owned immediately and never show or accept an adoption affordance.
-- The Living Egg Shelf projects reconnect-safe public egg state, prioritizes public offers and ready eggs, and displays eight full-size eggs plus rotating overflow.
-- Recurring free eggs are optional and do not depend on gifts. The default cooldown is 86,400 seconds (24 hours); creators can choose any whole-second value from 60 through 31,536,000.
-- A viewer's first chat contact creates one reserved offer when eligible. The viewer has 60 seconds to claim it with the active `adopt` alias (`!adopt` or `!adoptieren` by default).
-- After 60 seconds an unclaimed offer becomes public. Adoption takes the viewer's own reservation first, then the oldest public offer in FIFO order. Claims, events, cooldowns, and reload recovery are transactional.
-- Free eggs use the normal incubation, queue, expiry, shuffle-bag, and hatch paths, but add no Hype and never improve combat odds.
-- Spawn mappings create element eggs; a `Random` mapping uses a persistent six-element shuffle bag.
-- Exactly three eggs can incubate at once. Overflow waits in FIFO order, and ready eggs immediately free incubator slots.
-- New setups default to two minutes. Available presets are 30 seconds, 1, 2, 5, 10, or 30 minutes. Existing eggs keep their stored readiness time.
-- Ready eggs expire 24 hours after `ready_at`.
-- Charged eggs hatch 25 percent faster. Matching Elemental Hour subtracts 30 seconds and adds 10 Hype. Boost tiers subtract 15, 30, 60, or 120 seconds.
-- Paid gifts never improve combat stats, XP multipliers, rarity, or win probability.
-- Hype emits the 25/50/75/100 milestones with overflow. Heart Chains, one stream mission, quests, achievements, and collection cards use the same durable event flow.
+- Gift eggs belong to the gift sender immediately and are never adoptable.
+- Optional free eggs are reserved for one viewer for 60 seconds, then become
+  publicly adoptable through the active `adopt` alias.
+- Three eggs incubate at once; overflow waits in FIFO order. Ready eggs release
+  their incubator slot and expire 24 hours after `ready_at`.
+- The portrait shelf shows up to eight eggs plus rotating overflow with
+  countdown, ready, queued, rotten and adoption state.
+- Auto-Hatch is optional. It only hatches a ready owned egg when that owner was
+  active in the current stream within the configured activity window.
+- Charged eggs incubate 25 percent faster. Elemental Hour subtracts 30 seconds
+  from matching new eggs and adds 10 Hype. Boost gifts subtract 15, 30, 60 or
+  120 seconds.
+- Gifts, free eggs, Hype, quests and events never improve combat values,
+  rarity, XP multipliers or win probability.
 
-## Collection, evolution, and progression
+Overlay hints explain the current lifecycle step rather than flooding chat:
+gift ownership, private reservation, public adoption, incubation, queue,
+readiness, manual `hatch`, Auto-Hatch and expiry each have distinct copy.
 
-- The six elements are Ember, Tide, Grove, Gale, Volt, and Lunar.
-- The bundled Monsterdex contains 24 templates, four per element.
-- Every template includes three verified 1024×1024 transparent forms: Evolution I, Evolution II, and Evolution III.
-- Evolution II requires mastery 25 and 3 total spent element essence. Evolution III requires mastery 50 and 8 total spent essence.
-- Evolution II and III add fixed, element-themed combat stats and role-specific skill upgrades. Evolution never changes XP, level, owner, or paid odds, and gifts cannot buy evolution power.
-- Every legitimate completed battle gives both monsters 10 XP and the winner 5 additional XP.
-- Levels 2–20 grant one stat point for vitality, might, guard, or agility. Authorized viewers answer the post-battle prompt with `1`, `2`, `3`, or `4`.
-- Collector Score and Arena Rating are separate. Seasons can last 7, 14, 28, 60, or 90 days; collection, evolution, level, and allocated stats remain permanent.
-- Daily and weekly quests do not require gifts or wins. Streak, rivalry, upset, rank, and season events are idempotent presentation/reward records.
-- Only the first 10 legitimate battles per viewer and day alter Arena Rating and season rewards. Every legitimate completion still grants monster XP.
+## Collection, evolution and progression
 
-## Sealed Rules-v7 A/B/C Arena
+- Ember, Tide, Grove, Gale, Volt and Lunar each contain four templates.
+- Every template has Evolution I, II and III, for 72 verified bundled forms.
+- Evolution II requires mastery 25 and 3 spent essence; Evolution III requires
+  mastery 50 and 8 spent essence in total.
+- Evolution stages add fixed, simulator-checked stats and role-specific skill
+  upgrades. A gift can never buy an evolution or stat advantage.
+- Every legitimate completed battle grants both used monsters 10 XP and the
+  winner 5 additional XP.
+- Levels 2–20 grant one stat point. The authorized viewer answers `1`, `2`,
+  `3` or `4` for vitality, might, guard or agility; the prompt names both the
+  sanitized player and the affected monster.
+- Collector Score and Arena Rating are separate. Collection, evolution, levels
+  and allocated stats remain permanent across seasons.
 
-`!battle` joins the public queue. Matchmaking starts within ±2 levels, prefers the nearest Arena Rating, widens after 30 seconds, and avoids a recent opponent when another valid viewer is waiting.
+## Rules v8 K.O. Arena
 
-- The roster choice window lasts 10 seconds.
-- Each action window lasts 8 seconds.
-- The first valid A/B/C answer is locked privately. Neither the public event nor the DOM reveals it until both choices exist or deterministic timeout resolution has completed; both choices are then revealed together in stable slot order.
-- `A` and `B` use the monster's regular skills and build special charge.
-- `C` requires and consumes a full special charge.
-- Agility determines order; shields resolve before HP; multi-hit attacks remain sequential and stop on knockout.
-- Missing choices use deterministic timeout decisions.
-- Battles finish in at most three rounds and persist ordered Rules-v7 replay data, including passive charge, skills, effects, rolls, hit order, shields, healing, status, charge, knockouts, XP, rating, and season outcomes.
-- Post-level-up stat prompts last 15 seconds and never block another viewer's match or the OBS queue.
-- Reload recovery resumes durable matches without duplicating rewards.
-- Public battle state and replay pages omit private viewer and provider identifiers.
+`!battle` joins the fair queue. Matchmaking starts near the viewer's Arena
+Rating and within ±2 monster levels, expands after 30 seconds and avoids recent
+rematches when an alternative exists.
 
-Rules-v5, Rules-v6, and old three-round v3 replays remain readable. They are compatibility history, not the current sealed Rules-v7 mode.
+- Monster selection lasts 8 seconds.
+- A/B/C selection lasts 6 seconds with one active overlay language and 10
+  seconds with the default German/English pair.
+- Choices stay sealed until both fighters lock or a deterministic timeout
+  resolves the missing answer. The action begins immediately when both are in.
+- `A` attacks, `B` defends and both build Special charge. `C` requires 100
+  percent and consumes the charge.
+- Passive Special charge gains 5 percentage points per active battle second,
+  capped at 30 percentage points per round. Translation time never grants
+  extra charge.
+- Agility determines action order; shield absorbs before HP; multi-hits render
+  and resolve sequentially.
+- Battles continue until a monster causes K.O. or a player forfeits. There is
+  no live three-round tie-break.
+- Arena Collapse starts at round 5: new shields are halved and neutral arena
+  damage after each round increases by `round - 4`. It cannot reduce a monster
+  below 1 HP, so the K.O. remains a monster action.
+- Replays persist sealed choices, effects, rolls, HP, shield, charge, collapse,
+  K.O., XP and rating. Rules-v5, Rules-v6, Rules-v7 and old three-round
+  fixtures remain readable as compatibility history.
 
-## Element matchups and template roles
+Only the first ten legitimate daily battles per viewer affect rating and
+season rewards. Every legitimate completion still grants monster XP.
 
-Every template has one stable role: Striker, Guardian, Trickster, or Sustain. Roles redistribute a declared effect budget. Evolution adds only the fixed, simulator-checked stat grants and skill upgrades declared for that template and stage.
+## Languages and commands
 
-- Ember has an advantage over Grove and Gale.
-- Tide has an advantage over Ember and Lunar.
-- Grove has an advantage over Tide and Volt.
-- Gale has an advantage over Grove and Lunar.
-- Volt has an advantage over Gale and Tide.
-- Lunar has an advantage over Volt and Ember.
+German and English are active by default. Creators may choose one or two
+overlay languages from German, English, Spanish and French and set 4–6 seconds
+per language. Critical cards show both languages in sequence; noncritical
+cards choose one deterministically. The global LTTH language is not changed.
 
-The acceptance simulator covers all templates at levels 1, 5, 10, 15, and 20, representative stat profiles, legal skill sequences, deterministic seeds, and mirrored sides. Cross-neutral pairs stay within the declared 47–53 percent band, directed advantages within 55–60 percent, and no neutral template exceeds 56 percent.
+Aliases and the GCCE prefix are creator-configurable and conflict-checked.
+Commands are grouped into eggs, collection, arena and progress. German-first
+egg-list aliases are `eier`, `eierliste` and `meineeier`; `eggs` remains an
+optional alias. When GCCE is active it is the only command ingress. Raw
+`A|B|C|1|2|3|4` input is accepted only from the authorized viewer during the
+matching decision window.
 
-## Viewer commands
+## Portrait overlay and effects
 
-Aliases and the GCCE prefix are creator-configurable and conflict-checked. New German-first defaults include `eier`, `eierliste`, and `meineeier`; the canonical `eggs` alias is available but disabled by default.
+- Portrait 1080×1920 is primary. Gameplay occupies the upper 74 percent and
+  the lower 26 percent remains clear for TikTok chat.
+- Outside battles, egg and information lanes are collision-aware and never
+  render behind the shelf.
+- During battle, both full monsters, sanitized player names, HP, shield,
+  Special, readable A/B/C effects and the current lead remain visible.
+- The shared director renders telegraph, movement, projectile or shield,
+  sequential impacts, numbers, HUD update, recoil and recovery in about
+  2–3 seconds.
+- K.O. and winner boards use backend result data and stay visible for at least
+  8 seconds.
+- Element-specific WebGPU effects use distinct Ember flame, Tide flow, Grove
+  growth, Gale wind, Volt electricity and Lunar eclipse signatures.
+- Canvas2D/CSS follows the same timing for OBS without WebGPU, device loss,
+  reduced motion and low-quality mode.
+- Reconnect restores the current egg shelf or battle phase without replaying
+  actions, animations or rewards.
 
-Core actions cover:
+## API surfaces
 
-- egg list and hatch
-- collection and single-monster cards
-- monster selection
-- battle queue entry and exit
-- Collector/Arena rank views
-- quests and help
-- combat evolution
-
-When GCCE is available it is the sole command ingress. The fallback TikTok parser is mutually exclusive, and raw `A|B|C|1|2|3|4` responses are consumed only inside the authorized viewer's active decision window.
-
-## OBS arena, effects, and audio
-
-- Jackpot Clash presents full monsters, readable skill cards, HP/shield/Special HUD, combo feedback, element lighting, and deterministic camera impulse.
-- Portrait 1080×1920 is primary and reserves the lower 26 percent for TikTok chat. Important content stays in the upper 74 percent.
-- Landscape 1920×1080 uses the same durable fighters and gameplay timing.
-- One deterministic Arena Timeline drives WebGPU and Canvas2D/CSS rendering.
-- WebGPU adds particles, lighting, trails, and distortion. Missing adapters, device loss, reduced motion, and low quality switch to the fallback without stretching gameplay timing.
-- Critical spawn, hatch, evolution, and battle groups are never partially rendered. Noncritical cards wait until the arena is free.
-- Overlay-only hints use the active GCCE prefix and aliases. They coalesce during bursts and wait until critical hatch/battle groups finish.
-- Server-persisted master, UI, egg, battle, and reward audio channels route curated deterministic CC0 cues through a limiter.
-
-## Public API
+Public, sanitized routes:
 
 - `GET /api/streammonsters/state`
 - `GET /api/streammonsters/battle-state`
@@ -110,8 +136,6 @@ When GCCE is available it is the sole command ingress. The fallback TikTok parse
 - `GET /api/streammonsters/monster-catalog?offset=&limit=`
 - `GET /api/streammonsters/gift-catalog?q=&locale=&offset=&limit=`
 - `GET /api/streammonsters/gift-mappings`
-- `PUT /api/streammonsters/gift-mappings/:giftId`
-- `DELETE /api/streammonsters/gift-mappings/:giftId`
 - `GET /api/streammonsters/season`
 - `GET /api/streammonsters/leaderboard?type=collector|arena&limit=`
 
@@ -121,11 +145,16 @@ Creator-protected routes:
 - `GET /api/streammonsters/creator-catalog?userId=`
 - `POST /api/streammonsters/config`
 - `POST /api/streammonsters/demo`
+- `PUT /api/streammonsters/gift-mappings/:giftId`
+- `DELETE /api/streammonsters/gift-mappings/:giftId`
 
-Legacy Art Lab endpoints return HTTP 410 with `{ "error": "art_lab_removed" }` and do not mutate preserved historical data.
+Retired Art Lab endpoints return HTTP 410 with
+`{ "error": "art_lab_removed" }` and never start preserved runtimes or models.
 
 ## Bundled assets and licenses
 
-The plugin ships 72 canonical Furry forms with dimensions, alpha bounds, pivots, anchors, identity metadata, and SHA-256 hashes in `assets/streammonsters/furry/manifest.json`. The Kenney Monster Builder fallback remains CC0.
-
-Curated 48 kHz mono PCM cues and their source/license/hash metadata live under `assets/audio/`. Bundled audio is restricted to verified CC0 Kenney Interface Sounds, Impact Sounds, RPG Audio, and Basic Spell Impacts assets.
+The 72 canonical Furry forms include dimensions, alpha bounds, pivots,
+identity, hit/effect anchors and SHA-256 values in
+`assets/streammonsters/furry/manifest.json`. Curated deterministic 48 kHz mono
+PCM cues and their CC0 source, license and hash metadata live under
+`assets/audio/`.

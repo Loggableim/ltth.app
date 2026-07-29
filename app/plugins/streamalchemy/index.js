@@ -100,7 +100,7 @@ class StreamAlchemyPlugin {
   }
 
   async init() {
-    this.api.log('[STREAM MONSTERS] Initializing League World Hybrid runtime', 'info');
+    this.api.log('[STREAM MONSTERS] Initializing Portrait Arcade Rally runtime', 'info');
     const storedConfig = this.api.getConfig('streamalchemy_config');
     this.config = this.loadConfig(storedConfig);
     this.persistSanitizedConfigIfNeeded(storedConfig);
@@ -295,7 +295,7 @@ class StreamAlchemyPlugin {
     }, 1_000);
     this.streamMonstersReadyTimer.unref?.();
 
-    this.api.log('[STREAM MONSTERS] League World Hybrid runtime initialized', 'info');
+    this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime initialized', 'info');
   }
 
   loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
@@ -787,7 +787,7 @@ class StreamAlchemyPlugin {
     this.streamMonstersCommandIngress?.clear();
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
-    this.api.log('[STREAM MONSTERS] League World Hybrid runtime stopped', 'info');
+    this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime stopped', 'info');
   }
 
   markStreamMonstersViewerActive(userId, source) {

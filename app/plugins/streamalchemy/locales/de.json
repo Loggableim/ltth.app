@@ -3,8 +3,8 @@
     "streamalchemy": {
       "ui": {
         "monsters": {
-          "title": "Stream Monsters · League World Hybrid",
-          "version": "Jackpot Arena & Living Egg Shelf · Version 1.10",
+          "title": "Stream Monsters · Portrait Arcade Rally",
+          "version": "Portrait Arcade Rally · Version 1.11",
           "heroTitle": "Ein Geschenk. Ein Ei. Ein Monster für immer.",
           "heroCopy": "Das faire, portrait-first Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. Alle 72 Furry-Formen sind sendefertig gebündelt.",
           "navLiveCenter": "1 · Live Center",
@@ -235,10 +235,10 @@
           "eggLunarStandard": "Lunar · Standard",
           "eggLunarCharged": "Lunar · Aufgeladen",
           "overlayBrand": "Stream Monsters",
-          "overlayTitle": "League World Hybrid",
+          "overlayTitle": "Portrait Arcade Rally",
           "overlayWaiting": "Das nächste Monster wartet.",
           "overlayCommands": "{eggs} · {hatch} [slot] · {battle}",
-          "overlayBattleKicker": "League World Hybrid · Drei Runden",
+          "overlayBattleKicker": "Portrait Arcade Rally · Kampf bis K.-o.",
           "monsterA": "Monster A",
           "monsterB": "Monster B",
           "battlePreparing": "Die Arena wird vorbereitet …",
@@ -405,7 +405,7 @@
           "questComplete": "Quest geschafft · {reward}",
           "reward": "Belohnung eingesammelt",
           "activeSuffix": " · AKTIV",
-          "arenaReady": "League World Hybrid bereit. Gifts zuordnen, Aliase prüfen und Demo starten.",
+          "arenaReady": "Portrait Arcade Rally bereit. Gifts zuordnen, Aliase prüfen und Demo starten.",
           "demoSent": "Vollständiger Spawn-, Hatch-, Evolutions-, Liga- und Duell-Demoablauf gesendet.",
           "eggTitle": "{element} Ei · {variant}",
           "giftMeta": "ID {id} · {coins} Diamonds",

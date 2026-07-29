@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "pluginId": "streamalchemy",
   "sourcePath": "app/plugins/streamalchemy",
+  "stagedRelease": {
+    "version": "1.11.0",
+    "manifestVersion": "1.11.0",
+    "package": "plugin-store/packages/streamalchemy-1.11.0.zip",
+    "channel": "open-beta",
+    "status": "source-ready"
+  },
   "releases": {
     "1.6.0": {
       "sourceCommit": "c4c0eca7a0a04617da3db042a0964d904f62a2c7",

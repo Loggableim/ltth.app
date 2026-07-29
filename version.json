@@ -3,7 +3,7 @@
   "releaseDate": "2026-07-26",
   "status": "stable",
   "downloadVersion": "1.4.1",
-  "downloadNote": "LTTH 1.4.1 ships Stream Monsters 1.5.0 with gift-only eggs, 72 bundled evolution forms, interactive A/B/C PvP, permanent progression, two seasonal leaderboards, and portrait-first OBS arenas.",
+  "downloadNote": "LTTH remains at 1.4.1 while Stream Monsters 1.11.0 is prepared as a separate Open Beta source candidate with a 90-second fresh default, bilingual portrait guidance, K.O.-only Rules v8 battles, Arena Collapse, 72 bundled evolution forms, and element-specific WebGPU effects; its final plugin-store package is pending verification.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.1",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",

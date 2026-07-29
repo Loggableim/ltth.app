@@ -173,7 +173,7 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Status:** 🟡 Working / Open Beta
-**Version:** 1.10.0
+**Version:** 1.11.0
 **Author:** Pup Cid
 
 **Description:**
@@ -183,11 +183,14 @@ Creator-enabled TikTok gifts and optional recurring free eggs share the same fai
 - 🎁 Gift-triggered eggs and optional free eggs share three incubators, FIFO overflow, and 24-hour expiry
 - 🥚 Optional free egg: reserved for 60 seconds, then public through `!adopt`; 60–31,536,000 second cooldown, 24-hour default
 - 🐾 24 monster templates across Evolution I, II, and III – 72 bundled forms
-- ⚔️ Sealed Rules-v7 battles: 10-second roster, 6-second A/B/C, 15-second stat choice, and complete replay
+- ⏱️ Fresh setups: 90-second incubation; stored creator timings and existing eggs remain unchanged
+- 🌍 German and English active by default; choose one or two overlay languages from DE/EN/ES/FR
+- ⚔️ Sealed Rules v8 K.O. battles: 8-second roster, 6 seconds with one or 10 seconds with two languages, 10-second stat choice, and complete replay
+- 💥 Arena Collapse from round 5 and element-specific WebGPU effects with synchronized fallback
 - ⚖️ Six element families plus Striker, Guardian, Trickster, and Sustain with simulator-gated strengths and weaknesses
 - 🏆 Separate Collector Score and Arena Rating leaderboards
 - 📋 Non-gift/non-win daily and weekly quests; only 10 daily battles alter rating while every legitimate battle grants monster XP
-- 📱 Portrait arena with a 26-percent chat safe zone plus landscape layout
+- 📱 Portrait arena with 74 percent gameplay and a 26-percent chat safe zone plus landscape layout
 - ✨ WebGPU effects with Canvas2D fallback and curated CC0 audio
 - 🔒 No Art Lab, AI image generation, or model installer in the plugin
 
