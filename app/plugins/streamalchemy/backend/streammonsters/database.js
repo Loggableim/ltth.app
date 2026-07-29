@@ -369,7 +369,8 @@ class StreamMonstersDatabase {
       );
       CREATE TABLE IF NOT EXISTS streammonsters_stream_missions (
         stream_key TEXT PRIMARY KEY, mission_key TEXT NOT NULL, target INTEGER NOT NULL,
-        progress INTEGER NOT NULL DEFAULT 0, completed_at_ms INTEGER
+        progress INTEGER NOT NULL DEFAULT 0, completed_at_ms INTEGER,
+        population_band TEXT, population_peak INTEGER
       );
       CREATE TABLE IF NOT EXISTS streammonsters_stream_mission_participants (
         stream_key TEXT NOT NULL, user_id TEXT NOT NULL, selected_monster_id TEXT,
@@ -704,6 +705,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'best_battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_stream_missions', 'population_band', 'TEXT');
+    this.ensureColumn('streammonsters_stream_missions', 'population_peak', 'INTEGER');
     this.db.prepare(`
       UPDATE streammonsters_eggs
       SET provenance = CASE
@@ -1948,9 +1951,18 @@ class StreamMonstersDatabase {
 
   getOrCreateStreamMission(streamKey, mission) {
     this.db.prepare(`
-      INSERT OR IGNORE INTO streammonsters_stream_missions (stream_key, mission_key, target)
-      VALUES (?, ?, ?)
-    `).run(streamKey, mission.key, mission.target);
+      INSERT OR IGNORE INTO streammonsters_stream_missions (
+        stream_key, mission_key, target, population_band, population_peak
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run(
+      streamKey,
+      mission.key,
+      mission.target,
+      mission.populationBand || null,
+      Number.isFinite(Number(mission.populationPeak))
+        ? Math.max(0, Math.round(Number(mission.populationPeak)))
+        : null
+    );
     return this.getStreamMission(streamKey);
   }
 
@@ -1964,6 +1976,36 @@ class StreamMonstersDatabase {
       SET progress = ?, completed_at_ms = COALESCE(completed_at_ms, ?)
       WHERE stream_key = ?
     `).run(progress, completedAtMs, streamKey);
+    return this.getStreamMission(streamKey);
+  }
+
+  updateStreamMissionPopulation(streamKey, {
+    populationBand,
+    populationPeak,
+    target
+  }) {
+    const normalizedPeak = Math.max(0, Math.round(Number(populationPeak) || 0));
+    const normalizedTarget = Math.max(1, Math.round(Number(target) || 1));
+    this.db.prepare(`
+      UPDATE streammonsters_stream_missions
+      SET population_peak = MAX(COALESCE(population_peak, 0), ?),
+        population_band = CASE
+          WHEN progress = 0 AND ? > target THEN ?
+          ELSE population_band
+        END,
+        target = CASE
+          WHEN progress = 0 AND ? > target THEN ?
+          ELSE target
+        END
+      WHERE stream_key = ? AND population_band IS NOT NULL
+    `).run(
+      normalizedPeak,
+      normalizedTarget,
+      populationBand,
+      normalizedTarget,
+      normalizedTarget,
+      streamKey
+    );
     return this.getStreamMission(streamKey);
   }
 

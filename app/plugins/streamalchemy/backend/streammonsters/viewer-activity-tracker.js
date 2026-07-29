@@ -1,6 +1,7 @@
 'use strict';
 
 const DEFAULT_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+const POPULATION_WINDOW_MS = 5 * 60 * 1000;
 const ACTIVE_SOURCES = new Set(['chat', 'gift']);
 
 function normalizedText(value) {
@@ -51,6 +52,37 @@ class StreamMonstersViewerActivityTracker {
     return Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= this.activeWindowMs;
   }
 
+  countActiveViewers({
+    streamKey,
+    nowMs = this.now(),
+    windowMs = POPULATION_WINDOW_MS
+  } = {}) {
+    const activeStreamKey = normalizedText(streamKey);
+    const currentMs = Number(nowMs);
+    const populationWindowMs = Number(windowMs);
+    if (
+      !activeStreamKey ||
+      !Number.isFinite(currentMs) ||
+      !Number.isFinite(populationWindowMs) ||
+      populationWindowMs < 1
+    ) {
+      return 0;
+    }
+    let count = 0;
+    for (const entry of this.activeByViewer.values()) {
+      const elapsedMs = currentMs - entry.lastSeenAtMs;
+      if (
+        entry.streamKey === activeStreamKey &&
+        Number.isFinite(elapsedMs) &&
+        elapsedMs >= 0 &&
+        elapsedMs <= populationWindowMs
+      ) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
   clear(streamKey = null) {
     const activeStreamKey = normalizedText(streamKey);
     if (!activeStreamKey) {
@@ -69,3 +101,4 @@ class StreamMonstersViewerActivityTracker {
 
 module.exports = StreamMonstersViewerActivityTracker;
 module.exports.DEFAULT_ACTIVE_WINDOW_MS = DEFAULT_ACTIVE_WINDOW_MS;
+module.exports.POPULATION_WINDOW_MS = POPULATION_WINDOW_MS;

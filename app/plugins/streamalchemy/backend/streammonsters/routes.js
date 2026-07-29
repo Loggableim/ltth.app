@@ -1979,10 +1979,27 @@ class StreamMonstersRoutes {
 
   publicStreamMission(mission = null) {
     if (!mission) return null;
+    const missionKey = String(mission.mission_key || 'unknown');
+    const keySuffix = missionKey
+      .split('_')
+      .filter(Boolean)
+      .map(part => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+      .join('');
+    const populationBand = ['solo', 'party', 'rally'].includes(mission.population_band)
+      ? mission.population_band
+      : null;
+    const bandSuffix = populationBand
+      ? `${populationBand.charAt(0).toUpperCase()}${populationBand.slice(1)}`
+      : null;
     return {
+      missionKey,
+      titleKey: `mission${keySuffix || 'Unknown'}`,
+      explanationKey: bandSuffix ? `missionPopulation${bandSuffix}` : null,
       target: Math.max(0, Number(mission.target) || 0),
       progress: Math.max(0, Number(mission.progress) || 0),
-      completed: Boolean(mission.completed_at_ms)
+      completed: Boolean(mission.completed_at_ms),
+      populationBand,
+      populationPeak: Math.max(0, Number(mission.population_peak) || 0)
     };
   }
 

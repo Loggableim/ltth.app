@@ -164,7 +164,16 @@ class StreamAlchemyPlugin {
       store: this.streamMonstersStore,
       progression: this.streamMonstersProgression,
       assetRegistry: this.streamMonstersAssetRegistry,
-      emit: (event, payload) => this.emitStreamMonsters(event, payload)
+      emit: (event, payload) => this.emitStreamMonsters(event, payload),
+      getActiveViewerCount: streamKey => (
+        this.streamMonstersViewerActivity?.countActiveViewers?.({ streamKey }) || 0
+      ),
+      hasQualifyingHeartGift: () => this.streamMonstersStore
+        .getGiftMappings()
+        .some(mapping => (
+          mapping.enabled !== 0 &&
+          isHeartMeGift(mapping.gift_name)
+        ))
     });
     this.streamMonstersEngine = new StreamMonstersEngine({
       store: this.streamMonstersStore,

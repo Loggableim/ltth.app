@@ -1675,15 +1675,30 @@
     byId('heartChainStatus').textContent = text('heartChainStatus', 'Heart Chain · {count}', {
       count:state.heartChain?.chain_length ?? state.heartChain?.chainLength ?? 0
     });
-    byId('streamMissionStatus').textContent = text(
+    const missionTarget = state.streamMission?.target || 0;
+    const missionBand = String(state.streamMission?.population_band || '');
+    const missionBandSuffix = missionBand
+      ? `${missionBand.charAt(0).toUpperCase()}${missionBand.slice(1)}`
+      : '';
+    const missionPopulation = missionBandSuffix
+      ? text(`missionPopulation${missionBandSuffix}`, missionBand)
+      : '';
+    const missionStatus = text(
       'missionProgress',
       'Mission · {mission} · {progress}/{target}',
       {
-        mission:text(`mission${String(state.streamMission?.mission_key || 'unknown').replace(/(^|_)(\w)/g, (match, gap, letter) => letter.toUpperCase())}`, state.streamMission?.mission_key || '—'),
+        mission:text(
+          `mission${String(state.streamMission?.mission_key || 'unknown').replace(/(^|_)(\w)/g, (match, gap, letter) => letter.toUpperCase())}`,
+          state.streamMission?.mission_key || '—',
+          { target:missionTarget }
+        ),
         progress:state.streamMission?.progress || 0,
-        target:state.streamMission?.target || 0
+        target:missionTarget
       }
     );
+    byId('streamMissionStatus').textContent = missionPopulation
+      ? `${missionStatus} · ${missionPopulation}`
+      : missionStatus;
     renderRetentionTimerWarning();
     renderSafeZone();
   };

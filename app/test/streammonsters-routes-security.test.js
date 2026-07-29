@@ -68,6 +68,28 @@ function response() {
 }
 
 describe('Stream Monsters Rules v5 route security', () => {
+  test('projects mission localization and population context for overlays', () => {
+    const { routes } = createSubject();
+
+    expect(routes.publicStreamMission({
+      mission_key: 'six_hatches',
+      target: 4,
+      progress: 1,
+      completed_at_ms: null,
+      population_band: 'party',
+      population_peak: 9
+    })).toEqual({
+      missionKey: 'six_hatches',
+      titleKey: 'missionSixHatches',
+      explanationKey: 'missionPopulationParty',
+      target: 4,
+      progress: 1,
+      completed: false,
+      populationBand: 'party',
+      populationPeak: 9
+    });
+  });
+
   test('rejects unauthenticated remote creator-state reads', async () => {
     const { find } = createSubject();
     const res = response();

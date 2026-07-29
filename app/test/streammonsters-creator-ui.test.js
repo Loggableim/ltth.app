@@ -6,6 +6,39 @@ const path = require('path');
 const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
 
 describe('Stream Monsters creator UI presentation controls', () => {
+  test.each(['de', 'en', 'es', 'fr'])(
+    'localizes scaled mission targets and population explanations in %s',
+    locale => {
+      const translations = JSON.parse(
+        fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
+      ).plugins.streamalchemy.ui.monsters;
+
+      for (const key of [
+        'missionSixHatches',
+        'missionThreeBattles',
+        'missionHeartChainFive',
+        'missionFourElements'
+      ]) {
+        expect(translations[key]).toContain('{{target}}');
+      }
+      for (const key of [
+        'missionPopulationSolo',
+        'missionPopulationParty',
+        'missionPopulationRally'
+      ]) {
+        expect(translations[key]).toEqual(expect.any(String));
+        expect(translations[key].length).toBeGreaterThan(0);
+      }
+    }
+  );
+
+  test('renders the effective mission target and localized population explanation', () => {
+    const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
+
+    expect(html).toContain('target:missionTarget');
+    expect(html).toContain('missionPopulation${');
+  });
+
   test('wires persisted duration, pack, layout, Random mapping and scene demo controls', () => {
     const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
 
