@@ -68,6 +68,7 @@
             "deepgram_active": "Deepgram actif — env. 0,26 $/h, modèle : {model}",
             "elevenlabs_active": "ElevenLabs actif — modèle : {model}",
             "fish_audio_active": "Fish.audio est actif ; la consommation de jetons est visible. Une clé Deepgram ou ElevenLabs peut réduire les coûts.",
+            "deepgram_sdk_unavailable_fallback": "Le SDK Deepgram est indisponible ({reason}) ; le repli Fish.audio est actif.",
             "unknown": "Inconnu",
             "key_configured": "Configurée",
             "key_not_configured": "Non configurée",

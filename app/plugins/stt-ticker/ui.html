@@ -1576,10 +1576,27 @@
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
             providerHintEl.style.color = 'var(--stt-status-warning, #facc15)';
-            providerHintEl.textContent = translateUi(
-              'plugins.stt-ticker.stt_ticker.ui.messages.fish_audio_active',
-              'Fish.audio active — token usage is visible.'
-            );
+            const deepgramSdkFallback = asr.providerConfig === 'deepgram'
+              && asr.deepgramSdkAvailable === false;
+            if (deepgramSdkFallback) {
+              const knownReasonCodes = new Set([
+                'deepgram_sdk_unavailable',
+                'deepgram_sdk_invalid'
+              ]);
+              const reason = knownReasonCodes.has(asr.deepgramSdkReasonCode)
+                ? asr.deepgramSdkReasonCode
+                : 'deepgram_sdk_unavailable';
+              providerHintEl.textContent = translateUi(
+                'plugins.stt-ticker.stt_ticker.ui.messages.deepgram_sdk_unavailable_fallback',
+                `Deepgram SDK unavailable (${reason}) — Fish.audio fallback active.`,
+                { reason }
+              );
+            } else {
+              providerHintEl.textContent = translateUi(
+                'plugins.stt-ticker.stt_ticker.ui.messages.fish_audio_active',
+                'Fish.audio active — token usage is visible.'
+              );
+            }
           }
         } else {
           providerEl.textContent = asr.provider || translateUi('plugins.stt-ticker.stt_ticker.ui.messages.unknown', 'Unknown');

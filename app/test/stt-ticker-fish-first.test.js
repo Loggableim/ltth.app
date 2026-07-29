@@ -10,6 +10,45 @@ function createConfigApi(storedConfig) {
   };
 }
 
+async function renderUiStatus(asr) {
+  const html = fs.readFileSync(
+    path.join(__dirname, '../plugins/stt-ticker/ui.html'),
+    'utf8'
+  );
+  const { DEFAULT_CONFIG } = require('../plugins/stt-ticker/backend/config');
+  const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  const status = {
+    enabled: true,
+    asr,
+    translation: { enabled: false, configured: false },
+    buffer: { segmentCount: 0 },
+    vrchatChatbox: { enabled: false, bridgeAvailable: false },
+    config
+  };
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'http://127.0.0.1/stt-ticker/ui',
+    beforeParse(window) {
+      window.fetch = async input => {
+        const url = String(input);
+        let body = { success: true };
+        if (url === '/api/stt-ticker/status') body = { success: true, status };
+        else if (url === '/api/stt-ticker/translator/languages') body = { success: true, languages: [] };
+        else if (url === '/api/stt-ticker/translator/models') body = { success: true, models: [] };
+        else if (url.endsWith('/models')) body = { success: true, models: [] };
+        return { json: async () => body };
+      };
+    }
+  });
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const hint = dom.window.document.getElementById('provider-hint').textContent;
+    if (hint) return dom;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  return dom;
+}
+
 describe('STT Ticker Fish-first configuration', () => {
   test('new configurations default to Fish.audio', () => {
     const { ConfigManager } = require('../plugins/stt-ticker/backend/config');
@@ -69,6 +108,24 @@ describe('STT Ticker Fish-first configuration', () => {
     expect(provider.dataset.deepgramDefault).toBe('nova-3');
     expect(html).toContain("dgKeyField.value = asr.deepgramApiKeyConfigured ? '__KEEP__' : ''");
     expect(html).toContain("fishKeyField.value = asr.fishaudioApiKeyConfigured ? '__KEEP__' : ''");
+  });
+
+  test('visibly explains the safe Fish fallback when explicit Deepgram lacks its SDK', async () => {
+    const dom = await renderUiStatus({
+      provider: 'fish.audio',
+      providerConfig: 'deepgram',
+      deepgramSdkAvailable: false,
+      deepgramSdkReasonCode: 'C:\\private\\raw-reason',
+      deepgramSdkError: 'raw private path that must stay hidden'
+    });
+    const hint = dom.window.document.getElementById('provider-hint').textContent;
+
+    expect(hint).toBe(
+      'Deepgram SDK unavailable (deepgram_sdk_unavailable) — Fish.audio fallback active.'
+    );
+    expect(hint).not.toContain('raw private path');
+    expect(hint).not.toContain('C:\\private');
+    dom.window.close();
   });
 });
 

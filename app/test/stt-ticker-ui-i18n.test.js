@@ -46,6 +46,7 @@ describe('STT Ticker static UI localization', () => {
       , 'messages.key_source_config', 'messages.key_source_file',
       'messages.key_source_environment', 'messages.key_source_plugin',
       'messages.deepgram_multilingual_hint', 'messages.deepgram_fixed_language_hint'
+      , 'messages.deepgram_sdk_unavailable_fallback'
     ]
   };
 
