@@ -109,7 +109,9 @@ function resolveFrame(item, frameId) {
   if (!item?.frames) return item;
 
   const requestedFrame = frameId || 'rest';
-  const frame = item.frames[requestedFrame] || item.frames.rest;
+  const hasFrame = Object.prototype.hasOwnProperty.call(item.frames, requestedFrame);
+  const hasRestFrame = Object.prototype.hasOwnProperty.call(item.frames, 'rest');
+  const frame = hasFrame ? item.frames[requestedFrame] : hasRestFrame ? item.frames.rest : undefined;
   const cell = typeof frame === 'number' ? frame : frame?.cell;
   if (!Number.isInteger(cell)) throw new Error(`Missing frame cell: ${requestedFrame}`);
 

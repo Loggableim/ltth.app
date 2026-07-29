@@ -133,6 +133,22 @@ test('rejects an unknown mouth family through the selection contract', () => {
   );
 });
 
+test('falls back to rest for unknown or inherited mouth pose names', () => {
+  const { atlasManifest, rigManifest } = createFamilyFixture();
+
+  for (const frame of ['unknown-pose', 'toString', 'constructor', '__proto__']) {
+    const { selection } = selectedFamily('wide');
+    const persistedBeforeRender = structuredClone(selection);
+    const plan = buildDrawPlan(atlasManifest, rigManifest, selection, {
+      frameByLayer: { mouths: frame }
+    });
+    const mouth = plan.find(operation => operation.layer === 'mouths');
+
+    assert.deepEqual(mouth.source, { x: 10, y: 140, width: 80, height: 20 }, frame);
+    assert.deepEqual(selection, persistedBeforeRender, `${frame} must not mutate persisted selection`);
+  }
+});
+
 class TestImage {
   constructor() {
     this.width = 500;
