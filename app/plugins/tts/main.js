@@ -2751,8 +2751,8 @@ class TTSPlugin {
                     return;
                 }
 
-                // Extract text from either 'message' or 'comment' field
-                const chatText = data.message || data.comment;
+                // Keep chat ingress aligned with GCCE across normalized providers.
+                const chatText = data.message || data.comment || data.text;
 
                 // IMPORTANT: Use username/uniqueId as the primary userId for consistency
                 // username is the TikTok handle (@username) and is stable across sessions

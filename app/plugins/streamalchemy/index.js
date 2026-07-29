@@ -70,6 +70,12 @@ const DEFAULT_OVERLAY_LANGUAGE = Object.freeze({
   locales: Object.freeze(['de', 'en']),
   secondsPerLocale: 5
 });
+const STREAM_MONSTERS_RAW_TOKEN = /^([ABC1-4])[.!?…]*$/i;
+
+function normalizeStreamMonstersRawToken(value) {
+  const match = STREAM_MONSTERS_RAW_TOKEN.exec(String(value || '').trim());
+  return match ? match[1].toUpperCase() : null;
+}
 const DEFAULT_COMMAND_ALIASES = Object.freeze({
   eggs: Object.freeze({
     enabled: Object.freeze(['eier', 'eierliste', 'meineeier']),
@@ -1203,8 +1209,8 @@ class StreamAlchemyPlugin {
   }
 
   handleStreamMonstersRawResponse(message, context = {}) {
-    const choice = String(message || '').trim().toUpperCase();
-    if (!/^[ABC1-4]$/.test(choice) || !this.streamMonstersBattleMatchService) {
+    const choice = normalizeStreamMonstersRawToken(message);
+    if (!choice || !this.streamMonstersBattleMatchService) {
       return { handled: false };
     }
     const userId = this.resolveStreamMonstersViewerId({
@@ -1235,20 +1241,31 @@ class StreamAlchemyPlugin {
         .slice(0, 32)
       : `raw:${String(context.source || context.transport || 'chat')}:` +
         String(providerEventId);
+    let result;
     if (/^[ABC]$/.test(choice)) {
-      return this.streamMonstersBattleMatchService.submitChoice({
+      result = this.streamMonstersBattleMatchService.submitChoice({
+        userId,
+        choice,
+        eventId,
+        source: 'viewer'
+      });
+    } else {
+      result = this.streamMonstersBattleMatchService.submitStatChoice({
         userId,
         choice,
         eventId,
         source: 'viewer'
       });
     }
-    return this.streamMonstersBattleMatchService.submitStatChoice({
-      userId,
-      choice,
-      eventId,
-      source: 'viewer'
-    });
+    this.logStructured('raw_response_processed', {
+      viewerId: userId,
+      status: result?.reason || (result?.waiting ? 'sealed' : (
+        result?.handled ? 'handled' : 'unhandled'
+      )),
+      matchId: result?.matchId || result?.match?.matchId || null,
+      source: context.source || context.transport || 'gcce_raw_handler'
+    }, 'debug');
+    return result;
   }
 
   opaqueViewerRef(viewerId) {
@@ -1528,22 +1545,17 @@ class StreamAlchemyPlugin {
     const rawMessage = String(
       data.comment || data.message || data.text || ''
     ).trim();
-    if (directRawFallback && /^[ABC1-4]$/i.test(rawMessage)) {
+    if (directRawFallback && normalizeStreamMonstersRawToken(rawMessage)) {
       const rawResult = this.handleStreamMonstersRawResponse(rawMessage, {
         userId: data.uniqueId || data.userId || data.username,
         uniqueId: data.uniqueId || data.userId,
         username: data.nickname || data.username || data.uniqueId || data.userId,
         nickname: data.nickname || data.username || data.uniqueId || data.userId,
         timestamp: data.timestamp || data.createTime || 0,
+        source: directCommandFallback ? 'fallback' : 'legacy_gcce_raw_fallback',
         rawData: data
       });
       if (rawResult?.handled) {
-        this.logStructured('raw_response_processed', {
-          correlationId,
-          viewerId: data.userId || data.uniqueId,
-          status: 'handled',
-          source: directCommandFallback ? 'fallback' : 'legacy_gcce_raw_fallback'
-        }, 'debug');
         return rawResult;
       }
     }

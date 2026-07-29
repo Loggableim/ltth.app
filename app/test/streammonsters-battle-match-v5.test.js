@@ -110,7 +110,8 @@ function createMatchService({
 function createReservedRulesV7Match({
   chargeA = 95,
   chargeB = 70,
-  openedAtMs = 10_000
+  openedAtMs = 10_000,
+  rulesVersion = 7
 } = {}) {
   let nowMs = openedAtMs;
   const { sqlite, store } = createStore();
@@ -127,7 +128,7 @@ function createReservedRulesV7Match({
     store,
     now: () => nowMs,
     emit,
-    rulesVersion: 7
+    rulesVersion
   });
   service.join({ userId: 'viewer-a' });
   const reserved = service.join({ userId: 'viewer-b' });
@@ -213,20 +214,120 @@ describe('Stream Monsters durable rules-v5 match schema', () => {
 });
 
 describe('Stream Monsters durable BattleMatchService', () => {
-  test('Rules v7 rejects early C without a lock and accepts it at the first full tick', () => {
-    const { service, advance, decisions } = createReservedRulesV7Match({
+  test('Rules v7 consumes early C with redacted feedback and accepts it at the first full tick', () => {
+    const { service, emit, advance, decisions } = createReservedRulesV7Match({
       chargeA: 95,
       openedAtMs: 10_000
     });
+    const viewerASlot = service.getActiveMatchForViewer('viewer-a').participants
+      .find(participant => participant.viewerId === 'viewer-a').slot;
     advance(999);
     expect(service.submitChoice({ userId: 'viewer-a', choice: 'C' }))
-      .toEqual(expect.objectContaining({ handled: false, reason: 'special_not_charged' }));
+      .toEqual(expect.objectContaining({ handled: true, reason: 'special_not_charged' }));
     expect(decisions()).toHaveLength(0);
+    const rejected = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_choice_rejected'
+    ));
+    expect(rejected).toEqual([
+      'streammonsters:battle_choice_rejected',
+      expect.objectContaining({
+        matchId: expect.any(String),
+        slot: viewerASlot,
+        reason: 'special_not_charged',
+        messageKey: 'arenaChoiceSpecialNotCharged'
+      })
+    ]);
+    expect(JSON.stringify(rejected[1]))
+      .not.toMatch(/viewer-a|participant|"choice"|requestedChoice|["']C["']/i);
     advance(1);
     expect(service.submitChoice({ userId: 'viewer-a', choice: 'C' }))
       .toEqual(expect.objectContaining({ handled: true }));
     expect(decisions()).toHaveLength(1);
     expect(decisions()[0].charge_at_choice).toBe(100);
+  });
+
+  test('consumes duplicate, already locked and just-closed input only for active fighters', () => {
+    const { service, emit, advance } = createReservedRulesV7Match({
+      chargeA: 100,
+      openedAtMs: 10_000
+    });
+    const active = service.getActiveMatchForViewer('viewer-a');
+    const viewerASlot = active.participants
+      .find(participant => participant.viewerId === 'viewer-a').slot;
+    const viewerBSlot = active.participants
+      .find(participant => participant.viewerId === 'viewer-b').slot;
+
+    expect(service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'A',
+      eventId: 'sealed-once'
+    })).toEqual(expect.objectContaining({ handled: true, waiting: true }));
+    const locked = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_choice_locked'
+    ));
+    expect(JSON.stringify(locked)).not.toMatch(/viewer-a|participant|["']A["']/i);
+
+    expect(service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'A',
+      eventId: 'sealed-once'
+    })).toEqual(expect.objectContaining({ handled: true, reason: 'duplicate_event' }));
+    expect(service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'B',
+      eventId: 'sealed-twice'
+    })).toEqual(expect.objectContaining({ handled: true, reason: 'already_locked' }));
+
+    advance(8_001);
+    expect(service.submitChoice({
+      userId: 'viewer-b',
+      choice: 'A',
+      eventId: 'closed-fighter'
+    })).toEqual(expect.objectContaining({ handled: true, reason: 'no_active_window' }));
+    expect(service.submitChoice({
+      userId: 'bystander',
+      choice: 'A',
+      eventId: 'closed-bystander'
+    })).toEqual({ handled: false, reason: 'no_active_window' });
+
+    const rejectedPayloads = emit.mock.calls
+      .filter(([event]) => event === 'streammonsters:battle_choice_rejected')
+      .map(([, payload]) => payload);
+    expect(rejectedPayloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({ slot: viewerASlot, reason: 'duplicate_event' }),
+      expect.objectContaining({ slot: viewerASlot, reason: 'already_locked' }),
+      expect.objectContaining({ slot: viewerBSlot, reason: 'no_active_window' })
+    ]));
+    expect(JSON.stringify(rejectedPayloads))
+      .not.toMatch(/viewer-a|viewer-b|"choice"|requestedChoice/i);
+  });
+
+  test('consumes defense input from a fighter after Arena Collapse locks defense', () => {
+    const { sqlite, service, emit, matchId } = createReservedRulesV7Match({
+      rulesVersion: 8,
+      openedAtMs: 10_000
+    });
+    sqlite.prepare(`
+      UPDATE streammonsters_matches SET round_number = 11 WHERE match_id = ?
+    `).run(matchId);
+
+    expect(service.submitChoice({
+      userId:'viewer-a',
+      choice:'B',
+      eventId:'collapse-defense'
+    })).toEqual(expect.objectContaining({
+      handled:true,
+      accepted:false,
+      reason:'arena_collapse_defense_locked',
+      feedback:{ messageKey:'arenaChoiceDefenseLocked' }
+    }));
+    expect(emit).toHaveBeenCalledWith(
+      'streammonsters:battle_choice_rejected',
+      expect.objectContaining({
+        reason:'arena_collapse_defense_locked',
+        messageKey:'arenaChoiceDefenseLocked'
+      })
+    );
   });
 
   test('Rules v7 materializes both charges at the second lock timestamp', () => {
@@ -359,7 +460,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
       chargePauseUntilMs: expect.any(Number)
     }));
     expect(service.submitChoice({ userId: 'viewer-a', choice: 'A' }))
-      .toEqual(expect.objectContaining({ handled: false, reason: 'no_active_window' }));
+      .toEqual(expect.objectContaining({ handled: true, reason: 'no_active_window' }));
 
     advance(cinematic.chargePauseUntilMs - 10_000);
     service.sweep();
@@ -708,7 +809,8 @@ describe('Stream Monsters durable BattleMatchService', () => {
         runWorker({ userId: 'viewer-a', choice: 'B', eventId: 'concurrent-b' })
       ]);
 
-      expect(results.filter(result => result.handled)).toHaveLength(1);
+      expect(results.filter(result => result.accepted !== false && result.handled))
+        .toHaveLength(1);
       expect(results.filter(result => result.reason === 'already_locked')).toHaveLength(1);
       expect(sqlite.prepare(`
         SELECT COUNT(*) AS count FROM streammonsters_match_decisions
@@ -1064,7 +1166,11 @@ describe('Stream Monsters durable BattleMatchService', () => {
       userId: 'viewer-a',
       choice: 'B',
       eventId: 'choice-a-duplicate'
-    })).toEqual({ handled: false, reason: 'already_locked' });
+    })).toEqual(expect.objectContaining({
+      handled: true,
+      accepted: false,
+      reason: 'already_locked'
+    }));
 
     const ready = service.submitChoice({
       userId: 'viewer-b',
@@ -1084,13 +1190,21 @@ describe('Stream Monsters durable BattleMatchService', () => {
       userId: 'viewer-b',
       choice: 'B',
       eventId: 'choice-b'
-    })).toEqual({ handled: false, reason: 'duplicate_event' });
+    })).toEqual(expect.objectContaining({
+      handled: true,
+      accepted: false,
+      reason: 'duplicate_event'
+    }));
     nowMs = 10_001;
     expect(service.submitChoice({
       userId: 'viewer-a',
       choice: 'A',
       eventId: 'late-round-two'
-    })).toEqual({ handled: false, reason: 'no_active_window' });
+    })).toEqual(expect.objectContaining({
+      handled: true,
+      accepted: false,
+      reason: 'no_active_window'
+    }));
   });
 
   test('recovers expired roster/action windows deterministically and clears its timer on destroy', () => {
@@ -1267,7 +1381,11 @@ describe('Stream Monsters durable BattleMatchService', () => {
         userId: 'viewer-a',
         choice: 'A',
         eventId: 'deadline-action'
-      })).toEqual({ handled: false, reason: 'no_active_window' });
+      })).toEqual(expect.objectContaining({
+        handled: true,
+        accepted: false,
+        reason: 'no_active_window'
+      }));
       expect(sweeper.sweep().actionsExpired).toBe(1);
       expect(primary.sqlite.prepare(`
         SELECT COUNT(*) AS count FROM streammonsters_match_decisions

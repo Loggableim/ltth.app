@@ -1460,7 +1460,7 @@ class GlobalChatCommandEngine {
         try {
             if (!this.pluginConfig.enabled) return;
 
-            const message = data.comment || data.message;
+            const message = data.comment || data.message || data.text;
             if (!message) return;
 
             // Check if it's a command
@@ -1622,10 +1622,13 @@ class GlobalChatCommandEngine {
 
     isPotentiallyConsumableChat(data) {
         if (this.pluginConfig?.enabled === false) return false;
-        return this.chatConsumptionRegistry.isPotential(
+        const registryPotential = this.chatConsumptionRegistry.isPotential(
             data,
             this.parser?.commandPrefix || this.pluginConfig?.commandPrefix || '/'
         );
+        if (registryPotential) return true;
+        const message = String(data?.comment || data?.message || data?.text || '').trim();
+        return /^[ABC1-4][.!?…]*$/i.test(message);
     }
 
     waitForChatConsumption(data, options = {}) {

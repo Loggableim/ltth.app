@@ -325,6 +325,11 @@
       box-shadow:0 14px 40px #0008,inset 0 0 22px #55dcff12; transform:translateX(-50%);
       text-align:center; font-size:clamp(17px,2.2vw,28px); font-weight:950; letter-spacing:.08em;
     }
+    #arena-skill-prompt[data-choice-feedback="true"] {
+      display:block!important; visibility:visible!important; opacity:1!important;
+      border-color:#ffcf6f99; color:#fff7d1; background:#24172bea;
+      box-shadow:0 12px 38px #0008,0 0 28px #ffcf6f30;
+    }
     #arena-lead {
       position:absolute; top:15.5%; left:50%; z-index:15; min-width:170px; padding:7px 16px;
       border:1px solid #ffffff3d; border-radius:999px; color:#d9f8ff; background:#080d1edb;
@@ -1941,6 +1946,28 @@
     node('toast').classList.remove('visible');
     await wait(250);
   };
+  let battleChoiceFeedbackSequence = 0;
+  const showBattleChoiceFeedback = async data => {
+    const message = text(
+      safeHint(data?.messageKey, 'arenaChoiceWindowClosed'),
+      ''
+    );
+    if (node('streammonsters-overlay').dataset.battleActive !== 'true') {
+      return showToast(message);
+    }
+    const prompt = node('arena-skill-prompt');
+    const previous = prompt.textContent;
+    const feedbackId = String(++battleChoiceFeedbackSequence);
+    prompt.textContent = message;
+    prompt.dataset.choiceFeedback = 'true';
+    prompt.dataset.choiceFeedbackId = feedbackId;
+    await wait(Math.min(3_000, notificationDurationMs));
+    if (prompt.dataset.choiceFeedbackId === feedbackId) {
+      if (prompt.textContent === message) prompt.textContent = previous;
+      delete prompt.dataset.choiceFeedback;
+      delete prompt.dataset.choiceFeedbackId;
+    }
+  };
   const imageErrorFallback = element => {
     node('art-wrap').classList.add('image-fallback');
     node('art-wrap').dataset.element = elementName(element);
@@ -2626,6 +2653,9 @@
         ? arenaView.lockChoice?.(data)
         : playArcadeEvent(type, data);
     }
+    if (type === 'battle_choice_rejected') {
+      return showBattleChoiceFeedback(data);
+    }
     if (type === 'battle_choices_revealed') {
       return data?.snapshotRestore
         ? arenaView.revealChoices?.(data)
@@ -3148,6 +3178,7 @@
     'streammonsters:battle_skill_prompt':'battle_choice_opened',
     'streammonsters:battle_choice_locked':'battle_choice_locked',
     'streammonsters:battle_skill_locked':'battle_choice_locked',
+    'streammonsters:battle_choice_rejected':'battle_choice_rejected',
     'streammonsters:battle_choices_revealed':'battle_choices_revealed',
     'streammonsters:battle_skill_used':'battle_skill_used',
     'streammonsters:battle_action':'battle_skill_used',

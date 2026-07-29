@@ -616,6 +616,15 @@ class StreamMonstersPublicEventProjector {
         }
       };
     }
+    if (eventType === 'streammonsters:battle_choice_rejected') {
+      return {
+        matchId: boundedText(payload.matchId, 160),
+        round: Math.max(0, finiteNumber(payload.round, 0)),
+        slot: Math.max(0, finiteNumber(payload.slot, 0)),
+        reason: boundedText(payload.reason, 48),
+        messageKey: boundedText(payload.messageKey, 96)
+      };
+    }
     if (eventType === 'streammonsters:battle_choices_revealed') {
       return {
         matchId: boundedText(payload.matchId, 160),

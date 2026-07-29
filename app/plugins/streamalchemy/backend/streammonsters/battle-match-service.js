@@ -53,6 +53,13 @@ const ARENA_TIERS = Object.freeze([
   Object.freeze({ name: 'Silver', minimum: 1000 }),
   Object.freeze({ name: 'Bronze', minimum: 0 })
 ]);
+const CHOICE_REJECTION_MESSAGE_KEYS = Object.freeze({
+  special_not_charged: 'arenaChoiceSpecialNotCharged',
+  duplicate_event: 'arenaChoiceAlreadyLocked',
+  already_locked: 'arenaChoiceAlreadyLocked',
+  no_active_window: 'arenaChoiceWindowClosed',
+  arena_collapse_defense_locked: 'arenaChoiceDefenseLocked'
+});
 
 function parseJson(value, fallback = null) {
   if (typeof value !== 'string' || !value.trim()) return fallback;
@@ -1190,6 +1197,34 @@ class BattleMatchService {
     return event;
   }
 
+  rejectParticipantChoice(match, participant, reason) {
+    const messageKey = CHOICE_REJECTION_MESSAGE_KEYS[reason];
+    if (!match || !participant || !messageKey) {
+      return { handled: false, reason };
+    }
+    const feedback = {
+      matchId: match.matchId,
+      round: match.roundNumber,
+      slot: participant.slot,
+      reason,
+      messageKey
+    };
+    this.appendEvent(
+      match.matchId,
+      'streammonsters:battle_choice_rejected',
+      feedback,
+      feedback
+    );
+    return {
+      handled: true,
+      accepted: false,
+      reason,
+      matchId: match.matchId,
+      slot: participant.slot,
+      feedback: { messageKey }
+    };
+  }
+
   projectPublicAction(action, match, eventSequence = null) {
     const actor = match.participants.find(participant => (
       participant.lockedMonsterId === action.actorId
@@ -1367,33 +1402,37 @@ class BattleMatchService {
 
   submitChoice({ userId, choice, eventId = null, source = 'viewer' }) {
     const normalizedEventId = eventId ? String(eventId) : null;
-    if (normalizedEventId && this.db.prepare(`
-      SELECT 1 FROM streammonsters_match_decisions WHERE event_id = ?
-    `).get(normalizedEventId)) {
-      return { handled: false, reason: 'duplicate_event' };
-    }
     return this.store.runInImmediateTransaction(() => {
       const match = this.getActiveMatchForViewer(userId);
-      const nowMs = this.now();
-      if (!match || match.state !== 'action' || match.actionDeadlineMs <= nowMs) {
+      const participant = match?.participants.find(entry => entry.viewerId === userId);
+      if (!match || !participant) {
         return { handled: false, reason: 'no_active_window' };
       }
-      const participant = match.participants.find(entry => entry.viewerId === userId);
+      if (normalizedEventId && this.db.prepare(`
+        SELECT 1 FROM streammonsters_match_decisions WHERE event_id = ?
+      `).get(normalizedEventId)) {
+        return this.rejectParticipantChoice(match, participant, 'duplicate_event');
+      }
+      const nowMs = this.now();
+      if (match.state !== 'action' || match.actionDeadlineMs <= nowMs) {
+        return this.rejectParticipantChoice(match, participant, 'no_active_window');
+      }
       const normalized = String(choice || '').trim().toUpperCase();
       if (!['A', 'B', 'C'].includes(normalized)) {
         return { handled: false, reason: 'invalid_choice' };
       }
       if (normalized === 'B' && this.isDefenseLocked(match)) {
-        return {
-          handled: false,
-          reason: 'arena_collapse_defense_locked'
-        };
+        return this.rejectParticipantChoice(
+          match,
+          participant,
+          'arena_collapse_defense_locked'
+        );
       }
       const chargeAtChoice = this.isRulesV7(match)
         ? this.projectParticipantCharge(participant, match, nowMs)
         : null;
       if (this.isRulesV7(match) && normalized === 'C' && chargeAtChoice < 100) {
-        return { handled: false, reason: 'special_not_charged' };
+        return this.rejectParticipantChoice(match, participant, 'special_not_charged');
       }
       const normalizedSource = source === 'timeout' ? 'timeout' : 'viewer';
       const inserted = this.db.prepare(`
@@ -1412,7 +1451,9 @@ class BattleMatchService {
         chargeAtChoice,
         nowMs
       );
-      if (!inserted.changes) return { handled: false, reason: 'already_locked' };
+      if (!inserted.changes) {
+        return this.rejectParticipantChoice(match, participant, 'already_locked');
+      }
       this.appendDecisionEvent(match, participant, {
         choice: normalized,
         source: normalizedSource,

@@ -269,4 +269,58 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
 
     expect(plugin.speak).not.toHaveBeenCalled();
   });
+
+  test.each(['A...', ' a… ', 'B!', 'C?', '1.', 'A!!', 'A…!', 'C??'])(
+    'suppresses handled normalized raw response %p exactly once',
+    async raw => {
+      const api = createGCCEApi();
+      gcce = new GCCE(api);
+      await gcce.init();
+      gcce.registerRawResponseHandlerForPlugin('streamalchemy', message => (
+        /^[ABC1-4][.!?…]*$/i.test(message.trim())
+          ? { handled: true, reason: 'sealed' }
+          : { handled: false }
+      ));
+      const { plugin, chatHandler } = createTtsSubject(gcce);
+      const data = {
+        eventId: `evt-normalized-${Buffer.from(raw).toString('hex')}`,
+        timestamp: '2026-01-01T00:00:05.000Z',
+        text: raw,
+        uniqueId: 'viewer_one'
+      };
+
+      const ttsFirst = chatHandler(data);
+      await Promise.resolve();
+      await gcce.handleChatMessage(data);
+      await ttsFirst;
+
+      expect(plugin.speak).not.toHaveBeenCalled();
+      expect(api.emitted.filter(entry => (
+        entry.event === 'gcce:chat_consumed' &&
+        entry.data.correlationId === `tiktok:${data.eventId}`
+      ))).toHaveLength(1);
+    }
+  );
+
+  test.each(['ABC', 'A text'])('keeps rejected compound raw input %p audible', async raw => {
+    const api = createGCCEApi();
+    gcce = new GCCE(api);
+    await gcce.init();
+    gcce.registerRawResponseHandlerForPlugin('streamalchemy', () => ({ handled: false }));
+    const { plugin, chatHandler } = createTtsSubject(gcce);
+    const data = {
+      eventId: `evt-rejected-${raw.replace(/\s+/g, '-')}`,
+      timestamp: '2026-01-01T00:00:06.000Z',
+      ...(raw === 'A text' ? { text: raw } : { comment: raw }),
+      uniqueId: 'viewer_one'
+    };
+
+    await chatHandler(data);
+    await gcce.handleChatMessage(data);
+
+    expect(plugin.speak).toHaveBeenCalledWith(expect.objectContaining({
+      text: raw,
+      source: 'chat'
+    }));
+  });
 });

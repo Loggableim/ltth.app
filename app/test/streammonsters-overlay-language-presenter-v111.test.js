@@ -241,6 +241,31 @@ async function createPresenterHarness({
     arenaEvents,
     eggEvents,
     card,
+    toast:() => ({
+      visible:dom.window.document.getElementById('toast').classList.contains('visible'),
+      text:dom.window.document.getElementById('toast').textContent
+    }),
+    activateBattle:() => {
+      dom.window.document.getElementById('streammonsters-overlay')
+        .dataset.battleActive = 'true';
+      const battle = dom.window.document.getElementById('battle');
+      battle.classList.add('visible');
+      battle.dataset.phase = 'choice';
+    },
+    arenaFeedback:() => {
+      const prompt = dom.window.document.getElementById('arena-skill-prompt');
+      const style = dom.window.getComputedStyle(prompt);
+      return {
+        visible:prompt.dataset.choiceFeedback === 'true' &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          style.opacity !== '0',
+        text:prompt.textContent
+      };
+    },
+    setArenaPrompt:text => {
+      dom.window.document.getElementById('arena-skill-prompt').textContent = text;
+    },
     now:() => currentNowMs,
     shelf:() => ({
       total:Number(
@@ -259,6 +284,68 @@ async function createPresenterHarness({
 }
 
 describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
+  test.each([
+    ['de', 'arenaChoiceSpecialNotCharged', /Special.*noch nicht/i],
+    ['en', 'arenaChoiceAlreadyLocked', /already locked/i],
+    ['es', 'arenaChoiceWindowClosed', /ventana.*cerrada/i],
+    ['fr', 'arenaChoiceDefenseLocked', /défense.*bloquée/i]
+  ])('shows localized redacted battle rejection feedback in %s', async (
+    locale,
+    messageKey,
+    expected
+  ) => {
+    const harness = await createPresenterHarness({
+      primaryLocale:locale,
+      locales:[locale]
+    });
+    harness.activateBattle();
+
+    await harness.emit('streammonsters:battle_choice_rejected', {
+      eventId:`rejection-${locale}`,
+      matchId:'match-public',
+      round:4,
+      slot:1,
+      reason:'rejected',
+      messageKey
+    });
+
+    expect(harness.arenaFeedback()).toEqual({
+      visible:true,
+      text:expect.stringMatching(expected)
+    });
+    expect(harness.toast().visible).toBe(false);
+    expect(harness.arenaFeedback().text).not.toMatch(/\b[ABC]\b/);
+    harness.close();
+  });
+
+  test('does not overwrite a newer arena prompt when rejection feedback expires', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en']
+    });
+    harness.activateBattle();
+    await harness.emit('streammonsters:battle_choice_rejected', {
+      eventId:'rejection-restore',
+      matchId:'match-public',
+      round:4,
+      slot:1,
+      reason:'already_locked',
+      messageKey:'arenaChoiceAlreadyLocked'
+    });
+    expect(harness.arenaFeedback().visible).toBe(true);
+
+    harness.setArenaPrompt('Round 5 · choose your next skill');
+    for (let attempt = 0; attempt < 20 && harness.arenaFeedback().visible; attempt += 1) {
+      await harness.runNextTimer();
+    }
+
+    expect(harness.arenaFeedback()).toEqual({
+      visible:false,
+      text:'Round 5 · choose your next skill'
+    });
+    harness.close();
+  });
+
   test('budgets both configured stat pages inside the active deadline', () => {
     const pages = OverlayRuntime.criticalLocalePages({
       primaryLocale:'de',

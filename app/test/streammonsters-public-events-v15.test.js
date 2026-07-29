@@ -73,6 +73,30 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
     expect(JSON.stringify(projected)).not.toContain('private-monster-id');
   });
 
+  test('projects battle choice rejection feedback without choice or fighter identifiers', () => {
+    const projector = new StreamMonstersPublicEventProjector();
+    const projected = projector.project('streammonsters:battle_choice_rejected', {
+      matchId: 'match-public-1',
+      round: 3,
+      slot: 2,
+      reason: 'special_not_charged',
+      messageKey: 'arenaChoiceSpecialNotCharged',
+      choice: 'C',
+      requestedChoice: 'C',
+      participantId: 'private-participant',
+      viewerId: 'private-viewer'
+    });
+
+    expect(projected).toEqual({
+      matchId: 'match-public-1',
+      round: 3,
+      slot: 2,
+      reason: 'special_not_charged',
+      messageKey: 'arenaChoiceSpecialNotCharged'
+    });
+    expect(JSON.stringify(projected)).not.toMatch(/private|requestedChoice|["']C["']/);
+  });
+
   test('redacts compound private identifiers while preserving public gameplay keys', () => {
     const projector = new StreamMonstersPublicEventProjector();
     const projected = projector.project('streammonsters:achievement_unlocked', {

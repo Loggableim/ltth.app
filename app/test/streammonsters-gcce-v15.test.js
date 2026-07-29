@@ -158,6 +158,42 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     await gcce.destroy();
   });
 
+  test('dispatches text-only raw input exactly once while unrelated chat falls through', async () => {
+    const api = createGCCEApi();
+    const gcce = new GCCE(api);
+    await gcce.init();
+    const handler = jest.fn(message => (
+      message.trim().toUpperCase() === 'A'
+        ? { handled: true }
+        : { handled: false }
+    ));
+    gcce.registerRawResponseHandlerForPlugin('streamalchemy', handler);
+
+    await expect(gcce.handleChatMessage({
+      text: ' a ',
+      eventId: 'text-choice',
+      uniqueId: 'viewer-a'
+    })).resolves.toEqual(expect.objectContaining({
+      handled: true,
+      pluginId: 'streamalchemy'
+    }));
+    await expect(gcce.handleChatMessage({
+      text: 'hello stream',
+      eventId: 'text-chat',
+      uniqueId: 'viewer-a'
+    })).resolves.toEqual({ handled: false });
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenNthCalledWith(1, ' a ', expect.objectContaining({
+      rawData: expect.objectContaining({ text: ' a ' })
+    }));
+    expect(api.emitted.filter(entry => (
+      entry.event === 'gcce:chat_consumed' &&
+      entry.data.correlationId === 'tiktok:text-choice'
+    ))).toHaveLength(1);
+    await gcce.destroy();
+  });
+
   test('claims only authorized durable A/B/C and 1-4 windows and lets every other message fall through', () => {
     const plugin = new StreamAlchemyPlugin({ pluginDir: '', log: jest.fn() });
     plugin.resolveStreamMonstersViewerId = jest.fn(({ platformUserId, legacyUserId }) => (
@@ -165,7 +201,7 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     ));
     plugin.streamMonstersBattleMatchService = {
       submitChoice: jest.fn(({ userId, choice, eventId }) => (
-        userId === 'viewer-a' && choice === 'A'
+        userId === 'viewer-a' && /^[ABC]$/.test(choice)
           ? { handled: true, matchId: 'match-a', eventId }
           : { handled: false, reason: 'no_active_window' }
       )),
@@ -194,8 +230,58 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     expect(plugin.handleStreamMonstersRawResponse('!battle', {
       userId: 'viewer-a'
     })).toEqual({ handled: false });
-    expect(plugin.streamMonstersBattleMatchService.submitChoice).toHaveBeenCalledTimes(2);
+    for (const raw of ['a...', ' B! ', 'c?', 'A.', 'a…', 'A!!', 'A…!', 'C??']) {
+      expect(plugin.handleStreamMonstersRawResponse(raw, {
+        userId: 'viewer-a',
+        rawData: { eventId: `punctuation-${raw}` }
+      })).toEqual(expect.objectContaining({ handled: true }));
+    }
+    for (const raw of ['ABC', 'A text', 'A,']) {
+      expect(plugin.handleStreamMonstersRawResponse(raw, {
+        userId: 'viewer-a'
+      })).toEqual({ handled: false });
+    }
+    expect(plugin.streamMonstersBattleMatchService.submitChoice).toHaveBeenCalledTimes(10);
     expect(plugin.streamMonstersBattleMatchService.submitStatChoice).toHaveBeenCalledTimes(1);
+  });
+
+  test('logs normalized raw outcomes without viewer identity or sealed choice', () => {
+    const api = { pluginDir: '', log: jest.fn() };
+    const plugin = new StreamAlchemyPlugin(api);
+    plugin.resolveStreamMonstersViewerId = jest.fn(() => 'private-viewer-a');
+    plugin.streamMonstersBattleMatchService = {
+      getRawResponseWindowKey: jest.fn(() => 'match-public:action:1'),
+      submitChoice: jest.fn(() => ({
+        handled:true,
+        waiting:true,
+        match:{ matchId:'match-public' }
+      }))
+    };
+
+    expect(plugin.handleStreamMonstersRawResponse(' A... ', {
+      userId:'private-viewer-a',
+      source:'gcce_raw_handler',
+      rawData:{ eventId:'private-provider-event' }
+    })).toEqual(expect.objectContaining({ handled:true, waiting:true }));
+
+    const record = api.log.mock.calls
+      .map(([line]) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .find(entry => entry?.event === 'raw_response_processed');
+    expect(record).toEqual(expect.objectContaining({
+      component:'streammonsters',
+      status:'sealed',
+      source:'gcce_raw_handler',
+      matchId:'match-public',
+      viewerRef:expect.stringMatching(/^viewer:[a-f0-9]{16}$/)
+    }));
+    expect(JSON.stringify(record))
+      .not.toMatch(/private-viewer-a|private-provider-event|"choice"|A\.\.\./);
   });
 
   test('deduplicates a missing-provider-id retry within one window without colliding with the next round', () => {
@@ -267,7 +353,7 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     expect(JSON.stringify([...acceptedEventIds])).not.toMatch(/viewer-a|viewer-b/);
   });
 
-  test('offers exact raw choices to the battle window in fallback mode only', async () => {
+  test('offers normalized raw choices to the battle window in fallback mode only', async () => {
     const plugin = new StreamAlchemyPlugin({ pluginDir: '', log: jest.fn() });
     plugin.streamMonstersGCCERegistrationState = 'fallback';
     plugin.resolveStreamMonstersViewerId = jest.fn(({ platformUserId, legacyUserId }) => (
@@ -292,7 +378,7 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     await expect(plugin.handleStreamMonstersChat({
       userId: 'platform-a',
       uniqueId: 'viewer-a',
-      comment: 'A',
+      comment: 'A...',
       eventId: 'fallback-a'
     })).resolves.toEqual(expect.objectContaining({ handled: true, matchId: 'match-a' }));
     await expect(plugin.handleStreamMonstersChat({
@@ -315,7 +401,7 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     await expect(plugin.handleStreamMonstersChat({
       userId: 'platform-a',
       uniqueId: 'viewer-a',
-      comment: 'A',
+      comment: 'A...',
       eventId: 'gcce-owned'
     })).resolves.toEqual(expect.objectContaining({ status: 'gcce_active' }));
     expect(plugin.streamMonstersBattleMatchService.submitChoice).toHaveBeenCalledTimes(2);
@@ -343,4 +429,5 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     expect(plugin.streamMonstersGCCE).toBeNull();
     expect(plugin.streamMonstersReadyTimer).toBeNull();
   });
+
 });
