@@ -17,7 +17,7 @@ function sha256(relativePath) {
 }
 
 describe('Stream Monsters 1.11 source-release contract', () => {
-  test('stages the 1.11.0 Open Beta source without changing LTTH 1.4.1', () => {
+  test('binds the verified 1.11.0 Open Beta source without changing LTTH 1.4.1', () => {
     const manifest = readJson('app/plugins/streamalchemy/plugin.json');
     const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
     const appPackage = readJson('app/package.json');
@@ -31,12 +31,13 @@ describe('Stream Monsters 1.11 source-release contract', () => {
       version: '1.11.0',
       devStatus: 'working-beta'
     }));
-    expect(releaseMap.stagedRelease).toEqual({
-      version: '1.11.0',
+    expect(releaseMap).not.toHaveProperty('stagedRelease');
+    expect(releaseMap.releases['1.11.0']).toEqual({
+      sourceCommit: 'd65ed2404a79da6ada690dda677e8b757ee756fe',
+      sourceTree: 'dadc3c27395d02345ec27e07ef612d6461ad6c7f',
       manifestVersion: '1.11.0',
       package: 'plugin-store/packages/streamalchemy-1.11.0.zip',
-      channel: 'open-beta',
-      status: 'source-ready'
+      sha256: '9ccf95eaee2411c77e8f2fa238fcb37e7dc18240a716ab9bc6e808c669790875'
     });
     expect(appPackage.version).toBe('1.4.1');
     expect(rootPackage.version).toBe('1.4.1');
@@ -45,17 +46,19 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     expect(currentRelease.version).toBe('1.4.1');
   });
 
-  test('keeps the published store on 1.10 until the final package and hash exist', () => {
+  test('publishes the verified package and hash in the Open Beta store', () => {
     const store = readJson('plugin-store.json');
     const entry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(entry).toEqual(expect.objectContaining({
-      version: '1.10.0',
+      version: '1.11.0',
       channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip',
-      sha256: '232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626'
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
+      sha256: '9ccf95eaee2411c77e8f2fa238fcb37e7dc18240a716ab9bc6e808c669790875'
     }));
-    expect(fs.existsSync(path.join(packageDir, 'streamalchemy-1.11.0.zip'))).toBe(false);
+    expect(fs.existsSync(path.join(packageDir, 'streamalchemy-1.11.0.zip'))).toBe(true);
+    expect(sha256('plugin-store/packages/streamalchemy-1.11.0.zip'))
+      .toBe(entry.sha256);
   });
 
   test.each([
@@ -103,17 +106,15 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     expect(overlay).not.toContain('League World Hybrid');
   });
 
-  test('marks release notes as source-ready without claiming publication', () => {
+  test('marks release notes as verified without claiming an LTTH version bump', () => {
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
 
     expect(currentRelease.notes).toContain('Stream Monsters 1.11.0');
-    expect(currentRelease.notes).toMatch(/source candidate|Quellkandidat/i);
-    expect(currentRelease.notes).toMatch(/package pending|Paket ausstehend/i);
-    expect(currentRelease.notes).not.toMatch(
-      /official plugin store publishes Stream Monsters 1\.11\.0/i
+    expect(currentRelease.notes).toContain('streamalchemy-1.11.0.zip');
+    expect(currentRelease.notes).toContain(
+      '9ccf95eaee2411c77e8f2fa238fcb37e7dc18240a716ab9bc6e808c669790875'
     );
-    expect(currentRelease.notes).not.toMatch(
-      /streamalchemy-1\.11\.0\.zip is built/i
-    );
+    expect(currentRelease.notes).not.toMatch(/source candidate|package pending|Quellkandidat|Paket ausstehend/i);
+    expect(currentRelease.version).toBe('1.4.1');
   });
 });

@@ -425,10 +425,10 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
   });
 
   test.each([
-    ['de', /League World Hybrid/, /Team Heart/, /Collector Score/, /Paket|gebündelt/i],
-    ['en', /League World Hybrid/, /Team Heart/, /Collector Score/, /packaged|bundled/i],
-    ['es', /League World Hybrid/, /Team Heart/, /Collector Score/, /incluido|paquete/i],
-    ['fr', /League World Hybrid/, /Team Heart/, /Collector Score/, /incluse|paquet/i]
+    ['de', /Portrait Arcade Rally/, /Team Heart/, /Collector Score/, /Paket|gebündelt/i],
+    ['en', /Portrait Arcade Rally/, /Team Heart/, /Collector Score/, /packaged|bundled/i],
+    ['es', /Portrait Arcade Rally/, /Team Heart/, /Collector Score/, /incluido|paquete/i],
+    ['fr', /Portrait Arcade Rally/, /Team Heart/, /Collector Score/, /incluse|paquet/i]
   ])('uses current product language in %s', (locale, product, teamHeart, collectorScore, packagedAsset) => {
     const text = JSON.parse(fs.readFileSync(
       path.join(pluginDir, 'locales', `${locale}.json`),
@@ -547,24 +547,24 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     expect(overlaySource).not.toContain('data?.quest?.title');
   });
 
-  test('keeps the stable ID and publishes the complete 1.10 product description', () => {
+  test('keeps the stable ID and publishes the complete 1.11 product description', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storeEntry = registry.plugins.find(plugin => plugin.id === 'streamalchemy');
 
     expect(manifest.id).toBe('streamalchemy');
-    expect(manifest.version).toBe('1.10.0');
+    expect(manifest.version).toBe('1.11.0');
     expect(manifest.devStatus).toBe('working-beta');
-    expect(storeEntry.version).toBe('1.10.0');
+    expect(storeEntry.version).toBe('1.11.0');
     expect(storeEntry.channel).toBe('open-beta');
     expect(storeEntry.badges).toContain('working-beta');
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip');
+    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip');
 
     const expectedTerms = {
-      en: [/gift/i, /free-egg adoption/i, /sealed A\/B\/C PvP/i, /elemental roles/i, /progression/i, /portrait/i],
-      de: [/(?:Geschenk|Gift)/i, /Gratis-Ei-Adoption/i, /verdecktem A\/B\/C-PvP/i, /Elementrollen/i, /Fortschritt/i, /Portrait/i],
-      es: [/regalos/i, /huevos gratis/i, /PvP A\/B\/C sellado/i, /roles elementales/i, /progreso/i, /vertical/i],
-      fr: [/cadeaux/i, /œufs gratuits/i, /PvP A\/B\/C scellé/i, /rôles élémentaires/i, /progression/i, /portrait/i]
+      en: [/90-second/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /portrait/i],
+      de: [/90-Sekunden/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /Portrait/i],
+      es: [/90 segundos/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /Portrait/i],
+      fr: [/90 secondes/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /Portrait/i]
     };
     expect(manifest.description).toEqual(manifest.descriptions.en);
     for (const locale of ['de', 'en', 'es', 'fr']) {
@@ -579,7 +579,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const localeSource = fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8');
       const translations = JSON.parse(localeSource).plugins.streamalchemy;
-      expect(translations.ui.monsters.version).toMatch(/1\.10/);
+      expect(translations.ui.monsters.version).toMatch(/1\.11/);
       expect(translations.ui.monsters.rulesDynamic).toMatch(/skill|Skill|habilidad|compétence/);
       expect(translations.ui.monsters.skillAttack).toEqual(expect.any(String));
       expect(localeSource).not.toMatch(/Stream[\s-]+Alchemy/i);
@@ -593,15 +593,15 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
       expect(fs.readFileSync(path.join(pluginDir, visibleFile), 'utf8')).not.toMatch(/Stream[\s-]+Alchemy/i);
     }
     const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
-    expect(uiSource).toContain('Jackpot Arena &amp; Living Egg Shelf · Version 1.10');
+    expect(uiSource).toContain('Portrait Arcade Rally · Version 1.11');
     expect(uiSource).not.toMatch(/Version 1\.[34]/);
   });
 
-  test('documents configurable hatch presets with the two-minute current default', () => {
+  test('documents configurable hatch presets with the 90-second current default', () => {
     const readme = fs.readFileSync(path.join(pluginDir, 'README.md'), 'utf8');
 
-    expect(readme).toContain('New setups default to two minutes');
-    expect(readme).toContain('Available presets are 30 seconds, 1, 2, 5, 10, or 30 minutes');
+    expect(readme).toContain('New configurations use a 90-second incubation default');
+    expect(readme).toContain('30, 60, 90, 120, 300, 600 and 1,800 seconds');
     expect(readme).not.toMatch(/Standard incubation takes five minutes/i);
   });
 

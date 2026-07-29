@@ -9,14 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Stream Monsters 1.11.0 source candidate (Open Beta)**: Portrait Arcade Rally adds a 90-second default only for fresh configurations, selectable German/English/Spanish/French overlay sequencing, a strict 74/26 TikTok-safe battle takeover and clearer egg, adoption, hatch and stat prompts.
+- **Stream Monsters 1.11.0 (Open Beta)**: The verified Portrait Arcade Rally package adds a 90-second default only for fresh configurations, selectable German/English/Spanish/French overlay sequencing, a strict 74/26 TikTok-safe battle takeover and clearer egg, adoption, hatch and stat prompts.
 - **Rules v8 K.O. Arena**: Battles end only by K.O. or forfeit; sealed A/B/C actions, capped passive Special charge, Arena Collapse from round five and element-specific WebGPU effects share deterministic replay and fallback timing.
 - **Stream Monsters 1.9.0 (Open Beta)**: Rules v7 adds passive Special charge, localized skill explanations, combat-relevant evolution stages, animated stat growth, and deterministic reveal recovery to the retention and competitive arcade loop.
 - **Sealed Rules-v7 Arena**: A/B/C choices remain sealed until both fighters lock or time out, then reveal together with deterministic replays and balanced elemental roles.
 
 ### Changed
 
-- **Release separation**: LTTH stays at 1.4.1. Stream Monsters 1.11.0 is staged as source only until its deterministic package and SHA-256 are verified; the published 1.10.0 store artifact and all earlier packages remain immutable.
+- **Release separation**: LTTH stays at 1.4.1. Stream Monsters 1.11.0 ships as a separately versioned deterministic plugin package; the 1.10.0 store artifact and all earlier packages remain immutable.
 
 ## [1.4.1] - 2026-07-26
 

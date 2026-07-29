@@ -63,18 +63,9 @@ function readZip(filename) {
 }
 
 describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
-  test('publishes Jackpot Arena as the current 1.10.0 Open Beta plugin', () => {
-    const manifest = readJson('app/plugins/streamalchemy/plugin.json');
-    const store = readJson('plugin-store.json');
-    const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
+  test('records Jackpot Arena as an immutable 1.10.0 Open Beta plugin', () => {
     const release = loadReleaseMap().releases['1.10.0'];
 
-    expect(manifest).toEqual(expect.objectContaining({
-      id: 'streamalchemy',
-      name: 'Stream Monsters',
-      version: '1.10.0',
-      devStatus: 'working-beta'
-    }));
     expect(release).toEqual(expect.objectContaining({
       sourceCommit: expect.stringMatching(/^[a-f0-9]{40}$/),
       sourceTree: expect.stringMatching(/^[a-f0-9]{40}$/),
@@ -82,25 +73,17 @@ describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
       package: 'plugin-store/packages/streamalchemy-1.10.0.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
     }));
-    expect(storeEntry).toEqual(expect.objectContaining({
-      version: '1.10.0',
-      channel: 'open-beta',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.10.0.zip',
-      sha256: release.sha256
-    }));
+    expect(sha256(path.join(repoRoot, release.package))).toBe(release.sha256);
   });
 
-  test('documents 1.10 as Jackpot Arena and Living Egg Shelf', () => {
-    const pluginReadme = readText('app/plugins/streamalchemy/README.md');
+  test('retains 1.10 as Jackpot Arena and Living Egg Shelf in release history', () => {
     const changelog = readText('app/CHANGELOG.md');
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
 
-    expect(pluginReadme).toContain('# Stream Monsters 1.10');
-    expect(pluginReadme).toContain('Living Egg Shelf');
-    expect(pluginReadme).toContain('Jackpot');
     expect(changelog).toContain('Stream Monsters 1.10.0');
-    expect(currentRelease.notes).toContain('Stream Monsters 1.10.0');
-    expect(currentRelease.notes).toContain('streamalchemy-1.10.0.zip');
+    expect(changelog).toContain('Living Egg Shelf');
+    expect(changelog).toContain('Jackpot');
+    expect(currentRelease.notes).toContain('archive through 1.10.0 remain preserved');
   });
 
   test('binds every tree-backed release to its recorded source commit', () => {
