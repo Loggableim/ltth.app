@@ -1595,6 +1595,11 @@
   const seenStatPrompts = new Set();
   let queueRunning = false;
   let snapshotReady = false;
+  const MAX_RECONNECT_EGG_DELTAS = 256;
+  const reconnectSnapshotCycles = new WeakMap();
+  const reconnectEggDeltas = [];
+  let activeReconnectCycle = 0;
+  let reconnectEggSnapshotPending = false;
   let publicEventCursor = null;
   let notificationDurationMs = 12_000;
   let rendererQuality = 'auto';
@@ -1604,6 +1609,38 @@
   const battleLocaleSequences = new Map();
   let battleReplaySynchronizer = null;
   let currentCommandPrefix = '!';
+  const beginReconnectEggSnapshot = cycle => {
+    activeReconnectCycle = Math.max(1, Number(cycle) || 1);
+    reconnectEggSnapshotPending = true;
+    reconnectEggDeltas.length = 0;
+    return activeReconnectCycle;
+  };
+  const bufferReconnectEggDelta = (type, data) => {
+    if (!reconnectEggSnapshotPending) return false;
+    if (reconnectEggDeltas.length >= MAX_RECONNECT_EGG_DELTAS) {
+      reconnectEggDeltas.shift();
+    }
+    reconnectEggDeltas.push({ type, data });
+    return true;
+  };
+  const finishReconnectEggSnapshot = cycle => {
+    if (
+      !reconnectEggSnapshotPending ||
+      Number(cycle) !== activeReconnectCycle
+    ) return false;
+    const buffered = reconnectEggDeltas.splice(0);
+    reconnectEggSnapshotPending = false;
+    for (const event of buffered) {
+      eggStageView.applyEvent(event.type, event.data);
+    }
+    return true;
+  };
+  const clearReconnectEggSnapshot = cycle => {
+    if (cycle != null && Number(cycle) !== activeReconnectCycle) return false;
+    reconnectEggDeltas.length = 0;
+    reconnectEggSnapshotPending = false;
+    return true;
+  };
   const acceptStatPrompt = (type, data = {}) => {
     if (type === 'stat_choice_opened' && data.compatibilityAlias === true) return false;
     const key = window.StreamMonstersOverlayRuntime.statPromptKey(data);
@@ -2227,16 +2264,21 @@
   };
   const present = async ({ type, data }) => {
     if (type === 'state_snapshot') {
+      const reconnectCycle = reconnectSnapshotCycles.get(data) || activeReconnectCycle;
+      if (reconnectCycle !== activeReconnectCycle) return;
       overlayLanguage = await overlayLocaleResolver.configure(
         data?.config?.overlayLanguage
       );
+      if (reconnectCycle !== activeReconnectCycle) return;
       applyPresentationLocale(overlayLanguage.primaryLocale);
       const coldBaseline = battleReplaySynchronizer?.state?.().initialized !== true;
       if (coldBaseline) applySnapshot(data);
       try {
         await battleReplaySynchronizer?.sync(data?.battle || { matches:[] });
       } catch (_) {}
+      if (reconnectCycle !== activeReconnectCycle) return;
       if (!coldBaseline) applySnapshot(data);
+      finishReconnectEggSnapshot(reconnectCycle);
       if (Array.isArray(data?.recentEvents)) {
         const recentEvents = data.recentEvents;
         if (publicEventCursor !== null) {
@@ -2917,7 +2959,9 @@
   };
   const enqueue = (type, data) => {
     if (window.StreamMonstersOverlayRuntime.isEggStageEvent(type)) {
-      eggStageView.applyEvent(type, data);
+      if (!bufferReconnectEggDelta(type, data)) {
+        eggStageView.applyEvent(type, data);
+      }
     }
     if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {
       criticalLocaleSequencer.cancel(
@@ -2966,6 +3010,8 @@
       queueWakeTimer = null;
       queueWakeDeadline = 0;
     }
+    clearReconnectEggSnapshot();
+    activeReconnectCycle = 0;
     arenaView.destroy?.();
     eggStageView.destroy?.();
     battleEffectsRenderer.destroy?.();
@@ -2977,19 +3023,27 @@
   if (!socket) return;
   const reconnectController = window.StreamMonstersOverlayRuntime.createReconnectController({
     queue: eventQueue,
-    loadSnapshot: async signal => {
+    loadSnapshot: async (signal, requestGeneration) => {
       const response = await fetch('/api/streammonsters/state', { signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return response.json();
+      const payload = await response.json();
+      if (payload && typeof payload === 'object') {
+        reconnectSnapshotCycles.set(payload, requestGeneration);
+      }
+      return payload;
     },
-    fallbackSnapshot: () => ({
-      hype: { points: 0 },
-      gcce: {
-        commandPrefix: currentCommandPrefix,
-        commandReferences: safeFallbackCommandReferences(currentCommandPrefix)
-      },
-      config: { hatchDurationMs: 0 }
-    })
+    fallbackSnapshot: () => {
+      const payload = {
+        hype: { points: 0 },
+        gcce: {
+          commandPrefix: currentCommandPrefix,
+          commandReferences: safeFallbackCommandReferences(currentCommandPrefix)
+        },
+        config: { hatchDurationMs: 0 }
+      };
+      reconnectSnapshotCycles.set(payload, reconnectController.generation());
+      return payload;
+    }
   });
   const eventTypes = {
     'streammonsters:stream_started':'stream_started',
@@ -3046,10 +3100,18 @@
   };
   Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
   socket.on('connect', async () => {
+    const reconnectCycle = beginReconnectEggSnapshot(
+      reconnectController.generation() + 1
+    );
     snapshotReady = false;
     const completed = await reconnectController.reconnect();
+    if (reconnectCycle !== activeReconnectCycle) return;
     snapshotReady = reconnectController.isSnapshotReady();
-    if (completed) drainQueue();
+    if (completed) {
+      drainQueue();
+    } else {
+      clearReconnectEggSnapshot(reconnectCycle);
+    }
   });
 })();
 </script>

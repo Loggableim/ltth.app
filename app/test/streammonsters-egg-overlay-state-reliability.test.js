@@ -79,6 +79,9 @@ async function createOverlayHarness(snapshot) {
       });
       window.fetch = jest.fn(async input => {
         const url = String(input);
+        if (url.includes('/locales/')) {
+          return { ok: true, status: 200, json: async () => ({}) };
+        }
         if (url.includes('/assets/audio/manifest.json')) {
           return { ok: false, status: 404, json: async () => ({}) };
         }
@@ -92,7 +95,13 @@ async function createOverlayHarness(snapshot) {
             json: async () => ({ cursor: 0, hasMore: false, events: [] })
           };
         }
-        return { ok: true, status: 200, json: async () => snapshot };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => (
+            typeof snapshot === 'function' ? snapshot() : snapshot
+          )
+        };
       });
       window.StreamMonstersOverlayRuntime = runtime;
       window.StreamMonstersArenaDirector = ArenaDirector;
@@ -293,6 +302,49 @@ describe('Stream Monsters egg overlay state reliability', () => {
       });
 
       expect(shelf.querySelector('[data-egg-id="offer-blocked"]')).toBeNull();
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('replays a buffered egg delta after a delayed warm-reconnect snapshot', async () => {
+    const offer = freeEgg('offer-warm-reconnect');
+    const olderSnapshot = {
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    };
+    let stateRequest = 0;
+    let resolveWarmSnapshot;
+    const harness = await createOverlayHarness(() => {
+      stateRequest += 1;
+      if (stateRequest === 1) return olderSnapshot;
+      return new Promise(resolve => {
+        resolveWarmSnapshot = resolve;
+      });
+    });
+    try {
+      const shelf = harness.dom.window.document.getElementById('egg-shelf');
+      expect(shelf.querySelector('[data-egg-id="offer-warm-reconnect"]')).not.toBeNull();
+
+      const reconnect = harness.socketHandlers.get('connect')();
+      for (let attempt = 0; attempt < 10 && !resolveWarmSnapshot; attempt += 1) {
+        await flush();
+      }
+      expect(resolveWarmSnapshot).toEqual(expect.any(Function));
+
+      harness.socketHandlers.get('streammonsters:free_egg_claimed')({
+        eventId: 'claim-during-warm-reconnect',
+        correlationId: 'offer-warm-reconnect',
+        removedEggStage: offer
+      });
+      resolveWarmSnapshot(olderSnapshot);
+      await reconnect;
+      for (let attempt = 0; attempt < 10; attempt += 1) await flush();
+
+      expect(shelf.querySelector('[data-egg-id="offer-warm-reconnect"]')).toBeNull();
     } finally {
       await harness.close();
     }
