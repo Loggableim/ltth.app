@@ -841,7 +841,7 @@
     }
   ],
   "sourceUrl": "isolated-local-process",
-  "capturedAt": "2026-07-29T04:54:45.995Z",
+  "capturedAt": "2026-07-29T06:47:08.964Z",
   "requestedLocales": [
     "de",
     "en",
@@ -1280,8 +1280,8 @@
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "c950bd38dceb305fa05ce8b083acde10223da916e5b4b3a962f0b8b3cf34be1d",
-      "bytes": 1113562
+      "sha256": "e79f76943518927ccf948d95b65ebdeb7c367936ede7d2f37a53a4db99bb6402",
+      "bytes": 1117592
     },
     {
       "locale": "de",
@@ -1896,8 +1896,8 @@
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "d451ea1fa6a19a72d7b8a4d7e25654bac30ec1d4963b307f76308691daffb1b9",
-      "bytes": 1124139
+      "sha256": "90c1a7dc93c13e5c3f97514a7bcbb3ca0a6cdbe58f440f06e06551ea8553b502",
+      "bytes": 1106416
     },
     {
       "locale": "en",
@@ -2512,8 +2512,8 @@
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "dcbb37e3c536ad3034f90b9eabbc3f421cf18667bd3e20efd5a955116895f487",
-      "bytes": 1140225
+      "sha256": "dfd4a523ffb13810008a0925125d046286cd5022042fc6118303c98feb582e0a",
+      "bytes": 1125778
     },
     {
       "locale": "es",
@@ -3128,8 +3128,8 @@
           "motifs": "chain-lightning-storm,white-flash"
         }
       },
-      "sha256": "deed9af12e44785560a95d0369824696fcfc4843b1bfb6bb26be3bb6132ff814",
-      "bytes": 1120295
+      "sha256": "667cdfb24d3d48e59f701b2d3b69b8a289474e606a6c912b1db85fe3e0fa71e1",
+      "bytes": 1123454
     },
     {
       "locale": "fr",

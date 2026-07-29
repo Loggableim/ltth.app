@@ -33,11 +33,11 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     }));
     expect(releaseMap).not.toHaveProperty('stagedRelease');
     expect(releaseMap.releases['1.11.0']).toEqual({
-      sourceCommit: '413bc515334563cd3138384bcc59014c1f85c9aa',
-      sourceTree: '68848af33798e82376fb309797eaa4234d5853f9',
+      sourceCommit: '05916eaaf42ba46c3070001ccb07fe071422f797',
+      sourceTree: 'a0e8fb2f013f707cc4441cf7841aa41f1bc82588',
       manifestVersion: '1.11.0',
       package: 'plugin-store/packages/streamalchemy-1.11.0.zip',
-      sha256: 'f0c0991e0b0e047ee81b26103714bd2661a43079eb53945437dd39c88f69659e'
+      sha256: 'f3f5ef00290867629df632644ee9a4b21f003a45e4cc83779c07218a0863b4f6'
     });
     expect(appPackage.version).toBe('1.4.1');
     expect(rootPackage.version).toBe('1.4.1');
@@ -54,7 +54,7 @@ describe('Stream Monsters 1.11 source-release contract', () => {
       version: '1.11.0',
       channel: 'open-beta',
       packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.0.zip',
-      sha256: 'f0c0991e0b0e047ee81b26103714bd2661a43079eb53945437dd39c88f69659e'
+      sha256: 'f3f5ef00290867629df632644ee9a4b21f003a45e4cc83779c07218a0863b4f6'
     }));
     expect(fs.existsSync(path.join(packageDir, 'streamalchemy-1.11.0.zip'))).toBe(true);
     expect(sha256('plugin-store/packages/streamalchemy-1.11.0.zip'))
@@ -112,7 +112,7 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     expect(currentRelease.notes).toContain('Stream Monsters 1.11.0');
     expect(currentRelease.notes).toContain('streamalchemy-1.11.0.zip');
     expect(currentRelease.notes).toContain(
-      'f0c0991e0b0e047ee81b26103714bd2661a43079eb53945437dd39c88f69659e'
+      'f3f5ef00290867629df632644ee9a4b21f003a45e4cc83779c07218a0863b4f6'
     );
     expect(currentRelease.notes).not.toMatch(/source candidate|package pending|Quellkandidat|Paket ausstehend/i);
     expect(currentRelease.version).toBe('1.4.1');
