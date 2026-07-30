@@ -392,7 +392,6 @@
     #battle[data-phase="action"] #arena-lead {
       opacity:1; visibility:visible; pointer-events:none;
     }
-    #battle[data-phase="action"] #arena-action-card { top:22%; }
     #arena-choice-surface {
       position:absolute; right:3%; bottom:2%; left:3%; z-index:18;
       display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;
@@ -1014,6 +1013,11 @@
       .arena-skill-card .skill-copy { display:block; font-size:clamp(10px,1vw,14px); }
       .arena-skill-card .skill-charge { min-width:0; text-align:center; }
       #arena-feed { top:18%; bottom:auto; }
+      #battle[data-phase="action"] #arena-lead { top:8.5%; }
+      #battle[data-phase="action"] #arena-action-card { top:14.5%; min-height:118px; }
+      #battle[data-phase="action"] .arena-fighter {
+        top:31%; bottom:auto; height:66%;
+      }
       #chat-detail {
         top:9%; right:5%;
         bottom:calc(26% + var(--egg-shelf-lane-height)); left:5%;
@@ -1124,6 +1128,11 @@
       }
       #arena-feed { top:auto; bottom:1.5%; width:86%; }
       #arena-action-card { top:8.5%; width:94%; min-height:130px; }
+      #battle[data-phase="action"] #arena-lead { top:8.5%; }
+      #battle[data-phase="action"] #arena-action-card { top:14.5%; min-height:130px; }
+      #battle[data-phase="action"] .arena-fighter {
+        top:31%; bottom:auto; height:66%;
+      }
       #arena-result {
         top:3%; width:94%; min-height:0; max-height:90%; padding:14px 16px;
         gap:2px; overflow:hidden;
@@ -1185,8 +1194,10 @@
       .arena-result-decisive { padding:3px 6px; }
       .arena-result-fighter { gap:2px; padding:4px 5px; }
       .arena-result-metrics { gap:1px 4px; }
+      #battle[data-phase="action"] #arena-lead { top:6.5%; }
+      #battle[data-phase="action"] #arena-action-card { top:14.5%; min-height:108px; }
       #battle[data-phase="action"] .arena-fighter {
-        top:43%; height:55%;
+        top:36%; bottom:auto; height:62%;
       }
       #arena-choice-surface {
         right:1.5%; bottom:1%; left:1.5%; gap:5px; padding:5px;

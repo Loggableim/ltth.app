@@ -1632,10 +1632,18 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(styles.get('#arena-action-card').getPropertyValue('top')).toBe('20%');
     expect(styles.get('#arena-action-card').getPropertyValue('min-height')).toBe('0px');
     expect(styles.get('#arena-action-card').getPropertyValue('max-height')).toBe('');
+    expect(styles.get('#battle[data-phase="action"] #arena-lead').getPropertyValue('top'))
+      .toBe('6.5%');
+    expect(styles.get('#battle[data-phase="action"] #arena-action-card').getPropertyValue('top'))
+      .toBe('14.5%');
+    expect(styles.get('#battle[data-phase="action"] #arena-action-card').getPropertyValue('min-height'))
+      .toBe('108px');
     expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('top'))
-      .toBe('43%');
+      .toBe('36%');
     expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('height'))
-      .toBe('55%');
+      .toBe('62%');
+    expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('bottom'))
+      .toBe('auto');
     expect(styles.get('#battle[data-phase="choice"] #arena-feed').getPropertyValue('display'))
       .toBe('none');
     expect(styles.get('#arena-choice-surface').getPropertyValue('bottom')).toBe('1%');
@@ -1644,7 +1652,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .not.toBe('ellipsis');
   });
 
-  test('keeps the HP and shield leader visible above a separated action card', () => {
+  test('composes visible action-phase lead, action copy, and fighter HUD safe bands in every orientation', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
@@ -1663,9 +1671,37 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const actionLeadRules = rules.filter(rule => (
       rule.selectorText?.includes('#battle[data-phase="action"] #arena-lead')
     ));
-    const actionCardRule = rules.find(rule => (
-      rule.selectorText === '#battle[data-phase="action"] #arena-action-card'
-    ));
+    const mediaStyles = condition => {
+      const media = rules.find(rule => rule.parentRule?.conditionText === condition)?.parentRule;
+      return new Map([...(media?.cssRules || [])]
+        .filter(rule => rule.selectorText)
+        .map(rule => [rule.selectorText, rule.style]));
+    };
+    const expectSafeActionBands = (styles, {
+      leadTop,
+      fighterTop,
+      fighterHeight,
+      cardMinHeight,
+      battleHeight,
+      minimumGap
+    }) => {
+      const lead = styles.get('#battle[data-phase="action"] #arena-lead');
+      const card = styles.get('#battle[data-phase="action"] #arena-action-card');
+      const fighters = styles.get('#battle[data-phase="action"] .arena-fighter');
+
+      expect(lead?.getPropertyValue('top')).toBe(leadTop);
+      expect(card?.getPropertyValue('top')).toBe('14.5%');
+      expect(card?.getPropertyValue('min-height')).toBe(`${cardMinHeight}px`);
+      expect(card?.getPropertyValue('max-height')).toBe('');
+      expect(card?.getPropertyValue('overflow')).toBe('');
+      expect(fighters?.getPropertyValue('top')).toBe(fighterTop);
+      expect(fighters?.getPropertyValue('height')).toBe(fighterHeight);
+      expect(fighters?.getPropertyValue('bottom')).toBe('auto');
+
+      const cardBottomPx = (battleHeight * 0.145) + cardMinHeight;
+      const fighterHudTopPx = battleHeight * (Number.parseFloat(fighterTop) / 100);
+      expect(fighterHudTopPx - cardBottomPx).toBeGreaterThanOrEqual(minimumGap);
+    };
 
     expect(actionLeadRules.some(rule => rule.style.getPropertyValue('opacity') === '0'))
       .toBe(false);
@@ -1673,7 +1709,30 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       rule.style.getPropertyValue('opacity') === '1' &&
       rule.style.getPropertyValue('visibility') === 'visible'
     ))).toBe(true);
-    expect(actionCardRule?.style.getPropertyValue('top')).toBe('22%');
+    expectSafeActionBands(mediaStyles('(orientation: landscape)'), {
+      leadTop: '8.5%',
+      fighterTop: '31%',
+      fighterHeight: '66%',
+      cardMinHeight: 118,
+      battleHeight: 1080 * 0.74,
+      minimumGap: 12
+    });
+    expectSafeActionBands(mediaStyles('(orientation: portrait)'), {
+      leadTop: '8.5%',
+      fighterTop: '31%',
+      fighterHeight: '66%',
+      cardMinHeight: 130,
+      battleHeight: 1920 * 0.74,
+      minimumGap: 80
+    });
+    expectSafeActionBands(mediaStyles('(orientation: portrait) and (max-height: 900px)'), {
+      leadTop: '6.5%',
+      fighterTop: '36%',
+      fighterHeight: '62%',
+      cardMinHeight: 108,
+      battleHeight: 829 * 0.74,
+      minimumGap: 20
+    });
   });
 
   test('updates shelf, meter, and skill-deck accessibility labels with the presentation locale', () => {
