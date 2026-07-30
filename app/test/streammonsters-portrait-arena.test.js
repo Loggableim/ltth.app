@@ -143,6 +143,124 @@ describe('Stream Monsters bounded portrait arena', () => {
     )).toBeNull();
   });
 
+  test('preserves edge-only, dimension-only and floating rectangle call shapes', () => {
+    expect(helperLoadError).toBeNull();
+    if (!portraitArena) return;
+
+    expect(portraitArena.normalizedRectCenter(
+      { left: 150, top: 75, right: 170, bottom: 85 },
+      { left: 100, top: 50, right: 300, bottom: 150 }
+    )).toEqual({ x: 0.3, y: 0.3 });
+    expect(portraitArena.normalizedRectCenter(
+      { left: 150, top: 75, width: 20, height: 10 },
+      { left: 100, top: 50, width: 200, height: 100 }
+    )).toEqual({ x: 0.3, y: 0.3 });
+    expect(portraitArena.normalizedRectCenter(
+      {
+        left: 0.1,
+        top: 0.1,
+        right: 0.3,
+        bottom: 0.3,
+        width: 0.2,
+        height: 0.2
+      },
+      {
+        left: 0,
+        top: 0,
+        right: 1,
+        bottom: 1,
+        width: 1,
+        height: 1
+      }
+    )).toEqual({ x: 0.2, y: 0.2 });
+  });
+
+  test.each([
+    [
+      'explicit NaN rectangle width',
+      { width: Number.NaN },
+      {}
+    ],
+    [
+      'explicit undefined rectangle width',
+      { width: undefined },
+      {}
+    ],
+    [
+      'contradictory rectangle width and edges',
+      { width: 2 },
+      {}
+    ],
+    [
+      'explicit NaN rectangle height',
+      { height: Number.NaN },
+      {}
+    ],
+    [
+      'contradictory rectangle height and edges',
+      { height: 2 },
+      {}
+    ],
+    [
+      'explicit negative rectangle height',
+      { height: -1 },
+      {}
+    ],
+    [
+      'explicit NaN container width',
+      {},
+      { width: Number.NaN }
+    ],
+    [
+      'explicit undefined container width',
+      {},
+      { width: undefined }
+    ],
+    [
+      'contradictory container width and edges',
+      {},
+      { width: 50 }
+    ],
+    [
+      'explicit NaN container height',
+      {},
+      { height: Number.NaN }
+    ],
+    [
+      'contradictory container height and edges',
+      {},
+      { height: 50 }
+    ],
+    [
+      'explicit zero container height',
+      {},
+      { height: 0 }
+    ]
+  ])('rejects %s', (_name, rectOverrides, containerOverrides) => {
+    expect(helperLoadError).toBeNull();
+    if (!portraitArena) return;
+
+    const rect = {
+      left: 10,
+      top: 10,
+      right: 20,
+      bottom: 20,
+      width: 10,
+      height: 10,
+      ...rectOverrides
+    };
+    const container = {
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 100,
+      width: 100,
+      height: 100,
+      ...containerOverrides
+    };
+    expect(portraitArena.normalizedRectCenter(rect, container)).toBeNull();
+  });
+
   test('nests every stage surface in one arena and only egg exceptions below it', () => {
     const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
     const document = dom.window.document;

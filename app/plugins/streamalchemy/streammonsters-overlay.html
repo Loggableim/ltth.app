@@ -2639,7 +2639,7 @@
       lifecycleFallbacks[notice.titleKey] || 'Stream Monsters',
       notice.params
     );
-    const action = notice.commands.slice(0, 2).join(' Â· ') || text(
+    const action = notice.commands.slice(0, 2).join(' \u00b7 ') || text(
       notice.copyKey,
       lifecycleFallbacks[notice.copyKey] || '',
       notice.params

@@ -57,65 +57,78 @@
     );
   }
 
-  function dimension(rect, start, end, size) {
-    const explicit = Number(rect?.[size]);
-    if (Number.isFinite(explicit)) return explicit;
-    const startValue = Number(rect?.[start]);
-    const endValue = Number(rect?.[end]);
-    return endValue - startValue;
+  function hasProperty(value, key) {
+    return value != null && key in Object(value);
   }
 
-  function invalidEnd(rect, key, start) {
-    if (rect?.[key] == null) return false;
-    const end = Number(rect[key]);
-    return !Number.isFinite(end) || end <= start;
+  function dimensionsAgree(explicit, derived) {
+    const scale = Math.max(1, Math.abs(explicit), Math.abs(derived));
+    return Math.abs(explicit - derived) <= 1e-9 * scale;
+  }
+
+  function resolveAxis(rect, startKey, endKey, dimensionKey) {
+    const start = Number(rect?.[startKey]);
+    const hasEnd = hasProperty(rect, endKey);
+    const hasDimension = hasProperty(rect, dimensionKey);
+    const end = hasEnd ? Number(rect[endKey]) : null;
+    const explicitDimension = hasDimension
+      ? Number(rect[dimensionKey])
+      : null;
+    if (
+      !Number.isFinite(start) ||
+      (!hasEnd && !hasDimension) ||
+      (hasEnd && (!Number.isFinite(end) || end <= start)) ||
+      (
+        hasDimension &&
+        (!Number.isFinite(explicitDimension) || explicitDimension <= 0)
+      )
+    ) {
+      return null;
+    }
+    const derivedDimension = hasEnd ? end - start : null;
+    if (
+      hasEnd &&
+      hasDimension &&
+      !dimensionsAgree(explicitDimension, derivedDimension)
+    ) {
+      return null;
+    }
+    return {
+      start,
+      dimension: hasDimension ? explicitDimension : derivedDimension
+    };
   }
 
   function normalizedRectCenter(rect, containerRect) {
-    const left = Number(rect?.left);
-    const top = Number(rect?.top);
-    const width = dimension(rect, 'left', 'right', 'width');
-    const height = dimension(rect, 'top', 'bottom', 'height');
-    const containerLeft = Number(containerRect?.left);
-    const containerTop = Number(containerRect?.top);
-    const containerWidth = dimension(
+    const horizontal = resolveAxis(rect, 'left', 'right', 'width');
+    const vertical = resolveAxis(rect, 'top', 'bottom', 'height');
+    const containerHorizontal = resolveAxis(
       containerRect,
       'left',
       'right',
       'width'
     );
-    const containerHeight = dimension(
+    const containerVertical = resolveAxis(
       containerRect,
       'top',
       'bottom',
       'height'
     );
-    if (
-      ![
-        left,
-        top,
-        width,
-        height,
-        containerLeft,
-        containerTop,
-        containerWidth,
-        containerHeight
-      ].every(Number.isFinite) ||
-      width <= 0 ||
-      height <= 0 ||
-      containerWidth <= 0 ||
-      containerHeight <= 0 ||
-      invalidEnd(rect, 'right', left) ||
-      invalidEnd(rect, 'bottom', top) ||
-      invalidEnd(containerRect, 'right', containerLeft) ||
-      invalidEnd(containerRect, 'bottom', containerTop)
-    ) {
+    if (!horizontal || !vertical || !containerHorizontal || !containerVertical) {
       return null;
     }
     const clamp = value => Math.max(0, Math.min(1, value));
     return {
-      x: clamp((left + width / 2 - containerLeft) / containerWidth),
-      y: clamp((top + height / 2 - containerTop) / containerHeight)
+      x: clamp((
+        horizontal.start +
+        horizontal.dimension / 2 -
+        containerHorizontal.start
+      ) / containerHorizontal.dimension),
+      y: clamp((
+        vertical.start +
+        vertical.dimension / 2 -
+        containerVertical.start
+      ) / containerVertical.dimension)
     };
   }
 

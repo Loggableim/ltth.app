@@ -41,7 +41,10 @@ function freeEgg(visualId, overrides = {}) {
   };
 }
 
-async function createOverlayHarness(snapshot, { portrait = false } = {}) {
+async function createOverlayHarness(snapshot, {
+  portrait = false,
+  lifecycleCommands = null
+} = {}) {
   const html = fs.readFileSync(path.join(
     process.cwd(),
     'plugins',
@@ -106,7 +109,19 @@ async function createOverlayHarness(snapshot, { portrait = false } = {}) {
       });
       window.StreamMonstersOverlayRuntime = runtime;
       window.StreamMonstersArenaDirector = ArenaDirector;
-      window.StreamMonstersEggStageView = EggStageView;
+      window.StreamMonstersEggStageView = lifecycleCommands
+        ? {
+            ...EggStageView,
+            buildEventPresentation(type, payload, options) {
+              const notice = EggStageView.buildEventPresentation(
+                type,
+                payload,
+                options
+              );
+              return notice ? { ...notice, commands: lifecycleCommands } : notice;
+            }
+          }
+        : EggStageView;
       window.StreamMonstersPortraitArena = {
         normalizeVariant(value, fallback = 'classic') {
           return ['split-arena', 'classic'].includes(value) ? value : fallback;
@@ -198,7 +213,10 @@ describe('Stream Monsters egg overlay state reliability', () => {
       gcce: { commandPrefix: '!', registeredCommands: [] },
       battle: { matches: [] },
       eggStage: [offer]
-    }, { portrait: true });
+    }, {
+      portrait: true,
+      lifecycleCommands: ['!adopt', '!eggs']
+    });
     try {
       harness.socketHandlers.get('streammonsters:free_egg_public')({
         eventId: 'portrait-lifecycle-public',
@@ -218,8 +236,21 @@ describe('Stream Monsters egg overlay state reliability', () => {
         .toHaveLength(2);
       expect(notice.querySelector('[data-egg-notice-title]').textContent.trim())
         .not.toBe('');
-      expect(notice.querySelector('[data-egg-notice-action]').textContent)
-        .toBe('!adopt');
+      const action = notice.querySelector('[data-egg-notice-action]').textContent;
+      expect(action).toBe('!adopt \u00b7 !eggs');
+      expect([...action].filter(character => character === '\u00b7')).toHaveLength(1);
+      expect(action).not.toContain('\u00c2');
+      const overlaySource = fs.readFileSync(path.join(
+        process.cwd(),
+        'plugins',
+        'streamalchemy',
+        'streammonsters-overlay.html'
+      ), 'utf8');
+      const compactJoinLine = overlaySource.split(/\r?\n/).find(line => (
+        line.includes('const action = notice.commands')
+      ));
+      expect(compactJoinLine).toContain("join(' \\u00b7 ')");
+      expect(compactJoinLine).not.toContain('\u00c2');
       expect(card.classList.contains('visible')).toBe(false);
       expect(card.hasAttribute('data-presentation')).toBe(false);
       expect(harness.pendingTimerDurations()).toContain(5_000);
