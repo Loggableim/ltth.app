@@ -14,6 +14,27 @@
     * { box-sizing:border-box; }
     body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
     #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; isolation:isolate; }
+    #portrait-arena,
+    #portrait-exception-lane {
+      position:fixed; inset:0; overflow:visible; pointer-events:none;
+    }
+    #egg-lifecycle-notice {
+      display:grid; gap:2px; min-width:0; max-width:100%; padding:5px 10px;
+      border:1px solid #b4a1ff99; border-radius:12px; color:var(--ink);
+      background:#10182bf2; box-shadow:0 8px 22px #0009; line-height:1.1;
+      text-align:center;
+    }
+    #egg-lifecycle-notice[hidden] { display:none; }
+    #egg-lifecycle-notice > * {
+      display:block; min-width:0; overflow:hidden; text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    #egg-lifecycle-notice [data-egg-notice-title] {
+      font-size:clamp(12px,2.8vw,18px); font-weight:1000;
+    }
+    #egg-lifecycle-notice [data-egg-notice-action] {
+      color:#c8fff0; font-size:clamp(11px,2.5vw,16px); font-weight:900;
+    }
     #effects-canvas { position:fixed; inset:0; z-index:0; width:100%; height:100%; background:transparent; }
     #battle-effects-canvas.effects-fallback[data-renderer-backend="css"][data-effect-scene="attack"] {
       background-image:
@@ -300,7 +321,6 @@
       transition:opacity .34s ease,transform .55s cubic-bezier(.2,.85,.25,1),visibility 0s linear .55s;
       isolation:isolate;
     }
-    #streammonsters-overlay[data-battle-active="true"] #egg-shelf,
     #streammonsters-overlay[data-battle-active="true"] #egg-next-landscape,
     #streammonsters-overlay[data-battle-active="true"] #reveal-stage,
     #streammonsters-overlay[data-battle-active="true"] #arcade-choreography,
@@ -1084,20 +1104,43 @@
         --portrait-safe-zone-height:26%;
         --portrait-info-rail-height:clamp(146px,19vh,246px);
         --egg-shelf-lane-height:66px;
+        --portrait-arena-left:2%;
+        --portrait-arena-top:11.8%;
+        --portrait-arena-right:2%;
+        --portrait-arena-bottom:42.2%;
+        --portrait-exception-top:74%;
+        --portrait-exception-right:3%;
+        --portrait-exception-bottom:2%;
+        --portrait-exception-left:3%;
+      }
+      #portrait-arena {
+        position:fixed;
+        inset:var(--portrait-arena-top) var(--portrait-arena-right)
+          var(--portrait-arena-bottom) var(--portrait-arena-left);
+        overflow:clip; contain:paint; isolation:isolate;
+      }
+      #portrait-exception-lane {
+        position:fixed;
+        inset:var(--portrait-exception-top) var(--portrait-exception-right)
+          var(--portrait-exception-bottom) var(--portrait-exception-left);
+        z-index:80; display:grid; grid-template-rows:auto minmax(0,1fr);
+        gap:clamp(3px,.7vh,8px); overflow:clip;
       }
       #effects-canvas {
-        inset:0 0 auto;
-        height:calc(100% - var(--portrait-safe-zone-height));
+        position:absolute; inset:0; width:100%; height:100%;
       }
-      #brand { top:20px; left:20px; width:210px; height:58px; }
-      #hype { top:18px; right:20px; width:76px; height:76px; }
-      #toast { top:104px; width:calc(100vw - 32px); }
+      #brand {
+        top:6px; left:8px; width:clamp(72px,24%,112px); height:34px;
+        object-fit:contain;
+      }
+      #hype { top:6px; right:8px; width:44px; height:44px; }
+      #hype-value { font-size:11px; }
+      #toast { top:44px; width:calc(100% - 16px); }
       #reveal-stage {
-        top:0; right:0; bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); left:0;
-        padding:50px 16px;
+        position:absolute; inset:0; padding:50px 8px 8px;
       }
-      #arcade-choreography { bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); }
-      #card { grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
+      #arcade-choreography { position:absolute; inset:0; }
+      #card { grid-template-columns:1fr; width:calc(100% - 16px); text-align:center; }
       #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) {
         min-height:250px; padding:22px 18px;
       }
@@ -1123,9 +1166,10 @@
         font-size:clamp(13px,2.8vw,19px);
       }
       #egg-shelf {
-        bottom:var(--portrait-safe-zone-height); height:var(--portrait-info-rail-height); display:grid;
+        position:relative; inset:auto; width:100%; height:100%; min-height:0;
+        display:grid; overflow:hidden;
         grid-template-columns:1fr; grid-template-rows:1fr;
-        align-items:end; justify-items:center;
+        align-items:center; justify-items:center;
       }
       #egg-shelf [data-egg-slots],
       #egg-shelf [data-egg-overflow],
@@ -1175,7 +1219,7 @@
       #card[data-presentation="hatch"] #title { font-size:clamp(34px,7.4vw,64px); }
       #card[data-presentation="hatch"] #subtitle { font-size:clamp(17px,3.2vw,28px); }
       #card[data-presentation="hatch"] #hint { font-size:clamp(15px,2.8vw,23px); }
-      #battle { inset:0 0 var(--portrait-safe-zone-height); }
+      #battle { inset:0; overflow:hidden; }
       #arena-topline { top:2%; min-width:88%; }
       #arena-skill-prompt { top:8%; width:88%; }
       #arena-lead { top:14.5%; }
@@ -1256,10 +1300,9 @@
       .arena-result-metrics span { font-size:clamp(9px,2.2vw,12px); }
       #arena-stat-card { top:14%; width:92%; min-height:260px; }
       #arena-impact { top:49%; }
-      #chat-card { left:16px; bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); max-width:calc(100vw - 32px); }
+      #chat-card { position:absolute; left:8px; bottom:8px; max-width:calc(100% - 16px); }
       #chat-detail {
-        top:7%; right:3%;
-        bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); left:3%;
+        position:absolute; top:7%; right:3%; bottom:3%; left:3%;
         padding:20px 16px;
       }
       .sm-collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -1275,6 +1318,21 @@
       .sm-monster-stat strong { font-size:clamp(25px,6vw,42px); }
     }
     @media (orientation: portrait) and (max-height: 900px) {
+      #egg-lifecycle-notice { padding:3px 7px; }
+      #egg-lifecycle-notice [data-egg-notice-title] { font-size:11px; }
+      #egg-lifecycle-notice [data-egg-notice-action] { font-size:10px; }
+      #egg-shelf [data-egg-focus] {
+        width:min(100%,420px); height:100%; min-height:0; padding:5px 7px;
+        grid-template-columns:clamp(54px,18vw,78px) minmax(0,1fr);
+        column-gap:7px; border-radius:13px;
+      }
+      .egg-focus-art[data-fallback="true"] { font-size:42px; }
+      [data-egg-focus-owner] { font-size:11px; }
+      [data-egg-focus-element] { font-size:10px; }
+      [data-egg-focus-state] { font-size:12px; }
+      [data-egg-focus-timer] { font-size:18px; }
+      [data-egg-focus-command] { padding:2px 6px; font-size:12px; }
+      [data-egg-focus-position] { top:3px; right:6px; font-size:9px; }
       #arena-topline { top:1%; padding:6px 12px; }
       #arena-skill-prompt { top:6.5%; padding:7px 10px; font-size:15px; }
       #arena-lead { top:12.5%; padding:4px 10px; }
@@ -1360,6 +1418,7 @@
 </head>
 <body>
 <main id="streammonsters-overlay" aria-live="polite">
+  <section id="portrait-arena" data-arena-variant="classic">
   <canvas id="effects-canvas" aria-hidden="true"></canvas>
   <section id="arcade-choreography" aria-hidden="true">
     <div id="arcade-portal"></div>
@@ -1446,15 +1505,6 @@
     </div>
   </section>
   </div>
-  <section id="egg-shelf"
-    data-gameplay-boundary="74"
-    aria-label="Living egg shelf"
-    data-i18n-aria-label="plugins.streamalchemy.ui.monsters.eggShelfAria">
-    <div data-egg-slots></div>
-    <div data-egg-overflow hidden></div>
-    <div data-egg-adopt-summary hidden></div>
-    <article data-egg-focus hidden></article>
-  </section>
   <div id="egg-next-landscape" data-egg-next-landscape role="status" aria-live="polite" hidden></div>
   <section id="battle"
     aria-label="Stream Monsters Arena"
@@ -1637,11 +1687,28 @@
   <div id="arena-chat-safe-zone" aria-hidden="true"></div>
   <section id="chat-detail" data-placement="upper" role="status" aria-atomic="true"></section>
   <div id="chat-card"></div>
+  </section>
+  <section id="portrait-exception-lane">
+    <div id="egg-lifecycle-notice" role="status" aria-live="polite" hidden>
+      <strong data-egg-notice-title></strong>
+      <span data-egg-notice-action></span>
+    </div>
+    <section id="egg-shelf"
+      data-gameplay-boundary="74"
+      aria-label="Living egg shelf"
+      data-i18n-aria-label="plugins.streamalchemy.ui.monsters.eggShelfAria">
+      <div data-egg-slots></div>
+      <div data-egg-overflow hidden></div>
+      <div data-egg-adopt-summary hidden></div>
+      <article data-egg-focus hidden></article>
+    </section>
+  </section>
 </main>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-rules-v8-pacing.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-portrait-arena.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-effects-renderer.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-egg-stage-view.js"></script>
@@ -2522,7 +2589,7 @@
     eggLifecycleExpiredTitle:'Egg expired',
     eggLifecycleExpiredCopy:'This egg can no longer be hatched.'
   });
-  const showEggLifecycleNotice = (type, data, notice) => showCriticalCard(
+  const showFullEggLifecycleCard = (type, data, notice) => showCriticalCard(
     type,
     {
       ...data,
@@ -2557,6 +2624,42 @@
       } : {})
     }
   );
+  const isPortraitViewport = () => Boolean(
+    window.matchMedia?.('(orientation: portrait)')?.matches
+  );
+  const showEggLifecycleNotice = (type, data, notice) => {
+    if (!isPortraitViewport()) {
+      return showFullEggLifecycleCard(type, data, notice);
+    }
+    const noticeNode = node('egg-lifecycle-notice');
+    const titleNode = noticeNode.querySelector('[data-egg-notice-title]');
+    const actionNode = noticeNode.querySelector('[data-egg-notice-action]');
+    const title = text(
+      notice.titleKey,
+      lifecycleFallbacks[notice.titleKey] || 'Stream Monsters',
+      notice.params
+    );
+    const action = notice.commands.slice(0, 2).join(' Â· ') || text(
+      notice.copyKey,
+      lifecycleFallbacks[notice.copyKey] || '',
+      notice.params
+    );
+    return (async () => {
+      titleNode.textContent = title;
+      actionNode.textContent = action;
+      noticeNode.hidden = false;
+      try {
+        await wait(Math.max(
+          1,
+          Number(notice.durationMs) || notificationDurationMs
+        ));
+      } finally {
+        noticeNode.hidden = true;
+        titleNode.textContent = '';
+        actionNode.textContent = '';
+      }
+    })();
+  };
   const showHype = async data => {
     const points = Number(data?.hype?.points) || 0;
     node('hype').style.setProperty('--hype', `${points}%`);
@@ -2580,6 +2683,14 @@
     });
   };
   const applySnapshot = data => {
+    const transportedArenaVariant =
+      data?.config?.portraitArenaVariant ??
+      data?.battle?.portraitArenaVariant;
+    node('portrait-arena').dataset.arenaVariant =
+      window.StreamMonstersPortraitArena.normalizeVariant(
+        transportedArenaVariant,
+        'classic'
+      );
     const points = Number(data?.hype?.points) || 0;
     currentCommandPrefix = value(data?.gcce?.commandPrefix, currentCommandPrefix);
     const registeredCommands = new Set(

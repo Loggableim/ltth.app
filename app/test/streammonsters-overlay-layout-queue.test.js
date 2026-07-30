@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const { JSDOM } = require('jsdom');
 const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 describe('Stream Monsters overlay layout and critical queue', () => {
@@ -481,7 +484,23 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(cancelled.shift(3).type).toBe('battle_cancelled');
   });
 
-  test('suspends every non-battle surface for the full active match and releases it after result', () => {
+  test('keeps the shelf visible while deferring its lifecycle presentation during battle', () => {
+    const overlayHtml = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(overlayHtml);
+    const battleHideSelectors = Array.from(dom.window.document.styleSheets)
+      .flatMap(sheet => Array.from(sheet.cssRules || []))
+      .filter(rule => rule.selectorText?.includes(
+        '#streammonsters-overlay[data-battle-active="true"]'
+      ))
+      .map(rule => rule.selectorText);
+    expect(battleHideSelectors.some(selector => selector.includes('#egg-shelf')))
+      .toBe(false);
+
     const queue = runtime.createPriorityQueue();
     queue.enqueue('battle_match_found', {
       matchId: 'takeover',
@@ -523,6 +542,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
 
     queue.setBattleActive(false);
     expect(queue.shift(11).type).toBe('egg_landed');
+    dom.window.close();
   });
 
   test('coalesces hype/chat, drops stale noncritical events, and never partially trims hatch groups', () => {

@@ -41,7 +41,7 @@ function freeEgg(visualId, overrides = {}) {
   };
 }
 
-async function createOverlayHarness(snapshot) {
+async function createOverlayHarness(snapshot, { portrait = false } = {}) {
   const html = fs.readFileSync(path.join(
     process.cwd(),
     'plugins',
@@ -65,8 +65,8 @@ async function createOverlayHarness(snapshot) {
       window.clearTimeout = id => timers.delete(id);
       window.setInterval = () => ++timerId;
       window.clearInterval = () => {};
-      window.matchMedia = () => ({
-        matches: false,
+      window.matchMedia = query => ({
+        matches: query === '(orientation: portrait)' ? portrait : false,
         addEventListener: () => {},
         removeEventListener: () => {}
       });
@@ -107,6 +107,11 @@ async function createOverlayHarness(snapshot) {
       window.StreamMonstersOverlayRuntime = runtime;
       window.StreamMonstersArenaDirector = ArenaDirector;
       window.StreamMonstersEggStageView = EggStageView;
+      window.StreamMonstersPortraitArena = {
+        normalizeVariant(value, fallback = 'classic') {
+          return ['split-arena', 'classic'].includes(value) ? value : fallback;
+        }
+      };
       window.StreamMonstersEffectsRenderer = {
         createEffectsRenderer: () => ({
           init: async () => true,
@@ -148,6 +153,9 @@ async function createOverlayHarness(snapshot) {
     dom,
     socketHandlers,
     arenaCalls,
+    pendingTimerDurations() {
+      return [...timers.values()].map(timer => timer.milliseconds);
+    },
     async runPendingTimers(maxPasses = 80) {
       let idlePasses = 0;
       for (let pass = 0; pass < maxPasses; pass += 1) {
@@ -176,6 +184,93 @@ async function createOverlayHarness(snapshot) {
 }
 
 describe('Stream Monsters egg overlay state reliability', () => {
+  test('uses only the compact two-line lifecycle notice in portrait and clears it', async () => {
+    const offer = freeEgg('portrait-lifecycle', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }
+    });
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: {
+        hatchDurationMs: 90_000,
+        notificationDurationMs: 12_000,
+        portraitArenaVariant: 'split-arena'
+      },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    }, { portrait: true });
+    try {
+      harness.socketHandlers.get('streammonsters:free_egg_public')({
+        eventId: 'portrait-lifecycle-public',
+        correlationId: offer.visualId,
+        eggStage: offer
+      });
+      for (let attempt = 0; attempt < 5; attempt += 1) await flush();
+
+      const notice = harness.dom.window.document.getElementById(
+        'egg-lifecycle-notice'
+      );
+      const card = harness.dom.window.document.getElementById('card');
+      expect(notice).not.toBeNull();
+      if (!notice) return;
+      expect(notice.hidden).toBe(false);
+      expect(Array.from(notice.children).filter(child => !child.hidden))
+        .toHaveLength(2);
+      expect(notice.querySelector('[data-egg-notice-title]').textContent.trim())
+        .not.toBe('');
+      expect(notice.querySelector('[data-egg-notice-action]').textContent)
+        .toBe('!adopt');
+      expect(card.classList.contains('visible')).toBe(false);
+      expect(card.hasAttribute('data-presentation')).toBe(false);
+      expect(harness.pendingTimerDurations()).toContain(5_000);
+
+      await harness.runPendingTimers();
+      expect(notice.hidden).toBe(true);
+      expect(notice.querySelector('[data-egg-notice-title]').textContent).toBe('');
+      expect(notice.querySelector('[data-egg-notice-action]').textContent).toBe('');
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('keeps the existing full lifecycle card path in landscape', async () => {
+    const offer = freeEgg('landscape-lifecycle', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }
+    });
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: {
+        hatchDurationMs: 90_000,
+        notificationDurationMs: 12_000,
+        portraitArenaVariant: 'classic'
+      },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    });
+    try {
+      harness.socketHandlers.get('streammonsters:free_egg_public')({
+        eventId: 'landscape-lifecycle-public',
+        correlationId: offer.visualId,
+        eggStage: offer
+      });
+      for (let attempt = 0; attempt < 5; attempt += 1) await flush();
+
+      expect(harness.dom.window.document.getElementById('card').classList)
+        .toContain('visible');
+      expect(harness.dom.window.document.getElementById('card').dataset.presentation)
+        .toBe('egg-offer');
+      const notice = harness.dom.window.document.getElementById(
+        'egg-lifecycle-notice'
+      );
+      expect(notice).not.toBeNull();
+      if (!notice) return;
+      expect(notice.hidden).toBe(true);
+    } finally {
+      await harness.close();
+    }
+  });
+
   test('routes rivalry, READY and streak sockets through the shared arena director once', async () => {
     const harness = await createOverlayHarness({
       hype: { points: 0 },

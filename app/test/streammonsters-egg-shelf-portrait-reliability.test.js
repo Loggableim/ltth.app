@@ -624,13 +624,16 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     }));
   });
 
-  test('anchors the portrait focus shelf above chat without changing battle geometry', () => {
+  test('anchors the portrait focus shelf in the lower exception grid', () => {
     const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
     const rules = styleRules(dom.window.document);
     const portraitRules = rules.filter(rule => (
       rule.media.includes('orientation: portrait')
     ));
     const shelfRule = portraitRules.find(rule => rule.selector === '#egg-shelf');
+    const exceptionRule = portraitRules.find(rule => (
+      rule.selector === '#portrait-exception-lane'
+    ));
     const compactCardRule = portraitRules.find(rule => (
       rule.selector ===
       '#card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"])'
@@ -643,8 +646,12 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       rule.selector === '#egg-shelf [data-egg-focus]'
     ));
 
-    expect(rootRule?.style.getPropertyValue('--egg-shelf-lane-height')).toBe('66px');
-    expect(shelfRule?.style.bottom).toBe('var(--portrait-safe-zone-height)');
+    expect(rootRule?.style.getPropertyValue('--portrait-exception-top')).toBe('74%');
+    expect(rootRule?.style.getPropertyValue('--portrait-exception-bottom')).toBe('2%');
+    expect(exceptionRule?.style.display).toBe('grid');
+    expect(exceptionRule?.style['grid-template-rows']).toBe('auto minmax(0,1fr)');
+    expect(shelfRule?.style.position).toBe('relative');
+    expect(shelfRule?.style.inset).toBe('auto');
     expect(shelfRule?.style.display).toBe('grid');
     expect(focusRule?.style.display).toBe('grid');
     expect(compactCardRule?.style['min-height']).toBe('250px');
@@ -652,7 +659,8 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     expect(offerRule?.style.top).toBe('7%');
 
     const battleRule = portraitRules.find(rule => rule.selector === '#battle');
-    expect(battleRule?.style.inset).toBe('0 0 var(--portrait-safe-zone-height)');
+    expect(battleRule?.style.inset).toBe('0px');
+    expect(battleRule?.style.overflow).toBe('hidden');
     dom.window.close();
   });
 
@@ -673,45 +681,42 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     dom.window.close();
   });
 
-  test('reserves the complete portrait information rail for every non-battle layer', () => {
+  test('keeps every portrait non-egg layer inside the clipped arena', () => {
     const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
     const portraitRules = styleRules(dom.window.document).filter(rule => (
       rule.media.includes('orientation: portrait')
     ));
     const bySelector = selector => portraitRules.find(rule => rule.selector === selector);
-    const reservedBottom = 'calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height))';
 
-    expect(bySelector(':root')?.style.getPropertyValue('--portrait-safe-zone-height'))
-      .toBe('26%');
-    expect(bySelector(':root')?.style.getPropertyValue('--portrait-info-rail-height'))
-      .toBe('clamp(146px,19vh,246px)');
-    expect(bySelector('#egg-shelf')?.style.bottom)
-      .toBe('var(--portrait-safe-zone-height)');
-    expect(bySelector('#egg-shelf')?.style.height)
-      .toBe('var(--portrait-info-rail-height)');
-    for (const selector of ['#reveal-stage', '#arcade-choreography', '#chat-card', '#chat-detail']) {
-      expect(bySelector(selector)?.style.bottom).toBe(reservedBottom);
+    expect(bySelector('#portrait-arena')?.style.overflow).toBe('clip');
+    expect(bySelector('#portrait-arena')?.style.contain).toBe('paint');
+    for (const selector of [
+      '#effects-canvas',
+      '#reveal-stage',
+      '#arcade-choreography',
+      '#chat-card',
+      '#chat-detail'
+    ]) {
+      expect(bySelector(selector)?.style.position).toBe('absolute');
     }
-    expect(bySelector('#battle')?.style.inset).toBe('0 0 var(--portrait-safe-zone-height)');
+    expect(bySelector('#battle')?.style.inset).toBe('0px');
+    expect(bySelector('#egg-shelf')?.style.overflow).toBe('hidden');
     dom.window.close();
   });
 
   test.each([
-    [477, 829, 157.51],
-    [1080, 1920, 246]
-  ])('keeps the focus card above chat at %ix%i', (width, height, shelfHeight) => {
-    const gameplayBoundary = height * 0.74;
-    const heroBottom = gameplayBoundary - shelfHeight;
-    const safeZoneTop = height * 0.74;
-    const shelfTop = heroBottom;
-    const cardMinimum = Math.min(182, Math.max(116, height * 0.15));
+    [324, 581],
+    [477, 829],
+    [1080, 1920]
+  ])('keeps the focus shelf below Likebar and inside 98 percent at %ix%i', (width, height) => {
+    const likebarBottom = height * 0.74;
+    const exceptionTop = height * 0.74;
+    const exceptionBottom = height * 0.98;
 
-    expect(width).toBeGreaterThanOrEqual(477);
-    expect(heroBottom).toBeGreaterThanOrEqual(0);
-    expect(heroBottom).toBeLessThan(safeZoneTop);
-    expect(shelfTop).toBeCloseTo(heroBottom, 5);
-    expect(shelfTop + shelfHeight).toBeCloseTo(safeZoneTop, 5);
-    expect(cardMinimum).toBeLessThanOrEqual(shelfHeight);
+    expect(width * 0.03).toBeGreaterThan(0);
+    expect(exceptionTop).toBeCloseTo(likebarBottom, 10);
+    expect(exceptionBottom).toBeLessThan(height);
+    expect(exceptionBottom - exceptionTop).toBeCloseTo(height * 0.24, 10);
   });
 
   test.each(['de', 'en', 'es', 'fr'])(
@@ -813,12 +818,19 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
 
 
 describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
-  test('uses a viewport-relative focus card above the 26 percent chat boundary', () => {
+  test('uses a compact focus card inside the lower exception lane', () => {
     const overlayHtml = fs.readFileSync(overlayPath, 'utf8');
+    const dom = new JSDOM(overlayHtml);
+    const exceptionLane = dom.window.document.getElementById('portrait-exception-lane');
+    const shelf = dom.window.document.getElementById('egg-shelf');
+
     expect(overlayHtml).toContain('[data-egg-focus]');
-    expect(overlayHtml).toMatch(/#egg-shelf\s*\{[^}]*bottom:26%/s);
+    expect(exceptionLane?.contains(shelf)).toBe(true);
     expect(overlayHtml).toMatch(
       /@media \(orientation: portrait\)\s*\{[\s\S]*?\[data-egg-focus\]\s*\{[\s\S]*?width:clamp\(/s
+    );
+    expect(overlayHtml).toMatch(
+      /@media \(orientation: portrait\) and \(max-height: 900px\)\s*\{[\s\S]*?\[data-egg-focus\]/s
     );
     expect(overlayHtml).toMatch(/\[data-egg-focus-owner\][\s\S]*?font-size:clamp\(/s);
     expect(overlayHtml).toMatch(/\[data-egg-focus-element\][\s\S]*?font-size:clamp\(/s);
@@ -828,6 +840,7 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
     expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="ready"\]/);
     expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="public"\]/);
     expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="queued"\]/);
+    dom.window.close();
   });
 
   test.each(['de', 'en', 'es', 'fr'])(
