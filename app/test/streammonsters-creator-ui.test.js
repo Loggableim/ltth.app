@@ -124,8 +124,22 @@ describe('Stream Monsters creator UI presentation controls', () => {
       .toBe('external');
     expect(battlePreview.querySelector('[data-preview-zone="likebar"]').textContent)
       .toMatch(/Likebar.*external.*reserved/i);
-    expect(battlePreview.closest('.preview-example').querySelector('p').textContent)
+    const portraitHelp = battlePreview.closest('.preview-example').querySelector('p');
+    const landscapeHelp = document.getElementById('landscapeStagePreview')
+      .closest('.preview-example')
+      .querySelector('p');
+    expect(portraitHelp.dataset.i18n).toBe(
+      'plugins.streamalchemy.ui.monsters.portraitBattlePreviewHelp'
+    );
+    expect(portraitHelp.textContent)
       .toMatch(/bounded.*Likebar/i);
+    expect(landscapeHelp.dataset.i18n).toBe(
+      'plugins.streamalchemy.ui.monsters.previewBattleHelp'
+    );
+    expect(landscapeHelp.textContent).toMatch(/74%.*26%/);
+    expect(landscapeHelp.textContent).not.toMatch(
+      /Likebar|egg shelf|Eierleiste|bandeja de huevos|étagère à œufs/i
+    );
 
     expect(html).toContain('id="obsTakeoverSourceOrder"');
     expect(html).toContain('id="obsExternalSourcesWarning"');
@@ -145,6 +159,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
         'previewStateBattle',
         'previewNormalHelp',
         'previewBattleHelp',
+        'portraitBattlePreviewHelp',
         'obsSourceOrderTitle',
         'obsSourceOrderIntro',
         'obsSourceOrderTakeover',
@@ -165,7 +180,11 @@ describe('Stream Monsters creator UI presentation controls', () => {
       }
       expect(translations.portraitArenaVariantSplitArena).toMatch(/Split Arena/i);
       expect(translations.portraitArenaVariantClassic).toMatch(/Classic/i);
-      expect(translations.previewBattleHelp).toMatch(/Likebar/i);
+      expect(translations.previewBattleHelp).toMatch(/74.*26/);
+      expect(translations.previewBattleHelp).not.toMatch(
+        /Likebar|egg shelf|Eierleiste|bandeja de huevos|étagère à œufs/i
+      );
+      expect(translations.portraitBattlePreviewHelp).toMatch(/Likebar/i);
     }
   );
 });

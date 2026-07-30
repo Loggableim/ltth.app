@@ -299,6 +299,7 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       'portraitArenaVariantPreviewClassic',
       'portraitArenaLikebarReserved',
       'portraitArenaEggShelf',
+      'portraitBattlePreviewHelp',
       'overlayProfile',
       'overlayProfileTikTokStudio',
       'overlayProfileSummary'
