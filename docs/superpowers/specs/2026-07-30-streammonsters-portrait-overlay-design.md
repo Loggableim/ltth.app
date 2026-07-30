@@ -55,6 +55,29 @@ No overlay-owned visual element may enter the safe zone in portrait mode.
   today. The TikTok safe zone remains untouched.
 - Landscape behavior is not redesigned or regressed.
 
+### Battle readability contract
+
+A battle is a live decision surface, not a written combat log. In portrait it
+uses the same 0–74 percent gameplay area, with each phase exposing only the
+information the viewer needs next:
+
+- The top status area permanently shows the two fighters, their element, and
+  large HP bars. It does not repeat long owner, rank, or narrative text.
+- The action phase has one centered, single-line callout: actor, action, and
+  the decisive result (for example `Luna attacks · 24 DMG`). At most one short
+  badge may accompany it for an effect such as Critical, Shield, or Element
+  Advantage. Detailed damage formulae and narrated descriptions stay out of
+  the overlay.
+- The choice phase shows the prominent `A / B / C` choices as the sole primary
+  instruction. The selected action name remains readable, but explanatory
+  prose, battle summaries, and unrelated persistent hints are hidden.
+- The result phase shows a compact winner/result card after the battle. It
+  must not replay a multi-line turn history.
+
+This changes presentation only: battle rules, sealed-choice privacy, the
+existing `A / B / C` command protocol, effects, and stored results stay
+unchanged.
+
 ### Implementation boundaries
 
 The change is limited to the Stream Monsters overlay presentation and its
@@ -77,9 +100,13 @@ timer-driven parallel state machine.
    without overlap.
 4. Active battle presentation still occupies only the gameplay 74 percent and
    hides conflicting persistent layers.
-5. Existing landscape geometry and public event sequencing continue to pass
+5. At 1080 x 1920, battle status, action, choice, and result phases make one
+   next action unmistakable: fighter/HP, current result, `A / B / C` choice,
+   or final winner. No multi-line combat log or description competes with that
+   primary item.
+6. Existing landscape geometry and public event sequencing continue to pass
    their focused regression tests.
-6. The rendered portrait demo is inspected in a real browser at 1080 x 1920;
+7. The rendered portrait demo is inspected in a real browser at 1080 x 1920;
    a screenshot provides visual evidence for the final hand-off.
 
 ## Test strategy
@@ -92,7 +119,8 @@ timer-driven parallel state machine.
 - Run the focused overlay, egg-shelf, arena-view, and chat suites using the
   bundled Node runtime when native dependencies require it.
 - Exercise the built-in Stream Monsters demo in a real browser and inspect the
-  portrait rendered state for the representative events above.
+  portrait rendered state for the representative events above plus the battle
+  choice, action, and result phases.
 
 ## Non-goals
 
