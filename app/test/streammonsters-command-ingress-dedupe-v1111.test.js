@@ -29,7 +29,7 @@ function commandDefinition() {
 }
 
 describe('Stream Monsters durable command ingress deduplication', () => {
-  test('executes one provider command only once across fallback and GCCE ingress', async () => {
+  test('deduplicates one provider command across fallback and GCCE without a second effect', async () => {
     const { sqlite, store } = createStore();
     let executions = 0;
     const emitted = [];
@@ -73,6 +73,15 @@ describe('Stream Monsters durable command ingress deduplication', () => {
     });
     expect(executions).toBe(1);
     expect(emitted).toHaveLength(1);
+    const receipts = sqlite.prepare(`
+      SELECT event_id, transport
+      FROM streammonsters_command_ingress_events
+    `).all();
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]).toEqual(expect.objectContaining({
+      event_id: expect.stringMatching(/^command:/),
+      transport: 'fallback'
+    }));
     sqlite.close();
   });
 

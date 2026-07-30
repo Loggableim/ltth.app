@@ -580,7 +580,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     );
   });
 
-  test('keeps a readable action card and visible lead from public combat state', async () => {
+  test('shows the full readable action contract from public combat state', async () => {
     mountArena();
     const view = ArenaView.createArenaView({
       document,
@@ -646,9 +646,11 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-action-copy').textContent)
       .toContain('restores health');
     const metrics = document.getElementById('arena-action-metrics').textContent;
-    for (const amount of ['7', '1', '3', '4']) expect(metrics).toContain(amount);
-    expect(metrics)
-      .toMatch(/evad|auswei/i);
+    expect(metrics).toBe(
+      'Schaden 7 · Schildtreffer 1 · Schild +3 · Heilung 4 · Ausweichen'
+    );
+    expect(document.getElementById('arena-action-card').classList)
+      .toContain('visible');
   });
 
   test('clears the last action card before the result and keeps the next roster clean', async () => {
@@ -1232,16 +1234,34 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     });
     const specialCard = document.querySelector('[data-slot="1"] [data-skill="C"]');
 
+    openAt(74.5);
+    expect(specialCard.classList).not.toContain('anticipation-75');
+    expect(specialCard.querySelector('.skill-charge').textContent)
+      .toMatch(/^74%.*26 charge missing$/);
+
     openAt(75);
     expect(specialCard.classList).toContain('anticipation-75');
     expect(specialCard.querySelector('.skill-charge').textContent)
       .toMatch(/^75%.*25 charge missing$/);
+
+    openAt(89.5);
+    expect(specialCard.classList).toContain('anticipation-75');
+    expect(specialCard.classList).not.toContain('anticipation-90');
+    expect(specialCard.querySelector('.skill-charge').textContent)
+      .toMatch(/^89%.*11 charge missing$/);
 
     openAt(90);
     expect(specialCard.classList).not.toContain('anticipation-75');
     expect(specialCard.classList).toContain('anticipation-90');
     expect(specialCard.querySelector('.skill-charge').textContent)
       .toMatch(/^90%.*10 charge missing$/);
+
+    openAt(99.5);
+    expect(specialCard.classList).toContain('anticipation-90');
+    expect(specialCard.classList).not.toContain('anticipation-100');
+    expect(specialCard.classList).not.toContain('ready');
+    expect(specialCard.querySelector('.skill-charge').textContent)
+      .toMatch(/^99%.*1 charge missing$/);
 
     openAt(100);
     expect(specialCard.classList).not.toContain('anticipation-90');
@@ -1330,6 +1350,20 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toMatch(/^NEXT.*\bA\b.*\bC\b/);
     expect(document.querySelector('#arena-skill-prompt').textContent)
       .not.toMatch(/\bB\b/);
+
+    view.openChoice({
+      matchId: 'match-next-actions',
+      round: 3,
+      choices: ['A', 'C'],
+      fighters: [
+        { slot: 1, name: 'Ashfang', skills: skills(true) },
+        { slot: 2, name: 'Ripple', skills: skills(false) }
+      ]
+    });
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .toMatch(/^NEXT.*\bA\b/);
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .not.toMatch(/\bC\b/);
   });
 
   test('updates the deadline countdown from the durable timestamp and clears it at terminal state', async () => {

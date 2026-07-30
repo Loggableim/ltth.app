@@ -767,6 +767,9 @@
   function buildArcadeTimeline(eventType, payload = {}, options = {}) {
     const type = normalizedEventType(eventType);
     const element = elementValue(payload);
+    const rulesVersion = numeric(
+      payload.rulesVersion ?? payload.action?.rulesVersion
+    );
     let scene = 'card';
     let beats = [];
     if (type === 'elemental_hour') {
@@ -934,7 +937,9 @@
       beats = [{
         type: 'sealed_card',
         atMs: 0,
-        durationMs: RULES_V8_PACING.LOCK_FLASH_MS,
+        durationMs: rulesVersion >= 8
+          ? RULES_V8_PACING.LOCK_FLASH_MS
+          : 420,
         slot: numeric(payload.decision?.slot ?? payload.slot),
         locked: payload.decision?.locked !== false,
         source: payload.decision?.source || payload.source || 'viewer',
@@ -945,7 +950,9 @@
       beats = [{
         type: 'simultaneous_reveal',
         atMs: 0,
-        durationMs: RULES_V8_PACING.JOINT_REVEAL_MS,
+        durationMs: rulesVersion >= 8
+          ? RULES_V8_PACING.JOINT_REVEAL_MS
+          : 680,
         choices: (Array.isArray(payload.choices) ? payload.choices : [])
           .map(choice => ({
             slot: numeric(choice?.slot),

@@ -16,7 +16,7 @@ async function waitFor(predicate, attempts = 30) {
 }
 
 describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
-  test('animates only missed replay pages before applying the final reconnect snapshot', async () => {
+  test('animates missed pages once and reconnects at the current cursor without replay delay', async () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
@@ -26,6 +26,7 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
     const socketHandlers = new Map();
     const arenaOperations = [];
     const replayRequests = [];
+    let replayPlaybackCalls = 0;
     const clearedIntervals = [];
     let snapshot = {
       hype: { points: 0 },
@@ -151,12 +152,21 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
             applySnapshot: value => arenaOperations.push(
               `snapshot:${value?.matches?.[0]?.cursor ?? 'none'}`
             ),
-            openChoice: value => arenaOperations.push(`open:${value.sequence || 7}`),
-            lockChoice: value => arenaOperations.push(`lock:${value.sequence || 5}`),
+            openChoice: value => {
+              replayPlaybackCalls += 1;
+              arenaOperations.push(`open:${value.sequence || 7}`);
+            },
+            lockChoice: value => {
+              replayPlaybackCalls += 1;
+              arenaOperations.push(`lock:${value.sequence || 5}`);
+            },
             revealChoices: value => arenaOperations.push(`reveal:${value.choices?.length || 0}`),
-            playAction: async value => arenaOperations.push(
-              `action:${value.eventSequence || value.action?.eventSequence}`
-            ),
+            playAction: async value => {
+              replayPlaybackCalls += 1;
+              arenaOperations.push(
+                `action:${value.eventSequence || value.action?.eventSequence}`
+              );
+            },
             complete: async () => {},
             cancel: async () => {},
             destroy: () => arenaOperations.push('destroy')
@@ -201,12 +211,14 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
         'open:7',
         'snapshot:7'
       ]);
+      expect(replayPlaybackCalls).toBe(3);
 
       arenaOperations.length = 0;
       await socketHandlers.get('connect')();
       await waitFor(() => arenaOperations.includes('snapshot:7'));
       expect(replayRequests).toEqual([4, 6]);
       expect(arenaOperations).toEqual(['snapshot:7']);
+      expect(replayPlaybackCalls).toBe(3);
 
       dom.window.dispatchEvent(new dom.window.Event('pagehide'));
       dom.window.dispatchEvent(new dom.window.Event('beforeunload'));

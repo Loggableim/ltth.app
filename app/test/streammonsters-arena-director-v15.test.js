@@ -211,12 +211,17 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     const durations = {
       lock: ArenaDirector.buildArcadeTimeline(
         'battle_choice_locked',
-        { eventId: 'paced-lock', decision: { slot: 1, locked: true } }
+        {
+          eventId: 'paced-lock',
+          rulesVersion: 8,
+          decision: { slot: 1, locked: true }
+        }
       ).durationMs,
       reveal: ArenaDirector.buildArcadeTimeline(
         'battle_choices_revealed',
         {
           eventId: 'paced-reveal',
+          rulesVersion: 8,
           choices: [{ slot: 1, choice: 'A' }, { slot: 2, choice: 'B' }]
         }
       ).durationMs,
@@ -252,6 +257,25 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       result: ArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS
     });
   });
+
+  test.each([5, 6, 7])(
+    'preserves legacy lock and reveal timing when replaying rules-v%s events',
+    rulesVersion => {
+      const lock = ArenaDirector.buildArcadeTimeline('battle_choice_locked', {
+        eventId: `legacy-lock-v${rulesVersion}`,
+        rulesVersion,
+        decision: { slot: 1, locked: true }
+      });
+      const reveal = ArenaDirector.buildArcadeTimeline('battle_choices_revealed', {
+        eventId: `legacy-reveal-v${rulesVersion}`,
+        rulesVersion,
+        choices: [{ slot: 1, choice: 'A' }, { slot: 2, choice: 'B' }]
+      });
+
+      expect(lock.durationMs).toBe(420);
+      expect(reveal.durationMs).toBe(680);
+    }
+  );
 
   test.each([
     ['attack', 'A'],

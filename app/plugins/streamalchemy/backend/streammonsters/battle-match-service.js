@@ -237,9 +237,21 @@ class BattleMatchService {
   }
 
   actionPromptChoices(match) {
-    return this.isDefenseLocked(match)
+    const candidates = this.isDefenseLocked(match)
       ? ['A', 'C']
       : ['A', 'B', 'C'];
+    if (!this.isRulesV8(match)) return candidates;
+    const participants = Array.isArray(match?.participants)
+      ? match.participants.filter(participant => participant?.roster)
+      : [];
+    if (!participants.length) return candidates;
+    const decks = participants.map(participant => (
+      this.projectPublicSkillDeck(participant, match)
+    ));
+    return candidates.filter(choice => decks.every(deck => {
+      const skill = deck.find(entry => entry?.choice === choice);
+      return skill && skill.available !== false;
+    }));
   }
 
   chargeWindow(match) {
@@ -2519,6 +2531,9 @@ class BattleMatchService {
       const decision = payload.decision || payload;
       return {
         matchId: match.matchId,
+        ...(this.isRulesV8(match) ? {
+          rulesVersion: Number(match.rulesVersion) || 8
+        } : {}),
         decision: {
           round: Number(decision.round) || 0,
           slot: Number(decision.slot) || 0,
@@ -2531,6 +2546,9 @@ class BattleMatchService {
     if (eventType === 'streammonsters:battle_choices_revealed') {
       return {
         matchId: match.matchId,
+        ...(this.isRulesV8(match) ? {
+          rulesVersion: Number(match.rulesVersion) || 8
+        } : {}),
         round: Number(payload.round) || 0,
         choices: projectBattleChoices(payload.choices)
       };

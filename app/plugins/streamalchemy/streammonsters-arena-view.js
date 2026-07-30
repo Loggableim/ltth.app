@@ -745,7 +745,8 @@
           projectedCharge >= required ||
           (canReachRequired && asOfMs >= readyAtMs);
         const charge = ready ? required : Math.max(0, Math.min(required, projectedCharge));
-        const chargePercent = Math.round((charge / required) * 100);
+        const rawChargePercent = (charge / required) * 100;
+        const chargePercent = ready ? 100 : Math.floor(rawChargePercent);
         const missingCharge = Math.max(0, Math.ceil(required - charge));
         setSkillText(
           'skill-charge',
@@ -759,9 +760,12 @@
         card.classList.toggle('ready', ready);
         card.classList.toggle(
           'anticipation-75',
-          !ready && chargePercent >= 75 && chargePercent < 90
+          !ready && rawChargePercent >= 75 && rawChargePercent < 90
         );
-        card.classList.toggle('anticipation-90', !ready && chargePercent >= 90);
+        card.classList.toggle(
+          'anticipation-90',
+          !ready && rawChargePercent >= 90
+        );
         card.classList.toggle('anticipation-100', ready);
       }
     }
@@ -1088,8 +1092,19 @@
       const choices = Array.isArray(payload.choices) && payload.choices.length
         ? payload.choices
         : ['A', 'B', 'C'];
+      const skillDecks = [1, 2]
+        .map(slot => stateBySlot.get(slot)?.skills)
+        .filter(skills => Array.isArray(skills) && skills.length);
+      const universallyAvailable = choice => (
+        !skillDecks.length ||
+        skillDecks.every(skills => {
+          const skill = skills.find(entry => entry?.choice === choice);
+          return skill && skill.available !== false;
+        })
+      );
       const nextChoices = choices
         .filter(choice => ['A', 'B', 'C'].includes(choice))
+        .filter(universallyAvailable)
         .slice(0, 2);
       const renderChoiceCopy = () => {
         setLabelText('arena-round', 'round', { round });

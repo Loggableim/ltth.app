@@ -176,19 +176,126 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(bilingual.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
   });
 
-  test('keeps a representative four-round fight inside the 35-45 second target', () => {
-    const pacing = ArenaDirector.RULES_V8_PACING;
-    const representativeDurationMs =
-      pacing.ROSTER_MS +
-      (4 * pacing.SKILL_CHOICE_MS) +
-      (3 * (pacing.JOINT_REVEAL_MS + (2 * pacing.ACTION_MS))) +
-      pacing.JOINT_REVEAL_MS +
-      pacing.TERMINAL_ACTION_MS +
-      pacing.COLLAPSE_MS;
+  test('measures a controlled-clock four-round K.O. inside the 35-45 second target', () => {
+    const { sqlite, store } = createStore();
+    let nowMs = 1_000;
+    insertMonster(sqlite, {
+      id: 'alpha-v8',
+      userId: 'viewer-a',
+      name: 'Ashfang'
+    });
+    insertMonster(sqlite, {
+      id: 'beta-v8',
+      userId: 'viewer-b',
+      name: 'Ripple',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    insertMonster(sqlite, {
+      id: 'alpha-reserve-v8',
+      userId: 'viewer-a',
+      name: 'Ashfang Reserve'
+    });
+    insertMonster(sqlite, {
+      id: 'beta-reserve-v8',
+      userId: 'viewer-b',
+      name: 'Ripple Reserve',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const service = createService({ store, now: () => nowMs });
+    service.join({ userId: 'viewer-a' });
+    const joined = service.join({ userId: 'viewer-b' });
+    const matchId = joined.match.matchId;
+    const createdAtMs = service.getMatch(matchId).createdAtMs;
 
-    expect(representativeDurationMs).toBe(38_600);
-    expect(representativeDurationMs).toBeGreaterThanOrEqual(35_000);
-    expect(representativeDurationMs).toBeLessThanOrEqual(45_000);
+    nowMs += ArenaDirector.RULES_V8_PACING.ROSTER_MS - 1;
+    service.lockRoster({ userId: 'viewer-a', monsterId: 'alpha-v8' });
+    service.lockRoster({ userId: 'viewer-b', monsterId: 'beta-v8' });
+
+    service.battleService.resolveInteractiveRound = jest.fn(({ fighters, round }) => {
+      const terminal = round === 4;
+      const alphaState = {
+        hp: 30,
+        maxHp: 30,
+        shield: 0,
+        charge: 0
+      };
+      const betaState = {
+        hp: terminal ? 0 : 30 - (round * 5),
+        maxHp: 30,
+        shield: 0,
+        charge: 0
+      };
+      return {
+        terminal,
+        winnerId: terminal ? 'alpha-v8' : null,
+        state: {
+          'alpha-v8': alphaState,
+          'beta-v8': betaState
+        },
+        actions: fighters.map((fighter, index) => ({
+          actorId: fighter.monster_id,
+          targetId: fighters[1 - index].monster_id,
+          round,
+          choice: 'A',
+          skill: { type: 'attack', element: fighter.element },
+          hits: [{
+            index: 1,
+            hpDamage: terminal && index === 0 ? 15 : 5,
+            shieldAbsorbed: 0,
+            evaded: false
+          }],
+          outcomes: [],
+          actorState: index === 0 ? alphaState : betaState,
+          targetState: index === 0 ? betaState : alphaState,
+          terminal: terminal && index === 0
+        }))
+      };
+    });
+
+    for (let round = 1; round <= 4; round += 1) {
+      const opened = service.getMatch(matchId);
+      nowMs = opened.actionDeadlineMs - 1;
+      submitRound(service, round);
+      if (round < 4) {
+        const cinematic = service.getMatch(matchId);
+        nowMs = cinematic.chargePauseUntilMs;
+        expect(service.sweep().cinematicsResumed).toBe(1);
+      }
+    }
+
+    const completed = service.getMatch(matchId);
+    const authoritativeDurationMs = completed.completedAtMs - createdAtMs;
+    expect(completed.state).toBe('completed');
+    expect(completed.result.terminalReason).toBe('knockout');
+    expect(authoritativeDurationMs).toBeGreaterThanOrEqual(35_000);
+    expect(authoritativeDurationMs).toBeLessThanOrEqual(45_000);
+  });
+
+  test('only advertises Special after defense locks when both fighters can use it', () => {
+    const { sqlite, service, matchId } = createLockedMatch();
+    sqlite.prepare(`
+      UPDATE streammonsters_matches SET round_number = 8 WHERE match_id = ?
+    `).run(matchId);
+    sqlite.prepare(`
+      UPDATE streammonsters_match_participants
+      SET combat_state_json = CASE locked_monster_id
+        WHEN 'alpha-v8' THEN '{"hp":30,"maxHp":30,"shield":0,"charge":100}'
+        ELSE '{"hp":30,"maxHp":30,"shield":0,"charge":90}'
+      END
+      WHERE match_id = ?
+    `).run(matchId);
+
+    expect(service.actionPromptChoices(service.getMatch(matchId))).toEqual(['A']);
+
+    sqlite.prepare(`
+      UPDATE streammonsters_match_participants
+      SET combat_state_json = '{"hp":30,"maxHp":30,"shield":0,"charge":100}'
+      WHERE match_id = ?
+    `).run(matchId);
+    expect(service.actionPromptChoices(service.getMatch(matchId)))
+      .toEqual(['A', 'C']);
   });
 
   test('fits both locale pages inside the authoritative six-second choice deadline', () => {
@@ -294,6 +401,24 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(match.chargePauseUntilMs - match.chargePauseStartedAtMs)
       .toBe(directorPauseMs);
     expect(directorPauseMs).toBeLessThanOrEqual(3_200);
+
+    const replayEvents = service.getPublicNormalizedReplay(matchId, 0, 100).events;
+    const lock = replayEvents.find(event => (
+      event.type === 'streammonsters:battle_choice_locked'
+    ));
+    const reveal = replayEvents.find(event => (
+      event.type === 'streammonsters:battle_choices_revealed'
+    ));
+    expect(lock.payload.rulesVersion).toBe(8);
+    expect(reveal.payload.rulesVersion).toBe(8);
+    expect(ArenaDirector.buildArcadeTimeline(
+      'battle_choice_locked',
+      lock.payload
+    ).durationMs).toBe(ArenaDirector.RULES_V8_PACING.LOCK_FLASH_MS);
+    expect(ArenaDirector.buildArcadeTimeline(
+      'battle_choices_revealed',
+      reveal.payload
+    ).durationMs).toBe(ArenaDirector.RULES_V8_PACING.JOINT_REVEAL_MS);
   });
 
   test('opens the next choice deadline only after reveal actions and Collapse finish', () => {

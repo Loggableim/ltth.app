@@ -1176,7 +1176,10 @@
       #battle-effects-canvas { z-index:3; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .arena-skill-card.ready,
+      .arena-skill-card.ready {
+        animation:none!important;
+        filter:none!important;
+      }
       .arena-skill-card.anticipation-90 {
         animation:none!important;
         filter:none!important;
