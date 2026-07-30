@@ -1,8 +1,11 @@
 (function attachStreamMonstersOverlayRuntime(root, factory) {
-  const api = factory();
+  const pacing = typeof module === 'object' && module.exports
+    ? require('./streammonsters-rules-v8-pacing')
+    : root.StreamMonstersRulesV8Pacing;
+  const api = factory(pacing);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersOverlayRuntime = api;
-}(typeof globalThis === 'object' ? globalThis : this, () => {
+}(typeof globalThis === 'object' ? globalThis : this, RULES_V8_PACING => {
   'use strict';
 
   const CRITICAL_TYPES = new Set([
@@ -1646,6 +1649,7 @@
   }
 
   return {
+    RULES_V8_PACING,
     ANCHORS,
     apiErrorKey,
     anchorPlacement,

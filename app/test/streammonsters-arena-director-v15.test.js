@@ -169,7 +169,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       }
     });
 
-    expect(timeline.durationMs).toBeGreaterThanOrEqual(1_000);
+    expect(timeline.durationMs).toBe(900);
     expect(timeline.durationMs).toBeLessThanOrEqual(1_600);
     const types = timeline.beats.map(beat => beat.type);
     expect(types).toEqual(expect.arrayContaining([
@@ -192,6 +192,65 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     ))).toEqual(expect.objectContaining({ evaded: true }));
     expect(timeline.beats.filter(beat => beat.effect?.scene === 'special')).toHaveLength(1);
     expect(timeline.beats.filter(beat => beat.type === 'hud')).toHaveLength(2);
+  });
+
+  test('uses the shared v8 duration for every combat presentation phase', () => {
+    const actionPayload = terminal => ({
+      eventId: `paced-action-${terminal}`,
+      action: {
+        rulesVersion: 8,
+        actorSlot: 1,
+        targetSlot: 2,
+        choice: 'A',
+        skill: { name: 'Paced Strike', type: 'attack', element: 'Ember' },
+        hits: [{ index: 1, hpDamage: 5, shieldAbsorbed: 0, evaded: false }],
+        outcomes: [],
+        terminal
+      }
+    });
+    const durations = {
+      lock: ArenaDirector.buildArcadeTimeline(
+        'battle_choice_locked',
+        { eventId: 'paced-lock', decision: { slot: 1, locked: true } }
+      ).durationMs,
+      reveal: ArenaDirector.buildArcadeTimeline(
+        'battle_choices_revealed',
+        {
+          eventId: 'paced-reveal',
+          choices: [{ slot: 1, choice: 'A' }, { slot: 2, choice: 'B' }]
+        }
+      ).durationMs,
+      action: ArenaDirector.buildArcadeTimeline(
+        'battle_skill_used',
+        actionPayload(false)
+      ).durationMs,
+      collapse: ArenaDirector.buildArcadeTimeline(
+        'battle_arena_collapse',
+        {
+          eventId: 'paced-collapse',
+          round: 4,
+          damage: 2,
+          fighters: [{ slot: 1, hpDamage: 1, hp: 20, shield: 0 }]
+        }
+      ).durationMs,
+      terminalAction: ArenaDirector.buildArcadeTimeline(
+        'battle_skill_used',
+        actionPayload(true)
+      ).durationMs,
+      result: ArenaDirector.buildArcadeTimeline(
+        'battle_completed',
+        { eventId: 'paced-result', winnerSlot: 1 }
+      ).durationMs
+    };
+
+    expect(durations).toEqual({
+      lock: ArenaDirector.RULES_V8_PACING.LOCK_FLASH_MS,
+      reveal: ArenaDirector.RULES_V8_PACING.JOINT_REVEAL_MS,
+      action: ArenaDirector.RULES_V8_PACING.ACTION_MS,
+      collapse: ArenaDirector.RULES_V8_PACING.COLLAPSE_MS,
+      terminalAction: ArenaDirector.RULES_V8_PACING.TERMINAL_ACTION_MS,
+      result: ArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS
+    });
   });
 
   test.each([

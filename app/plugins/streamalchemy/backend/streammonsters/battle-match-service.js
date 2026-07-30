@@ -26,14 +26,12 @@ const {
   buildCombatReport,
   sanitizeCombatReport
 } = require('./battle-report');
+const RULES_V8_PACING = require('../../streammonsters-rules-v8-pacing');
 const ArenaDirector = require('../../streammonsters-arena-director');
 
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
 const STAT_WINDOW_MS = 15_000;
-const RULES_V8_ROSTER_WINDOW_MS = 6_000;
-const RULES_V8_ACTION_WINDOW_MS = 6_000;
-const RULES_V8_STAT_WINDOW_MS = 10_000;
 const RULES_V5_ROSTER_WINDOW_MS = 15_000;
 const RULES_V5_ACTION_WINDOW_MS = 8_000;
 const RULES_V5_STAT_WINDOW_MS = 30_000;
@@ -101,7 +99,7 @@ class BattleMatchService {
     secondsPerLocale = 6,
     gameplayPace = 'arcade-rally',
     portraitBattleMode = 'takeover-74',
-    sweepIntervalMs = 1_000,
+    sweepIntervalMs = RULES_V8_PACING.SERVICE_SWEEP_MS,
     autoStart = true
   }) {
     this.store = store;
@@ -135,7 +133,11 @@ class BattleMatchService {
     this.portraitBattleMode = portraitBattleMode === 'takeover-74'
       ? portraitBattleMode
       : 'takeover-74';
-    this.sweepIntervalMs = Math.max(250, Number(sweepIntervalMs) || 1_000);
+    this.rulesV8Pacing = RULES_V8_PACING;
+    this.sweepIntervalMs = Math.max(
+      RULES_V8_PACING.SERVICE_SWEEP_MS,
+      Number(sweepIntervalMs) || RULES_V8_PACING.SERVICE_SWEEP_MS
+    );
     this.sweepTimer = null;
     this.pauseActiveChargesForReconnect();
     if (autoStart) this.start();
@@ -445,18 +447,18 @@ class BattleMatchService {
   }
 
   rosterWindowMs(match = null) {
-    if (this.isRulesV8(match)) return RULES_V8_ROSTER_WINDOW_MS;
+    if (this.isRulesV8(match)) return RULES_V8_PACING.ROSTER_MS;
     return this.isRulesV6(match) ? ROSTER_WINDOW_MS : RULES_V5_ROSTER_WINDOW_MS;
   }
 
   actionWindowMs(match = null) {
-    if (this.isRulesV8(match)) return RULES_V8_ACTION_WINDOW_MS;
+    if (this.isRulesV8(match)) return RULES_V8_PACING.SKILL_CHOICE_MS;
     if (this.isRulesV7(match)) return RULES_V7_ACTION_WINDOW_MS;
     return this.isRulesV6(match) ? ACTION_WINDOW_MS : RULES_V5_ACTION_WINDOW_MS;
   }
 
   statWindowMs(match = null) {
-    if (this.isRulesV8(match)) return RULES_V8_STAT_WINDOW_MS;
+    if (this.isRulesV8(match)) return RULES_V8_PACING.STAT_CHOICE_MS;
     return this.isRulesV6(match) ? STAT_WINDOW_MS : RULES_V5_STAT_WINDOW_MS;
   }
 
@@ -1676,7 +1678,7 @@ class BattleMatchService {
       });
     }
     const nowMs = this.now();
-    const cinematicPauseMs = outcome.actions.reduce((total, action) => {
+    const actionPauseMs = outcome.actions.reduce((total, action) => {
       if (this.isRulesV8(match)) {
         return total + ArenaDirector.buildArcadeTimeline(
           'battle_skill_used',
@@ -1697,6 +1699,15 @@ class BattleMatchService {
         0
       );
     }, 0);
+    const cinematicPauseMs = actionPauseMs + (
+      this.isRulesV8(match)
+        ? RULES_V8_PACING.JOINT_REVEAL_MS + (
+            match.roundNumber >= ARENA_COLLAPSE_ROUND
+              ? RULES_V8_PACING.COLLAPSE_MS
+              : 0
+          )
+        : 0
+    );
     const changed = this.db.prepare(`
       UPDATE streammonsters_matches
       SET phase_version = phase_version + 1,

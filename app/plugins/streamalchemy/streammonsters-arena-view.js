@@ -92,7 +92,21 @@
         skillIcon: boundedReportText(skill.skillIcon, 16)
       }
       : null;
-    return { decisiveSkill, fighters };
+    const normalizeHighlight = highlight => {
+      const slot = boundedReportInteger(highlight?.slot);
+      const amount = boundedReportInteger(highlight?.amount);
+      return [1, 2].includes(slot) && amount > 0 ? { slot, amount } : null;
+    };
+    const highlights = {
+      largestHit: normalizeHighlight(value.highlights?.largestHit),
+      largestBlock: normalizeHighlight(value.highlights?.largestBlock),
+      largestHeal: normalizeHighlight(value.highlights?.largestHeal)
+    };
+    return {
+      decisiveSkill,
+      fighters,
+      ...(Object.values(highlights).some(Boolean) ? { highlights } : {})
+    };
   }
 
   function unwrapAction(payload = {}) {
@@ -187,6 +201,10 @@
       cancelled: 'Kampf abgebrochen',
       shield: 'Schild',
       special: 'Special',
+      specialMissing: '{amount} charge missing',
+      sealedWaiting: '{name} sealed - waiting for opponent',
+      choicesSealed: 'Both choices sealed - reveal now',
+      next: 'NEXT',
       lead: '{name} führt',
       tied: 'Gleichstand',
       knockoutResult: 'K.-O.',
@@ -204,6 +222,9 @@
       combatReportSpecials: 'Specials {count}',
       combatReportXp: 'XP +{amount}',
       combatReportElo: 'ELO {after} ({delta})',
+      combatReportLargestHit: 'Largest hit {amount} - {name}',
+      combatReportLargestBlock: 'Largest block {amount} - {name}',
+      combatReportLargestHeal: 'Largest heal {amount} - {name}',
       damageMetric: 'Schaden {amount}',
       shieldAbsorbedMetric: 'Schildtreffer {amount}',
       shieldGainMetric: 'Schild +{amount}',
@@ -239,6 +260,10 @@
       cancelled: 'arenaCancelled',
       shield: 'arenaShieldLabel',
       special: 'arenaSpecialLabel',
+      specialMissing: 'arenaSpecialMissing',
+      sealedWaiting: 'arenaSealedWaiting',
+      choicesSealed: 'arenaChoicesSealed',
+      next: 'arenaNext',
       lead: 'arenaLeadLabel',
       tied: 'arenaTiedLabel',
       knockoutResult: 'arenaKnockoutResult',
@@ -256,6 +281,9 @@
       combatReportSpecials: 'arenaCombatReportSpecials',
       combatReportXp: 'arenaCombatReportXp',
       combatReportElo: 'arenaCombatReportElo',
+      combatReportLargestHit: 'arenaCombatReportLargestHit',
+      combatReportLargestBlock: 'arenaCombatReportLargestBlock',
+      combatReportLargestHeal: 'arenaCombatReportLargestHeal',
       damageMetric: 'arenaDamageMetric',
       shieldAbsorbedMetric: 'arenaShieldAbsorbedMetric',
       shieldGainMetric: 'arenaShieldGainMetric',
@@ -375,6 +403,28 @@
           round: decisive.round
         });
         target.appendChild(decisiveNode);
+      }
+      if (report.highlights) {
+        const highlightNode = documentLike.createElement('div');
+        highlightNode.className = 'arena-result-highlights';
+        highlightNode.dataset.reportHighlights = 'true';
+        [
+          ['largestHit', 'combatReportLargestHit'],
+          ['largestBlock', 'combatReportLargestBlock'],
+          ['largestHeal', 'combatReportLargestHeal']
+        ].forEach(([field, label]) => {
+          const highlight = report.highlights[field];
+          if (!highlight) return;
+          const fighterState = stateBySlot.get(highlight.slot) || {};
+          const metric = documentLike.createElement('span');
+          metric.dataset.reportHighlight = field;
+          metric.textContent = formatLabel(label, {
+            amount:highlight.amount,
+            name:safeDisplayName(fighterState.viewerName, fighterState.name)
+          });
+          highlightNode.appendChild(metric);
+        });
+        target.appendChild(highlightNode);
       }
       report.fighters.forEach(fighter => {
         const fighterState = stateBySlot.get(fighter.slot) || {};
@@ -613,7 +663,14 @@
         if (!card) continue;
         const skill = skills.find(entry => entry?.choice === choice);
         card.hidden = !skill;
-        card.classList.remove('charging', 'ready', 'unavailable');
+        card.classList.remove(
+          'charging',
+          'ready',
+          'unavailable',
+          'anticipation-75',
+          'anticipation-90',
+          'anticipation-100'
+        );
         if (!skill) {
           for (const className of [
             'skill-icon',
@@ -688,9 +745,24 @@
           projectedCharge >= required ||
           (canReachRequired && asOfMs >= readyAtMs);
         const charge = ready ? required : Math.max(0, Math.min(required, projectedCharge));
-        setSkillText('skill-charge', `${Math.round((charge / required) * 100)}%`);
+        const chargePercent = Math.round((charge / required) * 100);
+        const missingCharge = Math.max(0, Math.ceil(required - charge));
+        setSkillText(
+          'skill-charge',
+          ready
+            ? `${chargePercent}%`
+            : `${chargePercent}% \u00b7 ${formatLabel('specialMissing', {
+                amount:missingCharge
+              })}`
+        );
         card.classList.toggle('charging', !ready);
         card.classList.toggle('ready', ready);
+        card.classList.toggle(
+          'anticipation-75',
+          !ready && chargePercent >= 75 && chargePercent < 90
+        );
+        card.classList.toggle('anticipation-90', !ready && chargePercent >= 90);
+        card.classList.toggle('anticipation-100', ready);
       }
     }
 
@@ -828,7 +900,7 @@
 
     function activateMatch(matchId) {
       const nextId = matchId ? String(matchId) : activeMatchId;
-      if (activeMatchId && nextId && activeMatchId !== nextId) {
+      if (nextId && activeMatchId !== nextId) {
         resetFighters();
         surfaceVersion += 1;
       }
@@ -1016,11 +1088,17 @@
       const choices = Array.isArray(payload.choices) && payload.choices.length
         ? payload.choices
         : ['A', 'B', 'C'];
+      const nextChoices = choices
+        .filter(choice => ['A', 'B', 'C'].includes(choice))
+        .slice(0, 2);
       const renderChoiceCopy = () => {
         setLabelText('arena-round', 'round', { round });
         setText(
           'arena-skill-prompt',
-          choices.map(choice => `${choice} ${choiceLabel(choice)}`.trim()).join('  ·  ')
+          [
+            formatLabel('next'),
+            ...nextChoices.map(choice => `${choice} ${choiceLabel(choice)}`.trim())
+          ].join(' - ')
         );
       };
       renderVisibleComposite = renderChoiceCopy;
@@ -1067,6 +1145,21 @@
         decision.timeout || decision.source === 'timeout'
       ) ? 'timeout' : 'viewer';
       fighter.classList.add('choice-locked');
+      const lockedSlots = [1, 2].filter(candidate => (
+        fighterNode(candidate)?.classList.contains('choice-locked')
+      ));
+      const renderSealedFeedback = () => {
+        if (lockedSlots.length === 2) {
+          setLabelText('arena-skill-prompt', 'choicesSealed');
+          return;
+        }
+        const state = stateBySlot.get(slot) || {};
+        setLabelText('arena-skill-prompt', 'sealedWaiting', {
+          name:safeDisplayName(state.viewerName, state.name)
+        });
+      };
+      renderVisibleComposite = renderSealedFeedback;
+      renderSealedFeedback();
       return true;
     }
 
@@ -1717,7 +1810,7 @@
           eventId: `${payload.eventId || activeMatchId || 'battle'}:victory`
         });
       }
-      await wait(8_000);
+      await wait(ArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS);
       if (terminalVersion === surfaceVersion) {
         result?.classList.remove('visible');
         arena?.classList.remove('visible');
@@ -1743,7 +1836,7 @@
         : 'cancelled';
       setLabelText('arena-feed', cancellationLabel);
       renderVisibleComposite = () => setLabelText('arena-feed', cancellationLabel);
-      await wait(3_000);
+      await wait(ArenaDirector.RULES_V8_PACING.CANCELLATION_MS);
       if (terminalVersion === surfaceVersion) {
         arena?.classList.remove('visible');
         activeMatchId = null;

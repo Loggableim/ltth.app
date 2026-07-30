@@ -149,10 +149,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     view.openChoice({ ...match, round: 2, deadlineMs: 9_000, choices: ['A', 'B', 'C'] });
     expect(document.querySelector('#arena-skill-prompt').textContent).toContain('A');
     expect(document.querySelector('#arena-skill-prompt').textContent).toContain('B');
-    expect(document.querySelector('#arena-skill-prompt').textContent).toContain('C');
     expect(document.querySelector('#arena-skill-prompt').textContent).toContain('Attack');
     expect(document.querySelector('#arena-skill-prompt').textContent).toContain('Defense');
-    expect(document.querySelector('#arena-skill-prompt').textContent).toContain('Special');
+    expect(document.querySelector('#arena-skill-prompt').textContent).toContain('NEXT');
+    expect(document.querySelector('[data-slot="1"] [data-skill="C"]')).not.toBeNull();
 
     await view.playAction({
       matchId: 'match-a',
@@ -455,6 +455,11 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
           skillName: 'Inferno Crown',
           skillIcon: '🔥'
         },
+        highlights: {
+          largestHit: { slot: 1, amount: 11 },
+          largestBlock: { slot: 1, amount: 5 },
+          largestHeal: { slot: 2, amount: 6 }
+        },
         fighters: [{
           slot: 1,
           playerName: '@alpha',
@@ -490,6 +495,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('🔥 Inferno Crown');
     expect(report.querySelector('.arena-result-decisive').textContent)
       .toContain('C');
+    expect(report.querySelector('[data-report-highlights]').textContent)
+      .toMatch(/11.*5.*6/);
     expect(report.querySelector('[data-report-fighter="1"]').textContent)
       .toContain('@alpha');
     expect(report.querySelector('[data-report-fighter="1"]').textContent)
@@ -706,6 +713,61 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-action-card').classList).not.toContain('visible');
   });
 
+  test('resets a defeated slot when the completed result already cleared the active match', async () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'completed-old-match',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@ember', hp: 18, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 0, maxHp: 30 }
+      ]
+    });
+    await view.playAction({
+      rulesVersion: 8,
+      matchId: 'completed-old-match',
+      eventId: 'completed-old-match:event:1',
+      eventSequence: 1,
+      round: 4,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'A',
+      skill: { name: 'Moon Strike', shortText: 'Deals 8 damage.', type: 'attack' },
+      hits: [{ index: 1, hpDamage: 8, shieldAbsorbed: 0, evaded: false }],
+      terminal: true
+    });
+    await view.complete({
+      eventId: 'completed-old-match:event:completed',
+      matchId: 'completed-old-match',
+      winnerSlot: 1,
+      winner: { viewerName: '@ember', name: 'Ashfang' },
+      terminalReason: 'knockout',
+      knockout: { round: 4, remainingHp: 18, maxHp: 30 }
+    });
+
+    const reusedSlot = document.getElementById('arena-fighter-2');
+    expect(reusedSlot.classList.contains('defeated')).toBe(true);
+    expect(reusedSlot.classList.contains('knockout')).toBe(true);
+
+    view.applyMatch({
+      matchId: 'fresh-new-match',
+      state: 'roster',
+      fighters: [
+        { slot: 1, name: 'Oakheart', viewerName: '@grove', hp: 30, maxHp: 30 },
+        { slot: 2, name: 'Voltkit', viewerName: '@volt', hp: 30, maxHp: 30 }
+      ]
+    });
+
+    expect([...reusedSlot.classList]).toEqual(['arena-fighter']);
+    expect(reusedSlot.dataset.choice).toBeUndefined();
+    expect(reusedSlot.dataset.choiceSource).toBeUndefined();
+    expect(document.getElementById('arena-name-2').textContent).toBe('Voltkit');
+  });
+
   test('clears the last action card immediately when a battle is cancelled', async () => {
     mountArena();
     let finishCancellation;
@@ -713,7 +775,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       document,
       clock: {
         wait: milliseconds => (
-          milliseconds === 3_000
+          milliseconds === 1_500
             ? new Promise(resolve => { finishCancellation = resolve; })
             : Promise.resolve()
         ),
@@ -747,6 +809,41 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-action-card').classList).not.toContain('visible');
     finishCancellation();
     await cancellation;
+  });
+
+  test('holds terminal surfaces for the shared result and cancellation durations', async () => {
+    mountArena();
+    const wait = jest.fn(async () => {});
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'paced-terminal',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@ember', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 0, maxHp: 30 }
+      ]
+    });
+
+    await view.complete({
+      eventId: 'paced-terminal:completed',
+      matchId: 'paced-terminal',
+      winnerSlot: 1,
+      terminalReason: 'knockout'
+    });
+    view.applyMatch({
+      matchId: 'paced-cancellation',
+      state: 'roster',
+      fighters: []
+    });
+    await view.cancel({ matchId: 'paced-cancellation', reason: 'roster_unavailable' });
+
+    expect(wait.mock.calls.map(([milliseconds]) => milliseconds)).toEqual([
+      8_000,
+      1_500
+    ]);
   });
 
   test('renders one explicit stat allocation card for the sanitized player and monster', () => {
@@ -1099,21 +1196,75 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       currentTime = 1_000 + (elapsedSeconds * 1_000);
       view.renderCountdown();
       const specialCard = document.querySelector('[data-slot="1"] [data-skill="C"]');
-      expect(specialCard.querySelector('.skill-charge').textContent).toBe('90%');
+      expect(specialCard.querySelector('.skill-charge').textContent)
+        .toMatch(/^90%.*10 charge missing$/);
       expect(specialCard.classList).toContain('charging');
       expect(specialCard.classList).not.toContain('ready');
     }
   });
 
+  test('shows exact missing Special charge at the 75 90 and 100 anticipation milestones', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { now: () => 1_000 },
+      labels: { specialMissing: '{amount} charge missing' }
+    });
+    const special = {
+      choice: 'C',
+      name: 'Inferno',
+      chargeRequired: 100,
+      available: false
+    };
+    const openAt = charge => view.openChoice({
+      matchId: 'match-special-milestones',
+      round: 1,
+      deadlineMs: 7_000,
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 7_000,
+        passivePerSecond: 0
+      },
+      fighters: [
+        { slot: 1, name: 'Ashfang', charge, skills: [special] },
+        { slot: 2, name: 'Ripple', charge: 0, skills: [special] }
+      ]
+    });
+    const specialCard = document.querySelector('[data-slot="1"] [data-skill="C"]');
+
+    openAt(75);
+    expect(specialCard.classList).toContain('anticipation-75');
+    expect(specialCard.querySelector('.skill-charge').textContent)
+      .toMatch(/^75%.*25 charge missing$/);
+
+    openAt(90);
+    expect(specialCard.classList).not.toContain('anticipation-75');
+    expect(specialCard.classList).toContain('anticipation-90');
+    expect(specialCard.querySelector('.skill-charge').textContent)
+      .toMatch(/^90%.*10 charge missing$/);
+
+    openAt(100);
+    expect(specialCard.classList).not.toContain('anticipation-90');
+    expect(specialCard.classList).toContain('anticipation-100');
+    expect(specialCard.classList).toContain('ready');
+    expect(specialCard.querySelector('.skill-charge').textContent).toBe('100%');
+  });
+
   test('shows a sealed lock without selecting a skill until both choices are revealed', () => {
     mountArena();
-    const view = ArenaView.createArenaView({ document });
+    const view = ArenaView.createArenaView({
+      document,
+      labels: {
+        sealedWaiting: '{name} sealed - waiting for opponent',
+        choicesSealed: 'Both choices sealed - reveal now'
+      }
+    });
     view.openChoice({
       matchId: 'match-sealed-board',
       round: 1,
       fighters: [
-        { slot: 1, skills: [] },
-        { slot: 2, skills: [] }
+        { slot: 1, name: 'Ashfang', viewerName: '@ember', skills: [] },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', skills: [] }
       ]
     });
 
@@ -1121,6 +1272,12 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-fighter-1').dataset.choice).toBeUndefined();
     expect(document.querySelector('[data-slot="1"] [data-skill="A"]').classList)
       .not.toContain('selected');
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .toMatch(/@ember.*sealed.*waiting/i);
+
+    view.lockChoice({ decision: { slot: 2, choice: 'C', locked: true } });
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .toMatch(/both choices sealed.*reveal now/i);
 
     view.revealChoices({
       choices: [
@@ -1132,6 +1289,47 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('selected');
     expect(document.querySelector('[data-slot="2"] [data-skill="C"]').classList)
       .toContain('selected');
+  });
+
+  test('shows NEXT with at most two currently valid actions during a choice window', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      labels: { next: 'NEXT' }
+    });
+    const skills = specialAvailable => [
+      { choice: 'A', name: 'Strike', available: true },
+      { choice: 'B', name: 'Guard', available: true },
+      { choice: 'C', name: 'Inferno', available: specialAvailable }
+    ];
+
+    view.openChoice({
+      matchId: 'match-next-actions',
+      round: 1,
+      choices: ['A', 'B', 'C'],
+      fighters: [
+        { slot: 1, name: 'Ashfang', skills: skills(false) },
+        { slot: 2, name: 'Ripple', skills: skills(false) }
+      ]
+    });
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .toMatch(/^NEXT.*\bA\b.*\bB\b/);
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .not.toMatch(/\bC\b/);
+
+    view.openChoice({
+      matchId: 'match-next-actions',
+      round: 2,
+      choices: ['A', 'C'],
+      fighters: [
+        { slot: 1, name: 'Ashfang', skills: skills(true) },
+        { slot: 2, name: 'Ripple', skills: skills(true) }
+      ]
+    });
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .toMatch(/^NEXT.*\bA\b.*\bC\b/);
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .not.toMatch(/\bB\b/);
   });
 
   test('updates the deadline countdown from the durable timestamp and clears it at terminal state', async () => {

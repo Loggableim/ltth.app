@@ -1,8 +1,11 @@
 (function attachStreamMonstersArenaDirector(root, factory) {
-  const api = factory();
+  const pacing = typeof module === 'object' && module.exports
+    ? require('./streammonsters-rules-v8-pacing')
+    : root.StreamMonstersRulesV8Pacing;
+  const api = factory(pacing);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersArenaDirector = api;
-}(typeof globalThis === 'object' ? globalThis : this, () => {
+}(typeof globalThis === 'object' ? globalThis : this, RULES_V8_PACING => {
   'use strict';
 
   const QUALITY_MODES = new Set(['auto', 'high', 'medium', 'low']);
@@ -931,7 +934,7 @@
       beats = [{
         type: 'sealed_card',
         atMs: 0,
-        durationMs: 420,
+        durationMs: RULES_V8_PACING.LOCK_FLASH_MS,
         slot: numeric(payload.decision?.slot ?? payload.slot),
         locked: payload.decision?.locked !== false,
         source: payload.decision?.source || payload.source || 'viewer',
@@ -942,7 +945,7 @@
       beats = [{
         type: 'simultaneous_reveal',
         atMs: 0,
-        durationMs: 680,
+        durationMs: RULES_V8_PACING.JOINT_REVEAL_MS,
         choices: (Array.isArray(payload.choices) ? payload.choices : [])
           .map(choice => ({
             slot: numeric(choice?.slot),
@@ -964,8 +967,10 @@
             buildArcadeActionBeats(action),
             numeric(action.rulesVersion ?? payload.rulesVersion) >= 8 &&
               !action.terminal
-              ? 1_500
-              : 2_800
+              ? RULES_V8_PACING.ACTION_MS
+              : numeric(action.rulesVersion ?? payload.rulesVersion) >= 8
+                ? RULES_V8_PACING.TERMINAL_ACTION_MS
+                : 2_800
           )
         : buildArcadeActionBeats(action);
     } else if (type === 'battle_arena_collapse') {
@@ -1019,12 +1024,16 @@
         durationMs: 420,
         fighters
       });
+      beats = compressArcadeActionBeats(
+        beats,
+        RULES_V8_PACING.COLLAPSE_MS
+      );
     } else if (type === 'battle_completed') {
       scene = 'battle_finale';
       beats = [{
         type: 'winner_frame',
         atMs: 0,
-        durationMs: 4000,
+        durationMs: RULES_V8_PACING.RESULT_BOARD_MS,
         winnerSlot: numeric(payload.winnerSlot),
         peak: true,
         audioCue: 'arena.victory',
@@ -1168,6 +1177,7 @@
   }
 
   return {
+    RULES_V8_PACING,
     ARENA_COLLAPSE_ROUND,
     ELEMENTS,
     createArenaGeometry,

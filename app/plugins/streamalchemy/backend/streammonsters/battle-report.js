@@ -72,6 +72,14 @@ function sanitizeDecisiveSkill(value) {
   };
 }
 
+function sanitizeHighlight(value) {
+  if (!isObject(value)) return null;
+  const slot = boundedInteger(value.slot);
+  const amount = boundedInteger(value.amount);
+  if (!VALID_SLOTS.has(slot) || amount < 1) return null;
+  return { slot, amount };
+}
+
 function sanitizeFighter(value) {
   if (!isObject(value)) return null;
   const slot = boundedInteger(value.slot);
@@ -112,13 +120,19 @@ function sanitizeCombatReport(value) {
       return true;
     })
     .sort((left, right) => left.slot - right.slot);
+  const highlights = {
+    largestHit: sanitizeHighlight(report.highlights?.largestHit),
+    largestBlock: sanitizeHighlight(report.highlights?.largestBlock),
+    largestHeal: sanitizeHighlight(report.highlights?.largestHeal)
+  };
   return {
     roundCount: boundedInteger(report.roundCount),
     durationMs: boundedInteger(report.durationMs, {
       maximum: MAX_DURATION_MS
     }),
     decisiveSkill: sanitizeDecisiveSkill(report.decisiveSkill),
-    fighters
+    fighters,
+    ...(Object.values(highlights).some(Boolean) ? { highlights } : {})
   };
 }
 
@@ -208,6 +222,18 @@ function buildCombatReport({
 
   let roundCount = boundedInteger(roundNumber);
   let decisiveSkill = null;
+  const highlights = {
+    largestHit: null,
+    largestBlock: null,
+    largestHeal: null
+  };
+  const rememberHighlight = (field, slot, value) => {
+    const amount = appliedAmount(value);
+    if (!VALID_SLOTS.has(slot) || amount < 1) return;
+    if (!highlights[field] || amount > highlights[field].amount) {
+      highlights[field] = { slot, amount };
+    }
+  };
   const persistedActions = Array.isArray(actions) ? actions : [];
   persistedActions.forEach(action => {
     if (!isObject(action)) return;
@@ -227,6 +253,10 @@ function buildCombatReport({
         if (!isObject(hit)) return;
         addMetric(actor, 'damageDealt', hit.hpDamage);
         addMetric(target, 'damageBlocked', hit.shieldAbsorbed);
+        if (hit.evaded !== true) {
+          rememberHighlight('largestHit', actorSlot, hit.hpDamage);
+          rememberHighlight('largestBlock', targetSlot, hit.shieldAbsorbed);
+        }
         if (hit.evaded === true) {
           addMetric(target, 'evades', 1);
         } else {
@@ -241,6 +271,7 @@ function buildCombatReport({
         const type = boundedText(outcome.type, 32).toLowerCase();
         if (type === 'heal' || type === 'lifesteal') {
           addMetric(actor, 'healingDone', outcome.amount);
+          rememberHighlight('largestHeal', actorSlot, outcome.amount);
         } else if (type === 'shield') {
           addMetric(actor, 'shieldGained', outcome.amount);
         }
@@ -252,6 +283,10 @@ function buildCombatReport({
         if (!isObject(retaliation)) return;
         addMetric(target, 'damageDealt', retaliation.hpDamage);
         addMetric(actor, 'damageBlocked', retaliation.shieldAbsorbed);
+        if (retaliation.evaded !== true) {
+          rememberHighlight('largestHit', targetSlot, retaliation.hpDamage);
+          rememberHighlight('largestBlock', actorSlot, retaliation.shieldAbsorbed);
+        }
       });
     }
 
@@ -261,6 +296,11 @@ function buildCombatReport({
         addMetric(
           target,
           'damageDealt',
+          status.hpDamage ?? status.amount
+        );
+        rememberHighlight(
+          'largestHit',
+          targetSlot,
           status.hpDamage ?? status.amount
         );
       });
@@ -294,6 +334,7 @@ function buildCombatReport({
     roundCount,
     durationMs,
     decisiveSkill,
+    highlights,
     fighters: [...states.values()]
   });
 }

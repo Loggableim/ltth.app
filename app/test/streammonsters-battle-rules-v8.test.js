@@ -137,6 +137,29 @@ function submitRound(service, round) {
 }
 
 describe('Stream Monsters Rules v8 combat contract', () => {
+  test('shares one exact Rules-v8 pacing contract across service and overlay timelines', () => {
+    const { store } = createStore();
+    const service = createService({ store });
+    const expected = {
+      ROSTER_MS: 6_000,
+      SKILL_CHOICE_MS: 6_000,
+      STAT_CHOICE_MS: 10_000,
+      LOCK_FLASH_MS: 150,
+      JOINT_REVEAL_MS: 300,
+      ACTION_MS: 900,
+      COLLAPSE_MS: 600,
+      TERMINAL_ACTION_MS: 1_400,
+      RESULT_BOARD_MS: 8_000,
+      CANCELLATION_MS: 1_500,
+      SERVICE_SWEEP_MS: 250
+    };
+
+    expect(ArenaDirector.RULES_V8_PACING).toEqual(expected);
+    expect(OverlayRuntime.RULES_V8_PACING).toBe(ArenaDirector.RULES_V8_PACING);
+    expect(service.rulesV8Pacing).toBe(ArenaDirector.RULES_V8_PACING);
+    expect(service.sweepIntervalMs).toBe(expected.SERVICE_SWEEP_MS);
+  });
+
   test('uses fixed six-second v8 roster and action windows in every language mode', () => {
     const { store } = createStore();
     const singleLocale = createService({ store });
@@ -151,6 +174,37 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(singleLocale.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
     expect(singleLocale.statWindowMs({ rulesVersion: 8 })).toBe(10_000);
     expect(bilingual.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
+  });
+
+  test('keeps a representative four-round fight inside the 35-45 second target', () => {
+    const pacing = ArenaDirector.RULES_V8_PACING;
+    const representativeDurationMs =
+      pacing.ROSTER_MS +
+      (4 * pacing.SKILL_CHOICE_MS) +
+      (3 * (pacing.JOINT_REVEAL_MS + (2 * pacing.ACTION_MS))) +
+      pacing.JOINT_REVEAL_MS +
+      pacing.TERMINAL_ACTION_MS +
+      pacing.COLLAPSE_MS;
+
+    expect(representativeDurationMs).toBe(38_600);
+    expect(representativeDurationMs).toBeGreaterThanOrEqual(35_000);
+    expect(representativeDurationMs).toBeLessThanOrEqual(45_000);
+  });
+
+  test('fits both locale pages inside the authoritative six-second choice deadline', () => {
+    const config = OverlayRuntime.normalizeOverlayLanguage({
+      primaryLocale: 'de',
+      locales: ['de', 'en'],
+      secondsPerLocale: 5
+    });
+
+    expect(OverlayRuntime.criticalLocalePages(config, {
+      nowMs: 1_000,
+      deadlineMs: 7_000
+    })).toEqual([
+      { locale: 'de', durationMs: 3_000 },
+      { locale: 'en', durationMs: 3_000 }
+    ]);
   });
 
   test('fits eight timeout-heavy rounds inside the 75-second pace budget', () => {
@@ -227,7 +281,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       eventId: 'early-b'
     });
     const match = service.getMatch(matchId);
-    const directorPauseMs = actions.reduce((total, action) => (
+    const directorPauseMs = 300 + actions.reduce((total, action) => (
       total + ArenaDirector.buildArcadeTimeline(
         'battle_skill_used',
         { action: { ...action, rulesVersion: 8 } }
@@ -240,6 +294,79 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(match.chargePauseUntilMs - match.chargePauseStartedAtMs)
       .toBe(directorPauseMs);
     expect(directorPauseMs).toBeLessThanOrEqual(3_200);
+  });
+
+  test('opens the next choice deadline only after reveal actions and Collapse finish', () => {
+    const { sqlite, service, matchId } = createLockedMatch();
+    sqlite.prepare(`
+      UPDATE streammonsters_matches SET round_number = 4 WHERE match_id = ?
+    `).run(matchId);
+    const actions = [
+      {
+        actorId: 'alpha-v8',
+        targetId: 'beta-v8',
+        round: 4,
+        choice: 'A',
+        skill: { type: 'attack', element: 'Ember' },
+        hits: [{ index: 1, hpDamage: 4, shieldAbsorbed: 0, evaded: false }],
+        outcomes: [],
+        actorState: { hp: 30, maxHp: 30, shield: 0, charge: 25 },
+        targetState: { hp: 26, maxHp: 30, shield: 0, charge: 0 },
+        terminal: false
+      },
+      {
+        actorId: 'beta-v8',
+        targetId: 'alpha-v8',
+        round: 4,
+        choice: 'A',
+        skill: { type: 'attack', element: 'Tide' },
+        hits: [{ index: 1, hpDamage: 3, shieldAbsorbed: 0, evaded: false }],
+        outcomes: [],
+        actorState: { hp: 26, maxHp: 30, shield: 0, charge: 25 },
+        targetState: { hp: 27, maxHp: 30, shield: 0, charge: 25 },
+        terminal: false
+      }
+    ];
+    service.battleService.resolveInteractiveRound = jest.fn(() => ({
+      terminal: false,
+      winnerId: null,
+      state: {
+        'alpha-v8': actions[1].targetState,
+        'beta-v8': actions[1].actorState
+      },
+      actions
+    }));
+
+    service.submitChoice({
+      userId: 'viewer-a',
+      choice: 'A',
+      eventId: 'paced-round-a'
+    });
+    service.submitChoice({
+      userId: 'viewer-b',
+      choice: 'A',
+      eventId: 'paced-round-b'
+    });
+
+    const paced = service.getMatch(matchId);
+    const expectedVisualMs = 300 + (2 * 900) + 600;
+    expect(paced.actionDeadlineMs).toBeNull();
+    expect(paced.chargePauseReason).toBe('cinematic');
+    expect(paced.chargePauseUntilMs - paced.chargePauseStartedAtMs)
+      .toBe(expectedVisualMs);
+    expect(service.resumeCinematicChoiceWindow(
+      matchId,
+      paced.chargePauseUntilMs - 1
+    )).toBe(false);
+    expect(service.resumeCinematicChoiceWindow(
+      matchId,
+      paced.chargePauseUntilMs
+    )).toBe(true);
+    expect(service.getMatch(matchId)).toEqual(expect.objectContaining({
+      roundNumber: 5,
+      actionOpenedAtMs: paced.chargePauseUntilMs,
+      actionDeadlineMs: paced.chargePauseUntilMs + 6_000
+    }));
   });
 
   test('derives the battle roster instruction from the persisted v8 deadline', () => {
@@ -428,7 +555,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
   });
 
   test('continues a living match beyond round three without an HP tie-break', () => {
-    const { service, matchId } = createLockedMatch();
+    const { service, matchId, setNow } = createLockedMatch();
     service.battleService.resolveInteractiveRound = jest.fn(({ fighters, round }) => ({
       terminal: false,
       winnerId: null,
@@ -446,6 +573,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
     for (let round = 1; round <= 3; round += 1) {
       submitRound(service, round);
+      setNow(service.getMatch(matchId).chargePauseUntilMs);
       expect(service.resumeCinematicChoiceWindow(matchId)).toBe(true);
     }
 
@@ -614,6 +742,11 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         choice: 'C',
         skillName: 'Solar Bloom',
         skillIcon: '☀️'
+      },
+      highlights: {
+        largestHit: { slot: alpha.slot, amount: 7 },
+        largestBlock: { slot: beta.slot, amount: 3 },
+        largestHeal: { slot: alpha.slot, amount: 2 }
       },
       fighters: [{
         slot: alpha.slot,

@@ -417,6 +417,14 @@
       text-align:right; font-variant-numeric:tabular-nums;
     }
     .arena-skill-card.charging { opacity:.68; filter:saturate(.62); }
+    .arena-skill-card.anticipation-75 {
+      opacity:.82; border-color:#d6b6ff80; filter:saturate(.82);
+    }
+    .arena-skill-card.anticipation-90 {
+      opacity:.94; border-color:#ffe387ad; filter:saturate(.98);
+      box-shadow:0 0 16px #ffc95230,inset 0 0 12px #ffdf6b14;
+      animation:arena-special-anticipation .7s ease-in-out infinite alternate;
+    }
     .arena-skill-card.ready {
       border-color:#ffe884bd; box-shadow:0 0 22px #ffc95242,inset 0 0 18px #ffdf6b18;
       animation:arena-skill-ready .9s ease-in-out infinite alternate;
@@ -519,6 +527,15 @@
     .arena-result-metrics span {
       min-width:0; overflow:hidden; color:#cfe5ff; font-size:clamp(10px,1.18vw,14px);
       font-weight:850; line-height:1.15; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-result-highlights {
+      display:flex; flex-wrap:wrap; justify-content:center; gap:4px 7px;
+      padding:5px 7px; border:1px solid #ffde8a4d; border-radius:8px;
+      background:#38270d66;
+    }
+    .arena-result-highlights span {
+      color:#ffe9aa; font-size:clamp(10px,1.12vw,13px); font-weight:900;
+      line-height:1.15; white-space:nowrap;
     }
     #arena-stat-card {
       position:absolute; top:17%; left:50%; z-index:60; display:grid; gap:8px;
@@ -719,6 +736,9 @@
     }
     @keyframes arena-skill-ready {
       to { filter:brightness(1.12); box-shadow:0 0 30px #ffc95266,inset 0 0 22px #ffdf6b22; }
+    }
+    @keyframes arena-special-anticipation {
+      to { filter:brightness(1.08) saturate(1.05); box-shadow:0 0 24px #ffc95248,inset 0 0 17px #ffdf6b1d; }
     }
     @keyframes arena-impact-pop {
       0% { opacity:0; transform:translate(-50%,-50%) scale(.4) rotate(-8deg); }
@@ -1156,7 +1176,8 @@
       #battle-effects-canvas { z-index:3; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .arena-skill-card.ready {
+      .arena-skill-card.ready,
+      .arena-skill-card.anticipation-90 {
         animation:none!important;
         filter:none!important;
       }
@@ -1448,6 +1469,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-rules-v8-pacing.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-effects-renderer.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-egg-stage-view.js"></script>
@@ -1611,6 +1633,10 @@
       cancelled:'arenaCancelled',
       shield:'arenaShieldLabel',
       special:'arenaSpecialLabel',
+      specialMissing:'arenaSpecialMissing',
+      sealedWaiting:'arenaSealedWaiting',
+      choicesSealed:'arenaChoicesSealed',
+      next:'arenaNext',
       lead:'arenaLeadLabel',
       tied:'arenaTiedLabel',
       knockoutResult:'arenaKnockoutResult',
@@ -1618,6 +1644,9 @@
       resultSummary:'arenaResultSummary',
       ratingChanged:'arenaRatingChanged',
       ratingUnchanged:'arenaRatingUnchanged',
+      combatReportLargestHit:'arenaCombatReportLargestHit',
+      combatReportLargestBlock:'arenaCombatReportLargestBlock',
+      combatReportLargestHeal:'arenaCombatReportLargestHeal',
       damageMetric:'arenaDamageMetric',
       shieldAbsorbedMetric:'arenaShieldAbsorbedMetric',
       shieldGainMetric:'arenaShieldGainMetric',

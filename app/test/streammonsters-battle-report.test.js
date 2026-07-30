@@ -46,6 +46,44 @@ function fighter(report, slot) {
 }
 
 describe('Stream Monsters authoritative combat report', () => {
+  test('identifies the largest applied hit block and heal for the KO report', () => {
+    const report = buildCombatReport({
+      fighters,
+      participantResults,
+      roundNumber: 2,
+      actions: [{
+        round: 1,
+        actorId: 'private-monster-a',
+        targetId: 'private-monster-b',
+        choice: 'C',
+        skill: { name: 'Solar Bloom' },
+        hits: [
+          { hpDamage: 4, shieldAbsorbed: 3, evaded: false },
+          { hpDamage: 2, shieldAbsorbed: 0, evaded: false }
+        ],
+        outcomes: [
+          { type: 'heal', amount: 2 },
+          { type: 'lifesteal', amount: 1 }
+        ]
+      }, {
+        round: 2,
+        actorId: 'private-monster-b',
+        targetId: 'private-monster-a',
+        choice: 'A',
+        skill: { name: 'Moon Crash' },
+        hits: [{ hpDamage: 6, shieldAbsorbed: 2, evaded: false }],
+        outcomes: [],
+        terminal: true
+      }]
+    });
+
+    expect(report.highlights).toEqual({
+      largestHit: { slot: 2, amount: 6 },
+      largestBlock: { slot: 2, amount: 3 },
+      largestHeal: { slot: 1, amount: 2 }
+    });
+  });
+
   test('aggregates applied action values at the correct fighter slots', () => {
     const report = buildCombatReport({
       fighters,
@@ -132,6 +170,11 @@ describe('Stream Monsters authoritative combat report', () => {
         choice: 'A',
         skillName: 'Moon Crash',
         skillIcon: '🌙'
+      },
+      highlights: {
+        largestHit: { slot: 2, amount: 6 },
+        largestBlock: { slot: 2, amount: 3 },
+        largestHeal: { slot: 1, amount: 2 }
       },
       fighters: [{
         slot: 1,
