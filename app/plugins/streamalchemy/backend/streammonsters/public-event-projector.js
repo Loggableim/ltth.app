@@ -830,6 +830,8 @@ class StreamMonstersPublicEventProjector {
     const missionKey = payload.mission?.mission_key ?? payload.mission?.missionKey;
     const stage = payload.evolutionStage ?? payload.monster?.evolution_stage ??
       payload.monster?.evolutionStage;
+    const fusionId = payload.fusionId ?? payload.fusion_id ??
+      payload.fusion?.fusionId ?? payload.fusion?.fusion_id;
     const userId = payload.userId ?? payload.user_id;
     const templateId = payload.templateId ?? payload.template_id ??
       payload.mastery?.templateId ?? payload.mastery?.template_id;
@@ -840,6 +842,12 @@ class StreamMonstersPublicEventProjector {
     let domainIdentity = null;
     let correlationIdentity = null;
     if (
+      eventType === 'streammonsters:monster_evolved' &&
+      fusionId
+    ) {
+      domainIdentity = `fusion:${fusionId}`;
+      correlationIdentity = monsterId ? `monster:${monsterId}` : domainIdentity;
+    } else if (
       eventType === 'streammonsters:mastery_unlocked' &&
       userId && templateId && unlock
     ) {

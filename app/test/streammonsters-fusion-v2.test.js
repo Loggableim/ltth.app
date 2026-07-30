@@ -14,6 +14,7 @@ const ChatCommands = require(
 const PublicEventProjector = require(
   '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
 );
+const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 const ArenaDirector = require(
   '../plugins/streamalchemy/streammonsters-arena-director'
 );
@@ -828,6 +829,101 @@ describe('Stream Monsters duplicate fusion persistence', () => {
         payload: projected
       })
     ]);
+  });
+
+  test('persists and reconnect-replays Stage III plus every Prestige fusion exactly once', () => {
+    const { sqlite, store } = createStore();
+    const api = {
+      emit: jest.fn(),
+      log: jest.fn()
+    };
+    const plugin = new StreamAlchemyPlugin(api);
+    plugin.streamMonstersStore = store;
+    plugin.streamMonstersEngine = { streamKey: 'creator:fusion-live' };
+    plugin.streamMonstersPublicEventProjector = new PublicEventProjector({ store });
+    const fusionPayloads = [];
+    const collection = new CollectionService({
+      store,
+      assetRegistry: completeAssetRegistry(),
+      emit: (event, payload) => {
+        fusionPayloads.push({ event, payload });
+        plugin.emitStreamMonsters(event, payload);
+      },
+      now: () => 50_000
+    });
+    createMonster(store, {
+      monsterId: 'lineage-survivor',
+      createdAtMs: 1,
+      stage: 2,
+      level: 8,
+      xp: 91
+    });
+    createMonster(store, {
+      monsterId: 'stage-three-donor',
+      createdAtMs: 2,
+      stage: 2
+    });
+
+    const stageThree = collection.fuseDuplicates({
+      userId: 'viewer-a',
+      templateId: 'ashfang',
+      triggerType: 'contact',
+      triggerId: 'chat:stage-three'
+    });
+    ['one', 'two', 'three'].forEach((suffix, index) => {
+      createMonster(store, {
+        monsterId: `prestige-donor-${suffix}`,
+        createdAtMs: 3 + index,
+        stage: 3
+      });
+    });
+    const prestigeOne = collection.fuseDuplicates({
+      userId: 'viewer-a',
+      templateId: 'ashfang',
+      triggerType: 'contact',
+      triggerId: 'chat:prestige-one'
+    });
+    const prestigeTwo = collection.fuseDuplicates({
+      userId: 'viewer-a',
+      templateId: 'ashfang',
+      triggerType: 'contact',
+      triggerId: 'chat:prestige-two'
+    });
+    const prestigeThree = collection.fuseDuplicates({
+      userId: 'viewer-a',
+      templateId: 'ashfang',
+      triggerType: 'contact',
+      triggerId: 'chat:prestige-three'
+    });
+
+    expect([
+      stageThree.toStage,
+      prestigeOne.prestigeAfter,
+      prestigeTwo.prestigeAfter,
+      prestigeThree.prestigeAfter
+    ]).toEqual([3, 1, 2, 3]);
+    expect(fusionPayloads).toHaveLength(4);
+    fusionPayloads.forEach(({ event, payload }) => {
+      plugin.emitStreamMonsters(event, payload);
+    });
+
+    const liveEvents = api.emit.mock.calls
+      .filter(([event]) => event === 'streammonsters:monster_evolved')
+      .map(([, payload]) => payload);
+    expect(liveEvents).toHaveLength(4);
+    expect(new Set(liveEvents.map(payload => payload.eventId)).size).toBe(4);
+    expect(liveEvents.map(payload => payload.prestigeLevel)).toEqual([0, 1, 2, 3]);
+
+    const reconnected = new StreamMonstersDatabase(sqlite);
+    reconnected.initialize();
+    const replay = reconnected.getRecentPublicEvents('creator:fusion-live');
+    expect(replay).toHaveLength(4);
+    expect(replay.map(event => event.sequence)).toEqual([1, 2, 3, 4]);
+    expect(replay.map(event => event.eventId))
+      .toEqual(liveEvents.map(payload => payload.eventId));
+    expect(replay.map(event => event.payload.prestigeLevel)).toEqual([0, 1, 2, 3]);
+    expect(replay.map(event => event.payload.fusion.kind))
+      .toEqual(['stage', 'prestige', 'prestige', 'prestige']);
   });
 
   test('orders fusion animation through converge, crystal, evolved asset, stats, skill and settle', () => {

@@ -441,6 +441,7 @@ class CollectionService {
     }
     this.emitAfterCommit('streammonsters:monster_evolved', {
       userId: normalizedUserId,
+      fusionId: stored.fusion_id,
       evolutionStage: toStage,
       prestigeLevel: prestigeAfter,
       prestige: result.prestige,

@@ -2323,6 +2323,67 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(JSON.stringify(snapshot.statPrompt)).not.toContain('7392847109283746102');
   });
 
+  test('does not recover or directly create a stat prompt for an archived fusion donor', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'archived-fusion-donor',
+      userId: 'viewer-archived-donor'
+    });
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters
+      SET unspent_stat_points = 2,
+          collection_state = 'archived',
+          archived_at_ms = 4_000,
+          archived_reason = 'fusion_donor',
+          archived_by_fusion_id = 'fusion-archived-donor',
+          is_selected = 0
+      WHERE monster_id = 'archived-fusion-donor'
+    `).run();
+    const firstEmit = jest.fn();
+    const firstService = createMatchService({
+      store,
+      now: () => 5_000,
+      emit: firstEmit,
+      rulesVersion: 8,
+      autoStart: true
+    });
+    firstService.destroy();
+
+    expect(sqlite.prepare(`
+      SELECT * FROM streammonsters_stat_allocations
+      WHERE monster_id = 'archived-fusion-donor'
+    `).all()).toEqual([]);
+    expect(firstEmit.mock.calls.some(([event]) => (
+      event === 'streammonsters:monster_stat_prompt' ||
+      event === 'streammonsters:stat_choice_opened'
+    ))).toBe(false);
+    expect(firstService.createStandaloneStatPrompt({
+      userId: 'viewer-archived-donor',
+      monsterId: 'archived-fusion-donor',
+      sourceKey: 'direct-after-fusion'
+    })).toBeNull();
+
+    const reloadedStore = new StreamMonstersDatabase(sqlite);
+    reloadedStore.initialize();
+    const reloadEmit = jest.fn();
+    const reloadedService = createMatchService({
+      store: reloadedStore,
+      now: () => 6_000,
+      emit: reloadEmit,
+      rulesVersion: 8,
+      autoStart: true
+    });
+    reloadedService.destroy();
+    expect(sqlite.prepare(`
+      SELECT * FROM streammonsters_stat_allocations
+      WHERE monster_id = 'archived-fusion-donor'
+    `).all()).toEqual([]);
+    expect(reloadEmit.mock.calls.some(([event]) => (
+      event === 'streammonsters:monster_stat_prompt' ||
+      event === 'streammonsters:stat_choice_opened'
+    ))).toBe(false);
+  });
+
   test('redacts numeric viewer names from legacy persisted public monsters', () => {
     const { store } = createStore();
     const service = createMatchService({ store, now: () => 1_000 });

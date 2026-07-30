@@ -2301,6 +2301,7 @@ class BattleMatchService {
     if (
       !monster ||
       monster.user_id !== userId ||
+      monster.collection_state !== 'owned' ||
       (Number(monster.unspent_stat_points) || 0) < 1
     ) {
       return null;
@@ -3881,6 +3882,7 @@ class BattleMatchService {
       SELECT monster_id, user_id
       FROM streammonsters_monsters monster
       WHERE unspent_stat_points > 0
+        AND monster.collection_state = 'owned'
         AND NOT EXISTS (
           SELECT 1 FROM streammonsters_stat_prompts prompt
           WHERE prompt.monster_id = monster.monster_id AND prompt.status = 'open'
