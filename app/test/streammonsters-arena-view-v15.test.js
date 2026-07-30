@@ -1639,9 +1639,9 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(styles.get('#battle[data-phase="action"] #arena-action-card').getPropertyValue('min-height'))
       .toBe('108px');
     expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('top'))
-      .toBe('36%');
+      .toBe('42%');
     expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('height'))
-      .toBe('62%');
+      .toBe('56%');
     expect(styles.get('#battle[data-phase="action"] .arena-fighter').getPropertyValue('bottom'))
       .toBe('auto');
     expect(styles.get('#battle[data-phase="choice"] #arena-feed').getPropertyValue('display'))
@@ -1683,6 +1683,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       fighterHeight,
       cardMinHeight,
       battleHeight,
+      contentRows,
+      rowGap,
+      paddingY,
+      borderY,
       minimumGap
     }) => {
       const lead = styles.get('#battle[data-phase="action"] #arena-lead');
@@ -1698,10 +1702,20 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       expect(fighters?.getPropertyValue('height')).toBe(fighterHeight);
       expect(fighters?.getPropertyValue('bottom')).toBe('auto');
 
-      const cardBottomPx = (battleHeight * 0.145) + cardMinHeight;
+      const intrinsicOuterHeight = contentRows.reduce((total, height) => (
+        total + height
+      ), 0) +
+        (rowGap * (contentRows.length - 1)) +
+        (paddingY * 2) +
+        (borderY * 2);
+      const cardOuterHeight = Math.max(cardMinHeight, intrinsicOuterHeight);
+      const cardBottomPx = (battleHeight * 0.145) + cardOuterHeight;
       const fighterHudTopPx = battleHeight * (Number.parseFloat(fighterTop) / 100);
       expect(fighterHudTopPx - cardBottomPx).toBeGreaterThanOrEqual(minimumGap);
     };
+
+    expect(rules.find(rule => rule.selectorText === '*')?.style.getPropertyValue('box-sizing'))
+      .toBe('border-box');
 
     expect(actionLeadRules.some(rule => rule.style.getPropertyValue('opacity') === '0'))
       .toBe(false);
@@ -1711,11 +1725,15 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     ))).toBe(true);
     expectSafeActionBands(mediaStyles('(orientation: landscape)'), {
       leadTop: '8.5%',
-      fighterTop: '31%',
-      fighterHeight: '66%',
+      fighterTop: '40%',
+      fighterHeight: '57%',
       cardMinHeight: 118,
       battleHeight: 1080 * 0.74,
-      minimumGap: 12
+      contentRows: [42, 30, 35],
+      rowGap: 5,
+      paddingY: 14,
+      borderY: 2,
+      minimumGap: 50
     });
     expectSafeActionBands(mediaStyles('(orientation: portrait)'), {
       leadTop: '8.5%',
@@ -1723,15 +1741,23 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       fighterHeight: '66%',
       cardMinHeight: 130,
       battleHeight: 1920 * 0.74,
-      minimumGap: 80
+      contentRows: [42, 52, 60],
+      rowGap: 5,
+      paddingY: 14,
+      borderY: 2,
+      minimumGap: 35
     });
     expectSafeActionBands(mediaStyles('(orientation: portrait) and (max-height: 900px)'), {
       leadTop: '6.5%',
-      fighterTop: '36%',
-      fighterHeight: '62%',
+      fighterTop: '42%',
+      fighterHeight: '56%',
       cardMinHeight: 108,
       battleHeight: 829 * 0.74,
-      minimumGap: 20
+      contentRows: [28, 60, 32],
+      rowGap: 2,
+      paddingY: 7,
+      borderY: 2,
+      minimumGap: 25
     });
   });
 
