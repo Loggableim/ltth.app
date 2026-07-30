@@ -656,6 +656,23 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     dom.window.close();
   });
 
+  test('keeps persistent urgent guidance landscape-only beside the portrait focus rail', () => {
+    const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
+    const rules = styleRules(dom.window.document);
+    const landscapeRule = rules.find(rule => (
+      rule.media === '' && rule.selector === '#egg-next-landscape'
+    ));
+    const portraitRule = rules.find(rule => (
+      rule.media.includes('orientation: portrait') && rule.selector === '#egg-next-landscape'
+    ));
+
+    expect(landscapeRule?.style.position).toBe('absolute');
+    expect(portraitRule?.style.display).toBe('none');
+    expect(portraitRule?.style.getPropertyPriority('display')).toBe('important');
+    expect(dom.window.document.getElementById('egg-next-persistent')).toBeNull();
+    dom.window.close();
+  });
+
   test('reserves the complete portrait information rail for every non-battle layer', () => {
     const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
     const portraitRules = styleRules(dom.window.document).filter(rule => (

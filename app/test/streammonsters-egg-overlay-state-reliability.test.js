@@ -497,6 +497,12 @@ describe('Stream Monsters egg overlay state reliability', () => {
       expect(focus.hidden).toBe(false);
       expect(focus.querySelector('[data-egg-focus-command]').textContent).toBe('!adopt');
       expect(harness.dom.window.document.getElementById('egg-next-persistent')).toBeNull();
+      const landscapeNext = harness.dom.window.document.querySelector(
+        '[data-egg-next-landscape]'
+      );
+      expect(landscapeNext).not.toBeNull();
+      expect(landscapeNext.hidden).toBe(false);
+      expect(landscapeNext.textContent).toContain('!adopt');
 
       harness.socketHandlers.get('streammonsters:achievement_unlocked')({
         eventId: 'unrelated-visible-card',
@@ -509,6 +515,8 @@ describe('Stream Monsters egg overlay state reliability', () => {
       expect(harness.dom.window.document.getElementById('card').classList).toContain('visible');
       expect(harness.dom.window.document.getElementById('hint').textContent).toContain('!adopt');
       expect(focus.querySelector('[data-egg-focus-command]').textContent).toBe('!adopt');
+      expect(landscapeNext.hidden).toBe(false);
+      expect(landscapeNext.textContent).toContain('!adopt');
     } finally {
       await harness.close();
     }
