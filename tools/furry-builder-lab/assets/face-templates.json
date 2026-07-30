@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "atlasIds": {
+    "head": "template-heads",
+    "eyes": "template-eyes",
+    "mouth": "template-mouths"
+  },
+  "atlases": {
+    "template-heads": {
+      "file": "templates/heads.png",
+      "columns": 3,
+      "rows": 2,
+      "cellSize": 512
+    },
+    "template-eyes": {
+      "file": "templates/eyes.png",
+      "columns": 3,
+      "rows": 2,
+      "cellSize": 512
+    },
+    "template-mouths": {
+      "file": "templates/mouths.png",
+      "columns": 5,
+      "rows": 6,
+      "cellSize": 512
+    }
+  },
+  "templates": [
+    {
+      "id": "raccoon-slate",
+      "label": "Waschbär · Schiefer",
+      "headCell": 0,
+      "eyesCell": 0,
+      "mouthRow": 0,
+      "eyesRect": [0.1875, 0.3125, 0.625, 0.1875],
+      "mouthRect": [0.3125, 0.5625, 0.375, 0.21875]
+    },
+    {
+      "id": "fox-ember",
+      "label": "Fuchs · Glut",
+      "headCell": 1,
+      "eyesCell": 1,
+      "mouthRow": 1,
+      "eyesRect": [0.1953125, 0.3046875, 0.609375, 0.1796875],
+      "mouthRect": [0.31640625, 0.5546875, 0.3671875, 0.22265625]
+    },
+    {
+      "id": "wolf-fog",
+      "label": "Wolf · Nebel",
+      "headCell": 2,
+      "eyesCell": 2,
+      "mouthRow": 2,
+      "eyesRect": [0.203125, 0.328125, 0.59375, 0.171875],
+      "mouthRect": [0.3203125, 0.5703125, 0.359375, 0.2265625]
+    },
+    {
+      "id": "otter-cocoa",
+      "label": "Otter · Kakao",
+      "headCell": 3,
+      "eyesCell": 3,
+      "mouthRow": 3,
+      "eyesRect": [0.19921875, 0.3359375, 0.6015625, 0.16796875],
+      "mouthRect": [0.30859375, 0.578125, 0.3828125, 0.21484375]
+    },
+    {
+      "id": "cat-lilac",
+      "label": "Katze · Flieder",
+      "headCell": 4,
+      "eyesCell": 4,
+      "mouthRow": 4,
+      "eyesRect": [0.2109375, 0.3203125, 0.578125, 0.18359375],
+      "mouthRect": [0.328125, 0.56640625, 0.34375, 0.23046875]
+    },
+    {
+      "id": "fawn-cream",
+      "label": "Rehkitz · Creme",
+      "headCell": 5,
+      "eyesCell": 5,
+      "mouthRow": 5,
+      "eyesRect": [0.21875, 0.31640625, 0.5625, 0.17578125],
+      "mouthRect": [0.3359375, 0.5625, 0.328125, 0.22265625]
+    }
+  ]
+}
