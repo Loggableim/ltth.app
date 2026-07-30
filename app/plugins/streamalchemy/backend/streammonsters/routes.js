@@ -403,7 +403,7 @@ class StreamMonstersRoutes {
       const config = this.configProvider.getConfig().streamMonsters;
       const demoRunId = crypto.randomUUID();
       const demoMatchId = `demo-match:${demoRunId}`;
-      const demoBattleId = `demo-battle:${demoRunId}`;
+      const demoBattleId = demoMatchId;
       const roleScene = /^role_(striker|guardian|trickster|sustain)$/.exec(
         preview?.scene || ''
       );

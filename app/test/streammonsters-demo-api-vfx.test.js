@@ -390,6 +390,8 @@ describe('Stream Monsters targeted demo API', () => {
     expect(secondRoster.matchId).toMatch(/^demo-match:/);
     expect(firstAction.matchId).toBe(firstRoster.matchId);
     expect(secondAction.matchId).toBe(secondRoster.matchId);
+    expect(firstAction.battleId).toBe(firstRoster.matchId);
+    expect(secondAction.battleId).toBe(secondRoster.matchId);
     expect(firstAction.eventId).toMatch(/^demo-match:.+:attack$/);
     expect(secondAction.eventId).toMatch(/^demo-match:.+:attack$/);
     expect(secondRoster.matchId).not.toBe(firstRoster.matchId);
