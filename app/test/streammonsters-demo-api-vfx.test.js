@@ -392,6 +392,12 @@ describe('Stream Monsters targeted demo API', () => {
     expect(secondAction.matchId).toBe(secondRoster.matchId);
     expect(firstAction.battleId).toBe(firstRoster.matchId);
     expect(secondAction.battleId).toBe(secondRoster.matchId);
+    expect(firstAction.action.skill).toEqual(expect.objectContaining({
+      nameKey: 'skillNameAshfangAStage1',
+      shortTextKey: 'skillEffectAshfangAStage1',
+      shortText: expect.any(String)
+    }));
+    expect(firstAction.action.skill.shortText.length).toBeGreaterThan(0);
     expect(firstAction.eventId).toMatch(/^demo-match:.+:attack$/);
     expect(secondAction.eventId).toMatch(/^demo-match:.+:attack$/);
     expect(secondRoster.matchId).not.toBe(firstRoster.matchId);

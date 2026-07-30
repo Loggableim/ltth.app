@@ -591,40 +591,56 @@ class StreamMonstersRoutes {
           hits = [{ index: 1, requestedDamage: 8, shieldAbsorbed: 3, hpDamage: 5, evaded: false }],
           outcomes = [],
           terminal = false
-        } = {}) => ({
-          sequence: 1,
-          eventSequence: 4,
-          round: 1,
-          actorSlot: 1,
-          targetSlot: 2,
-          requestedChoice: choice,
-          choice,
-          choiceFallback: null,
-          skill: {
-            id: `${selectedTemplate.templateId}:${choice}`,
-            name: selectedTemplate.skills[skillType]?.name || `${selectedTemplate.name} Strike`,
-            type: skillType,
-            element: selectedTemplate.element,
-            vfxKey: selectedTemplate.skills[skillType]?.vfxKey || `${selectedTemplate.templateId}:${skillType}`
-          },
-          hits,
-          outcomes,
-          retaliations: [],
-          statusEffects: [],
-          actorState: {
-            hp: 50,
-            maxHp: 50,
-            shield: skillType === 'defense' ? 8 : 0,
-            charge: choice === 'C' ? 0 : 75
-          },
-          targetState: {
-            hp: terminal ? 0 : 43,
-            maxHp: 52,
-            shield: 0,
-            charge: 75
-          },
-          terminal
-        });
+        } = {}) => {
+          const resolvedSkill = resolveStageSkill(
+            selectedTemplate.templateId,
+            choice,
+            1,
+            this.currentRulesVersion(config)
+          );
+          return {
+            sequence: 1,
+            eventSequence: 4,
+            round: 1,
+            actorSlot: 1,
+            targetSlot: 2,
+            requestedChoice: choice,
+            choice,
+            choiceFallback: null,
+            skill: {
+              id: resolvedSkill.id || `${selectedTemplate.templateId}:${choice}`,
+              icon: resolvedSkill.icon,
+              name: resolvedSkill.name ||
+                selectedTemplate.skills[skillType]?.name ||
+                `${selectedTemplate.name} Strike`,
+              nameKey: resolvedSkill.nameKey,
+              shortText: resolvedSkill.shortText,
+              shortTextKey: resolvedSkill.shortTextKey,
+              type: skillType,
+              element: selectedTemplate.element,
+              vfxKey: resolvedSkill.vfxKey ||
+                selectedTemplate.skills[skillType]?.vfxKey ||
+                `${selectedTemplate.templateId}:${skillType}`
+            },
+            hits,
+            outcomes,
+            retaliations: [],
+            statusEffects: [],
+            actorState: {
+              hp: 50,
+              maxHp: 50,
+              shield: skillType === 'defense' ? 8 : 0,
+              charge: choice === 'C' ? 0 : 75
+            },
+            targetState: {
+              hp: terminal ? 0 : 43,
+              maxHp: 52,
+              shield: 0,
+              charge: 75
+            },
+            terminal
+          };
+        };
         const skillPayload = type => ({
           battleId: demoBattleId,
           matchId: demoMatchId,
