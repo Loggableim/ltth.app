@@ -401,6 +401,9 @@ class StreamMonstersRoutes {
         return res.status(400).json({ success: false, error: error.message });
       }
       const config = this.configProvider.getConfig().streamMonsters;
+      const demoRunId = crypto.randomUUID();
+      const demoMatchId = `demo-match:${demoRunId}`;
+      const demoBattleId = `demo-battle:${demoRunId}`;
       const roleScene = /^role_(striker|guardian|trickster|sustain)$/.exec(
         preview?.scene || ''
       );
@@ -506,7 +509,7 @@ class StreamMonstersRoutes {
         { number: 3, firstDamage: 10, secondDamage: 6, hpA: 35, hpB: 31, elementAdvantageMonsterId: monster.monster_id }
       ];
       const battle = {
-        battleId: 'demo-battle',
+        battleId: demoBattleId,
         seed: 'collector-arena-demo-seed',
         monsterAId: monster.monster_id,
         monsterBId: opponent.monster_id,
@@ -623,9 +626,9 @@ class StreamMonstersRoutes {
           terminal
         });
         const skillPayload = type => ({
-          battleId: 'demo-battle',
-          matchId: 'demo-match',
-          eventId: `demo-match:${type}`,
+          battleId: demoBattleId,
+          matchId: demoMatchId,
+          eventId: `${demoMatchId}:${type}`,
           sequence: 4,
           actorId: monster.monster_id,
           targetId: opponent.monster_id,
@@ -652,8 +655,8 @@ class StreamMonstersRoutes {
         ]);
         if (isolatedBattleScenes.has(preview.scene)) {
           emit('streammonsters:battle_choice_opened', {
-            matchId: 'demo-match',
-            eventId: `demo-match:${preview.scene}:roster`,
+            matchId: demoMatchId,
+            eventId: `${demoMatchId}:${preview.scene}:roster`,
             sequence: 1,
             round: 1,
             deadlineMs: this.now() + 8_000,
@@ -699,7 +702,7 @@ class StreamMonstersRoutes {
           );
         } else if (preview.scene === 'sealed_lock') {
           emit('streammonsters:battle_choice_locked', {
-            matchId: 'demo-match',
+            matchId: demoMatchId,
             decision: {
               sequence: 3,
               round: 1,
@@ -712,7 +715,7 @@ class StreamMonstersRoutes {
         } else if (preview.scene === 'sealed_reveal') {
           for (const slot of [1, 2]) {
             emit('streammonsters:battle_choice_locked', {
-              matchId: 'demo-match',
+              matchId: demoMatchId,
               decision: {
                 sequence: slot + 2,
                 round: 1,
@@ -724,7 +727,7 @@ class StreamMonstersRoutes {
             });
           }
           emit('streammonsters:battle_choices_revealed', {
-            matchId: 'demo-match',
+            matchId: demoMatchId,
             round: 1,
             choices: [
               { slot: 1, choice: 'A', source: 'viewer' },
@@ -763,11 +766,11 @@ class StreamMonstersRoutes {
           emit('streammonsters:monster_evolved', evolutionPayload);
         } else if (preview.scene === 'match') {
           emit('streammonsters:battle_match_found', {
-            matchId: 'demo-match',
+            matchId: demoMatchId,
             deadlineMs: this.now() + 15_000
           });
           emit('streammonsters:battle_choice_opened', {
-            matchId: 'demo-match',
+            matchId: demoMatchId,
             round: 1,
             deadlineMs: this.now() + 8_000,
             choices: ['A', 'B', 'C'],
@@ -775,7 +778,7 @@ class StreamMonstersRoutes {
           });
         } else if (preview.scene === 'skill') {
           emit('streammonsters:battle_choice_locked', {
-            matchId: 'demo-match',
+            matchId: demoMatchId,
             decision: { sequence: 3, round: 1, slot: 1, choice: 'A', source: 'viewer', timeout: false }
           });
           emit('streammonsters:battle_skill_used', skillPayload('attack'));
@@ -795,8 +798,8 @@ class StreamMonstersRoutes {
           });
         } else if (preview.scene === 'special') {
           emit('streammonsters:battle_special_charged', {
-            battleId: 'demo-battle',
-            matchId: 'demo-match',
+            battleId: demoBattleId,
+            matchId: demoMatchId,
             monsterId: monster.monster_id,
             monster,
             element: monster.element,
@@ -814,8 +817,8 @@ class StreamMonstersRoutes {
             })
           });
           emit('streammonsters:battle_completed', {
-            matchId: 'demo-match',
-            eventId: 'demo-match:ko:completed',
+            matchId: demoMatchId,
+            eventId: `${demoMatchId}:ko:completed`,
             sequence: 5,
             winnerSlot: 1,
             terminalReason: 'knockout',

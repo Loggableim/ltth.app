@@ -329,9 +329,9 @@ describe('Stream Monsters targeted demo API', () => {
       entry.event === 'streammonsters:battle_completed'
     ))?.payload;
     expect(completed).toEqual(expect.objectContaining({
-      eventId: 'demo-match:ko:completed',
+      eventId: expect.stringMatching(/^demo-match:.+:ko:completed$/),
       sequence: 5,
-      matchId: 'demo-match',
+      matchId: expect.stringMatching(/^demo-match:/),
       winnerSlot: 1,
       terminalReason: 'knockout',
       knockout: {
@@ -355,6 +355,45 @@ describe('Stream Monsters targeted demo API', () => {
     }));
     expect(completed.winner).not.toHaveProperty('monster_id');
     expect(completed.winner).not.toHaveProperty('user_id');
+  });
+
+  test('uses a fresh event namespace for every battle preview request', () => {
+    const { demo, emitted } = harness();
+    const runPreview = () => {
+      const start = emitted.length;
+      const res = response();
+      demo(localRequest({
+        scene: 'skill',
+        templateId: 'ashfang',
+        layout: 'portrait'
+      }), res);
+      expect(res.statusCode).toBe(200);
+      return emitted.slice(start);
+    };
+
+    const first = runPreview();
+    const second = runPreview();
+    const firstRoster = first.find(entry => (
+      entry.event === 'streammonsters:battle_choice_opened'
+    ))?.payload;
+    const secondRoster = second.find(entry => (
+      entry.event === 'streammonsters:battle_choice_opened'
+    ))?.payload;
+    const firstAction = first.find(entry => (
+      entry.event === 'streammonsters:battle_skill_used'
+    ))?.payload;
+    const secondAction = second.find(entry => (
+      entry.event === 'streammonsters:battle_skill_used'
+    ))?.payload;
+
+    expect(firstRoster.matchId).toMatch(/^demo-match:/);
+    expect(secondRoster.matchId).toMatch(/^demo-match:/);
+    expect(firstAction.matchId).toBe(firstRoster.matchId);
+    expect(secondAction.matchId).toBe(secondRoster.matchId);
+    expect(firstAction.eventId).toMatch(/^demo-match:.+:attack$/);
+    expect(secondAction.eventId).toMatch(/^demo-match:.+:attack$/);
+    expect(secondRoster.matchId).not.toBe(firstRoster.matchId);
+    expect(secondAction.eventId).not.toBe(firstAction.eventId);
   });
 
   test.each([
