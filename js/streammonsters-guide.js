@@ -277,5 +277,7 @@
   }
   const params=new URLSearchParams(location.search);const lang=['de','en','es','fr'].includes(params.get('lang'))?params.get('lang'):(['de','en','es','fr'].includes(localStorage.getItem('ltthLanguage'))?localStorage.getItem('ltthLanguage'):(navigator.language||'de').slice(0,2));
   document.querySelectorAll('.sm-language button').forEach(button=>button.addEventListener('click',()=>{const next=button.dataset.lang;localStorage.setItem('ltthLanguage',next);const url=new URL(location.href);url.searchParams.set('lang',next);history.replaceState({},'',url);render(next);}));render(lang);
-  document.addEventListener('DOMContentLoaded',async()=>{if(window.LTTHLayout)await window.LTTHLayout.init();});
+  const initializeLayout=async()=>{if(window.LTTHLayout)await window.LTTHLayout.init();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeLayout,{once:true});
+  else initializeLayout();
 })();
