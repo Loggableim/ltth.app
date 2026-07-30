@@ -137,17 +137,17 @@ describe('Stream Monsters 1.11 overlay language configuration', () => {
     });
   });
 
-  test('keeps the Rules v8 action window at six seconds regardless of overlay language cadence', () => {
+  test('keeps the Rules v8 action window at four seconds regardless of overlay language cadence', () => {
     const service = Object.create(StreamMonstersBattleMatchService.prototype);
     service.rulesVersion = 8;
     service.localeCount = 1;
     service.secondsPerLocale = 5;
 
     service.setLanguageTiming({ localeCount: 1, secondsPerLocale: 5 });
-    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
+    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(4_000);
 
     service.setLanguageTiming({ localeCount: 2, secondsPerLocale: 5 });
-    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
+    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(4_000);
   });
 
   test('sanitizes and publishes overlay language config through the creator API contract', () => {

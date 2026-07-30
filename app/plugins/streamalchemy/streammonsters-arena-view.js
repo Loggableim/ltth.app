@@ -12,6 +12,59 @@
     play: async () => false
   });
 
+  const FIGHTER_TRANSIENT_CLASSES = Object.freeze([
+    'telegraphing',
+    'advancing',
+    'hit',
+    'status-hit',
+    'retaliation-hit',
+    'shielding',
+    'evaded',
+    'knockout',
+    'winner',
+    'defeated',
+    'roster-locked',
+    'choice-locked',
+    'choice-revealed'
+  ]);
+
+  const FIGHTER_TRANSIENT_STYLE_PROPERTIES = Object.freeze([
+    'opacity',
+    'filter',
+    'backdrop-filter',
+    '-webkit-backdrop-filter',
+    'mask',
+    'mask-image',
+    'mask-mode',
+    'mask-position',
+    'mask-repeat',
+    'mask-size',
+    '-webkit-mask',
+    '-webkit-mask-image',
+    '-webkit-mask-position',
+    '-webkit-mask-repeat',
+    '-webkit-mask-size',
+    'animation',
+    'animation-name',
+    'animation-duration',
+    'animation-delay',
+    'animation-fill-mode',
+    'animation-timing-function',
+    'animation-iteration-count',
+    'animation-direction',
+    'animation-play-state',
+    'visibility',
+    'transform',
+    'transform-origin',
+    'translate',
+    'rotate',
+    'scale',
+    'perspective',
+    'mix-blend-mode',
+    'clip-path',
+    'will-change'
+  ]);
+
   function numeric(value, fallback = 0) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
@@ -358,6 +411,38 @@
     const skillDeckNode = slot => documentLike.querySelector(
       `[data-skill-deck="${slot}"]`
     );
+
+    function resetVisualElement(element) {
+      if (!element) return;
+      if (typeof element.getAnimations === 'function') {
+        try {
+          for (const animation of element.getAnimations()) {
+            try {
+              animation?.cancel?.();
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+      element.classList?.remove(...FIGHTER_TRANSIENT_CLASSES);
+      for (const property of FIGHTER_TRANSIENT_STYLE_PROPERTIES) {
+        element.style?.removeProperty(property);
+      }
+    }
+
+    function resetFighterVisuals() {
+      for (const slot of [1, 2]) {
+        const fighter = fighterNode(slot);
+        const wrapper = fighter?.querySelector('.arena-sprite-wrap');
+        const image = node(`arena-image-${slot}`);
+        for (const element of [fighter, wrapper, image]) {
+          resetVisualElement(element);
+        }
+        if (fighter?.dataset) {
+          delete fighter.dataset.choice;
+          delete fighter.dataset.choiceSource;
+        }
+      }
+    }
     const interpolate = (template, params = {}) => String(template || '').replace(
       /\{(\w+)\}/g,
       (match, name) => Object.prototype.hasOwnProperty.call(params, name)
@@ -994,6 +1079,8 @@
     }
 
     function resetFighters() {
+      resetFighterVisuals();
+      clearArenaStamps();
       stateBySlot.clear();
       activeChargeWindow = null;
       renderVisibleComposite = null;
@@ -1225,6 +1312,7 @@
 
     function openChoice(payload = {}) {
       activateMatch(payload.matchId);
+      resetFighterVisuals();
       clearArenaStamps();
       setBattleSurface(true, 'choice');
       activeChargeWindow = normalizeChargeWindow(payload);
@@ -1607,6 +1695,7 @@
     async function playAction(payload = {}) {
       const action = unwrapAction(payload);
       if (!acceptAction(action)) return false;
+      resetFighterVisuals();
       if (payload.round != null || payload.roundNumber != null || payload.action?.round != null) {
         lastRound = Math.max(
           1,
@@ -1928,7 +2017,7 @@
 
     async function complete(payload = {}) {
       stopCountdown();
-      clearArenaStamps();
+      resetFighterVisuals();
       node('arena-action-card')?.classList.remove('visible');
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
@@ -1939,6 +2028,10 @@
         const fighter = fighterNode(slot);
         fighter?.classList.toggle('winner', slot === winnerSlot);
         fighter?.classList.toggle('defeated', Boolean(winnerSlot) && slot !== winnerSlot);
+        fighter?.classList.toggle(
+          'knockout',
+          terminalReason === 'knockout' && Boolean(winnerSlot) && slot !== winnerSlot
+        );
       }
       if (arena) {
         arena.classList.add('visible');
@@ -2077,6 +2170,7 @@
 
     async function cancel(payload = {}) {
       stopCountdown();
+      resetFighterVisuals();
       clearArenaStamps();
       node('arena-action-card')?.classList.remove('visible');
       const terminalVersion = surfaceVersion;
@@ -2120,6 +2214,7 @@
         setBattleSurface(false, 'snapshot_empty');
         return null;
       }
+      resetFighterVisuals();
       applyMatch(match);
       if (
         match.state === 'action' &&

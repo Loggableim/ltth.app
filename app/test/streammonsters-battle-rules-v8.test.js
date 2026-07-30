@@ -143,7 +143,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     const service = createService({ store });
     const expected = {
       ROSTER_MS: 6_000,
-      SKILL_CHOICE_MS: 6_000,
+      SKILL_CHOICE_MS: 4_000,
       STAT_CHOICE_MS: 10_000,
       LOCK_FLASH_MS: 150,
       JOINT_REVEAL_MS: 300,
@@ -161,7 +161,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(service.sweepIntervalMs).toBe(expected.SERVICE_SWEEP_MS);
   });
 
-  test('uses fixed six-second v8 roster and action windows in every language mode', () => {
+  test('uses a six-second roster and fixed four-second action window in every language mode', () => {
     const { store } = createStore();
     const singleLocale = createService({ store });
     const bilingual = createService({
@@ -172,12 +172,12 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
     expect(singleLocale.rulesVersion).toBe(8);
     expect(singleLocale.rosterWindowMs({ rulesVersion: 8 })).toBe(6_000);
-    expect(singleLocale.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
+    expect(singleLocale.actionWindowMs({ rulesVersion: 8 })).toBe(4_000);
     expect(singleLocale.statWindowMs({ rulesVersion: 8 })).toBe(10_000);
-    expect(bilingual.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
+    expect(bilingual.actionWindowMs({ rulesVersion: 8 })).toBe(4_000);
   });
 
-  test('keeps each v8 action readable while a controlled four-round K.O. stays inside 35-45 seconds', () => {
+  test('keeps each v8 action readable while a controlled four-round K.O. stays inside 30-40 seconds', () => {
     const { sqlite, store } = createStore();
     let nowMs = 1_000;
     insertMonster(sqlite, {
@@ -305,8 +305,8 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     const authoritativeDurationMs = completed.completedAtMs - createdAtMs;
     expect(completed.state).toBe('completed');
     expect(completed.result.terminalReason).toBe('knockout');
-    expect(authoritativeDurationMs).toBeGreaterThanOrEqual(35_000);
-    expect(authoritativeDurationMs).toBeLessThanOrEqual(45_000);
+    expect(authoritativeDurationMs).toBeGreaterThanOrEqual(30_000);
+    expect(authoritativeDurationMs).toBeLessThanOrEqual(40_000);
   });
 
   test('only advertises Special after defense locks when both fighters can use it', () => {
@@ -334,7 +334,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       .toEqual(['A', 'C']);
   });
 
-  test('fits both locale pages inside the authoritative six-second choice deadline', () => {
+  test('fits both locale pages inside the authoritative four-second choice deadline', () => {
     const config = OverlayRuntime.normalizeOverlayLanguage({
       primaryLocale: 'de',
       locales: ['de', 'en'],
@@ -343,14 +343,14 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
     expect(OverlayRuntime.criticalLocalePages(config, {
       nowMs: 1_000,
-      deadlineMs: 7_000
+      deadlineMs: 5_000
     })).toEqual([
-      { locale: 'de', durationMs: 3_000 },
-      { locale: 'en', durationMs: 3_000 }
+      { locale: 'de', durationMs: 2_000 },
+      { locale: 'en', durationMs: 2_000 }
     ]);
   });
 
-  test('keeps eight timeout-heavy rounds bounded while preserving the readable action choreography', () => {
+  test('keeps a deterministic ten-round early-choice fight materially below the old 94.9-second run', () => {
     const action = {
       rulesVersion: 8,
       actorSlot: 1,
@@ -365,15 +365,28 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       'battle_skill_used',
       { action }
     ).durationMs;
-    const timeoutHeavyEightRoundsMs = 6_000 +
-      (8 * 6_000) +
-      (7 * 2 * actionDurationMs);
+    const normalActionCount = 9 * 2;
+    const collapseRoundCount = 5;
+    const tenRoundCinematicsMs =
+      (10 * ArenaDirector.RULES_V8_PACING.JOINT_REVEAL_MS) +
+      (normalActionCount * actionDurationMs) +
+      ArenaDirector.RULES_V8_PACING.TERMINAL_ACTION_MS +
+      (collapseRoundCount * ArenaDirector.RULES_V8_PACING.COLLAPSE_MS);
+    const deterministicEarlyChoiceTenRoundsMs =
+      ArenaDirector.RULES_V8_PACING.ROSTER_MS +
+      tenRoundCinematicsMs;
+    const deterministicTimeoutTenRoundsMs =
+      (10 * 4_000) +
+      tenRoundCinematicsMs;
 
     expect(PASSIVE_CHARGE_PER_SECOND).toBe(5);
     expect(MAX_PASSIVE_CHARGE_PER_ROUND).toBe(30);
     expect(actionDurationMs).toBeGreaterThanOrEqual(2_000);
     expect(actionDurationMs).toBeLessThanOrEqual(3_000);
-    expect(timeoutHeavyEightRoundsMs).toBeLessThanOrEqual(90_000);
+    expect(deterministicEarlyChoiceTenRoundsMs).toBe(50_500);
+    expect(deterministicEarlyChoiceTenRoundsMs).toBeLessThan(70_000);
+    expect(deterministicTimeoutTenRoundsMs).toBe(84_500);
+    expect(deterministicTimeoutTenRoundsMs).toBeLessThan(90_000);
   });
 
   test('resolves two early sealed choices immediately with the director-derived pause', () => {
@@ -550,7 +563,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(service.getMatch(matchId)).toEqual(expect.objectContaining({
       roundNumber: 6,
       actionOpenedAtMs: paced.chargePauseUntilMs,
-      actionDeadlineMs: paced.chargePauseUntilMs + 6_000
+      actionDeadlineMs: paced.chargePauseUntilMs + 4_000
     }));
   });
 
@@ -662,7 +675,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     })).toBe(40);
   });
 
-  test('does not advertise Special readiness beyond the six-second charge cap', () => {
+  test('does not advertise Special readiness beyond the four-second choice window', () => {
     const { sqlite, service, matchId } = createLockedMatch({
       localeCount: 2,
       secondsPerLocale: 5
@@ -696,7 +709,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
     expect(opened.chargeWindow).toEqual(expect.objectContaining({
       openedAtMs: 1_000,
-      deadlineMs: 7_000,
+      deadlineMs: 5_000,
       passivePerSecond: 5,
       maxGain: 30
     }));
@@ -724,8 +737,8 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       ])),
       actions: []
     }));
-    setNow(7_000);
-    expect(service.recoverActionMatch(matchId, 7_000)).toBe(true);
+    setNow(5_000);
+    expect(service.recoverActionMatch(matchId, 5_000)).toBe(true);
 
     const ticks = sqlite.prepare(`
       SELECT public_payload_json
@@ -734,8 +747,8 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       ORDER BY sequence
     `).all(matchId).map(row => JSON.parse(row.public_payload_json));
     expect(ticks).toEqual([
-      expect.objectContaining({ round: 1, before: 0, after: 30, gained: 30 }),
-      expect.objectContaining({ round: 1, before: 0, after: 30, gained: 30 })
+      expect.objectContaining({ round: 1, before: 0, after: 20, gained: 20 }),
+      expect.objectContaining({ round: 1, before: 0, after: 20, gained: 20 })
     ]);
   });
 

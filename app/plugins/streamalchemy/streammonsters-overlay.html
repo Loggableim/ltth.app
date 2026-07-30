@@ -641,10 +641,10 @@
     .arena-fighter.hit { animation:arena-hit-left .34s cubic-bezier(.1,.8,.25,1); filter:brightness(1.7) saturate(1.25); }
     #arena-fighter-2.hit { animation-name:arena-hit-right; }
     .arena-fighter.evaded { animation:arena-evade .42s ease-out; filter:drop-shadow(0 0 28px #64e9ff); }
-    .arena-fighter.knockout { opacity:.38; transform:translateY(9%) rotate(-7deg) scale(.92); filter:grayscale(.45) brightness(.55); }
+    .arena-fighter.knockout { opacity:1; transform:translateY(9%) rotate(-7deg) scale(.92); filter:grayscale(.45) brightness(.55); }
     #arena-fighter-2.knockout { transform:translateY(9%) rotate(7deg) scale(.92); }
     .arena-fighter.winner { z-index:11; transform:translateY(-3%) scale(1.08); filter:drop-shadow(0 0 42px #ffe78e88); }
-    .arena-fighter.defeated { opacity:.38; filter:grayscale(.55) brightness(.55); }
+    .arena-fighter.defeated { opacity:1; filter:grayscale(.55) brightness(.55); }
     .arena-fighter.choice-locked .fighter-hud { border-color:#7cf5bc; box-shadow:0 0 28px #58e9a13b; }
     .arena-fighter.choice-locked .fighter-hud::after {
       content:attr(data-choice); position:absolute; right:10px; bottom:-23px; display:grid; place-items:center;

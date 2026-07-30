@@ -141,8 +141,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     };
     view.applyMatch(match);
     expect(document.querySelector('#battle').classList.contains('visible')).toBe(true);
-    expect(document.querySelector('#arena-image-1').src).toContain('/furry/ashfang.png');
-    expect(document.querySelector('#arena-image-2').src).toContain('/furry/ripple.png');
+    expect(document.querySelector('#arena-image-1').src).toContain('/furry/ashfang.webp');
+    expect(document.querySelector('#arena-image-2').src).toContain('/furry/ripple.webp');
     expect(document.querySelector('#arena-name-1').textContent).toBe('Ashfang');
     expect(document.querySelector('#arena-hp-text-2').textContent).toBe('48 / 52');
 

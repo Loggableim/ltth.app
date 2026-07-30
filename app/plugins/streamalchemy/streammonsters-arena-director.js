@@ -72,9 +72,9 @@
     const stage = Math.max(1, Math.min(3, Number(fighter?.evolutionStage) || 1));
     if (!templateId) return '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
     if (stage === 1) {
-      return `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.png`;
+      return `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.webp`;
     }
-    return `/plugins/streamalchemy/assets/streammonsters/furry/evolution/${element}/${templateId}-stage${stage}.png`;
+    return `/plugins/streamalchemy/assets/streammonsters/furry/evolution/${element}/${templateId}-stage${stage}.webp`;
   }
 
   function normalizeFighters(fighters = []) {

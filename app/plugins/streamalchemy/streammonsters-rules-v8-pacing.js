@@ -4,7 +4,7 @@
   if (root) root.StreamMonstersRulesV8Pacing = pacing;
 }(typeof globalThis === 'object' ? globalThis : this, () => Object.freeze({
   ROSTER_MS: 6_000,
-  SKILL_CHOICE_MS: 6_000,
+  SKILL_CHOICE_MS: 4_000,
   STAT_CHOICE_MS: 10_000,
   LOCK_FLASH_MS: 150,
   JOINT_REVEAL_MS: 300,
