@@ -645,12 +645,58 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-action-skill').textContent).toBe('Moonfall');
     expect(document.getElementById('arena-action-copy').textContent)
       .toContain('restores health');
-    const metrics = document.getElementById('arena-action-metrics').textContent;
-    expect(metrics).toBe(
-      'Schaden 7 · Schildtreffer 1 · Schild +3 · Heilung 4 · Ausweichen'
-    );
+    const metrics = [...document.querySelectorAll('#arena-action-metrics [data-action-metric]')]
+      .map(metric => metric.textContent);
+    expect(metrics).toEqual([
+      'Schaden 7',
+      'Schildtreffer 1',
+      'Schild +3',
+      'Heilung 4',
+      'Ausweichen'
+    ]);
+    expect(document.querySelector('#arena-action-metrics').textContent)
+      .toContain('Schaden 7');
     expect(document.getElementById('arena-action-card').classList)
       .toContain('visible');
+  });
+
+  test('renders every localized action metric as an individually addressable value', async () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      localize: (key, params) => ({
+        arenaDamageMetric: `${params.amount} DMG`,
+        arenaShieldAbsorbedMetric: `${params.amount} Schild absorbiert`,
+        arenaShieldGainMetric: `${params.amount} Schild`,
+        arenaHealMetric: `${params.amount} Heilung`
+      }[key] || key),
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+
+    await view.playAction({
+      matchId: 'metric-spans',
+      eventId: 'metric-spans:action:1',
+      eventSequence: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      skill: { name: 'Moonfall', type: 'special' },
+      hits: [{ hpDamage: 42, shieldAbsorbed: 12 }],
+      outcomes: [
+        { type: 'shield', amount: 8 },
+        { type: 'heal', amount: 5 }
+      ]
+    });
+
+    const metrics = [...document.querySelectorAll('#arena-action-metrics [data-action-metric]')]
+      .map(metric => metric.textContent);
+    expect(metrics).toEqual([
+      '42 DMG',
+      '12 Schild absorbiert',
+      '8 Schild',
+      '5 Heilung'
+    ]);
+    expect(document.querySelector('#arena-action-metrics').textContent)
+      .toContain('42 DMG');
   });
 
   test('clears the last action card before the result and keeps the next roster clean', async () => {
@@ -1651,6 +1697,39 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(styles.get('#battle-effects-canvas').getPropertyValue('z-index')).toBe('3');
     expect(styles.get('.arena-skill-card .skill-copy').getPropertyValue('text-overflow'))
       .not.toBe('ellipsis');
+  });
+
+  test('keeps portrait battle phases focused on the next viewer decision', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const portrait = new Map(rules
+      .filter(rule => rule.parentRule?.conditionText === '(orientation: portrait)')
+      .filter(rule => rule.selectorText)
+      .map(rule => [rule.selectorText, rule.style]));
+
+    expect(portrait.get('#battle[data-phase="choice"] #arena-skill-prompt:not([data-choice-feedback="true"])')
+      .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#arena-choice-surface .arena-skill-card .skill-copy')
+      .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#battle[data-phase="action"] #arena-action-copy')
+      .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#battle[data-phase="action"] #arena-action-metrics [data-action-metric]:nth-child(n+2)')
+      .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#battle[data-phase="completed"] #arena-result-report')
+      .getPropertyValue('display')).toBe('none');
   });
 
   test('composes visible action-phase lead, action copy, and fighter HUD safe bands in every orientation', () => {

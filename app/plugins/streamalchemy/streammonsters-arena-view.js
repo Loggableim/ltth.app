@@ -673,6 +673,18 @@
       return metrics;
     }
 
+    function renderActionMetrics(action = {}) {
+      const target = node('arena-action-metrics');
+      if (!target) return;
+      target.replaceChildren();
+      actionMetrics(action).forEach((metric, index) => {
+        const item = documentLike.createElement('span');
+        item.dataset.actionMetric = String(index + 1);
+        item.textContent = metric;
+        target.appendChild(item);
+      });
+    }
+
     function renderActionCard(action = {}) {
       const actor = stateBySlot.get(numeric(action.actorSlot)) || {};
       const skillName = action.skill?.nameKey
@@ -685,7 +697,7 @@
       setText('arena-action-key', String(action.choice || '').toUpperCase());
       setText('arena-action-skill', skillName);
       setText('arena-action-copy', skillCopy);
-      setText('arena-action-metrics', actionMetrics(action).join(' · '));
+      renderActionMetrics(action);
       node('arena-action-card')?.classList.add('visible');
     }
 

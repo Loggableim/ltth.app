@@ -399,6 +399,8 @@
       grid-area:metrics; color:#fff0a3; font-size:clamp(17px,2.2vw,28px); font-weight:1000;
       line-height:1.25;
     }
+    #arena-action-metrics [data-action-metric] { display:inline; }
+    #arena-action-metrics [data-action-metric] + [data-action-metric]::before { content:' · '; }
     #battle[data-phase="action"] #arena-skill-prompt { opacity:0; }
     #battle[data-phase="action"] #arena-lead {
       opacity:1; visibility:visible; pointer-events:none;
@@ -1189,7 +1191,21 @@
       #arena-choice-surface {
         right:2.5%; bottom:2%; left:2.5%; gap:7px; padding:8px;
       }
+      #battle[data-phase="choice"] #arena-skill-prompt:not([data-choice-feedback="true"]) { display:none; }
       #battle[data-phase="choice"] #arena-feed { display:none; }
+      #arena-choice-surface .arena-skill-card .skill-copy { display:none; }
+      #battle[data-phase="action"] #arena-action-copy { display:none; }
+      #battle[data-phase="completed"] #arena-result-report { display:none; }
+      #battle[data-phase="completed"] #arena-result-ratings { display:none; }
+      #battle[data-phase="completed"] #arena-result-next { display:none; }
+      #battle[data-phase="action"] #arena-action-metrics {
+        display:flex;
+        justify-content:center;
+        gap:.55em;
+      }
+      #battle[data-phase="action"] #arena-action-metrics [data-action-metric]:nth-child(n+2) {
+        display:none;
+      }
       .arena-skill-deck { gap:5px; }
       #arena-choice-surface .arena-skill-card {
         min-height:64px; padding:8px 9px;
@@ -1198,7 +1214,7 @@
         font-size:clamp(16px,3.35vw,22px);
       }
       #arena-choice-surface .arena-skill-card .skill-copy {
-        font-size:clamp(14px,2.85vw,18px); line-height:1.16;
+        display:none; font-size:clamp(14px,2.85vw,18px); line-height:1.16;
       }
       #arena-feed { top:auto; bottom:1.5%; width:86%; }
       #arena-action-card { top:8.5%; width:94%; min-height:130px; }
