@@ -1271,6 +1271,9 @@ class BattleMatchService {
       },
       () => ({
         matchId: match.matchId,
+        ...(this.isRulesV8(match) ? {
+          rulesVersion: Number(match.rulesVersion) || 8
+        } : {}),
         decision: {
           round: match.roundNumber,
           slot: participant.slot,
@@ -1585,6 +1588,9 @@ class BattleMatchService {
     }
     this.appendEvent(matchId, 'streammonsters:battle_choices_revealed', {
       matchId,
+      ...(this.isRulesV8(match) ? {
+        rulesVersion: Number(match.rulesVersion) || 8
+      } : {}),
       round: match.roundNumber,
       choices: decisions.map(decision => {
         const participant = match.participants.find(entry => (

@@ -340,7 +340,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
   });
 
   test('resolves two early sealed choices immediately with the director-derived pause', () => {
-    const { service, matchId } = createLockedMatch();
+    const { emit, service, matchId } = createLockedMatch();
     const actions = [
       {
         actorId: 'alpha-v8',
@@ -401,6 +401,23 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(match.chargePauseUntilMs - match.chargePauseStartedAtMs)
       .toBe(directorPauseMs);
     expect(directorPauseMs).toBeLessThanOrEqual(3_200);
+
+    const liveLock = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_choice_locked'
+    ))?.[1];
+    const liveReveal = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_choices_revealed'
+    ))?.[1];
+    expect(liveLock.rulesVersion).toBe(8);
+    expect(liveReveal.rulesVersion).toBe(8);
+    expect(ArenaDirector.buildArcadeTimeline(
+      'battle_choice_locked',
+      liveLock
+    ).durationMs).toBe(ArenaDirector.RULES_V8_PACING.LOCK_FLASH_MS);
+    expect(ArenaDirector.buildArcadeTimeline(
+      'battle_choices_revealed',
+      liveReveal
+    ).durationMs).toBe(ArenaDirector.RULES_V8_PACING.JOINT_REVEAL_MS);
 
     const replayEvents = service.getPublicNormalizedReplay(matchId, 0, 100).events;
     const lock = replayEvents.find(event => (
