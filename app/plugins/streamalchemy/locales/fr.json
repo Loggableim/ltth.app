@@ -325,6 +325,7 @@
           "arenaDrawLabel": "Égalité",
           "arenaDoubleKnockoutSummary": "Manche {round} · Les deux monstres sont K.-O.",
           "arenaResultSummary": "Manche {round} · {hp}/{maxHp} HP restants",
+          "arenaCompactResultSummary": "Manche {round} · {hp} HP restants",
           "arenaRatingChanged": "{name} : {before} → {after} ({delta})",
           "arenaRatingUnchanged": "{name} : ELO inchangé ({after})",
           "arenaCombatReportDecisive": "Compétence décisive : {icon}{skill} · {choice} · R{round}",

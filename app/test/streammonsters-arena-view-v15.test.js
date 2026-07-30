@@ -21,12 +21,38 @@ function skillDeck(slot) {
 
 function mountArena({ portrait = false } = {}) {
   const dom = new JSDOM('<!doctype html><html><body></body></html>');
-  dom.window.matchMedia = jest.fn(query => ({
-    matches: portrait && query === '(orientation: portrait)',
-    media: query,
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn()
-  }));
+  const orientationListeners = new Set();
+  const portraitMediaQuery = {
+    matches: portrait,
+    media: '(orientation: portrait)',
+    addEventListener: jest.fn((type, listener) => {
+      if (type === 'change') orientationListeners.add(listener);
+    }),
+    removeEventListener: jest.fn((type, listener) => {
+      if (type === 'change') orientationListeners.delete(listener);
+    })
+  };
+  dom.window.matchMedia = jest.fn(query => (
+    query === portraitMediaQuery.media
+      ? portraitMediaQuery
+      : {
+          matches: false,
+          media: query,
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        }
+  ));
+  dom.portraitMediaQuery = portraitMediaQuery;
+  dom.setPortrait = matches => {
+    portraitMediaQuery.matches = Boolean(matches);
+    for (const listener of orientationListeners) {
+      listener({
+        matches: portraitMediaQuery.matches,
+        media: portraitMediaQuery.media
+      });
+    }
+  };
+  dom.orientationListenerCount = () => orientationListeners.size;
   global.document = dom.window.document;
   document.body.innerHTML = `
     <section id="battle">
@@ -57,6 +83,7 @@ function mountArena({ portrait = false } = {}) {
         <strong id="arena-result-winner"></strong>
         <span id="arena-result-monster"></span>
         <span id="arena-result-summary"></span>
+        <span id="arena-result-compact-summary"></span>
         <div id="arena-result-ratings"></div>
         <div id="arena-result-report" hidden></div>
         <div id="arena-result-next"></div>
@@ -317,6 +344,57 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     }));
     expect(fallback).not.toHaveProperty('origin');
     expect(fallback).not.toHaveProperty('targetOrigin');
+  });
+
+  test.each([
+    ['actor valid and target invalid', 1],
+    ['actor invalid and target valid', 2]
+  ])('omits both measured origins when %s', async (_label, validSlot) => {
+    mountArena();
+    const effects = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      effects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    document.getElementById('battle').getBoundingClientRect = jest.fn(() => ({
+      left: 100, top: 50, right: 500, bottom: 250, width: 400, height: 200
+    }));
+    for (const slot of [1, 2]) {
+      document.getElementById(`arena-image-${slot}`).getBoundingClientRect = jest.fn(() => (
+        slot === validSlot
+          ? {
+              left: slot === 1 ? 140 : 380,
+              top: 70,
+              right: slot === 1 ? 220 : 460,
+              bottom: 170,
+              width: 80,
+              height: 100
+            }
+          : {
+              left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0
+            }
+      ));
+    }
+
+    await view.playAction({
+      eventId: `paired-slot-fallback:${validSlot}`,
+      eventSequence: validSlot,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: { name: 'Moonfall', type: 'special', element: 'Lunar' },
+      hits: [{ hpDamage: 7, shieldAbsorbed: 0 }]
+    });
+
+    const payload = effects.play.mock.calls
+      .find(([scene]) => scene === 'special')?.[1];
+    expect(payload).toEqual(expect.objectContaining({
+      actorSlot: 1,
+      targetSlot: 2
+    }));
+    expect(payload).not.toHaveProperty('origin');
+    expect(payload).not.toHaveProperty('targetOrigin');
   });
 
   test.each([
@@ -660,6 +738,111 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     );
   });
 
+  test.each([
+    {
+      label: 'knockout',
+      matchRound: 6,
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@pupcid', hp: 9, maxHp: 20 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 0, maxHp: 20 }
+      ],
+      completion: {
+        winnerSlot: 1,
+        winner: { name: 'Ashfang', viewerName: '@pupcid' },
+        terminalReason: 'knockout',
+        knockout: { round: 7, remainingHp: 4, maxHp: 20 }
+      },
+      expectedWinner: '@pupcid',
+      expectedCompact: 'Runde 7 \u00b7 9 HP \u00fcbrig',
+      expectedDetailed: 'Runde 7 \u00b7 4/20 HP \u00fcbrig'
+    },
+    {
+      label: 'forfeit',
+      matchRound: 4,
+      fighters: [
+        { slot: 1, name: 'Selene', viewerName: '@luna', hp: 17, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 22, maxHp: 30 }
+      ],
+      completion: {
+        round: 5,
+        winnerSlot: 1,
+        winner: { name: 'Selene', viewerName: '@luna' },
+        terminalReason: 'forfeit',
+        knockout: null
+      },
+      expectedWinner: '@luna',
+      expectedCompact: 'Runde 5 \u00b7 17 HP \u00fcbrig',
+      expectedDetailed: ''
+    },
+    {
+      label: 'double knockout',
+      matchRound: 8,
+      fighters: [
+        { slot: 1, name: 'Ashfang', viewerName: '@left', hp: 0, maxHp: 40 },
+        { slot: 2, name: 'Ripple', viewerName: '@right', hp: 0, maxHp: 40 }
+      ],
+      completion: {
+        winnerSlot: 0,
+        winner: null,
+        terminalReason: 'double_knockout',
+        knockout: null
+      },
+      expectedWinner: 'Unentschieden',
+      expectedCompact: 'Runde 8 \u00b7 0 HP \u00fcbrig',
+      expectedDetailed: 'Runde 8 \u00b7 Beide Monster sind K. O.'
+    }
+  ])(
+    'exposes one compact round and remaining-HP summary for portrait $label completion',
+    async ({
+      label,
+      matchRound,
+      fighters,
+      completion,
+      expectedWinner,
+      expectedCompact,
+      expectedDetailed
+    }) => {
+      mountArena({ portrait: true });
+      let finishResult;
+      const view = ArenaView.createArenaView({
+        document,
+        clock: {
+          wait: milliseconds => (
+            milliseconds === 8_000
+              ? new Promise(resolve => { finishResult = resolve; })
+              : Promise.resolve()
+          ),
+          now: () => 1_000
+        }
+      });
+      view.applyMatch({
+        matchId: `compact-result:${label}`,
+        state: 'action',
+        roundNumber: matchRound,
+        fighters
+      });
+
+      const playback = view.playEvent('battle_completed', {
+        eventId: `compact-result:${label}:completed`,
+        matchId: `compact-result:${label}`,
+        ...completion
+      });
+
+      expect(document.getElementById('battle').dataset.phase).toBe('completed');
+      expect(document.getElementById('arena-result-winner').textContent)
+        .toContain(expectedWinner);
+      expect(document.getElementById('arena-result-compact-summary').textContent)
+        .toBe(expectedCompact);
+      expect(document.getElementById('arena-result-compact-summary').textContent
+        .match(/\b\d+ HP\b/g)).toHaveLength(1);
+      expect(document.getElementById('arena-result-summary').textContent)
+        .toBe(expectedDetailed);
+
+      finishResult();
+      await playback;
+    }
+  );
+
   test('shows the full readable action contract from public combat state', async () => {
     mountArena({ portrait: true });
     const view = ArenaView.createArenaView({
@@ -748,6 +931,109 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('visible');
   });
 
+  test('synchronizes the compact action label across portrait and landscape changes', async () => {
+    const dom = mountArena({ portrait: true });
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'orientation-action',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Selene', viewerName: '@luna', hp: 24, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 20, maxHp: 30 }
+      ]
+    });
+    await view.playAction({
+      matchId: 'orientation-action',
+      eventId: 'orientation-action:1',
+      eventSequence: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: {
+        name: 'Moonfall',
+        shortText: 'Full localized action detail.',
+        type: 'special',
+        element: 'Lunar'
+      },
+      hits: [{ hpDamage: 7, shieldAbsorbed: 0 }]
+    });
+
+    const actionCard = document.getElementById('arena-action-card');
+    expect(actionCard.getAttribute('aria-label'))
+      .toBe('C \u00b7 Moonfall \u00b7 \u22127 HP');
+    expect(dom.orientationListenerCount()).toBe(1);
+
+    dom.setPortrait(false);
+    expect(actionCard.getAttribute('aria-label')).toBeNull();
+    expect(document.getElementById('arena-action-player').textContent).toBe('@luna');
+    expect(document.getElementById('arena-action-copy').textContent)
+      .toBe('Full localized action detail.');
+    expect(document.getElementById('arena-action-metrics').textContent)
+      .toContain('Schaden 7');
+
+    dom.setPortrait(true);
+    expect(actionCard.getAttribute('aria-label'))
+      .toBe('C \u00b7 Moonfall \u00b7 \u22127 HP');
+  });
+
+  test('removes compact action ARIA on completion cancellation and destroy', async () => {
+    const dom = mountArena({ portrait: true });
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    const play = async (matchId, eventSequence) => {
+      view.applyMatch({
+        matchId,
+        state: 'action',
+        fighters: [
+          { slot: 1, name: 'Selene', viewerName: '@luna', hp: 24, maxHp: 30 },
+          { slot: 2, name: 'Ripple', viewerName: '@tide', hp: 20, maxHp: 30 }
+        ]
+      });
+      await view.playAction({
+        matchId,
+        eventId: `${matchId}:action`,
+        eventSequence,
+        actorSlot: 1,
+        targetSlot: 2,
+        choice: 'A',
+        skill: { name: 'Moon Strike', type: 'attack', element: 'Lunar' },
+        hits: [{ hpDamage: 5, shieldAbsorbed: 0 }]
+      });
+    };
+    const actionCard = document.getElementById('arena-action-card');
+
+    await play('aria-complete', 1);
+    expect(actionCard.getAttribute('aria-label'))
+      .toBe('A \u00b7 Moon Strike \u00b7 \u22125 HP');
+    await view.complete({
+      matchId: 'aria-complete',
+      winnerSlot: 1,
+      terminalReason: 'forfeit'
+    });
+    expect(actionCard.getAttribute('aria-label')).toBeNull();
+    dom.setPortrait(false);
+    dom.setPortrait(true);
+    expect(actionCard.getAttribute('aria-label')).toBeNull();
+
+    await play('aria-cancel', 2);
+    expect(actionCard.hasAttribute('aria-label')).toBe(true);
+    await view.cancel({ matchId: 'aria-cancel', reason: 'forfeit' });
+    expect(actionCard.getAttribute('aria-label')).toBeNull();
+
+    await play('aria-destroy', 3);
+    expect(actionCard.hasAttribute('aria-label')).toBe(true);
+    view.destroy();
+    expect(actionCard.getAttribute('aria-label')).toBeNull();
+    expect(dom.portraitMediaQuery.removeEventListener)
+      .toHaveBeenCalledWith('change', expect.any(Function));
+    expect(dom.orientationListenerCount()).toBe(0);
+  });
+
   test('chooses exactly one decisive compact metric in the approved priority order', async () => {
     mountArena({ portrait: true });
     const view = ArenaView.createArenaView({
@@ -763,6 +1049,20 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         hits: [{ hpDamage: 9, shieldAbsorbed: 4 }],
         outcomes: [{ type: 'shield', amount: 7 }, { type: 'heal', amount: 5 }],
         expected: '\u22129 HP'
+      },
+      {
+        statusEffects: [{
+          type: 'burn_tick',
+          amount: 6,
+          hpDamage: 6,
+          remaining: 0
+        }],
+        outcomes: [
+          { type: 'shield', amount: 7 },
+          { type: 'heal', amount: 5 },
+          { type: 'reflect', amount: 2 }
+        ],
+        expected: '\u22126 HP'
       },
       {
         hits: [{ hpDamage: 0, shieldAbsorbed: 4 }],
@@ -2055,8 +2355,17 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const hiddenResult = portraitRule(
       '#battle[data-phase="completed"] .arena-fighter'
     );
+    const compactResult = portraitRule(
+      '#portrait-arena #battle[data-phase="completed"] #arena-result-compact-summary'
+    );
+    const baseCompactResult = rules.find(rule => (
+      rule.selectorText === '#arena-result-compact-summary' &&
+      !rule.parentRule
+    ));
 
     expect(dom.window.document.getElementById('arena-action-compact-metric'))
+      .not.toBeNull();
+    expect(dom.window.document.getElementById('arena-result-compact-summary'))
       .not.toBeNull();
     expect(splitDeck?.style.getPropertyValue('grid-template-columns'))
       .toBe('repeat(3,minmax(0,1fr))');
@@ -2071,6 +2380,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toBe('"key skill compact"');
     expect(compactRow?.style.getPropertyValue('white-space')).toBe('nowrap');
     expect(hiddenResult?.style.getPropertyValue('display')).toBe('none');
+    expect(baseCompactResult?.style.getPropertyValue('display')).toBe('none');
+    expect(compactResult?.style.getPropertyValue('display')).toBe('block');
     for (const selector of [
       '#battle[data-phase="completed"] #arena-topline',
       '#battle[data-phase="completed"] #arena-action-card',
@@ -2078,6 +2389,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       '#battle[data-phase="completed"] #arena-feed',
       '#battle[data-phase="completed"] #arena-result-ko',
       '#battle[data-phase="completed"] #arena-result-monster',
+      '#battle[data-phase="completed"] #arena-result-summary',
       '#battle[data-phase="completed"] #arena-result-ratings',
       '#battle[data-phase="completed"] #arena-result-report',
       '#battle[data-phase="completed"] #arena-result-next'
@@ -2364,6 +2676,23 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(catalog.arenaStatusMetric).toBe(expected);
   });
 
+  test.each([
+    ['de', 'Runde {round} \u00b7 {hp} HP \u00fcbrig'],
+    ['en', 'Round {round} \u00b7 {hp} HP left'],
+    ['es', 'Ronda {round} \u00b7 {hp} HP restantes'],
+    ['fr', 'Manche {round} \u00b7 {hp} HP restants']
+  ])('localizes the compact terminal summary in %s', (locale, expected) => {
+    const catalog = JSON.parse(fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'locales',
+      `${locale}.json`
+    ), 'utf8')).plugins.streamalchemy.ui.monsters;
+
+    expect(catalog.arenaCompactResultSummary).toBe(expected);
+  });
+
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
@@ -2390,6 +2719,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(dom.window.document.querySelector('#arena-result-ko')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-monster')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-summary')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-result-compact-summary')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-ratings')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-report')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-rating')).toBeNull();

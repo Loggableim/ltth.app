@@ -566,6 +566,9 @@
     #arena-result-winner { display:block; color:#fff0a3; font-size:clamp(27px,4vw,52px); line-height:1.05; text-shadow:0 3px 0 #3d1b55,0 0 28px #ffe57e99; }
     #arena-result-monster { color:#d8c9ff; font-size:clamp(20px,2.7vw,34px); font-weight:950; }
     #arena-result-summary { color:#f0f6ff; font-size:clamp(16px,2vw,25px); font-weight:850; }
+    #arena-result-compact-summary {
+      display:none; color:#f0f6ff; font-size:clamp(16px,2vw,25px); font-weight:850;
+    }
     #arena-result-ratings {
       display:block; margin-top:8px; color:#e5f5ff; font-size:clamp(15px,1.9vw,23px);
       font-weight:900; font-variant-numeric:tabular-nums; line-height:1.3;
@@ -1555,6 +1558,7 @@
       #portrait-arena #battle[data-phase="completed"] #arena-feed,
       #portrait-arena #battle[data-phase="completed"] #arena-result-ko,
       #portrait-arena #battle[data-phase="completed"] #arena-result-monster,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-summary,
       #portrait-arena #battle[data-phase="completed"] #arena-result-ratings,
       #portrait-arena #battle[data-phase="completed"] #arena-result-report,
       #portrait-arena #battle[data-phase="completed"] #arena-result-next,
@@ -1571,7 +1575,7 @@
         overflow:hidden; transform:none;
       }
       #portrait-arena #battle[data-phase="completed"] #arena-result-winner,
-      #portrait-arena #battle[data-phase="completed"] #arena-result-summary {
+      #portrait-arena #battle[data-phase="completed"] #arena-result-compact-summary {
         display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
         white-space:nowrap;
       }
@@ -1981,6 +1985,7 @@
       <strong id="arena-result-winner"></strong>
       <span id="arena-result-monster"></span>
       <span id="arena-result-summary"></span>
+      <span id="arena-result-compact-summary"></span>
       <div id="arena-result-ratings"></div>
       <section id="arena-result-report" hidden></section>
       <div id="arena-result-next"></div>
@@ -2196,6 +2201,7 @@
       knockoutResult:'arenaKnockoutResult',
       forfeitResult:'arenaForfeitResult',
       resultSummary:'arenaResultSummary',
+      compactResultSummary:'arenaCompactResultSummary',
       ratingChanged:'arenaRatingChanged',
       ratingUnchanged:'arenaRatingUnchanged',
       combatReportLargestHit:'arenaCombatReportLargestHit',

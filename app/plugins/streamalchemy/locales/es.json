@@ -325,6 +325,7 @@
           "arenaDrawLabel": "Empate",
           "arenaDoubleKnockoutSummary": "Ronda {round} · Ambos monstruos están K.O.",
           "arenaResultSummary": "Ronda {round} · {hp}/{maxHp} HP restantes",
+          "arenaCompactResultSummary": "Ronda {round} · {hp} HP restantes",
           "arenaRatingChanged": "{name}: {before} → {after} ({delta})",
           "arenaRatingUnchanged": "{name}: ELO sin cambios ({after})",
           "arenaCombatReportDecisive": "Habilidad decisiva: {icon}{skill} · {choice} · R{round}",

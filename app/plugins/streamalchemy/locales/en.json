@@ -325,6 +325,7 @@
           "arenaDrawLabel": "Draw",
           "arenaDoubleKnockoutSummary": "Round {round} · Both monsters are knocked out.",
           "arenaResultSummary": "Round {round} · {hp}/{maxHp} HP left",
+          "arenaCompactResultSummary": "Round {round} · {hp} HP left",
           "arenaRatingChanged": "{name}: {before} → {after} ({delta})",
           "arenaRatingUnchanged": "{name}: ELO unchanged ({after})",
           "arenaCombatReportDecisive": "Decisive skill: {icon}{skill} · {choice} · R{round}",

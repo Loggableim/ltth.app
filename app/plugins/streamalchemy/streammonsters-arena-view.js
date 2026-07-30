@@ -209,6 +209,9 @@
     const arena = documentLike.getElementById('battle');
     const surface = documentLike.getElementById('streammonsters-overlay') || arena;
     const choreography = documentLike.getElementById('arcade-choreography');
+    const portraitMediaQuery = documentLike.defaultView?.matchMedia?.(
+      '(orientation: portrait)'
+    ) || null;
     const transientPresentationClasses = Object.freeze([
       'arcade-egg-impact',
       'arcade-silhouette',
@@ -228,6 +231,8 @@
     let activeLocale = null;
     let renderVisibleComposite = null;
     let lastRound = 1;
+    let activeActionAriaLabel = '';
+    let orientationListenerMode = null;
     const acceptedEventIds = new Set();
     const acceptedTimelineEventIds = new Set();
     const choicesByKey = {
@@ -271,6 +276,7 @@
       draw: 'Unentschieden',
       doubleKnockoutSummary: 'Runde {round} · Beide Monster sind K. O.',
       resultSummary: 'Runde {round} · {hp}/{maxHp} HP übrig',
+      compactResultSummary: 'Runde {round} · {hp} HP übrig',
       ratingChanged: '{name}: {before} → {after} ({delta})',
       ratingUnchanged: '{name}: ELO unchanged ({after})',
       combatReportDecisive: 'Entscheidender Skill: {icon}{skill} · {choice} · R{round}',
@@ -355,6 +361,7 @@
       draw: 'arenaDrawLabel',
       doubleKnockoutSummary: 'arenaDoubleKnockoutSummary',
       resultSummary: 'arenaResultSummary',
+      compactResultSummary: 'arenaCompactResultSummary',
       ratingChanged: 'arenaRatingChanged',
       ratingUnchanged: 'arenaRatingUnchanged',
       combatReportDecisive: 'arenaCombatReportDecisive',
@@ -681,9 +688,16 @@
     function decisiveActionMetric(action = {}) {
       const hits = Array.isArray(action.hits) ? action.hits : [];
       const outcomes = Array.isArray(action.outcomes) ? action.outcomes : [];
-      const damage = hits.reduce((sum, hit) => (
+      const statusEffects = Array.isArray(action.statusEffects)
+        ? action.statusEffects
+        : [];
+      const hitDamage = hits.reduce((sum, hit) => (
         sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.hpDamage)))
       ), 0);
+      const statusDamage = statusEffects.reduce((sum, effect) => (
+        sum + Math.max(0, numeric(effect?.hpDamage))
+      ), 0);
+      const damage = hitDamage + statusDamage;
       const shield = outcomes
         .filter(outcome => outcome?.type === 'shield')
         .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
@@ -699,7 +713,7 @@
       if (absorbed > 0) return `${absorbed} BLOCK`;
       if (hits.some(hit => hit?.evaded)) return formatLabel('evadeMetric');
       if (
-        (Array.isArray(action.statusEffects) && action.statusEffects.length > 0) ||
+        statusEffects.length > 0 ||
         outcomes.some(outcome => [
           'burn',
           'evade',
@@ -727,6 +741,26 @@
       });
     }
 
+    function syncActionAriaLabel() {
+      const actionCard = node('arena-action-card');
+      if (
+        actionCard?.classList.contains('visible') &&
+        portraitMediaQuery?.matches &&
+        activeActionAriaLabel
+      ) {
+        actionCard.setAttribute('aria-label', activeActionAriaLabel);
+      } else {
+        actionCard?.removeAttribute('aria-label');
+      }
+    }
+
+    function clearActionCard() {
+      activeActionAriaLabel = '';
+      const actionCard = node('arena-action-card');
+      actionCard?.classList.remove('visible');
+      actionCard?.removeAttribute('aria-label');
+    }
+
     function renderActionCard(action = {}) {
       const actor = stateBySlot.get(numeric(action.actorSlot)) || {};
       const skillName = action.skill?.nameKey
@@ -748,19 +782,13 @@
       }
       const actionCard = node('arena-action-card');
       if (actionCard) {
-        const portrait = Boolean(
-          documentLike.defaultView?.matchMedia?.('(orientation: portrait)')?.matches
-        );
-        if (portrait) {
-          actionCard.setAttribute('aria-label', [
-            String(action.choice || '').toUpperCase(),
-            skillName,
-            compactMetric
-          ].filter(Boolean).join(' \u00b7 '));
-        } else {
-          actionCard.removeAttribute('aria-label');
-        }
+        activeActionAriaLabel = [
+          String(action.choice || '').toUpperCase(),
+          skillName,
+          compactMetric
+        ].filter(Boolean).join(' \u00b7 ');
         actionCard.classList.add('visible');
+        syncActionAriaLabel();
       }
     }
 
@@ -1156,6 +1184,7 @@
     function resetFighters() {
       resetFighterVisuals();
       clearArenaStamps();
+      clearActionCard();
       stateBySlot.clear();
       activeChargeWindow = null;
       renderVisibleComposite = null;
@@ -1269,10 +1298,7 @@
         node(`arena-image-${targetSlot}`)?.getBoundingClientRect?.(),
         arenaRect
       );
-      return {
-        ...(origin ? { origin } : {}),
-        ...(targetOrigin ? { targetOrigin } : {})
-      };
+      return origin && targetOrigin ? { origin, targetOrigin } : {};
     }
 
     function fireTimelineOutputs(beat, payload = {}, effectOutput = effects) {
@@ -1457,7 +1483,7 @@
         arena.classList.add('visible');
         arena.dataset.phase = 'choice';
       }
-      node('arena-action-card')?.classList.remove('visible');
+      clearActionCard();
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.remove('choice-locked');
@@ -2115,7 +2141,7 @@
     async function complete(payload = {}) {
       stopCountdown();
       resetFighterVisuals();
-      node('arena-action-card')?.classList.remove('visible');
+      clearActionCard();
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
       const terminalReason = String(payload.terminalReason || '').toLowerCase();
@@ -2186,6 +2212,16 @@
       const knockout = payload.knockout && typeof payload.knockout === 'object'
         ? payload.knockout
         : null;
+      const endingRound = Math.max(
+        1,
+        numeric(
+          payload.round ?? payload.roundNumber ?? knockout?.round,
+          lastRound
+        )
+      );
+      const terminalHp = isDoubleKnockout
+        ? 0
+        : Math.max(0, numeric(stateBySlot.get(winnerSlot)?.hp));
       const combatReport = normalizeCombatReport(payload.combatReport);
       const result = node('arena-result');
       if (result) result.classList.add('visible');
@@ -2222,6 +2258,10 @@
       } else {
         setText('arena-result-summary', '');
       }
+      setLabelText('arena-result-compact-summary', 'compactResultSummary', {
+        round:endingRound,
+        hp:terminalHp
+      });
       renderCombatReport(combatReport);
       setText('arena-result-ratings', combatReport ? '' : canonicalRatingText);
       const showCloseHint = payload.nextArenaHint?.kind === 'close_result' &&
@@ -2269,7 +2309,7 @@
       stopCountdown();
       resetFighterVisuals();
       clearArenaStamps();
-      node('arena-action-card')?.classList.remove('visible');
+      clearActionCard();
       const terminalVersion = surfaceVersion;
       if (arena) {
         arena.classList.add('visible');
@@ -2306,7 +2346,7 @@
         resetFighters();
         arena?.classList.remove('visible');
         node('arena-result')?.classList.remove('visible');
-        node('arena-action-card')?.classList.remove('visible');
+        clearActionCard();
         setText('arena-countdown', '');
         setBattleSurface(false, 'snapshot_empty');
         return null;
@@ -2337,6 +2377,25 @@
       return match;
     }
 
+    function destroy() {
+      stopCountdown();
+      clearActionCard();
+      if (orientationListenerMode === 'event') {
+        portraitMediaQuery?.removeEventListener?.('change', syncActionAriaLabel);
+      } else if (orientationListenerMode === 'legacy') {
+        portraitMediaQuery?.removeListener?.(syncActionAriaLabel);
+      }
+      orientationListenerMode = null;
+    }
+
+    if (typeof portraitMediaQuery?.addEventListener === 'function') {
+      portraitMediaQuery.addEventListener('change', syncActionAriaLabel);
+      orientationListenerMode = 'event';
+    } else if (typeof portraitMediaQuery?.addListener === 'function') {
+      portraitMediaQuery.addListener(syncActionAriaLabel);
+      orientationListenerMode = 'legacy';
+    }
+
     return {
       applyMatch,
       applySnapshot,
@@ -2352,7 +2411,7 @@
       showStatPrompt,
       showStatResult,
       setLocale,
-      destroy: stopCountdown,
+      destroy,
       state: () => ({
         matchId: activeMatchId,
         deadlineMs: activeDeadlineMs,

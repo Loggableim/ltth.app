@@ -325,6 +325,7 @@
           "arenaDrawLabel": "Unentschieden",
           "arenaDoubleKnockoutSummary": "Runde {round} · Beide Monster sind K. O.",
           "arenaResultSummary": "Runde {round} · {hp}/{maxHp} HP übrig",
+          "arenaCompactResultSummary": "Runde {round} · {hp} HP übrig",
           "arenaRatingChanged": "{name}: {before} → {after} ({delta})",
           "arenaRatingUnchanged": "{name}: ELO unverändert ({after})",
           "arenaCombatReportDecisive": "Entscheidender Skill: {icon}{skill} · {choice} · R{round}",
