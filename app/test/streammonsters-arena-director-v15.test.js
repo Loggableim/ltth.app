@@ -129,7 +129,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     })).toEqual(expect.objectContaining({ renderer: 'css', fallbackReason: 'reduced_motion' }));
   });
 
-  test('keeps every rules-v8 combat outcome in a readable sub-1.6-second action timeline', () => {
+  test('keeps every rules-v8 combat outcome in a readable two-to-three-second action timeline', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_skill_used', {
       eventId: 'match-v8:event:17',
       matchId: 'match-v8',
@@ -169,8 +169,8 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       }
     });
 
-    expect(timeline.durationMs).toBe(900);
-    expect(timeline.durationMs).toBeLessThanOrEqual(1_600);
+    expect(timeline.durationMs).toBeGreaterThanOrEqual(2_000);
+    expect(timeline.durationMs).toBeLessThanOrEqual(3_000);
     const types = timeline.beats.map(beat => beat.type);
     expect(types).toEqual(expect.arrayContaining([
       'telegraph',
@@ -233,7 +233,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
         'battle_arena_collapse',
         {
           eventId: 'paced-collapse',
-          round: 4,
+          round: 5,
           damage: 2,
           fighters: [{ slot: 1, hpDamage: 1, hp: 20, shield: 0 }]
         }
@@ -256,6 +256,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       terminalAction: ArenaDirector.RULES_V8_PACING.TERMINAL_ACTION_MS,
       result: ArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS
     });
+    expect(ArenaDirector.ARENA_COLLAPSE_ROUND).toBe(5);
   });
 
   test.each([5, 6, 7])(
@@ -330,7 +331,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_arena_collapse', {
       eventId: 'match-collapse:event:22',
       matchId: 'match-collapse',
-      round: 4,
+      round: 5,
       damage: 2,
       fighters: [
         { slot: 1, shieldReduced: 3, hpDamage: 0, hp: 1, shield: 5 },
@@ -347,7 +348,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       'collapse_hud'
     ]);
     expect(timeline.beats[0]).toEqual(expect.objectContaining({
-      round: 4,
+      round: 5,
       damage: 2
     }));
     expect(timeline.beats[3]).toEqual(expect.objectContaining({

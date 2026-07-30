@@ -1,5 +1,5 @@
 const RULES_VERSION = 8;
-const ARENA_COLLAPSE_ROUND = 4;
+const ARENA_COLLAPSE_ROUND = 5;
 const ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS = 2;
 const ARENA_COLLAPSE_DEFENSE_LOCK_ROUND = 8;
 
@@ -42,7 +42,7 @@ function applyArenaCollapse({
     };
   }
 
-  const damage = 2 * (normalizedRound - 3);
+  const damage = 2 * (normalizedRound - ARENA_COLLAPSE_ROUND + 1);
   const shieldReductions = new Map();
   actions.forEach(action => {
     const reduced = (Array.isArray(action?.outcomes) ? action.outcomes : [])

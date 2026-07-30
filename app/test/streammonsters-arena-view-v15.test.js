@@ -1644,6 +1644,38 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .not.toBe('ellipsis');
   });
 
+  test('keeps the HP and shield leader visible above a separated action card', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const actionLeadRules = rules.filter(rule => (
+      rule.selectorText?.includes('#battle[data-phase="action"] #arena-lead')
+    ));
+    const actionCardRule = rules.find(rule => (
+      rule.selectorText === '#battle[data-phase="action"] #arena-action-card'
+    ));
+
+    expect(actionLeadRules.some(rule => rule.style.getPropertyValue('opacity') === '0'))
+      .toBe(false);
+    expect(actionLeadRules.some(rule => (
+      rule.style.getPropertyValue('opacity') === '1' &&
+      rule.style.getPropertyValue('visibility') === 'visible'
+    ))).toBe(true);
+    expect(actionCardRule?.style.getPropertyValue('top')).toBe('22%');
+  });
+
   test('updates shelf, meter, and skill-deck accessibility labels with the presentation locale', () => {
     mountArena();
     const shelf = document.createElement('section');

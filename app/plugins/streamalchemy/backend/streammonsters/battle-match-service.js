@@ -2680,7 +2680,7 @@ class BattleMatchService {
     if (eventType === 'streammonsters:battle_arena_collapse') {
       return {
         matchId: match.matchId,
-        round: Math.max(5, Number(payload.round) || 5),
+        round: Math.max(1, Number(payload.round) || 1),
         damage: Math.max(1, Number(payload.damage) || 1),
         fighters: Array.isArray(payload.fighters)
           ? payload.fighters.map(fighter => ({
