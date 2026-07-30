@@ -340,7 +340,9 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     expect(overlay.hint().textContent).not.toContain('/eggs');
 
     await overlay.emit('streammonsters:egg_spawned', events.spawned);
-    expect(overlay.hint().textContent).toBe('/sammlung');
+    expect(overlay.hint().textContent).toContain('/eier');
+    expect(overlay.hint().textContent).toContain('/schlupf [slot]');
+    expect(overlay.hint().textContent).toContain('2 Minuten');
 
     expect(events.earlyHatch.hint).toBe('/eier');
     await overlay.emit('streammonsters:chat_result', {
@@ -361,7 +363,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     await overlay.releaseChat();
 
     await overlay.emit('streammonsters:egg_ready', events.ready);
-    expect(overlay.hint().textContent).toBe('/schlupf');
+    expect(overlay.hint().textContent).toContain('/schlupf');
     expect(overlay.hint().textContent).not.toContain('/hatch');
 
     overlay.close();

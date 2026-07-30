@@ -21,6 +21,7 @@ function monster(id, element, overrides = {}) {
     element,
     template_id: getTemplatesForElement(element)[0].templateId,
     personality: 'Adaptive',
+    collection_state: 'owned',
     level: 1,
     xp: 0,
     stats: { vitality: 7, might: 7, guard: 7, agility: 7 },
@@ -426,6 +427,8 @@ describe('Stream Monsters automatic rules-v3 battles', () => {
       monster('second', 'Tide', { user_id: 'second-user' })
     ];
     const queue = [];
+    store.getSelectedMonster = userId => fighters.find(fighter => fighter.user_id === userId);
+    store.getMonster = monsterId => fighters.find(fighter => fighter.monster_id === monsterId);
     fighters.forEach((fighter, index) => {
       store.enqueueBattle({
         userId: fighter.user_id,
@@ -434,8 +437,6 @@ describe('Stream Monsters automatic rules-v3 battles', () => {
         queuedAtMs: 1
       });
     });
-    store.getSelectedMonster = userId => fighters.find(fighter => fighter.user_id === userId);
-    store.getMonster = monsterId => fighters.find(fighter => fighter.monster_id === monsterId);
     store.incrementViewer = jest.fn();
     store.incrementStreamMetric = jest.fn();
     store.hasRecentOpponentPair = jest.fn(() => false);

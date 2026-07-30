@@ -77,6 +77,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     for (let next = queue.shift(20_000); next; next = queue.shift(20_000)) drained.push(next.type);
     expect(drained).toEqual([
       'stance_revealed',
+      'win_streak',
       'battle_started',
       'battle_round',
       'battle_round',
@@ -84,7 +85,6 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
       'battle_completed',
       'rank_card',
       'quest_completed',
-      'win_streak',
       'upset',
       'rivalry'
     ]);

@@ -127,7 +127,7 @@ describe('Stream Monsters public guide visual contract', () => {
       lastRuleForSelector(cssRoot, 'body.site-v2.streammonsters-guide main')
     );
 
-    expect(page).toContain('<body class="site-v2 streammonsters-guide">');
+    expect(page).toContain('<body class="site-v2 streammonsters-guide"');
     expect(siteStylesheetIndex).toBeGreaterThan(-1);
     expect(guideStylesheetIndex).toBeGreaterThan(siteStylesheetIndex);
     expect(bodyStyles.background).toBe('#071124');

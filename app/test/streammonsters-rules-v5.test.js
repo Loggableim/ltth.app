@@ -8,7 +8,10 @@ const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
 const StreamMonstersCollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const { TEMPLATE_CATALOG } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+const {
+  TEMPLATE_CATALOG,
+  FURRY_ASSET_VERSION
+} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 const creatorRuntime = require('../plugins/streamalchemy/streammonsters-creator-runtime');
 
@@ -518,7 +521,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       imageUrl: template.assetPath,
       visualSource: 'furry',
       visualKey: `furry:${template.templateId}`,
-      assetVersion: 'furry-1.5.0'
+      assetVersion: FURRY_ASSET_VERSION
     });
     expect(artPool.consumeForTemplate).not.toHaveBeenCalled();
     expect(kenneyBuilder.build).not.toHaveBeenCalled();

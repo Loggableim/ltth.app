@@ -101,7 +101,11 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(focus.querySelector('[data-egg-focus-owner]').textContent)
       .toBe('Open to eligible viewers');
     expect(focus.querySelector('[data-egg-focus-state]').textContent)
-      .toBe('Free egg · 00:40 · !adopt');
+      .toBe('ADOPT NOW · !adopt');
+    expect(focus.querySelector('[data-egg-focus-timer]').textContent)
+      .toBe('00:40');
+    expect(focus.querySelector('[data-egg-focus-command]').textContent)
+      .toBe('!adopt');
     expect(gift.dataset.adoptable).toBe('false');
     expect(gift.classList.contains('gold-ring')).toBe(false);
     expect(gift.querySelector('[data-adopt-callout]')).toBeNull();
