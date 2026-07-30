@@ -2239,7 +2239,7 @@
       "element": "Tide",
       "role": "striker",
       "name": "Reefbite",
-      "species": "Shark Furry",
+      "species": "Shark",
       "stages": [
         {
           "stage": 1,
@@ -5119,7 +5119,7 @@
       "element": "Gale",
       "role": "guardian",
       "name": "Cirrus",
-      "species": "Owl Furry",
+      "species": "Owl",
       "stages": [
         {
           "stage": 1,
@@ -8035,7 +8035,7 @@
       "element": "Lunar",
       "role": "sustain",
       "name": "Lumen",
-      "species": "Moth Furry",
+      "species": "Moth",
       "stages": [
         {
           "stage": 1,

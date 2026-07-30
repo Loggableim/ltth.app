@@ -269,7 +269,7 @@ const TEMPLATE_CATALOG = Object.freeze([
   template('pyrra', 'Ember', 'Pyrra', 'Red Panda', 'pyrra'),
   template('ripple', 'Tide', 'Ripple', 'Otter', 'ripple'),
   template('brine', 'Tide', 'Brine', 'Seal', 'brine'),
-  template('reefbite', 'Tide', 'Reefbite', 'Shark Furry', 'reefbite'),
+  template('reefbite', 'Tide', 'Reefbite', 'Shark', 'reefbite'),
   template('axi', 'Tide', 'Axi', 'Axolotl', 'axi'),
   template('mosswhisker', 'Grove', 'Mosswhisker', 'Mouse', 'mosswhisker'),
   template('cloverhop', 'Grove', 'Cloverhop', 'Rabbit', 'cloverhop'),
@@ -277,7 +277,7 @@ const TEMPLATE_CATALOG = Object.freeze([
   template('fernmask', 'Grove', 'Fernmask', 'Raccoon', 'fernmask'),
   template('zephyr', 'Gale', 'Zephyr', 'Bat', 'zephyr'),
   template('skyrend', 'Gale', 'Skyrend', 'Griffin', 'skyrend'),
-  template('cirrus', 'Gale', 'Cirrus', 'Owl Furry', 'cirrus'),
+  template('cirrus', 'Gale', 'Cirrus', 'Owl', 'cirrus'),
   template('gusttail', 'Gale', 'Gusttail', 'Flying Squirrel', 'gusttail'),
   template('pulse', 'Volt', 'Pulse', 'Protogen', 'pulse'),
   template('neonclaw', 'Volt', 'Neonclaw', 'Cyber Lynx', 'neonclaw'),
@@ -285,7 +285,7 @@ const TEMPLATE_CATALOG = Object.freeze([
   template('flashstep', 'Volt', 'Flashstep', 'Cheetah', 'flashstep'),
   template('selene', 'Lunar', 'Selene', 'Snow Leopard', 'selene'),
   template('umbra', 'Lunar', 'Umbra', 'Black Cat', 'umbra'),
-  template('lumen', 'Lunar', 'Lumen', 'Moth Furry', 'lumen'),
+  template('lumen', 'Lunar', 'Lumen', 'Moth', 'lumen'),
   template('tsuki', 'Lunar', 'Tsuki', 'Kitsune', 'tsuki')
 ]);
 

@@ -127,18 +127,6 @@ class FreeEggDropService {
           ? this.recordEvent(input, 'adopt', disabled)
           : disabled;
       }
-      const latestClaim = this.store.getLatestFreeEggClaim(input.userId);
-      const cooldownMs = this.config.freeEggCooldownSeconds * 1_000;
-      if (latestClaim && input.nowMs - latestClaim.claimed_at_ms < cooldownMs) {
-        const cooldown = {
-          success: false,
-          status: 'cooldown',
-          remainingMs: cooldownMs - (input.nowMs - latestClaim.claimed_at_ms)
-        };
-        return recordFailure
-          ? this.recordEvent(input, 'adopt', cooldown)
-          : cooldown;
-      }
       const reserved = offerScope === 'public'
         ? null
         : this.store.getReservedFreeEggOffer(

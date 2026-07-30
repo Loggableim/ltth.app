@@ -72,7 +72,7 @@
       rulesCards: [
         ['🥚', 'Brut & Auto-Hatch', 'Standard: 90 Sekunden. Presets: 30 Sek., 1 Min., 90 Sek., 2 Min., 5 Min., 10 Min. oder 30 Min. Auto-Hatch ist standardmäßig aktiv und brütet bereite Eier für Zuschauer mit Aktivität in den letzten 300 Sekunden automatisch aus.'],
         ['✨', 'Charged & Boosts', 'Charged-Eier sind 25 % schneller. Boost-Gifts verkürzen nur die aktive Brutzeit um 15/30/60/120 Sekunden – abhängig vom Diamond-Wert.'],
-        ['🆓', 'Optionale Gratis-Eier', 'Wenn aktiviert: ein Gratis-Ei pro Viewer nach 86400 Sekunden Cooldown. Es bleibt 60 Sekunden reserviert und wird danach mit !adopt oder !adoptieren öffentlich.']
+        ['🆓', 'Optionale Gratis-Eier', 'Wenn aktiviert: ein persönliches Gratis-Ei pro Viewer nach 86400 Sekunden Cooldown. Es bleibt 60 Sekunden reserviert und ist danach für alle mit !adopt oder !adoptieren übernehmbar – auch mit vorhandenen Eiern.']
       ],
       arenaSteps: [
         ['1 · Match', '!battle paart nach Arena-Wertung und Monsterlevel. Nach 30 Sekunden erweitert sich die Suche.'],
@@ -82,8 +82,8 @@
         ['5 · Arena Collapse', 'Ab Runde 5 verursacht Arena Collapse am Rundenende neutralen Schaden in Höhe Runde minus 4. Er ignoriert Schilde und kann nie K.-o. verursachen. Neue Schilde zählen zunächst halb, später nur zu 25 % und ab Runde 11 gar nicht.'],
         ['6 · Kampfende', 'Ein Kampf endet nur durch K.-o. oder Aufgabe – nie durch ein Rundenlimit.']
       ],
-      dexTitle: 'Monsterdex: 24 Furry-Templates · 72 Formen',
-      dexLead: 'Vier Monster pro Element. Jede der 72 Formen zeigt ihre echten Rules-v8-Skills A, B und C mit lokalisierten Namen und Effekten.',
+      dexTitle: 'Monsterdex: 24 Streamlings · 72 Entwicklungsstufen',
+      dexLead: 'Vier Streamlings pro Element. Jede der 72 Entwicklungsstufen zeigt ihre echten Rules-v8-Skills A, B und C mit lokalisierten Namen und Effekten.',
       stageLabels: ['Stufe I', 'Stufe II', 'Stufe III'],
       allElements: 'Alle',
       disabledAliasLabel: 'optional deaktiviert'
@@ -94,7 +94,7 @@
       rulesCards: [
         ['🥚', 'Incubation & Auto-Hatch', 'Default: 90 seconds. Presets: 30 sec., 1 min., 90 sec., 2 min., 5 min., 10 min. or 30 min. Auto-Hatch is on by default and hatches ready eggs for viewers active within the last 300 seconds.'],
         ['✨', 'Charged & boosts', 'Charged eggs incubate 25% faster. Boost Gifts shorten only active incubation by 15/30/60/120 seconds based on Diamond value.'],
-        ['🆓', 'Optional free eggs', 'When enabled: one free egg per viewer after an 86400 seconds cooldown. It stays reserved for 60 seconds, then becomes public through !adopt.']
+        ['🆓', 'Optional free eggs', 'When enabled: one personal free egg per viewer after an 86400-second cooldown. It stays reserved for 60 seconds, then anyone can claim it with !adopt – even if they already have eggs.']
       ],
       arenaSteps: [
         ['1 · Match', '!battle matches by Arena Rating and monster level. The search widens after 30 seconds.'],
@@ -104,8 +104,8 @@
         ['5 · Arena Collapse', 'From round 5, Arena Collapse deals neutral end-of-round damage equal to round minus 4. It ignores shields and can never cause K.O. New shields are halved first, later fall to 25%, and reach zero from round 11.'],
         ['6 · Battle end', 'A battle ends only by K.O. or Forfeit, never by a round limit.']
       ],
-      dexTitle: 'Monsterdex: 24 furry templates · 72 forms',
-      dexLead: 'Four monsters per element. Every one of the 72 forms shows its real Rules v8 A, B and C skills with localized names and effects.',
+      dexTitle: 'Monsterdex: 24 Streamlings · 72 evolution stages',
+      dexLead: 'Four Streamlings per element. Every one of the 72 evolution stages shows its real Rules v8 A, B and C skills with localized names and effects.',
       stageLabels: ['Stage I', 'Stage II', 'Stage III'],
       allElements: 'All',
       disabledAliasLabel: 'optional disabled'
@@ -116,7 +116,7 @@
       rulesCards: [
         ['🥚', 'Incubación y eclosión automática', 'Predeterminado: 90 segundos. Ajustes: 30 s, 1 min., 90 s, 2 min., 5 min., 10 min. o 30 min. La eclosión automática está activa por defecto para huevos listos de viewers con actividad durante los últimos 300 segundos.'],
         ['✨', 'Charged y boosts', 'Los huevos Charged incuban un 25 % más rápido. Los Gifts de boost solo reducen la incubación activa en 15/30/60/120 segundos según su valor en diamantes.'],
-        ['🆓', 'Huevos gratis opcionales', 'Si se activa: un huevo gratis por viewer tras un cooldown de 86400 segundos. Queda reservado 60 segundos y después pasa a ser público mediante !adopt o !adoptieren.']
+        ['🆓', 'Huevos gratis opcionales', 'Si se activa: un huevo gratis personal por viewer tras un cooldown de 86400 segundos. Queda reservado 60 segundos y después cualquiera puede adoptarlo con !adopt o !adoptieren, incluso si ya tiene huevos.']
       ],
       arenaSteps: [
         ['1 · Match', '!battle empareja por rating de arena y nivel. La búsqueda se amplía tras 30 segundos.'],
@@ -126,8 +126,8 @@
         ['5 · Arena Collapse', 'Desde la ronda 5, Arena Collapse inflige al final daño neutral igual a ronda menos 4. Ignora escudos y nunca causa K.O. Los escudos nuevos cuentan primero a la mitad, después al 25 % y desde la ronda 11 a cero.'],
         ['6 · Fin del combate', 'El combate solo termina por K.O. o abandono, nunca por límite de rondas.']
       ],
-      dexTitle: 'Monsterdex: 24 plantillas furry · 72 formas',
-      dexLead: 'Cuatro monstruos por elemento. Cada una de las 72 formas muestra sus habilidades reales A, B y C de Rules v8 con nombres y efectos localizados.',
+      dexTitle: 'Monsterdex: 24 Streamlings · 72 etapas de evolución',
+      dexLead: 'Cuatro Streamlings por elemento. Cada una de las 72 etapas de evolución muestra sus habilidades reales A, B y C de Rules v8 con nombres y efectos localizados.',
       stageLabels: ['Etapa I', 'Etapa II', 'Etapa III'],
       allElements: 'Todos',
       disabledAliasLabel: 'opcional desactivado'
@@ -138,7 +138,7 @@
       rulesCards: [
         ['🥚', 'Incubation et éclosion automatique', 'Par défaut : 90 secondes. Réglages : 30 s, 1 min, 90 s, 2 min, 5 min, 10 min ou 30 min. L’éclosion automatique est active par défaut pour les œufs prêts des viewers actifs durant les 300 dernières secondes.'],
         ['✨', 'Charged et boosts', 'Les œufs Charged incubent 25 % plus vite. Les Gifts de boost réduisent uniquement l’incubation active de 15/30/60/120 secondes selon leur valeur en diamants.'],
-        ['🆓', 'Œufs gratuits optionnels', 'Si activé : un œuf gratuit par viewer après un cooldown de 86400 secondes. Il reste réservé 60 secondes, puis devient public via !adopt ou !adoptieren.']
+        ['🆓', 'Œufs gratuits optionnels', 'Si activé : un œuf gratuit personnel par viewer après un cooldown de 86400 secondes. Il reste réservé 60 secondes, puis tout le monde peut l’adopter avec !adopt ou !adoptieren, même avec des œufs déjà en inventaire.']
       ],
       arenaSteps: [
         ['1 · Match', '!battle associe selon le rating d’arène et le niveau. La recherche s’élargit après 30 secondes.'],
@@ -148,8 +148,8 @@
         ['5 · Arena Collapse', 'À partir de la manche 5, Arena Collapse inflige en fin de manche des dégâts neutres égaux à manche moins 4. Ils ignorent les boucliers et ne causent jamais de K.-O. Les nouveaux boucliers sont d’abord divisés par deux, puis passent à 25 %, et à zéro dès la manche 11.'],
         ['6 · Fin du combat', 'Le combat se termine uniquement par K.-O. ou abandon, jamais par une limite de manches.']
       ],
-      dexTitle: 'Monsterdex : 24 modèles furry · 72 formes',
-      dexLead: 'Quatre monstres par élément. Chacune des 72 formes affiche ses vraies compétences A, B et C de Rules v8 avec des noms et effets localisés.',
+      dexTitle: 'Monsterdex : 24 Streamlings · 72 stades d’évolution',
+      dexLead: 'Quatre Streamlings par élément. Chacun des 72 stades d’évolution affiche ses vraies compétences A, B et C de Rules v8 avec des noms et effets localisés.',
       stageLabels: ['Stade I', 'Stade II', 'Stade III'],
       allElements: 'Tous',
       disabledAliasLabel: 'optionnel désactivé'

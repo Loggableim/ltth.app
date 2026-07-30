@@ -312,17 +312,22 @@ describe('Stream Monsters recurring free egg drops', () => {
     expect(adopt(subject, 'viewer-d', 'adopt-d', 61_001).sourceUserId).toBe('viewer-b');
   });
 
-  test('allows one successful claim per configured cooldown across streams', () => {
+  test('allows adopting another public egg during the personal offer cooldown', () => {
     const subject = createSubject({ config: { freeEggCooldownSeconds: 120 } });
     offer(subject, 'viewer-a', 'chat-a', 1_000);
     offer(subject, 'viewer-b', 'chat-b', 1_001);
     expect(adopt(subject, 'viewer-c', 'adopt-c', 61_001).success).toBe(true);
 
-    expect(adopt(subject, 'viewer-c', 'adopt-cooldown', 121_000))
-      .toEqual(expect.objectContaining({ success: false, status: 'cooldown' }));
+    expect(adopt(subject, 'viewer-c', 'adopt-second-egg', 121_000))
+      .toEqual(expect.objectContaining({
+        success: true,
+        status: 'claimed',
+        sourceUserId: 'viewer-b'
+      }));
+    expect(subject.store.getViewerEggs('viewer-c')).toHaveLength(2);
   });
 
-  test('explains the remaining personal cooldown without blocking another eligible adopter', () => {
+  test('lets the chat command adopt a public egg even when the viewer already has one', () => {
     const subject = createSubject({ config: { freeEggCooldownSeconds: 120 } });
     const commands = new StreamMonstersChatCommands({
       store: subject.store,
@@ -339,18 +344,11 @@ describe('Stream Monsters recurring free egg drops', () => {
 
     expect(commands.execute({ userId: 'viewer-c' }, 'adopt'))
       .toEqual(expect.objectContaining({
-        success: false,
-        status: 'cooldown',
-        cooldownKind: 'free_egg',
-        remainingMs: 59_999,
-        message: expect.stringMatching(/try again in 1m/i)
-      }));
-    expect(commands.execute({ userId: 'viewer-d' }, 'adopt'))
-      .toEqual(expect.objectContaining({
         success: true,
         status: 'claimed',
         sourceUserId: 'viewer-b'
       }));
+    expect(subject.store.getViewerEggs('viewer-c')).toHaveLength(2);
   });
 
   test('deduplicates chat and adoption event ids and allows only one source offer per viewer and stream', () => {

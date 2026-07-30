@@ -1,10 +1,21 @@
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 const root = path.resolve(__dirname, '..', '..');
 
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
+}
+
+function renderGuide(locale) {
+  const dom = new JSDOM(read('streammonsters/index.html'), {
+    url: `https://ltth.app/streammonsters/?lang=${locale}`,
+    runScripts: 'outside-only'
+  });
+  dom.window.eval(read('js/streammonsters-catalog.generated.js'));
+  dom.window.eval(read('js/streammonsters-guide.js'));
+  return dom.window.document;
 }
 
 describe('Stream Monsters public guide', () => {
@@ -55,7 +66,7 @@ describe('Stream Monsters public guide', () => {
     expect(guide).toContain('72');
   });
 
-  test('publishes a compact WebP-only Furry roster for the public Monsterdex', () => {
+  test('publishes a compact WebP-only monster roster for the public Monsterdex', () => {
     const furryDirectory = path.join(root, 'assets', 'streammonsters', 'furry');
     const webpFiles = fs.readdirSync(furryDirectory).filter(file => file.endsWith('.webp'));
     const pngFiles = fs.readdirSync(furryDirectory).filter(file => file.endsWith('.png'));
@@ -63,5 +74,38 @@ describe('Stream Monsters public guide', () => {
     expect(webpFiles).toHaveLength(24);
     expect(pngFiles).toHaveLength(0);
     expect(webpFiles).toEqual(expect.arrayContaining(['ashfang.webp', 'tsuki.webp']));
+  });
+
+  test.each([
+    ['de', 'Monsterdex: 24 Streamlings · 72 Entwicklungsstufen'],
+    ['en', 'Monsterdex: 24 Streamlings · 72 evolution stages'],
+    ['es', 'Monsterdex: 24 Streamlings · 72 etapas de evolución'],
+    ['fr', 'Monsterdex : 24 Streamlings · 72 stades d’évolution']
+  ])('renders the player-facing Streamlings name in %s', (locale, expectedTitle) => {
+    const document = renderGuide(locale);
+
+    expect(document.querySelector('#dex-title').textContent).toBe(expectedTitle);
+  });
+
+  test('does not expose internal Furry terminology in the public Monsterdex', () => {
+    const document = renderGuide('de');
+
+    expect(document.querySelector('#monster-dex').textContent).not.toMatch(/furry/i);
+  });
+
+  test('explains that public free eggs remain adoptable for viewers with eggs', () => {
+    const document = renderGuide('de');
+
+    expect(document.querySelector('#rules').textContent)
+      .toMatch(/auch mit vorhandenen Eiern/i);
+  });
+
+  test('links Stream Monsters from the gaming navigation menu', () => {
+    const document = new JSDOM(read('_partials/header.html')).window.document;
+    const link = [...document.querySelectorAll('.mega-category .mega-item')]
+      .find(item => item.getAttribute('href') === '/streammonsters/');
+
+    expect(link).toBeDefined();
+    expect(link.textContent).toContain('Stream Monsters');
   });
 });
