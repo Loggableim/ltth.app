@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 const root = path.resolve(__dirname, '..', '..');
 
@@ -14,6 +15,11 @@ describe('Stream Monsters public guide', () => {
     const catalog = read('js/streammonsters-catalog.generated.js');
     const pagesBuilder = read('scripts/build_pages_bundle.py');
     const sitemap = read('sitemap.xml');
+    const header = read('_partials/header.html');
+    const headerDom = new JSDOM(header).window.document;
+    const streamMonstersLink = headerDom.querySelector(
+      '.mega-category .mega-item[href="/streammonsters/"]'
+    );
 
     expect(page).toContain('https://ltth.app/streammonsters');
     expect(page).toContain('/js/streammonsters-guide.js');
@@ -31,6 +37,10 @@ describe('Stream Monsters public guide', () => {
     expect(catalog).toContain('"name": "Tsuki"');
     expect(catalog).toContain('"element": "Ember"');
     expect(catalog).toContain('"element": "Lunar"');
+    expect(streamMonstersLink).not.toBeNull();
+    expect(streamMonstersLink.textContent).toContain('Stream Monsters');
+    expect(streamMonstersLink.closest('.mega-category').textContent)
+      .toContain('Gaming & Interaktion');
     expect(guide).toContain("de:");
     expect(guide).toContain("en:");
     expect(guide).toContain("es:");

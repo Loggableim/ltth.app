@@ -68,6 +68,7 @@
   const RULES_V8_COPY = {
     de: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel}: zwei Spieler, echte Entscheidungen`,
+      arenaLead: 'Portrait-Overlay: Status, klare A / B / C-Wahl, kompaktes Ergebnis.',
       subscription: PRODUCT_PROJECTION.access.description.de,
       rulesCards: [
         ['🥚', 'Brut & Auto-Hatch', 'Standard: 90 Sekunden. Presets: 30 Sek., 1 Min., 90 Sek., 2 Min., 5 Min., 10 Min. oder 30 Min. Auto-Hatch ist standardmäßig aktiv und brütet bereite Eier für Zuschauer mit Aktivität in den letzten 300 Sekunden automatisch aus.'],
@@ -90,6 +91,7 @@
     },
     en: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel}: two players, real choices`,
+      arenaLead: 'Portrait overlay: status, clear A / B / C choice, compact result.',
       subscription: PRODUCT_PROJECTION.access.description.en,
       rulesCards: [
         ['🥚', 'Incubation & Auto-Hatch', 'Default: 90 seconds. Presets: 30 sec., 1 min., 90 sec., 2 min., 5 min., 10 min. or 30 min. Auto-Hatch is on by default and hatches ready eggs for viewers active within the last 300 seconds.'],
@@ -112,6 +114,7 @@
     },
     es: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel}: dos jugadores, decisiones reales`,
+      arenaLead: 'Overlay vertical: estado, elección clara A / B / C y resultado compacto.',
       subscription: PRODUCT_PROJECTION.access.description.es,
       rulesCards: [
         ['🥚', 'Incubación y eclosión automática', 'Predeterminado: 90 segundos. Ajustes: 30 s, 1 min., 90 s, 2 min., 5 min., 10 min. o 30 min. La eclosión automática está activa por defecto para huevos listos de viewers con actividad durante los últimos 300 segundos.'],
@@ -134,6 +137,7 @@
     },
     fr: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel} : deux joueurs, de vrais choix`,
+      arenaLead: 'Overlay vertical : statut, choix A / B / C clair et résultat compact.',
       subscription: PRODUCT_PROJECTION.access.description.fr,
       rulesCards: [
         ['🥚', 'Incubation et éclosion automatique', 'Par défaut : 90 secondes. Réglages : 30 s, 1 min, 90 s, 2 min, 5 min, 10 min ou 30 min. L’éclosion automatique est active par défaut pour les œufs prêts des viewers actifs durant les 300 dernières secondes.'],

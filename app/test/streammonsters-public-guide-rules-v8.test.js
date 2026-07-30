@@ -55,6 +55,17 @@ describe('Stream Monsters public Rules v8 tutorial', () => {
   });
 
   test.each([
+    ['de', ['Portrait', 'A / B / C', 'Ergebnis']],
+    ['en', ['Portrait', 'A / B / C', 'result']],
+    ['es', ['vertical', 'A / B / C', 'resultado']],
+    ['fr', ['vertical', 'A / B / C', 'r\u00e9sultat']]
+  ])('explains the concise portrait battle flow in %s', (locale, tokens) => {
+    const document = renderGuide(locale);
+    const page = document.getElementById('main-content').textContent;
+    tokens.forEach(token => expect(page).toContain(token));
+  });
+
+  test.each([
     ['de', ['8 Sekunden', '6 Sekunden', '10 Sekunden', 'Runde 5', '30 %', 'K.-o.', 'Aufgabe']],
     ['en', ['8 seconds', '6 seconds', '10 seconds', 'round 5', '30%', 'K.O.', 'Forfeit']],
     ['es', ['8 segundos', '6 segundos', '10 segundos', 'ronda 5', '30 %', 'K.O.', 'abandono']],
