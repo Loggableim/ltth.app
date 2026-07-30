@@ -1142,9 +1142,34 @@ class StreamAlchemyPlugin {
     try {
       gcce.unregisterCommandsForPlugin('streamalchemy');
       gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
-      const result = gcce.registerCommandsForPlugin('streamalchemy', definitions);
+      const shadowedDefinitions = typeof gcce.getCommandOwner === 'function'
+        ? definitions.filter(definition => {
+          const owner = gcce.getCommandOwner(definition.name);
+          return owner && owner !== 'streamalchemy';
+        })
+        : [];
+      const shadowedAliases = new Set(
+        shadowedDefinitions.map(definition => definition.name)
+      );
+      const registrationDefinitions = definitions.filter(
+        definition => !shadowedAliases.has(definition.name)
+      );
+      const result = gcce.registerCommandsForPlugin(
+        'streamalchemy',
+        registrationDefinitions
+      );
       const registered = Array.isArray(result?.registered) ? result.registered : [];
-      const failed = Array.isArray(result?.failed) ? result.failed : [];
+      const registeredSet = new Set(registered);
+      const unresolvedShadowedAliases = shadowedDefinitions
+        .filter(definition => !definitions.some(candidate => (
+          candidate.commandName === definition.commandName &&
+          registeredSet.has(candidate.name)
+        )))
+        .map(definition => definition.name);
+      const failed = [...new Set([
+        ...(Array.isArray(result?.failed) ? result.failed : []),
+        ...unresolvedShadowedAliases
+      ])];
       if (!registered.length) {
         gcce.unregisterCommandsForPlugin('streamalchemy');
         gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
@@ -1158,7 +1183,6 @@ class StreamAlchemyPlugin {
         )];
         return false;
       }
-      const registeredSet = new Set(registered);
       const unavailableCommands = [...new Set(definitions
         .filter(definition => !definitions.some(candidate => (
           candidate.commandName === definition.commandName &&

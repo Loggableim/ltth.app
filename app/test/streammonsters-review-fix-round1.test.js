@@ -140,7 +140,7 @@ describe('Stream Monsters review fix round 1', () => {
     });
   });
 
-  test('keeps GCCE as sole ingress while a real rank ownership collision degrades per alias', async () => {
+  test('preflights a real rank ownership collision and keeps the fallback alias fully active', async () => {
     const api = createGCCEApi();
     const gcce = new GCCE(api);
     await gcce.init();
@@ -180,11 +180,14 @@ describe('Stream Monsters review fix round 1', () => {
       commandName: 'rank'
     }));
     expect(plugin.getStreamMonstersGCCEState()).toEqual(expect.objectContaining({
-      registrationState: 'active_partial',
-      registrationError: 'alias_conflicts',
-      registrationConflicts: ['rank'],
+      registrationState: 'active',
+      registrationError: null,
+      registrationConflicts: [],
+      registeredCommands: expect.arrayContaining(['monsterrank']),
       commandsRegistered: true
     }));
+    expect(plugin.getStreamMonstersGCCEState().commandReferences.rank)
+      .toBe('/monsterrank');
 
     await gcce.handleChatMessage({
       comment: '/monsterrank',

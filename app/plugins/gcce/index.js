@@ -2043,6 +2043,17 @@ class GlobalChatCommandEngine {
     }
 
     /**
+     * Public API: Resolve the plugin that currently owns a command or alias.
+     * Plugins can use this to avoid predictable registration conflicts while
+     * retaining their own non-conflicting fallback aliases.
+     * @param {string} commandName - Command name or alias
+     * @returns {string|null} Owning plugin ID, or null when available
+     */
+    getCommandOwner(commandName) {
+        return this.registry.getCommand(commandName)?.pluginId || null;
+    }
+
+    /**
      * Public API: Unregister commands for a plugin
      * @param {string} pluginId - Plugin ID
      */
