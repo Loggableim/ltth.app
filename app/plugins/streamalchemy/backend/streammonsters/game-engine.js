@@ -417,7 +417,7 @@ class StreamMonstersEngine {
   }
 
   hatchEgg(userId, slot = null, { autoHatch = false } = {}) {
-    return this.store.runInImmediateTransaction(() => {
+    const monster = this.store.runInImmediateTransaction(() => {
       const visibleEggs = this.store.getViewerEggs(userId)
         .filter(egg => ['incubating', 'queued', 'ready'].includes(egg.state));
       const hasExplicitSlot = slot !== null &&
@@ -511,6 +511,19 @@ class StreamMonstersEngine {
       });
       return monster;
     });
+    try {
+      this.collection?.fuseDuplicates?.({
+        userId,
+        templateId: monster.template_id,
+        preferredMonsterId: monster.monster_id,
+        triggerType: 'hatch',
+        triggerId: `hatch:${monster.monster_id}`
+      });
+    } catch (_) {
+      // The hatch is already committed. A later contact or manual trigger can
+      // safely retry the pending pair without misreporting the hatch as failed.
+    }
+    return monster;
   }
 
   calculateBoostMs(coinValue) {

@@ -82,7 +82,7 @@ class ChatCommands {
     if (command === 'inventory' || command === 'monsters') return this.inventory(userId, commandArgs[0]);
     if (command === 'monster') return this.monster(userId, commandArgs[0]);
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
-    if (command === 'evolve') return this.evolve(userId, commandArgs[0]);
+    if (command === 'evolve') return this.evolve(userId, commandArgs[0], context);
     if (command === 'adopt') return this.adopt(userId, context);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
@@ -360,7 +360,7 @@ class ChatCommands {
     };
   }
 
-  evolve(userId, slot) {
+  evolve(userId, slot, context = {}) {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
@@ -373,23 +373,49 @@ class ChatCommands {
           : 'Choose a valid monster slot.'
       };
     }
-    try {
-      const evolution = this.collection.evolveMonster(userId, monsters[index].monster_id);
+    const target = monsters[index];
+    const triggerId = normalizeIngressEventId({
+      namespace: 'fusion-manual',
+      context,
+      rawData: context.rawData || {},
+      nowMs: this.now(),
+      fingerprint: {
+        userId,
+        monsterId: target.monster_id,
+        slot: index + 1
+      }
+    });
+    const fusion = this.collection.fuseDuplicates({
+      userId,
+      templateId: target.template_id,
+      preferredMonsterId: target.monster_id,
+      triggerType: 'manual',
+      triggerId
+    });
+    if (fusion.status !== 'fused' && fusion.status !== 'already_processed') {
       return {
         success: true,
-        status: 'evolved',
-        message: `${evolution.monster.name} reached Evolution ${evolution.evolutionStage}.`,
-        evolution,
-        card: this.collection.getMonsterCard(userId, monsters[index].monster_id)
-      };
-    } catch (error) {
-      return {
-        success: false,
-        status: 'evolution_locked',
-        message: error.message,
-        errorCode: error.message
+        status: 'fusion_pending',
+        message: fusion.reason
+          ? `Fusion pending: ${fusion.reason}.`
+          : 'Fusion pending: an exact owned duplicate is required.',
+        fusion
       };
     }
+    const survivor = fusion.survivor;
+    const evolution = {
+      ...fusion,
+      monster: survivor
+    };
+    return {
+      success: true,
+      status: 'fused',
+      message: fusion.prestigeAfter > 0
+        ? `${survivor.name} reached Prestige ${fusion.prestigeAfter}.`
+        : `${survivor.name} reached Evolution ${fusion.toStage}.`,
+      evolution,
+      card: this.collection.getMonsterCard(userId, survivor.monster_id)
+    };
   }
 
   joinBattle(userId, requestedStance = null) {

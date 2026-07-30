@@ -15,6 +15,8 @@ const CHAT_RESULT_MESSAGE_KEYS = Object.freeze({
   invalid_slot: 'chatResultInvalidSlot',
   selected: 'chatResultSelected',
   monster: 'chatResultMonster',
+  fused: 'chatResultEvolved',
+  fusion_pending: 'chatResultEvolutionLocked',
   evolved: 'chatResultEvolved',
   evolution_locked: 'chatResultEvolutionLocked',
   invalid_stance: 'chatResultInvalidStance',

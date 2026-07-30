@@ -384,7 +384,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(store.getMonster('legacy-monster')).toEqual(expect.objectContaining({
       template_id: expect.stringMatching(/^(ripple|brine|reefbite|axi)$/), name: 'Legacy Name',
       image_url: expect.stringMatching(
-        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.png$/
+        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.webp$/
       ),
       visual_source: 'furry',
       visual_key: expect.stringMatching(/^furry:(ripple|brine|reefbite|axi)$/),

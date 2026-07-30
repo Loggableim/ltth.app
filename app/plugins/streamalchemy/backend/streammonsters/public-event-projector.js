@@ -151,6 +151,13 @@ function projectMonster(monster = null) {
       1,
       finiteNumber(monster.evolutionStage ?? monster.evolution_stage, 1)
     ),
+    prestigeLevel: Math.max(
+      0,
+      Math.min(
+        3,
+        finiteNumber(monster.prestigeLevel ?? monster.prestige_level, 0)
+      )
+    ),
     unspentStatPoints: Math.max(
       0,
       finiteNumber(
@@ -160,6 +167,62 @@ function projectMonster(monster = null) {
     ),
     imageUrl: safeImageUrl(monster.imageUrl ?? monster.image_url),
     stats: projectStats(monster.stats)
+  };
+}
+
+function projectPrestige(prestige = null, fallbackLevel = 0) {
+  const source = prestige && typeof prestige === 'object' ? prestige : {};
+  const level = Math.max(
+    0,
+    Math.min(3, finiteNumber(source.level, fallbackLevel))
+  );
+  if (!level) return null;
+  return {
+    level,
+    stars: '\u2605'.repeat(level),
+    aura: boundedText(source.aura, 48) || `fusion-crystal-${level}`,
+    frame: boundedText(source.frame, 48) || `prestige-${level}`,
+    title: boundedText(source.title, 64) ||
+      ['Fusion Star', 'Fusion Nova', 'Fusion Crown'][level - 1]
+  };
+}
+
+function projectFusion(fusion = null) {
+  if (!fusion || typeof fusion !== 'object') return null;
+  const kind = fusion.kind === 'prestige' ? 'prestige' : (
+    fusion.kind === 'stage' ? 'stage' : null
+  );
+  if (!kind) return null;
+  return {
+    kind,
+    fromStage: Math.max(
+      1,
+      Math.min(3, finiteNumber(fusion.fromStage ?? fusion.from_stage, 1))
+    ),
+    toStage: Math.max(
+      1,
+      Math.min(3, finiteNumber(fusion.toStage ?? fusion.to_stage, 1))
+    ),
+    prestigeBefore: Math.max(
+      0,
+      Math.min(
+        3,
+        finiteNumber(
+          fusion.prestigeBefore ?? fusion.prestige_before,
+          0
+        )
+      )
+    ),
+    prestigeAfter: Math.max(
+      0,
+      Math.min(
+        3,
+        finiteNumber(
+          fusion.prestigeAfter ?? fusion.prestige_after,
+          0
+        )
+      )
+    )
   };
 }
 
@@ -588,6 +651,21 @@ class StreamMonstersPublicEventProjector {
     }
     if (eventType === 'streammonsters:monster_evolved') {
       const unlockedSkill = projectEvolutionSkill(payload.unlockedSkill);
+      const prestigeLevel = Math.max(
+        0,
+        Math.min(
+          3,
+          finiteNumber(
+            payload.prestigeLevel ??
+            payload.prestige_level ??
+            payload.monster?.prestigeLevel ??
+            payload.monster?.prestige_level,
+            0
+          )
+        )
+      );
+      const prestige = projectPrestige(payload.prestige, prestigeLevel);
+      const fusion = projectFusion(payload.fusion);
       return {
         ...(payload.userId || payload.user_id || payload.username || payload.nickname
           ? { displayName: this.displayName(payload) }
@@ -605,6 +683,9 @@ class StreamMonstersPublicEventProjector {
         statsAfter: projectStats(payload.statsAfter),
         statChanges: projectStats(payload.statChanges),
         ...(unlockedSkill ? { unlockedSkill } : {}),
+        prestigeLevel,
+        ...(prestige ? { prestige } : {}),
+        ...(fusion ? { fusion } : {}),
         monster: projectMonster(payload.monster)
       };
     }

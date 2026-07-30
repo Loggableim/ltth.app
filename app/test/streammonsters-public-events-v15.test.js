@@ -264,6 +264,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
         personality: 'Bold',
         templateId: 'ashfang',
         evolutionStage: 2,
+        prestigeLevel: 0,
         unspentStatPoints: 3,
         imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
         stats: { vitality: 7, might: 8, guard: 6, agility: 7 }

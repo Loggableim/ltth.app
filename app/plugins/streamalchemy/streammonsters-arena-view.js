@@ -1574,6 +1574,48 @@
             pulseClass(surface, 'arcade-monster-reveal');
           }
           break;
+        case 'fusion_copies_converge':
+          showChoreography(payload, 'fusion-converge', beat.element);
+          choreography?.classList.add('fusion-converge');
+          break;
+        case 'fusion_crystal':
+          showChoreography(payload, 'fusion-crystal', beat.element);
+          choreography?.classList.add('fusion-crystal');
+          break;
+        case 'fusion_evolved_asset':
+          if (rootDataset) {
+            rootDataset.evolutionStage = String(beat.evolutionStage || 1);
+          }
+          choreography?.classList.remove('fusion-converge');
+          pulseClass(surface, 'arcade-monster-reveal');
+          break;
+        case 'evolution_stats':
+          if (rootDataset) {
+            rootDataset.evolutionStage = String(beat.evolutionStage || 1);
+            rootDataset.evolutionStats = 'animated';
+          }
+          break;
+        case 'evolution_skill':
+          if (rootDataset) {
+            rootDataset.evolutionSkill = String(beat.skill?.choice || '');
+          }
+          break;
+        case 'fusion_settle':
+          choreography?.classList.remove('fusion-crystal');
+          choreography?.classList.add('fusion-settle');
+          if (rootDataset) rootDataset.fusionState = 'settled';
+          break;
+        case 'fusion_prestige_settle':
+          choreography?.classList.remove('fusion-crystal');
+          choreography?.classList.add('fusion-prestige-settle');
+          if (rootDataset) {
+            rootDataset.fusionState = 'prestige-settled';
+            rootDataset.prestigeLevel = String(beat.prestige?.level || 0);
+            rootDataset.prestigeFrame = String(beat.prestige?.frame || '');
+            rootDataset.prestigeAura = String(beat.prestige?.aura || '');
+            rootDataset.prestigeTitle = String(beat.prestige?.title || '');
+          }
+          break;
         case 'new_discovery':
           setText('arena-feed', 'NEW');
           if (surface) surface.classList.add('arcade-new-discovery');

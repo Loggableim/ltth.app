@@ -5,8 +5,23 @@ const StreamMonstersDatabase = require(
 const CollectionService = require(
   '../plugins/streamalchemy/backend/streammonsters/collection-service'
 );
+const StreamMonstersEngine = require(
+  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+);
+const ChatCommands = require(
+  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+);
+const PublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
+const ArenaDirector = require(
+  '../plugins/streamalchemy/streammonsters-arena-director'
+);
 const { effectiveCombatPower } = require(
   '../plugins/streamalchemy/backend/streammonsters/evolution-rules'
+);
+const { getTemplate } = require(
+  '../plugins/streamalchemy/backend/streammonsters/catalog'
 );
 
 function createStore({ assetRegistry = null } = {}) {
@@ -29,9 +44,35 @@ function createSubject({ assetRegistry = null, progression = null } = {}) {
   return { sqlite, store, collection, emitted };
 }
 
+function createLifecycle({ assetRegistry = completeAssetRegistry() } = {}) {
+  const subject = createSubject({ assetRegistry });
+  const { store, collection, emitted } = subject;
+  collection.reserveTemplateForEgg = () => ({
+    template: getTemplate('ashfang')
+  });
+  const progression = {
+    recordHatch: jest.fn(),
+    recordCollection: jest.fn()
+  };
+  const engine = new StreamMonstersEngine({
+    store,
+    collection,
+    progression,
+    emit: (event, payload) => emitted.push({ event, payload }),
+    now: () => 50_000,
+    config: { hatchDurationMs: 0 }
+  });
+  return { ...subject, engine, progression };
+}
+
 function completeAssetRegistry() {
   return {
     audit: () => ({ assets: new Map() }),
+    getAsset: (templateId, stage) => ({
+      templateId,
+      stage,
+      assetVersion: 'furry-1.12.0'
+    }),
     resolveVisual: ({ templateId, stage }) => ({
       imageUrl: `/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/${templateId}-stage${stage}.webp`,
       visualSource: 'furry',
@@ -86,6 +127,22 @@ function createMonster(store, {
     WHERE monster_id = ?
   `).run(stage, prestigeLevel, level, xp, monsterId);
   return store.getMonster(monsterId);
+}
+
+function createReadyEgg(store, eggId, createdAtMs) {
+  return store.createEgg({
+    eggId,
+    userId: 'viewer-a',
+    giftId: 1,
+    giftName: 'Test Gift',
+    element: 'Ember',
+    eggColor: '#ef6b45',
+    seed: `seed:${eggId}`,
+    state: 'ready',
+    readyAtMs: createdAtMs,
+    createdAtMs,
+    hatchDurationMs: 0
+  });
 }
 
 describe('Stream Monsters duplicate fusion persistence', () => {
@@ -362,7 +419,7 @@ describe('Stream Monsters duplicate fusion persistence', () => {
       assetRegistry: completeAssetRegistry(),
       progression
     });
-    ['a', 'b', 'c', 'd', 'e'].forEach((suffix, index) => {
+    ['a', 'b', 'c', 'd', 'e', 'f'].forEach((suffix, index) => {
       createMonster(store, {
         monsterId: `stage-three-${suffix}`,
         createdAtMs: 10 + index,
@@ -415,7 +472,442 @@ describe('Stream Monsters duplicate fusion persistence', () => {
     expect(effectiveCombatPower(store.getMonster('stage-three-a')))
       .toBe(originalPower);
     expect(store.getViewerMonsters('viewer-a').map(row => row.monster_id))
-      .toEqual(['stage-three-a', 'stage-three-e']);
+      .toEqual(['stage-three-a', 'stage-three-e', 'stage-three-f']);
     expect(progression.awardCollectorPoints).not.toHaveBeenCalled();
+  });
+
+  test('commits and emits the hatch reveal before attempting one fusion', () => {
+    const { store, collection, engine, emitted } = createLifecycle();
+    createReadyEgg(store, 'egg:first-hatch', 10);
+    createReadyEgg(store, 'egg:second-hatch', 20);
+
+    const first = engine.hatchEgg('viewer-a', 1);
+    const second = engine.hatchEgg('viewer-a', 1);
+
+    expect(first.template_id).toBe('ashfang');
+    expect(second.template_id).toBe('ashfang');
+    expect(store.getViewerMonsters('viewer-a')).toEqual([
+      expect.objectContaining({
+        evolution_stage: 2,
+        collection_state: 'owned'
+      })
+    ]);
+    expect(collection.getMastery('viewer-a', 'ashfang')).toEqual(
+      expect.objectContaining({ points: 10 })
+    );
+    expect(collection.getEssence('viewer-a', 'Ember')).toEqual(
+      expect.objectContaining({ amount: 1, spent: 0 })
+    );
+    expect(store.getViewerMonsters('viewer-a')[0].evolution_essence_spent)
+      .toBe(0);
+    const secondReveal = emitted.findIndex(entry => (
+      entry.event === 'streammonsters:egg_hatched' &&
+      entry.payload.egg.egg_id === 'egg:second-hatch'
+    ));
+    const fusion = emitted.findIndex(entry => (
+      entry.event === 'streammonsters:monster_evolved'
+    ));
+    expect(secondReveal).toBeGreaterThanOrEqual(0);
+    expect(fusion).toBeGreaterThan(secondReveal);
+  });
+
+  test('keeps a successful hatch and its pair pending when the target asset is unavailable', () => {
+    const assetRegistry = {
+      audit: () => ({ assets: new Map() }),
+      getAsset: (templateId, stage) => ({
+        templateId,
+        stage,
+        assetVersion: 'furry-1.12.0'
+      }),
+      resolveVisual: ({ templateId, stage }) => stage === 1
+        ? {
+          imageUrl: `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.webp`,
+          visualSource: 'furry',
+          visualKey: `furry:${templateId}`,
+          assetVersion: 'furry-1.12.0'
+        }
+        : null
+    };
+    const { sqlite, store, engine, emitted } = createLifecycle({
+      assetRegistry
+    });
+    createReadyEgg(store, 'egg:asset-a', 10);
+    createReadyEgg(store, 'egg:asset-b', 20);
+
+    engine.hatchEgg('viewer-a', 1);
+    expect(() => engine.hatchEgg('viewer-a', 1)).not.toThrow();
+
+    expect(store.getViewerMonsters('viewer-a')).toHaveLength(2);
+    expect(store.getViewerMonsters('viewer-a').map(row => row.evolution_stage))
+      .toEqual([1, 1]);
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_fusion_ledger
+    `).get().count).toBe(0);
+    expect(emitted.filter(entry => (
+      entry.event === 'streammonsters:egg_hatched'
+    ))).toHaveLength(2);
+    expect(emitted.some(entry => (
+      entry.event === 'streammonsters:monster_evolved'
+    ))).toBe(false);
+  });
+
+  test.each([
+    ['queued', (store, monster) => {
+      store.enqueueBattle({
+        userId: monster.user_id,
+        monsterId: monster.monster_id,
+        stance: 'bold',
+        queuedAtMs: 40_000
+      });
+    }],
+    ['active_match', (store, monster) => {
+      store.db.prepare(`
+        INSERT INTO streammonsters_matches (
+          match_id, state, seed, created_at_ms, updated_at_ms
+        ) VALUES ('match:blocker', 'roster', 'seed', 1, 1)
+      `).run();
+      store.db.prepare(`
+        INSERT INTO streammonsters_match_participants (
+          match_id, participant_id, viewer_id, slot,
+          queued_monster_id, locked_monster_id, active
+        ) VALUES ('match:blocker', 'participant:blocker', ?, 1, ?, ?, 1)
+      `).run(monster.user_id, monster.monster_id, monster.monster_id);
+    }],
+    ['pending_stat_choice', (store, monster) => {
+      store.db.prepare(`
+        INSERT INTO streammonsters_stat_allocations (
+          prompt_id, viewer_id, monster_id, source_key,
+          deadline_ms, status, created_at_ms
+        ) VALUES ('stat:blocker', ?, ?, 'source:blocker', 60000, 'open', 1)
+      `).run(monster.user_id, monster.monster_id);
+    }]
+  ])('defers a fusion while either candidate is %s', (reason, block) => {
+    const { sqlite, store, collection } = createSubject({
+      assetRegistry: completeAssetRegistry()
+    });
+    const blocked = createMonster(store, {
+      monsterId: `monster:${reason}:a`,
+      createdAtMs: 10
+    });
+    createMonster(store, {
+      monsterId: `monster:${reason}:b`,
+      createdAtMs: 20
+    });
+    block(store, blocked);
+
+    const result = collection.fuseDuplicates({
+      userId: 'viewer-a',
+      templateId: 'ashfang',
+      triggerType: 'contact',
+      triggerId: `chat:${reason}`
+    });
+
+    expect(result).toEqual({ status: 'blocked', reason });
+    expect(store.getViewerMonsters('viewer-a')).toHaveLength(2);
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_fusion_ledger
+    `).get().count).toBe(0);
+  });
+
+  test('excludes an archived donor from stat allocation, XP targets and matchmaking', () => {
+    const { store, collection } = createSubject({
+      assetRegistry: completeAssetRegistry()
+    });
+    createMonster(store, {
+      monsterId: 'archive-survivor',
+      createdAtMs: 10
+    });
+    const donor = createMonster(store, {
+      monsterId: 'archive-donor',
+      createdAtMs: 20
+    });
+    store.selectMonster('viewer-a', donor.monster_id);
+    store.db.prepare(`
+      UPDATE streammonsters_monsters
+      SET unspent_stat_points = 1
+      WHERE monster_id = ?
+    `).run(donor.monster_id);
+    collection.fuseDuplicates({
+      userId: 'viewer-a',
+      templateId: 'ashfang',
+      triggerType: 'hatch',
+      triggerId: 'hatch:archive'
+    });
+    const before = store.getMonster(donor.monster_id);
+
+    expect(store.applyMonsterStatPoint({
+      userId: 'viewer-a',
+      monsterId: donor.monster_id,
+      stat: 'might'
+    })).toEqual({ applied: false, reason: 'not_owned' });
+    expect(store.awardMonsterXp(donor.monster_id, 100)).toBeNull();
+    expect(() => store.enqueueBattle({
+      userId: 'viewer-a',
+      monsterId: donor.monster_id,
+      stance: 'bold',
+      queuedAtMs: 50_000
+    })).toThrow('STREAM_MONSTER_NOT_OWNED');
+    expect(store.getMonster(donor.monster_id)).toEqual(before);
+
+    const awarded = store.awardViewerXp('viewer-a', 100, donor.monster_id);
+    expect(awarded).toEqual(expect.objectContaining({
+      monster_id: 'archive-survivor',
+      level: 2
+    }));
+    expect(store.getMonster(donor.monster_id)).toEqual(before);
+  });
+
+  test('reconciles at most one historical pair per distinct stable contact', () => {
+    const { sqlite, store, collection } = createSubject({
+      assetRegistry: completeAssetRegistry()
+    });
+    ['a', 'b', 'c', 'd'].forEach((suffix, index) => {
+      createMonster(store, {
+        monsterId: `legacy-${suffix}`,
+        createdAtMs: 10 + index
+      });
+    });
+
+    const first = collection.reconcileLegacyContact(
+      'viewer-a',
+      'chat:tiktok:stable-one'
+    );
+    const duplicate = collection.reconcileLegacyContact(
+      'viewer-a',
+      'chat:tiktok:stable-one'
+    );
+    const second = collection.reconcileLegacyContact(
+      'viewer-a',
+      'chat:tiktok:stable-two'
+    );
+
+    expect(first.status).toBe('fused');
+    expect(duplicate.status).toBe('contact_already_processed');
+    expect(second.status).toBe('fused');
+    expect(sqlite.prepare(`
+      SELECT contact_id, result
+      FROM streammonsters_fusion_contacts
+      ORDER BY contact_id
+    `).all()).toEqual([
+      { contact_id: 'chat:tiktok:stable-one', result: 'fused' },
+      { contact_id: 'chat:tiktok:stable-two', result: 'fused' }
+    ]);
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_fusion_ledger
+    `).get().count).toBe(2);
+  });
+
+  test('uses !evolve only as a pair trigger and status command without mastery or essence spending', () => {
+    const { store, collection } = createSubject({
+      assetRegistry: completeAssetRegistry()
+    });
+    createMonster(store, {
+      monsterId: 'manual-a',
+      createdAtMs: 10
+    });
+    createMonster(store, {
+      monsterId: 'manual-b',
+      createdAtMs: 20
+    });
+    const commands = new ChatCommands({
+      store,
+      collection,
+      engine: { markReadyEggs: jest.fn(), streamKey: 'stream-a' },
+      battleService: {},
+      progression: null,
+      now: () => 50_000
+    });
+
+    const fused = commands.execute({
+      userId: 'viewer-a',
+      rawData: { eventId: 'manual-contact-1', provider: 'tiktok' }
+    }, 'evolve', ['1']);
+    const pending = commands.execute({
+      userId: 'viewer-a',
+      rawData: { eventId: 'manual-contact-2', provider: 'tiktok' }
+    }, 'evolve', ['1']);
+
+    expect(fused).toEqual(expect.objectContaining({
+      success: true,
+      status: 'fused',
+      evolution: expect.objectContaining({
+        fromStage: 1,
+        toStage: 2
+      })
+    }));
+    expect(pending).toEqual(expect.objectContaining({
+      success: true,
+      status: 'fusion_pending'
+    }));
+    expect(collection.getMastery('viewer-a', 'ashfang').points).toBe(0);
+    expect(collection.getEssence('viewer-a', 'Ember')).toEqual(
+      expect.objectContaining({ amount: 0, spent: 0 })
+    );
+  });
+
+  test('projects and replays safe Prestige fusion metadata without owner or donor database IDs', () => {
+    const { sqlite, store } = createStore();
+    const projector = new PublicEventProjector({ store });
+    const projected = projector.project('streammonsters:monster_evolved', {
+      userId: 'viewer-db-id',
+      donorMonsterId: 'donor-db-id',
+      evolutionStage: 3,
+      prestigeLevel: 2,
+      prestige: {
+        level: 2,
+        stars: '\u2605\u2605',
+        aura: 'fusion-crystal-2',
+        frame: 'prestige-2',
+        title: 'Fusion Nova'
+      },
+      fusion: {
+        kind: 'prestige',
+        fromStage: 3,
+        toStage: 3,
+        prestigeBefore: 1,
+        prestigeAfter: 2,
+        donorMonsterId: 'donor-db-id'
+      },
+      statsBefore: { vitality: 9, might: 9, guard: 9, agility: 9 },
+      statsAfter: { vitality: 9, might: 9, guard: 9, agility: 9 },
+      statChanges: { vitality: 0, might: 0, guard: 0, agility: 0 },
+      monster: {
+        monster_id: 'survivor-db-id',
+        name: 'Ashfang',
+        element: 'Ember',
+        rarity: 'Standard',
+        level: 8,
+        xp: 91,
+        template_id: 'ashfang',
+        evolution_stage: 3,
+        prestige_level: 2,
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp',
+        stats: { vitality: 9, might: 9, guard: 9, agility: 9 }
+      }
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      evolutionStage: 3,
+      prestigeLevel: 2,
+      prestige: {
+        level: 2,
+        stars: '\u2605\u2605',
+        aura: 'fusion-crystal-2',
+        frame: 'prestige-2',
+        title: 'Fusion Nova'
+      },
+      fusion: {
+        kind: 'prestige',
+        fromStage: 3,
+        toStage: 3,
+        prestigeBefore: 1,
+        prestigeAfter: 2
+      },
+      monster: expect.objectContaining({
+        prestigeLevel: 2
+      })
+    }));
+    expect(JSON.stringify(projected)).not.toContain('viewer-db-id');
+    expect(JSON.stringify(projected)).not.toContain('donor-db-id');
+    expect(JSON.stringify(projected)).not.toContain('survivor-db-id');
+
+    store.appendPublicEvent({
+      eventId: 'fusion-public-event',
+      correlationId: 'fusion-correlation',
+      streamKey: 'stream-a',
+      eventType: 'streammonsters:monster_evolved',
+      payload: projected,
+      createdAtMs: 50_000
+    });
+    const reconnected = new StreamMonstersDatabase(sqlite);
+    reconnected.initialize();
+    expect(reconnected.getRecentPublicEvents('stream-a')).toEqual([
+      expect.objectContaining({
+        eventId: 'fusion-public-event',
+        type: 'streammonsters:monster_evolved',
+        payload: projected
+      })
+    ]);
+  });
+
+  test('orders fusion animation through converge, crystal, evolved asset, stats, skill and settle', () => {
+    const timeline = ArenaDirector.buildArcadeTimeline(
+      'streammonsters:monster_evolved',
+      {
+        eventId: 'fusion-animation',
+        evolutionStage: 2,
+        element: 'Ember',
+        fusion: {
+          kind: 'stage',
+          fromStage: 1,
+          toStage: 2,
+          prestigeBefore: 0,
+          prestigeAfter: 0
+        },
+        statsBefore: { vitality: 7, might: 7, guard: 7, agility: 7 },
+        statsAfter: { vitality: 7, might: 9, guard: 7, agility: 8 },
+        unlockedSkill: {
+          choice: 'A',
+          name: 'Flamefang II',
+          nameKey: 'skillNameAshfangAStage2',
+          shortText: 'Stronger flame.',
+          shortTextKey: 'skillEffectAshfangAStage2',
+          icon: '\ud83d\udd25',
+          evolutionStage: 2
+        },
+        monster: {
+          name: 'Ashfang',
+          element: 'Ember',
+          evolutionStage: 2
+        }
+      }
+    );
+    const beatTypes = timeline.beats.map(beat => beat.type);
+
+    expect(beatTypes).toEqual([
+      'fusion_copies_converge',
+      'fusion_crystal',
+      'fusion_evolved_asset',
+      'evolution_stats',
+      'evolution_skill',
+      'fusion_settle'
+    ]);
+    expect(timeline.beats.map(beat => beat.atMs))
+      .toEqual([...timeline.beats.map(beat => beat.atMs)].sort((a, b) => a - b));
+
+    const reduced = ArenaDirector.buildArcadeTimeline(
+      'streammonsters:monster_evolved',
+      {
+        eventId: 'fusion-animation-reduced',
+        evolutionStage: 3,
+        fusion: {
+          kind: 'prestige',
+          fromStage: 3,
+          toStage: 3,
+          prestigeBefore: 2,
+          prestigeAfter: 3
+        },
+        prestige: {
+          level: 3,
+          stars: '\u2605\u2605\u2605',
+          aura: 'fusion-crystal-3',
+          frame: 'prestige-3',
+          title: 'Fusion Crown'
+        },
+        monster: {
+          name: 'Ashfang',
+          element: 'Ember',
+          evolutionStage: 3
+        }
+      },
+      { reducedMotion: true }
+    );
+    expect(reduced.beats.map(beat => beat.type)).toEqual([
+      'fusion_copies_converge',
+      'fusion_crystal',
+      'fusion_evolved_asset',
+      'fusion_prestige_settle'
+    ]);
+    expect(reduced.beats.every(beat => beat.durationMs === 0)).toBe(true);
   });
 });

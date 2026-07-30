@@ -165,6 +165,14 @@ class StreamMonstersDatabase {
           SELECT RAISE(ABORT, 'STREAM_MONSTERS_FUSION_LEDGER_APPEND_ONLY');
         END;
 
+      CREATE TABLE IF NOT EXISTS streammonsters_fusion_contacts (
+        contact_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        result TEXT NOT NULL DEFAULT 'pending',
+        fusion_id TEXT,
+        processed_at_ms INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS streammonsters_viewer_progress (
         user_id TEXT PRIMARY KEY,
         gifts_sent INTEGER NOT NULL DEFAULT 0,
@@ -1800,6 +1808,37 @@ class StreamMonstersDatabase {
     }));
   }
 
+  getFusionCandidateTemplates(userId) {
+    return this.db.prepare(`
+      SELECT template_id, MAX(evolution_stage) AS highest_stage,
+             MIN(created_at_ms) AS oldest_created_at_ms
+      FROM streammonsters_monsters
+      WHERE user_id = ?
+        AND collection_state = 'owned'
+        AND template_id IS NOT NULL
+        AND template_id != ''
+      GROUP BY template_id
+      HAVING COUNT(*) >= 2
+      ORDER BY highest_stage DESC, oldest_created_at_ms ASC, template_id ASC
+    `).all(userId).map(row => row.template_id);
+  }
+
+  claimFusionContact(userId, contactId, processedAtMs) {
+    return this.db.prepare(`
+      INSERT OR IGNORE INTO streammonsters_fusion_contacts (
+        contact_id, user_id, result, processed_at_ms
+      ) VALUES (?, ?, 'pending', ?)
+    `).run(contactId, userId, processedAtMs).changes > 0;
+  }
+
+  setFusionContactResult(contactId, result, fusionId = null) {
+    this.db.prepare(`
+      UPDATE streammonsters_fusion_contacts
+      SET result = ?, fusion_id = ?
+      WHERE contact_id = ?
+    `).run(result, fusionId, contactId);
+  }
+
   getFusionBlocker(monsterId) {
     if (this.db.prepare(`
       SELECT 1 FROM streammonsters_battle_queue
@@ -2454,9 +2493,17 @@ class StreamMonstersDatabase {
     queuedPower = null,
     queuedAtMs
   }) {
+    const monster = this.getMonster(monsterId);
+    if (
+      !monster ||
+      monster.user_id !== userId ||
+      monster.collection_state !== 'owned'
+    ) {
+      throw new Error('STREAM_MONSTER_NOT_OWNED');
+    }
     const power = Number.isInteger(queuedPower)
       ? queuedPower
-      : effectiveCombatPower(this.getMonster(monsterId));
+      : effectiveCombatPower(monster);
     this.db.prepare(`
       INSERT INTO streammonsters_battle_queue (
         user_id, monster_id, stance, stream_key, queued_power, queued_at_ms
@@ -2506,7 +2553,7 @@ class StreamMonstersDatabase {
 
   awardMonsterXp(monsterId, amount) {
     const current = this.getMonster(monsterId);
-    if (!current) return null;
+    if (!current || current.collection_state !== 'owned') return null;
     let level = current.level;
     let xp = current.xp + Math.max(0, Number.parseInt(amount, 10) || 0);
     let unspentStatPoints = Math.max(0, Number(current.unspent_stat_points) || 0);
@@ -2529,7 +2576,11 @@ class StreamMonstersDatabase {
     if (!names.includes(stat)) return { applied: false, reason: 'invalid_stat' };
     return this.runInImmediateTransaction(() => {
       const monster = this.getMonster(monsterId);
-      if (!monster || monster.user_id !== userId) {
+      if (
+        !monster ||
+        monster.user_id !== userId ||
+        monster.collection_state !== 'owned'
+      ) {
         return { applied: false, reason: 'not_owned' };
       }
       if ((Number(monster.unspent_stat_points) || 0) < 1) {
@@ -2551,7 +2602,9 @@ class StreamMonstersDatabase {
     const normalizedAmount = Math.max(0, Number.parseInt(amount, 10) || 0);
     const progress = this.getViewerProgress(userId);
     const preferred = preferredMonsterId ? this.getMonster(preferredMonsterId) : null;
-    const monster = preferred?.user_id === userId ? preferred : this.getSelectedMonster(userId);
+    const monster = preferred?.user_id === userId && preferred.collection_state === 'owned'
+      ? preferred
+      : this.getSelectedMonster(userId);
     if (!monster) {
       if (normalizedAmount) {
         this.db.prepare(`
@@ -2573,7 +2626,7 @@ class StreamMonstersDatabase {
 
   recordMonsterBattle(monsterId, won) {
     const current = this.getMonster(monsterId);
-    if (!current) return null;
+    if (!current || current.collection_state !== 'owned') return null;
     this.db.prepare(`
       UPDATE streammonsters_monsters
       SET battle_count = battle_count + 1,
@@ -2599,7 +2652,7 @@ class StreamMonstersDatabase {
       SELECT
         COALESCE(SUM(battle_count), 0) AS battle_count
       FROM streammonsters_monsters
-      WHERE user_id = ?
+      WHERE user_id = ? AND collection_state = 'owned'
     `).get(userId);
     const progress = this.getViewerProgress(userId);
     return {

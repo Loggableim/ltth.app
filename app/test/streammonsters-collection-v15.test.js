@@ -279,7 +279,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     expect(store.getMonster('monster-a')).toEqual(expect.objectContaining({
       template_id: 'ashfang',
       evolution_stage: 1,
-      image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+      image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
       visual_source: 'furry',
       visual_key: 'furry:ashfang'
     }));
@@ -332,8 +332,11 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     }));
   });
 
-  test('exposes pagination, large cards, and cosmetic evolution through viewer commands', () => {
-    const { store, collection } = createCollection();
+  test('exposes pagination, large cards, and duplicate fusion through viewer commands', () => {
+    const assetRegistry = new AssetRegistry({
+      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+    });
+    const { store, collection } = createCollection(null, assetRegistry);
     const commands = new ChatCommands({
       store,
       collection,
@@ -342,6 +345,31 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     });
     store.setTemplateMastery('viewer-a', 'ashfang', 25, []);
     store.setElementEssence('viewer-a', 'Ember', 3, []);
+    const duplicateEgg = store.createEgg({
+      eggId: 'egg-duplicate',
+      userId: 'viewer-a',
+      giftId: 2,
+      giftName: 'Duplicate Gift',
+      element: 'Ember',
+      eggColor: '#ef6b45',
+      seed: 'seed-duplicate',
+      state: 'ready',
+      createdAtMs: 3,
+      hatchDurationMs: 1,
+      readyAtMs: 3
+    });
+    store.createMonsterFromEgg(duplicateEgg, {
+      monsterId: 'monster-duplicate',
+      name: 'Ashfang',
+      templateId: 'ashfang',
+      personality: 'Bold',
+      rarity: 'Standard',
+      stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
+      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
+      visualSource: 'furry',
+      visualKey: 'furry:ashfang',
+      createdAtMs: 3
+    });
 
     expect(commands.execute({ userId: 'viewer-a' }, 'monsters', ['1'])).toEqual(
       expect.objectContaining({
@@ -360,9 +388,12 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     expect(commands.execute({ userId: 'viewer-a' }, 'evolve', ['1'])).toEqual(
       expect.objectContaining({
         success: true,
-        status: 'evolved',
-        evolution: expect.objectContaining({ evolutionStage: 2 })
+        status: 'fused',
+        evolution: expect.objectContaining({ fromStage: 1, toStage: 2 })
       })
+    );
+    expect(collection.getEssence('viewer-a', 'Ember')).toEqual(
+      expect.objectContaining({ amount: 3, spent: 0 })
     );
   });
 });

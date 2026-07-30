@@ -1733,6 +1733,19 @@ class StreamAlchemyPlugin {
         repeatCount
       })
       : `${String(data.provider || data.source || 'tiktok')}:${String(providerEventId)}`;
+    if (eventPrefix) {
+      try {
+        this.streamMonstersCollection?.reconcileLegacyContact?.(
+          userId,
+          `gift:${eventPrefix}`
+        );
+      } catch (error) {
+        this.api.log(
+          `[STREAM MONSTERS] Gift fusion reconciliation failed: ${error.message}`,
+          'warn'
+        );
+      }
+    }
     let processedCount = 0;
     for (let index = 0; index < repeatCount; index += 1) {
       const result = this.streamMonstersEngine.processGift({
@@ -1818,6 +1831,19 @@ class StreamAlchemyPlugin {
         message: data.comment || data.message || data.text || ''
       }
     });
+    if (!eventId.includes(':ingress:')) {
+      try {
+        this.streamMonstersCollection?.reconcileLegacyContact?.(
+          userId,
+          eventId
+        );
+      } catch (error) {
+        this.api.log(
+          `[STREAM MONSTERS] Chat fusion reconciliation failed: ${error.message}`,
+          'warn'
+        );
+      }
+    }
     try {
       return this.streamMonstersFreeEggDrops.onFirstChat({
         userId,

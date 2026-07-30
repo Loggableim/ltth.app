@@ -286,27 +286,23 @@ class CollectionService {
         .filter(monster => Number(monster.prestige_level) === 0)
         .sort((left, right) => this.compareFusionStrength(left, right));
       const prestigeSurvivors = stageCandidates
-        .filter(monster => {
-          const level = Number(monster.prestige_level) || 0;
-          return level > 0 && level < 3;
-        })
+        .filter(monster => (Number(monster.prestige_level) || 0) > 0)
         .sort((left, right) => (
           (Number(right.prestige_level) || 0) -
             (Number(left.prestige_level) || 0) ||
           this.compareFusionStrength(left, right)
         ));
-      if (preferred) {
-        const prestige = Number(preferred.prestige_level) || 0;
-        if (prestige >= 3) continue;
-        if (prestige > 0) {
-          const donor = donors.find(monster => (
-            monster.monster_id !== preferred.monster_id
-          ));
-          if (donor) return [preferred, donor];
-          continue;
-        }
+      if (prestigeSurvivors.length) {
         const survivor = prestigeSurvivors[0];
-        if (survivor) return [survivor, preferred];
+        if ((Number(survivor.prestige_level) || 0) >= 3) continue;
+        const donor = preferred && (Number(preferred.prestige_level) || 0) === 0
+          ? preferred
+          : donors[0];
+        if (donor) return [survivor, donor];
+        continue;
+      }
+      if (preferred) {
+        if ((Number(preferred.prestige_level) || 0) > 0) continue;
         const counterpart = donors.find(monster => (
           monster.monster_id !== preferred.monster_id
         ));
@@ -315,9 +311,6 @@ class CollectionService {
             .sort((left, right) => this.compareFusionStrength(left, right));
         }
         continue;
-      }
-      if (prestigeSurvivors.length && donors.length) {
-        return [prestigeSurvivors[0], donors[0]];
       }
       if (donors.length >= 2) return donors.slice(0, 2);
     }
@@ -467,6 +460,47 @@ class CollectionService {
       monster: result.survivor
     });
     return result;
+  }
+
+  reconcileLegacyContact(userId, contactId) {
+    const normalizedUserId = String(userId || '').trim();
+    const normalizedContactId = String(contactId || '').trim();
+    if (!normalizedUserId || !normalizedContactId) {
+      return { status: 'invalid_contact' };
+    }
+    return this.store.runInImmediateTransaction(() => {
+      if (!this.store.claimFusionContact(
+        normalizedUserId,
+        normalizedContactId,
+        this.now()
+      )) {
+        return { status: 'contact_already_processed' };
+      }
+      let result = { status: 'no_pair' };
+      for (const templateId of this.store.getFusionCandidateTemplates(
+        normalizedUserId
+      )) {
+        if (!getTemplate(templateId)) continue;
+        result = this.fuseDuplicates({
+          userId: normalizedUserId,
+          templateId,
+          triggerType: 'contact',
+          triggerId: normalizedContactId
+        });
+        if (result.status !== 'no_pair') break;
+      }
+      this.store.setFusionContactResult(
+        normalizedContactId,
+        result.status,
+        result.status === 'fused'
+          ? this.store.getFusionByTrigger(
+            'contact',
+            normalizedContactId
+          )?.fusion_id || null
+          : null
+      );
+      return result;
+    });
   }
 
   evolveMonster(userId, monsterId) {

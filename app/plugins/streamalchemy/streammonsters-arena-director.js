@@ -864,7 +864,90 @@
       const isNew = type === 'monster_discovered' ||
         payload.discovery?.isNew === true ||
         payload.isNew === true;
-      beats = [
+      const fusion = type === 'monster_evolved' &&
+        payload.fusion &&
+        typeof payload.fusion === 'object'
+        ? payload.fusion
+        : null;
+      if (fusion) {
+        const reducedMotion = Boolean(options.reducedMotion);
+        const duration = value => reducedMotion ? 0 : value;
+        const at = value => reducedMotion ? 0 : value;
+        beats = [
+          {
+            type: 'fusion_copies_converge',
+            atMs: 0,
+            durationMs: duration(650),
+            element
+          },
+          {
+            type: 'fusion_crystal',
+            atMs: at(620),
+            durationMs: duration(760),
+            element,
+            peak: true,
+            effect: {
+              scene: 'evolution',
+              element,
+              vfxKey: `${element}:fusion-crystal`
+            },
+            audioCue: 'progress.evolution'
+          },
+          {
+            type: 'fusion_evolved_asset',
+            atMs: at(1_340),
+            durationMs: duration(820),
+            element,
+            evolutionStage,
+            peak: true,
+            audioCue: 'progress.evolution'
+          }
+        ];
+        if (fusion.kind === 'stage' && payload.statsBefore && payload.statsAfter) {
+          const presentation = buildEvolutionPresentation(payload, {
+            reducedMotion
+          });
+          beats.push({
+            type: 'evolution_stats',
+            atMs: at(2_180),
+            durationMs: duration(1_000),
+            evolutionStage,
+            stats: presentation.stats,
+            peak: true,
+            audioCue: 'progress.evolution'
+          });
+          if (presentation.skill) {
+            beats.push({
+              type: 'evolution_skill',
+              atMs: at(3_200),
+              durationMs: duration(820),
+              evolutionStage,
+              skill: presentation.skill,
+              peak: true,
+              audioCue: 'ui.navigate'
+            });
+          }
+          beats.push({
+            type: 'fusion_settle',
+            atMs: at(4_040),
+            durationMs: duration(900),
+            element,
+            evolutionStage
+          });
+        } else {
+          beats.push({
+            type: 'fusion_prestige_settle',
+            atMs: at(2_180),
+            durationMs: duration(1_100),
+            element,
+            evolutionStage,
+            prestige: payload.prestige || null,
+            peak: true,
+            audioCue: 'progress.rank'
+          });
+        }
+      } else {
+        beats = [
         {
           type: 'silhouette',
           atMs: 0,
@@ -881,57 +964,58 @@
           audioCue: type === 'monster_evolved' ? 'progress.evolution' : 'egg.hatch',
           audioDucking: { amount: 0.38, durationMs: 950 }
         }
-      ];
-      if (type === 'monster_evolved' && payload.statsBefore && payload.statsAfter) {
-        const presentation = buildEvolutionPresentation(payload, {
-          reducedMotion: Boolean(options.reducedMotion)
-        });
-        beats.push({
-          type: 'evolution_stats',
-          atMs: presentation.statsRevealAtMs,
-          durationMs: options.reducedMotion ? 0 : 1_200,
-          evolutionStage,
-          stats: presentation.stats,
-          peak: true,
-          audioCue: 'progress.evolution'
-        });
-        if (presentation.skill) {
+        ];
+        if (type === 'monster_evolved' && payload.statsBefore && payload.statsAfter) {
+          const presentation = buildEvolutionPresentation(payload, {
+            reducedMotion: Boolean(options.reducedMotion)
+          });
           beats.push({
-            type: 'evolution_skill',
-            atMs: presentation.skillRevealAtMs,
-            durationMs: options.reducedMotion ? 0 : 1_000,
+            type: 'evolution_stats',
+            atMs: presentation.statsRevealAtMs,
+            durationMs: options.reducedMotion ? 0 : 1_200,
             evolutionStage,
-            skill: presentation.skill,
+            stats: presentation.stats,
             peak: true,
-            audioCue: 'ui.navigate'
+            audioCue: 'progress.evolution'
+          });
+          if (presentation.skill) {
+            beats.push({
+              type: 'evolution_skill',
+              atMs: presentation.skillRevealAtMs,
+              durationMs: options.reducedMotion ? 0 : 1_000,
+              evolutionStage,
+              skill: presentation.skill,
+              peak: true,
+              audioCue: 'ui.navigate'
+            });
+          }
+        } else if (type === 'monster_evolved' || evolutionStage > 1) {
+          beats.push({
+            type: 'evolution_peak',
+            atMs: 1240,
+            durationMs: 900,
+            evolutionStage,
+            peak: true,
+            audioCue: 'progress.evolution'
+          });
+        } else {
+          beats.push({
+            type: isNew ? 'new_discovery' : 'duplicate_reward',
+            atMs: 1240,
+            durationMs: 760,
+            peak: isNew,
+            audioCue: isNew ? 'progress.level' : 'progress.xp'
           });
         }
-      } else if (type === 'monster_evolved' || evolutionStage > 1) {
         beats.push({
-          type: 'evolution_peak',
-          atMs: 1240,
-          durationMs: 900,
-          evolutionStage,
-          peak: true,
-          audioCue: 'progress.evolution'
-        });
-      } else {
-        beats.push({
-          type: isNew ? 'new_discovery' : 'duplicate_reward',
-          atMs: 1240,
-          durationMs: 760,
-          peak: isNew,
-          audioCue: isNew ? 'progress.level' : 'progress.xp'
+          type: 'winner_frame',
+          atMs: type === 'monster_evolved' && payload.statsBefore && payload.statsAfter
+            ? (options.reducedMotion ? 0 : 3_800)
+            : 1960,
+          durationMs: 1100,
+          element
         });
       }
-      beats.push({
-        type: 'winner_frame',
-        atMs: type === 'monster_evolved' && payload.statsBefore && payload.statsAfter
-          ? (options.reducedMotion ? 0 : 3_800)
-          : 1960,
-        durationMs: 1100,
-        element
-      });
     } else if (type === 'battle_choice_locked') {
       scene = 'sealed_choice';
       beats = [{
