@@ -591,7 +591,8 @@
       if (
         !templateId ||
         ![1, 2, 3].includes(stage) ||
-        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(assetPath) ||
+        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.webp$/.test(assetPath) ||
+        asset?.mediaType !== 'image/webp' ||
         seen.has(key)
       ) {
         return [];

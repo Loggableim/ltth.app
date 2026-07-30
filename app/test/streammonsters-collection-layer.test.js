@@ -2,7 +2,11 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
-const { TEMPLATE_CATALOG, getTemplatesForElement } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+const {
+  TEMPLATE_CATALOG,
+  FURRY_ASSET_VERSION,
+  getTemplatesForElement
+} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const ViewerActivityTracker = require(
@@ -15,6 +19,7 @@ function createCollection(options = {}) {
   const emitted = [];
   const collection = new CollectionService({
     store,
+    assetRegistry: options.assetRegistry || null,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => options.now ?? 10_000,
     getActiveViewerCount: options.getActiveViewerCount || (() => (
@@ -705,6 +710,60 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'furry', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe(template.assetPath);
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'furry', artPool, kenneyBuilder, hasBundledAsset: () => false }).visualSource).toBe('kenney');
     expect(artPool.consumeForTemplate).not.toHaveBeenCalled();
+  });
+
+  test('persists the healthy registry WebP when hatching despite a stale bundle probe', () => {
+    const assetRegistry = new AssetRegistry({
+      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+    });
+    const resolveVisual = jest.spyOn(assetRegistry, 'resolveVisual');
+    const { store, collection } = createCollection({ assetRegistry });
+    const kenneyBuilder = {
+      build: jest.fn(() => ({
+        publicUrl: '/api/streammonsters/art/kenney-deadbeefdeadbeef.svg',
+        visualSource: 'kenney',
+        visualKey: 'kenney:deadbeefdeadbeef'
+      }))
+    };
+    const engine = new StreamMonstersEngine({
+      store,
+      collection,
+      kenneyBuilder,
+      hasBundledAsset: () => false,
+      now: () => 10_000
+    });
+    const egg = store.createEgg({
+      eggId: 'ready-webp-egg',
+      userId: 'viewer-webp',
+      giftId: 1,
+      giftName: 'Gift',
+      element: 'Ember',
+      eggColor: '#fff',
+      seed: 'healthy-registry-webp',
+      createdAtMs: 1,
+      hatchDurationMs: 1,
+      state: 'ready'
+    });
+
+    const monster = engine.hatchEgg(egg.user_id, 1);
+    const persisted = store.getMonster(monster.monster_id);
+
+    expect(resolveVisual).toHaveBeenCalledWith(expect.objectContaining({
+      templateId: persisted.template_id,
+      stage: 1,
+      seed: egg.seed,
+      element: egg.element
+    }));
+    expect(kenneyBuilder.build).not.toHaveBeenCalled();
+    expect(persisted).toEqual(expect.objectContaining({
+      image_url: expect.stringMatching(
+        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[a-z0-9-]+\.webp$/
+      ),
+      visual_source: 'furry',
+      asset_version: FURRY_ASSET_VERSION
+    }));
+    expect(assetRegistry.getValidatedUrl(persisted.template_id, 1))
+      .toBe(persisted.image_url);
   });
 
   test('never consumes a historical Art Lab row', () => {

@@ -248,12 +248,12 @@ describe('Stream Monsters targeted demo API', () => {
           expect.objectContaining({
             slot: 1,
             name: 'Ashfang',
-            imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+            imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp'
           }),
           expect.objectContaining({
             slot: 2,
             imageUrl: expect.stringMatching(
-              /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/.+\.png$/
+              /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/.+\.webp$/
             )
           })
         ]);

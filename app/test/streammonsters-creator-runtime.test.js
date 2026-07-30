@@ -605,8 +605,9 @@ describe('Stream Monsters creator controls', () => {
         species: 'Wolf',
         stage,
         assetPath: stage === 1
-          ? `assets/streammonsters/furry/monster-${templateIndex}.png`
-          : `assets/streammonsters/furry/evolution/ember/monster-${templateIndex}-stage${stage}.png`,
+          ? `assets/streammonsters/furry/monster-${templateIndex}.webp`
+          : `assets/streammonsters/furry/evolution/ember/monster-${templateIndex}-stage${stage}.webp`,
+        mediaType: 'image/webp',
         dimensions: [1024, 1024],
         sha256: String(templateIndex * 3 + stage).padStart(64, 'a')
       }))
@@ -620,7 +621,7 @@ describe('Stream Monsters creator controls', () => {
       element: 'Ember',
       species: 'Wolf',
       stage: 1,
-      assetUrl: '/plugins/streamalchemy/assets/streammonsters/furry/monster-0.png',
+      assetUrl: '/plugins/streamalchemy/assets/streammonsters/furry/monster-0.webp',
       healthy: true
     });
     expect(entries.at(-1)).toEqual(expect.objectContaining({
@@ -628,5 +629,18 @@ describe('Stream Monsters creator controls', () => {
       stage: 3,
       healthy: true
     }));
+  });
+
+  test('rejects legacy PNG rows from schema-3 creator cards', () => {
+    expect(buildAssetStageEntries({
+      assets: [{
+        templateId: 'ashfang',
+        stage: 1,
+        assetPath: 'assets/streammonsters/furry/ashfang.png',
+        mediaType: 'image/png',
+        dimensions: [1024, 1024],
+        sha256: 'a'.repeat(64)
+      }]
+    })).toEqual([]);
   });
 });

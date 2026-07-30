@@ -22,6 +22,7 @@ const KenneyMonsterBuilder = require(
 );
 
 const realPluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 function sha256(buffer) {
   return crypto.createHash('sha256').update(buffer).digest('hex');
@@ -58,6 +59,21 @@ function packageAsset(templateId, stage, relativePath, buffer) {
     dimensions: [1024, 1024],
     sha256: sha256(buffer)
   };
+}
+
+function writeLegacyPngSource(tempDirs, filename, marker = 0) {
+  const sourceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-png-v15-'));
+  tempDirs.push(sourceDir);
+  const sourcePath = path.join(sourceDir, filename);
+  const bytes = Buffer.alloc(25);
+  PNG_SIGNATURE.copy(bytes, 0);
+  bytes.writeUInt32BE(13, 8);
+  bytes.write('IHDR', 12, 'ascii');
+  bytes.writeUInt32BE(1024, 16);
+  bytes.writeUInt32BE(1024, 20);
+  bytes[24] = marker;
+  fs.writeFileSync(sourcePath, bytes);
+  return sourcePath;
 }
 
 function createMonster(store, {
@@ -103,13 +119,7 @@ describe('Stream Monsters runtime asset registry', () => {
   });
 
   test('returns only a hash-verified 1024px package URL and invalidates its cache after corruption', () => {
-    const sourcePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'ashfang.png'
-    );
+    const sourcePath = writeLegacyPngSource(tempDirs, 'ashfang.png');
     const source = fs.readFileSync(sourcePath);
     const relativePath = 'assets/streammonsters/furry/ashfang.png';
     const pluginDir = createPluginFixture([{
@@ -151,14 +161,14 @@ describe('Stream Monsters runtime asset registry', () => {
       expect(initialChecks).toBeGreaterThan(72);
 
       for (let index = 0; index < 20; index += 1) {
-        expect(registry.getValidatedUrl('ashfang', 1)).toMatch(/ashfang\.png$/);
-        expect(registry.getValidatedUrl('pulse', 3)).toMatch(/pulse-stage3\.png$/);
+        expect(registry.getValidatedUrl('ashfang', 1)).toMatch(/ashfang\.webp$/);
+        expect(registry.getValidatedUrl('pulse', 3)).toMatch(/pulse-stage3\.webp$/);
         expect(registry.getIntegrity().healthy).toBe(true);
       }
       expect(lstat).toHaveBeenCalledTimes(initialChecks);
 
       registry.invalidate();
-      expect(registry.getValidatedUrl('ashfang', 1)).toMatch(/ashfang\.png$/);
+      expect(registry.getValidatedUrl('ashfang', 1)).toMatch(/ashfang\.webp$/);
       expect(lstat.mock.calls.length).toBeGreaterThan(initialChecks);
     } finally {
       lstat.mockRestore();
@@ -166,13 +176,7 @@ describe('Stream Monsters runtime asset registry', () => {
   });
 
   test('rejects package paths outside the plugin and symbolic-link assets', () => {
-    const sourcePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'ashfang.png'
-    );
+    const sourcePath = writeLegacyPngSource(tempDirs, 'ashfang.png');
     const source = fs.readFileSync(sourcePath);
     const relativePath = 'assets/streammonsters/furry/linked.png';
     const linkedDirectoryPath =
@@ -256,22 +260,8 @@ describe('Stream Monsters runtime asset registry', () => {
   });
 
   test('uses Kenney for a corrupt evolution asset while preserving identity and applying evolution stats', () => {
-    const basePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'ashfang.png'
-    );
-    const stagePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'evolution',
-      'ember',
-      'ashfang-stage2.png'
-    );
+    const basePath = writeLegacyPngSource(tempDirs, 'ashfang.png', 1);
+    const stagePath = writeLegacyPngSource(tempDirs, 'ashfang-stage2.png', 2);
     const base = fs.readFileSync(basePath);
     const stage = fs.readFileSync(stagePath);
     const baseRelative = 'assets/streammonsters/furry/ashfang.png';
@@ -361,13 +351,7 @@ describe('Stream Monsters runtime asset registry', () => {
   });
 
   test('records the verified package asset version during canonical legacy migration', () => {
-    const sourcePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'ashfang.png'
-    );
+    const sourcePath = writeLegacyPngSource(tempDirs, 'ashfang.png');
     const source = fs.readFileSync(sourcePath);
     const relativePath = 'assets/streammonsters/furry/ashfang.png';
     const pluginDir = createPluginFixture([
@@ -403,13 +387,7 @@ describe('Stream Monsters runtime asset registry', () => {
   });
 
   test('does not canonicalize a legacy visual onto a corrupt package asset', () => {
-    const sourcePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'ashfang.png'
-    );
+    const sourcePath = writeLegacyPngSource(tempDirs, 'ashfang.png');
     const source = fs.readFileSync(sourcePath);
     const relativePath = 'assets/streammonsters/furry/ashfang.png';
     const pluginDir = createPluginFixture([
@@ -518,13 +496,7 @@ describe('Stream Monsters runtime asset registry', () => {
   });
 
   test('canonical migration performs one asset audit regardless of monster count', () => {
-    const sourcePath = path.join(
-      realPluginDir,
-      'assets',
-      'streammonsters',
-      'furry',
-      'ashfang.png'
-    );
+    const sourcePath = writeLegacyPngSource(tempDirs, 'ashfang.png');
     const source = fs.readFileSync(sourcePath);
     const relativePath = 'assets/streammonsters/furry/ashfang.png';
     const pluginDir = createPluginFixture([

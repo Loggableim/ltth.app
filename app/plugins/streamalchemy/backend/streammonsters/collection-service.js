@@ -741,13 +741,20 @@ class CollectionService {
   }
 
   selectVisual({ template, egg, kenneyBuilder = null, hasBundledAsset = () => true }) {
-    if (hasBundledAsset(template)) {
+    const registryVisual = this.assetRegistry?.resolveVisual?.({
+      templateId: template.templateId,
+      stage: 1,
+      seed: egg.seed,
+      element: egg.element
+    }) || null;
+    if (registryVisual) return registryVisual;
+
+    if (!this.assetRegistry && hasBundledAsset(template)) {
       return {
         imageUrl: template.assetPath,
         visualSource: 'furry',
         visualKey: `furry:${template.templateId}`,
-        assetVersion: this.assetRegistry?.getAsset(template.templateId, 1)?.assetVersion ||
-          FURRY_ASSET_VERSION
+        assetVersion: FURRY_ASSET_VERSION
       };
     }
     const fallback = kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element }) || null;
@@ -757,10 +764,10 @@ class CollectionService {
       visualKey: fallback.visualKey,
       assetVersion: 'kenney-cc0-v1'
     } : {
-      imageUrl: template.assetPath,
-      visualSource: 'furry',
-      visualKey: `furry:${template.templateId}`,
-      assetVersion: FURRY_ASSET_VERSION
+      imageUrl: null,
+      visualSource: 'missing',
+      visualKey: null,
+      assetVersion: null
     };
   }
 

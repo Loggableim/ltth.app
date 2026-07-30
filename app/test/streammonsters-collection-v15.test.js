@@ -108,7 +108,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       }),
       monster: expect.objectContaining({
         evolution_stage: 2,
-        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.png',
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp',
         visual_source: 'furry',
         visual_key: 'furry:ashfang:stage-2',
         stats: { vitality: 7, might: 10, guard: 6, agility: 8 }
@@ -140,7 +140,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       }),
       monster: expect.objectContaining({
         evolution_stage: 3,
-        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.png',
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp',
         visual_key: 'furry:ashfang:stage-3',
         stats: { vitality: 7, might: 12, guard: 6, agility: 9 }
       })

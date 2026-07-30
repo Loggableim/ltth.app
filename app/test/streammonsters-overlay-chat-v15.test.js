@@ -296,7 +296,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(snapshot.detailText).toEqual(expect.stringContaining('Guard'));
     expect(snapshot.detailText).toEqual(expect.stringContaining('Agility'));
     expect(snapshot.detailHtml).toContain(
-      '/plugins/streamalchemy/assets/streammonsters/furry/evolution/volt/pulse-stage2.png'
+      '/plugins/streamalchemy/assets/streammonsters/furry/evolution/volt/pulse-stage2.webp'
     );
     for (const secret of [
       'private-user-id',

@@ -56,7 +56,7 @@ describe('Stream Monsters bundled monster catalog', () => {
     expect(res.payload.total).toBe(24);
     expect(res.payload.formsTotal).toBe(72);
     expect(res.payload.assetIntegrity).toEqual({
-      assetVersion: 'furry-1.5.0',
+      assetVersion: 'furry-1.12.0',
       expected: 72,
       available: 72,
       healthy: true
