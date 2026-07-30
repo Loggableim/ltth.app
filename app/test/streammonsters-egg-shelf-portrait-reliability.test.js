@@ -55,8 +55,29 @@ function shelfFixture({ nowMs = 10_000, width = 477 } = {}) {
       ready: 'Ready {command}',
       reserved: 'Reserved {time}',
       public: 'Free {time}',
-      adoptSummary: '{count} free · {command}'
+      adoptSummary: '{count} free · {command}',
+      eggCardOwner: 'Owner: {owner}',
+      eggCardElement: 'Element: {element}',
+      eggCardOwned: 'OWNED',
+      eggCardIncubating: 'INCUBATING',
+      eggCardQueued: 'QUEUED #{position}',
+      eggCardReady: 'READY · {command}',
+      eggCardReserved: 'RESERVED FOR {owner} · {command}',
+      eggCardPublic: 'ADOPT NOW · {command}',
+      eggCardRescuePublic: 'GRACE · ADOPT NOW · {command}',
+      eggCardRotTimer: 'ROT IN {time}',
+      eggCardTimer: '{time}',
+      eggCardTimerUnavailable: '--:--',
+      eggCardAria: '{owner} · {element} · {status} · {timer}'
     },
+    getElementName: element => ({
+      Ember: 'Fire',
+      Tide: 'Water',
+      Grove: 'Nature',
+      Gale: 'Air',
+      Volt: 'Lightning',
+      Lunar: 'Moon'
+    }[element] || element),
     getHatchReference: () => '!hatch',
     getAdoptReference: () => '!adopt',
     setTimeout: jest.fn(() => 1),
@@ -97,6 +118,92 @@ function styleRules(document) {
 }
 
 describe('Stream Monsters portrait egg shelf reliability', () => {
+  test('renders safe identity, localized element, explicit state, large timer, and accessible names', () => {
+    const { dom, view } = shelfFixture({ width: 1_920 });
+    view.applySnapshot([
+      egg('gift', {
+        displayName: '\u0000Alice',
+        element: 'Tide',
+        ownershipState: 'owned'
+      }),
+      egg('reserved', {
+        displayName: '@Mira',
+        element: 'Ember',
+        provenance: 'free',
+        ownershipState: 'offered',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        adoptable: false,
+        timing: { landedAtMs: 1_000, publicAtMs: 70_000 }
+      }),
+      egg('public', {
+        displayName: 'Community',
+        element: 'Grove',
+        provenance: 'free',
+        ownershipState: 'offered',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { landedAtMs: 1_000, expiresAtMs: 80_000 }
+      }),
+      egg('rescue', {
+        displayName: 'Original Owner',
+        element: 'Gale',
+        rescueId: 'rescue-offer',
+        ownershipState: 'offered',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { landedAtMs: 1_000, expiresAtMs: 90_000 }
+      }),
+      egg('ready', {
+        displayName: 'Ready Owner',
+        element: 'Volt',
+        ownershipState: 'owned',
+        state: 'ready',
+        timing: { landedAtMs: 1_000, expiresAtMs: 100_000 }
+      }),
+      egg('queued', {
+        displayName: 'Queue Owner',
+        element: 'Lunar',
+        ownershipState: 'owned',
+        state: 'queued',
+        queuePosition: 3,
+        timing: { landedAtMs: 1_000, readyAtMs: null }
+      })
+    ]);
+
+    const card = id => dom.window.document.querySelector(`[data-egg-id="${id}"]`);
+    for (const id of ['gift', 'reserved', 'public', 'rescue', 'ready', 'queued']) {
+      expect(card(id).querySelector('[data-egg-owner]').textContent).not.toBe('');
+      expect(card(id).querySelector('[data-egg-element]').textContent).not.toBe('');
+      expect(card(id).querySelector('[data-egg-status]').textContent).not.toBe('');
+      expect(card(id).querySelector('[data-egg-timer]').textContent).toMatch(
+        /(?:\d{2}:\d{2}|--:--)$/
+      );
+      expect(card(id).getAttribute('aria-label')).not.toContain(id);
+      expect(card(id).getAttribute('aria-label')).toContain(
+        card(id).querySelector('[data-egg-owner]').textContent.replace('Owner: ', '')
+      );
+    }
+
+    expect(card('gift').textContent).toContain('Owner: Alice');
+    expect(card('gift').textContent).toContain('Element: Water');
+    expect(card('gift').textContent).toContain('OWNED');
+    expect(card('gift').textContent).toContain('INCUBATING');
+    expect(card('reserved').textContent)
+      .toContain('RESERVED FOR @Mira · !adopt');
+    expect(card('public').textContent).toContain('ADOPT NOW · !adopt');
+    expect(card('rescue').textContent)
+      .toContain('GRACE · ADOPT NOW · !adopt');
+    expect(card('ready').textContent).toContain('READY · !hatch');
+    expect(card('ready').textContent).toContain('ROT IN 01:30');
+    expect(card('queued').textContent).toContain('QUEUED #3');
+    expect(card('queued').textContent).not.toContain('!hatch');
+    view.destroy();
+    dom.window.close();
+  });
+
   test('keeps the same overflow preview node across countdown ticks', () => {
     const { dom, view, intervals, setNow } = shelfFixture();
     view.applySnapshot(Array.from({ length: 6 }, (_, index) => (
@@ -284,14 +391,18 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       }
     );
 
-    for (const notice of [reserved, publicNotice]) {
-      expect(notice).toEqual(expect.objectContaining({
-        placement: 'upper-third',
-        size: 'compact',
-        durationMs: 5_000,
-        commands: ['!adopt']
-      }));
-    }
+    expect(reserved).toEqual(expect.objectContaining({
+      placement: 'upper-third',
+      size: 'compact',
+      durationMs: 5_000,
+      commands: []
+    }));
+    expect(publicNotice).toEqual(expect.objectContaining({
+      placement: 'upper-third',
+      size: 'compact',
+      durationMs: 5_000,
+      commands: ['!adopt']
+    }));
     expect(reserved.titleKey).toBe('eggLifecycleFreeReservedTitle');
     expect(publicNotice.titleKey).toBe('eggLifecycleFreePublicTitle');
     expect(EggStageView.buildEventPresentation(

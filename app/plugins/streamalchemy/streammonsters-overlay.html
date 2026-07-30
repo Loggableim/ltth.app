@@ -697,6 +697,15 @@
       transform:translateX(-50%); font-size:clamp(9px,.82vw,12px); font-weight:800;
       line-height:1.15; text-align:center; white-space:nowrap;
     }
+    .egg-shelf-owner,.egg-shelf-element,.egg-shelf-status,.egg-shelf-timer {
+      position:absolute; right:50%; z-index:3; width:max-content; max-width:150px;
+      transform:translateX(50%); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      text-align:center; text-shadow:0 2px 4px #000;
+    }
+    .egg-shelf-owner { top:-26px; color:var(--muted); font-size:clamp(8px,.72vw,11px); font-weight:800; }
+    .egg-shelf-element { top:-13px; color:#d6cdff; font-size:clamp(8px,.72vw,11px); font-weight:800; }
+    .egg-shelf-status { bottom:-23px; color:#fff4b4; font-size:clamp(8px,.75vw,11px); font-weight:1000; }
+    .egg-shelf-timer { bottom:-40px; color:#fff; font-size:clamp(13px,1.15vw,18px); font-weight:1000; letter-spacing:.05em; }
     #egg-shelf [data-egg-overflow] {
       position:relative; display:grid; place-items:end center; width:clamp(54px,6.5vw,88px);
       height:clamp(68px,8.5vw,110px);
@@ -1770,9 +1779,22 @@
       eggFocusReady:text('eggFocusReady', 'Bereit · {command}'),
       eggFocusIncubating:text('eggFocusIncubating', 'Schlüpft in {time}'),
       eggFocusPublic:text('eggFocusPublic', 'Gratis-Ei · {time} · {command}'),
-      eggFocusReserved:text('eggFocusReserved', 'Reserviert · {time} · {command}'),
-      eggFocusOpenOwner:text('eggFocusOpenOwner', 'Öffentlich · nur berechtigte Viewer')
+      eggFocusReserved:text('eggFocusReserved', 'Reserviert für {owner} · {command}'),
+      eggFocusOpenOwner:text('eggFocusOpenOwner', 'Öffentlich · nur berechtigte Viewer'),
+      eggCardOwner:text('eggCardOwner', 'Besitzer: {owner}'),
+      eggCardElement:text('eggCardElement', 'Element: {element}'),
+      eggCardOwned:text('eggCardOwned', 'EIGEN'),
+      eggCardIncubating:text('eggCardIncubating', 'BRÜTET'),
+      eggCardQueued:text('eggCardQueued', 'WARTESCHLANGE #{position}'),
+      eggCardReady:text('eggCardReady', 'BEREIT · {command}'),
+      eggCardReserved:text('eggCardReserved', 'RESERVIERT FÜR {owner} · {command}'),
+      eggCardPublic:text('eggCardPublic', 'JETZT ADOPTIEREN · {command}'),
+      eggCardRescuePublic:text('eggCardRescuePublic', 'RETTUNG · JETZT ADOPTIEREN · {command}'),
+      eggCardRotTimer:text('eggCardRotTimer', 'VERROTTET IN {time}'),
+      eggCardTimerUnavailable:text('eggCardTimerUnavailable', '--:--'),
+      eggCardAria:text('eggCardAria', '{owner} · {element} · {status} · {timer}')
     }),
+    getElementName:elementName,
     getHatchReference:() => commandReference('hatch'),
     getAdoptReference:() => commandReference('adopt')
   }) || {
@@ -1828,6 +1850,7 @@
     for (const event of buffered) {
       eggStageView.applyEvent(event.type, event.data);
     }
+    updateEggNextHint();
     return true;
   };
   const clearReconnectEggSnapshot = cycle => {
@@ -1835,6 +1858,17 @@
     reconnectEggDeltas.length = 0;
     reconnectEggSnapshotPending = false;
     return true;
+  };
+  const updateEggNextHint = () => {
+    const next = eggStageView.nextAction?.({
+      adopt:commandReference('adopt'),
+      hatch:commandReference('hatch')
+    });
+    if (next?.command) {
+      node('hint').textContent = text('eggShelfNextAction', 'NEXT · {command}', next);
+    } else {
+      node('hint').textContent = text('eggShelfNoAction', 'No egg action is available.');
+    }
   };
   const acceptStatPrompt = (type, data = {}) => {
     if (type === 'stat_choice_opened' && data.compatibilityAlias === true) return false;
@@ -2458,6 +2492,7 @@
     audioEngine.configure(data?.config?.audioChannels || {});
     layoutController.apply();
     eggStageView.applySnapshot(data?.eggStage || []);
+    updateEggNextHint();
     arenaView.applySnapshot(data?.battle || { matches:[] });
   };
   const legacyFighter = (monster, slot) => {
@@ -3237,6 +3272,7 @@
     if (window.StreamMonstersOverlayRuntime.isEggStageEvent(type)) {
       if (!bufferReconnectEggDelta(type, data)) {
         eggStageView.applyEvent(type, data);
+        updateEggNextHint();
       }
     }
     if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') {

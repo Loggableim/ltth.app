@@ -60,7 +60,7 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
     })).toMatchObject({
       kind: 'free_reserved',
       viewer: '@mira',
-      commands: ['!adopt'],
+      commands: [],
       durationMs: 12_000
     });
 
@@ -120,6 +120,35 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
       queuePosition: 2,
       commands: ['!eier']
     });
+  });
+
+  test('selects only a currently valid urgent adopt or ready hatch next action', () => {
+    const ready = {
+      visualId: 'ready',
+      provenance: 'gift',
+      ownershipState: 'owned',
+      state: 'ready'
+    };
+    const reserved = {
+      visualId: 'reserved',
+      provenance: 'free',
+      state: 'reserved',
+      adoptionStatus: 'reserved',
+      adoptable: false
+    };
+    const publicOffer = {
+      visualId: 'public',
+      provenance: 'free',
+      state: 'public',
+      adoptionStatus: 'public',
+      adoptable: true
+    };
+
+    expect(EggStageView.selectNextEggAction([ready, reserved], commands))
+      .toEqual({ kind: 'hatch', command: '!hatch', visualId: 'ready' });
+    expect(EggStageView.selectNextEggAction([ready, publicOffer], commands))
+      .toEqual({ kind: 'adopt', command: '!adopt', visualId: 'public' });
+    expect(EggStageView.selectNextEggAction([reserved], commands)).toBeNull();
   });
 
   test('an unready hatch shows exact time and queue position', () => {
@@ -246,7 +275,7 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
     });
     expect(notice.durationMs).toBe(4_500);
     expect(notice.viewer).toBe('');
-    expect(notice.commands).toHaveLength(1);
+    expect(notice.commands).toHaveLength(0);
   });
 
   test('gift eggs can never produce adoption copy or commands', () => {

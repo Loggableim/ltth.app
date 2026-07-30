@@ -295,6 +295,7 @@ describe('Stream Monsters egg overlay state reliability', () => {
         displayName: '@alpha',
         egg: { element: 'Grove', variant: 'standard' }
       });
+      harness.dom.window.document.getElementById('hint').textContent = 'NEXT · !adopt';
       harness.socketHandlers.get('streammonsters:free_egg_claimed')({
         eventId: 'claim-now',
         correlationId: 'offer-blocked',
@@ -302,6 +303,34 @@ describe('Stream Monsters egg overlay state reliability', () => {
       });
 
       expect(shelf.querySelector('[data-egg-id="offer-blocked"]')).toBeNull();
+      expect(harness.dom.window.document.getElementById('hint').textContent)
+        .not.toContain('!adopt');
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('replaces a stale NEXT adopt hint after the authoritative claim delta', async () => {
+    const offer = freeEgg('offer-next-hint');
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    });
+    try {
+      const hint = harness.dom.window.document.getElementById('hint');
+      hint.textContent = 'NEXT · !adopt';
+
+      harness.socketHandlers.get('streammonsters:free_egg_claimed')({
+        eventId: 'claim-next-hint',
+        correlationId: 'offer-next-hint',
+        removedEggStage: offer
+      });
+
+      expect(hint.textContent).not.toContain('!adopt');
+      expect(hint.textContent).not.toContain('!hatch');
     } finally {
       await harness.close();
     }

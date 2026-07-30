@@ -241,7 +241,7 @@
         titleKey: 'eggLifecycleFreeReservedTitle',
         copyKey: 'eggLifecycleFreeReservedCopy',
         durationMs: readableDuration(nowMs, timing.publicAtMs),
-        commands: commandList('adopt')
+        commands: []
       };
     }
 
@@ -387,7 +387,7 @@
           element: egg?.element || '',
           command: adoptCommand
         },
-        commands: adoptCommand ? [adoptCommand] : [],
+        commands: !reserved && adoptCommand ? [adoptCommand] : [],
         sideEffectKey: boundedText(
           payload.eventId || payload.correlationId ||
             `${normalizedType}:${egg?.visualId || 'egg'}`,
@@ -477,6 +477,24 @@
       eggsById.set(visualId, { ...egg, visualId });
     }
     return [...eggsById.values()];
+  }
+
+  function selectNextEggAction(eggStage = [], commands = {}) {
+    const eggs = (Array.isArray(eggStage) ? eggStage : [])
+      .map(normalizeEgg)
+      .filter(Boolean)
+      .filter(egg => egg.state !== 'expired' && !isClaimedFreeInventoryEgg(egg));
+    const adopt = boundedText(commands.adopt, 48);
+    const hatch = boundedText(commands.hatch, 48);
+    const urgentOffer = eggs.find(isPublicAdoptableEgg);
+    if (urgentOffer && adopt) {
+      return { kind: 'adopt', command: adopt, visualId: urgentOffer.visualId };
+    }
+    const readyEgg = eggs.find(egg => egg.state === 'ready');
+    if (readyEgg && hatch) {
+      return { kind: 'hatch', command: hatch, visualId: readyEgg.visualId };
+    }
+    return null;
   }
 
   function orderedStageEggs(eggStage = [], reducedMotion = false) {
@@ -603,6 +621,9 @@
       : () => staticLabels;
     const getHatchReference = options.getHatchReference || (() => '!hatch');
     const getAdoptReference = options.getAdoptReference || (() => '!adopt');
+    const getElementName = typeof options.getElementName === 'function'
+      ? options.getElementName
+      : element => element;
     const reducedMotion = Boolean(options.reducedMotion);
     const landingTimers = new Map();
     const eggsById = new Map();
@@ -624,6 +645,89 @@
         !url.split('/').includes('..')
         ? url
         : '';
+    }
+
+    function eggTimerText(egg) {
+      const timing = egg.timing || {};
+      const deadline = egg.state === 'reserved'
+        ? timing.publicAtMs
+        : egg.state === 'queued'
+          ? null
+          : timing.expiresAtMs ?? timing.expiryAtMs ?? timing.readyAtMs;
+      return Number.isFinite(Number(deadline))
+        ? formatCountdown(Math.max(0, Number(deadline) - Number(now())))
+        : currentLabels().eggCardTimerUnavailable || '--:--';
+    }
+
+    function eggCardStatus(egg) {
+      const labels = currentLabels();
+      const owner = safeViewerName(egg.displayName) || 'Viewer';
+      if (egg.state === 'ready') {
+        return [
+          labels.eggCardOwned || 'OWNED',
+          replaceTokens(labels.eggCardReady || 'READY · {command}', {
+            command: getHatchReference()
+          }),
+          replaceTokens(labels.eggCardRotTimer || 'ROT IN {time}', {
+            time: eggTimerText(egg)
+          })
+        ].filter(Boolean).join(' · ');
+      }
+      if (egg.state === 'queued') {
+        return [
+          labels.eggCardOwned || 'OWNED',
+          replaceTokens(labels.eggCardQueued || 'QUEUED #{position}', {
+            position: Number(egg.queuePosition) || 1
+          })
+        ].join(' · ');
+      }
+      if (egg.state === 'reserved') {
+        return replaceTokens(labels.eggCardReserved || 'RESERVED FOR {owner} · {command}', {
+          owner,
+          command: getAdoptReference()
+        });
+      }
+      if (isPublicAdoptableEgg(egg)) {
+        const template = isOwnedReadyRescue(egg)
+          ? labels.eggCardRescuePublic || 'GRACE · ADOPT NOW · {command}'
+          : labels.eggCardPublic || 'ADOPT NOW · {command}';
+        return replaceTokens(template, { command: getAdoptReference() });
+      }
+      if (egg.state === 'expired') return labels.eggCardRot || 'ROTTEN';
+      return [
+        egg.ownershipState === 'owned' || egg.provenance === 'gift'
+          ? labels.eggCardOwned || 'OWNED'
+          : '',
+        labels.eggCardIncubating || 'INCUBATING'
+      ].filter(Boolean).join(' · ');
+    }
+
+    function updateEggCardMetadata(item, egg) {
+      const labels = currentLabels();
+      const owner = safeViewerName(egg.displayName) || 'Viewer';
+      const element = boundedText(getElementName(egg.element), 48) || egg.element;
+      const status = eggCardStatus(egg);
+      const timer = eggTimerText(egg);
+      const lines = [
+        ['owner', replaceTokens(labels.eggCardOwner || 'Owner: {owner}', { owner })],
+        ['element', replaceTokens(labels.eggCardElement || 'Element: {element}', { element })],
+        ['status', status],
+        ['timer', timer]
+      ];
+      for (const [name, text] of lines) {
+        let line = item.querySelector(`[data-egg-${name}]`);
+        if (!line) {
+          line = documentLike.createElement('span');
+          line.dataset[`egg${name[0].toUpperCase()}${name.slice(1)}`] = '';
+          line.className = `egg-shelf-${name}`;
+          item.appendChild(line);
+        }
+        line.textContent = text;
+      }
+      item.setAttribute('aria-label', replaceTokens(
+        labels.eggCardAria || '{owner} · {element} · {status} · {timer}',
+        { owner, element, status, timer }
+      ));
     }
 
     function createEggNode(egg, index) {
@@ -668,6 +772,7 @@
         adoptReference: getAdoptReference()
       });
       item.appendChild(timing);
+      updateEggCardMetadata(item, egg);
 
       if (isPublicAdoptableEgg(egg)) {
         item.classList.add('gold-ring', 'public-free');
@@ -736,6 +841,7 @@
           adoptReference: getAdoptReference()
         });
       }
+      updateEggCardMetadata(item, egg);
       const publicEgg = isPublicAdoptableEgg(egg);
       item.classList.toggle('gold-ring', publicEgg);
       item.classList.toggle('public-free', publicEgg);
@@ -814,6 +920,7 @@
       if (egg.state === 'reserved') {
         return replaceTokens(labels.eggFocusReserved || labels.reserved || 'Reserved · {time} · {command}', {
           time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(now()))),
+          owner: safeViewerName(egg.displayName) || 'Viewer',
           command: getAdoptReference()
         });
       }
@@ -1000,6 +1107,7 @@
         rotationIndex:overflowRotationIndex,
         reducedMotion
       }),
+      nextAction: commands => selectNextEggAction([...eggsById.values()], commands),
       render,
       rotateFocus,
       rotateOverflow,
@@ -1040,6 +1148,7 @@
     isPublicFreeEgg,
     isReservedFreeEgg,
     reduceEggStage,
+    selectNextEggAction,
     shelfTiming,
     visibleCapacity
   };
