@@ -53,6 +53,10 @@ const DEFAULT_HATCH_DURATION_MS = PRODUCT_CONTRACT.defaults.hatchDurationMs;
 const DEFAULT_GAMEPLAY_PACE = 'arcade-rally';
 const DEFAULT_PORTRAIT_BATTLE_MODE =
   PRODUCT_CONTRACT.defaults.portraitBattleMode;
+const PORTRAIT_ARENA_VARIANTS = Object.freeze(['split-arena', 'classic']);
+const DEFAULT_PORTRAIT_ARENA_VARIANT =
+  PRODUCT_CONTRACT.defaults.portraitArenaVariant;
+const LEGACY_PORTRAIT_ARENA_VARIANT = 'classic';
 const INCUBATION_PRESETS_MS = Object.freeze([
   30_000,
   60_000,
@@ -235,6 +239,7 @@ class StreamAlchemyPlugin {
       secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale,
       gameplayPace: this.config.streamMonsters.gameplayPace,
       portraitBattleMode: this.config.streamMonsters.portraitBattleMode,
+      portraitArenaVariant: this.config.streamMonsters.portraitArenaVariant,
       rulesVersion: STREAM_MONSTERS_RULES_VERSION
     });
     this.streamMonstersProgression.setMonsterProgressHandler(({
@@ -372,6 +377,20 @@ class StreamAlchemyPlugin {
   }
 
   loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
+    const rawStoredStreamMonsters = (
+      storedConfig &&
+      typeof storedConfig === 'object' &&
+      !Array.isArray(storedConfig) &&
+      storedConfig.streamMonsters &&
+      typeof storedConfig.streamMonsters === 'object' &&
+      !Array.isArray(storedConfig.streamMonsters)
+    ) ? storedConfig.streamMonsters : null;
+    const storedArenaVariant = rawStoredStreamMonsters
+      ? this.normalizePortraitArenaVariant(
+        rawStoredStreamMonsters.portraitArenaVariant,
+        LEGACY_PORTRAIT_ARENA_VARIANT
+      )
+      : DEFAULT_PORTRAIT_ARENA_VARIANT;
     this.retiredConfigArchive = this.extractRetiredConfig(storedConfig);
     const stored = this.sanitizeConfig(storedConfig);
     const storedStreamMonsters = stored.streamMonsters || {};
@@ -416,6 +435,7 @@ class StreamAlchemyPlugin {
         portraitBattleMode: this.normalizePortraitBattleMode(
           storedStreamMonsters.portraitBattleMode
         ),
+        portraitArenaVariant: storedArenaVariant,
         eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(storedStreamMonsters.eggExpiryMs))
           ? Number(storedStreamMonsters.eggExpiryMs)
           : 86_400_000,
@@ -575,6 +595,10 @@ class StreamAlchemyPlugin {
     return value === DEFAULT_PORTRAIT_BATTLE_MODE
       ? value
       : DEFAULT_PORTRAIT_BATTLE_MODE;
+  }
+
+  normalizePortraitArenaVariant(value, fallback = LEGACY_PORTRAIT_ARENA_VARIANT) {
+    return PORTRAIT_ARENA_VARIANTS.includes(value) ? value : fallback;
   }
 
   normalizeAutoHatchActiveWindowSeconds(value) {
@@ -796,6 +820,12 @@ class StreamAlchemyPlugin {
         portraitBattleMode: this.normalizePortraitBattleMode(
           mergedStreamMonsters.portraitBattleMode
         ),
+        portraitArenaVariant: this.normalizePortraitArenaVariant(
+          mergedStreamMonsters.portraitArenaVariant,
+          this.normalizePortraitArenaVariant(
+            currentStreamMonsters.portraitArenaVariant
+          )
+        ),
         eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(mergedStreamMonsters.eggExpiryMs))
           ? Number(mergedStreamMonsters.eggExpiryMs)
           : 86_400_000,
@@ -865,7 +895,8 @@ class StreamAlchemyPlugin {
     });
     this.streamMonstersBattleMatchService?.setPresentationConfig?.({
       gameplayPace: this.config.streamMonsters.gameplayPace,
-      portraitBattleMode: this.config.streamMonsters.portraitBattleMode
+      portraitBattleMode: this.config.streamMonsters.portraitBattleMode,
+      portraitArenaVariant: this.config.streamMonsters.portraitArenaVariant
     });
     if (
       this.streamMonstersCommandIngress &&

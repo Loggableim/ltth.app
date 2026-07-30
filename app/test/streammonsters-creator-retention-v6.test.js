@@ -327,6 +327,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       rulesVersion: 8,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'classic',
       matches: []
     });
     expect(creatorState.payload.config.rulesVersion).toBe(8);
@@ -334,6 +335,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       rulesVersion: 8,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'classic',
       matches: []
     });
     expect(battleState.payload).toEqual({
@@ -341,6 +343,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       rulesVersion: 8,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'classic',
       matches: []
     });
   });
