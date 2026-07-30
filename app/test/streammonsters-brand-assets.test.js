@@ -42,7 +42,15 @@ describe('Stream Monsters 1.11 public branding', () => {
     expect(pluginManifest.version).toBe(streamMonsters.version);
     expect(pluginManifest.devStatus).toBe('stable');
     expect(streamMonsters.badges).toEqual(['subscriber-only']);
-    expect(streamMonsters.access).toEqual({ type: 'subscriber' });
+    expect(streamMonsters.access).toEqual(expect.objectContaining({
+      type: 'subscriber',
+      description: expect.objectContaining({
+        de: expect.any(String),
+        en: expect.any(String),
+        es: expect.any(String),
+        fr: expect.any(String)
+      })
+    }));
 
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const description = streamMonsters.description[locale];
@@ -94,8 +102,8 @@ describe('Stream Monsters 1.11 public branding', () => {
     }
 
     expect(furryManifest).toMatchObject({
-      schemaVersion: 2,
-      assetVersion: 'furry-1.5.0',
+      schemaVersion: 3,
+      assetVersion: 'furry-1.12.0',
       productionMode: 'bundled-only'
     });
     expect(furryManifest.assets).toHaveLength(72);
