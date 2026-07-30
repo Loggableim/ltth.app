@@ -611,6 +611,52 @@ describe('Stream Monsters objective gap presentation', () => {
     expect(document.getElementById('arena-streak-stamp').classList).toContain('visible');
   });
 
+  test('keeps the streak stamp visible while the completion board is on screen', async () => {
+    const { document } = mountArena();
+    let releaseResult;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: ms => (
+          ms === ArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS
+            ? new Promise(resolve => {
+                releaseResult = resolve;
+              })
+            : Promise.resolve()
+        )
+      },
+      labels: {
+        streakFive: '5 WINS'
+      }
+    });
+    view.applyMatch({
+      matchId: 'streak-result',
+      state: 'action',
+      fighters: publicFighters()
+    });
+    await view.playEvent('win_streak', {
+      eventId: 'streak-result-five',
+      matchId: 'streak-result',
+      count: 5
+    });
+
+    const completion = view.complete({
+      matchId: 'streak-result',
+      winnerSlot: 1,
+      winner: { viewerName: '@ember', name: 'Ashfang' },
+      terminalReason: 'knockout',
+      knockout: { round: 4, remainingHp: 6, maxHp: 30 }
+    });
+    await Promise.resolve();
+
+    expect(document.getElementById('arena-streak-stamp').textContent).toBe('5 WINS');
+    expect(document.getElementById('arena-streak-stamp').classList).toContain('visible');
+    expect(document.getElementById('arena-result').classList).toContain('visible');
+
+    releaseResult();
+    await completion;
+  });
+
   test('drains the active-match streak stamp before the completion board', () => {
     const queue = OverlayRuntime.createPriorityQueue({
       criticalGroupHoldMs: 0
