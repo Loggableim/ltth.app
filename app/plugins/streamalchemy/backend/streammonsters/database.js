@@ -1785,6 +1785,179 @@ class StreamMonstersDatabase {
     return row ? { ...row, stats: JSON.parse(row.stats_json) } : null;
   }
 
+  getFusionCandidates(userId, templateId) {
+    return this.db.prepare(`
+      SELECT *
+      FROM streammonsters_monsters
+      WHERE user_id = ?
+        AND template_id = ?
+        AND collection_state = 'owned'
+      ORDER BY evolution_stage DESC, prestige_level DESC,
+               created_at_ms ASC, monster_id ASC
+    `).all(userId, templateId).map(row => ({
+      ...row,
+      stats: JSON.parse(row.stats_json)
+    }));
+  }
+
+  getFusionBlocker(monsterId) {
+    if (this.db.prepare(`
+      SELECT 1 FROM streammonsters_battle_queue
+      WHERE monster_id = ?
+    `).get(monsterId)) return 'queued';
+    if (this.db.prepare(`
+      SELECT 1 FROM streammonsters_match_participants
+      WHERE active = 1
+        AND (locked_monster_id = ? OR queued_monster_id = ?)
+    `).get(monsterId, monsterId)) return 'active_match';
+    if (this.db.prepare(`
+      SELECT 1 FROM streammonsters_stat_prompts
+      WHERE monster_id = ? AND status = 'open'
+      UNION ALL
+      SELECT 1 FROM streammonsters_stat_allocations
+      WHERE monster_id = ? AND status = 'open'
+      LIMIT 1
+    `).get(monsterId, monsterId)) return 'pending_stat_choice';
+    return null;
+  }
+
+  getFusionByTrigger(triggerType, triggerId) {
+    const ledger = this.db.prepare(`
+      SELECT * FROM streammonsters_fusion_ledger
+      WHERE trigger_type = ? AND trigger_id = ?
+    `).get(triggerType, triggerId);
+    if (!ledger) return null;
+    return {
+      ...ledger,
+      survivor: this.getMonster(ledger.survivor_monster_id),
+      donor: this.getMonster(ledger.donor_monster_id)
+    };
+  }
+
+  commitFusion({
+    fusionId,
+    userId,
+    templateId,
+    survivorMonsterId,
+    donorMonsterId,
+    fromStage,
+    toStage,
+    prestigeBefore = 0,
+    prestigeAfter = 0,
+    triggerType,
+    triggerId,
+    visual = null,
+    createdAtMs
+  }) {
+    return this.runInImmediateTransaction(() => {
+      const processed = this.getFusionByTrigger(triggerType, triggerId);
+      if (processed) return { status: 'already_processed', ...processed };
+      const survivor = this.getMonster(survivorMonsterId);
+      const donor = this.getMonster(donorMonsterId);
+      const unchanged = [survivor, donor].every(monster => (
+        monster &&
+        monster.user_id === userId &&
+        monster.template_id === templateId &&
+        monster.collection_state === 'owned' &&
+        Number(monster.evolution_stage) === fromStage
+      ));
+      if (!unchanged || survivorMonsterId === donorMonsterId) {
+        throw new Error('STREAM_MONSTERS_FUSION_PAIR_CHANGED');
+      }
+      const blocker = this.getFusionBlocker(survivorMonsterId) ||
+        this.getFusionBlocker(donorMonsterId);
+      if (blocker) {
+        const error = new Error(`STREAM_MONSTERS_FUSION_BLOCKED:${blocker}`);
+        error.code = 'STREAM_MONSTERS_FUSION_BLOCKED';
+        error.reason = blocker;
+        throw error;
+      }
+
+      const donorWasSelected = donor.is_selected === 1;
+      const statsBefore = { ...survivor.stats };
+      let grant = {
+        applied: false,
+        monster: survivor,
+        statsBefore,
+        statsAfter: statsBefore,
+        statChanges: { vitality: 0, might: 0, guard: 0, agility: 0 }
+      };
+      if (fromStage < 3) {
+        this.setMonsterEvolutionStage(
+          survivorMonsterId,
+          toStage,
+          Math.max(0, Number(survivor.evolution_essence_spent) || 0),
+          visual.imageUrl,
+          visual.visualKey,
+          visual.visualSource,
+          visual.assetVersion
+        );
+        grant = this.applyEvolutionGrant(
+          survivorMonsterId,
+          toStage,
+          createdAtMs
+        );
+      } else {
+        this.db.prepare(`
+          UPDATE streammonsters_monsters
+          SET prestige_level = ?
+          WHERE monster_id = ? AND collection_state = 'owned'
+        `).run(prestigeAfter, survivorMonsterId);
+      }
+      this.db.prepare(`
+        UPDATE streammonsters_monsters
+        SET collection_state = 'archived',
+            archived_at_ms = ?,
+            archived_reason = 'fusion_donor',
+            archived_by_fusion_id = ?,
+            is_selected = 0
+        WHERE monster_id = ? AND collection_state = 'owned'
+      `).run(createdAtMs, fusionId, donorMonsterId);
+      if (donorWasSelected) {
+        this.db.prepare(`
+          UPDATE streammonsters_monsters
+          SET is_selected = 1
+          WHERE monster_id = ? AND collection_state = 'owned'
+        `).run(survivorMonsterId);
+      }
+      this.db.prepare(`
+        INSERT INTO streammonsters_fusion_ledger (
+          fusion_id, user_id, template_id, survivor_monster_id,
+          donor_monster_id, from_stage, to_stage, prestige_before,
+          prestige_after, trigger_type, trigger_id, created_at_ms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        fusionId,
+        userId,
+        templateId,
+        survivorMonsterId,
+        donorMonsterId,
+        fromStage,
+        toStage,
+        prestigeBefore,
+        prestigeAfter,
+        triggerType,
+        triggerId,
+        createdAtMs
+      );
+      return {
+        status: 'fused',
+        fusion_id: fusionId,
+        user_id: userId,
+        template_id: templateId,
+        survivor: this.getMonster(survivorMonsterId),
+        donor: this.getMonster(donorMonsterId),
+        from_stage: fromStage,
+        to_stage: toStage,
+        prestige_before: prestigeBefore,
+        prestige_after: prestigeAfter,
+        stats_before: grant.statsBefore,
+        stats_after: grant.statsAfter,
+        stat_changes: grant.statChanges
+      };
+    });
+  }
+
   getViewerMonsters(userId) {
     return this.db.prepare(`
       SELECT * FROM streammonsters_monsters

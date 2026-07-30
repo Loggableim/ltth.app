@@ -1,3 +1,4 @@
+const { randomUUID } = require('crypto');
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION,
@@ -7,6 +8,7 @@ const {
   hashNumber,
   resolveStageSkill
 } = require('./catalog');
+const { effectiveCombatPower } = require('./evolution-rules');
 
 const MASTERY_UNLOCKS = Object.freeze([
   [10, 'title'], [25, 'attack_trail'], [50, 'mastery_frame']
@@ -229,6 +231,242 @@ class CollectionService {
 
   getCosmetics(userId) {
     return this.store.getCollectionCosmetics(userId);
+  }
+
+  compareFusionStrength(left, right) {
+    const powerDifference = effectiveCombatPower(right) -
+      effectiveCombatPower(left);
+    if (powerDifference) return powerDifference;
+    const ageDifference = (Number(left.created_at_ms) || 0) -
+      (Number(right.created_at_ms) || 0);
+    if (ageDifference) return ageDifference;
+    return String(left.monster_id).localeCompare(String(right.monster_id));
+  }
+
+  prestigeCosmetics(level) {
+    const normalized = Math.max(0, Math.min(3, Number(level) || 0));
+    if (!normalized) return null;
+    return {
+      level: normalized,
+      stars: '\u2605'.repeat(normalized),
+      aura: `fusion-crystal-${normalized}`,
+      frame: `prestige-${normalized}`,
+      title: ['Fusion Star', 'Fusion Nova', 'Fusion Crown'][normalized - 1]
+    };
+  }
+
+  selectFusionPair(candidates, preferredMonsterId = null) {
+    const preferred = preferredMonsterId
+      ? candidates.find(monster => monster.monster_id === preferredMonsterId)
+      : null;
+    if (preferredMonsterId && !preferred) return null;
+    const stages = preferred
+      ? [Number(preferred.evolution_stage)]
+      : [3, 2, 1];
+    for (const stage of stages) {
+      const stageCandidates = candidates.filter(monster => (
+        Number(monster.evolution_stage) === stage
+      ));
+      if (stage < 3) {
+        if (stageCandidates.length < 2) continue;
+        if (preferred) {
+          const counterpart = stageCandidates
+            .filter(monster => monster.monster_id !== preferred.monster_id)
+            .sort((left, right) => this.compareFusionStrength(left, right))[0];
+          if (!counterpart) continue;
+          return [preferred, counterpart]
+            .sort((left, right) => this.compareFusionStrength(left, right));
+        }
+        return stageCandidates
+          .sort((left, right) => this.compareFusionStrength(left, right))
+          .slice(0, 2);
+      }
+
+      const donors = stageCandidates
+        .filter(monster => Number(monster.prestige_level) === 0)
+        .sort((left, right) => this.compareFusionStrength(left, right));
+      const prestigeSurvivors = stageCandidates
+        .filter(monster => {
+          const level = Number(monster.prestige_level) || 0;
+          return level > 0 && level < 3;
+        })
+        .sort((left, right) => (
+          (Number(right.prestige_level) || 0) -
+            (Number(left.prestige_level) || 0) ||
+          this.compareFusionStrength(left, right)
+        ));
+      if (preferred) {
+        const prestige = Number(preferred.prestige_level) || 0;
+        if (prestige >= 3) continue;
+        if (prestige > 0) {
+          const donor = donors.find(monster => (
+            monster.monster_id !== preferred.monster_id
+          ));
+          if (donor) return [preferred, donor];
+          continue;
+        }
+        const survivor = prestigeSurvivors[0];
+        if (survivor) return [survivor, preferred];
+        const counterpart = donors.find(monster => (
+          monster.monster_id !== preferred.monster_id
+        ));
+        if (counterpart) {
+          return [preferred, counterpart]
+            .sort((left, right) => this.compareFusionStrength(left, right));
+        }
+        continue;
+      }
+      if (prestigeSurvivors.length && donors.length) {
+        return [prestigeSurvivors[0], donors[0]];
+      }
+      if (donors.length >= 2) return donors.slice(0, 2);
+    }
+    return null;
+  }
+
+  fuseDuplicates({
+    userId,
+    templateId,
+    triggerType,
+    triggerId,
+    preferredMonsterId = null
+  } = {}) {
+    const template = getTemplate(templateId);
+    const normalizedUserId = String(userId || '');
+    const normalizedTriggerType = String(triggerType || '');
+    const normalizedTriggerId = String(triggerId || '');
+    if (
+      !normalizedUserId ||
+      !template ||
+      !normalizedTriggerType ||
+      !normalizedTriggerId
+    ) {
+      return { status: 'invalid' };
+    }
+    const processed = this.store.getFusionByTrigger(
+      normalizedTriggerType,
+      normalizedTriggerId
+    );
+    if (processed) {
+      return {
+        status: 'already_processed',
+        survivor: processed.survivor,
+        donor: processed.donor,
+        fromStage: processed.from_stage,
+        toStage: processed.to_stage,
+        prestigeBefore: processed.prestige_before,
+        prestigeAfter: processed.prestige_after
+      };
+    }
+    const pair = this.selectFusionPair(
+      this.store.getFusionCandidates(normalizedUserId, template.templateId),
+      preferredMonsterId
+    );
+    if (!pair) return { status: 'no_pair' };
+    const [survivor, donor] = pair;
+    const blocker = this.store.getFusionBlocker(survivor.monster_id) ||
+      this.store.getFusionBlocker(donor.monster_id);
+    if (blocker) return { status: 'blocked', reason: blocker };
+
+    const fromStage = Number(survivor.evolution_stage);
+    const toStage = Math.min(3, fromStage + 1);
+    const prestigeBefore = fromStage === 3
+      ? Math.max(0, Number(survivor.prestige_level) || 0)
+      : 0;
+    const prestigeAfter = fromStage === 3
+      ? Math.min(3, prestigeBefore + 1)
+      : 0;
+    const visual = fromStage < 3
+      ? this.assetRegistry?.resolveVisual?.({
+        templateId: template.templateId,
+        stage: toStage,
+        element: survivor.element
+      })
+      : null;
+    if (fromStage < 3 && (!visual?.imageUrl || visual.fallback === true)) {
+      return {
+        status: 'blocked',
+        reason: 'asset_unavailable',
+        fromStage,
+        toStage
+      };
+    }
+
+    const stored = this.store.commitFusion({
+      fusionId: randomUUID(),
+      userId: normalizedUserId,
+      templateId: template.templateId,
+      survivorMonsterId: survivor.monster_id,
+      donorMonsterId: donor.monster_id,
+      fromStage,
+      toStage,
+      prestigeBefore,
+      prestigeAfter,
+      triggerType: normalizedTriggerType,
+      triggerId: normalizedTriggerId,
+      visual,
+      createdAtMs: this.now()
+    });
+    if (stored.status === 'already_processed') {
+      return {
+        status: 'already_processed',
+        survivor: stored.survivor,
+        donor: stored.donor,
+        fromStage: stored.from_stage,
+        toStage: stored.to_stage,
+        prestigeBefore: stored.prestige_before,
+        prestigeAfter: stored.prestige_after
+      };
+    }
+    const unlockedChoice = fromStage < 3
+      ? (toStage >= 3
+        ? 'C'
+        : (['striker', 'trickster'].includes(template.role) ? 'A' : 'B'))
+      : null;
+    const result = {
+      status: 'fused',
+      fromStage,
+      toStage,
+      prestigeBefore,
+      prestigeAfter,
+      statsBefore: stored.stats_before,
+      statsAfter: stored.stats_after,
+      statChanges: stored.stat_changes,
+      unlockedSkill: unlockedChoice
+        ? resolveStageSkill(template.templateId, unlockedChoice, toStage, 7)
+        : null,
+      prestige: this.prestigeCosmetics(prestigeAfter),
+      survivor: stored.survivor,
+      donor: stored.donor
+    };
+    if (fromStage < 3) {
+      this.store.afterCommit(() => this.progression?.awardCollectorPoints?.(
+        normalizedUserId,
+        toStage === 2 ? 25 : 50,
+        `evolution:${stored.survivor.monster_id}:${toStage}`
+      ));
+    }
+    this.emitAfterCommit('streammonsters:monster_evolved', {
+      userId: normalizedUserId,
+      evolutionStage: toStage,
+      prestigeLevel: prestigeAfter,
+      prestige: result.prestige,
+      statsBefore: result.statsBefore,
+      statsAfter: result.statsAfter,
+      statChanges: result.statChanges,
+      ...(result.unlockedSkill
+        ? { unlockedSkill: result.unlockedSkill }
+        : {}),
+      fusion: {
+        kind: fromStage === 3 ? 'prestige' : 'stage',
+        fromStage,
+        toStage,
+        prestigeBefore,
+        prestigeAfter
+      },
+      monster: result.survivor
+    });
+    return result;
   }
 
   evolveMonster(userId, monsterId) {
