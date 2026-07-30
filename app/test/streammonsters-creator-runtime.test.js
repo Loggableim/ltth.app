@@ -7,6 +7,7 @@ const {
   GAMEPLAY_PACES,
   HATCH_PRESETS,
   EGG_EXPIRY_PRESETS,
+  PORTRAIT_ARENA_VARIANTS,
   PORTRAIT_BATTLE_MODES,
   REPAIR_ACTIONS,
   RENDERER_QUALITIES,
@@ -94,6 +95,7 @@ describe('Stream Monsters creator controls', () => {
     ]);
     expect(GAMEPLAY_PACES).toEqual(['arcade-rally']);
     expect(PORTRAIT_BATTLE_MODES).toEqual(['takeover-74']);
+    expect(PORTRAIT_ARENA_VARIANTS).toEqual(['split-arena', 'classic']);
     expect(EGG_EXPIRY_PRESETS).toEqual([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
     expect(SEASON_DURATIONS).toEqual([7, 14, 28, 60, 90]);
     expect(RENDERER_QUALITIES).toEqual(['auto', 'high', 'medium', 'low']);
@@ -156,6 +158,25 @@ describe('Stream Monsters creator controls', () => {
       audioChannels: { master: { enabled: true, volume: 0.8 } },
       giftMappingCustomized: true
     });
+  });
+
+  test('saves a selected portrait arena variant and preserves a valid current selection when omitted', () => {
+    expect(buildConfigPayload({
+      currentConfig: { portraitArenaVariant: 'classic' },
+      values: { portraitArenaVariant: 'split-arena' }
+    }).portraitArenaVariant).toBe('split-arena');
+    expect(buildConfigPayload({
+      currentConfig: { portraitArenaVariant: 'classic' },
+      values: {}
+    }).portraitArenaVariant).toBe('classic');
+    expect(buildConfigPayload({
+      currentConfig: { portraitArenaVariant: 'split-arena' },
+      values: { portraitArenaVariant: 'unknown' }
+    }).portraitArenaVariant).toBe('split-arena');
+    expect(buildConfigPayload({
+      currentConfig: { portraitArenaVariant: 'unknown' },
+      values: {}
+    })).not.toHaveProperty('portraitArenaVariant');
   });
 
   test('persists the fixed TikTok Studio portrait profile independently of creator anchors and scales', () => {
@@ -504,22 +525,17 @@ describe('Stream Monsters creator controls', () => {
     }).countdownMs).toBe(8_000);
   });
 
-  test('maps the supplied portrait broadcast zones and reserves the lower 26 percent for chat', () => {
+  test('maps the bounded portrait arena, external Likebar, shelf and safe strip exactly', () => {
     expect(previewGeometry('portrait')).toEqual({
       width: 1080,
       height: 1920,
       gameplayPercent: 74,
       chatPercent: 26,
       zones: {
-        logo: { x: 4, y: 2, width: 24, height: 6 },
-        music: { x: 5, y: 14.5, width: 58, height: 4.5 },
-        notification: { x: 4, y: 20, width: 92, height: 5 },
-        avatar: { x: 2, y: 26.5, width: 96, height: 31 },
-        likes: { x: 2, y: 58.5, width: 96, height: 6 },
-        shelf: { x: 3, y: 66.5, width: 94, height: 7 },
-        xp: { x: 4, y: 82.5, width: 92, height: 11 },
-        battle: { x: 0, y: 0, width: 100, height: 74 },
-        safe: { x: 0, y: 74, width: 100, height: 26 }
+        arena: { x: 2, y: 11.8, width: 96, height: 46 },
+        likebar: { x: 2, y: 57.8, width: 96, height: 16.2 },
+        shelf: { x: 3, y: 74, width: 94, height: 24 },
+        safe: { x: 0, y: 98, width: 100, height: 2 }
       }
     });
     expect(previewGeometry('landscape')).toMatchObject({
@@ -565,9 +581,9 @@ describe('Stream Monsters creator controls', () => {
       height: 1920,
       gameplayPercent: 74,
       chatPercent: 26,
-      visibleZones: ['battle', 'safe'],
+      visibleZones: ['arena', 'likebar', 'shelf', 'safe'],
       battleTakeover: true,
-      externalSources: 'move_or_disable_below_takeover',
+      externalSources: 'likebar_external_reserved',
       sourceOrder: [
         'stream-monsters-takeover',
         'avatar-likes-music',

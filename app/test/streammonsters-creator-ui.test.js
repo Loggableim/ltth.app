@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
 
@@ -46,6 +47,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
       'hatchPreset',
       'gameplayPace',
       'portraitBattleMode',
+      'portraitArenaVariant',
       'visualPack',
       'landscapeAnchor',
       'landscapeScale',
@@ -83,6 +85,10 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('safeZoneCollisions');
     expect(html).toContain('buildDexSlots');
     expect(html).toContain('/api/streammonsters/creator-catalog');
+    expect(html).toContain("portraitArenaVariant:byId('portraitArenaVariant').value");
+    expect(html).toContain(
+      "byId('portraitArenaVariant').addEventListener('change', renderPortraitArenaVariant)"
+    );
   });
 
   test('provides keyboard and live-region semantics for creator feedback', () => {
@@ -96,25 +102,30 @@ describe('Stream Monsters creator UI presentation controls', () => {
 
   test('shows separate normal and battle portrait previews with honest OBS source ordering', () => {
     const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
-    const normalPreview = html.match(
-      /<div id="portraitNormalPreview"[\s\S]*?<\/div>\s*<\/div>/
-    )?.[0] || '';
-    const battlePreview = html.match(
-      /<div id="portraitBattlePreview"[\s\S]*?<\/div>\s*<\/div>/
-    )?.[0] || '';
+    const document = new JSDOM(html).window.document;
+    const normalPreview = document.getElementById('portraitNormalPreview');
+    const battlePreview = document.getElementById('portraitBattlePreview');
 
-    expect(normalPreview).toContain('data-preview-mode="normal"');
+    expect(normalPreview.dataset.previewMode).toBe('normal');
     for (const zone of ['logo', 'music', 'notification', 'avatar', 'likes', 'shelf', 'xp', 'safe']) {
-      expect(normalPreview).toContain(`data-preview-zone="${zone}"`);
+      expect(normalPreview.querySelector(`[data-preview-zone="${zone}"]`)).not.toBeNull();
     }
-    expect(normalPreview).not.toContain('data-preview-zone="battle"');
+    expect(normalPreview.querySelector('[data-preview-zone="arena"]')).toBeNull();
 
-    expect(battlePreview).toContain('data-preview-mode="battle"');
-    expect(battlePreview).toContain('data-preview-zone="battle"');
-    expect(battlePreview).toContain('data-preview-zone="safe"');
-    for (const externalZone of ['logo', 'music', 'notification', 'avatar', 'likes', 'shelf', 'xp']) {
-      expect(battlePreview).not.toContain(`data-preview-zone="${externalZone}"`);
-    }
+    expect(battlePreview.dataset.previewMode).toBe('battle');
+    expect([...battlePreview.querySelectorAll('[data-preview-zone]')]
+      .map(zone => zone.dataset.previewZone)).toEqual([
+        'arena',
+        'likebar',
+        'shelf',
+        'safe'
+      ]);
+    expect(battlePreview.querySelector('[data-preview-zone="likebar"]').dataset.owner)
+      .toBe('external');
+    expect(battlePreview.querySelector('[data-preview-zone="likebar"]').textContent)
+      .toMatch(/Likebar.*external.*reserved/i);
+    expect(battlePreview.closest('.preview-example').querySelector('p').textContent)
+      .toMatch(/bounded.*Likebar/i);
 
     expect(html).toContain('id="obsTakeoverSourceOrder"');
     expect(html).toContain('id="obsExternalSourcesWarning"');
@@ -139,11 +150,22 @@ describe('Stream Monsters creator UI presentation controls', () => {
         'obsSourceOrderTakeover',
         'obsSourceOrderExternal',
         'obsSourceOrderBase',
-        'obsExternalSourcesWarning'
+        'obsExternalSourcesWarning',
+        'portraitArenaVariant',
+        'portraitArenaVariantSplitArena',
+        'portraitArenaVariantClassic',
+        'portraitArenaVariantHelp',
+        'portraitArenaVariantPreviewSplit',
+        'portraitArenaVariantPreviewClassic',
+        'portraitArenaLikebarReserved',
+        'portraitArenaEggShelf'
       ]) {
         expect(translations[key]).toEqual(expect.any(String));
         expect(translations[key].trim()).not.toBe('');
       }
+      expect(translations.portraitArenaVariantSplitArena).toMatch(/Split Arena/i);
+      expect(translations.portraitArenaVariantClassic).toMatch(/Classic/i);
+      expect(translations.previewBattleHelp).toMatch(/Likebar/i);
     }
   );
 });

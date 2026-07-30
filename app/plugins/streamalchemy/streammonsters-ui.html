@@ -183,6 +183,38 @@
     .stage-monster.left { left:4%; }
     .stage-monster.right { right:4%; transform:scaleX(-1); }
     .stage-callout { position:absolute; left:50%; top:14%; transform:translateX(-50%); width:max-content; max-width:80%; padding:7px 10px; border:1px solid #bca9ff; border-radius:12px; background:#1c1740e8; text-align:center; font-size:11px; font-weight:900; }
+    #portraitBattlePreview .portrait-arena-preview {
+      z-index:3; border:2px solid var(--violet); border-radius:10px; color:var(--ink);
+      background:
+        radial-gradient(ellipse at 50% 92%,#6652bb70,transparent 48%),
+        linear-gradient(180deg,#202b52,#10152d);
+    }
+    #portraitBattlePreview .portrait-arena-preview .stage-hud { top:5%; left:4%; right:4%; }
+    #portraitBattlePreview .portrait-arena-preview .stage-monster { bottom:2%; }
+    #portraitBattlePreview [data-preview-zone="likebar"] {
+      border-color:#f4b85f; color:#ffe2ae; background:#4a321d99;
+    }
+    #portraitBattlePreview [data-preview-zone="shelf"] {
+      border-color:#6ef1b8; color:#dffff0; background:#193f35a8;
+    }
+    #portraitBattlePreview [data-preview-zone="safe"] {
+      border:0; border-radius:0; color:transparent; background:#1c1420e6;
+    }
+    #portraitBattlePreview[data-arena-variant="split-arena"] .portrait-arena-preview::after {
+      content:""; position:absolute; inset:17% 50% 5%; border-left:1px solid #bca9ff80;
+    }
+    #portraitBattlePreview[data-arena-variant="split-arena"] .stage-monster {
+      bottom:1%; width:42%;
+    }
+    #portraitBattlePreview[data-arena-variant="split-arena"] .stage-callout {
+      top:44%; padding:5px 8px;
+    }
+    #portraitBattlePreview[data-arena-variant="classic"] .stage-monster {
+      bottom:0; width:45%;
+    }
+    #portraitBattlePreview[data-arena-variant="classic"] .stage-callout {
+      top:15%;
+    }
     .creator-egg-shelf-preview {
       display:flex; align-items:flex-end; justify-content:center; gap:7px; min-height:84px;
       margin-top:12px; padding:10px 12px 8px; border:1px solid #6b5fa1;
@@ -538,6 +570,14 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLayout">Preview format</span><select id="safeZoneLayout"><option value="portrait" data-i18n="plugins.streamalchemy.ui.monsters.layoutPortrait">Portrait 9:16</option><option value="landscape" data-i18n="plugins.streamalchemy.ui.monsters.layoutLandscape">Landscape 16:9</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayProfile">Portrait profile</span><select id="overlayProfile" aria-describedby="overlayProfileSummary"><option value="tiktok-live-studio-1080x1920" data-i18n="plugins.streamalchemy.ui.monsters.overlayProfileTikTokStudio">TikTok LIVE Studio · 1080×1920</option></select></label>
           <output id="overlayProfileSummary" class="control-help" data-i18n="plugins.streamalchemy.ui.monsters.overlayProfileSummary">1080×1920 · gameplay 74% · TikTok chat safe zone 26%</output>
+          <label>
+            <span data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariant">Portrait arena variant</span>
+            <select id="portraitArenaVariant" aria-describedby="portraitArenaVariantHelp">
+              <option value="split-arena" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantSplitArena">Split Arena</option>
+              <option value="classic" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantClassic" selected>Classic</option>
+            </select>
+          </label>
+          <output id="portraitArenaVariantHelp" class="control-help" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantHelp">Choose how the bounded portrait arena arranges both fighters. The Likebar remains external and reserved.</output>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.rendererQuality">Renderer quality</span><select id="rendererQuality"><option value="auto" data-i18n="plugins.streamalchemy.ui.monsters.rendererAuto">Auto</option><option value="high" data-i18n="plugins.streamalchemy.ui.monsters.rendererHigh">High</option><option value="medium" data-i18n="plugins.streamalchemy.ui.monsters.rendererMedium">Medium</option><option value="low" data-i18n="plugins.streamalchemy.ui.monsters.rendererLow">Low</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.notificationDuration">Notification duration (seconds)</span><input id="notificationDuration" type="number" min="8" max="30" value="12"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitAnchor">Portrait anchor</span><select id="portraitAnchor">
@@ -580,11 +620,13 @@
           </div>
           <div class="preview-example" data-preview-example="battle">
             <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
-            <div id="portraitBattlePreview" class="stage-preview portrait" data-preview-mode="battle" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 battle portrait stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.portraitBattlePreviewAria">
-              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span data-i18n="plugins.streamalchemy.ui.monsters.previewHpFull">HP &middot; 100%</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewRoundOne">ROUND 1</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewSpecialHalf">SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.webp" alt=""></div>
-              <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone &middot; lower 26%</div>
+            <div id="portraitBattlePreview" class="stage-preview portrait" data-preview-mode="battle" data-arena-variant="classic" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 battle portrait stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.portraitBattlePreviewAria">
+              <div class="preview-zone portrait-arena-preview" data-preview-zone="arena" style="--x:2%;--y:11.8%;--w:96%;--h:46%"><div class="stage-hud"><span data-i18n="plugins.streamalchemy.ui.monsters.previewHpFull">HP &middot; 100%</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewRoundOne">ROUND 1</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewSpecialHalf">SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp" alt=""><img class="stage-monster right" src="/plugins/streamalchemy/assets/streammonsters/furry/ripple.webp" alt=""></div>
+              <div class="preview-zone" data-preview-zone="likebar" data-owner="external" style="--x:2%;--y:57.8%;--w:96%;--h:16.2%" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaLikebarReserved">Likebar · external / reserved</div>
+              <div class="preview-zone" data-preview-zone="shelf" style="--x:3%;--y:74%;--w:94%;--h:24%" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaEggShelf">Egg shelf</div>
+              <div class="preview-zone" data-preview-zone="safe" style="--x:0%;--y:98%;--w:100%;--h:2%" aria-label="Lower safe strip"></div>
             </div>
-            <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">The Stream Monsters source covers the upper 74%; the lower 26% stays clear for TikTok chat.</p>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">Stream Monsters stays inside the bounded violet arena; the external Likebar remains reserved and the egg shelf uses the lower exception lane.</p>
           </div>
           <div class="preview-example" data-preview-example="landscape-battle">
             <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
@@ -1509,6 +1551,7 @@
         hatchDurationMs:byId('hatchPreset').value,
         gameplayPace:byId('gameplayPace').value,
         portraitBattleMode:byId('portraitBattleMode').value,
+        portraitArenaVariant:byId('portraitArenaVariant').value,
         eggExpiryMs:byId('eggExpiry').value,
         seasonDurationDays:byId('seasonDuration').value,
         landscapeAnchor:byId('landscapeAnchor').value,
@@ -1598,6 +1641,23 @@
       ? text('safeZoneCollision', 'Collision: {areas}', { areas:collisions.join(', ') })
       : text('safeZoneClear', 'No safe-zone collisions.');
   };
+  const renderPortraitArenaVariant = () => {
+    const selector = byId('portraitArenaVariant');
+    const variant = creatorRuntime.PORTRAIT_ARENA_VARIANTS.includes(selector.value)
+      ? selector.value
+      : 'classic';
+    selector.value = variant;
+    byId('portraitBattlePreview').dataset.arenaVariant = variant;
+    byId('portraitArenaVariantHelp').textContent = variant === 'split-arena'
+      ? text(
+        'portraitArenaVariantPreviewSplit',
+        'Split Arena preview: divided fighter lanes inside the violet arena. The Likebar is external and reserved.'
+      )
+      : text(
+        'portraitArenaVariantPreviewClassic',
+        'Classic preview: the familiar face-off inside the same violet arena. The Likebar is external and reserved.'
+      );
+  };
   const applyPresentationState = state => {
     currentStateConfig = {
       ...(state.config || {}),
@@ -1616,6 +1676,11 @@
     byId('gameplayPace').value = state.config?.gameplayPace || 'arcade-rally';
     byId('portraitBattleMode').value =
       state.config?.portraitBattleMode || 'takeover-74';
+    byId('portraitArenaVariant').value =
+      creatorRuntime.PORTRAIT_ARENA_VARIANTS.includes(
+        state.config?.portraitArenaVariant
+      ) ? state.config.portraitArenaVariant : 'classic';
+    renderPortraitArenaVariant();
     byId('presentationModeStatus').textContent = text(
       'presentationModeStatus',
       '{pace} · {mode}',
@@ -1923,6 +1988,7 @@
       notice(apiErrorText(error), 'error');
     }
   });
+  byId('portraitArenaVariant').addEventListener('change', renderPortraitArenaVariant);
   for (const id of [
     'safeZoneLayout',
     'landscapeAnchor',

@@ -15,15 +15,10 @@
     Object.freeze({ id: 'community-seasons', titleKey: 'communitySeasonsTitle' })
   ]);
   const PORTRAIT_PREVIEW_ZONES = Object.freeze({
-    logo: Object.freeze({ x: 4, y: 2, width: 24, height: 6 }),
-    music: Object.freeze({ x: 5, y: 14.5, width: 58, height: 4.5 }),
-    notification: Object.freeze({ x: 4, y: 20, width: 92, height: 5 }),
-    avatar: Object.freeze({ x: 2, y: 26.5, width: 96, height: 31 }),
-    likes: Object.freeze({ x: 2, y: 58.5, width: 96, height: 6 }),
-    shelf: Object.freeze({ x: 3, y: 66.5, width: 94, height: 7 }),
-    xp: Object.freeze({ x: 4, y: 82.5, width: 92, height: 11 }),
-    battle: Object.freeze({ x: 0, y: 0, width: 100, height: 74 }),
-    safe: Object.freeze({ x: 0, y: 74, width: 100, height: 26 })
+    arena: Object.freeze({ x: 2, y: 11.8, width: 96, height: 46 }),
+    likebar: Object.freeze({ x: 2, y: 57.8, width: 96, height: 16.2 }),
+    shelf: Object.freeze({ x: 3, y: 74, width: 94, height: 24 }),
+    safe: Object.freeze({ x: 0, y: 98, width: 100, height: 2 })
   });
   const LANDSCAPE_PREVIEW_ZONES = Object.freeze({
     battle: Object.freeze({ x: 0, y: 0, width: 100, height: 74 }),
@@ -102,6 +97,7 @@
   ]);
   const GAMEPLAY_PACES = Object.freeze(['arcade-rally']);
   const PORTRAIT_BATTLE_MODES = Object.freeze(['takeover-74']);
+  const PORTRAIT_ARENA_VARIANTS = Object.freeze(['split-arena', 'classic']);
   const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
     preset: 'tiktok-live-studio-1080x1920',
     width: 1080,
@@ -192,6 +188,9 @@
     const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
     const requestedHatchDurationMs = Number(values.hatchDurationMs);
     const storedHatchDurationMs = Number(currentConfig.hatchDurationMs);
+    const requestedArenaVariant = PORTRAIT_ARENA_VARIANTS.includes(
+      values.portraitArenaVariant
+    ) ? values.portraitArenaVariant : currentConfig.portraitArenaVariant;
     const payload = {
       creatorName: String(values.creatorName || '').trim(),
       gameplayPace: GAMEPLAY_PACES.includes(values.gameplayPace)
@@ -264,6 +263,9 @@
       audioChannels: values.audioChannels || currentConfig.audioChannels || {},
       giftMappingCustomized: Boolean(currentConfig.giftMappingCustomized)
     };
+    if (PORTRAIT_ARENA_VARIANTS.includes(requestedArenaVariant)) {
+      payload.portraitArenaVariant = requestedArenaVariant;
+    }
     if (HATCH_PRESETS.includes(requestedHatchDurationMs)) {
       payload.hatchDurationMs = requestedHatchDurationMs;
     } else if (!Number.isFinite(storedHatchDurationMs) || storedHatchDurationMs <= 0) {
@@ -533,8 +535,10 @@
       'avatar-likes-music',
       'base-scene'
     ];
-    const visibleZones = mode === 'battle'
-      ? ['battle', 'safe']
+    const visibleZones = mode === 'battle' && layout === 'portrait'
+      ? ['arena', 'likebar', 'shelf', 'safe']
+      : mode === 'battle'
+        ? ['battle', 'safe']
       : [
           'logo',
           'music',
@@ -544,7 +548,7 @@
           'shelf',
           'xp',
           'safe'
-        ].filter(zone => geometry.zones[zone]);
+        ];
     return {
       mode,
       width: geometry.width,
@@ -553,8 +557,10 @@
       chatPercent: geometry.chatPercent,
       visibleZones,
       battleTakeover: mode === 'battle',
-      externalSources: mode === 'battle'
-        ? 'move_or_disable_below_takeover'
+      externalSources: mode === 'battle' && layout === 'portrait'
+        ? 'likebar_external_reserved'
+        : mode === 'battle'
+          ? 'move_or_disable_below_takeover'
         : 'visible',
       sourceOrder
     };
@@ -765,6 +771,7 @@
     HATCH_PRESETS,
     EGG_EXPIRY_PRESETS,
     MASTERY_THRESHOLDS,
+    PORTRAIT_ARENA_VARIANTS,
     PORTRAIT_BATTLE_MODES,
     PORTRAIT_OVERLAY_PROFILE,
     REPAIR_ACTIONS,
