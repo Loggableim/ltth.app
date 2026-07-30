@@ -78,11 +78,28 @@ This changes presentation only: battle rules, sealed-choice privacy, the
 existing `A / B / C` command protocol, effects, and stored results stay
 unchanged.
 
+### Public page and menu discoverability
+
+The existing public guide at `/streammonsters/` becomes the concise product
+explanation for the same portrait-first experience. Its hero and arena copy
+will explain the viewer-readable sequence `status → A / B / C choice → compact
+result`, including the protected lower TikTok chat/camera area. The guide keeps
+its existing Monsterdex, commands, rules, and four-language rendering rather
+than adding a second marketing page.
+
+The shared Features mega menu receives a direct `Stream Monsters` entry in the
+existing `Gaming & Interaction` category that points to `/streammonsters/`.
+This keeps the already dense top-level navigation stable while making the game
+discoverable from every site page, including mobile navigation. No external
+links, new tracking, release deployment, or standalone game purchase flow is
+introduced.
+
 ### Implementation boundaries
 
-The change is limited to the Stream Monsters overlay presentation and its
-focused tests. It does not change game rules, Twitch/TikTok command handling,
-stored egg data, localisation keys, asset packs, or public API contracts.
+The change is limited to the Stream Monsters overlay presentation, focused
+tests, the existing public Stream Monsters guide, and one shared menu link. It
+does not change game rules, Twitch/TikTok command handling, stored egg data,
+localisation keys, asset packs, or public API contracts.
 
 The implementation should consolidate portrait CSS around shared custom
 properties and the existing `#reveal-stage`, `#egg-shelf`, `#chat-card`, and
@@ -108,6 +125,9 @@ timer-driven parallel state machine.
    their focused regression tests.
 7. The rendered portrait demo is inspected in a real browser at 1080 x 1920;
    a screenshot provides visual evidence for the final hand-off.
+8. `/streammonsters/` renders the current portrait game flow in every existing
+   site language, and the shared Gaming & Interaction menu has one working
+   direct link to that page.
 
 ## Test strategy
 
@@ -121,6 +141,9 @@ timer-driven parallel state machine.
 - Exercise the built-in Stream Monsters demo in a real browser and inspect the
   portrait rendered state for the representative events above plus the battle
   choice, action, and result phases.
+- Build the static Pages bundle and browser-check `/streammonsters/` with its
+  injected shared header. Verify the direct menu item resolves to the guide
+  and the guide copy introduces the compact portrait battle flow.
 
 ## Non-goals
 
@@ -128,3 +151,5 @@ timer-driven parallel state machine.
 - Changes to current combat balance, player commands, egg ownership, or chat
   safe-zone policy.
 - A full landscape redesign or general dashboard redesign.
+- Changing the public website deployment or asserting that the isolated
+  overlay branch is already live.
