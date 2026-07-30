@@ -17,11 +17,17 @@ describe('Stream Monsters public guide', () => {
     const sitemap = read('sitemap.xml');
     const header = read('_partials/header.html');
     const headerDom = new JSDOM(header).window.document;
+    const pageDom = new JSDOM(page).window.document;
     const streamMonstersLink = headerDom.querySelector(
       '.mega-category .mega-item[href="/streammonsters/"]'
     );
+    const openGraphDescription = pageDom.querySelector(
+      'meta[property="og:description"]'
+    ).content;
 
     expect(page).toContain('https://ltth.app/streammonsters');
+    expect(openGraphDescription).toContain('Leitfaden');
+    expect(openGraphDescription).toContain('Portrait-Ablauf');
     expect(page).toContain('/js/streammonsters-guide.js');
     expect(page).toContain('/css/streammonsters-guide.css');
     expect(page).toContain('id="monster-dex"');
