@@ -1078,11 +1078,19 @@
       }
     }
     @media (orientation: portrait) {
-      :root { --egg-shelf-lane-height:66px; }
+      :root {
+        --portrait-safe-zone-height:26%;
+        --portrait-info-rail-height:clamp(146px,19vh,246px);
+        --egg-shelf-lane-height:66px;
+      }
       #brand { top:20px; left:20px; width:210px; height:58px; }
       #hype { top:18px; right:20px; width:76px; height:76px; }
       #toast { top:104px; width:calc(100vw - 32px); }
-      #reveal-stage { inset:0 0 calc(26% + var(--egg-shelf-lane-height)); padding:50px 16px; }
+      #reveal-stage {
+        top:0; right:0; bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); left:0;
+        padding:50px 16px;
+      }
+      #arcade-choreography { bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); }
       #card { grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
       #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) {
         min-height:250px; padding:22px 18px;
@@ -1109,7 +1117,7 @@
         font-size:clamp(13px,2.8vw,19px);
       }
       #egg-shelf {
-        bottom:26%; height:clamp(146px,19vh,246px); display:grid;
+        bottom:var(--portrait-safe-zone-height); height:var(--portrait-info-rail-height); display:grid;
         grid-template-columns:1fr; grid-template-rows:1fr;
         align-items:end; justify-items:center;
       }
@@ -1160,7 +1168,7 @@
       #card[data-presentation="hatch"] #title { font-size:clamp(34px,7.4vw,64px); }
       #card[data-presentation="hatch"] #subtitle { font-size:clamp(17px,3.2vw,28px); }
       #card[data-presentation="hatch"] #hint { font-size:clamp(15px,2.8vw,23px); }
-      #battle { inset:0 0 26%; }
+      #battle { inset:0 0 var(--portrait-safe-zone-height); }
       #arena-topline { top:2%; min-width:88%; }
       #arena-skill-prompt { top:8%; width:88%; }
       #arena-lead { top:14.5%; }
@@ -1214,10 +1222,10 @@
       .arena-result-metrics span { font-size:clamp(9px,2.2vw,12px); }
       #arena-stat-card { top:14%; width:92%; min-height:260px; }
       #arena-impact { top:49%; }
-      #chat-card { left:16px; bottom:calc(26% + var(--egg-shelf-lane-height)); max-width:calc(100vw - 32px); }
+      #chat-card { left:16px; bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); max-width:calc(100vw - 32px); }
       #chat-detail {
         top:7%; right:3%;
-        bottom:calc(26% + var(--egg-shelf-lane-height)); left:3%;
+        bottom:calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height)); left:3%;
         padding:20px 16px;
       }
       .sm-collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }

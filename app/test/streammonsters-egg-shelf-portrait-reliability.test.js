@@ -644,7 +644,7 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     ));
 
     expect(rootRule?.style.getPropertyValue('--egg-shelf-lane-height')).toBe('66px');
-    expect(shelfRule?.style.bottom).toBe('26%');
+    expect(shelfRule?.style.bottom).toBe('var(--portrait-safe-zone-height)');
     expect(shelfRule?.style.display).toBe('grid');
     expect(focusRule?.style.display).toBe('grid');
     expect(compactCardRule?.style['min-height']).toBe('250px');
@@ -652,7 +652,30 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     expect(offerRule?.style.top).toBe('7%');
 
     const battleRule = portraitRules.find(rule => rule.selector === '#battle');
-    expect(battleRule?.style.inset).toBe('0 0 26%');
+    expect(battleRule?.style.inset).toBe('0 0 var(--portrait-safe-zone-height)');
+    dom.window.close();
+  });
+
+  test('reserves the complete portrait information rail for every non-battle layer', () => {
+    const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
+    const portraitRules = styleRules(dom.window.document).filter(rule => (
+      rule.media.includes('orientation: portrait')
+    ));
+    const bySelector = selector => portraitRules.find(rule => rule.selector === selector);
+    const reservedBottom = 'calc(var(--portrait-safe-zone-height) + var(--portrait-info-rail-height))';
+
+    expect(bySelector(':root')?.style.getPropertyValue('--portrait-safe-zone-height'))
+      .toBe('26%');
+    expect(bySelector(':root')?.style.getPropertyValue('--portrait-info-rail-height'))
+      .toBe('clamp(146px,19vh,246px)');
+    expect(bySelector('#egg-shelf')?.style.bottom)
+      .toBe('var(--portrait-safe-zone-height)');
+    expect(bySelector('#egg-shelf')?.style.height)
+      .toBe('var(--portrait-info-rail-height)');
+    for (const selector of ['#reveal-stage', '#arcade-choreography', '#chat-card', '#chat-detail']) {
+      expect(bySelector(selector)?.style.bottom).toBe(reservedBottom);
+    }
+    expect(bySelector('#battle')?.style.inset).toBe('0 0 var(--portrait-safe-zone-height)');
     dom.window.close();
   });
 
@@ -660,13 +683,17 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     [477, 829, 157.51],
     [1080, 1920, 246]
   ])('keeps the focus card above chat at %ix%i', (width, height, shelfHeight) => {
-    const chatBoundary = height * 0.74;
-    const shelfTop = chatBoundary - shelfHeight;
+    const gameplayBoundary = height * 0.74;
+    const heroBottom = gameplayBoundary - shelfHeight;
+    const safeZoneTop = height * 0.74;
+    const shelfTop = heroBottom;
     const cardMinimum = Math.min(182, Math.max(116, height * 0.15));
 
     expect(width).toBeGreaterThanOrEqual(477);
-    expect(shelfTop).toBeGreaterThanOrEqual(0);
-    expect(shelfTop + shelfHeight).toBeCloseTo(chatBoundary, 5);
+    expect(heroBottom).toBeGreaterThanOrEqual(0);
+    expect(heroBottom).toBeLessThan(safeZoneTop);
+    expect(shelfTop).toBeCloseTo(heroBottom, 5);
+    expect(shelfTop + shelfHeight).toBeCloseTo(safeZoneTop, 5);
     expect(cardMinimum).toBeLessThanOrEqual(shelfHeight);
   });
 
