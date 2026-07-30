@@ -19,11 +19,14 @@
     'monster_discovered',
     'monster_evolved',
     'monster_visual_evolved',
+    'battle_match_found',
+    'battle_special_charged',
     'battle_choice_locked',
     'battle_choices_revealed',
     'battle_skill_used',
     'battle_arena_collapse',
     'battle_completed',
+    'win_streak',
     'monster_xp_awarded',
     'monster_level_up',
     'arena_rating_changed',
@@ -1016,6 +1019,41 @@
           element
         });
       }
+    } else if (type === 'battle_match_found') {
+      const rivalry = payload.rivalry && typeof payload.rivalry === 'object'
+        ? payload.rivalry
+        : null;
+      const count = Math.max(0, Math.floor(numeric(rivalry?.count)));
+      const tier = ['rematch', 'rivals', 'nemesis'].includes(rivalry?.tier)
+        ? rivalry.tier
+        : null;
+      scene = 'rivalry_entrance';
+      beats = count > 0 && tier ? [{
+        type: 'rivalry_entrance',
+        atMs: 0,
+        durationMs: 1_100,
+        count,
+        tier,
+        peak: tier !== 'rematch',
+        audioCue: 'ui.navigate'
+      }] : [];
+    } else if (type === 'battle_special_charged') {
+      scene = 'special_ready';
+      beats = [{
+        type: 'special_ready',
+        atMs: 0,
+        durationMs: 920,
+        slot: numeric(payload.slot),
+        charge: Math.max(100, numeric(payload.charge, 100)),
+        element,
+        peak: true,
+        effect: {
+          scene: 'special',
+          element,
+          vfxKey: `${element}:special-ready`
+        },
+        audioCue: 'arena.special'
+      }];
     } else if (type === 'battle_choice_locked') {
       scene = 'sealed_choice';
       beats = [{
@@ -1053,12 +1091,18 @@
       const action = payload.action && typeof payload.action === 'object'
         ? { ...payload.action, eventId: payload.eventId || payload.action.eventId }
         : payload;
+      const isSpecial = String(action.choice || '').toUpperCase() === 'C' ||
+        String(action.skill?.type || '').toLowerCase() === 'special';
+      const actionDuration = Math.min(
+        2_800,
+        RULES_V8_PACING.ACTION_MS + (isSpecial ? 600 : 0)
+      );
       beats = numeric(action.rulesVersion ?? payload.rulesVersion) >= 7
         ? compressArcadeActionBeats(
             buildArcadeActionBeats(action),
             numeric(action.rulesVersion ?? payload.rulesVersion) >= 8 &&
               !action.terminal
-              ? RULES_V8_PACING.ACTION_MS
+              ? actionDuration
               : numeric(action.rulesVersion ?? payload.rulesVersion) >= 8
                 ? RULES_V8_PACING.TERMINAL_ACTION_MS
                 : 2_800
@@ -1161,6 +1205,25 @@
           audioDucking: { amount: 0.35, durationMs: 900 }
         });
       }
+    } else if (type === 'win_streak') {
+      const count = Math.max(0, Math.floor(numeric(payload.count)));
+      const tier = count >= 10
+        ? 'unstoppable'
+        : count >= 5
+          ? 'five'
+          : count >= 3
+            ? 'three'
+            : null;
+      scene = 'streak_stamp';
+      beats = tier ? [{
+        type: 'streak_stamp',
+        atMs: 0,
+        durationMs: 1_050,
+        count,
+        tier,
+        peak: tier !== 'three',
+        audioCue: 'progress.level'
+      }] : [];
     } else if (type === 'monster_xp_awarded' || type === 'monster_level_up') {
       scene = 'progression';
       beats = [{

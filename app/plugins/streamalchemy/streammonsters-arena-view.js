@@ -202,6 +202,8 @@
       shield: 'Schild',
       special: 'Special',
       specialMissing: '{amount} charge missing',
+      specialReady: 'READY',
+      choiceWindow: 'NEXT / {left} & {right}: A {attack} / B {defense} / C {special}',
       sealedWaiting: '{name} sealed - waiting for opponent',
       choicesSealed: 'Both choices sealed - reveal now',
       next: 'NEXT',
@@ -236,6 +238,28 @@
       statResult: '{stat} +1',
       collapse: 'ARENA COLLAPSE · Runde {round}',
       collapseDefenseLocked: 'Arena Collapse: defense locks from round 11',
+      effectDamage: 'Damage power +{power}',
+      effectShield: 'Shield +{power}',
+      effectHeal: 'Heal +{power}',
+      effectBurn: 'Burn {power}',
+      effectThorns: 'Thorns {power}',
+      effectWeaken: 'Weaken {power}',
+      effectPierce: 'Shield pierce {power}',
+      effectEvade: 'Evade {chance}%',
+      effectReflect: 'Reflect {power}',
+      effectLifesteal: 'Lifesteal {ratio}%',
+      effectHits: '{hits} hits',
+      relationAdvantage: 'Element advantage: +3 damage',
+      relationDisadvantage: 'Element disadvantage: opponent gets +3 damage',
+      relationNeutral: 'Neutral element matchup',
+      rivalryEntrance: 'RIVALRY {tier} / meeting {count}',
+      rivalryTierRematch: 'REMATCH',
+      rivalryTierRivals: 'RIVALS',
+      rivalryTierNemesis: 'NEMESIS',
+      closeBattleHint: 'CLOSE! Start the next arena; matchmaking searches fairly.',
+      streakThree: '3 WINS',
+      streakFive: '5 WINS',
+      streakUnstoppable: 'UNSTOPPABLE',
       hit: 'HIT',
       hitCombo: '{count} HIT COMBO',
       eggShelfAria: 'Living egg shelf',
@@ -261,6 +285,8 @@
       shield: 'arenaShieldLabel',
       special: 'arenaSpecialLabel',
       specialMissing: 'arenaSpecialMissing',
+      specialReady: 'arenaSpecialReady',
+      choiceWindow: 'arenaChoiceWindow',
       sealedWaiting: 'arenaSealedWaiting',
       choicesSealed: 'arenaChoicesSealed',
       next: 'arenaNext',
@@ -295,6 +321,28 @@
       statResult: 'monsterStatResult',
       collapse: 'arenaCollapseBanner',
       collapseDefenseLocked: 'arenaCollapseDefenseLocked',
+      effectDamage: 'arenaEffectDamage',
+      effectShield: 'arenaEffectShield',
+      effectHeal: 'arenaEffectHeal',
+      effectBurn: 'arenaEffectBurn',
+      effectThorns: 'arenaEffectThorns',
+      effectWeaken: 'arenaEffectWeaken',
+      effectPierce: 'arenaEffectPierce',
+      effectEvade: 'arenaEffectEvade',
+      effectReflect: 'arenaEffectReflect',
+      effectLifesteal: 'arenaEffectLifesteal',
+      effectHits: 'arenaEffectHits',
+      relationAdvantage: 'arenaRelationAdvantage',
+      relationDisadvantage: 'arenaRelationDisadvantage',
+      relationNeutral: 'arenaRelationNeutral',
+      rivalryEntrance: 'arenaRivalryEntrance',
+      rivalryTierRematch: 'arenaRivalryTierRematch',
+      rivalryTierRivals: 'arenaRivalryTierRivals',
+      rivalryTierNemesis: 'arenaRivalryTierNemesis',
+      closeBattleHint: 'arenaCloseBattleHint',
+      streakThree: 'arenaStreakThree',
+      streakFive: 'arenaStreakFive',
+      streakUnstoppable: 'arenaStreakUnstoppable',
       hit: 'arenaHit',
       hitCombo: 'arenaHitCombo',
       eggShelfAria: 'eggShelfAria',
@@ -611,6 +659,10 @@
           'aria-label',
           formatLabel('specialAria', { monster })
         );
+        node(`arena-charge-ring-${slot}`)?.setAttribute(
+          'aria-label',
+          formatLabel('specialAria', { monster })
+        );
         skillDeckNode(slot)?.setAttribute(
           'aria-label',
           formatLabel('skillDeckAria', { monster })
@@ -651,6 +703,66 @@
         pauseStartedAtMs: numeric(source.pauseStartedAtMs, -1),
         pauseUntilMs: numeric(source.pauseUntilMs, -1)
       };
+    }
+
+    function formatMechanicalEffects(effects = []) {
+      const copy = [];
+      for (const effect of Array.isArray(effects) ? effects : []) {
+        const type = String(effect?.type || '').toLowerCase();
+        const power = numeric(effect?.power);
+        if (type === 'damage') {
+          copy.push(formatLabel('effectDamage', { power }));
+        } else if (type === 'shield') {
+          copy.push(formatLabel('effectShield', { power }));
+        } else if (type === 'heal') {
+          copy.push(formatLabel('effectHeal', { power }));
+        } else if (type === 'burn') {
+          copy.push(formatLabel('effectBurn', { power }));
+        } else if (type === 'thorns') {
+          copy.push(formatLabel('effectThorns', { power }));
+        } else if (type === 'weaken') {
+          copy.push(formatLabel('effectWeaken', { power }));
+        } else if (type === 'pierce') {
+          copy.push(formatLabel('effectPierce', { power }));
+        } else if (type === 'evade') {
+          copy.push(formatLabel('effectEvade', {
+            chance:Math.round(Math.max(0, Math.min(100, numeric(effect.chance))))
+          }));
+        } else if (type === 'reflect') {
+          copy.push(formatLabel('effectReflect', { power }));
+        } else if (type === 'lifesteal') {
+          copy.push(formatLabel('effectLifesteal', {
+            ratio:Math.round(Math.max(0, Math.min(1, numeric(effect.ratio))) * 100)
+          }));
+        }
+        const hits = Math.max(0, Math.round(numeric(effect?.hits)));
+        if (hits > 1) copy.push(formatLabel('effectHits', { hits }));
+      }
+      return copy.filter(Boolean);
+    }
+
+    function renderChargeState(slot, charge, ready = charge >= 100) {
+      const percent = clampPercent(charge);
+      setMeter(`arena-charge-${slot}`, percent);
+      const ring = node(`arena-charge-ring-${slot}`);
+      if (ring) {
+        const state = stateBySlot.get(slot) || {};
+        const monster = safeDisplayName(
+          state.name,
+          formatLabel('monster', { slot })
+        );
+        ring.setAttribute('role', 'progressbar');
+        ring.setAttribute('aria-valuemin', '0');
+        ring.setAttribute('aria-valuemax', '100');
+        ring.setAttribute('aria-valuenow', String(Math.round(percent)));
+        ring.setAttribute('aria-label', formatLabel('specialAria', { monster }));
+        ring.style.setProperty('--charge-percent', `${percent}%`);
+        ring.classList.toggle('ready', Boolean(ready));
+      }
+      setText(
+        `arena-charge-ready-${slot}`,
+        ready ? formatLabel('specialReady') : ''
+      );
     }
 
     function renderSkillDeck(slot) {
@@ -698,12 +810,25 @@
                 ? formatLabel('skill')
                 : (skill.name || choiceLabel(choice) || labels.skill))
         );
-        setSkillText(
-          'skill-copy',
-          skill.unavailableReason === 'arena_collapse_defense_locked'
-            ? formatLabel('collapseDefenseLocked')
-            : localizedSkillText(skill.shortTextKey, skill.shortText)
-        );
+        const relation = ['advantage', 'disadvantage', 'neutral'].includes(
+          skill.elementRelation
+        )
+          ? formatLabel(
+              skill.elementRelation === 'advantage'
+                ? 'relationAdvantage'
+                : skill.elementRelation === 'disadvantage'
+                  ? 'relationDisadvantage'
+                  : 'relationNeutral'
+            )
+          : '';
+        const skillCopy = skill.unavailableReason === 'arena_collapse_defense_locked'
+          ? [formatLabel('collapseDefenseLocked')]
+          : [
+              localizedSkillText(skill.shortTextKey, skill.shortText),
+              ...formatMechanicalEffects(skill.effects),
+              relation
+            ];
+        setSkillText('skill-copy', skillCopy.filter(Boolean).join(' · '));
         if (choice !== 'C') {
           setSkillText('skill-charge', '');
           card.classList.toggle('unavailable', skill.available === false);
@@ -751,11 +876,12 @@
         setSkillText(
           'skill-charge',
           ready
-            ? `${chargePercent}%`
+            ? `${chargePercent}% · ${formatLabel('specialReady')}`
             : `${chargePercent}% \u00b7 ${formatLabel('specialMissing', {
                 amount:missingCharge
               })}`
         );
+        renderChargeState(slot, chargePercent, ready);
         card.classList.toggle('charging', !ready);
         card.classList.toggle('ready', ready);
         card.classList.toggle(
@@ -844,7 +970,7 @@
       setLabelText(`arena-special-label-${slot}`, 'special');
       setMeter(`arena-hp-${slot}`, (state.hp / state.maxHp) * 100);
       setMeter(`arena-shield-${slot}`, Math.min(100, state.shield * 10));
-      setMeter(`arena-charge-${slot}`, state.charge);
+      renderChargeState(slot, state.charge, state.charge >= 100);
       const image = node(`arena-image-${slot}`);
       if (image && state.imageUrl) {
         image.src = state.imageUrl;
@@ -1012,8 +1138,23 @@
       }
     }
 
+    function clearArenaStamps() {
+      for (const id of ['arena-rivalry-stamp', 'arena-streak-stamp']) {
+        const stamp = node(id);
+        if (!stamp) continue;
+        stamp.classList.remove('visible');
+        stamp.textContent = '';
+        delete stamp.dataset.tier;
+      }
+      if (arena) {
+        arena.classList.remove('rivalry-entrance');
+        delete arena.dataset.rivalryTier;
+      }
+    }
+
     function applyMatch(match = {}) {
       activateMatch(match.matchId);
+      clearArenaStamps();
       setBattleSurface(true, match.state || 'match');
       activeChargeWindow = normalizeChargeWindow(match);
       lastEventSequence = Math.max(
@@ -1084,6 +1225,7 @@
 
     function openChoice(payload = {}) {
       activateMatch(payload.matchId);
+      clearArenaStamps();
       setBattleSurface(true, 'choice');
       activeChargeWindow = normalizeChargeWindow(payload);
       if (payload.fighters) renderFighters(payload.fighters);
@@ -1092,29 +1234,36 @@
       const choices = Array.isArray(payload.choices) && payload.choices.length
         ? payload.choices
         : ['A', 'B', 'C'];
-      const skillDecks = [1, 2]
-        .map(slot => stateBySlot.get(slot)?.skills)
-        .filter(skills => Array.isArray(skills) && skills.length);
-      const universallyAvailable = choice => (
-        !skillDecks.length ||
-        skillDecks.every(skills => {
-          const skill = skills.find(entry => entry?.choice === choice);
-          return skill && skill.available !== false;
-        })
-      );
       const nextChoices = choices
-        .filter(choice => ['A', 'B', 'C'].includes(choice))
-        .filter(universallyAvailable)
-        .slice(0, 2);
+        .filter(choice => ['A', 'B', 'C'].includes(choice));
       const renderChoiceCopy = () => {
         setLabelText('arena-round', 'round', { round });
-        setText(
-          'arena-skill-prompt',
-          [
-            formatLabel('next'),
-            ...nextChoices.map(choice => `${choice} ${choiceLabel(choice)}`.trim())
-          ].join(' - ')
-        );
+        const fighters = [1, 2].map(slot => stateBySlot.get(slot) || {});
+        const actorNames = fighters.map((fighter, index) => safeDisplayName(
+          fighter.viewerName,
+          fighter.name || formatLabel('monster', { slot:index + 1 })
+        ));
+        if (
+          nextChoices.length === 3 &&
+          ['A', 'B', 'C'].every(choice => nextChoices.includes(choice))
+        ) {
+          setLabelText('arena-skill-prompt', 'choiceWindow', {
+            left:actorNames[0],
+            right:actorNames[1],
+            attack:choiceLabel('A'),
+            defense:choiceLabel('B'),
+            special:choiceLabel('C')
+          });
+        } else {
+          setText(
+            'arena-skill-prompt',
+            [
+              formatLabel('next'),
+              actorNames.filter(Boolean).join(' & '),
+              ...nextChoices.map(choice => `${choice} ${choiceLabel(choice)}`.trim())
+            ].filter(Boolean).join(' / ')
+          );
+        }
       };
       renderVisibleComposite = renderChoiceCopy;
       renderChoiceCopy();
@@ -1503,6 +1652,44 @@
           showChoreography(payload, 'portal', beat.element);
           choreography?.classList.add('portal-open');
           break;
+        case 'rivalry_entrance': {
+          if (arena) {
+            arena.dataset.rivalryTier = String(beat.tier || '');
+            arena.classList.add('visible', 'rivalry-entrance');
+          }
+          const stamp = node('arena-rivalry-stamp');
+          if (stamp) {
+            const tierKey = beat.tier === 'nemesis'
+              ? 'rivalryTierNemesis'
+              : beat.tier === 'rivals'
+                ? 'rivalryTierRivals'
+                : 'rivalryTierRematch';
+            stamp.textContent = formatLabel('rivalryEntrance', {
+              tier:formatLabel(tierKey),
+              count:beat.count
+            });
+            stamp.classList.add('visible');
+          }
+          break;
+        }
+        case 'special_ready':
+          renderChargeState(beat.slot, beat.charge, true);
+          fighterNode(beat.slot)?.classList.add('special-ready');
+          break;
+        case 'streak_stamp': {
+          const stamp = node('arena-streak-stamp');
+          if (stamp) {
+            const key = beat.tier === 'unstoppable'
+              ? 'streakUnstoppable'
+              : beat.tier === 'five'
+                ? 'streakFive'
+                : 'streakThree';
+            stamp.textContent = formatLabel(key);
+            stamp.classList.add('visible');
+            stamp.dataset.tier = String(beat.tier || '');
+          }
+          break;
+        }
         case 'sealed_card':
           lockChoice({
             decision: {
@@ -1741,6 +1928,7 @@
 
     async function complete(payload = {}) {
       stopCountdown();
+      clearArenaStamps();
       node('arena-action-card')?.classList.remove('visible');
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
@@ -1846,6 +2034,12 @@
       }
       renderCombatReport(combatReport);
       setText('arena-result-ratings', combatReport ? '' : canonicalRatingText);
+      const showCloseHint = payload.nextArenaHint?.kind === 'close_result' &&
+        payload.nextArenaHint?.avoidsImmediateRematch === true;
+      setText(
+        'arena-result-next',
+        showCloseHint ? formatLabel('closeBattleHint') : ''
+      );
       if (winnerSlot) setLabelText('arena-feed', 'winner', { name:winnerName });
       else if (isDoubleKnockout) setLabelText('arena-feed', 'draw');
       else setLabelText('arena-feed', 'battleEnded');
@@ -1861,6 +2055,10 @@
           setLabelText('arena-feed', 'battleEnded');
         }
         renderCombatReport(combatReport);
+        setText(
+          'arena-result-next',
+          showCloseHint ? formatLabel('closeBattleHint') : ''
+        );
       };
       if (winnerSlot) {
         fire(audio, 'arena.victory', {
@@ -1879,6 +2077,7 @@
 
     async function cancel(payload = {}) {
       stopCountdown();
+      clearArenaStamps();
       node('arena-action-card')?.classList.remove('visible');
       const terminalVersion = surfaceVersion;
       if (arena) {

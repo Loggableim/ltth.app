@@ -22,6 +22,7 @@
     'battle_choice_locked',
     'battle_choices_revealed',
     'battle_cancelled',
+    'win_streak',
     'egg_spawned',
     'egg_landed',
     'egg_ready',
@@ -710,6 +711,7 @@
       if (
         entry.type !== 'stance_revealed' &&
         entry.type !== 'battle_started' &&
+        entry.type !== 'win_streak' &&
         !String(entry.type || '').startsWith('battle_')
       ) return null;
       const data = entry.data || {};
@@ -1117,6 +1119,7 @@
       const normalizedType = normalizeRecentEventType(type);
       if (!normalizedType.startsWith('battle_') &&
           !normalizedType.startsWith('monster_') &&
+          normalizedType !== 'win_streak' &&
           normalizedType !== 'arena_rating_changed' &&
           normalizedType !== 'stat_choice_opened') {
         return '';

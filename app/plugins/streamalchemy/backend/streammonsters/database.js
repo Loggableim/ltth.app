@@ -2461,6 +2461,26 @@ class StreamMonstersDatabase {
     return Math.max(0, Number(row?.count) || 0);
   }
 
+  countBattlesBetweenViewers(userAId, userBId) {
+    if (!userAId || !userBId || userAId === userBId) return 0;
+    const row = this.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_battles battle
+      LEFT JOIN streammonsters_monsters monster_a
+        ON monster_a.monster_id = battle.monster_a_id
+      LEFT JOIN streammonsters_monsters monster_b
+        ON monster_b.monster_id = battle.monster_b_id
+      WHERE (
+        COALESCE(battle.user_a_id, monster_a.user_id) = ?
+        AND COALESCE(battle.user_b_id, monster_b.user_id) = ?
+      ) OR (
+        COALESCE(battle.user_a_id, monster_a.user_id) = ?
+        AND COALESCE(battle.user_b_id, monster_b.user_id) = ?
+      )
+    `).get(userAId, userBId, userBId, userAId);
+    return Math.max(0, Number(row?.count) || 0);
+  }
+
   hasRecentOpponentPair(userAId, userBId, sinceMs) {
     if (!userAId || !userBId) return false;
     return Boolean(this.db.prepare(`

@@ -2,7 +2,8 @@ const { randomUUID } = require('crypto');
 const {
   getEvolutionAssetPath,
   getTemplate,
-  resolveStageSkill
+  resolveStageSkill,
+  V6_ELEMENT_ADVANTAGE_PAIRS
 } = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
 const { elementAdvantage } = require('./battle-rules-v3');
@@ -20,7 +21,8 @@ const {
 } = require('./battle-rules-v8');
 const {
   projectBattleFighter,
-  projectBattleChoices
+  projectBattleChoices,
+  projectBattleSkillEffects
 } = require('./public-event-projector');
 const {
   buildCombatReport,
@@ -56,6 +58,7 @@ const ARENA_TIERS = Object.freeze([
   Object.freeze({ name: 'Silver', minimum: 1000 }),
   Object.freeze({ name: 'Bronze', minimum: 0 })
 ]);
+const CURRENT_ELEMENT_ADVANTAGES = new Set(V6_ELEMENT_ADVANTAGE_PAIRS);
 const CHOICE_REJECTION_MESSAGE_KEYS = Object.freeze({
   special_not_charged: 'arenaChoiceSpecialNotCharged',
   duplicate_event: 'arenaChoiceAlreadyLocked',
@@ -80,6 +83,36 @@ function projectSpecialAvailability({ charge, wasReady = false } = {}) {
     unavailableReason: available ? null : 'special_requires_full_charge',
     readyTransition: available && !wasReady
   };
+}
+
+function rivalryTier(count) {
+  const total = Math.max(0, Math.floor(Number(count) || 0));
+  if (total >= 5) return 'nemesis';
+  if (total >= 3) return 'rivals';
+  if (total >= 1) return 'rematch';
+  return null;
+}
+
+function closeResultHint({ terminalReason, knockout } = {}) {
+  if (terminalReason !== 'knockout' || !knockout) return null;
+  const remainingHp = Math.max(0, Number(knockout.remainingHp) || 0);
+  const maximumHp = Math.max(1, Number(knockout.maxHp) || 1);
+  if ((remainingHp / maximumHp) > 0.25) return null;
+  return {
+    kind: 'close_result',
+    avoidsImmediateRematch: true
+  };
+}
+
+function sanitizeRivalry(value = null) {
+  if (!value || typeof value !== 'object') return null;
+  const rawCount = Math.floor(Number(value.count) || 0);
+  if (rawCount < 1) return null;
+  const count = Math.min(10_000, rawCount);
+  const tier = ['rematch', 'rivals', 'nemesis'].includes(value.tier)
+    ? value.tier
+    : rivalryTier(count);
+  return tier ? { count, tier } : null;
 }
 
 class BattleMatchService {
@@ -626,9 +659,11 @@ class BattleMatchService {
     this.store.removeBattleQueueEntry(own.user_id);
     this.store.removeBattleQueueEntry(opponent.user_id);
     const match = this.getMatch(matchId);
+    const rivalry = this.projectRivalry(match);
     this.appendEvent(matchId, 'streammonsters:battle_match_found', {
       matchId,
-      deadlineMs: match.rosterDeadlineMs
+      deadlineMs: match.rosterDeadlineMs,
+      ...(rivalry ? { rivalry } : {})
     });
     this.autoLockSoleEligibleRosters(matchId);
     return this.getMatch(matchId);
@@ -1014,9 +1049,14 @@ class BattleMatchService {
     const opponentElement = match.participants.find(entry => (
       entry.participantId !== participant.participantId
     ))?.roster?.element;
-    const elementRelation = elementAdvantage(roster.element, opponentElement)
+    const hasAdvantage = (attacker, defender) => (
+      this.isRulesV6(match)
+        ? CURRENT_ELEMENT_ADVANTAGES.has(`${attacker}:${defender}`)
+        : elementAdvantage(attacker, defender)
+    );
+    const elementRelation = hasAdvantage(roster.element, opponentElement)
       ? 'advantage'
-      : elementAdvantage(opponentElement, roster.element)
+      : hasAdvantage(opponentElement, roster.element)
         ? 'disadvantage'
         : 'neutral';
     const baseCharge = Math.max(0, Math.min(100, Number(charge) || 0));
@@ -1067,6 +1107,7 @@ class BattleMatchService {
       const available = choice === 'B'
         ? !defenseLocked
         : choice !== 'C' || specialAvailability.available;
+      const effects = projectBattleSkillEffects(skill.effects);
       return {
         choice,
         icon: skill.icon,
@@ -1076,6 +1117,7 @@ class BattleMatchService {
         shortTextKey: skill.shortTextKey,
         elementRelation,
         available,
+        ...(effects.length ? { effects } : {}),
         ...(choice === 'B' && defenseLocked ? {
           unavailableReason: 'arena_collapse_defense_locked'
         } : {}),
@@ -1101,6 +1143,19 @@ class BattleMatchService {
       return 'Viewer';
     }
     return `@${candidate.slice(0, 64)}`;
+  }
+
+  projectRivalry(match) {
+    const participants = Array.isArray(match?.participants)
+      ? match.participants
+      : [];
+    if (participants.length !== 2) return null;
+    const count = this.store.countBattlesBetweenViewers?.(
+      participants[0].viewerId,
+      participants[1].viewerId
+    ) || 0;
+    const tier = rivalryTier(count);
+    return tier ? { count, tier } : null;
   }
 
   projectPublicFighters(match) {
@@ -2114,6 +2169,7 @@ class BattleMatchService {
       const durableWinnerMonsterId = isDraw
         ? 'double_knockout'
         : resolvedWinnerMonsterId;
+      const nextArenaHint = closeResultHint({ terminalReason, knockout });
       const result = {
         matchId,
         rulesVersion: match.rulesVersion,
@@ -2128,7 +2184,8 @@ class BattleMatchService {
         season,
         participants: participantResults,
         actions,
-        combatReport
+        combatReport,
+        ...(nextArenaHint ? { nextArenaHint } : {})
       };
       this.db.prepare(`
         UPDATE streammonsters_matches SET result_json = ? WHERE match_id = ?
@@ -2161,6 +2218,7 @@ class BattleMatchService {
         completion,
         terminalReason,
         knockout,
+        nextArenaHint,
         forfeitedParticipantId: forfeitedParticipant?.participantId || null,
         combatReport
       }, {
@@ -2176,6 +2234,7 @@ class BattleMatchService {
         completion,
         terminalReason,
         knockout,
+        nextArenaHint,
         forfeitedSlot: forfeitedParticipant?.slot || null,
         combatReport
       });
@@ -2561,9 +2620,11 @@ class BattleMatchService {
       };
     }
     if (eventType === 'streammonsters:battle_match_found') {
+      const rivalry = sanitizeRivalry(payload.rivalry);
       return {
         matchId: match.matchId,
-        deadlineMs: Number(payload.deadlineMs) || match.rosterDeadlineMs
+        deadlineMs: Number(payload.deadlineMs) || match.rosterDeadlineMs,
+        ...(rivalry ? { rivalry } : {})
       };
     }
     if (eventType === 'streammonsters:battle_roster_locked') {
@@ -2662,6 +2723,11 @@ class BattleMatchService {
         projected.terminalReason = terminalReason;
         projected.knockout = knockout;
       }
+      const nextArenaHint = closeResultHint({
+        terminalReason,
+        knockout
+      });
+      if (nextArenaHint) projected.nextArenaHint = nextArenaHint;
       return projected;
     }
     if (eventType === 'streammonsters:battle_charge_tick') {
@@ -3026,6 +3092,7 @@ class BattleMatchService {
       typeof match.result.combatReport === 'object'
       ? sanitizeCombatReport(match.result.combatReport)
       : null;
+    const nextArenaHint = closeResultHint({ terminalReason, knockout });
     return {
       winnerSlot: winner?.slot || 0,
       winner: persistedWinner || (winner
@@ -3037,6 +3104,7 @@ class BattleMatchService {
       completion: match.result.completion === 'forfeit' ? 'forfeit' : 'battle',
       forfeitedSlot: forfeited?.slot || null,
       ...(terminalReason ? { terminalReason, knockout } : {}),
+      ...(nextArenaHint ? { nextArenaHint } : {}),
       ...(combatReport ? { combatReport } : {}),
       season,
       participants: Array.isArray(match.result.participants)
@@ -3258,6 +3326,7 @@ class BattleMatchService {
           FROM streammonsters_match_events WHERE match_id = ?
         `).get(matchId).cursor;
         const chargeWindow = this.chargeWindow(match);
+        const rivalry = this.projectRivalry(match);
         return {
           matchId,
           rulesVersion: match.rulesVersion,
@@ -3266,6 +3335,7 @@ class BattleMatchService {
           rosterDeadlineMs: match.rosterDeadlineMs,
           actionDeadlineMs: match.actionDeadlineMs,
           cursor,
+          ...(rivalry ? { rivalry } : {}),
           ...(chargeWindow ? { chargeWindow } : {}),
           ...this.projectSnapshotChoiceState(match),
           fighters: this.projectPublicFighters(match)
@@ -4093,6 +4163,8 @@ class BattleMatchService {
 
 module.exports = BattleMatchService;
 module.exports.projectSpecialAvailability = projectSpecialAvailability;
+module.exports.closeResultHint = closeResultHint;
+module.exports.rivalryTier = rivalryTier;
 module.exports.ROSTER_WINDOW_MS = ROSTER_WINDOW_MS;
 module.exports.ACTION_WINDOW_MS = ACTION_WINDOW_MS;
 module.exports.STAT_WINDOW_MS = STAT_WINDOW_MS;

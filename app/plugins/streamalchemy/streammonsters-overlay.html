@@ -279,6 +279,16 @@
     #title { margin:5px 0; font-size:clamp(28px,3vw,39px); line-height:1.03; }
     #subtitle { color:var(--muted); font-size:16px; }
     #hint { margin-top:11px; color:var(--mint); font-size:14px; font-weight:700; }
+    #egg-next-persistent {
+      position:absolute; right:5%; bottom:28.5%; left:5%; z-index:44;
+      max-width:860px; margin:auto; padding:10px 16px;
+      border:2px solid #79ffd4aa; border-radius:16px; color:#e9fff8;
+      background:linear-gradient(135deg,#08231feb,#102a42eb);
+      box-shadow:0 14px 38px #000c,0 0 24px #6bffd43b;
+      font-size:clamp(17px,2.1vw,28px); font-weight:1000; line-height:1.15;
+      text-align:center; text-shadow:0 2px 6px #000;
+    }
+    #egg-next-persistent[hidden] { display:none; }
     #progress { height:9px; margin-top:13px; overflow:hidden; border-radius:99px; background:#070b13; }
     #bar { width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold)); transition:width .5s; }
     #battle {
@@ -291,6 +301,7 @@
       isolation:isolate;
     }
     #streammonsters-overlay[data-battle-active="true"] #egg-shelf,
+    #streammonsters-overlay[data-battle-active="true"] #egg-next-persistent,
     #streammonsters-overlay[data-battle-active="true"] #reveal-stage,
     #streammonsters-overlay[data-battle-active="true"] #arcade-choreography,
     #streammonsters-overlay[data-battle-active="true"] #chat-detail,
@@ -495,6 +506,21 @@
     .arena-shield > span { background:linear-gradient(90deg,#218cff,var(--arena-shield)); box-shadow:0 0 14px #55dcffaa; }
     .arena-charge > span { background:linear-gradient(90deg,#8c58ff,#ef76ff,#fff08a); box-shadow:0 0 15px #d478ffaa; }
     .arena-meter-labels { display:flex; justify-content:space-between; margin-top:5px; color:#aebcd3; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+    .arena-special-label-wrap { display:flex; align-items:center; gap:7px; }
+    .arena-charge-ring {
+      --charge-percent:0%; position:relative; display:grid; place-items:center;
+      width:32px; height:32px; flex:none; border-radius:50%;
+      background:
+        radial-gradient(circle,#111629 0 55%,transparent 57%),
+        conic-gradient(#ffe173 var(--charge-percent),#382c59 var(--charge-percent));
+      box-shadow:0 0 12px #b46cff55;
+      color:#fff4a5; font-size:7px; font-weight:1000; line-height:1;
+    }
+    .arena-charge-ring.ready {
+      box-shadow:0 0 20px #ffe173cc,0 0 38px #b46cff8f;
+      animation:arena-skill-ready .72s ease-in-out infinite alternate;
+    }
+    .arena-charge-ring strong { max-width:28px; text-align:center; }
     #arena-feed {
       position:absolute; left:50%; bottom:4%; z-index:12; width:min(64%,680px); padding:12px 20px;
       border:1px solid #ffe6a15c; border-radius:18px; color:white; background:#0b1022df; box-shadow:0 16px 45px #000b;
@@ -549,6 +575,25 @@
     .arena-result-metrics span {
       min-width:0; overflow:hidden; color:#cfe5ff; font-size:clamp(10px,1.18vw,14px);
       font-weight:850; line-height:1.15; text-overflow:ellipsis; white-space:nowrap;
+    }
+    #arena-result-next {
+      max-width:92%; margin-top:8px; color:#b8ffea;
+      font-size:clamp(14px,1.8vw,22px); font-weight:900; line-height:1.2;
+    }
+    #arena-rivalry-stamp,
+    #arena-streak-stamp {
+      position:absolute; left:50%; z-index:42; opacity:0; pointer-events:none;
+      transform:translate(-50%,-14px) scale(.8); transition:opacity .2s,transform .3s;
+      border:2px solid #ffe577; border-radius:999px; padding:10px 22px;
+      color:#fff5a8; background:#35123de8; box-shadow:0 0 34px #ffdb6773,0 12px 34px #000b;
+      font-size:clamp(22px,3.4vw,46px); font-weight:1000; line-height:1;
+      letter-spacing:.06em; text-align:center; text-shadow:0 3px 0 #5c173d;
+    }
+    #arena-rivalry-stamp { top:13%; }
+    #arena-streak-stamp { top:21%; }
+    #arena-rivalry-stamp.visible,
+    #arena-streak-stamp.visible {
+      opacity:1; transform:translate(-50%,0) scale(1);
     }
     .arena-result-highlights {
       display:flex; flex-wrap:wrap; justify-content:center; gap:4px 7px;
@@ -1368,6 +1413,7 @@
     <div data-egg-adopt-summary hidden></div>
     <article data-egg-focus hidden></article>
   </section>
+  <div id="egg-next-persistent" role="status" aria-live="polite" hidden></div>
   <section id="battle"
     aria-label="Stream Monsters Arena"
     data-i18n-aria-label="plugins.streamalchemy.ui.monsters.battleArenaAria"
@@ -1381,6 +1427,8 @@
     </div>
     <div id="arena-skill-prompt">A · Angriff&nbsp;&nbsp; B · Verteidigung&nbsp;&nbsp; C · Special</div>
     <div id="arena-lead"></div>
+    <div id="arena-rivalry-stamp" aria-live="polite"></div>
+    <div id="arena-streak-stamp" aria-live="polite"></div>
     <div id="arena-action-card" aria-live="polite">
       <span id="arena-action-player"></span>
       <span id="arena-action-key"></span>
@@ -1422,8 +1470,13 @@
         <div class="arena-meter-labels">
           <span id="arena-shield-label-1"
             data-i18n="plugins.streamalchemy.ui.monsters.arenaShieldLabel">Schild</span>
-          <span id="arena-special-label-1"
-            data-i18n="plugins.streamalchemy.ui.monsters.arenaSpecialLabel">Special</span>
+          <span class="arena-special-label-wrap">
+            <span id="arena-special-label-1"
+              data-i18n="plugins.streamalchemy.ui.monsters.arenaSpecialLabel">Special</span>
+            <span id="arena-charge-ring-1" class="arena-charge-ring">
+              <strong id="arena-charge-ready-1"></strong>
+            </span>
+          </span>
         </div>
       </div>
     </article>
@@ -1461,8 +1514,13 @@
         <div class="arena-meter-labels">
           <span id="arena-shield-label-2"
             data-i18n="plugins.streamalchemy.ui.monsters.arenaShieldLabel">Schild</span>
-          <span id="arena-special-label-2"
-            data-i18n="plugins.streamalchemy.ui.monsters.arenaSpecialLabel">Special</span>
+          <span class="arena-special-label-wrap">
+            <span id="arena-special-label-2"
+              data-i18n="plugins.streamalchemy.ui.monsters.arenaSpecialLabel">Special</span>
+            <span id="arena-charge-ring-2" class="arena-charge-ring">
+              <strong id="arena-charge-ready-2"></strong>
+            </span>
+          </span>
         </div>
       </div>
     </article>
@@ -1525,6 +1583,7 @@
       <span id="arena-result-summary"></span>
       <div id="arena-result-ratings"></div>
       <section id="arena-result-report" hidden></section>
+      <div id="arena-result-next"></div>
     </div>
   </section>
   <section id="arena-stat-card" aria-live="polite">
@@ -1878,17 +1937,39 @@
     reconnectEggSnapshotPending = false;
     return true;
   };
-  const updateEggNextHint = () => {
+  const currentEggNextHint = () => {
     const next = eggStageView.nextAction?.({
       adopt:commandReference('adopt'),
       hatch:commandReference('hatch')
     });
-    if (next?.command) {
+    return next?.command
+      ? text('eggShelfNextAction', 'NEXT · {command}', next)
+      : '';
+  };
+  const updateEggNextHint = () => {
+    const urgentHint = currentEggNextHint();
+    const persistent = node('egg-next-persistent');
+    if (urgentHint) {
       node('hint').dataset.eggNext = 'true';
-      node('hint').textContent = text('eggShelfNextAction', 'NEXT · {command}', next);
+      node('hint').textContent = urgentHint;
+      if (persistent) {
+        persistent.textContent = urgentHint;
+        persistent.hidden = false;
+      }
     } else if (generalHintText) {
       delete node('hint').dataset.eggNext;
       node('hint').textContent = generalHintText;
+      if (persistent) {
+        persistent.textContent = '';
+        persistent.hidden = true;
+      }
+    } else {
+      delete node('hint').dataset.eggNext;
+      node('hint').textContent = '';
+      if (persistent) {
+        persistent.textContent = '';
+        persistent.hidden = true;
+      }
     }
   };
   const acceptStatPrompt = (type, data = {}) => {
@@ -2317,7 +2398,7 @@
       if (page.imageUrl) node('art').src = page.imageUrl;
       else node('art').removeAttribute('src');
       node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
-      node('hint').textContent = page.hint || commandHint();
+      node('hint').textContent = currentEggNextHint() || page.hint || commandHint();
       card.classList.toggle('charged', Boolean(charged));
       if (!opened) {
         opened = true;
@@ -2856,12 +2937,14 @@
     );
     if (type === 'battle_match_found') {
       startBattleLocaleSequence(data);
-      return arenaView.applyMatch({
+      arenaView.applyMatch({
         matchId:data?.matchId,
         state:'roster',
         rosterDeadlineMs:data?.deadlineMs,
-        fighters:Array.isArray(data?.fighters) ? data.fighters : []
+        fighters:Array.isArray(data?.fighters) ? data.fighters : [],
+        rivalry:data?.rivalry || null
       });
+      return playArcadeEvent(type, data);
     }
     if (type === 'battle_roster_locked') {
       return arenaView.lockRoster(data);
@@ -2915,12 +2998,9 @@
           element:elementName(data?.element || monster?.element)
         }
       );
-      playCue('arena.special', data?.eventId || `${data?.battleId}:charged:${data?.monsterId}`);
-      return battleEffectsRenderer.play('special', {
-        element:data?.element || monster?.element,
-        vfxKey:data?.skill?.vfxKey || monster?.skills?.special?.vfxKey,
-        origin:{ x:.5, y:.44 },
-        scale:1.15
+      return playArcadeEvent(type, {
+        ...data,
+        element:data?.element || monster?.element
       });
     }
     if (type === 'battle_skill_used') {
@@ -3158,17 +3238,7 @@
       progress:100,
       charged:true
     }));
-    if (type === 'win_streak') return showCard({
-      kicker: text('winStreak', 'Siegesserie'),
-      title: text('winStreakTitle', '{monster} · {count} Siege', {
-        monster: itemName(data?.monster),
-        count: Number(data?.count) || 0
-      }),
-      subtitle: text('winStreakCopy', 'Die Arena merkt sich jede Serie.'),
-      progress: 100,
-      charged: true,
-      cue: 'win'
-    });
+    if (type === 'win_streak') return playArcadeEvent(type, data);
     if (type === 'upset') return showCard({
       kicker: text('upset', 'Überraschungssieg'),
       title: text('upsetTitle', '{winner} besiegt den Favoriten!', {

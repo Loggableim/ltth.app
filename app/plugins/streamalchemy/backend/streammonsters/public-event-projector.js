@@ -257,6 +257,55 @@ function projectGift(gift = null) {
   };
 }
 
+const PUBLIC_SKILL_EFFECT_FIELDS = Object.freeze({
+  damage: ['power', 'hits'],
+  shield: ['power'],
+  heal: ['power'],
+  burn: ['power'],
+  thorns: ['power'],
+  weaken: ['power'],
+  pierce: ['power'],
+  evade: ['chance'],
+  reflect: ['power'],
+  lifesteal: ['ratio']
+});
+
+function projectBattleSkillEffects(effects = null) {
+  if (!Array.isArray(effects)) return [];
+  return effects.map(effect => {
+    if (!effect || typeof effect !== 'object') return null;
+    const type = boundedText(effect.type, 24);
+    const allowedFields = PUBLIC_SKILL_EFFECT_FIELDS[type];
+    if (!allowedFields) return null;
+    const projected = { type };
+    if (allowedFields.includes('power')) {
+      const power = finiteNumber(effect.power);
+      if (power !== null) {
+        projected.power = Math.max(-100, Math.min(100, power));
+      }
+    }
+    if (allowedFields.includes('hits')) {
+      const hits = finiteNumber(effect.hits);
+      if (hits !== null) {
+        projected.hits = Math.max(1, Math.min(8, Math.round(hits)));
+      }
+    }
+    if (allowedFields.includes('chance')) {
+      const chance = finiteNumber(effect.chance);
+      if (chance !== null) {
+        projected.chance = Math.max(0, Math.min(100, chance));
+      }
+    }
+    if (allowedFields.includes('ratio')) {
+      const ratio = finiteNumber(effect.ratio);
+      if (ratio !== null) {
+        projected.ratio = Math.max(0, Math.min(1, ratio));
+      }
+    }
+    return projected;
+  }).filter(Boolean);
+}
+
 function projectBattleSkill(skill = null) {
   if (!skill || typeof skill !== 'object') return null;
   const choice = ['A', 'B', 'C'].includes(skill.choice) ? skill.choice : null;
@@ -276,6 +325,8 @@ function projectBattleSkill(skill = null) {
     ) ? skill.elementRelation : 'neutral',
     available: skill.available !== false
   };
+  const effects = projectBattleSkillEffects(skill.effects);
+  if (effects.length) projected.effects = effects;
   if (!projected.available) {
     projected.unavailableReason = boundedText(skill.unavailableReason, 64) ||
       (choice === 'C'
@@ -789,6 +840,15 @@ class StreamMonstersPublicEventProjector {
       if (payload.combatReport && typeof payload.combatReport === 'object') {
         projected.combatReport = sanitizeCombatReport(payload.combatReport);
       }
+      if (
+        payload.nextArenaHint?.kind === 'close_result' &&
+        payload.nextArenaHint?.avoidsImmediateRematch === true
+      ) {
+        projected.nextArenaHint = {
+          kind: 'close_result',
+          avoidsImmediateRematch: true
+        };
+      }
       return projected;
     }
     if (eventType === 'streammonsters:chat_result') {
@@ -900,6 +960,7 @@ module.exports.projectMonster = projectMonster;
 module.exports.projectEgg = projectEgg;
 module.exports.projectChatResult = projectChatResult;
 module.exports.projectBattleSkill = projectBattleSkill;
+module.exports.projectBattleSkillEffects = projectBattleSkillEffects;
 module.exports.projectEvolutionSkill = projectEvolutionSkill;
 module.exports.projectBattleFighter = projectBattleFighter;
 module.exports.projectBattleChargeWindow = projectBattleChargeWindow;

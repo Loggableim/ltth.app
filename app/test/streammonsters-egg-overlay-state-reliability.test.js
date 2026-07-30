@@ -49,6 +49,7 @@ async function createOverlayHarness(snapshot) {
     'streammonsters-overlay.html'
   ), 'utf8');
   const socketHandlers = new Map();
+  const arenaCalls = [];
   const timers = new Map();
   let timerId = 0;
   const dom = new JSDOM(html, {
@@ -116,11 +117,15 @@ async function createOverlayHarness(snapshot) {
       };
       window.StreamMonstersArenaView = {
         createArenaView: () => ({
-          applyMatch: () => {},
+          applyMatch: payload => arenaCalls.push(['applyMatch', payload]),
           applySnapshot: () => {},
           openChoice: () => {},
           lockChoice: () => {},
           revealChoices: () => {},
+          playEvent: async (type, payload) => {
+            arenaCalls.push(['playEvent', type, payload]);
+            return true;
+          },
           playAction: async () => true,
           complete: async () => {},
           cancel: async () => {},
@@ -142,6 +147,7 @@ async function createOverlayHarness(snapshot) {
   return {
     dom,
     socketHandlers,
+    arenaCalls,
     async runPendingTimers(maxPasses = 80) {
       let idlePasses = 0;
       for (let pass = 0; pass < maxPasses; pass += 1) {
@@ -170,6 +176,50 @@ async function createOverlayHarness(snapshot) {
 }
 
 describe('Stream Monsters egg overlay state reliability', () => {
+  test('routes rivalry, READY and streak sockets through the shared arena director once', async () => {
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: []
+    });
+    try {
+      harness.socketHandlers.get('streammonsters:battle_match_found')({
+        eventId: 'rivalry-live',
+        matchId: 'match-live',
+        rivalry: { count: 3, tier: 'rivals' }
+      });
+      harness.socketHandlers.get('streammonsters:battle_special_charged')({
+        eventId: 'ready-live',
+        matchId: 'match-live',
+        slot: 1,
+        charge: 100,
+        monster: { name: 'Ashfang', element: 'Ember' }
+      });
+      harness.socketHandlers.get('streammonsters:win_streak')({
+        eventId: 'streak-live',
+        matchId: 'match-live',
+        count: 5
+      });
+      await harness.runPendingTimers();
+
+      expect(harness.arenaCalls.filter(call => call[0] === 'applyMatch'))
+        .toHaveLength(1);
+      expect(harness.arenaCalls.filter(call => (
+        call[0] === 'playEvent' && call[1] === 'battle_match_found'
+      ))).toHaveLength(1);
+      expect(harness.arenaCalls.filter(call => (
+        call[0] === 'playEvent' && call[1] === 'battle_special_charged'
+      ))).toHaveLength(1);
+      expect(harness.arenaCalls.filter(call => (
+        call[0] === 'playEvent' && call[1] === 'win_streak'
+      ))).toHaveLength(1);
+    } finally {
+      await harness.close();
+    }
+  });
+
   test('does not replay egg lifecycle events after an authoritative snapshot', () => {
     const snapshot = {
       eggStage: [],
@@ -347,6 +397,12 @@ describe('Stream Monsters egg overlay state reliability', () => {
       expect(hint.textContent).not.toContain('!adopt');
       expect(hint.textContent).not.toMatch(/^NEXT\b/i);
       expect(hint.textContent.trim()).not.toBe('');
+      expect(hint.dataset.eggNext).toBeUndefined();
+      const persistent = harness.dom.window.document.getElementById(
+        'egg-next-persistent'
+      );
+      expect(persistent.hidden).toBe(true);
+      expect(persistent.textContent).toBe('');
     } finally {
       await harness.close();
     }
@@ -423,6 +479,44 @@ describe('Stream Monsters egg overlay state reliability', () => {
       expect(hint.textContent).not.toMatch(/^NEXT\b/i);
       expect(hint.textContent).toContain('!eier');
       expect(hint.textContent.trim()).not.toBe('');
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('keeps the urgent adopt NEXT visible during an unrelated transient card and reconnect', async () => {
+    const offer = freeEgg('offer-visible-next', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 31_000 }
+    });
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    });
+    try {
+      const persistent = harness.dom.window.document.getElementById(
+        'egg-next-persistent'
+      );
+      expect(persistent).not.toBeNull();
+      expect(persistent.hidden).toBe(false);
+      expect(persistent.textContent).toContain('!adopt');
+
+      harness.socketHandlers.get('streammonsters:achievement_unlocked')({
+        eventId: 'unrelated-visible-card',
+        correlationId: 'unrelated-visible-card',
+        displayName: 'Collector',
+        achievement: 'first_hatch'
+      });
+      await flush();
+
+      const card = harness.dom.window.document.getElementById('card');
+      const hint = harness.dom.window.document.getElementById('hint');
+      expect(card.classList).toContain('visible');
+      expect(hint.textContent).toContain('!adopt');
+      expect(persistent.hidden).toBe(false);
+      expect(persistent.textContent).toContain('!adopt');
     } finally {
       await harness.close();
     }

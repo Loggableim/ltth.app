@@ -1267,7 +1267,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(specialCard.classList).not.toContain('anticipation-90');
     expect(specialCard.classList).toContain('anticipation-100');
     expect(specialCard.classList).toContain('ready');
-    expect(specialCard.querySelector('.skill-charge').textContent).toBe('100%');
+    expect(specialCard.querySelector('.skill-charge').textContent)
+      .toMatch(/^100%.*READY$/);
   });
 
   test('shows a sealed lock without selecting a skill until both choices are revealed', () => {
@@ -1311,7 +1312,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('selected');
   });
 
-  test('shows NEXT with at most two currently valid actions during a choice window', () => {
+  test('shows NEXT with every contracted action while availability stays per fighter', () => {
     mountArena();
     const view = ArenaView.createArenaView({
       document,
@@ -1335,7 +1336,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-skill-prompt').textContent)
       .toMatch(/^NEXT.*\bA\b.*\bB\b/);
     expect(document.querySelector('#arena-skill-prompt').textContent)
-      .not.toMatch(/\bC\b/);
+      .toMatch(/\bC\b/);
 
     view.openChoice({
       matchId: 'match-next-actions',
@@ -1361,9 +1362,9 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       ]
     });
     expect(document.querySelector('#arena-skill-prompt').textContent)
-      .toMatch(/^NEXT.*\bA\b/);
+      .toMatch(/^NEXT.*\bA\b.*\bC\b/);
     expect(document.querySelector('#arena-skill-prompt').textContent)
-      .not.toMatch(/\bC\b/);
+      .not.toMatch(/\bB\b/);
   });
 
   test('updates the deadline countdown from the durable timestamp and clears it at terminal state', async () => {
