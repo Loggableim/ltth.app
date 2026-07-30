@@ -7,6 +7,16 @@ const guideSource = fs.readFileSync(
   path.join(websiteRoot, 'js', 'streammonsters-guide.js'),
   'utf8'
 );
+const pacingSource = fs.readFileSync(
+  path.join(
+    websiteRoot,
+    'app',
+    'plugins',
+    'streamalchemy',
+    'streammonsters-rules-v8-pacing.js'
+  ),
+  'utf8'
+);
 const guideHtml = fs.readFileSync(
   path.join(websiteRoot, 'streammonsters', 'index.html'),
   'utf8'
@@ -30,6 +40,7 @@ describe('Stream Monsters public guide layout bootstrap', () => {
       return addEventListener(type, listener, options);
     };
     dom.window.LTTHLayout = { init };
+    dom.window.eval(pacingSource);
     dom.window.eval(guideSource);
 
     await Promise.resolve();

@@ -1722,10 +1722,36 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
 
     expect(portrait.get('#battle[data-phase="choice"] #arena-skill-prompt:not([data-choice-feedback="true"])')
       .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#battle[data-phase="choice"] #arena-feed')
+      .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#battle[data-phase="action"] #arena-feed')
+      .getPropertyValue('display')).toBe('none');
+    expect(portrait.get('#battle[data-phase="completed"] #arena-feed')
+      .getPropertyValue('display')).toBe('none');
     expect(portrait.get('#arena-choice-surface .arena-skill-card .skill-copy')
       .getPropertyValue('display')).toBe('none');
     expect(portrait.get('#battle[data-phase="action"] #arena-action-copy')
       .getPropertyValue('display')).toBe('none');
+    const actionCard = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText === '#battle[data-phase="action"] #arena-action-card' &&
+      rule.style.cssText.includes('grid-template-areas')
+    ))?.style;
+    expect(actionCard).toBeDefined();
+    expect(actionCard.cssText).toContain(
+      'grid-template-areas: "player key skill metrics"'
+    );
+    expect(actionCard.cssText).toContain('grid-template-rows: minmax(0,1fr)');
+    const boundedActionFields = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes('#battle[data-phase="action"] #arena-action-player') &&
+      rule.selectorText?.includes('#battle[data-phase="action"] #arena-action-skill') &&
+      rule.selectorText?.includes('#battle[data-phase="action"] #arena-action-metrics')
+    ))?.style;
+    expect(boundedActionFields).toBeDefined();
+    expect(boundedActionFields.getPropertyValue('overflow')).toBe('hidden');
+    expect(boundedActionFields.getPropertyValue('text-overflow')).toBe('ellipsis');
+    expect(boundedActionFields.getPropertyValue('white-space')).toBe('nowrap');
     expect(portrait.get('#battle[data-phase="action"] #arena-action-metrics [data-action-metric]:nth-child(n+2)')
       .getPropertyValue('display')).toBe('none');
     expect(portrait.get('#battle[data-phase="completed"] #arena-result-report')

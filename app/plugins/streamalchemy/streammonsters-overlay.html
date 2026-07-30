@@ -1085,6 +1085,10 @@
         --portrait-info-rail-height:clamp(146px,19vh,246px);
         --egg-shelf-lane-height:66px;
       }
+      #effects-canvas {
+        inset:0 0 auto;
+        height:calc(100% - var(--portrait-safe-zone-height));
+      }
       #brand { top:20px; left:20px; width:210px; height:58px; }
       #hype { top:18px; right:20px; width:76px; height:76px; }
       #toast { top:104px; width:calc(100vw - 32px); }
@@ -1193,6 +1197,8 @@
       }
       #battle[data-phase="choice"] #arena-skill-prompt:not([data-choice-feedback="true"]) { display:none; }
       #battle[data-phase="choice"] #arena-feed { display:none; }
+      #battle[data-phase="action"] #arena-feed { display:none; }
+      #battle[data-phase="completed"] #arena-feed { display:none; }
       #arena-choice-surface .arena-skill-card .skill-copy { display:none; }
       #battle[data-phase="action"] #arena-action-copy { display:none; }
       #battle[data-phase="completed"] #arena-result-report { display:none; }
@@ -1202,6 +1208,17 @@
         display:flex;
         justify-content:center;
         gap:.55em;
+      }
+      #battle[data-phase="action"] #arena-action-card {
+        grid-template-columns:minmax(0,.8fr) auto minmax(0,1.2fr) minmax(0,auto);
+        grid-template-areas:"player key skill metrics";
+        grid-template-rows:minmax(0,1fr);
+        align-items:center;
+      }
+      #battle[data-phase="action"] #arena-action-player,
+      #battle[data-phase="action"] #arena-action-skill,
+      #battle[data-phase="action"] #arena-action-metrics {
+        min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
       }
       #battle[data-phase="action"] #arena-action-metrics [data-action-metric]:nth-child(n+2) {
         display:none;

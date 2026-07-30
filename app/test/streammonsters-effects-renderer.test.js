@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const { JSDOM } = require('jsdom');
 const {
   MAX_BACKING_PIXELS,
   SCENE_DURATIONS,
@@ -825,6 +828,68 @@ describe('Stream Monsters effects renderer', () => {
     expect(harness.canvas2d.fillRect).toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(600);
     expect(harness.canvas.dataset.effectPhase).toBe('monster-reveal');
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.hatch);
+    await hatch;
+  });
+
+  test('bounds portrait Canvas2D hatch flashes to the 74% gameplay surface while landscape stays full-screen', async () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const landscapeSurface = rules.find(rule => (
+      !rule.parentRule && rule.selectorText === '#effects-canvas'
+    ));
+    const portraitSurface = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText === '#effects-canvas'
+    ));
+
+    expect(landscapeSurface?.style.getPropertyValue('inset')).toBe('0px');
+    expect(landscapeSurface?.style.getPropertyValue('height')).toBe('100%');
+    expect(portraitSurface?.style.getPropertyValue('inset')).toBe('0 0 auto');
+    expect(portraitSurface?.style.getPropertyValue('height'))
+      .toBe('calc(100% - var(--portrait-safe-zone-height))');
+
+    const harness = createGpuHarness();
+    harness.canvas.clientWidth = 1080;
+    harness.canvas.clientHeight = 1920 * 0.74;
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: {},
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+    await renderer.init();
+    const hatch = renderer.play('hatch', {
+      element: 'Lunar',
+      origin: { x: 0.5, y: 0.5 }
+    });
+    await jest.advanceTimersByTimeAsync(1900);
+
+    expect(harness.canvas.dataset.effectPhase).toBe('flash');
+    expect(harness.canvas.height).toBe(1421);
+    expect(harness.canvas2d.translate.mock.calls.at(-1)).toEqual([540, 710.5]);
+    expect(harness.canvas2d.fillRect.mock.calls.at(-1)).toEqual([
+      -540,
+      -710.5,
+      1080,
+      1421
+    ]);
+
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.hatch);
     await hatch;
   });
