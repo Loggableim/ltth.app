@@ -417,14 +417,18 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
               nameKey: 'skillNameAshfangCStage1',
               shortTextKey: 'skillEffectAshfangCStage1',
               chargeRequired: 100,
-              readyAtMs: 2_000
+              readyAtMs: 2_000,
+              effects: [{
+                type: 'damage',
+                power: 99
+              }]
             })
           ]
         })
       ]
     }));
     expect(JSON.stringify(projected)).not.toMatch(
-      /participantId|requestedChoice|charge_at_choice|effects|power/
+      /participantId|requestedChoice|charge_at_choice|secretSeed|admin/
     );
   });
 
