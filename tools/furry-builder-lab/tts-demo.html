@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Furry Builder · Canvas-TTS-Demo</title>
+    <link rel="stylesheet" href="/tts-demo.css">
+  </head>
+  <body>
+    <main class="demo-shell" data-demo="local-template-canvas">
+      <header class="demo-header">
+        <p class="eyebrow">FURRY BUILDER · FRAME-LAB</p>
+        <h1>Lokale Canvas-TTS-Demo</h1>
+        <p class="intro">Wähle eine feste Figur und prüfe ihre fünf Mundformen. Die Vorschau zeichnet nur die lokalen Kopf-, Augen- und Mund-Atlanten.</p>
+      </header>
+
+      <section class="demo-stage" aria-labelledby="stage-title">
+        <div class="stage-copy">
+          <p class="eyebrow">AKTIVER MUND-FRAME</p>
+          <h2 id="stage-title">Figur wechseln. Mundform behalten.</h2>
+          <p id="state-description" class="state-description" aria-live="polite">Geschlossen · Ruheframe</p>
+          <p id="canvas-status" class="canvas-status" role="status">Canvas-Vorlage wird geladen.</p>
+        </div>
+
+        <div class="avatar-display" aria-label="Canvas-Vorschau der gewählten Furry-Vorlage">
+          <div class="scanline" aria-hidden="true"></div>
+          <canvas id="template-canvas" width="1024" height="1024" aria-label="Gerenderte Furry-Gesichtsvorlage"></canvas>
+          <span class="frame-badge" id="frame-badge">GESCHLOSSEN</span>
+        </div>
+      </section>
+
+      <section class="control-panel" aria-labelledby="controls-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">VORLAGEN</p>
+            <h2 id="controls-title">Gesicht und Mund testen</h2>
+          </div>
+          <p class="local-note">Nur lokale Visualisierung</p>
+        </div>
+
+        <div class="template-chips" role="group" aria-label="Furry-Gesichtsvorlage auswählen">
+          <button id="raccoon-slate" class="template-chip is-selected" type="button" data-template-id="raccoon-slate" aria-pressed="true">Waschbär · Schiefer</button>
+          <button id="fox-ember" class="template-chip" type="button" data-template-id="fox-ember" aria-pressed="false">Fuchs · Glut</button>
+          <button id="wolf-fog" class="template-chip" type="button" data-template-id="wolf-fog" aria-pressed="false">Wolf · Nebel</button>
+          <button id="otter-cocoa" class="template-chip" type="button" data-template-id="otter-cocoa" aria-pressed="false">Otter · Kakao</button>
+          <button id="cat-lilac" class="template-chip" type="button" data-template-id="cat-lilac" aria-pressed="false">Katze · Flieder</button>
+          <button id="fawn-cream" class="template-chip" type="button" data-template-id="fawn-cream" aria-pressed="false">Rehkitz · Creme</button>
+        </div>
+
+        <div class="template-navigation">
+          <button id="template-prev" class="navigation-button" type="button">← Vorherige</button>
+          <button id="template-next" class="navigation-button" type="button">Nächste →</button>
+          <button id="rotation-toggle" class="rotation-button" type="button" aria-pressed="false">Automatische Rotation starten</button>
+          <p id="rotation-message" aria-live="polite">Automatische Rotation ist ausgeschaltet.</p>
+        </div>
+
+        <div class="state-buttons" role="group" aria-label="TTS-Mundzustand auswählen">
+          <button type="button" class="state-button is-selected" data-state="rest" aria-pressed="true">Geschlossen</button>
+          <button type="button" class="state-button" data-state="small" aria-pressed="false">Klein</button>
+          <button type="button" class="state-button" data-state="round" aria-pressed="false">Rund</button>
+          <button type="button" class="state-button" data-state="wide" aria-pressed="false">Weit</button>
+          <button type="button" class="state-button" data-state="teeth" aria-pressed="false">Zähne</button>
+        </div>
+
+        <div class="level-control">
+          <label for="audio-level">Demo-Audiopegel <output id="audio-level-value" for="audio-level">0</output><span>/ 100</span></label>
+          <input id="audio-level" type="range" min="0" max="100" value="0" step="1" aria-describedby="level-map">
+          <p id="level-map">0 = geschlossen · 1–25 = klein · 26–50 = rund · 51–75 = weit · 76–100 = Zähne</p>
+        </div>
+      </section>
+
+      <footer class="demo-footer">
+        <span class="signal-dot" aria-hidden="true"></span>
+        Dieser Prototyp zeichnet lokale Canvas-Atlanten. Er spielt kein Audio ab und sendet keine Daten.
+      </footer>
+    </main>
+    <script src="/template-rig.js"></script>
+    <script src="/template-demo-state.js"></script>
+    <script src="/template-canvas-renderer.js"></script>
+    <script src="/tts-demo.js"></script>
+  </body>
+</html>
