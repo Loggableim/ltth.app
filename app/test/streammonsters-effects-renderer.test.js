@@ -832,7 +832,7 @@ describe('Stream Monsters effects renderer', () => {
     await hatch;
   });
 
-  test('bounds portrait Canvas2D hatch flashes to the 74% gameplay surface while landscape stays full-screen', async () => {
+  test('bounds portrait Canvas2D hatch flashes to the portrait arena while landscape stays full-screen', async () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
@@ -858,13 +858,12 @@ describe('Stream Monsters effects renderer', () => {
 
     expect(landscapeSurface?.style.getPropertyValue('inset')).toBe('0px');
     expect(landscapeSurface?.style.getPropertyValue('height')).toBe('100%');
-    expect(portraitSurface?.style.getPropertyValue('inset')).toBe('0 0 auto');
-    expect(portraitSurface?.style.getPropertyValue('height'))
-      .toBe('calc(100% - var(--portrait-safe-zone-height))');
+    expect(portraitSurface?.style.getPropertyValue('inset')).toBe('0px');
+    expect(portraitSurface?.style.getPropertyValue('height')).toBe('100%');
 
     const harness = createGpuHarness();
     harness.canvas.clientWidth = 1080;
-    harness.canvas.clientHeight = 1920 * 0.74;
+    harness.canvas.clientHeight = 1920 * 0.46;
     const renderer = createEffectsRenderer({
       canvas: harness.canvas,
       navigator: {},
@@ -881,13 +880,13 @@ describe('Stream Monsters effects renderer', () => {
     await jest.advanceTimersByTimeAsync(1900);
 
     expect(harness.canvas.dataset.effectPhase).toBe('flash');
-    expect(harness.canvas.height).toBe(1421);
-    expect(harness.canvas2d.translate.mock.calls.at(-1)).toEqual([540, 710.5]);
+    expect(harness.canvas.height).toBe(883);
+    expect(harness.canvas2d.translate.mock.calls.at(-1)).toEqual([540, 441.5]);
     expect(harness.canvas2d.fillRect.mock.calls.at(-1)).toEqual([
       -540,
-      -710.5,
+      -441.5,
       1080,
-      1421
+      883
     ]);
 
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.hatch);

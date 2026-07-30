@@ -342,6 +342,7 @@
           "arenaShieldGainMetric": "Escudo +{amount}",
           "arenaHealMetric": "Curación {amount}",
           "arenaEvadeMetric": "Esquivado",
+          "arenaStatusMetric": "ESTADO",
           "monsterStatMeta": "Nivel {level} · {remaining} puntos restantes",
           "monsterStatChoices": "1 Vitalidad +1 · 2 Fuerza +1 · 3 Defensa +1 · 4 Agilidad +1",
           "monsterStatResult": "{stat} +1",

@@ -420,6 +420,9 @@
       line-height:1.25;
     }
     #arena-action-metrics [data-action-metric] { display:inline; }
+    #arena-action-compact-metric {
+      grid-area:compact; display:none; color:#fff0a3; font-weight:1000;
+    }
     #arena-action-metrics [data-action-metric] + [data-action-metric]::before { content:' · '; }
     #battle[data-phase="action"] #arena-skill-prompt { opacity:0; }
     #battle[data-phase="action"] #arena-lead {
@@ -1388,6 +1391,284 @@
       #battle[data-phase="choice"] #arena-feed { display:none; }
       #battle-effects-canvas { z-index:3; }
     }
+    @media (orientation: portrait) {
+      #portrait-arena[data-arena-variant="split-arena"],
+      #portrait-arena[data-arena-variant="classic"] {
+        --arena-status-top:4%;
+        --arena-status-bottom:13%;
+        --arena-hud-top:15%;
+        --arena-hud-bottom:28%;
+        --arena-fighter-top:27%;
+        --arena-fighter-bottom:78%;
+        --arena-rail-top:79%;
+        --arena-rail-bottom:97%;
+        --arena-entry-ms:380ms;
+        --arena-lock-ms:180ms;
+        --arena-anticipation-ms:120ms;
+        --arena-dash-ms:170ms;
+        --arena-hit-stop-ms:70ms;
+        --arena-recoil-ms:280ms;
+        --arena-result-ms:420ms;
+        --arena-result-particles-ms:720ms;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #battle,
+      #portrait-arena[data-arena-variant="classic"] #battle {
+        display:grid;
+        transform:none;
+        transition:opacity var(--arena-entry-ms) ease,
+          visibility 0s linear var(--arena-entry-ms);
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        grid-template-rows:
+          [arena-start] 4%
+          [status-start] 9%
+          [status-end] 2%
+          [fighter-shell-start] 63%
+          [fighter-shell-end] 1%
+          [rail-start] 18%
+          [rail-end] 3%
+          [arena-end];
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #arena-topline,
+      #portrait-arena[data-arena-variant="classic"] #arena-topline {
+        position:relative; inset:auto; grid-row:status-start / status-end; grid-column:1 / -1;
+        align-self:center; justify-self:center; width:max-content; max-width:94%; min-width:0;
+        max-height:100%; padding:clamp(3px,.8vh,7px) clamp(8px,2.8vw,16px);
+        overflow:hidden; transform:none; text-overflow:ellipsis; white-space:nowrap;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-fighter,
+      #portrait-arena[data-arena-variant="classic"] .arena-fighter {
+        position:relative; inset:auto; grid-row:fighter-shell-start / fighter-shell-end;
+        display:grid; grid-template-columns:minmax(0,1fr);
+        grid-template-rows:[hud-start] 12fr [fighter-start] 1fr [hud-end] 50fr [fighter-end];
+        width:auto; height:auto; min-width:0; min-height:0; transform:none;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #arena-fighter-1,
+      #portrait-arena[data-arena-variant="classic"] #arena-fighter-1 {
+        grid-column:1; left:auto;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #arena-fighter-2,
+      #portrait-arena[data-arena-variant="classic"] #arena-fighter-2 {
+        grid-column:2; right:auto;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-hud,
+      #portrait-arena[data-arena-variant="classic"] .fighter-hud {
+        position:relative; inset:auto; z-index:12; grid-row:hud-start / hud-end;
+        grid-column:1; align-self:stretch; width:auto; min-width:0; max-height:100%;
+        padding:clamp(4px,.8vh,8px) clamp(6px,1.8vw,10px); overflow:hidden;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-sprite-wrap,
+      #portrait-arena[data-arena-variant="classic"] .arena-sprite-wrap {
+        position:relative; inset:auto; z-index:6; grid-row:fighter-start / fighter-end;
+        grid-column:1; min-width:0; min-height:0; overflow:visible;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-sprite {
+        max-width:84%; max-height:100%;
+      }
+      #portrait-arena[data-arena-variant="classic"] .arena-sprite {
+        max-width:100%; max-height:100%;
+      }
+      #portrait-arena[data-arena-variant="classic"] .fighter-hud {
+        padding:clamp(5px,1vh,9px) clamp(8px,2.2vw,13px);
+        border-width:2px;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #arena-choice-surface,
+      #portrait-arena[data-arena-variant="classic"] #arena-choice-surface {
+        position:relative; inset:auto; grid-row:rail-start / rail-end; grid-column:1 / -1;
+        align-self:stretch; display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:clamp(4px,1.2vw,8px); width:auto; min-width:0; height:auto;
+        margin:0 clamp(4px,1.3vw,8px); padding:clamp(3px,.8vh,6px);
+        overflow:hidden; transform:none;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-choice-player,
+      #portrait-arena[data-arena-variant="classic"] .arena-choice-player {
+        display:grid; grid-template-rows:minmax(0,1fr); gap:0; min-height:0;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-deck,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-deck {
+        display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+        grid-template-rows:minmax(0,1fr); gap:clamp(2px,.7vw,5px); min-height:0;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card {
+        display:grid; grid-template-columns:auto minmax(0,1fr);
+        grid-template-areas:"choice name"; grid-template-rows:minmax(0,1fr);
+        align-items:center; gap:clamp(2px,.6vw,5px); min-width:0; min-height:0;
+        padding:clamp(3px,.7vh,6px) clamp(3px,.8vw,7px); overflow:hidden;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-choice-owner,
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-icon,
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-copy,
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-charge,
+      #portrait-arena[data-arena-variant="classic"] .arena-choice-owner,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-icon,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-copy,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-charge {
+        display:none;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-choice,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-choice {
+        grid-area:choice; width:clamp(18px,4.4vw,25px); height:clamp(18px,4.4vw,25px);
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-name,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-name {
+        grid-area:name; min-width:0; overflow:hidden; font-size:clamp(9px,2.5vw,14px);
+        line-height:1; text-overflow:ellipsis; white-space:nowrap;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="action"] #arena-action-card,
+      #portrait-arena[data-arena-variant="classic"] #battle[data-phase="action"] #arena-action-card {
+        position:relative; inset:auto; grid-row:rail-start / rail-end; grid-column:1 / -1;
+        align-self:center; justify-self:center; display:grid;
+        grid-template-columns:auto minmax(0,1fr) auto;
+        grid-template-areas:"key skill compact"; grid-template-rows:minmax(0,1fr);
+        width:94%; min-width:0; min-height:0; max-height:100%;
+        padding:clamp(5px,1vh,9px) clamp(8px,2.2vw,14px);
+        gap:clamp(5px,1.5vw,10px); overflow:hidden; transform:none; white-space:nowrap;
+      }
+      #portrait-arena #battle[data-phase="action"] #arena-action-player,
+      #portrait-arena #battle[data-phase="action"] #arena-action-copy,
+      #portrait-arena #battle[data-phase="action"] #arena-action-metrics,
+      #portrait-arena #battle[data-phase="action"] #arena-feed {
+        display:none;
+      }
+      #portrait-arena #battle[data-phase="action"] #arena-action-key {
+        grid-area:key; width:clamp(25px,6vw,34px); height:clamp(25px,6vw,34px);
+      }
+      #portrait-arena #battle[data-phase="action"] #arena-action-skill {
+        grid-area:skill; min-width:0; overflow:hidden; font-size:clamp(13px,3.8vw,21px);
+        line-height:1; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap;
+      }
+      #portrait-arena #battle[data-phase="action"] #arena-action-compact-metric {
+        grid-area:compact; display:block; min-width:0; overflow:hidden;
+        font-size:clamp(12px,3.4vw,19px); line-height:1; text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      #portrait-arena #battle[data-phase="action"] #arena-action-skill::before,
+      #portrait-arena #battle[data-phase="action"] #arena-action-compact-metric::before {
+        content:"\00b7"; margin-right:clamp(4px,1.2vw,8px); color:#c8d6ef;
+      }
+      #portrait-arena #battle[data-phase="completed"] .arena-fighter,
+      #portrait-arena #battle[data-phase="completed"] #arena-topline,
+      #portrait-arena #battle[data-phase="completed"] #arena-skill-prompt,
+      #portrait-arena #battle[data-phase="completed"] #arena-lead,
+      #portrait-arena #battle[data-phase="completed"] #arena-action-card,
+      #portrait-arena #battle[data-phase="completed"] #arena-choice-surface,
+      #portrait-arena #battle[data-phase="completed"] #arena-feed,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-ko,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-monster,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-ratings,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-report,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-next,
+      #portrait-arena #battle[data-phase="completed"] #arena-rivalry-stamp,
+      #portrait-arena #battle[data-phase="completed"] #arena-streak-stamp,
+      #portrait-arena #battle[data-phase="completed"] #arena-impact,
+      #portrait-arena #battle[data-phase="completed"] #arena-combo {
+        display:none;
+      }
+      #portrait-arena #battle[data-phase="completed"] #arena-result {
+        position:relative; inset:auto; z-index:40; grid-row:fighter-shell-start / rail-end;
+        grid-column:1 / -1; place-self:center; width:min(92%,460px); min-height:0;
+        max-height:82%; padding:clamp(10px,2vh,18px); gap:clamp(4px,1vh,8px);
+        overflow:hidden; transform:none;
+      }
+      #portrait-arena #battle[data-phase="completed"] #arena-result-winner,
+      #portrait-arena #battle[data-phase="completed"] #arena-result-summary {
+        display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #battle-effects-canvas,
+      #portrait-arena[data-arena-variant="classic"] #battle-effects-canvas {
+        z-index:3;
+      }
+      #portrait-arena #battle.visible {
+        transition-duration:var(--arena-entry-ms);
+      }
+      #portrait-arena #battle.visible .arena-sprite-wrap {
+        animation:arena-bounded-entry var(--arena-entry-ms) cubic-bezier(.16,.84,.24,1) both;
+      }
+      #portrait-arena .arena-fighter.choice-locked:not(.choice-revealed) .fighter-hud::after {
+        animation:
+          arena-choice-lock var(--arena-lock-ms) cubic-bezier(.16,.84,.24,1) both,
+          arena-sealed-pulse 760ms ease-in-out var(--arena-lock-ms) infinite alternate;
+      }
+      #portrait-arena .arena-fighter.telegraphing .arena-sprite {
+        transition-duration:var(--arena-anticipation-ms);
+      }
+      #portrait-arena #arena-fighter-1.advancing .arena-sprite-wrap {
+        transform:translate3d(18%, -3%, 0) scale(1.05);
+        transition-duration:var(--arena-dash-ms);
+      }
+      #portrait-arena #arena-fighter-2.advancing .arena-sprite-wrap {
+        transform:translate3d(-18%, -3%, 0) scale(1.05);
+        transition-duration:var(--arena-dash-ms);
+      }
+      #portrait-arena .arena-fighter.hit,
+      #portrait-arena .arena-fighter.evaded,
+      #portrait-arena .arena-fighter.knockout,
+      #portrait-arena .arena-fighter.winner {
+        animation:none; transform:none;
+      }
+      #portrait-arena .arena-fighter.hit .arena-sprite-wrap {
+        animation:arena-hit-left var(--arena-recoil-ms) cubic-bezier(.1,.8,.25,1);
+        filter:brightness(1.7) saturate(1.25);
+      }
+      #portrait-arena #arena-fighter-2.hit .arena-sprite-wrap {
+        animation-name:arena-hit-right;
+      }
+      #portrait-arena .arena-fighter.evaded .arena-sprite-wrap {
+        animation:arena-evade var(--arena-recoil-ms) ease-out;
+        filter:drop-shadow(0 0 28px #64e9ff);
+      }
+      #portrait-arena .arena-fighter.knockout .arena-sprite-wrap {
+        transform:translateY(7%) rotate(-6deg) scale(.94);
+        filter:grayscale(.45) brightness(.55);
+      }
+      #portrait-arena #arena-fighter-2.knockout .arena-sprite-wrap {
+        transform:translateY(7%) rotate(6deg) scale(.94);
+      }
+      #portrait-arena .arena-fighter.winner .arena-sprite-wrap {
+        transform:translateY(-2%) scale(1.06);
+        filter:drop-shadow(0 0 38px #ffe78e88);
+      }
+      #portrait-arena #battle.camera-impulse {
+        animation:none;
+      }
+      #portrait-arena #battle.camera-impulse .arena-sprite-wrap {
+        animation:arena-camera-impulse var(--arena-recoil-ms) cubic-bezier(.12,.75,.2,1);
+      }
+      #portrait-arena #battle.hit-stop .arena-sprite,
+      #portrait-arena #battle.hit-stop .arena-sprite-wrap {
+        animation-play-state:paused!important;
+        transition-duration:var(--arena-hit-stop-ms)!important;
+      }
+      #portrait-arena #arena-result.visible {
+        animation:arena-result-enter var(--arena-result-ms) cubic-bezier(.16,.84,.24,1) both;
+      }
+      #portrait-arena #arena-result.visible::before {
+        content:""; position:absolute; inset:0; z-index:-1; opacity:.72;
+        background:
+          radial-gradient(circle at 18% 30%,#fff6a8 0 2px,transparent 4px),
+          radial-gradient(circle at 78% 22%,#7deaff 0 2px,transparent 4px),
+          radial-gradient(circle at 55% 82%,#c794ff 0 2px,transparent 4px);
+        animation:arena-result-particles var(--arena-result-particles-ms) ease-out both;
+      }
+      @keyframes arena-bounded-entry {
+        from { opacity:0; transform:translateY(6%) scale(.96); }
+        to { opacity:1; transform:none; }
+      }
+      @keyframes arena-choice-lock {
+        from { opacity:0; transform:scale(.72); }
+        to { opacity:1; transform:scale(1); }
+      }
+      @keyframes arena-result-enter {
+        from { opacity:0; transform:translateY(5%) scale(.96); }
+        to { opacity:1; transform:none; }
+      }
+      @keyframes arena-result-particles {
+        from { opacity:0; transform:scale(.82); }
+        38% { opacity:.9; }
+        to { opacity:0; transform:scale(1.08); }
+      }
+    }
     @media (prefers-reduced-motion: reduce) {
       .arena-skill-card.ready {
         animation:none!important;
@@ -1412,6 +1693,32 @@
         animation-iteration-count:1!important;
         transition-duration:.001ms!important;
         scroll-behavior:auto!important;
+      }
+    }
+    @media (orientation: portrait) and (prefers-reduced-motion: reduce) {
+      #portrait-arena .arena-fighter.advancing .arena-sprite-wrap,
+      #portrait-arena .arena-fighter.hit .arena-sprite-wrap,
+      #portrait-arena .arena-fighter.evaded .arena-sprite-wrap,
+      #portrait-arena .arena-fighter.knockout .arena-sprite-wrap,
+      #portrait-arena .arena-fighter.winner .arena-sprite-wrap,
+      #portrait-arena #battle.camera-impulse .arena-sprite-wrap {
+        animation:none!important; transform:none!important; transition-duration:.001ms!important;
+      }
+      #portrait-arena #battle.hit-stop .arena-sprite,
+      #portrait-arena #battle.hit-stop .arena-sprite-wrap {
+        animation-play-state:running!important; transition-duration:.001ms!important;
+      }
+      #portrait-arena .arena-fighter.choice-locked:not(.choice-revealed) .fighter-hud::after {
+        animation:none!important;
+      }
+      #portrait-arena #battle::after,
+      #portrait-arena #arena-special.visible,
+      #portrait-arena #arena-result.visible::before {
+        animation:none!important;
+      }
+      #portrait-arena #arena-action-card.visible,
+      #portrait-arena #arena-result.visible {
+        opacity:1!important; transition-duration:.001ms!important;
       }
     }
   </style>
@@ -1527,6 +1834,7 @@
       <strong id="arena-action-skill"></strong>
       <span id="arena-action-copy"></span>
       <span id="arena-action-metrics"></span>
+      <span id="arena-action-compact-metric"></span>
     </div>
     <article id="arena-fighter-1" class="arena-fighter" data-slot="1">
       <div class="arena-sprite-wrap">
@@ -1898,6 +2206,7 @@
       shieldGainMetric:'arenaShieldGainMetric',
       healMetric:'arenaHealMetric',
       evadeMetric:'arenaEvadeMetric',
+      statusMetric:'arenaStatusMetric',
       statTitle:'monsterStatTitle',
       statMeta:'monsterStatMeta',
       statChoices:'monsterStatChoices',

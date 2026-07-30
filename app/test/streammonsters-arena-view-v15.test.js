@@ -19,8 +19,14 @@ function skillDeck(slot) {
   `;
 }
 
-function mountArena() {
+function mountArena({ portrait = false } = {}) {
   const dom = new JSDOM('<!doctype html><html><body></body></html>');
+  dom.window.matchMedia = jest.fn(query => ({
+    matches: portrait && query === '(orientation: portrait)',
+    media: query,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn()
+  }));
   global.document = dom.window.document;
   document.body.innerHTML = `
     <section id="battle">
@@ -38,6 +44,7 @@ function mountArena() {
         <strong id="arena-action-skill"></strong>
         <span id="arena-action-copy"></span>
         <span id="arena-action-metrics"></span>
+        <span id="arena-action-compact-metric"></span>
       </div>
       <div id="arena-stat-card">
         <span id="arena-stat-kicker"></span>
@@ -52,6 +59,7 @@ function mountArena() {
         <span id="arena-result-summary"></span>
         <div id="arena-result-ratings"></div>
         <div id="arena-result-report" hidden></div>
+        <div id="arena-result-next"></div>
         <span id="arena-result-rating"></span>
       </div>
       <article id="arena-fighter-1" data-slot="1">
@@ -237,6 +245,78 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       hits: [{ index: 1, hpDamage: 5 }]
     });
     expect(battleEffects.play).toHaveBeenCalled();
+  });
+
+  test('measures valid fighter image centers and omits invalid origins for renderer slot fallback', async () => {
+    mountArena();
+    const effects = { play: jest.fn(async () => true) };
+    const view = ArenaView.createArenaView({
+      document,
+      effects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    document.getElementById('battle').getBoundingClientRect = jest.fn(() => ({
+      left: 100, top: 50, right: 500, bottom: 250, width: 400, height: 200
+    }));
+    document.getElementById('arena-image-1').getBoundingClientRect = jest.fn(() => ({
+      left: 140, top: 70, right: 220, bottom: 170, width: 80, height: 100
+    }));
+    document.getElementById('arena-image-2').getBoundingClientRect = jest.fn(() => ({
+      left: 380, top: 130, right: 460, bottom: 210, width: 80, height: 80
+    }));
+
+    await view.playAction({
+      eventId: 'measured-origin:1',
+      eventSequence: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: { name: 'Moonfall', type: 'special', element: 'Lunar' },
+      hits: [{ hpDamage: 7, shieldAbsorbed: 0 }]
+    });
+
+    const measured = effects.play.mock.calls.find(([scene]) => scene === 'special')?.[1];
+    expect(measured).toEqual(expect.objectContaining({
+      actorSlot: 1,
+      targetSlot: 2,
+      origin: { x: 0.2, y: 0.35 },
+      targetOrigin: { x: 0.8, y: 0.6 }
+    }));
+
+    mountArena();
+    const fallbackEffects = { play: jest.fn(async () => true) };
+    const fallbackView = ArenaView.createArenaView({
+      document,
+      effects: fallbackEffects,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    document.getElementById('battle').getBoundingClientRect = jest.fn(() => ({
+      left: 100, top: 50, right: 500, bottom: 250, width: 400, height: 200
+    }));
+    for (const slot of [1, 2]) {
+      document.getElementById(`arena-image-${slot}`).getBoundingClientRect = jest.fn(() => ({
+        left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0
+      }));
+    }
+
+    await fallbackView.playAction({
+      eventId: 'slot-fallback:1',
+      eventSequence: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: { name: 'Moonfall', type: 'special', element: 'Lunar' },
+      hits: [{ hpDamage: 7, shieldAbsorbed: 0 }]
+    });
+
+    const fallback = fallbackEffects.play.mock.calls
+      .find(([scene]) => scene === 'special')?.[1];
+    expect(fallback).toEqual(expect.objectContaining({
+      actorSlot: 1,
+      targetSlot: 2
+    }));
+    expect(fallback).not.toHaveProperty('origin');
+    expect(fallback).not.toHaveProperty('targetOrigin');
   });
 
   test.each([
@@ -581,7 +661,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
   });
 
   test('shows the full readable action contract from public combat state', async () => {
-    mountArena();
+    mountArena({ portrait: true });
     const view = ArenaView.createArenaView({
       document,
       clock: { wait: async () => {}, now: () => 1_000 }
@@ -656,8 +736,81 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     ]);
     expect(document.querySelector('#arena-action-metrics').textContent)
       .toContain('Schaden 7');
+    expect(document.getElementById('arena-action-compact-metric').textContent)
+      .toBe('\u22127 HP');
+    expect(document.getElementById('arena-action-compact-metric').dataset.actionMetric)
+      .toBe('compact');
+    expect(document.getElementById('arena-action-card').getAttribute('aria-label'))
+      .toBe('C \u00b7 Moonfall \u00b7 \u22127 HP');
+    expect(document.getElementById('arena-feed').textContent)
+      .not.toContain('\u22127 HP');
     expect(document.getElementById('arena-action-card').classList)
       .toContain('visible');
+  });
+
+  test('chooses exactly one decisive compact metric in the approved priority order', async () => {
+    mountArena({ portrait: true });
+    const view = ArenaView.createArenaView({
+      document,
+      localize: key => ({
+        arenaEvadeMetric: 'DODGED',
+        arenaStatusMetric: 'STATUS'
+      }[key] || key),
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    const cases = [
+      {
+        hits: [{ hpDamage: 9, shieldAbsorbed: 4 }],
+        outcomes: [{ type: 'shield', amount: 7 }, { type: 'heal', amount: 5 }],
+        expected: '\u22129 HP'
+      },
+      {
+        hits: [{ hpDamage: 0, shieldAbsorbed: 4 }],
+        outcomes: [{ type: 'shield', amount: 7 }, { type: 'heal', amount: 5 }],
+        expected: '+7 SHIELD'
+      },
+      {
+        outcomes: [{ type: 'heal', amount: 5 }, { type: 'lifesteal', amount: 2 }],
+        expected: '+7 HP'
+      },
+      {
+        hits: [{ hpDamage: 0, shieldAbsorbed: 4 }],
+        expected: '4 BLOCK'
+      },
+      {
+        hits: [{ hpDamage: 0, shieldAbsorbed: 0, evaded: true }],
+        expected: 'DODGED'
+      },
+      {
+        statusEffects: [{ type: 'shock' }],
+        expected: 'STATUS'
+      },
+      {
+        outcomes: [{ type: 'reflect', amount: 2 }],
+        expected: 'STATUS'
+      },
+      {
+        expected: '0 HP'
+      }
+    ];
+
+    for (const [index, metricCase] of cases.entries()) {
+      await view.playAction({
+        eventId: `decisive-metric:${index + 1}`,
+        eventSequence: index + 1,
+        actorSlot: 1,
+        targetSlot: 2,
+        choice: 'A',
+        skill: { name: 'Pulse', type: 'attack', element: 'Volt' },
+        hits: metricCase.hits || [],
+        outcomes: metricCase.outcomes || [],
+        statusEffects: metricCase.statusEffects || []
+      });
+      expect(document.getElementById('arena-action-compact-metric').textContent)
+        .toBe(metricCase.expected);
+      expect(document.querySelectorAll('#arena-action-compact-metric[data-action-metric]'))
+        .toHaveLength(1);
+    }
   });
 
   test('renders every localized action metric as an individually addressable value', async () => {
@@ -679,7 +832,12 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       eventSequence: 1,
       actorSlot: 1,
       targetSlot: 2,
-      skill: { name: 'Moonfall', type: 'special' },
+      choice: 'C',
+      skill: {
+        name: 'Moonfall',
+        shortText: 'Landscape detail remains readable.',
+        type: 'special'
+      },
       hits: [{ hpDamage: 42, shieldAbsorbed: 12 }],
       outcomes: [
         { type: 'shield', amount: 8 },
@@ -697,10 +855,15 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     ]);
     expect(document.querySelector('#arena-action-metrics').textContent)
       .toContain('42 DMG');
+    expect(document.getElementById('arena-action-skill').textContent).toBe('Moonfall');
+    expect(document.getElementById('arena-action-copy').textContent)
+      .toBe('Landscape detail remains readable.');
+    expect(document.getElementById('arena-action-card').getAttribute('aria-label'))
+      .toBeNull();
   });
 
   test('clears the last action card before the result and keeps the next roster clean', async () => {
-    mountArena();
+    mountArena({ portrait: true });
     let finishResult;
     const view = ArenaView.createArenaView({
       document,
@@ -735,6 +898,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       terminal: true
     });
     expect(document.getElementById('arena-action-card').classList).toContain('visible');
+    expect(document.getElementById('arena-action-compact-metric').textContent)
+      .toBe('\u22128 HP');
 
     const completion = view.complete({
       eventId: 'terminal-action:event:completed',
@@ -747,6 +912,9 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
 
     expect(document.getElementById('arena-result').classList).toContain('visible');
     expect(document.getElementById('arena-action-card').classList).not.toContain('visible');
+    expect(document.getElementById('battle').dataset.phase).toBe('completed');
+    expect(document.getElementById('arena-result-winner').textContent).toContain('@luna');
+    expect(document.getElementById('arena-result-summary').textContent).toContain('4');
     finishResult();
     await completion;
 
@@ -1330,17 +1498,56 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       matchId: 'match-sealed-board',
       round: 1,
       fighters: [
-        { slot: 1, name: 'Ashfang', viewerName: '@ember', skills: [] },
-        { slot: 2, name: 'Ripple', viewerName: '@tide', skills: [] }
+        {
+          slot: 1,
+          name: 'Ashfang',
+          viewerName: '@ember',
+          skills: [
+            { choice: 'A', name: 'SECRET_SLASH' },
+            { choice: 'B', name: 'SECRET_GUARD' },
+            { choice: 'C', name: 'SECRET_BURST' }
+          ]
+        },
+        {
+          slot: 2,
+          name: 'Ripple',
+          viewerName: '@tide',
+          skills: [
+            { choice: 'A', name: 'TIDE_SLASH' },
+            { choice: 'B', name: 'TIDE_GUARD' },
+            { choice: 'C', name: 'TIDE_BURST' }
+          ]
+        }
       ]
     });
 
-    view.lockChoice({ decision: { slot: 1, choice: 'A', locked: true } });
-    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBeUndefined();
-    expect(document.querySelector('[data-slot="1"] [data-skill="A"]').classList)
+    const firstDeck = document.querySelector('[data-skill-deck="1"]');
+    const deckTextBeforeLock = firstDeck.textContent;
+    view.lockChoice({ decision: { slot: 1, choice: 'B', locked: true } });
+    const firstFighter = document.querySelector('#arena-fighter-1');
+    expect(firstFighter.dataset.choice).toBeUndefined();
+    expect(document.querySelector('[data-slot="1"] [data-skill="B"]').classList)
       .not.toContain('selected');
     expect(document.querySelector('#arena-skill-prompt').textContent)
       .toMatch(/@ember.*sealed.*waiting/i);
+    expect(document.querySelector('#arena-skill-prompt').textContent)
+      .not.toContain('SECRET_GUARD');
+    expect(firstDeck.textContent).toBe(deckTextBeforeLock);
+    const choiceSpecificSideChannels = [
+      ...[...firstFighter.attributes].map(attribute => (
+        `${attribute.name}=${attribute.value}`
+      )),
+      ...[...document.querySelector('#arena-skill-prompt').attributes].map(attribute => (
+        `${attribute.name}=${attribute.value}`
+      )),
+      document.querySelector('#arena-skill-prompt').textContent
+    ].join(' | ');
+    expect(choiceSpecificSideChannels).not.toContain('SECRET_GUARD');
+    expect(choiceSpecificSideChannels).not.toMatch(/(?:^|[=\s])B(?:$|[\s|])/);
+    expect(document.querySelector('[data-choice="B"]')).toBeNull();
+    expect([...document.querySelectorAll('[aria-label]')]
+      .map(element => element.getAttribute('aria-label')).join(' | '))
+      .not.toContain('SECRET_GUARD');
 
     view.lockChoice({ decision: { slot: 2, choice: 'C', locked: true } });
     expect(document.querySelector('#arena-skill-prompt').textContent)
@@ -1348,11 +1555,15 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
 
     view.revealChoices({
       choices: [
-        { slot: 1, choice: 'A', source: 'viewer' },
+        { slot: 1, choice: 'B', source: 'viewer' },
         { slot: 2, choice: 'C', source: 'timeout' }
       ]
     });
-    expect(document.querySelector('[data-slot="1"] [data-skill="A"]').classList)
+    expect([
+      document.querySelector('#arena-fighter-1').dataset.choice,
+      document.querySelector('#arena-fighter-2').dataset.choice
+    ]).toEqual(['B', 'C']);
+    expect(document.querySelector('[data-slot="1"] [data-skill="B"]').classList)
       .toContain('selected');
     expect(document.querySelector('[data-slot="2"] [data-skill="C"]').classList)
       .toContain('selected');
@@ -1758,6 +1969,203 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .getPropertyValue('display')).toBe('none');
   });
 
+  test('assigns both portrait arena variants to the approved bounded phase bands', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const variantRule = variant => rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes(
+        `#portrait-arena[data-arena-variant="${variant}"]`
+      ) &&
+      rule.style.getPropertyValue('--arena-status-top')
+    ));
+    const fighterRule = variant => rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes(
+        `#portrait-arena[data-arena-variant="${variant}"] .arena-fighter`
+      ) &&
+      rule.style.getPropertyValue('grid-template-rows')
+    ));
+
+    for (const variant of ['split-arena', 'classic']) {
+      const root = variantRule(variant)?.style;
+      expect(root?.getPropertyValue('--arena-status-top')).toBe('4%');
+      expect(root?.getPropertyValue('--arena-status-bottom')).toBe('13%');
+      expect(root?.getPropertyValue('--arena-hud-top')).toBe('15%');
+      expect(root?.getPropertyValue('--arena-hud-bottom')).toBe('28%');
+      expect(root?.getPropertyValue('--arena-fighter-top')).toBe('27%');
+      expect(root?.getPropertyValue('--arena-fighter-bottom')).toBe('78%');
+      expect(root?.getPropertyValue('--arena-rail-top')).toBe('79%');
+      expect(root?.getPropertyValue('--arena-rail-bottom')).toBe('97%');
+      expect(fighterRule(variant)?.style.getPropertyValue('grid-template-rows'))
+        .toContain('[fighter-start]');
+    }
+  });
+
+  test('limits portrait choices action and completed results while preserving landscape data', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const portraitRule = selectorFragment => rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes(selectorFragment)
+    ));
+    const splitDeck = portraitRule(
+      '#portrait-arena[data-arena-variant="split-arena"] .arena-skill-deck'
+    );
+    const hiddenChoiceCopy = portraitRule(
+      '#portrait-arena[data-arena-variant="split-arena"] .arena-choice-owner'
+    );
+    const compactMetric = portraitRule('#arena-action-compact-metric');
+    const fullMetrics = portraitRule(
+      '#portrait-arena #battle[data-phase="action"] #arena-action-metrics'
+    );
+    const hiddenActionCopy = portraitRule(
+      '#portrait-arena #battle[data-phase="action"] #arena-action-player'
+    );
+    const compactRow = portraitRule(
+      '#portrait-arena[data-arena-variant="split-arena"] ' +
+      '#battle[data-phase="action"] #arena-action-card'
+    );
+    const hiddenResult = portraitRule(
+      '#battle[data-phase="completed"] .arena-fighter'
+    );
+
+    expect(dom.window.document.getElementById('arena-action-compact-metric'))
+      .not.toBeNull();
+    expect(splitDeck?.style.getPropertyValue('grid-template-columns'))
+      .toBe('repeat(3,minmax(0,1fr))');
+    expect(splitDeck?.style.getPropertyValue('grid-template-rows'))
+      .toBe('minmax(0,1fr)');
+    expect(hiddenChoiceCopy?.style.getPropertyValue('display')).toBe('none');
+    expect(compactMetric?.style.getPropertyValue('display')).toBe('block');
+    expect(compactMetric?.style.getPropertyValue('white-space')).toBe('nowrap');
+    expect(fullMetrics?.style.getPropertyValue('display')).toBe('none');
+    expect(hiddenActionCopy?.style.getPropertyValue('display')).toBe('none');
+    expect(compactRow?.style.getPropertyValue('grid-template-areas'))
+      .toBe('"key skill compact"');
+    expect(compactRow?.style.getPropertyValue('white-space')).toBe('nowrap');
+    expect(hiddenResult?.style.getPropertyValue('display')).toBe('none');
+    for (const selector of [
+      '#battle[data-phase="completed"] #arena-topline',
+      '#battle[data-phase="completed"] #arena-action-card',
+      '#battle[data-phase="completed"] #arena-choice-surface',
+      '#battle[data-phase="completed"] #arena-feed',
+      '#battle[data-phase="completed"] #arena-result-ko',
+      '#battle[data-phase="completed"] #arena-result-monster',
+      '#battle[data-phase="completed"] #arena-result-ratings',
+      '#battle[data-phase="completed"] #arena-result-report',
+      '#battle[data-phase="completed"] #arena-result-next'
+    ]) {
+      expect(portraitRule(`#portrait-arena ${selector}`)?.style.getPropertyValue('display'))
+        .toBe('none');
+    }
+    expect(html).toMatch(
+      /#arena-action-metrics\s*\{[^}]*grid-area:metrics;[^}]*font-size:/s
+    );
+    expect(html).toMatch(
+      /#arena-action-copy\s*\{[^}]*grid-area:copy;[^}]*white-space:normal/s
+    );
+  });
+
+  test('uses the approved bounded motion timings and removes disorienting reduced motion', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+    const dom = new JSDOM(html);
+    const rules = [];
+    const collect = ruleList => {
+      for (const rule of [...ruleList]) {
+        if (rule.cssRules?.length) collect(rule.cssRules);
+        else rules.push(rule);
+      }
+    };
+    for (const sheet of [...dom.window.document.styleSheets]) collect(sheet.cssRules);
+    const timingRule = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes(
+        '#portrait-arena[data-arena-variant="split-arena"]'
+      ) &&
+      rule.style.getPropertyValue('--arena-entry-ms')
+    ));
+    expect(timingRule?.style.getPropertyValue('--arena-entry-ms')).toBe('380ms');
+    expect(timingRule?.style.getPropertyValue('--arena-lock-ms')).toBe('180ms');
+    expect(timingRule?.style.getPropertyValue('--arena-anticipation-ms')).toBe('120ms');
+    expect(timingRule?.style.getPropertyValue('--arena-dash-ms')).toBe('170ms');
+    expect(timingRule?.style.getPropertyValue('--arena-hit-stop-ms')).toBe('70ms');
+    expect(timingRule?.style.getPropertyValue('--arena-recoil-ms')).toBe('280ms');
+    expect(timingRule?.style.getPropertyValue('--arena-result-ms')).toBe('420ms');
+    expect(timingRule?.style.getPropertyValue('--arena-result-particles-ms'))
+      .toBe('720ms');
+    const variantBattle = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes(
+        '#portrait-arena[data-arena-variant="split-arena"] #battle'
+      ) &&
+      rule.style.getPropertyValue('grid-template-rows')
+    ));
+    expect(variantBattle?.style.getPropertyValue('transform')).toBe('none');
+    const evadeMotion = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText?.includes('.arena-fighter.evaded .arena-sprite-wrap')
+    ));
+    expect(evadeMotion?.style.getPropertyValue('animation'))
+      .toContain('arena-evade var(--arena-recoil-ms)');
+    const portraitCamera = rules.find(rule => (
+      rule.parentRule?.conditionText === '(orientation: portrait)' &&
+      rule.selectorText === '#portrait-arena #battle.camera-impulse'
+    ));
+    expect(portraitCamera?.style.getPropertyValue('animation')).toBe('none');
+    const reduced = rules.filter(rule => (
+      rule.parentRule?.conditionText ===
+        '(orientation: portrait) and (prefers-reduced-motion: reduce)'
+    ));
+    expect(reduced.some(rule => (
+      rule.selectorText?.includes('.advancing .arena-sprite-wrap') &&
+      rule.style.getPropertyValue('transform') === 'none'
+    ))).toBe(true);
+    expect(reduced.some(rule => (
+      rule.selectorText?.includes('#battle.hit-stop .arena-sprite') &&
+      rule.style.getPropertyValue('animation-play-state') === 'running'
+    ))).toBe(true);
+    expect(reduced.some(rule => (
+      rule.selectorText?.includes('.choice-locked:not(.choice-revealed)') &&
+      rule.style.getPropertyValue('animation') === 'none'
+    ))).toBe(true);
+    expect(reduced.some(rule => (
+      rule.selectorText?.includes('#arena-result.visible::before') &&
+      rule.style.getPropertyValue('animation') === 'none'
+    ))).toBe(true);
+  });
+
   test('composes visible action-phase lead, action copy, and fighter HUD safe bands in every orientation', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
@@ -1940,6 +2348,22 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     }
   );
 
+  test.each([
+    ['de', 'STATUS'],
+    ['en', 'STATUS'],
+    ['es', 'ESTADO'],
+    ['fr', 'STATUT']
+  ])('localizes the compact status metric in %s', (locale, expected) => {
+    const catalog = JSON.parse(fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'locales',
+      `${locale}.json`
+    ), 'utf8')).plugins.streamalchemy.ui.monsters;
+    expect(catalog.arenaStatusMetric).toBe(expected);
+  });
+
   test('ships one portrait-first arena surface wired to durable events and persisted audio', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
@@ -1961,6 +2385,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(dom.window.document.querySelector('#arena-action-card')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-action-copy')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-action-metrics')).not.toBeNull();
+    expect(dom.window.document.querySelector('#arena-action-compact-metric')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-stat-card')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-ko')).not.toBeNull();
     expect(dom.window.document.querySelector('#arena-result-monster')).not.toBeNull();

@@ -759,7 +759,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
       .classList.contains('winner')).toBe(true);
   });
 
-  test('keeps portrait gameplay in the upper 74 percent with full framing and readable text', () => {
+  test('keeps portrait gameplay inside the bounded arena with full framing and readable text', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
@@ -777,6 +777,8 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     ));
     const portraitBattle = [...portraitRule.cssRules]
       .find(rule => rule.selectorText === '#battle');
+    const portraitArena = [...portraitRule.cssRules]
+      .find(rule => rule.selectorText === '#portrait-arena');
     const battleRule = rules.find(rule => rule.selectorText === '#battle');
     const spriteRule = rules.find(rule => rule.selectorText === '.arena-sprite');
     const landscapeRule = rules.find(rule => (
@@ -790,7 +792,11 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     expect(portrait.gameplay.height / portrait.height).toBeCloseTo(0.74, 2);
     expect(portrait.chatSafeZone.height / portrait.height).toBeCloseTo(0.26, 2);
     expect(battleRule.style.inset).toBe('0 0 26%');
-    expect(portraitBattle.style.inset).toBe('0 0 26%');
+    expect(portraitBattle.style.inset).toBe('0px');
+    expect(portraitArena.style.inset.replace(/\s+/g, ' ')).toBe(
+      'var(--portrait-arena-top) var(--portrait-arena-right) ' +
+      'var(--portrait-arena-bottom) var(--portrait-arena-left)'
+    );
     expect(spriteRule.style.objectFit).toBe('contain');
     expect(dom.window.document.querySelectorAll('.arena-skill-deck')).toHaveLength(2);
     expect(dom.window.document.querySelectorAll('.arena-skill-card')).toHaveLength(6);

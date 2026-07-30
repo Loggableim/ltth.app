@@ -342,6 +342,7 @@
           "arenaShieldGainMetric": "Bouclier +{amount}",
           "arenaHealMetric": "Soin {amount}",
           "arenaEvadeMetric": "Esquivé",
+          "arenaStatusMetric": "STATUT",
           "monsterStatMeta": "Niveau {level} · {remaining} points restants",
           "monsterStatChoices": "1 Vitalité +1 · 2 Force +1 · 3 Défense +1 · 4 Agilité +1",
           "monsterStatResult": "{stat} +1",

@@ -2,10 +2,13 @@
   const director = typeof module === 'object' && module.exports
     ? require('./streammonsters-arena-director')
     : root.StreamMonstersArenaDirector;
-  const api = factory(director);
+  const portraitArena = typeof module === 'object' && module.exports
+    ? require('./streammonsters-portrait-arena')
+    : root.StreamMonstersPortraitArena;
+  const api = factory(director, portraitArena);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersArenaView = api;
-}(typeof globalThis === 'object' ? globalThis : this, ArenaDirector => {
+}(typeof globalThis === 'object' ? globalThis : this, (ArenaDirector, PortraitArena) => {
   'use strict';
 
   const SILENT_OUTPUT = Object.freeze({
@@ -285,6 +288,7 @@
       shieldGainMetric: 'Schild +{amount}',
       healMetric: 'Heilung {amount}',
       evadeMetric: 'Ausweichen',
+      statusMetric: 'STATUS',
       statTitle: '{player}: {monster}',
       statMeta: 'Level {level} · {remaining} Punkte übrig',
       statChoices: '1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1',
@@ -368,6 +372,7 @@
       shieldGainMetric: 'arenaShieldGainMetric',
       healMetric: 'arenaHealMetric',
       evadeMetric: 'arenaEvadeMetric',
+      statusMetric: 'arenaStatusMetric',
       statTitle: 'monsterStatTitle',
       statMeta: 'monsterStatMeta',
       statChoices: 'monsterStatChoices',
@@ -673,6 +678,43 @@
       return metrics;
     }
 
+    function decisiveActionMetric(action = {}) {
+      const hits = Array.isArray(action.hits) ? action.hits : [];
+      const outcomes = Array.isArray(action.outcomes) ? action.outcomes : [];
+      const damage = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.hpDamage)))
+      ), 0);
+      const shield = outcomes
+        .filter(outcome => outcome?.type === 'shield')
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const healing = outcomes
+        .filter(outcome => ['heal', 'lifesteal'].includes(outcome?.type))
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const absorbed = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.shieldAbsorbed)))
+      ), 0);
+      if (damage > 0) return `\u2212${damage} HP`;
+      if (shield > 0) return `+${shield} SHIELD`;
+      if (healing > 0) return `+${healing} HP`;
+      if (absorbed > 0) return `${absorbed} BLOCK`;
+      if (hits.some(hit => hit?.evaded)) return formatLabel('evadeMetric');
+      if (
+        (Array.isArray(action.statusEffects) && action.statusEffects.length > 0) ||
+        outcomes.some(outcome => [
+          'burn',
+          'evade',
+          'reflect',
+          'shock',
+          'status',
+          'thorns',
+          'weaken'
+        ].includes(String(outcome?.type || '').toLowerCase()))
+      ) {
+        return formatLabel('statusMetric');
+      }
+      return '0 HP';
+    }
+
     function renderActionMetrics(action = {}) {
       const target = node('arena-action-metrics');
       if (!target) return;
@@ -698,7 +740,28 @@
       setText('arena-action-skill', skillName);
       setText('arena-action-copy', skillCopy);
       renderActionMetrics(action);
-      node('arena-action-card')?.classList.add('visible');
+      const compactMetric = decisiveActionMetric(action);
+      const compactMetricNode = node('arena-action-compact-metric');
+      if (compactMetricNode) {
+        compactMetricNode.textContent = compactMetric;
+        compactMetricNode.dataset.actionMetric = 'compact';
+      }
+      const actionCard = node('arena-action-card');
+      if (actionCard) {
+        const portrait = Boolean(
+          documentLike.defaultView?.matchMedia?.('(orientation: portrait)')?.matches
+        );
+        if (portrait) {
+          actionCard.setAttribute('aria-label', [
+            String(action.choice || '').toUpperCase(),
+            skillName,
+            compactMetric
+          ].filter(Boolean).join(' \u00b7 '));
+        } else {
+          actionCard.removeAttribute('aria-label');
+        }
+        actionCard.classList.add('visible');
+      }
     }
 
     function showStatPrompt(payload = {}) {
@@ -1194,6 +1257,24 @@
       return { renderer, fallbackReason };
     }
 
+    function effectOriginsForSlots(actorSlot, targetSlot) {
+      const arenaRect = arena?.getBoundingClientRect?.();
+      const normalizedRectCenter = PortraitArena?.normalizedRectCenter;
+      if (typeof normalizedRectCenter !== 'function') return {};
+      const origin = normalizedRectCenter(
+        node(`arena-image-${actorSlot}`)?.getBoundingClientRect?.(),
+        arenaRect
+      );
+      const targetOrigin = normalizedRectCenter(
+        node(`arena-image-${targetSlot}`)?.getBoundingClientRect?.(),
+        arenaRect
+      );
+      return {
+        ...(origin ? { origin } : {}),
+        ...(targetOrigin ? { targetOrigin } : {})
+      };
+    }
+
     function fireTimelineOutputs(beat, payload = {}, effectOutput = effects) {
       if (beat.effect?.scene) {
         const hits = Array.isArray(beat.hits)
@@ -1205,14 +1286,18 @@
         const statusEffects = Array.isArray(beat.statusEffects)
           ? beat.statusEffects
           : (Array.isArray(payload.statusEffects) ? payload.statusEffects : []);
+        const actorSlot = numeric(beat.actorSlot ?? payload.actorSlot) || null;
+        const targetSlot = numeric(beat.targetSlot ?? payload.targetSlot) || null;
+        const effectOrigins = effectOriginsForSlots(actorSlot, targetSlot);
         fire(effectOutput, beat.effect.scene, {
           ...beat.effect,
           eventId: beat.eventId,
           beatId: beat.beatId,
           correlationId: payload.correlationId || null,
           motion: beat.motion,
-          actorSlot: numeric(beat.actorSlot ?? payload.actorSlot) || null,
-          targetSlot: numeric(beat.targetSlot ?? payload.targetSlot) || null,
+          actorSlot,
+          targetSlot,
+          ...effectOrigins,
           hitIndex: numeric(beat.hitIndex ?? payload.hitIndex) || 1,
           hitCount: Math.max(
             1,
