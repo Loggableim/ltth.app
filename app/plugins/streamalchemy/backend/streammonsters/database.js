@@ -120,6 +120,11 @@ class StreamMonstersDatabase {
         win_streak INTEGER NOT NULL DEFAULT 0,
         evolution_stage INTEGER NOT NULL DEFAULT 1,
         evolution_essence_spent INTEGER NOT NULL DEFAULT 0,
+        collection_state TEXT NOT NULL DEFAULT 'owned',
+        archived_at_ms INTEGER,
+        archived_reason TEXT,
+        archived_by_fusion_id TEXT,
+        prestige_level INTEGER NOT NULL DEFAULT 0,
         created_at_ms INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user
@@ -133,6 +138,32 @@ class StreamMonstersDatabase {
         PRIMARY KEY (monster_id, stage),
         FOREIGN KEY (monster_id) REFERENCES streammonsters_monsters(monster_id)
       );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_fusion_ledger (
+        fusion_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        template_id TEXT NOT NULL,
+        survivor_monster_id TEXT NOT NULL,
+        donor_monster_id TEXT NOT NULL UNIQUE,
+        from_stage INTEGER NOT NULL CHECK (from_stage IN (1, 2, 3)),
+        to_stage INTEGER NOT NULL CHECK (to_stage IN (2, 3)),
+        prestige_before INTEGER NOT NULL DEFAULT 0,
+        prestige_after INTEGER NOT NULL DEFAULT 0,
+        trigger_type TEXT NOT NULL,
+        trigger_id TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        UNIQUE (trigger_type, trigger_id)
+      );
+      CREATE TRIGGER IF NOT EXISTS streammonsters_fusion_ledger_no_update
+        BEFORE UPDATE ON streammonsters_fusion_ledger
+        BEGIN
+          SELECT RAISE(ABORT, 'STREAM_MONSTERS_FUSION_LEDGER_APPEND_ONLY');
+        END;
+      CREATE TRIGGER IF NOT EXISTS streammonsters_fusion_ledger_no_delete
+        BEFORE DELETE ON streammonsters_fusion_ledger
+        BEGIN
+          SELECT RAISE(ABORT, 'STREAM_MONSTERS_FUSION_LEDGER_APPEND_ONLY');
+        END;
 
       CREATE TABLE IF NOT EXISTS streammonsters_viewer_progress (
         user_id TEXT PRIMARY KEY,
@@ -668,6 +699,11 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'evolution_stage', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_monsters', 'evolution_essence_spent', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'unspent_stat_points', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_monsters', 'collection_state', "TEXT NOT NULL DEFAULT 'owned'");
+    this.ensureColumn('streammonsters_monsters', 'archived_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_monsters', 'archived_reason', 'TEXT');
+    this.ensureColumn('streammonsters_monsters', 'archived_by_fusion_id', 'TEXT');
+    this.ensureColumn('streammonsters_monsters', 'prestige_level', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_element_essence', 'spent', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_battles', 'user_a_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'user_b_id', 'TEXT');
@@ -731,6 +767,11 @@ class StreamMonstersDatabase {
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user_template
         ON streammonsters_monsters(user_id, template_id, created_at_ms);
+      CREATE INDEX IF NOT EXISTS streammonsters_monsters_owned_template_stage
+        ON streammonsters_monsters(
+          user_id, template_id, evolution_stage, prestige_level, created_at_ms
+        )
+        WHERE collection_state = 'owned';
       CREATE INDEX IF NOT EXISTS streammonsters_art_pool_template_lookup
         ON streammonsters_art_pool(element, variant, template_id, status, created_at_ms);
       CREATE INDEX IF NOT EXISTS streammonsters_battles_created
@@ -1702,7 +1743,8 @@ class StreamMonstersDatabase {
         }
       }
       const hasSelection = this.db.prepare(
-        'SELECT 1 FROM streammonsters_monsters WHERE user_id = ? AND is_selected = 1'
+        `SELECT 1 FROM streammonsters_monsters
+         WHERE user_id = ? AND is_selected = 1 AND collection_state = 'owned'`
       ).get(egg.user_id);
       this.db.prepare(`
         INSERT INTO streammonsters_monsters (
@@ -1745,21 +1787,28 @@ class StreamMonstersDatabase {
 
   getViewerMonsters(userId) {
     return this.db.prepare(`
-      SELECT * FROM streammonsters_monsters WHERE user_id = ? ORDER BY created_at_ms ASC, monster_id ASC
+      SELECT * FROM streammonsters_monsters
+      WHERE user_id = ? AND collection_state = 'owned'
+      ORDER BY created_at_ms ASC, monster_id ASC
     `).all(userId).map(row => ({ ...row, stats: JSON.parse(row.stats_json) }));
   }
 
   getOwnedTemplateIds(userId, element = null) {
     const sql = element
-      ? 'SELECT DISTINCT template_id FROM streammonsters_monsters WHERE user_id = ? AND element = ? AND template_id IS NOT NULL'
-      : 'SELECT DISTINCT template_id FROM streammonsters_monsters WHERE user_id = ? AND template_id IS NOT NULL';
+      ? `SELECT DISTINCT template_id FROM streammonsters_monsters
+         WHERE user_id = ? AND element = ? AND template_id IS NOT NULL
+           AND collection_state = 'owned'`
+      : `SELECT DISTINCT template_id FROM streammonsters_monsters
+         WHERE user_id = ? AND template_id IS NOT NULL
+           AND collection_state = 'owned'`;
     return (element ? this.db.prepare(sql).all(userId, element) : this.db.prepare(sql).all(userId))
       .map(row => row.template_id);
   }
 
   countOwnedTemplate(userId, templateId) {
     return this.db.prepare(`
-      SELECT COUNT(*) AS count FROM streammonsters_monsters WHERE user_id = ? AND template_id = ?
+      SELECT COUNT(*) AS count FROM streammonsters_monsters
+      WHERE user_id = ? AND template_id = ? AND collection_state = 'owned'
     `).get(userId, templateId).count;
   }
 
@@ -2130,7 +2179,8 @@ class StreamMonstersDatabase {
 
   getSelectedMonster(userId) {
     const row = this.db.prepare(`
-      SELECT * FROM streammonsters_monsters WHERE user_id = ? AND is_selected = 1
+      SELECT * FROM streammonsters_monsters
+      WHERE user_id = ? AND is_selected = 1 AND collection_state = 'owned'
     `).get(userId);
     return row ? { ...row, stats: JSON.parse(row.stats_json) } : null;
   }
@@ -2139,7 +2189,8 @@ class StreamMonstersDatabase {
     const transaction = this.db.transaction(() => {
       this.db.prepare('UPDATE streammonsters_monsters SET is_selected = 0 WHERE user_id = ?').run(userId);
       const result = this.db.prepare(`
-        UPDATE streammonsters_monsters SET is_selected = 1 WHERE user_id = ? AND monster_id = ?
+        UPDATE streammonsters_monsters SET is_selected = 1
+        WHERE user_id = ? AND monster_id = ? AND collection_state = 'owned'
       `).run(userId, monsterId);
       if (!result.changes) throw new Error('STREAM_MONSTER_NOT_OWNED');
     });
