@@ -398,11 +398,8 @@ describe('Stream Monsters egg overlay state reliability', () => {
       expect(hint.textContent).not.toMatch(/^NEXT\b/i);
       expect(hint.textContent.trim()).not.toBe('');
       expect(hint.dataset.eggNext).toBeUndefined();
-      const persistent = harness.dom.window.document.getElementById(
-        'egg-next-persistent'
-      );
-      expect(persistent.hidden).toBe(true);
-      expect(persistent.textContent).toBe('');
+      expect(harness.dom.window.document.getElementById('egg-next-persistent'))
+        .toBeNull();
     } finally {
       await harness.close();
     }
@@ -484,7 +481,7 @@ describe('Stream Monsters egg overlay state reliability', () => {
     }
   });
 
-  test('keeps the urgent adopt NEXT visible during an unrelated transient card and reconnect', async () => {
+  test('keeps urgent adopt guidance in the egg-focus rail during a transient card', async () => {
     const offer = freeEgg('offer-visible-next', {
       timing: { publicAtMs: 1_000, expiresAtMs: 31_000 }
     });
@@ -496,12 +493,10 @@ describe('Stream Monsters egg overlay state reliability', () => {
       eggStage: [offer]
     });
     try {
-      const persistent = harness.dom.window.document.getElementById(
-        'egg-next-persistent'
-      );
-      expect(persistent).not.toBeNull();
-      expect(persistent.hidden).toBe(false);
-      expect(persistent.textContent).toContain('!adopt');
+      const focus = harness.dom.window.document.querySelector('[data-egg-focus]');
+      expect(focus.hidden).toBe(false);
+      expect(focus.querySelector('[data-egg-focus-command]').textContent).toBe('!adopt');
+      expect(harness.dom.window.document.getElementById('egg-next-persistent')).toBeNull();
 
       harness.socketHandlers.get('streammonsters:achievement_unlocked')({
         eventId: 'unrelated-visible-card',
@@ -511,12 +506,9 @@ describe('Stream Monsters egg overlay state reliability', () => {
       });
       await flush();
 
-      const card = harness.dom.window.document.getElementById('card');
-      const hint = harness.dom.window.document.getElementById('hint');
-      expect(card.classList).toContain('visible');
-      expect(hint.textContent).toContain('!adopt');
-      expect(persistent.hidden).toBe(false);
-      expect(persistent.textContent).toContain('!adopt');
+      expect(harness.dom.window.document.getElementById('card').classList).toContain('visible');
+      expect(harness.dom.window.document.getElementById('hint').textContent).toContain('!adopt');
+      expect(focus.querySelector('[data-egg-focus-command]').textContent).toBe('!adopt');
     } finally {
       await harness.close();
     }

@@ -279,16 +279,6 @@
     #title { margin:5px 0; font-size:clamp(28px,3vw,39px); line-height:1.03; }
     #subtitle { color:var(--muted); font-size:16px; }
     #hint { margin-top:11px; color:var(--mint); font-size:14px; font-weight:700; }
-    #egg-next-persistent {
-      position:absolute; right:5%; bottom:28.5%; left:5%; z-index:44;
-      max-width:860px; margin:auto; padding:10px 16px;
-      border:2px solid #79ffd4aa; border-radius:16px; color:#e9fff8;
-      background:linear-gradient(135deg,#08231feb,#102a42eb);
-      box-shadow:0 14px 38px #000c,0 0 24px #6bffd43b;
-      font-size:clamp(17px,2.1vw,28px); font-weight:1000; line-height:1.15;
-      text-align:center; text-shadow:0 2px 6px #000;
-    }
-    #egg-next-persistent[hidden] { display:none; }
     #progress { height:9px; margin-top:13px; overflow:hidden; border-radius:99px; background:#070b13; }
     #bar { width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold)); transition:width .5s; }
     #battle {
@@ -301,7 +291,6 @@
       isolation:isolate;
     }
     #streammonsters-overlay[data-battle-active="true"] #egg-shelf,
-    #streammonsters-overlay[data-battle-active="true"] #egg-next-persistent,
     #streammonsters-overlay[data-battle-active="true"] #reveal-stage,
     #streammonsters-overlay[data-battle-active="true"] #arcade-choreography,
     #streammonsters-overlay[data-battle-active="true"] #chat-detail,
@@ -1421,7 +1410,6 @@
     <div data-egg-adopt-summary hidden></div>
     <article data-egg-focus hidden></article>
   </section>
-  <div id="egg-next-persistent" role="status" aria-live="polite" hidden></div>
   <section id="battle"
     aria-label="Stream Monsters Arena"
     data-i18n-aria-label="plugins.streamalchemy.ui.monsters.battleArenaAria"
@@ -1956,28 +1944,15 @@
   };
   const updateEggNextHint = () => {
     const urgentHint = currentEggNextHint();
-    const persistent = node('egg-next-persistent');
     if (urgentHint) {
       node('hint').dataset.eggNext = 'true';
       node('hint').textContent = urgentHint;
-      if (persistent) {
-        persistent.textContent = urgentHint;
-        persistent.hidden = false;
-      }
     } else if (generalHintText) {
       delete node('hint').dataset.eggNext;
       node('hint').textContent = generalHintText;
-      if (persistent) {
-        persistent.textContent = '';
-        persistent.hidden = true;
-      }
     } else {
       delete node('hint').dataset.eggNext;
       node('hint').textContent = '';
-      if (persistent) {
-        persistent.textContent = '';
-        persistent.hidden = true;
-      }
     }
   };
   const acceptStatPrompt = (type, data = {}) => {
