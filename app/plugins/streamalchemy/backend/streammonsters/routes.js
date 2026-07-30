@@ -1286,8 +1286,11 @@ class StreamMonstersRoutes {
   }
 
   eggStageSnapshot(streamKey = 'offline') {
+    const projectedStage = this.eggStageProjector.snapshot(streamKey);
+    const visibleStage = this.ownedReadyEggRescueService
+      ?.excludeClaimedStageEntries?.(projectedStage) || projectedStage;
     const byVisualId = new Map(
-      this.eggStageProjector.snapshot(streamKey)
+      visibleStage
         .map(stage => [stage.visualId, stage])
     );
     const publicRescues = this.ownedReadyEggRescueService?.listPublic?.(

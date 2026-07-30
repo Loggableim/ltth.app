@@ -142,6 +142,21 @@ async function createOverlayHarness(snapshot) {
   return {
     dom,
     socketHandlers,
+    async runPendingTimers(maxPasses = 80) {
+      let idlePasses = 0;
+      for (let pass = 0; pass < maxPasses; pass += 1) {
+        await flush();
+        if (!timers.size) {
+          idlePasses += 1;
+          if (idlePasses >= 4) return;
+          continue;
+        }
+        idlePasses = 0;
+        const pending = [...timers.entries()];
+        timers.clear();
+        pending.forEach(([, timer]) => timer.callback());
+      }
+    },
     async close() {
       for (let pass = 0; pass < 20 && timers.size; pass += 1) {
         const pending = [...timers.entries()];
@@ -330,7 +345,84 @@ describe('Stream Monsters egg overlay state reliability', () => {
       });
 
       expect(hint.textContent).not.toContain('!adopt');
-      expect(hint.textContent).not.toContain('!hatch');
+      expect(hint.textContent).not.toMatch(/^NEXT\b/i);
+      expect(hint.textContent.trim()).not.toBe('');
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('restores adopt then hatch then general NEXT guidance after transient cards close', async () => {
+    const firstOffer = freeEgg('offer-a', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 31_000 }
+    });
+    const secondOffer = freeEgg('offer-b', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }
+    });
+    const readyEgg = {
+      visualId: 'ready-next',
+      provenance: 'gift',
+      ownershipState: 'owned',
+      adoptionStatus: 'owned',
+      adoptable: false,
+      displayName: 'Ready Viewer',
+      element: 'Volt',
+      variant: 'standard',
+      state: 'ready',
+      timing: { readyAtMs: 500, expiresAtMs: 121_000 }
+    };
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [readyEgg, secondOffer, firstOffer]
+    });
+    const hint = harness.dom.window.document.getElementById('hint');
+    try {
+      harness.socketHandlers.get('streammonsters:egg_stage_updated')({
+        eventId: 'establish-next-guidance',
+        correlationId: 'offer-a',
+        eggStage: firstOffer
+      });
+      expect(hint.textContent).toContain('!adopt');
+
+      harness.socketHandlers.get('streammonsters:egg_ready')({
+        eventId: 'ready-card-cycle',
+        correlationId: 'ready-next',
+        eggStage: readyEgg
+      });
+      await harness.runPendingTimers();
+      expect(hint.textContent).toContain('!adopt');
+
+      harness.socketHandlers.get('streammonsters:free_egg_claimed')({
+        eventId: 'claim-first-offer',
+        correlationId: 'offer-a',
+        removedEggStage: firstOffer
+      });
+      await harness.runPendingTimers();
+      expect(hint.textContent).toContain('!adopt');
+
+      harness.socketHandlers.get('streammonsters:free_egg_claimed')({
+        eventId: 'claim-second-offer',
+        correlationId: 'offer-b',
+        removedEggStage: secondOffer
+      });
+      await harness.runPendingTimers();
+      expect(hint.textContent).toContain('!hatch');
+
+      harness.socketHandlers.get('streammonsters:egg_stage_removed')({
+        eventId: 'remove-ready',
+        correlationId: 'ready-next',
+        removedEggStage: readyEgg,
+        eggStage: readyEgg
+      });
+      await harness.runPendingTimers();
+      expect(hint.textContent).not.toContain('!adopt');
+      expect(hint.textContent).not.toMatch(/no egg action/i);
+      expect(hint.textContent).not.toMatch(/^NEXT\b/i);
+      expect(hint.textContent).toContain('!eier');
+      expect(hint.textContent.trim()).not.toBe('');
     } finally {
       await harness.close();
     }

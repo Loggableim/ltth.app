@@ -113,19 +113,28 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
       labels: {
         eggFocusOwner: 'Owner: {owner}',
         eggFocusPosition: '{position} / {total}',
-        eggFocusReady: 'Ready · {command}',
-        eggFocusIncubating: 'Hatches in {time}'
+        eggCardOwned: 'OWNED',
+        eggCardReady: 'READY · {command}',
+        eggCardRotTimer: 'ROT IN {time}',
+        eggCardTimerUnavailable: '--:--'
       },
       getHatchReference: () => '!hatch'
     });
 
-    view.applySnapshot([egg('ready', { state: 'ready' })]);
+    view.applySnapshot([egg('ready', {
+      state: 'ready',
+      timing: { readyAtMs: 500, expiresAtMs: 61_000, landedAtMs: 1_000 }
+    })]);
     const focus = dom.window.document.querySelector('[data-egg-focus]');
     expect(focus.dataset.eggId).toBe('ready');
     expect(focus.querySelector('[data-egg-focus-owner]').textContent)
       .toBe('Owner: @ready');
     expect(focus.querySelector('[data-egg-focus-state]').textContent)
-      .toBe('Ready · !hatch');
+      .toBe('OWNED · READY · !hatch · ROT IN 01:00');
+    expect(focus.querySelector('[data-egg-focus-timer]').textContent)
+      .toBe('01:00');
+    expect(focus.querySelector('[data-egg-focus-command]').textContent)
+      .toBe('!hatch');
     expect(focus.querySelector('[data-egg-focus-position]').textContent)
       .toBe('1 / 1');
 
@@ -147,8 +156,9 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
         eggFocusOwner: 'Besitzer: {owner}',
         eggFocusOpenOwner: 'Öffentlich · nur berechtigte Viewer',
         eggFocusPosition: '{position} / {total}',
-        eggFocusPublic: 'Gratis-Ei · {time} · {command}',
-        eggFocusReserved: 'Reserviert · {time} · {command}'
+        eggCardPublic: 'JETZT ADOPTIEREN · {command}',
+        eggCardReserved: 'RESERVIERT FÜR {owner} · {command}',
+        eggCardTimerUnavailable: '--:--'
       },
       getAdoptReference: () => '!adoptieren'
     });
@@ -165,7 +175,11 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
     expect(focus.querySelector('[data-egg-focus-owner]').textContent)
       .toBe('Öffentlich · nur berechtigte Viewer');
     expect(focus.querySelector('[data-egg-focus-state]').textContent)
-      .toBe('Gratis-Ei · 01:00 · !adoptieren');
+      .toBe('JETZT ADOPTIEREN · !adoptieren');
+    expect(focus.querySelector('[data-egg-focus-timer]').textContent)
+      .toBe('01:00');
+    expect(focus.querySelector('[data-egg-focus-command]').textContent)
+      .toBe('!adoptieren');
 
     view.applySnapshot([egg('reserved', {
       displayName: '@Mira',
@@ -178,7 +192,11 @@ describe('Stream Monsters 1.11 portrait Smart Egg Focus', () => {
     expect(focus.querySelector('[data-egg-focus-owner]').textContent)
       .toBe('Besitzer: @Mira');
     expect(focus.querySelector('[data-egg-focus-state]').textContent)
-      .toBe('Reserviert · 01:00 · !adoptieren');
+      .toBe('RESERVIERT FÜR @Mira · !adoptieren');
+    expect(focus.querySelector('[data-egg-focus-timer]').textContent)
+      .toBe('01:00');
+    expect(focus.querySelector('[data-egg-focus-command]').textContent)
+      .toBe('!adoptieren');
     view.destroy();
   });
 

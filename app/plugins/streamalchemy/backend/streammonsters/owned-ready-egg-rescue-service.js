@@ -460,6 +460,22 @@ class OwnedReadyEggRescueService {
       .map(row => this.projectPublicRow(row, nowMs));
   }
 
+  excludeClaimedStageEntries(stageEntries = []) {
+    const claimedVisualIds = new Set(this.db.prepare(`
+      SELECT rescue.*, eggs.*
+      FROM streammonsters_owned_ready_egg_rescues rescue
+      JOIN streammonsters_eggs eggs ON eggs.egg_id = rescue.egg_id
+      WHERE rescue.status = 'claimed'
+        AND eggs.state IN ('queued', 'incubating', 'ready')
+        AND eggs.monster_id IS NULL
+        AND eggs.expired_at_ms IS NULL
+    `).all().map(row => (
+      this.eggStageProjector.projectEgg(row)?.visualId
+    )).filter(Boolean));
+    return (Array.isArray(stageEntries) ? stageEntries : [])
+      .filter(stage => !claimedVisualIds.has(stage?.visualId));
+  }
+
   claimedRowByEvent(eventId) {
     return this.db.prepare(`
       SELECT rescue.*, eggs.*

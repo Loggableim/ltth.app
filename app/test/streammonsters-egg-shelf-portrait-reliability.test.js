@@ -68,7 +68,10 @@ function shelfFixture({ nowMs = 10_000, width = 477 } = {}) {
       eggCardRotTimer: 'ROT IN {time}',
       eggCardTimer: '{time}',
       eggCardTimerUnavailable: '--:--',
-      eggCardAria: '{owner} · {element} · {status} · {timer}'
+      eggCardAria: '{owner} · {element} · {status} · {timer}',
+      eggFocusOwner: 'Owner: {owner}',
+      eggFocusOpenOwner: 'Public · eligible viewers only',
+      eggFocusPosition: '{position} / {total}'
     },
     getElementName: element => ({
       Ember: 'Fire',
@@ -203,6 +206,200 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     view.destroy();
     dom.window.close();
   });
+
+  test('counts each card down to the deadline that belongs to its current state', () => {
+    const { dom, view } = shelfFixture({ width: 1_920 });
+    view.applySnapshot([
+      egg('incubating-deadlines', {
+        state: 'incubating',
+        timing: {
+          landedAtMs: 1_000,
+          readyAtMs: 70_000,
+          expiresAtMs: 130_000
+        }
+      }),
+      egg('ready-deadlines', {
+        state: 'ready',
+        timing: {
+          landedAtMs: 1_000,
+          readyAtMs: 5_000,
+          expiresAtMs: 100_000
+        }
+      }),
+      egg('public-deadlines', {
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: {
+          landedAtMs: 1_000,
+          publicAtMs: 5_000,
+          expiresAtMs: 80_000
+        }
+      }),
+      egg('reserved-deadlines', {
+        provenance: 'free',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        adoptable: false,
+        timing: {
+          landedAtMs: 1_000,
+          publicAtMs: 40_000,
+          expiresAtMs: 80_000
+        }
+      }),
+      egg('queued-deadlines', {
+        state: 'queued',
+        queuePosition: 2,
+        timing: {
+          landedAtMs: 1_000,
+          readyAtMs: 70_000,
+          expiresAtMs: 130_000
+        }
+      })
+    ]);
+
+    const timer = id => dom.window.document.querySelector(
+      `[data-egg-id="${id}"] [data-egg-timer]`
+    ).textContent;
+    expect(timer('incubating-deadlines')).toBe('01:00');
+    expect(timer('ready-deadlines')).toBe('01:30');
+    expect(timer('public-deadlines')).toBe('01:10');
+    expect(timer('reserved-deadlines')).toBe('00:30');
+    expect(timer('queued-deadlines')).toBe('--:--');
+    view.destroy();
+    dom.window.close();
+  });
+
+  test.each([
+    {
+      name: 'incubating owned egg',
+      stage: egg('opaque-incubating-id', {
+        displayName: 'Alice',
+        element: 'Tide',
+        ownershipState: 'owned',
+        state: 'incubating',
+        timing: { landedAtMs: 1_000, readyAtMs: 70_000, expiresAtMs: 130_000 }
+      }),
+      owner: 'Owner: Alice',
+      element: 'Element: Water',
+      status: 'OWNED · INCUBATING',
+      timer: '01:00',
+      command: null
+    },
+    {
+      name: 'reserved free egg',
+      stage: egg('opaque-reserved-id', {
+        displayName: '@Mira',
+        element: 'Ember',
+        provenance: 'free',
+        ownershipState: 'offered',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        adoptable: false,
+        timing: { landedAtMs: 1_000, publicAtMs: 70_000, expiresAtMs: 130_000 }
+      }),
+      owner: 'Owner: @Mira',
+      element: 'Element: Fire',
+      status: 'RESERVED FOR @Mira · !adopt',
+      timer: '01:00',
+      command: '!adopt'
+    },
+    {
+      name: 'public free egg',
+      stage: egg('opaque-public-id', {
+        displayName: 'Source Viewer',
+        element: 'Grove',
+        provenance: 'free',
+        ownershipState: 'offered',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { landedAtMs: 1_000, expiresAtMs: 80_000 }
+      }),
+      owner: 'Public · eligible viewers only',
+      element: 'Element: Nature',
+      status: 'ADOPT NOW · !adopt',
+      timer: '01:10',
+      command: '!adopt'
+    },
+    {
+      name: 'public rescue grace egg',
+      stage: egg('opaque-rescue-id', {
+        rescueId: 'opaque-rescue-record',
+        displayName: 'Original Owner',
+        element: 'Gale',
+        ownershipState: 'offered',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { landedAtMs: 1_000, expiresAtMs: 90_000 }
+      }),
+      owner: 'Owner: Original Owner',
+      element: 'Element: Air',
+      status: 'GRACE · ADOPT NOW · !adopt',
+      timer: '01:20',
+      command: '!adopt'
+    },
+    {
+      name: 'ready owned egg',
+      stage: egg('opaque-ready-id', {
+        displayName: 'Ready Owner',
+        element: 'Volt',
+        ownershipState: 'owned',
+        state: 'ready',
+        timing: { landedAtMs: 1_000, readyAtMs: 5_000, expiresAtMs: 100_000 }
+      }),
+      owner: 'Owner: Ready Owner',
+      element: 'Element: Lightning',
+      status: 'OWNED · READY · !hatch · ROT IN 01:30',
+      timer: '01:30',
+      command: '!hatch'
+    },
+    {
+      name: 'queued owned egg',
+      stage: egg('opaque-queued-id', {
+        displayName: 'Queue Owner',
+        element: 'Lunar',
+        ownershipState: 'owned',
+        state: 'queued',
+        queuePosition: 3,
+        timing: { landedAtMs: 1_000, readyAtMs: null, expiresAtMs: null }
+      }),
+      owner: 'Owner: Queue Owner',
+      element: 'Element: Moon',
+      status: 'OWNED · QUEUED #3',
+      timer: '--:--',
+      command: null
+    }
+  ])(
+    'renders complete portrait focus metadata for $name',
+    ({ stage, owner, element, status, timer, command }) => {
+      const { dom, view } = shelfFixture({ width: 477 });
+      view.applySnapshot([stage]);
+      const focus = dom.window.document.querySelector('[data-egg-focus]');
+      const text = selector => focus.querySelector(selector)?.textContent || '';
+
+      expect(focus.hidden).toBe(false);
+      expect(text('[data-egg-focus-owner]')).toBe(owner);
+      expect(text('[data-egg-focus-element]')).toBe(element);
+      expect(text('[data-egg-focus-state]')).toBe(status);
+      expect(text('[data-egg-focus-timer]')).toBe(timer);
+      if (command) {
+        expect(text('[data-egg-focus-command]')).toBe(command);
+      } else {
+        expect(focus.querySelector('[data-egg-focus-command]').hidden).toBe(true);
+      }
+      expect(focus.getAttribute('aria-label')).toContain(owner.replace('Owner: ', ''));
+      expect(focus.getAttribute('aria-label')).toContain(element.replace('Element: ', ''));
+      expect(focus.getAttribute('aria-label')).toContain(status);
+      expect(focus.getAttribute('aria-label')).toContain(timer);
+      expect(focus.getAttribute('aria-label')).not.toContain(stage.visualId);
+      expect(focus.textContent).not.toContain(stage.visualId);
+      view.destroy();
+      dom.window.close();
+    }
+  );
 
   test('keeps the same overflow preview node across countdown ticks', () => {
     const { dom, view, intervals, setNow } = shelfFixture();
@@ -580,7 +777,10 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
       /@media \(orientation: portrait\)\s*\{[\s\S]*?\[data-egg-focus\]\s*\{[\s\S]*?width:clamp\(/s
     );
     expect(overlayHtml).toMatch(/\[data-egg-focus-owner\][\s\S]*?font-size:clamp\(/s);
+    expect(overlayHtml).toMatch(/\[data-egg-focus-element\][\s\S]*?font-size:clamp\(/s);
     expect(overlayHtml).toMatch(/\[data-egg-focus-state\][\s\S]*?font-size:clamp\(/s);
+    expect(overlayHtml).toMatch(/\[data-egg-focus-timer\][\s\S]*?font-size:clamp\(/s);
+    expect(overlayHtml).toMatch(/\[data-egg-focus-command\][\s\S]*?font-size:clamp\(/s);
     expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="ready"\]/);
     expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="public"\]/);
     expect(overlayHtml).toMatch(/\[data-egg-focus\]\[data-state="queued"\]/);
@@ -598,6 +798,20 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
         'utf8'
       ));
       const keys = [
+        'eggShelfNextAction',
+        'eggShelfNoAction',
+        'eggCardOwner',
+        'eggCardElement',
+        'eggCardOwned',
+        'eggCardIncubating',
+        'eggCardQueued',
+        'eggCardReady',
+        'eggCardReserved',
+        'eggCardPublic',
+        'eggCardRescuePublic',
+        'eggCardRotTimer',
+        'eggCardTimerUnavailable',
+        'eggCardAria',
         'eggFocusOwner',
         'eggFocusPosition',
         'eggFocusReady',
@@ -606,6 +820,24 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
         'eggFocusReserved',
         'eggFocusOpenOwner'
       ];
+      const requiredTokens = {
+        eggShelfNextAction: ['{command}'],
+        eggCardOwner: ['{owner}'],
+        eggCardElement: ['{element}'],
+        eggCardQueued: ['{position}'],
+        eggCardReady: ['{command}'],
+        eggCardReserved: ['{owner}', '{command}'],
+        eggCardPublic: ['{command}'],
+        eggCardRescuePublic: ['{command}'],
+        eggCardRotTimer: ['{time}'],
+        eggCardAria: ['{owner}', '{element}', '{status}', '{timer}'],
+        eggFocusOwner: ['{owner}'],
+        eggFocusPosition: ['{position}', '{total}'],
+        eggFocusReady: ['{command}'],
+        eggFocusIncubating: ['{time}'],
+        eggFocusPublic: ['{time}', '{command}'],
+        eggFocusReserved: ['{time}', '{command}']
+      };
 
       for (const key of keys) {
         expect(pluginLocale.plugins.streamalchemy.ui.monsters[key])
@@ -613,6 +845,10 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
         expect(pluginLocale.plugins.streamalchemy.ui.monsters[key].trim()).not.toBe('');
         expect(appLocale.streammonsters[key]).toEqual(expect.any(String));
         expect(appLocale.streammonsters[key].trim()).not.toBe('');
+        for (const token of requiredTokens[key] || []) {
+          expect(pluginLocale.plugins.streamalchemy.ui.monsters[key]).toContain(token);
+          expect(appLocale.streammonsters[key]).toContain(token);
+        }
       }
     }
   );

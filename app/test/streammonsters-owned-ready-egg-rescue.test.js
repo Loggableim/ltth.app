@@ -1046,13 +1046,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
       publicStage
     ], 'owned_ready_egg_claimed', {
       eggStage: claimedStage
-    })).toEqual([
-      expect.objectContaining({
-        visualId: publicStage.visualId,
-        state: 'ready',
-        displayName: 'New Owner'
-      })
-    ]);
+    })).toEqual([]);
   });
 
   test('keeps free-provenance owned-ready rescues distinct in shelf and card copy', () => {
@@ -1122,7 +1116,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     }));
   });
 
-  test('adds each public rescue once to the state snapshot and hides claimed free rescues', () => {
+  test('adds each public rescue once and keeps every claimed rescue out of reconnect snapshots', () => {
     const subject = createSubject({ graceSeconds: 1 });
     if (!subject) return;
     createReadyEgg(subject.store, {
@@ -1215,23 +1209,46 @@ describe('Stream Monsters owned-ready egg rescue', () => {
       ]);
     });
 
-    subject.service.adopt({
+    const claimedGiftVisualId = publicState.eggStage.find(stage => (
+      stage.provenance === 'gift' && stage.state === 'public'
+    )).visualId;
+    const claimedFreeVisualId = publicState.eggStage.find(stage => (
+      stage.provenance === 'free' && stage.state === 'public'
+    )).visualId;
+    const giftClaim = subject.service.adopt({
       userId: 'rescuer-route-gift',
       eventId: 'route-gift-claim',
       nowMs: 2_000
     });
-    subject.service.adopt({
+    const freeClaim = subject.service.adopt({
       userId: 'rescuer-route-free',
       eventId: 'route-free-claim',
       nowMs: 2_000
     });
     const claimedState = readState();
-    const claimedFreeVisualId = publicState.eggStage.find(stage => (
-      stage.provenance === 'free' && stage.state === 'public'
-    )).visualId;
-    expect(claimedState.eggStage).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({ visualId: claimedFreeVisualId })
-    ]));
+    const delayedReconnectState = readState();
+    for (const visualId of [claimedGiftVisualId, claimedFreeVisualId]) {
+      expect(claimedState.eggStage).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ visualId })
+      ]));
+      expect(delayedReconnectState.eggStage).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ visualId })
+      ]));
+    }
+    for (const [claim, userId] of [
+      [giftClaim, 'rescuer-route-gift'],
+      [freeClaim, 'rescuer-route-free']
+    ]) {
+      expect(claim).toEqual(expect.objectContaining({
+        success: true,
+        status: 'claimed'
+      }));
+      expect(subject.store.getViewerEggs(userId)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ state: 'ready' })
+        ])
+      );
+    }
   });
 
   test('exposes and validates the 0..86400 rescue grace creator control', () => {

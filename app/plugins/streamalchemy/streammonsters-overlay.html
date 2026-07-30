@@ -1072,8 +1072,9 @@
       #egg-shelf [data-egg-overflow],
       #egg-shelf [data-egg-adopt-summary] { display:none!important; }
       #egg-shelf [data-egg-focus] {
+        position:relative;
         display:grid; grid-template-columns:clamp(78px,20vw,132px) minmax(0,1fr);
-        grid-template-rows:auto auto auto; column-gap:clamp(10px,2.6vw,18px);
+        grid-template-rows:auto auto auto auto auto; column-gap:clamp(10px,2.6vw,18px);
         width:clamp(280px,86vw,560px); min-height:clamp(116px,15vh,182px); padding:clamp(10px,2.4vw,18px);
         border:2px solid #b4a1ff; border-radius:22px; color:var(--ink); background:#10182bf2;
         box-shadow:0 14px 42px #000b,0 0 30px #a984ff33;
@@ -1082,9 +1083,19 @@
       .egg-focus-art { grid-row:1 / -1; display:grid; place-items:center; width:100%; height:100%; }
       .egg-focus-art img { width:100%; height:100%; object-fit:contain; }
       .egg-focus-art[data-fallback="true"] { font-size:clamp(58px,14vw,96px); }
-      [data-egg-focus-owner] { align-self:end; color:var(--muted); font-size:clamp(16px,3.7vw,24px); font-weight:800; }
-      [data-egg-focus-state] { align-self:center; font-size:clamp(20px,4.8vw,34px); font-weight:1000; line-height:1.1; }
-      [data-egg-focus-position] { align-self:start; color:var(--muted); font-size:clamp(14px,3.2vw,21px); font-weight:800; }
+      [data-egg-focus-owner] { align-self:end; color:var(--muted); font-size:clamp(15px,3.4vw,23px); font-weight:900; }
+      [data-egg-focus-element] { color:#d9e7ff; font-size:clamp(14px,3vw,20px); font-weight:850; }
+      [data-egg-focus-state] { align-self:center; font-size:clamp(17px,3.8vw,27px); font-weight:1000; line-height:1.08; }
+      [data-egg-focus-timer] { color:#fff; font-size:clamp(25px,6vw,42px); font-variant-numeric:tabular-nums; font-weight:1000; line-height:1; }
+      [data-egg-focus-command] {
+        justify-self:start; padding:3px 10px; border:1px solid #ffffff8c; border-radius:999px;
+        color:#fff; background:#ffffff16; font-size:clamp(17px,3.8vw,25px); font-weight:1000;
+      }
+      [data-egg-focus-command][hidden] { display:none!important; }
+      [data-egg-focus-position] {
+        position:absolute; top:6px; right:10px; color:var(--muted);
+        font-size:clamp(13px,2.8vw,19px); font-weight:800;
+      }
       [data-egg-focus][data-state="public"] { border-color:#ffd76f; box-shadow:0 0 38px #ffd76f88,0 14px 42px #000b; }
       [data-egg-focus][data-state="public"] [data-egg-focus-state] { color:#fff0a0; }
       [data-egg-focus][data-state="ready"] { border-color:#6ef1b8; }
@@ -1557,8 +1568,15 @@
       }
     });
   await overlayLocaleResolver.ready();
-  const text = (key, _fallback, params = {}) => {
-    return overlayLocaleResolver.translate(key, params);
+  const text = (key, fallback, params = {}) => {
+    const translated = overlayLocaleResolver.translate(key, params);
+    if (translated) return translated;
+    return String(fallback || '').replace(
+      /\{\{?(\w+)\}?\}/g,
+      (match, name) => Object.prototype.hasOwnProperty.call(params, name)
+        ? String(params[name])
+        : match
+    );
   };
   const elementName = element => text(
     window.StreamMonstersOverlayRuntime.elementKey(element),
@@ -1829,6 +1847,7 @@
   const battleLocaleSequences = new Map();
   let battleReplaySynchronizer = null;
   let currentCommandPrefix = '!';
+  let generalHintText = '';
   const beginReconnectEggSnapshot = cycle => {
     activeReconnectCycle = Math.max(1, Number(cycle) || 1);
     reconnectEggSnapshotPending = true;
@@ -1865,9 +1884,11 @@
       hatch:commandReference('hatch')
     });
     if (next?.command) {
+      node('hint').dataset.eggNext = 'true';
       node('hint').textContent = text('eggShelfNextAction', 'NEXT · {command}', next);
-    } else {
-      node('hint').textContent = text('eggShelfNoAction', 'No egg action is available.');
+    } else if (generalHintText) {
+      delete node('hint').dataset.eggNext;
+      node('hint').textContent = generalHintText;
     }
   };
   const acceptStatPrompt = (type, data = {}) => {
@@ -2060,7 +2081,8 @@
       : '{minutes} minutes';
     return text(duration.key, fallback, duration.params);
   };
-  node('hint').textContent = commandHint();
+  generalHintText = commandHint();
+  node('hint').textContent = generalHintText;
 
   const LEGACY_CUE_IDS = Object.freeze({
     spawn:'egg.spawn',
@@ -2476,11 +2498,12 @@
     node('hype-value').textContent = data?.hype?.charged_eggs
       ? text('charged', 'CHARGED!')
       : `${points}%`;
-    node('hint').textContent = text(
+    generalHintText = text(
       'snapshotRules',
       '{eggs} · {hatch} [slot] · {duration}',
       { ...commandParams(), duration: formatHatchDuration(duration) }
     );
+    node('hint').textContent = generalHintText;
     const layouts = data?.config?.layouts || {};
     Object.assign(layoutConfig, {
       landscapeAnchor: layouts?.landscape?.anchor || data?.config?.landscapeAnchor || 'bottom-center',
@@ -3208,6 +3231,7 @@
       return result;
     } finally {
       if (preview) layoutController.apply();
+      updateEggNextHint();
     }
   };
   battleReplaySynchronizer = window.StreamMonstersOverlayRuntime.createBattleReplaySynchronizer({

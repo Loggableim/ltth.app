@@ -151,6 +151,81 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
     expect(EggStageView.selectNextEggAction([reserved], commands)).toBeNull();
   });
 
+  test('selects urgent egg actions deterministically by deadline and visual id', () => {
+    const offers = [
+      {
+        visualId: 'offer-z',
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { expiresAtMs: 80_000 }
+      },
+      {
+        visualId: 'offer-b',
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { expiresAtMs: 40_000 }
+      },
+      {
+        visualId: 'offer-a',
+        provenance: 'free',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { expiresAtMs: 40_000 }
+      }
+    ];
+    const ready = [
+      {
+        visualId: 'ready-z',
+        provenance: 'gift',
+        ownershipState: 'owned',
+        state: 'ready',
+        timing: { expiresAtMs: 90_000 }
+      },
+      {
+        visualId: 'ready-b',
+        provenance: 'gift',
+        ownershipState: 'owned',
+        state: 'ready',
+        timing: { expiresAtMs: 50_000 }
+      },
+      {
+        visualId: 'ready-a',
+        provenance: 'gift',
+        ownershipState: 'owned',
+        state: 'ready',
+        timing: { expiresAtMs: 50_000 }
+      }
+    ];
+
+    for (const stages of [offers, [...offers].reverse()]) {
+      expect(EggStageView.selectNextEggAction(stages, commands)).toEqual({
+        kind: 'adopt',
+        command: '!adopt',
+        visualId: 'offer-a'
+      });
+    }
+    for (const stages of [ready, [...ready].reverse()]) {
+      expect(EggStageView.selectNextEggAction(stages, commands)).toEqual({
+        kind: 'hatch',
+        command: '!hatch',
+        visualId: 'ready-a'
+      });
+    }
+    expect(EggStageView.selectNextEggAction(
+      [...ready, ...offers].reverse(),
+      commands
+    )).toEqual({
+      kind: 'adopt',
+      command: '!adopt',
+      visualId: 'offer-a'
+    });
+  });
+
   test('an unready hatch shows exact time and queue position', () => {
     expect(card('hatch_not_ready', {
       egg: {

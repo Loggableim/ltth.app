@@ -467,6 +467,7 @@
     if (!visualId) return [...eggsById.values()];
     if (
       type === 'free_egg_claimed' ||
+      type === 'owned_ready_egg_claimed' ||
       type === 'egg_stage_removed' ||
       type === 'egg_expired' ||
       isClaimedFreeInventoryEgg(egg) ||
@@ -486,11 +487,27 @@
       .filter(egg => egg.state !== 'expired' && !isClaimedFreeInventoryEgg(egg));
     const adopt = boundedText(commands.adopt, 48);
     const hatch = boundedText(commands.hatch, 48);
-    const urgentOffer = eggs.find(isPublicAdoptableEgg);
+    const deadline = egg => {
+      const value = Number(
+        egg?.timing?.expiresAtMs ??
+        egg?.timing?.expiryAtMs ??
+        egg?.expiresAtMs
+      );
+      return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+    };
+    const byDeadlineThenId = (left, right) => (
+      deadline(left) - deadline(right) ||
+      left.visualId.localeCompare(right.visualId)
+    );
+    const urgentOffer = eggs
+      .filter(isPublicAdoptableEgg)
+      .sort(byDeadlineThenId)[0];
     if (urgentOffer && adopt) {
       return { kind: 'adopt', command: adopt, visualId: urgentOffer.visualId };
     }
-    const readyEgg = eggs.find(egg => egg.state === 'ready');
+    const readyEgg = eggs
+      .filter(egg => egg.state === 'ready')
+      .sort(byDeadlineThenId)[0];
     if (readyEgg && hatch) {
       return { kind: 'hatch', command: hatch, visualId: readyEgg.visualId };
     }
@@ -649,12 +666,21 @@
 
     function eggTimerText(egg) {
       const timing = egg.timing || {};
-      const deadline = egg.state === 'reserved'
-        ? timing.publicAtMs
-        : egg.state === 'queued'
-          ? null
-          : timing.expiresAtMs ?? timing.expiryAtMs ?? timing.readyAtMs;
-      return Number.isFinite(Number(deadline))
+      let deadline = null;
+      if (egg.state === 'reserved') {
+        deadline = timing.publicAtMs;
+      } else if (egg.state === 'incubating') {
+        deadline = timing.readyAtMs;
+      } else if (
+        egg.state === 'ready' ||
+        egg.state === 'public' ||
+        isPublicAdoptableEgg(egg)
+      ) {
+        deadline = timing.expiresAtMs ?? timing.expiryAtMs;
+      }
+      return deadline !== null &&
+        deadline !== undefined &&
+        Number.isFinite(Number(deadline))
         ? formatCountdown(Math.max(0, Number(deadline) - Number(now())))
         : currentLabels().eggCardTimerUnavailable || '--:--';
     }
@@ -895,43 +921,6 @@
         : '';
     }
 
-    function focusTiming(egg) {
-      const labels = currentLabels();
-      const timing = egg.timing || {};
-      if (isPublicAdoptableEgg(egg)) {
-        return replaceTokens(labels.eggFocusPublic || labels.public || 'Free egg · {time} · {command}', {
-          time: formatCountdown(Math.max(
-            0,
-            Number(timing.expiresAtMs ?? timing.expiryAtMs) - Number(now())
-          )),
-          command: getAdoptReference()
-        });
-      }
-      if (egg.state === 'ready') {
-        return replaceTokens(labels.eggFocusReady || labels.ready || 'Ready · {command}', {
-          command: getHatchReference()
-        });
-      }
-      if (egg.state === 'queued') {
-        return replaceTokens(labels.eggFocusQueued || labels.queued || 'Queue #{position}', {
-          position: Number(egg.queuePosition) || 1
-        });
-      }
-      if (egg.state === 'reserved') {
-        return replaceTokens(labels.eggFocusReserved || labels.reserved || 'Reserved · {time} · {command}', {
-          time: formatCountdown(Math.max(0, Number(timing.publicAtMs) - Number(now()))),
-          owner: safeViewerName(egg.displayName) || 'Viewer',
-          command: getAdoptReference()
-        });
-      }
-      return replaceTokens(
-        labels.eggFocusIncubating || labels.incubating || 'Hatches in {time}',
-        {
-          time: formatCountdown(Math.max(0, Number(timing.readyAtMs) - Number(now())))
-        }
-      );
-    }
-
     function updateFocusCard(model) {
       if (!focusCard) return;
       const egg = model.focus;
@@ -945,6 +934,9 @@
       focusCard.dataset.provenance = boundedText(egg.provenance, 24);
       focusCard.dataset.element = egg.element.toLowerCase();
       focusCard.dataset.adoptable = String(isPublicAdoptableEgg(egg));
+      const labels = currentLabels();
+      const owner = safeViewerName(egg.displayName) || 'Viewer';
+      const element = boundedText(getElementName(egg.element), 48) || egg.element;
 
       let art = focusCard.querySelector('[data-egg-focus-art]');
       if (!art) {
@@ -961,7 +953,7 @@
           art.replaceChildren(image);
         }
         image.src = imageUrl;
-        image.alt = `${egg.element} egg`;
+        image.alt = `${element} egg`;
         delete art.dataset.fallback;
       } else if (art.dataset.fallback !== 'true') {
         art.replaceChildren();
@@ -980,17 +972,43 @@
         return line;
       };
       const ownerLine = ensureLine('owner', 'egg-focus-owner');
-      ownerLine.textContent = isPublicAdoptableEgg(egg)
-        ? currentLabels().eggFocusOpenOwner || ''
+      ownerLine.textContent = isPublicAdoptableEgg(egg) && !isOwnedReadyRescue(egg)
+        ? labels.eggFocusOpenOwner || ''
         : replaceTokens(
-            currentLabels().eggFocusOwner || 'Owner: {owner}',
-            { owner: safeViewerName(egg.displayName) || 'Viewer' }
+            labels.eggFocusOwner || 'Owner: {owner}',
+            { owner }
           );
-      ensureLine('state', 'egg-focus-state').textContent = focusTiming(egg);
+      ensureLine('element', 'egg-focus-element').textContent = replaceTokens(
+        labels.eggCardElement || 'Element: {element}',
+        { element }
+      );
+      const status = eggCardStatus(egg);
+      const timer = eggTimerText(egg);
+      ensureLine('state', 'egg-focus-state').textContent = status;
+      ensureLine('timer', 'egg-focus-timer').textContent = timer;
+      const command = egg.state === 'ready'
+        ? getHatchReference()
+        : (egg.state === 'reserved' || isPublicAdoptableEgg(egg))
+          ? getAdoptReference()
+          : '';
+      const commandLine = ensureLine('command', 'egg-focus-command');
+      commandLine.textContent = command;
+      commandLine.hidden = !command;
       ensureLine('position', 'egg-focus-position').textContent = replaceTokens(
-        currentLabels().eggFocusPosition || '{position} / {total}',
+        labels.eggFocusPosition || '{position} / {total}',
         { position: model.position, total: model.total }
       );
+      focusCard.setAttribute('aria-label', replaceTokens(
+        labels.eggCardAria || '{owner} · {element} · {status} · {timer}',
+        {
+          owner: isPublicAdoptableEgg(egg) && !isOwnedReadyRescue(egg)
+            ? ownerLine.textContent
+            : owner,
+          element,
+          status,
+          timer
+        }
+      ));
     }
 
     function render() {
@@ -1044,7 +1062,7 @@
     }
 
     function applyEvent(type, payload = {}) {
-      if (type === 'free_egg_claimed') {
+      if (type === 'free_egg_claimed' || type === 'owned_ready_egg_claimed') {
         const removedId = boundedText(
           payload.removedEggStage?.visualId ||
           payload.eggStage?.visualId ||
