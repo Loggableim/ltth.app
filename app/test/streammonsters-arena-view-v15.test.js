@@ -504,6 +504,77 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-owner-2').textContent).toBe('@mark_teufel01');
   });
 
+  test('keeps sealed choices inaccessible until one joint production reveal', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { now: () => 1_000 }
+    });
+    const fighters = [1, 2].map(slot => ({
+      slot,
+      name: slot === 1 ? 'Ashfang' : 'Selene',
+      viewerName: slot === 1 ? '@alpha' : '@beta',
+      hp: 30,
+      maxHp: 30,
+      skills: [
+        { choice: 'A', name: 'Bite', icon: 'A', available: true },
+        { choice: 'B', name: 'Guard', icon: 'B', available: true },
+        { choice: 'C', name: 'Nova', icon: 'C', available: true }
+      ]
+    }));
+    const cards = () => [
+      ...document.querySelectorAll('[data-skill-deck] [data-skill]')
+    ];
+
+    cards()[0].classList.add('selected');
+    cards()[0].setAttribute('aria-selected', 'true');
+    view.openChoice({
+      matchId: 'accessible-sealed',
+      round: 3,
+      fighters,
+      choices: ['A', 'B', 'C']
+    });
+
+    expect(cards().every(card => !card.classList.contains('selected'))).toBe(true);
+    expect(cards().every(card => card.getAttribute('aria-selected') === 'false'))
+      .toBe(true);
+
+    view.lockChoice({
+      matchId: 'accessible-sealed',
+      decision: { slot: 1, choice: 'B', source: 'viewer' }
+    });
+    expect(document.getElementById('arena-fighter-1').dataset.choice)
+      .toBeUndefined();
+    expect(cards().every(card => !card.classList.contains('selected'))).toBe(true);
+    expect(cards().every(card => card.getAttribute('aria-selected') === 'false'))
+      .toBe(true);
+
+    expect(view.revealChoices({
+      choices: [
+        { slot: 1, choice: 'B', source: 'viewer' },
+        { slot: 2, choice: 'C', source: 'viewer' }
+      ]
+    })).toBe(true);
+    for (const card of cards()) {
+      const deck = card.closest('[data-skill-deck]').dataset.skillDeck;
+      const selected = (
+        (deck === '1' && card.dataset.skill === 'B') ||
+        (deck === '2' && card.dataset.skill === 'C')
+      );
+      expect(card.classList.contains('selected')).toBe(selected);
+      expect(card.getAttribute('aria-selected')).toBe(String(selected));
+    }
+
+    view.openChoice({
+      matchId: 'accessible-sealed',
+      round: 4,
+      choices: ['A', 'B', 'C']
+    });
+    expect(cards().every(card => !card.classList.contains('selected'))).toBe(true);
+    expect(cards().every(card => card.getAttribute('aria-selected') === 'false'))
+      .toBe(true);
+  });
+
   test('marks locks, cancellation and winner without leaking the lower chat safe zone', async () => {
     mountArena();
     const waited = [];
@@ -2549,7 +2620,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(styles.get('#arena-action-card').getPropertyValue('min-height')).toBe('0px');
     expect(styles.get('#arena-action-card').getPropertyValue('max-height')).toBe('');
     expect(styles.get('#battle[data-phase="action"] #arena-lead').getPropertyValue('top'))
-      .toBe('6.5%');
+      .toBe('12.5%');
     expect(styles.get('#battle[data-phase="action"] #arena-action-card').getPropertyValue('top'))
       .toBe('14.5%');
     expect(styles.get('#battle[data-phase="action"] #arena-action-card').getPropertyValue('min-height'))
@@ -2716,6 +2787,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const compactResult = portraitRule(
       '#portrait-arena #battle[data-phase="completed"] #arena-result-compact-summary'
     );
+    const hiddenEmptyCountdown = portraitRule(
+      '#portrait-arena[data-arena-variant="split-arena"] ' +
+      '#battle[data-phase="action"] #arena-countdown:empty'
+    );
     const baseCompactResult = rules.find(rule => (
       rule.selectorText === '#arena-result-compact-summary' &&
       !rule.parentRule
@@ -2740,6 +2815,11 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(hiddenResult?.style.getPropertyValue('display')).toBe('none');
     expect(baseCompactResult?.style.getPropertyValue('display')).toBe('none');
     expect(compactResult?.style.getPropertyValue('display')).toBe('block');
+    expect(hiddenEmptyCountdown?.style.getPropertyValue('display')).toBe('none');
+    expect(hiddenEmptyCountdown?.selectorText).toContain(
+      '#portrait-arena[data-arena-variant="classic"] ' +
+      '#battle[data-phase="completed"] #arena-countdown:empty'
+    );
     for (const selector of [
       '#battle[data-phase="completed"] #arena-topline',
       '#battle[data-phase="completed"] #arena-action-card',
@@ -2920,7 +3000,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       minimumGap: 50
     });
     expectSafeActionBands(mediaStyles('(orientation: portrait)'), {
-      leadTop: '8.5%',
+      leadTop: '14.5%',
       fighterTop: '31%',
       fighterHeight: '66%',
       cardMinHeight: 130,
@@ -2932,7 +3012,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       minimumGap: 35
     });
     expectSafeActionBands(mediaStyles('(orientation: portrait) and (max-height: 900px)'), {
-      leadTop: '6.5%',
+      leadTop: '12.5%',
       fighterTop: '42%',
       fighterHeight: '56%',
       cardMinHeight: 108,

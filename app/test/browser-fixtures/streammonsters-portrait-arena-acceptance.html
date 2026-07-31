@@ -33,11 +33,203 @@ const SELECTED_CHOICES = Object.freeze([
   Object.freeze({ slot: 1, key: 'B', name: 'Guard' }),
   Object.freeze({ slot: 2, key: 'C', name: 'Nova' })
 ]);
-const SKILL_NAMES = Object.freeze(['Bite', 'Guard', 'Nova']);
+const NOW_MS = 1_000;
+const MATCH_ID = 'portrait-arena-acceptance';
+const FIGHTERS = Object.freeze([
+  Object.freeze({
+    slot: 1,
+    name: 'Ash',
+    viewerName: '@Ari',
+    templateId: 'ashfang',
+    element: 'Ember',
+    level: 7,
+    hp: 31,
+    maxHp: 38,
+    shield: 2,
+    charge: 68,
+    skills: Object.freeze([
+      Object.freeze({
+        choice: 'A',
+        icon: '\u2726',
+        name: 'Bite',
+        shortText: 'A swift bite.',
+        type: 'attack',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'B',
+        icon: '\u25c6',
+        name: 'Guard',
+        shortText: 'Raises a shield.',
+        type: 'defense',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'C',
+        icon: '\u2605',
+        name: 'Nova',
+        shortText: 'A focused lunar strike.',
+        type: 'special',
+        element: 'Lunar',
+        chargeRequired: 100,
+        available: false
+      })
+    ])
+  }),
+  Object.freeze({
+    slot: 2,
+    name: 'Luna',
+    viewerName: '@Nox',
+    templateId: 'selene',
+    element: 'Lunar',
+    level: 8,
+    hp: 27,
+    maxHp: 36,
+    shield: 1,
+    charge: 92,
+    skills: Object.freeze([
+      Object.freeze({
+        choice: 'A',
+        icon: '\u2726',
+        name: 'Bite',
+        shortText: 'A swift bite.',
+        type: 'attack',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'B',
+        icon: '\u25c6',
+        name: 'Guard',
+        shortText: 'Raises a shield.',
+        type: 'defense',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'C',
+        icon: '\u2605',
+        name: 'Nova',
+        shortText: 'A focused lunar strike.',
+        type: 'special',
+        element: 'Lunar',
+        chargeRequired: 100,
+        available: false
+      })
+    ])
+  })
+]);
+const MATCH = Object.freeze({
+  matchId: MATCH_ID,
+  state: 'roster',
+  roundNumber: 3,
+  fighters: FIGHTERS
+});
+const ACTION = Object.freeze({
+  rulesVersion: 8,
+  matchId: MATCH_ID,
+  eventId: `${MATCH_ID}:action:1`,
+  eventSequence: 1,
+  round: 3,
+  actorSlot: 1,
+  targetSlot: 2,
+  choice: 'C',
+  skill: Object.freeze({
+    icon: '\u2605',
+    name: 'Nova',
+    shortText: 'A focused lunar strike.',
+    type: 'special',
+    element: 'Lunar'
+  }),
+  hits: Object.freeze([
+    Object.freeze({
+      index: 1,
+      hpDamage: 7,
+      shieldAbsorbed: 0,
+      evaded: false
+    })
+  ]),
+  outcomes: Object.freeze([
+    Object.freeze({ type: 'heal', amount: 2 })
+  ]),
+  actorState: Object.freeze({
+    slot: 1,
+    hp: 31,
+    maxHp: 38,
+    shield: 2,
+    charge: 68
+  }),
+  targetState: Object.freeze({
+    slot: 2,
+    hp: 20,
+    maxHp: 36,
+    shield: 1,
+    charge: 92
+  })
+});
+const COMPLETION = Object.freeze({
+  eventId: `${MATCH_ID}:completed`,
+  matchId: MATCH_ID,
+  winnerSlot: 1,
+  winner: Object.freeze({ viewerName: '@Ari', name: 'Ash' }),
+  terminalReason: 'knockout',
+  knockout: Object.freeze({ round: 3, remainingHp: 31, maxHp: 38 }),
+  ratingChanges: Object.freeze([
+    Object.freeze({ slot: 1, before: 1_000, after: 1_012, delta: 12 })
+  ])
+});
+const READY_EGG = Object.freeze({
+  visualId: 'portrait-acceptance-lunar-ready',
+  state: 'ready',
+  provenance: 'gift',
+  ownershipState: 'owned',
+  adoptionStatus: 'owned',
+  displayName: '@Mika',
+  element: 'Lunar',
+  variant: 'charged',
+  imageUrl: '/plugins/streamalchemy/assets/eggs/lunar-charged.png',
+  queuePosition: 2,
+  timing: Object.freeze({ expiresAtMs: NOW_MS + 25_000 })
+});
+const ARENA_LABELS = Object.freeze({
+  round: 'ROUND {round}',
+  roster: 'ROSTER',
+  knockout: 'KO',
+  knockoutResult: 'KO',
+  winner: '{name} WINS',
+  lead: '{name} LEADS',
+  tied: 'TIED',
+  resultSummary: 'Round {round} \u00b7 {hp}/{maxHp} HP',
+  compactResultSummary: 'R{round} \u00b7 {hp} HP',
+  ratingChanged: '{name} {delta}',
+  ratingUnchanged: '{name} {after}',
+  damageMetric: 'Damage {amount}',
+  shieldAbsorbedMetric: 'Block {amount}',
+  shieldGainMetric: 'Shield +{amount}',
+  healMetric: 'Heal {amount}'
+});
+const EGG_LABELS = Object.freeze({
+  eggCardOwner: 'Owner: {owner}',
+  eggCardElement: '{element} egg',
+  eggCardOwned: 'OWNED',
+  eggCardReady: 'READY \u00b7 {command}',
+  eggCardRotTimer: 'ROT IN {time}',
+  eggFocusOwner: '{owner}',
+  eggFocusPosition: '#{position}',
+  eggCardAria: '{owner} \u00b7 {element} \u00b7 {status} \u00b7 {timer}'
+});
+const LIFECYCLE_COPY = Object.freeze({
+  eggLifecycleReadyTitle: 'Egg ready to hatch',
+  eggLifecycleReadyCopy: 'Hatch it now before it expires.'
+});
 let activeRenderer = null;
 let pendingEffect = null;
 let scheduledFrame = null;
 let frameClock = 0;
+let arenaView = null;
+let eggStageView = null;
+let pendingCompletion = null;
+let releaseCompletion = null;
+let pendingNotice = null;
+let releaseNotice = null;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -51,11 +243,6 @@ function loadScript(src) {
 
 function node(id) {
   return document.getElementById(id);
-}
-
-function setText(id, value) {
-  const target = node(id);
-  if (target) target.textContent = String(value);
 }
 
 function rectRecord(rect) {
@@ -202,207 +389,172 @@ function isPainted(element) {
   return true;
 }
 
-function populateFighters() {
-  const fighters = [
-    {
-      slot: 1,
-      name: 'Ash',
-      owner: '@Ari',
-      level: 'Lv. 7',
-      hp: '31 / 38',
-      hpWidth: '82%',
-      shieldWidth: '18%',
-      chargeWidth: '68%',
-      image: `${ROOT}assets/streammonsters/furry/ashfang.webp`
-    },
-    {
-      slot: 2,
-      name: 'Luna',
-      owner: '@Nox',
-      level: 'Lv. 8',
-      hp: '27 / 36',
-      hpWidth: '75%',
-      shieldWidth: '8%',
-      chargeWidth: '92%',
-      image: `${ROOT}assets/streammonsters/furry/selene.webp`
+function formatLifecycleCopy(template, params = {}) {
+  return String(template || '').replace(/\{([^}]+)\}/g, (_, key) => (
+    params[key] == null ? '' : String(params[key])
+  ));
+}
+
+async function finishPendingProductionPresentations() {
+  const completion = pendingCompletion;
+  const notice = pendingNotice;
+  pendingCompletion = null;
+  pendingNotice = null;
+  const finishCompletion = releaseCompletion;
+  const finishNotice = releaseNotice;
+  releaseCompletion = null;
+  releaseNotice = null;
+  finishCompletion?.();
+  finishNotice?.();
+  if (completion) await completion;
+  if (notice) await notice;
+}
+
+async function createProductionViews(reducedMotion) {
+  await finishPendingProductionPresentations();
+  arenaView?.destroy?.();
+  eggStageView?.destroy?.();
+
+  const silentOutput = {
+    play: () => Promise.resolve(),
+    status: () => ({ renderer: 'css', fallbackReason: null })
+  };
+  arenaView = window.StreamMonstersArenaView.createArenaView({
+    document,
+    audio: silentOutput,
+    effects: silentOutput,
+    presentationEffects: silentOutput,
+    labels: ARENA_LABELS,
+    clock: {
+      now: () => NOW_MS,
+      wait: milliseconds => {
+        if (
+          Number(milliseconds) ===
+          Number(window.StreamMonstersArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS)
+        ) {
+          return new Promise(resolve => {
+            releaseCompletion = resolve;
+          });
+        }
+        return Promise.resolve();
+      }
     }
-  ];
-  for (const fighter of fighters) {
-    setText(`arena-name-${fighter.slot}`, fighter.name);
-    setText(`arena-owner-${fighter.slot}`, fighter.owner);
-    setText(`arena-level-${fighter.slot}`, fighter.level);
-    setText(`arena-hp-text-${fighter.slot}`, fighter.hp);
-    node(`arena-hp-${fighter.slot}`).style.width = fighter.hpWidth;
-    node(`arena-shield-${fighter.slot}`).style.width = fighter.shieldWidth;
-    node(`arena-charge-${fighter.slot}`).style.width = fighter.chargeWidth;
-    const image = node(`arena-image-${fighter.slot}`);
-    image.src = fighter.image;
-    image.alt = `${fighter.name} fighter`;
-  }
-  for (const [deckIndex, deck] of Array.from(
-    document.querySelectorAll('[data-skill-deck]')
-  ).entries()) {
-    for (const [skillIndex, card] of Array.from(
-      deck.querySelectorAll('.arena-skill-card')
-    ).entries()) {
-      const name = SKILL_NAMES[skillIndex];
-      card.querySelector('.skill-icon').textContent = ['✦', '◆', '★'][skillIndex];
-      card.querySelector('.skill-name').textContent = name;
-      card.querySelector('.skill-copy').textContent = `${name} skill`;
-      card.querySelector('.skill-charge').textContent = skillIndex === 2
-        ? `${deckIndex === 0 ? 68 : 92}%`
-        : 'READY';
-    }
-  }
+  });
+  eggStageView = window.StreamMonstersEggStageView.createEggStageView({
+    document,
+    now: () => NOW_MS,
+    reducedMotion,
+    labels: EGG_LABELS,
+    getHatchReference: () => '!hatch 2',
+    getAdoptReference: () => '!adopt',
+    setTimeout: () => 1,
+    clearTimeout: () => {}
+  });
+
+  arenaView.applySnapshot({ battle: { matches: [MATCH] } });
+  arenaView.openChoice({
+    ...MATCH,
+    round: 3,
+    deadlineMs: NOW_MS + 6_000,
+    choices: ['A', 'B', 'C']
+  });
+  eggStageView.applySnapshot([READY_EGG]);
 }
 
-function populateEggShelf() {
-  const focus = document.querySelector('[data-egg-focus]');
-  focus.hidden = false;
-  focus.dataset.state = 'public';
-  focus.innerHTML = `
-    <div class="egg-focus-art">
-      <img src="${ROOT}assets/eggs/lunar-charged.png" alt="Violet lunar egg">
-    </div>
-    <span data-egg-focus-owner>@Mika</span>
-    <span data-egg-focus-element>Lunar egg</span>
-    <strong data-egg-focus-state>Ready to hatch</strong>
-    <span data-egg-focus-timer>00:24</span>
-    <span data-egg-focus-command>!hatch 2</span>
-    <span data-egg-focus-position>#2</span>
-  `;
-}
-
-function resetPhaseState() {
-  const battle = node('battle');
-  battle.className = 'visible';
-  delete battle.dataset.acceptancePhase;
-  const action = node('arena-action-card');
-  action.classList.remove('visible');
-  action.removeAttribute('aria-label');
-  const result = node('arena-result');
-  result.classList.remove('visible');
-  const prompt = node('arena-skill-prompt');
-  prompt.removeAttribute('data-choice-feedback');
-  prompt.textContent = 'A · ATTACK  B · DEFEND  C · SPECIAL';
-  for (const choice of SELECTED_CHOICES) {
-    const fighter = node(`arena-fighter-${choice.slot}`);
-    fighter.className = 'arena-fighter';
-    fighter.removeAttribute('data-choice');
-    fighter.removeAttribute('data-choice-name');
-    fighter.removeAttribute('aria-label');
-  }
-  for (const card of document.querySelectorAll('.arena-skill-card')) {
-    card.classList.remove('selected');
-    card.setAttribute('aria-selected', 'false');
-    card.removeAttribute('data-selected-choice');
-    card.removeAttribute('aria-label');
-  }
-  const notice = node('egg-lifecycle-notice');
-  notice.hidden = true;
-  notice.querySelector('[data-egg-notice-title]').textContent = '';
-  notice.querySelector('[data-egg-notice-action]').textContent = '';
-}
-
-function applyPhase(phase) {
-  resetPhaseState();
-  const battle = node('battle');
-  battle.dataset.acceptancePhase = phase;
-  setText('arena-countdown', phase === 'completed' ? '' : '06');
-  setText('arena-round', 'ROUND 3');
-
-  if (['choice', 'sealed', 'revealed', 'egg-exception'].includes(phase)) {
-    battle.dataset.phase = 'choice';
-  } else {
-    battle.dataset.phase = phase;
-  }
-
+async function driveProductionPhase(phase) {
   if (phase === 'sealed') {
-    node('arena-fighter-1').classList.add('choice-locked');
-    setText('arena-round', 'CHOICE SEALED');
+    arenaView.lockChoice({
+      matchId: MATCH_ID,
+      decision: {
+        slot: SELECTED_CHOICES[0].slot,
+        choice: SELECTED_CHOICES[0].key,
+        source: 'viewer',
+        locked: true
+      }
+    });
+    return;
   }
 
   if (phase === 'revealed') {
     for (const choice of SELECTED_CHOICES) {
-      const fighter = node(`arena-fighter-${choice.slot}`);
-      fighter.classList.add('choice-locked', 'choice-revealed');
-      fighter.dataset.choice = choice.key;
-      fighter.dataset.choiceName = choice.name;
-      fighter.setAttribute(
-        'aria-label',
-        `${choice.slot === 1 ? 'Ari' : 'Nox'} choice ${choice.key} ${choice.name}`
-      );
-      const selectedCard = document.querySelector(
-        `[data-skill-deck="${choice.slot}"] [data-skill="${choice.key}"]`
-      );
-      selectedCard.classList.add('selected');
-      selectedCard.setAttribute('aria-selected', 'true');
-      selectedCard.dataset.selectedChoice = choice.key;
-      selectedCard.setAttribute(
-        'aria-label',
-        `Selected choice ${choice.key} ${choice.name}`
-      );
+      arenaView.lockChoice({
+        matchId: MATCH_ID,
+        decision: {
+          slot: choice.slot,
+          choice: choice.key,
+          source: 'viewer',
+          locked: true
+        }
+      });
     }
-    setText('arena-round', 'B · GUARD   +   C · NOVA');
+    arenaView.revealChoices({
+      choices: SELECTED_CHOICES.map(choice => ({
+        slot: choice.slot,
+        choice: choice.key,
+        source: 'viewer'
+      }))
+    });
+    return;
   }
 
   if (phase === 'action') {
-    const action = node('arena-action-card');
-    action.classList.add('visible');
-    action.setAttribute('aria-label', 'C · NOVA · −7 HP');
-    action.dataset.acceptanceInformation = 'action';
-    setText('arena-action-player', '@Ari');
-    setText('arena-action-key', 'C');
-    setText('arena-action-skill', 'NOVA');
-    setText('arena-action-copy', 'A focused lunar strike.');
-    node('arena-action-metrics').innerHTML =
-      '<span data-action-metric>Damage 7</span><span data-action-metric>Heal 2</span>';
-    const compactMetric = node('arena-action-compact-metric');
-    compactMetric.textContent = '−7 HP';
-    compactMetric.dataset.actionMetric = 'decisive';
+    await arenaView.playAction(ACTION);
+    return;
   }
 
   if (phase === 'completed') {
-    const result = node('arena-result');
-    result.classList.add('visible');
-    result.dataset.acceptanceInformation = 'result';
-    setText('arena-result-ko', 'KO');
-    setText('arena-result-winner', '@Ari WINS');
-    setText('arena-result-monster', 'ASH');
-    setText('arena-result-summary', 'Round 3 · 19 HP');
-    setText('arena-result-compact-summary', 'ASH · @Ari · R3 · 19 HP');
-    setText('arena-result-ratings', 'Rating +12');
-    setText('arena-result-next', 'Next battle soon');
+    await arenaView.playAction(ACTION);
+    pendingCompletion = arenaView.complete(COMPLETION);
+    await Promise.resolve();
+    await Promise.resolve();
+    arenaView.applySnapshot({
+      battle: {
+        matches: [{ ...MATCH, state: 'finalizing', cursor: 1 }]
+      }
+    });
+    return;
   }
 
   if (phase === 'egg-exception') {
-    const notice = node('egg-lifecycle-notice');
-    notice.hidden = false;
-    notice.querySelector('[data-egg-notice-title]').textContent = 'Lunar egg ready';
-    notice.querySelector('[data-egg-notice-action]').textContent = 'Use !hatch 2';
+    const notice = window.StreamMonstersEggStageView.buildEventPresentation(
+      'egg_ready',
+      {
+        eventId: 'portrait-acceptance:egg-ready',
+        eggStage: READY_EGG
+      },
+      {
+        nowMs: NOW_MS,
+        commands: {
+          adopt: '!adopt',
+          eggs: '!eggs',
+          hatch: '!hatch 2',
+          monsters: '!monsters'
+        }
+      }
+    );
+    if (!notice) throw new Error('Production egg-ready presentation was not built');
+    const title = formatLifecycleCopy(
+      LIFECYCLE_COPY[notice.titleKey] || notice.titleKey,
+      notice.params
+    );
+    const action = notice.commands?.length
+      ? notice.commands.join(' \u00b7 ')
+      : formatLifecycleCopy(
+          LIFECYCLE_COPY[notice.copyKey] || notice.copyKey,
+          notice.params
+        );
+    pendingNotice =
+      window.StreamMonstersEggStageView.presentCompactLifecycleNotice({
+        document,
+        node: node('egg-lifecycle-notice'),
+        title,
+        action,
+        durationMs: notice.durationMs,
+        wait: () => new Promise(resolve => {
+          releaseNotice = resolve;
+        })
+      });
   }
-}
-
-function applyActionVisualState(state) {
-  const battle = node('battle');
-  const actor = node('arena-fighter-1');
-  const target = node('arena-fighter-2');
-  for (const className of ['camera-impulse', 'hit-stop']) {
-    battle.classList.remove(className);
-  }
-  for (const fighter of [actor, target]) {
-    fighter.classList.remove('advancing', 'telegraphing', 'hit', 'evaded');
-  }
-  if (state === 'advance') {
-    actor.classList.add('telegraphing', 'advancing');
-  } else if (state === 'impact') {
-    target.classList.add('hit');
-    battle.classList.add('camera-impulse', 'hit-stop');
-  }
-}
-
-function recoverActionVisualState() {
-  applyActionVisualState('recover');
 }
 
 function measuredOrigins() {
@@ -597,6 +749,58 @@ function collectTextGeometry() {
   return records;
 }
 
+function collectToplineContract() {
+  const records = [
+    ['round', node('arena-round')],
+    ['countdown', node('arena-countdown')],
+    ['lead', node('arena-lead')]
+  ].filter(([, element]) => (
+    element?.textContent.trim() && isPainted(element)
+  )).map(([name, element]) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return {
+      name,
+      text: element.textContent.replace(/\s+/g, ' ').trim(),
+      rangeRect: rectRecord(range.getBoundingClientRect()),
+      elementRect: rectRecord(element.getBoundingClientRect())
+    };
+  });
+  const overlaps = [];
+  for (let left = 0; left < records.length; left += 1) {
+    for (let right = left + 1; right < records.length; right += 1) {
+      if (
+        intersectsBeyondTolerance(
+          records[left].rangeRect,
+          records[right].rangeRect,
+          0.5
+        )
+      ) {
+        overlaps.push({
+          left: records[left],
+          right: records[right]
+        });
+      }
+    }
+  }
+  return {
+    records,
+    overlaps,
+    pass: overlaps.length === 0
+  };
+}
+
+function collectCountdownContract() {
+  const countdown = node('arena-countdown');
+  const text = countdown?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const painted = isPainted(countdown);
+  return {
+    text,
+    painted,
+    pass: text ? painted : !painted
+  };
+}
+
 function selectionSemantics(phase) {
   const cards = Array.from(
     document.querySelectorAll('[data-skill-deck] .arena-skill-card')
@@ -705,7 +909,7 @@ function disclosureRecord(phase) {
   const attributes = [];
   for (const element of scope) {
     for (const attribute of Array.from(element.attributes || [])) {
-      if (/^(data-choice|data-choice-name|aria-label)$/.test(attribute.name)) {
+      if (/^(data-choice|data-choice-source|aria-label)$/.test(attribute.name)) {
         attributes.push(`${attribute.name}=${attribute.value}`);
       }
     }
@@ -723,10 +927,6 @@ function disclosureRecord(phase) {
       selected.earlyDisclosure
     ),
     revealedTogether: phase === 'revealed' && (
-      /\bB\b/.test(text) &&
-      /\bC\b/.test(text) &&
-      /Guard/i.test(text) &&
-      /Nova/i.test(text) &&
       attributes.some(value => /data-choice=B/.test(value)) &&
       attributes.some(value => /data-choice=C/.test(value)) &&
       selected.revealedTogether
@@ -963,6 +1163,8 @@ function collectLayout(phase, effect) {
     notice: noticeRect,
     shelfNoticeOverlap: intersects(shelfRect, noticeRect),
     textGeometry,
+    toplineContract: collectToplineContract(),
+    countdownContract: collectCountdownContract(),
     visibleArenaDescendants,
     hudContract: collectHudContract(),
     completedOwnership: completedOwnership(),
@@ -989,32 +1191,19 @@ async function showArenaCase({
   variant,
   phase,
   renderer,
-  sealed = phase === 'sealed',
-  reducedMotion = false,
-  eggNotice = phase === 'egg-exception'
+  reducedMotion = false
 }) {
-  void sealed;
-  void eggNotice;
   node('portrait-arena').dataset.arenaVariant =
     window.StreamMonstersPortraitArena.normalizeVariant(variant);
-  applyPhase(phase);
+  await createProductionViews(reducedMotion);
+  await driveProductionPhase(phase);
   await Promise.all(Array.from(document.images).map(image => (
     image.complete ? Promise.resolve() : image.decode().catch(() => {})
   )));
   await new Promise(resolve => window.requestAnimationFrame(resolve));
   settleOneShotStageAnimations();
   await new Promise(resolve => window.requestAnimationFrame(resolve));
-  if (phase === 'action') {
-    applyActionVisualState('advance');
-    await new Promise(resolve => window.requestAnimationFrame(resolve));
-  }
   const effect = await renderEffect(renderer, reducedMotion);
-  if (phase === 'action') {
-    applyActionVisualState('impact');
-    await new Promise(resolve => window.requestAnimationFrame(resolve));
-    recoverActionVisualState();
-    await new Promise(resolve => window.requestAnimationFrame(resolve));
-  }
   await new Promise(resolve => window.requestAnimationFrame(resolve));
   return collectLayout(phase, effect);
 }
@@ -1035,13 +1224,13 @@ async function bootstrap() {
     true
   );
   document.body.appendChild(overlay);
+  await loadScript(`${ROOT}streammonsters-rules-v8-pacing.js`);
+  await loadScript(`${ROOT}streammonsters-arena-director.js`);
   await loadScript(`${ROOT}streammonsters-portrait-arena.js`);
+  await loadScript(`${ROOT}streammonsters-arena-view.js`);
+  await loadScript(`${ROOT}streammonsters-egg-stage-view.js`);
   await loadScript(`${ROOT}streammonsters-effects-renderer.js`);
-  overlay.dataset.battleActive = 'true';
-  node('battle').classList.add('visible');
-  populateFighters();
-  populateEggShelf();
-  applyPhase('choice');
+  await createProductionViews(false);
   window.harnessReady = true;
 }
 
@@ -1055,6 +1244,10 @@ window.addEventListener('pagehide', () => {
   activeRenderer?.destroy?.();
   activeRenderer = null;
   pendingEffect = null;
+  releaseCompletion?.();
+  releaseNotice?.();
+  arenaView?.destroy?.();
+  eggStageView?.destroy?.();
 });
 bootstrap().catch(error => {
   window.harnessError = String(error?.stack || error);

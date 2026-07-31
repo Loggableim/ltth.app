@@ -399,6 +399,32 @@
     return buildLifecycleNotice(normalizedType, payload, options);
   }
 
+  async function presentCompactLifecycleNotice({
+    document: documentLike,
+    node: noticeNode = documentLike?.getElementById?.('egg-lifecycle-notice'),
+    title = '',
+    action = '',
+    durationMs = 12_000,
+    wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
+  } = {}) {
+    const titleNode = noticeNode?.querySelector?.('[data-egg-notice-title]');
+    const actionNode = noticeNode?.querySelector?.('[data-egg-notice-action]');
+    if (!noticeNode || !titleNode || !actionNode || typeof wait !== 'function') {
+      return false;
+    }
+    titleNode.textContent = boundedText(title, 160);
+    actionNode.textContent = boundedText(action, 160);
+    noticeNode.hidden = false;
+    try {
+      await wait(Math.max(1, Number(durationMs) || 12_000));
+    } finally {
+      noticeNode.hidden = true;
+      titleNode.textContent = '';
+      actionNode.textContent = '';
+    }
+    return true;
+  }
+
   function priority(egg = {}) {
     if (isPublicAdoptableEgg(egg)) return 0;
     if (egg.state === 'ready') return 1;
@@ -1165,6 +1191,7 @@
     isPublicAdoptableEgg,
     isPublicFreeEgg,
     isReservedFreeEgg,
+    presentCompactLifecycleNotice,
     reduceEggStage,
     selectNextEggAction,
     shelfTiming,

@@ -86,6 +86,10 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(runnerSource).toContain(
       "path.join(repoRoot, 'app', 'output', 'playwright', 'streammonsters-bounded-arena')"
     );
+    expect(runnerSource).toContain(
+      "requestedPath.startsWith('/plugins/streamalchemy/')"
+    );
+    expect(runnerSource).toContain('`/app${requestedPath}`');
     expect(fixtureSource).toContain('firstClippingAncestor');
     expect(fixtureSource).toContain('rangeRect');
     expect(fixtureSource).toContain('overflowX');
@@ -93,7 +97,54 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(fixtureSource).toContain('selectionSemantics');
     expect(fixtureSource).toContain('visibleArenaDescendants');
     expect(fixtureSource).toContain('hudContract');
-    expect(fixtureSource).toContain('recoverActionVisualState');
+    expect(fixtureSource).toContain('collectToplineContract');
+    expect(runnerSource).toContain('row.toplineContract.pass');
+    expect(fixtureSource).toContain('collectCountdownContract');
+    expect(runnerSource).toContain('row.countdownContract.pass');
+    expect(fixtureSource).toContain(
+      "loadScript(`${ROOT}streammonsters-rules-v8-pacing.js`)"
+    );
+    expect(fixtureSource).toContain(
+      "loadScript(`${ROOT}streammonsters-arena-director.js`)"
+    );
+    expect(fixtureSource).toContain(
+      "loadScript(`${ROOT}streammonsters-arena-view.js`)"
+    );
+    expect(fixtureSource).toContain(
+      "loadScript(`${ROOT}streammonsters-egg-stage-view.js`)"
+    );
+    expect(fixtureSource).toContain(
+      'window.StreamMonstersArenaView.createArenaView'
+    );
+    expect(fixtureSource).toContain('arenaView.applySnapshot');
+    expect(fixtureSource).toContain('arenaView.openChoice');
+    expect(fixtureSource).toContain('arenaView.lockChoice');
+    expect(fixtureSource).toContain('arenaView.revealChoices');
+    expect(fixtureSource).toContain('arenaView.playAction');
+    expect(fixtureSource).toContain('arenaView.complete');
+    expect(fixtureSource).toContain("state: 'finalizing'");
+    expect(fixtureSource).toContain(
+      'window.StreamMonstersEggStageView.buildEventPresentation'
+    );
+    expect(fixtureSource).toContain(
+      'window.StreamMonstersEggStageView.presentCompactLifecycleNotice'
+    );
+    for (const forbiddenFactory of [
+      'function applyPhase(',
+      'function applyActionVisualState(',
+      'function recoverActionVisualState(',
+      'battle.dataset.phase = phase',
+      "selectedCard.classList.add('selected')",
+      "setText('arena-action-player'",
+      "setText('arena-action-key'",
+      "setText('arena-action-skill'",
+      "setText('arena-result-winner'",
+      "setText('arena-result-compact-summary'",
+      "notice.querySelector('[data-egg-notice-title]').textContent",
+      "notice.querySelector('[data-egg-notice-action]').textContent"
+    ]) {
+      expect(fixtureSource).not.toContain(forbiddenFactory);
+    }
     expect(runnerSource).toContain('record.horizontalClipped');
     expect(runnerSource).toContain('record.verticalClipped');
     expect(runnerSource).toContain('row.hudContract');

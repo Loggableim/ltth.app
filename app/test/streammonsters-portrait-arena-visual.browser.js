@@ -27,7 +27,10 @@ const mimeTypes = Object.freeze({
 });
 
 function safePath(url) {
-  const pathname = decodeURIComponent(String(url || '/').split('?')[0]);
+  const requestedPath = decodeURIComponent(String(url || '/').split('?')[0]);
+  const pathname = requestedPath.startsWith('/plugins/streamalchemy/')
+    ? `/app${requestedPath}`
+    : requestedPath;
   const resolved = path.resolve(repoRoot, `.${pathname}`);
   const relative = path.relative(repoRoot, resolved);
   if (relative.startsWith('..') || path.isAbsolute(relative)) return null;
@@ -377,6 +380,18 @@ function validateLayout(row, targets, webgpu) {
       `clip=${JSON.stringify(record.firstClippingAncestor)} ` +
       `overflow=${record.overflowX}/${record.overflowY} ` +
       `ancestry=${record.ancestry.join(' > ')}`
+    );
+  }
+  if (!row.toplineContract.pass) {
+    failures.push(
+      `${label} topline text ranges overlap: ` +
+      `${JSON.stringify(row.toplineContract.overlaps)}`
+    );
+  }
+  if (!row.countdownContract.pass) {
+    failures.push(
+      `${label} countdown paint does not match its production text: ` +
+      `${JSON.stringify(row.countdownContract)}`
     );
   }
   if (

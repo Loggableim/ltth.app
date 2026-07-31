@@ -423,6 +423,12 @@
     const skillDeckNode = slot => documentLike.querySelector(
       `[data-skill-deck="${slot}"]`
     );
+    const setChoiceCardSelected = (card, selected) => {
+      if (!card) return;
+      const active = Boolean(selected);
+      card.classList.toggle('selected', active);
+      card.setAttribute('aria-selected', String(active));
+    };
 
     function resetVisualElement(element) {
       if (!element) return;
@@ -1234,7 +1240,8 @@
         });
         const deck = skillDeckNode(slot);
         deck?.querySelectorAll('[data-skill]').forEach(card => {
-          card.classList.remove('selected', 'charging', 'ready', 'unavailable');
+          setChoiceCardSelected(card, false);
+          card.classList.remove('charging', 'ready', 'unavailable');
         });
       }
     }
@@ -1526,7 +1533,7 @@
         }
         const deck = skillDeckNode(slot);
         deck?.querySelectorAll('[data-skill]').forEach(card => {
-          card.classList.remove('selected');
+          setChoiceCardSelected(card, false);
         });
       }
       renderSkillDecks();
@@ -1591,7 +1598,7 @@
       projected.forEach(choice => {
         const fighter = fighterNode(choice.slot);
         skillDeckNode(choice.slot)?.querySelectorAll('[data-skill]').forEach(card => {
-          card.classList.toggle('selected', card.dataset.skill === choice.choice);
+          setChoiceCardSelected(card, card.dataset.skill === choice.choice);
         });
         fighter.dataset.choice = choice.choice;
         fighter.dataset.choiceSource = choice.source;

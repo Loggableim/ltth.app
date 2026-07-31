@@ -1285,7 +1285,7 @@
       }
       #arena-feed { top:auto; bottom:1.5%; width:86%; }
       #arena-action-card { top:8.5%; width:94%; min-height:130px; }
-      #battle[data-phase="action"] #arena-lead { top:8.5%; }
+      #battle[data-phase="action"] #arena-lead { top:14.5%; }
       #battle[data-phase="action"] #arena-action-card { top:14.5%; min-height:130px; }
       #battle[data-phase="action"] .arena-fighter {
         top:31%; bottom:auto; height:66%;
@@ -1365,7 +1365,7 @@
       .arena-result-decisive { padding:3px 6px; }
       .arena-result-fighter { gap:2px; padding:4px 5px; }
       .arena-result-metrics { gap:1px 4px; }
-      #battle[data-phase="action"] #arena-lead { top:6.5%; }
+      #battle[data-phase="action"] #arena-lead { top:12.5%; }
       #battle[data-phase="action"] #arena-action-card { top:14.5%; min-height:108px; }
       #battle[data-phase="action"] .arena-fighter {
         top:42%; bottom:auto; height:56%;
@@ -1437,6 +1437,12 @@
         align-self:center; justify-self:center; width:max-content; max-width:94%; min-width:0;
         max-height:100%; padding:clamp(3px,.8vh,7px) clamp(8px,2.8vw,16px);
         overflow:hidden; transform:none; text-overflow:ellipsis; white-space:nowrap;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="action"] #arena-countdown:empty,
+      #portrait-arena[data-arena-variant="classic"] #battle[data-phase="action"] #arena-countdown:empty,
+      #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="completed"] #arena-countdown:empty,
+      #portrait-arena[data-arena-variant="classic"] #battle[data-phase="completed"] #arena-countdown:empty {
+        display:none;
       }
       #portrait-arena[data-arena-variant="split-arena"] .arena-fighter,
       #portrait-arena[data-arena-variant="classic"] .arena-fighter {
@@ -3009,8 +3015,6 @@
       return showFullEggLifecycleCard(type, data, notice);
     }
     const noticeNode = node('egg-lifecycle-notice');
-    const titleNode = noticeNode.querySelector('[data-egg-notice-title]');
-    const actionNode = noticeNode.querySelector('[data-egg-notice-action]');
     const title = text(
       notice.titleKey,
       lifecycleFallbacks[notice.titleKey] || 'Stream Monsters',
@@ -3021,21 +3025,17 @@
       lifecycleFallbacks[notice.copyKey] || '',
       notice.params
     );
-    return (async () => {
-      titleNode.textContent = title;
-      actionNode.textContent = action;
-      noticeNode.hidden = false;
-      try {
-        await wait(Math.max(
-          1,
-          Number(notice.durationMs) || notificationDurationMs
-        ));
-      } finally {
-        noticeNode.hidden = true;
-        titleNode.textContent = '';
-        actionNode.textContent = '';
-      }
-    })();
+    return window.StreamMonstersEggStageView.presentCompactLifecycleNotice({
+      document,
+      node:noticeNode,
+      title,
+      action,
+      durationMs:Math.max(
+        1,
+        Number(notice.durationMs) || notificationDurationMs
+      ),
+      wait
+    });
   };
   const showHype = async data => {
     const points = Number(data?.hype?.points) || 0;

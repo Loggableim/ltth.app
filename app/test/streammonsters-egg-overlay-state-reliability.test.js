@@ -199,6 +199,42 @@ async function createOverlayHarness(snapshot, {
 }
 
 describe('Stream Monsters egg overlay state reliability', () => {
+  test('production compact lifecycle presenter owns show wait hide and clear', async () => {
+    const documentLike = new JSDOM(`
+      <!doctype html>
+      <div id="egg-lifecycle-notice" hidden>
+        <strong data-egg-notice-title></strong>
+        <span data-egg-notice-action></span>
+      </div>
+    `).window.document;
+    let finish;
+    const waited = [];
+    const presentation = EggStageView.presentCompactLifecycleNotice({
+      document: documentLike,
+      title: 'Egg ready to hatch',
+      action: '!hatch 2',
+      durationMs: 12_000,
+      wait: milliseconds => {
+        waited.push(milliseconds);
+        return new Promise(resolve => { finish = resolve; });
+      }
+    });
+    const notice = documentLike.getElementById('egg-lifecycle-notice');
+
+    expect(notice.hidden).toBe(false);
+    expect(notice.querySelector('[data-egg-notice-title]').textContent)
+      .toBe('Egg ready to hatch');
+    expect(notice.querySelector('[data-egg-notice-action]').textContent)
+      .toBe('!hatch 2');
+    expect(waited).toEqual([12_000]);
+
+    finish();
+    await expect(presentation).resolves.toBe(true);
+    expect(notice.hidden).toBe(true);
+    expect(notice.querySelector('[data-egg-notice-title]').textContent).toBe('');
+    expect(notice.querySelector('[data-egg-notice-action]').textContent).toBe('');
+  });
+
   test('uses only the compact two-line lifecycle notice in portrait and clears it', async () => {
     const offer = freeEgg('portrait-lifecycle', {
       timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }
@@ -251,6 +287,9 @@ describe('Stream Monsters egg overlay state reliability', () => {
       ));
       expect(compactJoinLine).toContain("join(' \\u00b7 ')");
       expect(compactJoinLine).not.toContain('\u00c2');
+      expect(overlaySource).toContain(
+        'StreamMonstersEggStageView.presentCompactLifecycleNotice'
+      );
       expect(card.classList.contains('visible')).toBe(false);
       expect(card.hasAttribute('data-presentation')).toBe(false);
       expect(harness.pendingTimerDurations()).toContain(5_000);
