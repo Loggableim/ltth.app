@@ -198,6 +198,7 @@ const DEFAULT_CONFIG = {
   chatStrategyCooldownMs: 8000,
   chatTargetCommandEnabled: true,
   topOverlayShowCommandHints: true,
+  topOverlayShowAbilityLegend: false,
   maxWeaponPickups: 10,
   weaponPickupRadius: 14,
   weaponPickupSpawnIntervalMs: 3400,
@@ -2416,6 +2417,7 @@ class ArenaGame {
         topOverlayShowCount: config.topOverlayShowCount,
         topOverlayShowLeaderboard: config.topOverlayShowLeaderboard,
         topOverlayLeaderboardRows: config.topOverlayLeaderboardRows,
+        topOverlayShowAbilityLegend: config.topOverlayShowAbilityLegend === true,
         topOverlayShowCommandHints: config.topOverlayShowCommandHints,
         infoRotatorPlacement: config.infoRotatorPlacement,
         infoRotatorLanguageMode: config.infoRotatorLanguageMode,
@@ -7649,6 +7651,7 @@ class ArenaGame {
   }
 
   _normalizeConfig(config, stored) {
+    config.topOverlayShowAbilityLegend = config.topOverlayShowAbilityLegend === true;
     const validColor = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
     config.directAbilitiesEnabled = config.directAbilitiesEnabled !== false;
     config.abilityChargeMs = this._clamp(Number(config.abilityChargeMs) || 60000, 10000, 300000);

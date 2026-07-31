@@ -1019,6 +1019,7 @@
         topOverlayShowLeaderboard: true,
         topOverlayLeaderboardRows: 3,
         topOverlayShowCommandHints: true,
+        topOverlayShowAbilityLegend: false,
         infoRotatorPlacement: 'in-hud',
         infoRotatorLanguageMode: 'de-en',
         chatStrategyEnabled: true,
@@ -1795,6 +1796,25 @@
         iconText: 'CMD'
       }));
     }
+    function getArenaAbilityHints(config) {
+      if (config?.directAbilitiesEnabled === false) return [];
+      const languages = infoRotatorLanguageSequence(config);
+      const definitions = [
+        { iconText: 'RUN', label: { de: 'F?higkeit', en: 'Ability' }, text: { de: '!boost - Tempo', en: '!boost - Speed' } },
+        { iconText: 'SHD', label: { de: 'F?higkeit', en: 'Ability' }, text: { de: '!shield - Schutz', en: '!shield - Shield' } },
+        { iconText: 'BMB', label: { de: 'F?higkeit', en: 'Ability' }, text: { de: '!bomb - Wurf', en: '!bomb - Throw' } }
+      ];
+      return definitions.map((definition, index) => {
+        const language = languages[index % languages.length] || 'de';
+        return {
+          kind: 'ability',
+          label: definition.label[language],
+          text: definition.text[language],
+          iconText: definition.iconText
+        };
+      });
+    }
+
 
     function buildInfoRotatorMessages() {
       const config = state.config || {};
@@ -1844,6 +1864,7 @@
 
       return [
         ...buildLocalizedInfoMessages(config),
+        ...getArenaAbilityHints(config),
         ...getArenaCommandHints(config),
         ...customMessages,
         ...giftMessages
@@ -2159,7 +2180,9 @@
         drawWeaponPickups(now);
         drawTrails(players);
         players.forEach(player => drawPlayer(player, now));
-        drawAbilityLegend();
+        if (state.config?.topOverlayShowAbilityLegend === true) {
+          drawAbilityLegend();
+        }
         drawEffects(now);
         restoreArenaPlayfieldClip(clipped);
       }
@@ -2368,7 +2391,9 @@
           clearLayer(pickupLayer);
           clearLayer(bombLayer);
           clearLayer(effectLayer);
-          drawPixiAbilityLegend();
+          if (state.config?.topOverlayShowAbilityLegend === true) {
+            drawPixiAbilityLegend();
+          }
 
           const food = state.food || [];
           const configuredMax = Math.min(

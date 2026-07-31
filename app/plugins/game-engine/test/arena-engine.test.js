@@ -83,6 +83,15 @@ describe('ArenaGame', () => {
     expect(config.maxFoodRender).toBeLessThanOrEqual(72);
   });
 
+  it('defaults the optional upper ability legend off while exposing an explicit enablement', () => {
+    const { arena } = createArena();
+
+    expect(arena.getState().config.topOverlayShowAbilityLegend).toBe(false);
+
+    const { arena: enabledArena } = createArena({ topOverlayShowAbilityLegend: true });
+    expect(enabledArena.getState().config.topOverlayShowAbilityLegend).toBe(true);
+  });
+
   it('charges boost and shield for sixty seconds before activating their direct effects', () => {
     let now = 0;
     const { arena } = createArena({}, { now: () => now });
@@ -7132,6 +7141,28 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain('node.abilityRings');
     expect(overlay).toContain('function drawPixiAbilityLegend()');
     expect(overlay).toContain('for (const bomb of state.bombs || [])');
+  });
+
+  it('lists individual direct abilities in the lower rotator and exposes the optional upper legend toggle', () => {
+    const overlay = readOverlay();
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
+
+    expect(overlay).toContain('function getArenaAbilityHints(config)');
+    expect(overlay).toContain("if (config?.directAbilitiesEnabled === false) return [];");
+    expect(overlay).toContain("kind: 'ability'");
+    expect(overlay).toContain('!boost');
+    expect(overlay).toContain('!shield');
+    expect(overlay).toContain('!bomb');
+    expect(ui).toContain('id="arena-top-overlay-show-ability-legend"');
+    expect(ui).toContain('topOverlayShowAbilityLegend:');
+  });
+
+  it('gates both upper ability legends behind the opt-in setting', () => {
+    const overlay = readOverlay();
+
+    expect(overlay).toContain('if (state.config?.topOverlayShowAbilityLegend === true) {');
+    expect(overlay).toContain('drawAbilityLegend();');
+    expect(overlay).toContain('drawPixiAbilityLegend();');
   });
 
   it('draws chainsaw super weapon teeth around player avatars', () => {

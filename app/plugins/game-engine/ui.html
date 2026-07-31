@@ -3243,6 +3243,7 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
           <div class="form-group"><label><input type="checkbox" id="arena-direct-abilities-enabled" checked> <span data-i18n="plugins.game-engine.ui.arena.direct_abilities_enabled">Direkte Fähigkeiten aktiv</span></label></div>
+          <div class="form-group"><label><input type="checkbox" id="arena-top-overlay-show-ability-legend"> Direktfaehigkeits-Legende oben anzeigen</label></div>
           <div class="form-group"><label data-i18n="plugins.game-engine.ui.arena.ability_charge_seconds">Fähigkeit laden (Sekunden):</label><input type="number" id="arena-ability-charge-seconds" min="10" max="300" step="1"></div>
           <div class="form-group"><label data-i18n="plugins.game-engine.ui.arena.boost_duration_seconds">Boost-Dauer (Sekunden):</label><input type="number" id="arena-boost-duration-seconds" min="1" max="30" step="1"></div>
           <div class="form-group"><label data-i18n="plugins.game-engine.ui.arena.shield_duration_seconds">Shield-Dauer (Sekunden):</label><input type="number" id="arena-shield-duration-seconds" min="1" max="30" step="1"></div>
@@ -6574,6 +6575,7 @@
         setArenaCheckbox('arena-chat-target-enabled', config.chatTargetCommandEnabled, true);
         setArenaCheckbox('arena-show-command-hints', config.topOverlayShowCommandHints, true);
         setArenaCheckbox('arena-direct-abilities-enabled', config.directAbilitiesEnabled, true);
+        setArenaCheckbox('arena-top-overlay-show-ability-legend', config.topOverlayShowAbilityLegend, false);
         setArenaField('arena-ability-charge-seconds', Math.round((config.abilityChargeMs || 60000) / 1000));
         setArenaField('arena-boost-duration-seconds', Math.round((config.boostDurationMs || 6000) / 1000));
         setArenaField('arena-shield-duration-seconds', Math.round((config.shieldDurationMs || 8000) / 1000));
@@ -6651,6 +6653,7 @@
         chatTargetCommandEnabled: document.getElementById('arena-chat-target-enabled')?.checked !== false,
         topOverlayShowCommandHints: document.getElementById('arena-show-command-hints')?.checked !== false,
         directAbilitiesEnabled: document.getElementById('arena-direct-abilities-enabled')?.checked !== false,
+        topOverlayShowAbilityLegend: document.getElementById('arena-top-overlay-show-ability-legend')?.checked === true,
         abilityChargeMs: getArenaNumber('arena-ability-charge-seconds', 60) * 1000,
         boostDurationMs: getArenaNumber('arena-boost-duration-seconds', 6) * 1000,
         shieldDurationMs: getArenaNumber('arena-shield-duration-seconds', 8) * 1000,
