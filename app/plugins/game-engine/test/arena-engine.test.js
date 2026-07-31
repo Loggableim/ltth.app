@@ -92,30 +92,42 @@ describe('ArenaGame', () => {
 
 
   it('migrates noisy runtime food profiles without overwriting intentional low-volume pacing', () => {
-    const noisy = createArena({
-      maxMass: 260,
+    const noisyProfile = {
       maxFood: 130,
       maxFoodRender: 72,
       foodSpawnIntervalMs: 6000,
       foodSpawnBatchSize: 22
-    }).arena.getConfig();
-    expect(noisy).toEqual(expect.objectContaining({
-      maxMass: 666,
-      maxFood: 72,
-      maxFoodRender: 66,
+    };
+
+    for (const legacyMaxMass of [90, 140, 170, 260, 520]) {
+      const noisy = createArena({ ...noisyProfile, maxMass: legacyMaxMass }).arena.getConfig();
+      expect(noisy).toEqual(expect.objectContaining({
+        maxMass: 666,
+        maxFood: 72,
+        maxFoodRender: 66,
+        foodSpawnIntervalMs: 2400,
+        foodSpawnBatchSize: 1
+      }));
+    }
+
+    const legacyBurst = createArena({ foodSpawnBatchSize: 4 }).arena.getConfig();
+    expect(legacyBurst).toEqual(expect.objectContaining({
       foodSpawnIntervalMs: 2400,
       foodSpawnBatchSize: 1
     }));
 
-    const intentionalPacing = createArena({
-      foodSpawnIntervalMs: 5000,
-      foodSpawnBatchSize: 3
-    }).arena.getConfig();
-    expect(intentionalPacing).toEqual(expect.objectContaining({
-      foodSpawnIntervalMs: 5000,
-      foodSpawnBatchSize: 3
-    }));
+    for (const foodSpawnBatchSize of [1, 2, 3]) {
+      const intentionalPacing = createArena({
+        foodSpawnIntervalMs: 5000,
+        foodSpawnBatchSize
+      }).arena.getConfig();
+      expect(intentionalPacing).toEqual(expect.objectContaining({
+        foodSpawnIntervalMs: 5000,
+        foodSpawnBatchSize
+      }));
+    }
   });
+
   it('defaults the optional upper ability legend off while exposing an explicit enablement', () => {
     const { arena } = createArena();
 
@@ -5282,33 +5294,40 @@ describe('ArenaGame', () => {
   });
 
   it('scales large absorb reward growth beyond 400 mass under the 666 cap', () => {
-    const { arena } = createArena({
-      maxMass: 666,
-      maxFood: 0,
-      maxWeaponPickups: 0
-    });
-    const config = arena.getConfig();
-    const predator = movementPlayer(arena, config, 'large_reward_predator', 320, {
-      x: 300,
-      y: 300,
-      lives: arena._massToLives(320, config),
-      spawnedAt: -12000,
-      spawnProtectedUntil: 0
-    });
-    const prey = movementPlayer(arena, config, 'large_reward_prey', 120, {
-      x: 322,
-      y: 300,
-      lives: arena._massToLives(120, config),
-      spawnedAt: -12000,
-      spawnProtectedUntil: 0
-    });
-    arena.players.set(predator.username, predator);
-    arena.players.set(prey.username, prey);
+    function resolveAbsorb(maxMass) {
+      const { arena } = createArena({
+        maxMass,
+        maxFood: 0,
+        maxWeaponPickups: 0
+      });
+      const config = arena.getConfig();
+      const predator = movementPlayer(arena, config, 'large_reward_predator', 320, {
+        x: 300,
+        y: 300,
+        lives: arena._massToLives(320, config),
+        spawnedAt: -12000,
+        spawnProtectedUntil: 0
+      });
+      const prey = movementPlayer(arena, config, 'large_reward_prey', 120, {
+        x: 322,
+        y: 300,
+        lives: arena._massToLives(120, config),
+        spawnedAt: -12000,
+        spawnProtectedUntil: 0
+      });
+      arena.players.set(predator.username, predator);
+      arena.players.set(prey.username, prey);
+      arena._resolvePlayerCollisions(config);
+      return { arena, predator, prey };
+    }
 
-    arena._resolvePlayerCollisions(config);
+    const standardCap = resolveAbsorb(666);
+    const largerCap = resolveAbsorb(900);
 
-    expect(arena.players.has(prey.username)).toBe(false);
-    expect(predator.mass).toBeGreaterThan(400);
+    expect(standardCap.arena.players.has(standardCap.prey.username)).toBe(false);
+    expect(largerCap.arena.players.has(largerCap.prey.username)).toBe(false);
+    expect(largerCap.predator.mass).toBeGreaterThan(standardCap.predator.mass);
+    expect(standardCap.predator.mass).toBeGreaterThan(400);
   });
 
   it('damps direct rewards for dominant unarmed predators and spills more food', () => {
@@ -7093,34 +7112,44 @@ describe('GameEnginePlugin arena integration', () => {
     }));
   });
 
-  it('migrates a noisy stored food profile without overwriting intentional low-volume pacing', () => {
+  it('migrates noisy stored food profiles without overwriting intentional low-volume pacing', () => {
     const { plugin } = createPlugin();
-    const profile = {
-      maxMass: 260,
+    const noisyProfile = {
       maxFood: 130,
       maxFoodRender: 72,
       foodSpawnIntervalMs: 6000,
       foodSpawnBatchSize: 22
     };
 
-    const noisy = plugin._getConfigWithDefaults('arena', profile);
-    expect(noisy).toEqual(expect.objectContaining({
-      maxMass: 666,
-      maxFood: 72,
-      maxFoodRender: 66,
+    for (const legacyMaxMass of [90, 140, 170, 260, 520]) {
+      const noisy = plugin._getConfigWithDefaults('arena', { ...noisyProfile, maxMass: legacyMaxMass });
+      expect(noisy).toEqual(expect.objectContaining({
+        maxMass: 666,
+        maxFood: 72,
+        maxFoodRender: 66,
+        foodSpawnIntervalMs: 2400,
+        foodSpawnBatchSize: 1
+      }));
+    }
+
+    const legacyBurst = plugin._getConfigWithDefaults('arena', { foodSpawnBatchSize: 4 });
+    expect(legacyBurst).toEqual(expect.objectContaining({
       foodSpawnIntervalMs: 2400,
       foodSpawnBatchSize: 1
     }));
 
-    const intentionalPacing = plugin._getConfigWithDefaults('arena', {
-      foodSpawnIntervalMs: 5000,
-      foodSpawnBatchSize: 3
-    });
-    expect(intentionalPacing).toEqual(expect.objectContaining({
-      foodSpawnIntervalMs: 5000,
-      foodSpawnBatchSize: 3
-    }));
+    for (const foodSpawnBatchSize of [1, 2, 3]) {
+      const intentionalPacing = plugin._getConfigWithDefaults('arena', {
+        foodSpawnIntervalMs: 5000,
+        foodSpawnBatchSize
+      });
+      expect(intentionalPacing).toEqual(expect.objectContaining({
+        foodSpawnIntervalMs: 5000,
+        foodSpawnBatchSize
+      }));
+    }
   });
+
   it('adds curated gift weapon defaults to arena admin config responses without overwriting custom mappings', () => {
     const { plugin } = createPlugin();
 
