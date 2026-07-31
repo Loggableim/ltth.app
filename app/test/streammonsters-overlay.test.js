@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 describe('Stream Monsters OBS overlay', () => {
@@ -59,6 +60,63 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toMatch(/#brand\s*\{[^}]*brightness\(1\.18\)/);
     expect(html).toContain("['attack', 'defense', 'special'].includes(scene)");
     expect(html).toContain('return { origin: { x: 0.5, y: 0.5 }, scale: 1 }');
+  });
+
+  test('provides a dedicated portrait hatch reveal above the chat safe zone', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+
+    expect(html).toContain('id="hatch-reveal"');
+    expect(html).toContain('data-hatch-skills');
+    expect(html).toContain('--hatch-safe-bottom');
+    expect(html).toMatch(/#hatch-reveal\s*\{[^}]*overflow:hidden/);
+    expect(html).toMatch(
+      /@media\s*\(orientation:\s*portrait\)[\s\S]*?#hatch-reveal\s*\{[^}]*grid-template-columns:minmax\(0,1fr\)/
+    );
+    const document = new JSDOM(html).window.document;
+    expect(document.getElementById('hatch-reveal').parentElement.id)
+      .toBe('streammonsters-overlay');
+  });
+
+  test('routes egg_hatched through the dedicated hatch reveal instead of the generic card', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+
+    expect(html).toContain('showHatchReveal(data)');
+    expect(html).toContain('setHatchRevealSkills');
+  });
+
+  test('keeps the dedicated hatch reveal visible for its full 12-second lifecycle', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+
+    expect(html).toContain('const deadlineMs = startedAt + 12_000;');
+    expect(html).toContain('if (remaining > 0) await wait(remaining);');
+  });
+
+  test('shows generic A/B/C skill slots when the public hatch payload has no skills', () => {
+    const html = fs.readFileSync(path.join(
+      process.cwd(),
+      'plugins',
+      'streamalchemy',
+      'streammonsters-overlay.html'
+    ), 'utf8');
+
+    expect(html).toContain("`A · ${text('skillAttack', 'Attack')}`");
+    expect(html).toContain("`B · ${text('skillDefense', 'Defense')}`");
+    expect(html).toContain("`C · ${text('skillSpecial', 'Special')}`");
   });
 
   test.each(['de', 'en', 'es', 'fr'])('localizes command hints with effective command references in %s', locale => {
