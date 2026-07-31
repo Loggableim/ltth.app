@@ -59,7 +59,7 @@ describe('Stream Monsters public guide', () => {
     expect(streamMonstersLink).not.toBeNull();
     expect(streamMonstersLink.textContent).toContain('Stream Monsters');
     expect(streamMonstersLink.closest('.mega-category').textContent)
-      .toContain('Gaming & Interaktion');
+      .toContain('Plugins & Erweiterungen');
     expect(guide).toContain("de:");
     expect(guide).toContain("en:");
     expect(guide).toContain("es:");
@@ -118,12 +118,15 @@ describe('Stream Monsters public guide', () => {
       .toMatch(/auch mit vorhandenen Eiern/i);
   });
 
-  test('links Stream Monsters from the gaming navigation menu', () => {
+  test('lists Stream Monsters once in the plugin navigation menu', () => {
     const document = new JSDOM(read('_partials/header.html')).window.document;
-    const link = [...document.querySelectorAll('.mega-category .mega-item')]
+    const pluginCategory = document.querySelector('.mega-category--plugins');
+    const link = [...pluginCategory.querySelectorAll('.mega-item')]
       .find(item => item.getAttribute('href') === '/streammonsters/');
 
     expect(link).toBeDefined();
     expect(link.textContent).toContain('Stream Monsters');
+    expect(pluginCategory.textContent).not.toContain('Stream Alchemy');
+    expect(document.querySelectorAll('.mega-item[href="/streammonsters/"]')).toHaveLength(1);
   });
 });
