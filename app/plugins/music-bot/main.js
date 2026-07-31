@@ -21,6 +21,7 @@ try {
   './lib/music-resolver',
   './lib/media-cache',
   './lib/track-identity',
+  './lib/soundbot-process-registry',
   './lib/playback-controller',
   './lib/playback-engine',
   './lib/ban-list',

@@ -3,6 +3,8 @@ jest.mock('child_process', () => ({
 }));
 
 const EventEmitter = require('events');
+const fs = require('fs');
+const path = require('path');
 const { spawn } = require('child_process');
 const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
@@ -199,6 +201,53 @@ describe('Music Bot marked MPV process registry', () => {
     expect(script).not.toContain("'Stop' | Get-CimInstance");
   });
 
+  test('preserves a five-second budget for slow Windows MPV scans', async () => {
+    const observedTimeouts = [];
+    const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
+      platform: 'win32',
+      listProcesses: async ({ timeoutMs }) => {
+        observedTimeouts.push(timeoutMs);
+        return [];
+      }
+    });
+
+    await expect(registry.findMarkedProcesses({ timeoutMs: 5000 })).resolves.toEqual([]);
+
+    expect(observedTimeouts).toEqual([5000]);
+  });
+
+  test('lets the Windows scanner child run for the full five-second budget', async () => {
+    jest.useFakeTimers();
+    const scanner = Object.assign(new EventEmitter(), {
+      stdout: new EventEmitter(),
+      stderr: new EventEmitter(),
+      kill: jest.fn()
+    });
+    const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
+      platform: 'win32',
+      spawn: jest.fn(() => scanner)
+    });
+
+    const pending = registry.findMarkedProcesses({ timeoutMs: 5000 });
+    const failure = expect(pending).rejects.toThrow(/timed out/);
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(2001);
+    expect(scanner.kill).not.toHaveBeenCalled();
+
+    await jest.advanceTimersByTimeAsync(2999);
+    await failure;
+    expect(scanner.kill).toHaveBeenCalledTimes(1);
+  });
+
+  test('reload invalidates the process registry module cache', () => {
+    const mainSource = fs.readFileSync(
+      path.join(__dirname, '../plugins/music-bot/main.js'),
+      'utf8'
+    );
+
+    expect(mainSource).toContain("'./lib/soundbot-process-registry'");
+  });
+
   test.each([
     ['win32', 'powershell.exe'],
     ['linux', 'ps']
@@ -290,7 +339,7 @@ describe('Music Bot orphan reconciliation', () => {
       locked: true,
       remaining: []
     }));
-    expect(processRegistry.findMarkedProcesses).toHaveBeenCalledWith({ timeoutMs: 1500 });
+    expect(processRegistry.findMarkedProcesses).toHaveBeenCalledWith({ timeoutMs: 5000 });
     expect(controller.isSafetyLocked()).toBe(true);
     expect(processRegistry.cleanupMarked).toHaveBeenCalledWith({ timeoutMs: 2000 });
     expect(safetyChanged).toHaveBeenCalledWith(expect.objectContaining({

@@ -4,6 +4,7 @@ const PlaybackEngine = require('./playback-engine');
 const { SoundbotProcessRegistry } = require('./soundbot-process-registry');
 
 const RAMP_STEP_MS = 50;
+const PROCESS_SCAN_TIMEOUT_MS = 5000;
 
 function createSeekError(code, message) {
   const error = new Error(message);
@@ -477,7 +478,7 @@ class PlaybackController extends EventEmitter {
     }
 
     const operation = Promise.resolve()
-      .then(() => this._processRegistry.findMarkedProcesses({ timeoutMs: 1500 }))
+      .then(() => this._processRegistry.findMarkedProcesses({ timeoutMs: PROCESS_SCAN_TIMEOUT_MS }))
       .then(async (processes) => {
         const unexpected = processes.filter((entry) => this._isUnexpectedMarkedProcess(entry));
         const detected = unexpected.map((entry) => Number(entry.pid));

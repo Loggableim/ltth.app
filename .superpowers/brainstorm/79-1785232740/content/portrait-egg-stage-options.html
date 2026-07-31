@@ -1,0 +1,81 @@
+<style>
+  .portrait-grid { display:grid; grid-template-columns:repeat(3,minmax(240px,1fr)); gap:18px; }
+  .portrait-card { cursor:pointer; }
+  .phone { position:relative; width:100%; aspect-ratio:9/16; overflow:hidden; border-radius:24px; border:2px solid #43506c; background:
+    radial-gradient(circle at 50% 25%, rgba(99,102,241,.30), transparent 32%),
+    linear-gradient(180deg,#11172a 0%,#17203a 54%,#0b1020 100%); box-shadow:0 18px 44px rgba(0,0,0,.35); }
+  .hud { position:absolute; inset:4% 6% auto; display:flex; justify-content:space-between; color:#eaf2ff; font-weight:800; font-size:12px; }
+  .monster { position:absolute; top:19%; width:35%; aspect-ratio:.72; border-radius:45% 45% 38% 38%;
+    background:linear-gradient(160deg,#7dd3fc,#6366f1 55%,#312e81); filter:drop-shadow(0 16px 12px rgba(0,0,0,.45)); }
+  .monster.left { left:10%; transform:rotate(4deg); } .monster.right { right:10%; transform:scaleX(-1) rotate(4deg); }
+  .battle-line { position:absolute; top:50%; left:8%; right:8%; height:3px; background:linear-gradient(90deg,transparent,#a5b4fc,transparent); opacity:.75; }
+  .safe { position:absolute; left:0; right:0; bottom:0; height:26%; background:repeating-linear-gradient(135deg,rgba(239,68,68,.10),rgba(239,68,68,.10) 8px,rgba(239,68,68,.03) 8px,rgba(239,68,68,.03) 16px); border-top:1px dashed rgba(248,113,113,.55); }
+  .safe-label { position:absolute; bottom:21.5%; right:4%; color:#fca5a5; font-size:10px; font-weight:800; }
+  .egg-row { position:absolute; display:flex; align-items:flex-end; justify-content:center; gap:7px; z-index:4; }
+  .egg { width:28px; height:38px; border-radius:52% 52% 46% 46%; background:radial-gradient(circle at 35% 28%,#fff 0 7%,#facc15 9%,#f97316 48%,#7c2d12 100%); border:2px solid rgba(255,255,255,.55); box-shadow:0 7px 12px rgba(0,0,0,.48),0 0 14px rgba(251,191,36,.42); }
+  .egg.blue { background:radial-gradient(circle at 35% 28%,#fff 0 7%,#67e8f9 9%,#2563eb 48%,#172554 100%); }
+  .egg.green { background:radial-gradient(circle at 35% 28%,#fff 0 7%,#d9f99d 9%,#22c55e 48%,#14532d 100%); }
+  .egg.purple { background:radial-gradient(circle at 35% 28%,#fff 0 7%,#e9d5ff 9%,#a855f7 48%,#581c87 100%); }
+  .egg.free { transform:translateY(-12px) scale(1.15); box-shadow:0 8px 16px rgba(0,0,0,.48),0 0 24px #fde047; }
+  .adopt-pill { position:absolute; z-index:5; padding:5px 9px; border-radius:999px; background:#facc15; color:#351a00; font-size:10px; font-weight:900; box-shadow:0 5px 18px rgba(250,204,21,.45); }
+  .compact-wait { position:absolute; z-index:5; top:11%; left:12%; right:12%; border:1px solid rgba(255,255,255,.35); border-radius:15px; padding:9px 12px; color:white; text-align:center; font-size:11px; font-weight:700; background:rgba(15,23,42,.88); box-shadow:0 12px 28px rgba(0,0,0,.35); }
+  .avatar { display:inline-flex; width:22px; height:22px; border-radius:50%; align-items:center; justify-content:center; background:linear-gradient(135deg,#fb7185,#8b5cf6); margin-right:5px; vertical-align:middle; font-size:9px; }
+  .recommended { display:inline-block; margin-left:7px; padding:3px 7px; border-radius:999px; background:#22c55e; color:#052e16; font-size:11px; font-weight:900; }
+  @media (max-width:980px) { .portrait-grid { grid-template-columns:1fr; } .phone { max-width:320px; margin:auto; } }
+</style>
+
+<h2>Wo sollen die Geschenk-Eier nach dem Einflug liegen bleiben?</h2>
+<p class="subtitle">Alle Varianten halten Monster und Hinweise in den oberen 74 %. Die rote Fläche zeigt die TikTok-Chat-Zone. Klicke eine Variante an.</p>
+
+<div class="portrait-grid cards">
+  <div class="card portrait-card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="phone">
+        <div class="hud"><span>MARK ★ 82%</span><span>Runde 2</span></div>
+        <div class="compact-wait"><span class="avatar">MT</span> Dein Ei brütet noch · <strong>01:24</strong></div>
+        <div class="monster left"></div><div class="monster right"></div><div class="battle-line"></div>
+        <div class="safe"></div><div class="safe-label">TIKTOK CHAT-SAFE-ZONE</div>
+        <div class="egg-row" style="left:8%;right:8%;bottom:25.5%">
+          <div class="egg blue"></div><div class="egg"></div><div class="egg green free"></div><div class="egg purple"></div><div class="egg blue"></div>
+        </div>
+        <div class="adopt-pill" style="bottom:31%;left:38%">!adopt · jetzt frei</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · Chat-Safe Shelf <span class="recommended">Empfohlen</span></h3><p>Eier landen direkt auf der Oberkante des Chats. Sehr präsent, aber Text und TikTok-Bedienung bleiben frei.</p></div>
+  </div>
+
+  <div class="card portrait-card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="phone">
+        <div class="hud"><span>MARK ★ 82%</span><span>Runde 2</span></div>
+        <div class="compact-wait"><span class="avatar">MT</span> Dein Ei brütet noch · <strong>01:24</strong></div>
+        <div class="monster left"></div><div class="monster right"></div><div class="battle-line"></div>
+        <div class="safe"></div><div class="safe-label">TIKTOK CHAT-SAFE-ZONE</div>
+        <div class="egg-row" style="left:10%;right:10%;bottom:3%">
+          <div class="egg purple"></div><div class="egg blue"></div><div class="egg free"></div><div class="egg green"></div><div class="egg purple"></div>
+        </div>
+        <div class="adopt-pill" style="bottom:10%;left:38%">!adopt · jetzt frei</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · Echter Bodenhaufen</h3><p>Maximaler EmojiRain-Eindruck. Die Eier liegen ganz unten, können aber mit TikTok-Chat und Buttons kollidieren.</p></div>
+  </div>
+
+  <div class="card portrait-card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="phone">
+        <div class="hud"><span>MARK ★ 82%</span><span>Runde 2</span></div>
+        <div class="compact-wait"><span class="avatar">MT</span> Dein Ei brütet noch · <strong>01:24</strong></div>
+        <div class="monster left"></div><div class="monster right"></div><div class="battle-line"></div>
+        <div class="safe"></div><div class="safe-label">TIKTOK CHAT-SAFE-ZONE</div>
+        <div class="egg-row" style="left:4%;bottom:27%;flex-direction:column">
+          <div class="egg blue"></div><div class="egg green"></div><div class="egg"></div>
+        </div>
+        <div class="egg-row" style="right:4%;bottom:27%;flex-direction:column">
+          <div class="egg purple"></div><div class="egg blue free"></div>
+        </div>
+        <div class="adopt-pill" style="bottom:40%;right:12%">!adopt</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · Seitliche Nester</h3><p>Fast keine Chat-Überdeckung und viel freie Mitte. Wirkt aufgeräumter, aber weniger wie ein physischer Eierregen.</p></div>
+  </div>
+</div>

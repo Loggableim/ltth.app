@@ -1,0 +1,75 @@
+<style>
+  .battle-grid { display:grid; grid-template-columns:repeat(3,minmax(240px,1fr)); gap:18px; }
+  .phone { position:relative; width:100%; aspect-ratio:9/16; overflow:hidden; border-radius:24px; border:2px solid #465370; background:#0b1020; box-shadow:0 18px 44px rgba(0,0,0,.38); }
+  .arena-a { background:radial-gradient(circle at 50% 47%,rgba(249,115,22,.42),transparent 22%),radial-gradient(circle at 50% 20%,rgba(59,130,246,.34),transparent 35%),linear-gradient(180deg,#172554,#1e1b4b 58%,#090d19); }
+  .arena-b { background:radial-gradient(circle at 50% 47%,rgba(250,204,21,.58),transparent 20%),repeating-conic-gradient(from 45deg at 50% 46%,rgba(236,72,153,.18) 0 8deg,transparent 8deg 18deg),linear-gradient(180deg,#3b0764,#111827 62%,#070a12); }
+  .arena-c { background:radial-gradient(circle at 50% 42%,rgba(56,189,248,.18),transparent 30%),linear-gradient(180deg,#111827,#172033 60%,#080b12); }
+  .topbar { position:absolute; z-index:8; top:3.5%; left:5%; right:5%; color:#f8fafc; font-size:10px; font-weight:900; text-align:center; letter-spacing:.08em; }
+  .versus { position:absolute; z-index:8; top:9%; left:5%; right:5%; display:grid; grid-template-columns:1fr auto 1fr; gap:7px; align-items:center; color:#fff; font-size:9px; font-weight:850; }
+  .hp { height:9px; overflow:hidden; border-radius:999px; background:#1f2937; border:1px solid rgba(255,255,255,.28); }
+  .hp::after { content:""; display:block; width:72%; height:100%; background:linear-gradient(90deg,#22c55e,#a3e635); }
+  .hp.enemy::after { width:48%; background:linear-gradient(90deg,#ef4444,#fb923c); }
+  .fighters { position:absolute; z-index:4; top:20%; left:4%; right:4%; height:43%; }
+  .fighter { position:absolute; bottom:0; width:45%; height:82%; filter:drop-shadow(0 18px 14px rgba(0,0,0,.55)); }
+  .fighter::before { content:""; position:absolute; inset:7% 9% 0; border-radius:48% 48% 38% 38%; background:linear-gradient(145deg,#fef08a,#f97316 48%,#7c2d12); clip-path:polygon(47% 0,62% 11%,77% 8%,84% 27%,96% 49%,80% 59%,76% 100%,24% 100%,20% 59%,4% 49%,16% 27%,23% 8%,38% 11%); border:2px solid rgba(255,255,255,.5); }
+  .fighter.left { left:1%; transform:perspective(440px) rotateY(9deg) rotate(-3deg); }
+  .fighter.right { right:1%; transform:scaleX(-1) perspective(440px) rotateY(9deg) rotate(-3deg); }
+  .fighter.right::before { background:linear-gradient(145deg,#cffafe,#3b82f6 48%,#1e3a8a); }
+  .impact { position:absolute; z-index:6; top:38%; left:42%; width:16%; aspect-ratio:1; border-radius:50%; background:#fff; box-shadow:0 0 14px #fff,0 0 40px #facc15,0 0 80px #f97316; }
+  .slash { position:absolute; z-index:7; top:34%; left:31%; width:40%; height:8px; transform:rotate(-18deg); background:linear-gradient(90deg,transparent,#fff,#fde047,transparent); filter:drop-shadow(0 0 12px #fb923c); }
+  .damage { position:absolute; z-index:9; top:31%; right:21%; color:#fff; font-size:31px; font-weight:1000; transform:rotate(-7deg); text-shadow:0 3px 0 #991b1b,0 0 18px #ef4444; }
+  .camera { position:absolute; inset:0; border:5px solid rgba(255,255,255,.22); box-shadow:inset 0 0 42px rgba(239,68,68,.55); }
+  .skills { position:absolute; z-index:8; left:6%; right:6%; top:65%; display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .skill { min-height:76px; border-radius:12px; padding:8px 6px; color:#fff; background:rgba(15,23,42,.89); border:1px solid rgba(255,255,255,.25); text-align:center; font-size:9px; box-shadow:0 8px 18px rgba(0,0,0,.30); }
+  .skill strong { display:block; font-size:13px; margin-bottom:4px; }
+  .skill.ready { border-color:#fde047; box-shadow:0 0 18px rgba(250,204,21,.45); }
+  .charge { position:absolute; z-index:8; top:83%; left:10%; right:10%; color:#e2e8f0; font-size:9px; font-weight:800; }
+  .meter { height:8px; margin-top:4px; border-radius:999px; background:#334155; overflow:hidden; }
+  .meter::after { content:""; display:block; width:74%; height:100%; background:linear-gradient(90deg,#8b5cf6,#e879f9,#fde047); }
+  .safe { position:absolute; left:0; right:0; bottom:0; height:10%; border-top:1px dashed rgba(248,113,113,.45); background:rgba(127,29,29,.12); color:#fca5a5; font-size:9px; text-align:right; padding:7px; }
+  .coins { position:absolute; inset:0; background-image:radial-gradient(circle,#fde047 0 2px,transparent 3px); background-size:33px 47px; opacity:.45; transform:rotate(8deg); }
+  .clean .impact { width:10%; left:45%; box-shadow:0 0 20px #38bdf8; } .clean .slash { opacity:.5; } .clean .camera { box-shadow:none;border-color:rgba(56,189,248,.15); }
+  .recommended { display:inline-block; margin-left:7px; padding:3px 7px; border-radius:999px; background:#22c55e; color:#052e16; font-size:11px; font-weight:900; }
+  @media (max-width:980px) { .battle-grid { grid-template-columns:1fr; } .phone { max-width:320px; margin:auto; } }
+</style>
+
+<h2>Welche Intensität soll die neue Portrait-Arena haben?</h2>
+<p class="subtitle">In allen Varianten bleiben beide Monster vollständig sichtbar, A/B/C wird nur den Kämpfern angeboten und die untersten 26 % bleiben im echten Overlay chatfrei.</p>
+
+<div class="battle-grid cards">
+  <div class="card" data-choice="broadcast-arcade" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="phone arena-a">
+      <div class="topbar">RUNDE 2 · BEIDE SKILLS VERSIEGELT</div>
+      <div class="versus"><div class="hp"></div><span>VS</span><div class="hp enemy"></div></div>
+      <div class="fighters"><div class="fighter left"></div><div class="fighter right"></div></div>
+      <div class="impact"></div><div class="slash"></div><div class="damage">-18</div><div class="camera"></div>
+      <div class="skills"><div class="skill"><strong>A</strong>Glutklaue<br>Schaden + Brand</div><div class="skill"><strong>B</strong>Glutschild<br>Schild + Dornen</div><div class="skill ready"><strong>C</strong>Solarsturm<br>Special bereit!</div></div>
+      <div class="charge">SPECIAL LÄDT AUCH MIT DER ZEIT<div class="meter"></div></div><div class="safe">CHAT-SAFE</div>
+    </div></div>
+    <div class="card-body"><h3>V1 · Broadcast Arcade <span class="recommended">Empfohlen</span></h3><p>Große Monster, starke Treffer, Kamerastoß und Elementeffekte – energiereich, aber HUD und Skilltexte bleiben klar.</p></div>
+  </div>
+
+  <div class="card" data-choice="jackpot-clash" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="phone arena-b">
+      <div class="coins"></div><div class="topbar">PERFECT LOCK! · COMBO x3</div>
+      <div class="versus"><div class="hp"></div><span>VS</span><div class="hp enemy"></div></div>
+      <div class="fighters"><div class="fighter left"></div><div class="fighter right"></div></div>
+      <div class="impact"></div><div class="slash"></div><div class="damage">CRIT!</div><div class="camera"></div>
+      <div class="skills"><div class="skill"><strong>A</strong>Glutklaue</div><div class="skill"><strong>B</strong>Glutschild</div><div class="skill ready"><strong>C</strong>JACKPOT SPECIAL</div></div>
+      <div class="charge">SPECIAL FEVER<div class="meter"></div></div><div class="safe">CHAT-SAFE</div>
+    </div></div>
+    <div class="card-body"><h3>V2 · Jackpot Clash</h3><p>Mehr Blitze, Combo-Stempel und Casino-Feedback. Sehr dopaminreich, kann die eigentlichen Entscheidungen aber überstrahlen.</p></div>
+  </div>
+
+  <div class="card" data-choice="clean-esport" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="phone arena-c clean">
+      <div class="topbar">RUNDE 2 · AKTION</div>
+      <div class="versus"><div class="hp"></div><span>VS</span><div class="hp enemy"></div></div>
+      <div class="fighters"><div class="fighter left"></div><div class="fighter right"></div></div>
+      <div class="impact"></div><div class="slash"></div><div class="damage">-18</div><div class="camera"></div>
+      <div class="skills"><div class="skill"><strong>A</strong>Glutklaue<br>+ Brand</div><div class="skill"><strong>B</strong>Glutschild<br>+ Dornen</div><div class="skill ready"><strong>C</strong>Solarsturm</div></div>
+      <div class="charge">SPECIAL 74 %<div class="meter"></div></div><div class="safe">CHAT-SAFE</div>
+    </div></div>
+    <div class="card-body"><h3>V3 · Clean Esport</h3><p>Beste Lesbarkeit und geringste OBS-Last. Professionell, aber deutlich weniger spektakulär und verspielt.</p></div>
+  </div>
+</div>

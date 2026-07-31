@@ -1,0 +1,49 @@
+<div id="arena-ability-layout">
+  <h2>Wo sollen die Fähigkeitsringe sitzen?</h2>
+  <p class="subtitle">Beide Varianten zeigen: <code>!boost</code> lädt rot, <code>!shield</code> lädt blau. Nach 60 Sekunden sind sie bereit.</p>
+  <style>
+    #arena-ability-layout .choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    #arena-ability-layout .choice { cursor:pointer; }
+    #arena-ability-layout .field { position:relative; min-height:310px; overflow:hidden; background:radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 48%), var(--card); border:1px solid var(--border); border-radius:12px; }
+    #arena-ability-layout .grid { position:absolute; inset:0; background-image:linear-gradient(color-mix(in srgb, var(--border) 40%, transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb, var(--border) 40%, transparent) 1px,transparent 1px); background-size:26px 26px; opacity:.55; }
+    #arena-ability-layout .avatar { position:absolute; top:43%; left:50%; width:74px; height:74px; margin:-37px; border-radius:50%; background:var(--secondary); border:4px solid var(--foreground); display:grid; place-items:center; color:var(--secondary-foreground); font-weight:500; z-index:2; }
+    #arena-ability-layout .ring { position:absolute; top:43%; left:50%; border-radius:50%; transform:translate(-50%,-50%) rotate(-90deg); z-index:3; pointer-events:none; }
+    #arena-ability-layout .ring::before { content:""; position:absolute; inset:0; border-radius:inherit; background:conic-gradient(var(--ring-color) var(--fill), color-mix(in srgb,var(--ring-color) 18%,transparent) 0); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px)); mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px)); }
+    #arena-ability-layout .boost { --ring-color:#ef4444; --fill:74%; width:108px; height:108px; }
+    #arena-ability-layout .shield { --ring-color:#3b82f6; --fill:100%; width:124px; height:124px; }
+    #arena-ability-layout .legend { position:absolute; left:14px; bottom:14px; z-index:4; display:flex; gap:8px; flex-wrap:wrap; }
+    #arena-ability-layout .chip { background:color-mix(in srgb,var(--background) 88%,transparent); color:var(--foreground); border:1px solid var(--border); border-radius:999px; padding:6px 9px; font-size:12px; }
+    #arena-ability-layout .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+    #arena-ability-layout .red { background:#ef4444; } #arena-ability-layout .blue { background:#3b82f6; }
+    #arena-ability-layout .fixed { position:absolute; inset:auto 0 16px; z-index:4; display:flex; justify-content:center; gap:10px; }
+    #arena-ability-layout .orb { width:46px; height:46px; border-radius:50%; background:conic-gradient(#ef4444 74%,color-mix(in srgb,#ef4444 15%,transparent) 0); padding:5px; }
+    #arena-ability-layout .orb > span { display:grid; place-items:center; width:100%; height:100%; border-radius:50%; background:var(--card); font-size:11px; color:var(--foreground); }
+    #arena-ability-layout .orb.sh { background:conic-gradient(#3b82f6 100%,color-mix(in srgb,#3b82f6 15%,transparent) 0); }
+    #arena-ability-layout .choice.is-selected .field { outline:3px solid var(--ring); outline-offset:2px; }
+    @media (max-width:560px) { #arena-ability-layout .choices { grid-template-columns:1fr; } }
+  </style>
+  <div class="choices">
+    <button class="choice btn" type="button" data-choice="rings-am-avatar" onclick="selectLayout(this)">
+      <div class="field" aria-label="Ringe direkt um die Spielfigur">
+        <div class="grid"></div><div class="avatar">USER</div><div class="ring boost"></div><div class="ring shield"></div>
+        <div class="legend"><span class="chip"><i class="dot red"></i><code>!boost</code> 44s</span><span class="chip"><i class="dot blue"></i><code>!shield</code> bereit</span></div>
+      </div>
+      <strong>Direkt um die Figur</strong><br><span class="text-small">Status ist immer beim eigenen Avatar sichtbar.</span>
+    </button>
+    <button class="choice btn" type="button" data-choice="feste-leiste" onclick="selectLayout(this)">
+      <div class="field" aria-label="Feste Fähigkeitsleiste am unteren Spielfeldrand">
+        <div class="grid"></div><div class="avatar">USER</div>
+        <div class="fixed"><div class="orb"><span><code>!boost</code></span></div><div class="orb sh"><span><code>!shield</code></span></div></div>
+      </div>
+      <strong>Feste Leiste im Feld</strong><br><span class="text-small">Groß und sehr lesbar, aber nicht direkt am Avatar.</span>
+    </button>
+  </div>
+  <script>
+    const root = document.getElementById('arena-ability-layout');
+    function selectLayout(button) {
+      root.querySelectorAll('.choice').forEach(item => item.classList.remove('is-selected'));
+      button.classList.add('is-selected');
+      window.toggleSelect(button);
+    }
+  </script>
+</div>

@@ -4,6 +4,7 @@ const path = require('path');
 const SOUND_BOT_PROCESS_MARKER = 'ltth-soundbot-mpv-v1';
 const SOUND_BOT_IPC_PREFIX = 'ltth-soundbot-mpv-v1-';
 const MAX_CLEANUP_MS = 2000;
+const MAX_PROCESS_SCAN_MS = 5000;
 const MAX_SCANNER_OUTPUT_BYTES = 1024 * 1024;
 const MAX_SCANNER_ERROR_CHARS = 512;
 const MPV_EXECUTABLE_NAMES = new Set(['mpv', 'mpv.exe', 'mpv.com']);
@@ -77,7 +78,7 @@ class SoundbotProcessRegistry {
   }
 
   async findMarkedProcesses({ timeoutMs = 500 } = {}) {
-    const boundedTimeoutMs = Math.min(Math.max(Number(timeoutMs) || 500, 1), MAX_CLEANUP_MS);
+    const boundedTimeoutMs = Math.min(Math.max(Number(timeoutMs) || 500, 1), MAX_PROCESS_SCAN_MS);
     const listOperation = this._listProcessesOverride
       ? Promise.resolve().then(() => this._listProcessesOverride({ timeoutMs: boundedTimeoutMs }))
       : this._listProcesses({ timeoutMs: boundedTimeoutMs });
@@ -301,7 +302,7 @@ class SoundbotProcessRegistry {
       const timer = this._setTimeout(() => {
         child.kill?.('SIGTERM');
         finish(new Error(`${executable} timed out`));
-      }, Math.max(1, Math.min(Number(timeoutMs) || 500, MAX_CLEANUP_MS)));
+      }, Math.max(1, Math.min(Number(timeoutMs) || 500, MAX_PROCESS_SCAN_MS)));
     });
   }
 }

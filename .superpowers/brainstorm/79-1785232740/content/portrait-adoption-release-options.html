@@ -1,0 +1,63 @@
+<style>
+  .adopt-grid { display:grid; grid-template-columns:repeat(3,minmax(240px,1fr)); gap:18px; }
+  .phone { position:relative; width:100%; aspect-ratio:9/16; overflow:hidden; border-radius:24px; border:2px solid #43506c; background:
+    radial-gradient(circle at 50% 28%, rgba(34,211,238,.20), transparent 32%),
+    linear-gradient(180deg,#11172a 0%,#17203a 55%,#0b1020 100%); box-shadow:0 18px 44px rgba(0,0,0,.35); }
+  .hud { position:absolute; inset:4% 6% auto; display:flex; justify-content:space-between; color:#eaf2ff; font-weight:800; font-size:12px; }
+  .safe { position:absolute; left:0; right:0; bottom:0; height:26%; background:repeating-linear-gradient(135deg,rgba(239,68,68,.10),rgba(239,68,68,.10) 8px,rgba(239,68,68,.03) 8px,rgba(239,68,68,.03) 16px); border-top:1px dashed rgba(248,113,113,.55); }
+  .safe-label { position:absolute; bottom:21.5%; right:4%; color:#fca5a5; font-size:10px; font-weight:800; }
+  .shelf { position:absolute; z-index:2; left:4%; right:4%; bottom:25.6%; height:3px; border-radius:8px; background:linear-gradient(90deg,transparent,#64748b 12%,#cbd5e1 50%,#64748b 88%,transparent); }
+  .eggs { position:absolute; z-index:4; left:9%; right:9%; bottom:25.8%; display:flex; justify-content:center; align-items:flex-end; gap:9px; }
+  .egg { position:relative; width:30px; height:41px; border-radius:52% 52% 46% 46%; border:2px solid rgba(255,255,255,.55); background:radial-gradient(circle at 35% 28%,#fff 0 7%,#67e8f9 9%,#2563eb 48%,#172554 100%); box-shadow:0 7px 12px rgba(0,0,0,.48); }
+  .egg.orange { background:radial-gradient(circle at 35% 28%,#fff 0 7%,#fef08a 9%,#f97316 48%,#7c2d12 100%); }
+  .egg.green { background:radial-gradient(circle at 35% 28%,#fff 0 7%,#d9f99d 9%,#22c55e 48%,#14532d 100%); }
+  .egg.purple { background:radial-gradient(circle at 35% 28%,#fff 0 7%,#e9d5ff 9%,#a855f7 48%,#581c87 100%); }
+  .free { transform:translateY(-14px) scale(1.18); box-shadow:0 8px 16px rgba(0,0,0,.48),0 0 22px #fde047,0 0 44px rgba(250,204,21,.50); }
+  .ring::after { content:""; position:absolute; inset:-9px; border:3px solid #fde047; border-radius:50%; box-shadow:0 0 17px #facc15; }
+  .beam::before { content:""; position:absolute; z-index:-1; left:50%; bottom:-10px; width:100px; height:300px; transform:translateX(-50%); background:linear-gradient(0deg,rgba(250,204,21,.46),rgba(250,204,21,0)); clip-path:polygon(34% 100%,66% 100%,100% 0,0 0); }
+  .cracks::after { content:"⚡"; position:absolute; top:6px; left:7px; font-size:15px; color:white; filter:drop-shadow(0 0 5px #fff); }
+  .callout { position:absolute; z-index:5; left:14%; right:14%; bottom:34%; padding:10px 12px; border-radius:14px; text-align:center; background:linear-gradient(135deg,#fde047,#fb923c); color:#351a00; font-size:12px; font-weight:900; box-shadow:0 10px 30px rgba(250,204,21,.35); }
+  .small-callout { left:31%; right:31%; bottom:33%; border-radius:999px; padding:7px 8px; }
+  .owner-card { position:absolute; z-index:5; top:12%; left:13%; right:13%; padding:9px 11px; border:1px solid rgba(255,255,255,.30); border-radius:14px; color:#f8fafc; background:rgba(15,23,42,.88); text-align:center; font-size:11px; font-weight:750; }
+  .avatar { display:inline-flex; width:23px; height:23px; margin-right:6px; vertical-align:middle; align-items:center; justify-content:center; overflow:hidden; border-radius:50%; background:linear-gradient(135deg,#fb7185,#8b5cf6); color:white; font-size:9px; border:2px solid rgba(255,255,255,.7); }
+  .recommended { display:inline-block; margin-left:7px; padding:3px 7px; border-radius:999px; background:#22c55e; color:#052e16; font-size:11px; font-weight:900; }
+  @media (max-width:980px) { .adopt-grid { grid-template-columns:1fr; } .phone { max-width:320px; margin:auto; } }
+</style>
+
+<h2>Wie soll ein Ei sichtbar „öffentlich adoptierbar“ werden?</h2>
+<p class="subtitle">Der Wechsel passiert nach Ablauf der exklusiven 60 Sekunden. Das Ei bleibt danach auf dem gewählten Chat-Safe Shelf.</p>
+
+<div class="adopt-grid cards">
+  <div class="card" data-choice="release-pulse" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="phone">
+      <div class="hud"><span>STREAM MONSTERS</span><span>HYPE 75</span></div>
+      <div class="owner-card"><span class="avatar">MT</span> Reservierung abgelaufen · jetzt für alle frei</div>
+      <div class="safe"></div><div class="safe-label">TIKTOK CHAT-SAFE-ZONE</div><div class="shelf"></div>
+      <div class="eggs"><div class="egg orange"></div><div class="egg green"></div><div class="egg purple free ring cracks"></div><div class="egg"></div></div>
+      <div class="callout">GOLDENES SIGNAL · <strong>!adopt</strong></div>
+    </div></div>
+    <div class="card-body"><h3>V1 · Sprung, Schütteln, Goldring <span class="recommended">Empfohlen</span></h3><p>Das Ei springt kurz hoch, schüttelt sich und bekommt einen dauerhaften Goldring. Der große Aufruf verschwindet nach acht Sekunden.</p></div>
+  </div>
+
+  <div class="card" data-choice="release-beacon" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="phone">
+      <div class="hud"><span>STREAM MONSTERS</span><span>HYPE 75</span></div>
+      <div class="owner-card"><span class="avatar">MT</span> Dieses Ei sucht jetzt ein neues Zuhause</div>
+      <div class="safe"></div><div class="safe-label">TIKTOK CHAT-SAFE-ZONE</div><div class="shelf"></div>
+      <div class="eggs"><div class="egg orange"></div><div class="egg green"></div><div class="egg purple free beam ring"></div><div class="egg"></div></div>
+      <div class="callout">FREIES EI · SCHREIBE <strong>!adopt</strong></div>
+    </div></div>
+    <div class="card-body"><h3>V2 · Arcade-Leuchtfeuer</h3><p>Ein kräftiger Lichtstrahl und Partikel machen den Moment maximal auffällig. Mehr Casino-Energie, aber stärkerer Eingriff ins Bild.</p></div>
+  </div>
+
+  <div class="card" data-choice="release-quiet" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="phone">
+      <div class="hud"><span>STREAM MONSTERS</span><span>HYPE 75</span></div>
+      <div class="owner-card"><span class="avatar">MT</span> Ei ist jetzt öffentlich adoptierbar</div>
+      <div class="safe"></div><div class="safe-label">TIKTOK CHAT-SAFE-ZONE</div><div class="shelf"></div>
+      <div class="eggs"><div class="egg orange"></div><div class="egg green"></div><div class="egg purple free ring"></div><div class="egg"></div></div>
+      <div class="callout small-callout"><strong>!adopt</strong></div>
+    </div></div>
+    <div class="card-body"><h3>V3 · Ruhiger Statuswechsel</h3><p>Nur Goldring, kurzer Ton und kleines Keyword. Weniger Ablenkung, aber der wichtige Community-Moment kann leichter übersehen werden.</p></div>
+  </div>
+</div>
