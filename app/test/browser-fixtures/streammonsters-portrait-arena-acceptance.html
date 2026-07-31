@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Stream Monsters bounded arena acceptance</title>
+  <style>
+    body[data-effect-capture="true"] #portrait-arena > :not(#battle),
+    body[data-effect-capture="true"] #battle > :not(#battle-effects-canvas) {
+      visibility:hidden!important;
+    }
+    body[data-effect-capture="true"] #portrait-arena,
+    body[data-effect-capture="true"] #battle {
+      border:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+    }
+    body[data-effect-capture="true"] #battle::before,
+    body[data-effect-capture="true"] #battle::after {
+      display:none!important;
+    }
+    body[data-effect-capture="true"] #portrait-exception-lane {
+      visibility:hidden!important;
+    }
+  </style>
+</head>
+<body>
+<script>
+'use strict';
+
+const ROOT = '/app/plugins/streamalchemy/';
+const SELECTED_CHOICES = Object.freeze([
+  Object.freeze({ slot: 1, key: 'B', name: 'Guard' }),
+  Object.freeze({ slot: 2, key: 'C', name: 'Nova' })
+]);
+const SKILL_NAMES = Object.freeze(['Bite', 'Guard', 'Nova']);
+let activeRenderer = null;
+let pendingEffect = null;
+let scheduledFrame = null;
+let frameClock = 0;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Unable to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+function node(id) {
+  return document.getElementById(id);
+}
+
+function setText(id, value) {
+  const target = node(id);
+  if (target) target.textContent = String(value);
+}
+
+function rectRecord(rect) {
+  if (!rect) return null;
+  return {
+    left: rect.left,
+    top: rect.top,
+    right: rect.right,
+    bottom: rect.bottom,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+function intersects(left, right) {
+  return Boolean(left && right) && !(
+    left.right <= right.left ||
+    right.right <= left.left ||
+    left.bottom <= right.top ||
+    right.bottom <= left.top
+  );
+}
+
+function intersectsBeyondTolerance(left, right, tolerance = 1) {
+  return Boolean(left && right) && !(
+    left.right <= right.left + tolerance ||
+    right.right <= left.left + tolerance ||
+    left.bottom <= right.top + tolerance ||
+    right.bottom <= left.top + tolerance
+  );
+}
+
+function stableSelector(element) {
+  if (!element) return null;
+  if (element.id) return `#${element.id}`;
+  for (const attribute of [
+    'data-egg-focus-timer',
+    'data-egg-focus-state',
+    'data-egg-notice-title',
+    'data-egg-notice-action',
+    'data-skill',
+    'data-slot'
+  ]) {
+    if (element.hasAttribute(attribute)) {
+      const value = element.getAttribute(attribute);
+      return value ? `[${attribute}="${value}"]` : `[${attribute}]`;
+    }
+  }
+  const className = Array.from(element.classList || [])[0];
+  if (className) return `.${className}`;
+  return element.tagName?.toLowerCase() || null;
+}
+
+function clipsAxis(style, axis) {
+  const value = axis === 'x' ? style.overflowX : style.overflowY;
+  return ['hidden', 'clip', 'auto', 'scroll'].includes(value);
+}
+
+function firstClippingAncestor(element, subjectRect) {
+  let first = null;
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    const style = getComputedStyle(current);
+    const clipX = clipsAxis(style, 'x');
+    const clipY = clipsAxis(style, 'y');
+    if (!clipX && !clipY) {
+      if (current === node('streammonsters-overlay')) break;
+      continue;
+    }
+    const clipRect = current.getBoundingClientRect();
+    const clippedX = clipX && (
+      subjectRect.left < clipRect.left - 1 ||
+      subjectRect.right > clipRect.right + 1
+    );
+    const extendsY = clipY && (
+      subjectRect.top < clipRect.top - 1 ||
+      subjectRect.bottom > clipRect.bottom + 1
+    );
+    const clippedY = clipY && (
+      subjectRect.bottom <= clipRect.top + 1 ||
+      subjectRect.top >= clipRect.bottom - 1
+    );
+    const record = {
+      selector: stableSelector(current),
+      rect: rectRecord(clipRect),
+      overflowX: style.overflowX,
+      overflowY: style.overflowY,
+      clippedX,
+      extendsY,
+      clippedY
+    };
+    first ||= record;
+    if (clippedX || clippedY) return record;
+    if (current === node('streammonsters-overlay')) break;
+  }
+  return first;
+}
+
+function isPainted(element) {
+  if (!element?.isConnected) return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  let visibleRect = {
+    left: 0,
+    top: 0,
+    right: innerWidth,
+    bottom: innerHeight
+  };
+  if (!intersects(rect, visibleRect)) return false;
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    const style = getComputedStyle(current);
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      Number(style.opacity) <= 0.001
+    ) return false;
+    const clipX = clipsAxis(style, 'x');
+    const clipY = clipsAxis(style, 'y');
+    if (!clipX && !clipY) {
+      if (current === node('streammonsters-overlay')) break;
+      continue;
+    }
+    const clipRect = current.getBoundingClientRect();
+    visibleRect = {
+      left: clipX ? Math.max(visibleRect.left, clipRect.left) : visibleRect.left,
+      top: clipY ? Math.max(visibleRect.top, clipRect.top) : visibleRect.top,
+      right: clipX
+        ? Math.min(visibleRect.right, clipRect.right)
+        : visibleRect.right,
+      bottom: clipY
+        ? Math.min(visibleRect.bottom, clipRect.bottom)
+        : visibleRect.bottom
+    };
+    if (!intersects(rect, visibleRect)) return false;
+    if (current === node('streammonsters-overlay')) break;
+  }
+  return true;
+}
+
+function populateFighters() {
+  const fighters = [
+    {
+      slot: 1,
+      name: 'Ash',
+      owner: '@Ari',
+      level: 'Lv. 7',
+      hp: '31 / 38',
+      hpWidth: '82%',
+      shieldWidth: '18%',
+      chargeWidth: '68%',
+      image: `${ROOT}assets/streammonsters/furry/ashfang.webp`
+    },
+    {
+      slot: 2,
+      name: 'Luna',
+      owner: '@Nox',
+      level: 'Lv. 8',
+      hp: '27 / 36',
+      hpWidth: '75%',
+      shieldWidth: '8%',
+      chargeWidth: '92%',
+      image: `${ROOT}assets/streammonsters/furry/selene.webp`
+    }
+  ];
+  for (const fighter of fighters) {
+    setText(`arena-name-${fighter.slot}`, fighter.name);
+    setText(`arena-owner-${fighter.slot}`, fighter.owner);
+    setText(`arena-level-${fighter.slot}`, fighter.level);
+    setText(`arena-hp-text-${fighter.slot}`, fighter.hp);
+    node(`arena-hp-${fighter.slot}`).style.width = fighter.hpWidth;
+    node(`arena-shield-${fighter.slot}`).style.width = fighter.shieldWidth;
+    node(`arena-charge-${fighter.slot}`).style.width = fighter.chargeWidth;
+    const image = node(`arena-image-${fighter.slot}`);
+    image.src = fighter.image;
+    image.alt = `${fighter.name} fighter`;
+  }
+  for (const [deckIndex, deck] of Array.from(
+    document.querySelectorAll('[data-skill-deck]')
+  ).entries()) {
+    for (const [skillIndex, card] of Array.from(
+      deck.querySelectorAll('.arena-skill-card')
+    ).entries()) {
+      const name = SKILL_NAMES[skillIndex];
+      card.querySelector('.skill-icon').textContent = ['✦', '◆', '★'][skillIndex];
+      card.querySelector('.skill-name').textContent = name;
+      card.querySelector('.skill-copy').textContent = `${name} skill`;
+      card.querySelector('.skill-charge').textContent = skillIndex === 2
+        ? `${deckIndex === 0 ? 68 : 92}%`
+        : 'READY';
+    }
+  }
+}
+
+function populateEggShelf() {
+  const focus = document.querySelector('[data-egg-focus]');
+  focus.hidden = false;
+  focus.dataset.state = 'public';
+  focus.innerHTML = `
+    <div class="egg-focus-art">
+      <img src="${ROOT}assets/eggs/lunar-charged.png" alt="Violet lunar egg">
+    </div>
+    <span data-egg-focus-owner>@Mika</span>
+    <span data-egg-focus-element>Lunar egg</span>
+    <strong data-egg-focus-state>Ready to hatch</strong>
+    <span data-egg-focus-timer>00:24</span>
+    <span data-egg-focus-command>!hatch 2</span>
+    <span data-egg-focus-position>#2</span>
+  `;
+}
+
+function resetPhaseState() {
+  const battle = node('battle');
+  battle.className = 'visible';
+  delete battle.dataset.acceptancePhase;
+  const action = node('arena-action-card');
+  action.classList.remove('visible');
+  action.removeAttribute('aria-label');
+  const result = node('arena-result');
+  result.classList.remove('visible');
+  const prompt = node('arena-skill-prompt');
+  prompt.removeAttribute('data-choice-feedback');
+  prompt.textContent = 'A · ATTACK  B · DEFEND  C · SPECIAL';
+  for (const choice of SELECTED_CHOICES) {
+    const fighter = node(`arena-fighter-${choice.slot}`);
+    fighter.className = 'arena-fighter';
+    fighter.removeAttribute('data-choice');
+    fighter.removeAttribute('data-choice-name');
+    fighter.removeAttribute('aria-label');
+  }
+  for (const card of document.querySelectorAll('.arena-skill-card')) {
+    card.classList.remove('selected');
+    card.setAttribute('aria-selected', 'false');
+    card.removeAttribute('data-selected-choice');
+    card.removeAttribute('aria-label');
+  }
+  const notice = node('egg-lifecycle-notice');
+  notice.hidden = true;
+  notice.querySelector('[data-egg-notice-title]').textContent = '';
+  notice.querySelector('[data-egg-notice-action]').textContent = '';
+}
+
+function applyPhase(phase) {
+  resetPhaseState();
+  const battle = node('battle');
+  battle.dataset.acceptancePhase = phase;
+  setText('arena-countdown', phase === 'completed' ? '' : '06');
+  setText('arena-round', 'ROUND 3');
+
+  if (['choice', 'sealed', 'revealed', 'egg-exception'].includes(phase)) {
+    battle.dataset.phase = 'choice';
+  } else {
+    battle.dataset.phase = phase;
+  }
+
+  if (phase === 'sealed') {
+    node('arena-fighter-1').classList.add('choice-locked');
+    setText('arena-round', 'CHOICE SEALED');
+  }
+
+  if (phase === 'revealed') {
+    for (const choice of SELECTED_CHOICES) {
+      const fighter = node(`arena-fighter-${choice.slot}`);
+      fighter.classList.add('choice-locked', 'choice-revealed');
+      fighter.dataset.choice = choice.key;
+      fighter.dataset.choiceName = choice.name;
+      fighter.setAttribute(
+        'aria-label',
+        `${choice.slot === 1 ? 'Ari' : 'Nox'} choice ${choice.key} ${choice.name}`
+      );
+      const selectedCard = document.querySelector(
+        `[data-skill-deck="${choice.slot}"] [data-skill="${choice.key}"]`
+      );
+      selectedCard.classList.add('selected');
+      selectedCard.setAttribute('aria-selected', 'true');
+      selectedCard.dataset.selectedChoice = choice.key;
+      selectedCard.setAttribute(
+        'aria-label',
+        `Selected choice ${choice.key} ${choice.name}`
+      );
+    }
+    setText('arena-round', 'B · GUARD   +   C · NOVA');
+  }
+
+  if (phase === 'action') {
+    const action = node('arena-action-card');
+    action.classList.add('visible');
+    action.setAttribute('aria-label', 'C · NOVA · −7 HP');
+    action.dataset.acceptanceInformation = 'action';
+    setText('arena-action-player', '@Ari');
+    setText('arena-action-key', 'C');
+    setText('arena-action-skill', 'NOVA');
+    setText('arena-action-copy', 'A focused lunar strike.');
+    node('arena-action-metrics').innerHTML =
+      '<span data-action-metric>Damage 7</span><span data-action-metric>Heal 2</span>';
+    const compactMetric = node('arena-action-compact-metric');
+    compactMetric.textContent = '−7 HP';
+    compactMetric.dataset.actionMetric = 'decisive';
+  }
+
+  if (phase === 'completed') {
+    const result = node('arena-result');
+    result.classList.add('visible');
+    result.dataset.acceptanceInformation = 'result';
+    setText('arena-result-ko', 'KO');
+    setText('arena-result-winner', '@Ari WINS');
+    setText('arena-result-monster', 'ASH');
+    setText('arena-result-summary', 'Round 3 · 19 HP');
+    setText('arena-result-compact-summary', 'ASH · @Ari · R3 · 19 HP');
+    setText('arena-result-ratings', 'Rating +12');
+    setText('arena-result-next', 'Next battle soon');
+  }
+
+  if (phase === 'egg-exception') {
+    const notice = node('egg-lifecycle-notice');
+    notice.hidden = false;
+    notice.querySelector('[data-egg-notice-title]').textContent = 'Lunar egg ready';
+    notice.querySelector('[data-egg-notice-action]').textContent = 'Use !hatch 2';
+  }
+}
+
+function applyActionVisualState(state) {
+  const battle = node('battle');
+  const actor = node('arena-fighter-1');
+  const target = node('arena-fighter-2');
+  for (const className of ['camera-impulse', 'hit-stop']) {
+    battle.classList.remove(className);
+  }
+  for (const fighter of [actor, target]) {
+    fighter.classList.remove('advancing', 'telegraphing', 'hit', 'evaded');
+  }
+  if (state === 'advance') {
+    actor.classList.add('telegraphing', 'advancing');
+  } else if (state === 'impact') {
+    target.classList.add('hit');
+    battle.classList.add('camera-impulse', 'hit-stop');
+  }
+}
+
+function recoverActionVisualState() {
+  applyActionVisualState('recover');
+}
+
+function measuredOrigins() {
+  const battleRect = node('battle').getBoundingClientRect();
+  return {
+    origin: window.StreamMonstersPortraitArena.normalizedRectCenter(
+      node('arena-image-1').getBoundingClientRect(),
+      battleRect
+    ),
+    targetOrigin: window.StreamMonstersPortraitArena.normalizedRectCenter(
+      node('arena-image-2').getBoundingClientRect(),
+      battleRect
+    )
+  };
+}
+
+async function probeWebGpu() {
+  if (!navigator.gpu?.requestAdapter) {
+    return { available: false, status: 'skipped-no-adapter' };
+  }
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return { available: false, status: 'skipped-no-adapter' };
+    return { available: true, status: 'available' };
+  } catch (_) {
+    return { available: false, status: 'skipped-no-adapter' };
+  }
+}
+
+async function renderEffect(rendererName, reducedMotion) {
+  activeRenderer?.destroy?.();
+  activeRenderer = null;
+  pendingEffect = null;
+  scheduledFrame = null;
+  frameClock = 0;
+
+  const requestedWebGpu = rendererName === 'WebGPU';
+  if (requestedWebGpu) {
+    const availability = await probeWebGpu();
+    if (!availability.available) return availability;
+  }
+
+  let canvas = node('battle-effects-canvas');
+  canvas.className = '';
+  canvas.removeAttribute('style');
+  const forceCss = rendererName === 'CSS fallback';
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  if (forceCss) {
+    HTMLCanvasElement.prototype.getContext = function getAcceptanceContext(
+      contextType,
+      ...args
+    ) {
+      if (this.id === 'battle-effects-canvas') return null;
+      return originalGetContext.call(this, contextType, ...args);
+    };
+  }
+
+  try {
+    activeRenderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
+      canvas,
+      navigator: requestedWebGpu ? navigator : {},
+      quality: 'high',
+      matchMedia: query => ({
+        matches: reducedMotion && query === '(prefers-reduced-motion: reduce)'
+      }),
+      requestAnimationFrame: callback => {
+        scheduledFrame = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {
+        scheduledFrame = null;
+      },
+      now: () => frameClock,
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      diagnostics: () => {}
+    });
+    await activeRenderer.init();
+  } finally {
+    if (forceCss) HTMLCanvasElement.prototype.getContext = originalGetContext;
+  }
+
+  const statusAfterInit = activeRenderer.status();
+  if (requestedWebGpu && !reducedMotion && statusAfterInit.renderer !== 'webgpu') {
+    return {
+      available: true,
+      status: 'failed-renderer-fallback',
+      backend: statusAfterInit.renderer,
+      fallbackReason: statusAfterInit.fallbackReason
+    };
+  }
+
+  const origins = measuredOrigins();
+  pendingEffect = activeRenderer.play('attack', {
+    element: 'Lunar',
+    actorSlot: 1,
+    targetSlot: 2,
+    origin: origins.origin,
+    targetOrigin: origins.targetOrigin,
+    damage: 7,
+    healing: 2,
+    quality: 'high'
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  const sampleProgress = 0.82;
+  frameClock =
+    window.StreamMonstersEffectsRenderer.SCENE_DURATIONS.attack * sampleProgress;
+  const callback = scheduledFrame;
+  scheduledFrame = null;
+  callback?.(frameClock);
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+
+  canvas = node('battle-effects-canvas');
+  const computed = getComputedStyle(canvas);
+  return {
+    available: true,
+    status: reducedMotion && requestedWebGpu
+      ? 'reduced-motion-fallback'
+      : 'rendered',
+    backend: canvas.dataset.rendererBackend,
+    fallbackReason: canvas.dataset.fallbackReason || null,
+    cssVariables: {
+      originX: computed.getPropertyValue('--sm-effect-origin-x').trim(),
+      originY: computed.getPropertyValue('--sm-effect-origin-y').trim(),
+      targetX: computed.getPropertyValue('--sm-effect-target-x').trim(),
+      targetY: computed.getPropertyValue('--sm-effect-target-y').trim()
+    },
+    measuredOrigins: origins,
+    samplePhase: 'impact',
+    sampleProgress
+  };
+}
+
+function selectorAncestry(element) {
+  const ancestry = [];
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    ancestry.push(stableSelector(current));
+    if (current === document.body) break;
+  }
+  return ancestry;
+}
+
+function collectTextGeometry() {
+  const roots = [node('portrait-arena'), node('portrait-exception-lane')];
+  const records = [];
+  for (const root of roots) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let textNode = walker.nextNode();
+    while (textNode) {
+      const text = textNode.textContent.replace(/\s+/g, ' ').trim();
+      const parent = textNode.parentElement;
+      if (text && parent && isPainted(parent)) {
+        const range = document.createRange();
+        range.selectNodeContents(textNode);
+        const rangeRect = range.getBoundingClientRect();
+        const elementRect = parent.getBoundingClientRect();
+        const style = getComputedStyle(parent);
+        const clippingAncestor = firstClippingAncestor(parent, rangeRect);
+        const noWrap = ['nowrap', 'pre'].includes(style.whiteSpace);
+        const horizontalTooWide = (
+          noWrap &&
+          parent.scrollWidth > parent.clientWidth + 1
+        );
+        records.push({
+          selector: stableSelector(parent),
+          ancestry: selectorAncestry(parent),
+          text,
+          painted: true,
+          overflowX: style.overflowX,
+          overflowY: style.overflowY,
+          whiteSpace: style.whiteSpace,
+          textOverflow: style.textOverflow,
+          clientWidth: parent.clientWidth,
+          scrollWidth: parent.scrollWidth,
+          clientHeight: parent.clientHeight,
+          scrollHeight: parent.scrollHeight,
+          rangeRect: rectRecord(rangeRect),
+          elementRect: rectRecord(elementRect),
+          firstClippingAncestor: clippingAncestor,
+          horizontalClipped: horizontalTooWide,
+          verticalClipped: Boolean(clippingAncestor?.clippedY)
+        });
+      }
+      textNode = walker.nextNode();
+    }
+  }
+  return records;
+}
+
+function selectionSemantics(phase) {
+  const cards = Array.from(
+    document.querySelectorAll('[data-skill-deck] .arena-skill-card')
+  );
+  const selected = cards.filter(card => (
+    card.classList.contains('selected') ||
+    card.getAttribute('aria-selected') === 'true' ||
+    Boolean(card.dataset.selectedChoice) ||
+    /selected choice/i.test(card.getAttribute('aria-label') || '')
+  )).map(card => ({
+    deck: card.closest('[data-skill-deck]')?.dataset.skillDeck || null,
+    key: card.dataset.skill || null,
+    name: card.querySelector('.skill-name')?.textContent.trim() || null,
+    selectedClass: card.classList.contains('selected'),
+    ariaSelected: card.getAttribute('aria-selected'),
+    selectedChoice: card.dataset.selectedChoice || null,
+    accessibleLabel: card.getAttribute('aria-label') || null
+  }));
+  const selectionSpecificEvidence = selected.flatMap(record => [
+    record.key,
+    record.name,
+    record.selectedChoice,
+    record.accessibleLabel
+  ]).filter(Boolean).join(' ');
+  return {
+    phase,
+    selected,
+    selectionSpecificEvidence,
+    earlyDisclosure: (
+      phase === 'sealed' &&
+      selected.length > 0
+    ),
+    revealedTogether: (
+      phase === 'revealed' &&
+      selected.length === 2 &&
+      selected.some(record => (
+        record.deck === '1' &&
+        record.key === 'B' &&
+        record.name === 'Guard' &&
+        record.selectedClass &&
+        record.ariaSelected === 'true'
+      )) &&
+      selected.some(record => (
+        record.deck === '2' &&
+        record.key === 'C' &&
+        record.name === 'Nova' &&
+        record.selectedClass &&
+        record.ariaSelected === 'true'
+      ))
+    )
+  };
+}
+
+function collectMotionState() {
+  const arena = node('portrait-arena');
+  const repeated = arena.getAnimations({ subtree: true })
+    .filter(animation => {
+      const timing = animation.effect?.getComputedTiming?.() || {};
+      return (
+        animation.playState === 'running' &&
+        (timing.iterations === Infinity || Number(timing.iterations) > 1)
+      );
+    })
+    .map(animation => ({
+      playState: animation.playState,
+      iterations: animation.effect?.getComputedTiming?.().iterations
+    }));
+  const transforms = Array.from(
+    arena.querySelectorAll('.arena-sprite-wrap')
+  ).filter(isPainted).map(element => ({
+    id: element.parentElement?.id || element.className,
+    transform: getComputedStyle(element).transform
+  }));
+  return {
+    runningRepeatedAnimations: repeated,
+    transforms,
+    hasTransformDisplacement: transforms.some(record => (
+      record.transform !== 'none' &&
+      record.transform !== 'matrix(1, 0, 0, 1, 0, 0)'
+    ))
+  };
+}
+
+function settleOneShotStageAnimations() {
+  for (const animation of node('portrait-arena').getAnimations({ subtree: true })) {
+    const timing = animation.effect?.getComputedTiming?.() || {};
+    if (
+      timing.iterations !== Infinity &&
+      Number(timing.iterations) <= 1 &&
+      Number.isFinite(Number(timing.endTime))
+    ) {
+      try {
+        animation.finish();
+      } catch (_) {}
+    }
+  }
+}
+
+function disclosureRecord(phase) {
+  const scope = [
+    node('arena-topline'),
+    node('arena-fighter-1'),
+    node('arena-fighter-2')
+  ];
+  const text = scope.map(element => element.textContent).join(' ');
+  const attributes = [];
+  for (const element of scope) {
+    for (const attribute of Array.from(element.attributes || [])) {
+      if (/^(data-choice|data-choice-name|aria-label)$/.test(attribute.name)) {
+        attributes.push(`${attribute.name}=${attribute.value}`);
+      }
+    }
+  }
+  const selected = selectionSemantics(phase);
+  const selectedPattern = /\bB\b|\bC\b|Guard|Nova/i;
+  return {
+    phase,
+    text,
+    attributes,
+    selectionSemantics: selected,
+    earlyDisclosure: phase === 'sealed' && (
+      selectedPattern.test(text) ||
+      attributes.some(value => selectedPattern.test(value)) ||
+      selected.earlyDisclosure
+    ),
+    revealedTogether: phase === 'revealed' && (
+      /\bB\b/.test(text) &&
+      /\bC\b/.test(text) &&
+      /Guard/i.test(text) &&
+      /Nova/i.test(text) &&
+      attributes.some(value => /data-choice=B/.test(value)) &&
+      attributes.some(value => /data-choice=C/.test(value)) &&
+      selected.revealedTogether
+    )
+  };
+}
+
+function elementPaintRecord(element) {
+  return {
+    selector: stableSelector(element),
+    ancestry: selectorAncestry(element),
+    rect: rectRecord(element.getBoundingClientRect())
+  };
+}
+
+function hudElementRecord(element, hudRect) {
+  if (!element) {
+    return {
+      selector: null,
+      painted: false,
+      insideHud: false,
+      rect: null
+    };
+  }
+  const rect = rectRecord(element.getBoundingClientRect());
+  return {
+    selector: stableSelector(element),
+    painted: isPainted(element),
+    insideHud: (
+      rect.left >= hudRect.left - 1 &&
+      rect.top >= hudRect.top - 1 &&
+      rect.right <= hudRect.right + 1 &&
+      rect.bottom <= hudRect.bottom + 1
+    ),
+    rect
+  };
+}
+
+function collectHudContract() {
+  return [1, 2].map(slot => {
+    const fighter = node(`arena-fighter-${slot}`);
+    const hud = fighter.querySelector('.fighter-hud');
+    const hudRect = rectRecord(hud.getBoundingClientRect());
+    const name = hudElementRecord(node(`arena-name-${slot}`), hudRect);
+    const level = hudElementRecord(node(`arena-level-${slot}`), hudRect);
+    const hpRow = hudElementRecord(
+      hud.querySelector('.fighter-hp-row'),
+      hudRect
+    );
+    const hpMeter = hudElementRecord(
+      hud.querySelector('.arena-meter.arena-hp'),
+      hudRect
+    );
+    const hpFill = hudElementRecord(node(`arena-hp-${slot}`), hudRect);
+    const hpBar = {
+      meter: hpMeter,
+      fill: hpFill,
+      nonzero: Boolean(
+        hpMeter.rect?.width > 0 &&
+        hpMeter.rect?.height > 0 &&
+        hpFill.rect?.width > 0 &&
+        hpFill.rect?.height > 0
+      ),
+      insideHud: hpMeter.insideHud && hpFill.insideHud,
+      painted: hpMeter.painted && hpFill.painted
+    };
+    return {
+      slot,
+      hud: elementPaintRecord(hud),
+      name,
+      level,
+      hpRow,
+      hpBar,
+      pass: (
+        name.painted &&
+        name.insideHud &&
+        level.painted &&
+        level.insideHud &&
+        hpRow.painted &&
+        hpRow.insideHud &&
+        hpBar.painted &&
+        hpBar.nonzero &&
+        hpBar.insideHud
+      )
+    };
+  });
+}
+
+function visibilityRecord(element) {
+  return {
+    ...elementPaintRecord(element),
+    painted: isPainted(element)
+  };
+}
+
+function completedOwnership() {
+  const fighters = [1, 2].map(slot => {
+    const fighter = node(`arena-fighter-${slot}`);
+    return {
+      slot,
+      fighter: visibilityRecord(fighter),
+      hud: visibilityRecord(fighter.querySelector('.fighter-hud')),
+      image: visibilityRecord(node(`arena-image-${slot}`))
+    };
+  });
+  const competingInformation = [
+    node('arena-topline'),
+    node('arena-choice-surface'),
+    node('arena-action-card')
+  ].map(visibilityRecord);
+  const result = {
+    surface: visibilityRecord(node('arena-result')),
+    winner: visibilityRecord(node('arena-result-winner')),
+    compactSummary: visibilityRecord(node('arena-result-compact-summary'))
+  };
+  return {
+    fighters,
+    competingInformation,
+    result,
+    pass: (
+      fighters.every(record => (
+        !record.fighter.painted &&
+        !record.hud.painted &&
+        !record.image.painted
+      )) &&
+      competingInformation.every(record => !record.painted) &&
+      result.surface.painted &&
+      result.winner.painted &&
+      result.compactSummary.painted
+    )
+  };
+}
+
+function collectLayout(phase, effect) {
+  const arena = node('portrait-arena');
+  const likebar = window.StreamMonstersPortraitArena.viewportZones(
+    innerWidth,
+    innerHeight
+  ).likebar;
+  const exceptionTarget = window.StreamMonstersPortraitArena.viewportZones(
+    innerWidth,
+    innerHeight
+  ).exception;
+  const arenaRect = arena.getBoundingClientRect();
+  const exceptionRect = node('portrait-exception-lane').getBoundingClientRect();
+  const stageSelectors = [
+    '#arena-topline',
+    '#arena-fighter-1 .fighter-hud',
+    '#arena-fighter-2 .fighter-hud',
+    '#arena-image-1',
+    '#arena-image-2',
+    '#arena-choice-surface',
+    '#arena-action-card',
+    '#arena-result',
+    '#battle-effects-canvas'
+  ];
+  const informationSelectors = [
+    '#arena-topline',
+    '#arena-fighter-1 .fighter-hud',
+    '#arena-fighter-2 .fighter-hud',
+    '#arena-choice-surface',
+    '#arena-action-card',
+    '#arena-result'
+  ];
+  const recordsFor = selectors => selectors
+    .map(selector => document.querySelector(selector))
+    .filter(isPainted)
+    .map(element => ({
+      selector: element.id ? `#${element.id}` : (
+        `#${element.closest('[id]')?.id} .${element.classList[0]}`
+      ),
+      rect: rectRecord(element.getBoundingClientRect())
+    }));
+  const stageRects = recordsFor(stageSelectors);
+  const informationRects = recordsFor(informationSelectors);
+  const overlaps = [];
+  for (let left = 0; left < informationRects.length; left += 1) {
+    for (let right = left + 1; right < informationRects.length; right += 1) {
+      if (intersects(informationRects[left].rect, informationRects[right].rect)) {
+        overlaps.push([
+          informationRects[left].selector,
+          informationRects[right].selector
+        ]);
+      }
+    }
+  }
+
+  const allowedExceptions = [node('egg-shelf'), node('egg-lifecycle-notice')];
+  const exceptionIntruders = Array.from(
+    node('streammonsters-overlay').querySelectorAll('*')
+  ).filter(element => (
+    isPainted(element) &&
+    intersects(rectRecord(element.getBoundingClientRect()), exceptionTarget) &&
+    !allowedExceptions.some(allowed => (
+      element === allowed || allowed.contains(element)
+    )) &&
+    element !== node('portrait-exception-lane') &&
+    element !== node('streammonsters-overlay')
+  )).map(element => element.id || element.className || element.tagName.toLowerCase());
+
+  const shelfRect = rectRecord(node('egg-shelf').getBoundingClientRect());
+  const notice = node('egg-lifecycle-notice');
+  const noticeRect = isPainted(notice)
+    ? rectRecord(notice.getBoundingClientRect())
+    : null;
+  const action = node('arena-action-card');
+  const visibleMetrics = Array.from(
+    action.querySelectorAll('[data-action-metric]')
+  ).filter(isPainted);
+  const actionStyle = getComputedStyle(action);
+  const actionText = Array.from(action.children)
+    .filter(isPainted)
+    .map(element => element.textContent.trim())
+    .filter(Boolean);
+  const textGeometry = collectTextGeometry();
+  const visibleArenaDescendants = Array.from(
+    arena.querySelectorAll('*')
+  ).filter(isPainted).map(elementPaintRecord);
+  const likebarViolations = stageRects.filter(record => (
+    intersectsBeyondTolerance(record.rect, likebar)
+  ));
+
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    arena: rectRecord(arenaRect),
+    likebar,
+    exception: rectRecord(exceptionRect),
+    stageRects,
+    informationRects,
+    overlaps,
+    likebarViolations,
+    exceptionIntruders,
+    shelf: shelfRect,
+    notice: noticeRect,
+    shelfNoticeOverlap: intersects(shelfRect, noticeRect),
+    textGeometry,
+    visibleArenaDescendants,
+    hudContract: collectHudContract(),
+    completedOwnership: completedOwnership(),
+    action: {
+      visible: isPainted(action),
+      visualState: phase === 'action' ? 'recover' : 'inactive',
+      text: actionText.join(' · '),
+      metricCount: visibleMetrics.length,
+      whiteSpace: actionStyle.whiteSpace,
+      gridTemplateRows: actionStyle.gridTemplateRows,
+      noWrap: actionStyle.whiteSpace === 'nowrap',
+      overflow: (
+        action.scrollWidth > action.clientWidth + 1 ||
+        action.scrollHeight > action.clientHeight + 1
+      )
+    },
+    effect,
+    disclosure: disclosureRecord(phase),
+    reducedMotion: collectMotionState()
+  };
+}
+
+async function showArenaCase({
+  variant,
+  phase,
+  renderer,
+  sealed = phase === 'sealed',
+  reducedMotion = false,
+  eggNotice = phase === 'egg-exception'
+}) {
+  void sealed;
+  void eggNotice;
+  node('portrait-arena').dataset.arenaVariant =
+    window.StreamMonstersPortraitArena.normalizeVariant(variant);
+  applyPhase(phase);
+  await Promise.all(Array.from(document.images).map(image => (
+    image.complete ? Promise.resolve() : image.decode().catch(() => {})
+  )));
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  settleOneShotStageAnimations();
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  if (phase === 'action') {
+    applyActionVisualState('advance');
+    await new Promise(resolve => window.requestAnimationFrame(resolve));
+  }
+  const effect = await renderEffect(renderer, reducedMotion);
+  if (phase === 'action') {
+    applyActionVisualState('impact');
+    await new Promise(resolve => window.requestAnimationFrame(resolve));
+    recoverActionVisualState();
+    await new Promise(resolve => window.requestAnimationFrame(resolve));
+  }
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  return collectLayout(phase, effect);
+}
+
+async function bootstrap() {
+  const source = await fetch(`${ROOT}streammonsters-overlay.html`, {
+    cache: 'no-store'
+  }).then(response => {
+    if (!response.ok) throw new Error(`Overlay fetch failed: HTTP ${response.status}`);
+    return response.text();
+  });
+  const parsed = new DOMParser().parseFromString(source, 'text/html');
+  for (const style of parsed.querySelectorAll('style')) {
+    document.head.appendChild(document.importNode(style, true));
+  }
+  const overlay = document.importNode(
+    parsed.querySelector('#streammonsters-overlay'),
+    true
+  );
+  document.body.appendChild(overlay);
+  await loadScript(`${ROOT}streammonsters-portrait-arena.js`);
+  await loadScript(`${ROOT}streammonsters-effects-renderer.js`);
+  overlay.dataset.battleActive = 'true';
+  node('battle').classList.add('visible');
+  populateFighters();
+  populateEggShelf();
+  applyPhase('choice');
+  window.harnessReady = true;
+}
+
+window.showArenaCase = showArenaCase;
+window.probeArenaWebGpu = probeWebGpu;
+window.setArenaEffectCapture = enabled => {
+  if (enabled) document.body.dataset.effectCapture = 'true';
+  else delete document.body.dataset.effectCapture;
+};
+window.addEventListener('pagehide', () => {
+  activeRenderer?.destroy?.();
+  activeRenderer = null;
+  pendingEffect = null;
+});
+bootstrap().catch(error => {
+  window.harnessError = String(error?.stack || error);
+});
+</script>
+</body>
+</html>

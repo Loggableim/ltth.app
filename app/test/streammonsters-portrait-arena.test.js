@@ -16,6 +16,17 @@ const overlayPath = path.join(
   'streamalchemy',
   'streammonsters-overlay.html'
 );
+const acceptanceFixturePath = path.join(
+  process.cwd(),
+  'test',
+  'browser-fixtures',
+  'streammonsters-portrait-arena-acceptance.html'
+);
+const acceptanceRunnerPath = path.join(
+  process.cwd(),
+  'test',
+  'streammonsters-portrait-arena-visual.browser.js'
+);
 
 let portraitArena = null;
 let helperLoadError = null;
@@ -45,6 +56,61 @@ function styleRules(document) {
 }
 
 describe('Stream Monsters bounded portrait arena', () => {
+  test('ships the complete real-browser acceptance matrix and fixture contract', () => {
+    expect(fs.existsSync(acceptanceFixturePath)).toBe(true);
+    expect(fs.existsSync(acceptanceRunnerPath)).toBe(true);
+    if (
+      !fs.existsSync(acceptanceFixturePath) ||
+      !fs.existsSync(acceptanceRunnerPath)
+    ) return;
+
+    const fixtureSource = fs.readFileSync(acceptanceFixturePath, 'utf8');
+    const runnerSource = fs.readFileSync(acceptanceRunnerPath, 'utf8');
+
+    expect(fixtureSource).toContain('window.showArenaCase = showArenaCase;');
+    expect(runnerSource).toContain(
+      "const VIEWPORTS = Object.freeze([[324, 581], [477, 829], [1080, 1920]]);"
+    );
+    expect(runnerSource).toContain(
+      "const VARIANTS = Object.freeze(['split-arena', 'classic']);"
+    );
+    expect(runnerSource).toContain(
+      "const PHASES = Object.freeze(['choice', 'sealed', 'revealed', 'action', 'completed', 'egg-exception']);"
+    );
+    expect(runnerSource).toContain(
+      "const RENDERERS = Object.freeze(['Canvas2D', 'CSS fallback', 'WebGPU']);"
+    );
+    expect(runnerSource).toContain(
+      "const MOTION = Object.freeze(['normal', 'reduced']);"
+    );
+    expect(runnerSource).toContain(
+      "path.join(repoRoot, 'app', 'output', 'playwright', 'streammonsters-bounded-arena')"
+    );
+    expect(fixtureSource).toContain('firstClippingAncestor');
+    expect(fixtureSource).toContain('rangeRect');
+    expect(fixtureSource).toContain('overflowX');
+    expect(fixtureSource).toContain('overflowY');
+    expect(fixtureSource).toContain('selectionSemantics');
+    expect(fixtureSource).toContain('visibleArenaDescendants');
+    expect(fixtureSource).toContain('hudContract');
+    expect(fixtureSource).toContain('recoverActionVisualState');
+    expect(runnerSource).toContain('record.horizontalClipped');
+    expect(runnerSource).toContain('record.verticalClipped');
+    expect(runnerSource).toContain('row.hudContract');
+    expect(runnerSource).toContain(
+      "const FIGHTER_HUD_PHASES = Object.freeze(['choice', 'sealed', 'revealed', 'action', 'egg-exception']);"
+    );
+    expect(runnerSource).toContain('FIGHTER_HUD_PHASES.includes(row.phase)');
+    expect(fixtureSource).toContain('completedOwnership');
+    expect(runnerSource).toContain('row.completedOwnership');
+    expect(runnerSource).toContain('row.visibleArenaDescendants');
+    expect(runnerSource).toContain('shelfRegionPaint');
+    expect(runnerSource).toContain('omitBackground: false');
+    expect(runnerSource).not.toContain(
+      'parent.scrollHeight > parent.clientHeight + 1'
+    );
+  });
+
   test('exports the canonical variants and normalized portrait rectangles', () => {
     expect(helperLoadError).toBeNull();
     if (!portraitArena) return;
