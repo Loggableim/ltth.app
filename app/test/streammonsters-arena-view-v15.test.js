@@ -674,6 +674,154 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     await completion;
   });
 
+  test('preserves a held portrait result across same-match reconnect snapshots', async () => {
+    const dom = mountArena({ portrait: true });
+    const waited = [];
+    let finishResult;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: milliseconds => {
+          waited.push(milliseconds);
+          return milliseconds === 8_000
+            ? new Promise(resolve => { finishResult = resolve; })
+            : Promise.resolve();
+        },
+        now: () => 1_000
+      }
+    });
+    view.applyMatch({
+      matchId: 'held-portrait-result',
+      state: 'action',
+      roundNumber: 5,
+      fighters: [
+        { slot: 1, name: 'Selene', viewerName: '@winner', hp: 14, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@runner-up', hp: 0, maxHp: 30 }
+      ]
+    });
+    const completion = view.complete({
+      eventId: 'held-portrait-result:completed',
+      matchId: 'held-portrait-result',
+      winnerSlot: 1,
+      terminalReason: 'knockout',
+      winner: { name: 'Selene', viewerName: '@winner' },
+      knockout: { round: 5, remainingHp: 14, maxHp: 30 },
+      ratingChanges: [
+        { slot: 1, before: 1000, after: 1016, delta: 16 },
+        { slot: 2, before: 1000, after: 984, delta: -16 }
+      ]
+    });
+
+    const battle = document.getElementById('battle');
+    const result = document.getElementById('arena-result');
+    const compact = document.getElementById('arena-result-compact-summary');
+    const detailed = document.getElementById('arena-result-ratings');
+    const winner = document.getElementById('arena-result-winner');
+    const heldPresentation = {
+      compact: compact.textContent,
+      detailed: detailed.textContent,
+      winner: winner.textContent
+    };
+    const expectHeldPortraitPresentation = () => {
+      expect(dom.portraitMediaQuery.matches).toBe(true);
+      expect(battle.dataset.phase).toBe('completed');
+      expect(battle.dataset.terminal).toBe('winner');
+      expect(result.classList).toContain('visible');
+      expect(compact.textContent).toBe(heldPresentation.compact);
+      expect(detailed.textContent).toBe(heldPresentation.detailed);
+      expect(winner.textContent).toBe(heldPresentation.winner);
+      expect(document.querySelector(
+        '#battle[data-phase="completed"] #arena-result-compact-summary'
+      )).toBe(compact);
+      expect(document.querySelector(
+        '#battle[data-phase="completed"] #arena-result-ratings'
+      )).toBe(detailed);
+    };
+
+    expect(heldPresentation.compact).toMatch(/5.*14/);
+    expect(heldPresentation.detailed).not.toBe('');
+    expect(heldPresentation.winner).toContain('@winner');
+    expectHeldPortraitPresentation();
+
+    for (const [state, cursor] of [
+      ['finalizing', 41],
+      ['action', 42]
+    ]) {
+      view.applySnapshot({
+        battle: {
+          matches: [{
+            matchId: 'held-portrait-result',
+            state,
+            cursor,
+            roundNumber: 6,
+            ...(state === 'action' ? { actionDeadlineMs: 9_000 } : {}),
+            fighters: [
+              {
+                slot: 1,
+                name: 'Reconnect Replacement',
+                viewerName: '@reconnect',
+                hp: 30,
+                maxHp: 30
+              },
+              {
+                slot: 2,
+                name: 'Reconnect Opponent',
+                viewerName: '@other',
+                hp: 30,
+                maxHp: 30
+              }
+            ]
+          }]
+        }
+      });
+
+      expect(view.state().eventSequence).toBe(cursor);
+      expectHeldPortraitPresentation();
+    }
+
+    expect(waited).toEqual([8_000]);
+    finishResult();
+    await completion;
+
+    expect(result.classList).not.toContain('visible');
+    expect(battle.classList).not.toContain('visible');
+    expect(view.state().matchId).toBeNull();
+
+    view.applySnapshot({
+      battle: {
+        matches: [{
+          matchId: 'held-portrait-result',
+          state: 'action',
+          cursor: 43,
+          roundNumber: 6,
+          fighters: [
+            {
+              slot: 1,
+              name: 'Reconnect Replacement',
+              viewerName: '@reconnect',
+              hp: 30,
+              maxHp: 30
+            },
+            {
+              slot: 2,
+              name: 'Reconnect Opponent',
+              viewerName: '@other',
+              hp: 30,
+              maxHp: 30
+            }
+          ]
+        }]
+      }
+    });
+
+    expect(battle.dataset.phase).toBe('action');
+    expect(battle.dataset.terminal).toBeUndefined();
+    expect(result.classList).not.toContain('visible');
+    expect(document.getElementById('arena-name-1').textContent)
+      .toBe('Reconnect Replacement');
+    expect(view.state().eventSequence).toBe(43);
+  });
+
   test('clears a held result when a different match owns the arena without letting the old timer clear it', async () => {
     mountArena();
     const resultResolvers = [];

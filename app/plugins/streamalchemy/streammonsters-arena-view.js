@@ -1248,6 +1248,17 @@
       activeMatchId = nextId || null;
     }
 
+    function heldResultOwnsMatch(matchId) {
+      const nextId = matchId ? String(matchId) : activeMatchId;
+      return Boolean(
+        nextId &&
+        activeMatchId === nextId &&
+        arena?.dataset.phase === 'completed' &&
+        ['winner', 'draw', 'ended'].includes(arena?.dataset.terminal) &&
+        node('arena-result')?.classList.contains('visible')
+      );
+    }
+
     function renderCountdown(deadlineMs = activeDeadlineMs) {
       activeDeadlineMs = Math.max(0, numeric(deadlineMs));
       const seconds = Math.max(0, Math.ceil((activeDeadlineMs - now()) / 1000));
@@ -1384,13 +1395,14 @@
 
     function applyMatch(match = {}) {
       activateMatch(match.matchId);
-      clearArenaStamps();
-      setBattleSurface(true, match.state || 'match');
-      activeChargeWindow = normalizeChargeWindow(match);
       lastEventSequence = Math.max(
         lastEventSequence,
         numeric(match.cursor ?? match.eventSequence)
       );
+      if (heldResultOwnsMatch(match.matchId)) return match;
+      clearArenaStamps();
+      setBattleSurface(true, match.state || 'match');
+      activeChargeWindow = normalizeChargeWindow(match);
       renderFighters(match.fighters);
       if (arena) {
         arena.classList.add('visible');
@@ -2370,6 +2382,7 @@
         setBattleSurface(false, 'snapshot_empty');
         return null;
       }
+      if (heldResultOwnsMatch(match.matchId)) return applyMatch(match);
       resetFighterVisuals();
       applyMatch(match);
       if (
