@@ -75,7 +75,14 @@ describe('ArenaGame', () => {
     const { arena } = createArena();
     const config = arena.getConfig();
 
-    expect(config.maxMass).toBe(520);
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 666,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1,
+      foodDespawnMs: 150000
+    }));
     expect(config.maxLives).toBe(88000);
     expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
     expect(config.targetFps).toBeLessThanOrEqual(45);
@@ -83,6 +90,32 @@ describe('ArenaGame', () => {
     expect(config.maxFoodRender).toBeLessThanOrEqual(72);
   });
 
+
+  it('migrates noisy runtime food profiles without overwriting intentional low-volume pacing', () => {
+    const noisy = createArena({
+      maxMass: 260,
+      maxFood: 130,
+      maxFoodRender: 72,
+      foodSpawnIntervalMs: 6000,
+      foodSpawnBatchSize: 22
+    }).arena.getConfig();
+    expect(noisy).toEqual(expect.objectContaining({
+      maxMass: 666,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1
+    }));
+
+    const intentionalPacing = createArena({
+      foodSpawnIntervalMs: 5000,
+      foodSpawnBatchSize: 3
+    }).arena.getConfig();
+    expect(intentionalPacing).toEqual(expect.objectContaining({
+      foodSpawnIntervalMs: 5000,
+      foodSpawnBatchSize: 3
+    }));
+  });
   it('defaults the optional upper ability legend off while exposing an explicit enablement', () => {
     const { arena } = createArena();
 
@@ -2388,6 +2421,21 @@ describe('ArenaGame', () => {
     arena.tick(1000);
     expect(arena.food.size).toBe(4);
     expect(arena.food.size).toBeLessThan(config.maxFood);
+  });
+
+  it('uses food pacing to add one ambient refill dot per 2400 ms interval', () => {
+    let now = 1000;
+    const { arena } = createArena({ maxFood: 72, maxWeaponPickups: 0 }, { now: () => now });
+    arena.food.clear();
+    arena.lastFoodSpawnAt = now;
+
+    now += 2400;
+    arena.tick(2400);
+    expect(arena.food.size).toBe(1);
+
+    now += 1200;
+    arena.tick(1200);
+    expect(arena.food.size).toBe(1);
   });
 
   it('uses adaptive ambient food catch-up when active players deplete the arena', () => {
@@ -5233,6 +5281,36 @@ describe('ArenaGame', () => {
     expect(Array.from(arena.food.values()).every(food => food.source === 'death-drop')).toBe(true);
   });
 
+  it('scales large absorb reward growth beyond 400 mass under the 666 cap', () => {
+    const { arena } = createArena({
+      maxMass: 666,
+      maxFood: 0,
+      maxWeaponPickups: 0
+    });
+    const config = arena.getConfig();
+    const predator = movementPlayer(arena, config, 'large_reward_predator', 320, {
+      x: 300,
+      y: 300,
+      lives: arena._massToLives(320, config),
+      spawnedAt: -12000,
+      spawnProtectedUntil: 0
+    });
+    const prey = movementPlayer(arena, config, 'large_reward_prey', 120, {
+      x: 322,
+      y: 300,
+      lives: arena._massToLives(120, config),
+      spawnedAt: -12000,
+      spawnProtectedUntil: 0
+    });
+    arena.players.set(predator.username, predator);
+    arena.players.set(prey.username, prey);
+
+    arena._resolvePlayerCollisions(config);
+
+    expect(arena.players.has(prey.username)).toBe(false);
+    expect(predator.mass).toBeGreaterThan(400);
+  });
+
   it('damps direct rewards for dominant unarmed predators and spills more food', () => {
     const { arena, io } = createArena({
       maxFood: 0,
@@ -7015,6 +7093,34 @@ describe('GameEnginePlugin arena integration', () => {
     }));
   });
 
+  it('migrates a noisy stored food profile without overwriting intentional low-volume pacing', () => {
+    const { plugin } = createPlugin();
+    const profile = {
+      maxMass: 260,
+      maxFood: 130,
+      maxFoodRender: 72,
+      foodSpawnIntervalMs: 6000,
+      foodSpawnBatchSize: 22
+    };
+
+    const noisy = plugin._getConfigWithDefaults('arena', profile);
+    expect(noisy).toEqual(expect.objectContaining({
+      maxMass: 666,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1
+    }));
+
+    const intentionalPacing = plugin._getConfigWithDefaults('arena', {
+      foodSpawnIntervalMs: 5000,
+      foodSpawnBatchSize: 3
+    });
+    expect(intentionalPacing).toEqual(expect.objectContaining({
+      foodSpawnIntervalMs: 5000,
+      foodSpawnBatchSize: 3
+    }));
+  });
   it('adds curated gift weapon defaults to arena admin config responses without overwriting custom mappings', () => {
     const { plugin } = createPlugin();
 
@@ -7187,6 +7293,17 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain('fadeOutMs');
     expect(overlay).toContain('state.fever?.active ? 0.36 : 0.28');
     expect(overlay).toContain('weaponAlpha');
+  });
+
+  it('keeps the overlay rendering contract for gentle food fades', () => {
+    const overlay = readOverlay();
+    const foodOpacityFor = overlay.slice(
+      overlay.indexOf('function foodOpacityFor'),
+      overlay.indexOf('function drawFood')
+    );
+
+    expect(foodOpacityFor).toContain('1400');
+    expect(foodOpacityFor).toContain('48000');
   });
 
   it('renders selectable large-player transparency modes in Canvas and Pixi', () => {
