@@ -25,15 +25,20 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
     ), 'utf8');
     const socketHandlers = new Map();
     const arenaOperations = [];
+    const snapshotVariants = [];
     const replayRequests = [];
     let replayPlaybackCalls = 0;
     const clearedIntervals = [];
     let snapshot = {
       hype: { points: 0 },
-      config: { hatchDurationMs: 120_000 },
+      config: {
+        hatchDurationMs: 120_000,
+        portraitArenaVariant: 'split-arena'
+      },
       gcce: { commandPrefix: '!', registeredCommands: [] },
       battle: {
         rulesVersion: 5,
+        portraitArenaVariant: 'classic',
         matches: [{
           matchId: 'match-reconnect',
           state: 'action',
@@ -138,6 +143,11 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
           };
         });
         window.StreamMonstersOverlayRuntime = overlayRuntime;
+        window.StreamMonstersPortraitArena = {
+          normalizeVariant(value, fallback = 'classic') {
+            return ['split-arena', 'classic'].includes(value) ? value : fallback;
+          }
+        };
         window.StreamMonstersEffectsRenderer = {
           createEffectsRenderer: () => ({
             init: () => {},
@@ -149,9 +159,14 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
         window.StreamMonstersArenaView = {
           createArenaView: () => ({
             applyMatch: value => arenaOperations.push(`match:${value.matchId}`),
-            applySnapshot: value => arenaOperations.push(
-              `snapshot:${value?.matches?.[0]?.cursor ?? 'none'}`
-            ),
+            applySnapshot: value => {
+              snapshotVariants.push(
+                window.document.getElementById('portrait-arena')?.dataset.arenaVariant
+              );
+              arenaOperations.push(
+                `snapshot:${value?.matches?.[0]?.cursor ?? 'none'}`
+              );
+            },
             openChoice: value => {
               replayPlaybackCalls += 1;
               arenaOperations.push(`open:${value.sequence || 7}`);
@@ -181,6 +196,7 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
       await waitFor(() => arenaOperations.includes('snapshot:4'));
       expect(replayRequests).toEqual([]);
       expect(arenaOperations).toEqual(['snapshot:4']);
+      expect(snapshotVariants).toEqual(['split-arena']);
 
       socketHandlers.get('streammonsters:battle_choices_revealed')({
         matchId: 'match-reconnect',
@@ -191,8 +207,13 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
 
       snapshot = {
         ...snapshot,
+        config: {
+          ...snapshot.config,
+          portraitArenaVariant: undefined
+        },
         battle: {
           rulesVersion: 5,
+          portraitArenaVariant: 'classic',
           matches: [{
             ...snapshot.battle.matches[0],
             roundNumber: 2,
@@ -212,13 +233,26 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
         'snapshot:7'
       ]);
       expect(replayPlaybackCalls).toBe(3);
+      expect(snapshotVariants.at(-1)).toBe('classic');
 
+      snapshot = {
+        ...snapshot,
+        config: {
+          ...snapshot.config,
+          portraitArenaVariant: 'wide'
+        },
+        battle: {
+          ...snapshot.battle,
+          portraitArenaVariant: 'split-arena'
+        }
+      };
       arenaOperations.length = 0;
       await socketHandlers.get('connect')();
       await waitFor(() => arenaOperations.includes('snapshot:7'));
       expect(replayRequests).toEqual([4, 6]);
       expect(arenaOperations).toEqual(['snapshot:7']);
       expect(replayPlaybackCalls).toBe(3);
+      expect(snapshotVariants.at(-1)).toBe('classic');
 
       dom.window.dispatchEvent(new dom.window.Event('pagehide'));
       dom.window.dispatchEvent(new dom.window.Event('beforeunload'));

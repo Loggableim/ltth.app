@@ -3,6 +3,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const root = path.resolve(__dirname, '..', '..');
+const pacing = require('../plugins/streamalchemy/streammonsters-rules-v8-pacing');
 
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -15,6 +16,9 @@ function renderGuide(locale = 'de') {
     runScripts: 'outside-only',
     url: `https://ltth.app/streammonsters/?lang=${locale}`
   });
+  dom.window.eval(read(
+    'app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js'
+  ));
   dom.window.eval(read('js/streammonsters-guide.js'));
   return dom.window.document;
 }
@@ -55,10 +59,24 @@ describe('Stream Monsters public Rules v8 tutorial', () => {
   });
 
   test.each([
-    ['de', ['8 Sekunden', '6 Sekunden', '10 Sekunden', 'Runde 5', '30 %', 'K.-o.', 'Aufgabe']],
-    ['en', ['8 seconds', '6 seconds', '10 seconds', 'round 5', '30%', 'K.O.', 'Forfeit']],
-    ['es', ['8 segundos', '6 segundos', '10 segundos', 'ronda 5', '30 %', 'K.O.', 'abandono']],
-    ['fr', ['8 secondes', '6 secondes', '10 secondes', 'manche 5', '30 %', 'K.-O.', 'abandon']]
+    ['de', ['Portrait', 'A / B / C', 'Ergebnis', 'unteren 26 %', 'TikTok-Chat', 'Kamera']],
+    ['en', ['Portrait', 'A / B / C', 'result', 'lower 26%', 'TikTok chat', 'camera']],
+    ['es', ['vertical', 'A / B / C', 'resultado', '26 % inferior', 'chat de TikTok', 'c\u00e1mara']],
+    ['fr', ['vertical', 'A / B / C', 'r\u00e9sultat', '26 % inf\u00e9rieurs', 'chat TikTok', 'cam\u00e9ra']]
+  ])('explains the concise portrait battle flow in %s', (locale, tokens) => {
+    const document = renderGuide(locale);
+    const page = document.getElementById('main-content').textContent;
+    tokens.forEach(token => expect(page).toContain(token));
+  });
+
+  const rosterSeconds = pacing.ROSTER_MS / 1000;
+  const skillSeconds = pacing.SKILL_CHOICE_MS / 1000;
+  const statSeconds = pacing.STAT_CHOICE_MS / 1000;
+  test.each([
+    ['de', [`${rosterSeconds} Sekunden`, `${skillSeconds} Sekunden`, `${statSeconds} Sekunden`, 'Runde 5', '30 %', 'K.-o.', 'Aufgabe']],
+    ['en', [`${rosterSeconds} seconds`, `${skillSeconds} seconds`, `${statSeconds} seconds`, 'round 5', '30%', 'K.O.', 'Forfeit']],
+    ['es', [`${rosterSeconds} segundos`, `${skillSeconds} segundos`, `${statSeconds} segundos`, 'ronda 5', '30 %', 'K.O.', 'abandono']],
+    ['fr', [`${rosterSeconds} secondes`, `${skillSeconds} secondes`, `${statSeconds} secondes`, 'manche 5', '30 %', 'K.-O.', 'abandon']]
   ])('documents every decisive Rules v8 battle timing in %s', (locale, tokens) => {
     const document = renderGuide(locale);
     const arena = document.getElementById('arena').textContent;

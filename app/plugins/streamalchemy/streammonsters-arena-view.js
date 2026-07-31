@@ -2,10 +2,13 @@
   const director = typeof module === 'object' && module.exports
     ? require('./streammonsters-arena-director')
     : root.StreamMonstersArenaDirector;
-  const api = factory(director);
+  const portraitArena = typeof module === 'object' && module.exports
+    ? require('./streammonsters-portrait-arena')
+    : root.StreamMonstersPortraitArena;
+  const api = factory(director, portraitArena);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersArenaView = api;
-}(typeof globalThis === 'object' ? globalThis : this, ArenaDirector => {
+}(typeof globalThis === 'object' ? globalThis : this, (ArenaDirector, PortraitArena) => {
   'use strict';
 
   const SILENT_OUTPUT = Object.freeze({
@@ -206,6 +209,9 @@
     const arena = documentLike.getElementById('battle');
     const surface = documentLike.getElementById('streammonsters-overlay') || arena;
     const choreography = documentLike.getElementById('arcade-choreography');
+    const portraitMediaQuery = documentLike.defaultView?.matchMedia?.(
+      '(orientation: portrait)'
+    ) || null;
     const transientPresentationClasses = Object.freeze([
       'arcade-egg-impact',
       'arcade-silhouette',
@@ -225,6 +231,8 @@
     let activeLocale = null;
     let renderVisibleComposite = null;
     let lastRound = 1;
+    let activeActionAriaLabel = '';
+    let orientationListenerMode = null;
     const acceptedEventIds = new Set();
     const acceptedTimelineEventIds = new Set();
     const choicesByKey = {
@@ -268,6 +276,7 @@
       draw: 'Unentschieden',
       doubleKnockoutSummary: 'Runde {round} · Beide Monster sind K. O.',
       resultSummary: 'Runde {round} · {hp}/{maxHp} HP übrig',
+      compactResultSummary: 'Runde {round} · {hp} HP übrig',
       ratingChanged: '{name}: {before} → {after} ({delta})',
       ratingUnchanged: '{name}: ELO unchanged ({after})',
       combatReportDecisive: 'Entscheidender Skill: {icon}{skill} · {choice} · R{round}',
@@ -285,6 +294,7 @@
       shieldGainMetric: 'Schild +{amount}',
       healMetric: 'Heilung {amount}',
       evadeMetric: 'Ausweichen',
+      statusMetric: 'STATUS',
       statTitle: '{player}: {monster}',
       statMeta: 'Level {level} · {remaining} Punkte übrig',
       statChoices: '1 Vitalität +1 · 2 Stärke +1 · 3 Verteidigung +1 · 4 Agilität +1',
@@ -351,6 +361,7 @@
       draw: 'arenaDrawLabel',
       doubleKnockoutSummary: 'arenaDoubleKnockoutSummary',
       resultSummary: 'arenaResultSummary',
+      compactResultSummary: 'arenaCompactResultSummary',
       ratingChanged: 'arenaRatingChanged',
       ratingUnchanged: 'arenaRatingUnchanged',
       combatReportDecisive: 'arenaCombatReportDecisive',
@@ -368,6 +379,7 @@
       shieldGainMetric: 'arenaShieldGainMetric',
       healMetric: 'arenaHealMetric',
       evadeMetric: 'arenaEvadeMetric',
+      statusMetric: 'arenaStatusMetric',
       statTitle: 'monsterStatTitle',
       statMeta: 'monsterStatMeta',
       statChoices: 'monsterStatChoices',
@@ -411,6 +423,12 @@
     const skillDeckNode = slot => documentLike.querySelector(
       `[data-skill-deck="${slot}"]`
     );
+    const setChoiceCardSelected = (card, selected) => {
+      if (!card) return;
+      const active = Boolean(selected);
+      card.classList.toggle('selected', active);
+      card.setAttribute('aria-selected', String(active));
+    };
 
     function resetVisualElement(element) {
       if (!element) return;
@@ -673,6 +691,96 @@
       return metrics;
     }
 
+    function decisiveActionMetric(action = {}) {
+      const hits = Array.isArray(action.hits) ? action.hits : [];
+      const outcomes = Array.isArray(action.outcomes) ? action.outcomes : [];
+      const statusEffects = Array.isArray(action.statusEffects)
+        ? action.statusEffects
+        : [];
+      const hitDamage = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.hpDamage)))
+      ), 0);
+      const statusDamage = statusEffects.reduce((sum, effect) => (
+        sum + Math.max(0, numeric(effect?.hpDamage))
+      ), 0);
+      const damage = hitDamage + statusDamage;
+      const shield = outcomes
+        .filter(outcome => outcome?.type === 'shield')
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const healing = outcomes
+        .filter(outcome => ['heal', 'lifesteal'].includes(outcome?.type))
+        .reduce((sum, outcome) => sum + Math.max(0, numeric(outcome?.amount)), 0);
+      const absorbed = hits.reduce((sum, hit) => (
+        sum + (hit?.evaded ? 0 : Math.max(0, numeric(hit?.shieldAbsorbed)))
+      ), 0);
+      if (damage > 0) return `\u2212${damage} HP`;
+      if (shield > 0) return `+${shield} SHIELD`;
+      if (healing > 0) return `+${healing} HP`;
+      if (absorbed > 0) return `${absorbed} BLOCK`;
+      if (hits.some(hit => hit?.evaded)) return formatLabel('evadeMetric');
+      if (
+        statusEffects.length > 0 ||
+        outcomes.some(outcome => [
+          'burn',
+          'evade',
+          'reflect',
+          'shock',
+          'status',
+          'thorns',
+          'weaken'
+        ].includes(String(outcome?.type || '').toLowerCase()))
+      ) {
+        return formatLabel('statusMetric');
+      }
+      return '0 HP';
+    }
+
+    function renderActionMetrics(action = {}) {
+      const target = node('arena-action-metrics');
+      if (!target) return;
+      target.replaceChildren();
+      actionMetrics(action).forEach((metric, index) => {
+        const item = documentLike.createElement('span');
+        item.dataset.actionMetric = String(index + 1);
+        item.textContent = metric;
+        target.appendChild(item);
+      });
+    }
+
+    function syncActionAriaLabel() {
+      const actionCard = node('arena-action-card');
+      if (
+        actionCard?.classList.contains('visible') &&
+        portraitMediaQuery?.matches &&
+        activeActionAriaLabel
+      ) {
+        actionCard.setAttribute('aria-label', activeActionAriaLabel);
+      } else {
+        actionCard?.removeAttribute('aria-label');
+      }
+    }
+
+    function clearTransientImpact() {
+      const impact = node('arena-impact');
+      if (!impact) return;
+      impact.classList.remove(
+        'visible',
+        'damage-number',
+        'shield-number',
+        'heal-number',
+        'retaliation-number'
+      );
+      impact.textContent = '';
+    }
+
+    function clearActionCard() {
+      activeActionAriaLabel = '';
+      const actionCard = node('arena-action-card');
+      actionCard?.classList.remove('visible');
+      actionCard?.removeAttribute('aria-label');
+      clearTransientImpact();
+    }
+
     function renderActionCard(action = {}) {
       const actor = stateBySlot.get(numeric(action.actorSlot)) || {};
       const skillName = action.skill?.nameKey
@@ -685,8 +793,23 @@
       setText('arena-action-key', String(action.choice || '').toUpperCase());
       setText('arena-action-skill', skillName);
       setText('arena-action-copy', skillCopy);
-      setText('arena-action-metrics', actionMetrics(action).join(' · '));
-      node('arena-action-card')?.classList.add('visible');
+      renderActionMetrics(action);
+      const compactMetric = decisiveActionMetric(action);
+      const compactMetricNode = node('arena-action-compact-metric');
+      if (compactMetricNode) {
+        compactMetricNode.textContent = compactMetric;
+        compactMetricNode.dataset.actionMetric = 'compact';
+      }
+      const actionCard = node('arena-action-card');
+      if (actionCard) {
+        activeActionAriaLabel = [
+          String(action.choice || '').toUpperCase(),
+          skillName,
+          compactMetric
+        ].filter(Boolean).join(' \u00b7 ');
+        actionCard.classList.add('visible');
+        syncActionAriaLabel();
+      }
     }
 
     function showStatPrompt(payload = {}) {
@@ -1078,14 +1201,35 @@
       return normalized;
     }
 
+    function resetResultSurface() {
+      node('arena-result')?.classList.remove('visible');
+      for (const id of [
+        'arena-result-ko',
+        'arena-result-winner',
+        'arena-result-monster',
+        'arena-result-summary',
+        'arena-result-compact-summary',
+        'arena-result-ratings',
+        'arena-result-next',
+        'arena-feed'
+      ]) {
+        setText(id, '');
+      }
+      renderCombatReport(null);
+      if (arena) delete arena.dataset.terminal;
+    }
+
     function resetFighters() {
       resetFighterVisuals();
       clearArenaStamps();
+      clearActionCard();
+      resetResultSurface();
       stateBySlot.clear();
       activeChargeWindow = null;
       renderVisibleComposite = null;
       acceptedEventIds.clear();
       lastEventSequence = 0;
+      lastRound = 1;
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         if (fighter) {
@@ -1110,7 +1254,8 @@
         });
         const deck = skillDeckNode(slot);
         deck?.querySelectorAll('[data-skill]').forEach(card => {
-          card.classList.remove('selected', 'charging', 'ready', 'unavailable');
+          setChoiceCardSelected(card, false);
+          card.classList.remove('charging', 'ready', 'unavailable');
         });
       }
     }
@@ -1122,6 +1267,17 @@
         surfaceVersion += 1;
       }
       activeMatchId = nextId || null;
+    }
+
+    function heldResultOwnsMatch(matchId) {
+      const nextId = matchId ? String(matchId) : activeMatchId;
+      return Boolean(
+        nextId &&
+        activeMatchId === nextId &&
+        arena?.dataset.phase === 'completed' &&
+        ['winner', 'draw', 'ended'].includes(arena?.dataset.terminal) &&
+        node('arena-result')?.classList.contains('visible')
+      );
     }
 
     function renderCountdown(deadlineMs = activeDeadlineMs) {
@@ -1182,6 +1338,21 @@
       return { renderer, fallbackReason };
     }
 
+    function effectOriginsForSlots(actorSlot, targetSlot) {
+      const arenaRect = arena?.getBoundingClientRect?.();
+      const normalizedRectCenter = PortraitArena?.normalizedRectCenter;
+      if (typeof normalizedRectCenter !== 'function') return {};
+      const origin = normalizedRectCenter(
+        node(`arena-image-${actorSlot}`)?.getBoundingClientRect?.(),
+        arenaRect
+      );
+      const targetOrigin = normalizedRectCenter(
+        node(`arena-image-${targetSlot}`)?.getBoundingClientRect?.(),
+        arenaRect
+      );
+      return origin && targetOrigin ? { origin, targetOrigin } : {};
+    }
+
     function fireTimelineOutputs(beat, payload = {}, effectOutput = effects) {
       if (beat.effect?.scene) {
         const hits = Array.isArray(beat.hits)
@@ -1193,14 +1364,18 @@
         const statusEffects = Array.isArray(beat.statusEffects)
           ? beat.statusEffects
           : (Array.isArray(payload.statusEffects) ? payload.statusEffects : []);
+        const actorSlot = numeric(beat.actorSlot ?? payload.actorSlot) || null;
+        const targetSlot = numeric(beat.targetSlot ?? payload.targetSlot) || null;
+        const effectOrigins = effectOriginsForSlots(actorSlot, targetSlot);
         fire(effectOutput, beat.effect.scene, {
           ...beat.effect,
           eventId: beat.eventId,
           beatId: beat.beatId,
           correlationId: payload.correlationId || null,
           motion: beat.motion,
-          actorSlot: numeric(beat.actorSlot ?? payload.actorSlot) || null,
-          targetSlot: numeric(beat.targetSlot ?? payload.targetSlot) || null,
+          actorSlot,
+          targetSlot,
+          ...effectOrigins,
           hitIndex: numeric(beat.hitIndex ?? payload.hitIndex) || 1,
           hitCount: Math.max(
             1,
@@ -1241,13 +1416,14 @@
 
     function applyMatch(match = {}) {
       activateMatch(match.matchId);
-      clearArenaStamps();
-      setBattleSurface(true, match.state || 'match');
-      activeChargeWindow = normalizeChargeWindow(match);
       lastEventSequence = Math.max(
         lastEventSequence,
         numeric(match.cursor ?? match.eventSequence)
       );
+      if (heldResultOwnsMatch(match.matchId)) return match;
+      clearArenaStamps();
+      setBattleSurface(true, match.state || 'match');
+      activeChargeWindow = normalizeChargeWindow(match);
       renderFighters(match.fighters);
       if (arena) {
         arena.classList.add('visible');
@@ -1360,7 +1536,7 @@
         arena.classList.add('visible');
         arena.dataset.phase = 'choice';
       }
-      node('arena-action-card')?.classList.remove('visible');
+      clearActionCard();
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.remove('choice-locked');
@@ -1371,7 +1547,7 @@
         }
         const deck = skillDeckNode(slot);
         deck?.querySelectorAll('[data-skill]').forEach(card => {
-          card.classList.remove('selected');
+          setChoiceCardSelected(card, false);
         });
       }
       renderSkillDecks();
@@ -1436,7 +1612,7 @@
       projected.forEach(choice => {
         const fighter = fighterNode(choice.slot);
         skillDeckNode(choice.slot)?.querySelectorAll('[data-skill]').forEach(card => {
-          card.classList.toggle('selected', card.dataset.skill === choice.choice);
+          setChoiceCardSelected(card, card.dataset.skill === choice.choice);
         });
         fighter.dataset.choice = choice.choice;
         fighter.dataset.choiceSource = choice.source;
@@ -1668,6 +1844,7 @@
           node('arena-special')?.classList.remove('visible');
           node('arena-combo')?.classList.remove('visible');
           node('arena-element-light')?.classList.remove('visible');
+          clearTransientImpact();
           break;
         case 'winner':
           actor?.classList.add('winner');
@@ -1696,6 +1873,7 @@
       const action = unwrapAction(payload);
       if (!acceptAction(action)) return false;
       resetFighterVisuals();
+      clearTransientImpact();
       if (payload.round != null || payload.roundNumber != null || payload.action?.round != null) {
         lastRound = Math.max(
           1,
@@ -2018,7 +2196,7 @@
     async function complete(payload = {}) {
       stopCountdown();
       resetFighterVisuals();
-      node('arena-action-card')?.classList.remove('visible');
+      clearActionCard();
       const terminalVersion = surfaceVersion;
       const winnerSlot = numeric(payload.winnerSlot);
       const terminalReason = String(payload.terminalReason || '').toLowerCase();
@@ -2089,6 +2267,16 @@
       const knockout = payload.knockout && typeof payload.knockout === 'object'
         ? payload.knockout
         : null;
+      const endingRound = Math.max(
+        1,
+        numeric(
+          payload.round ?? payload.roundNumber ?? knockout?.round,
+          lastRound
+        )
+      );
+      const terminalHp = isDoubleKnockout
+        ? 0
+        : Math.max(0, numeric(stateBySlot.get(winnerSlot)?.hp));
       const combatReport = normalizeCombatReport(payload.combatReport);
       const result = node('arena-result');
       if (result) result.classList.add('visible');
@@ -2125,6 +2313,10 @@
       } else {
         setText('arena-result-summary', '');
       }
+      setLabelText('arena-result-compact-summary', 'compactResultSummary', {
+        round:endingRound,
+        hp:terminalHp
+      });
       renderCombatReport(combatReport);
       setText('arena-result-ratings', combatReport ? '' : canonicalRatingText);
       const showCloseHint = payload.nextArenaHint?.kind === 'close_result' &&
@@ -2172,7 +2364,7 @@
       stopCountdown();
       resetFighterVisuals();
       clearArenaStamps();
-      node('arena-action-card')?.classList.remove('visible');
+      clearActionCard();
       const terminalVersion = surfaceVersion;
       if (arena) {
         arena.classList.add('visible');
@@ -2208,12 +2400,12 @@
         activeDeadlineMs = 0;
         resetFighters();
         arena?.classList.remove('visible');
-        node('arena-result')?.classList.remove('visible');
-        node('arena-action-card')?.classList.remove('visible');
+        clearActionCard();
         setText('arena-countdown', '');
         setBattleSurface(false, 'snapshot_empty');
         return null;
       }
+      if (heldResultOwnsMatch(match.matchId)) return applyMatch(match);
       resetFighterVisuals();
       applyMatch(match);
       if (
@@ -2240,6 +2432,25 @@
       return match;
     }
 
+    function destroy() {
+      stopCountdown();
+      clearActionCard();
+      if (orientationListenerMode === 'event') {
+        portraitMediaQuery?.removeEventListener?.('change', syncActionAriaLabel);
+      } else if (orientationListenerMode === 'legacy') {
+        portraitMediaQuery?.removeListener?.(syncActionAriaLabel);
+      }
+      orientationListenerMode = null;
+    }
+
+    if (typeof portraitMediaQuery?.addEventListener === 'function') {
+      portraitMediaQuery.addEventListener('change', syncActionAriaLabel);
+      orientationListenerMode = 'event';
+    } else if (typeof portraitMediaQuery?.addListener === 'function') {
+      portraitMediaQuery.addListener(syncActionAriaLabel);
+      orientationListenerMode = 'legacy';
+    }
+
     return {
       applyMatch,
       applySnapshot,
@@ -2255,7 +2466,7 @@
       showStatPrompt,
       showStatResult,
       setLocale,
-      destroy: stopCountdown,
+      destroy,
       state: () => ({
         matchId: activeMatchId,
         deadlineMs: activeDeadlineMs,

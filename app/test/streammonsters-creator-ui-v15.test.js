@@ -101,10 +101,8 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect([portraitNormal.dataset.width, portraitNormal.dataset.height]).toEqual(['1080', '1920']);
     expect([portraitBattle.dataset.width, portraitBattle.dataset.height]).toEqual(['1080', '1920']);
     expect([landscape.dataset.width, landscape.dataset.height]).toEqual(['1920', '1080']);
-    for (const preview of [portraitBattle, landscape]) {
-      expect(preview.querySelector('[data-gameplay-percent="74"]')).not.toBeNull();
-      expect(preview.querySelector('[data-chat-safe-percent="26"]')).not.toBeNull();
-    }
+    expect(landscape.querySelector('[data-gameplay-percent="74"]')).not.toBeNull();
+    expect(landscape.querySelector('[data-chat-safe-percent="26"]')).not.toBeNull();
     expect(portraitNormal.querySelector('[data-gameplay-percent="74"]')).toBeNull();
     expect([...portraitNormal.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
       .toEqual([
@@ -118,7 +116,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
         'safe'
       ]);
     expect([...portraitBattle.querySelectorAll('[data-preview-zone]')].map(zone => zone.dataset.previewZone))
-      .toEqual(['battle', 'safe']);
+      .toEqual(['arena', 'likebar', 'shelf', 'safe']);
     expect(document.getElementById('obsTakeoverSourceOrder')).not.toBeNull();
     expect(document.getElementById('obsExternalSourcesWarning').textContent).toContain('CSS');
   });
@@ -133,6 +131,45 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect(summary.textContent).toContain('1920');
     expect(summary.textContent).toContain('74');
     expect(summary.textContent).toContain('26');
+  });
+
+  test('offers an independent bounded portrait arena selector with truthful preview geometry', () => {
+    const overlayStudio = document.getElementById('overlay-studio');
+    const selector = overlayStudio.querySelector('#portraitArenaVariant');
+    const battleMode = document.getElementById('portraitBattleMode');
+    const preview = document.getElementById('portraitBattlePreview');
+
+    expect(selector).not.toBeNull();
+    const helpId = selector.getAttribute('aria-describedby');
+    expect([...selector.options].map(option => option.value)).toEqual([
+      'split-arena',
+      'classic'
+    ]);
+    expect(selector.value).toBe('classic');
+    expect(document.getElementById(helpId)).not.toBeNull();
+    expect(document.getElementById('gameplay').contains(battleMode)).toBe(true);
+    expect(overlayStudio.contains(battleMode)).toBe(false);
+    expect([...document.getElementById('safeZoneLayout').options]
+      .map(option => option.value)).toEqual(['portrait', 'landscape']);
+    expect(preview.dataset.arenaVariant).toBe('classic');
+
+    const zoneGeometry = Object.fromEntries(
+      [...preview.querySelectorAll('[data-preview-zone]')].map(zone => [
+        zone.dataset.previewZone,
+        {
+          x: zone.style.getPropertyValue('--x'),
+          y: zone.style.getPropertyValue('--y'),
+          width: zone.style.getPropertyValue('--w'),
+          height: zone.style.getPropertyValue('--h')
+        }
+      ])
+    );
+    expect(zoneGeometry).toEqual({
+      arena: { x: '2%', y: '11.8%', width: '96%', height: '46%' },
+      likebar: { x: '2%', y: '57.8%', width: '96%', height: '16.2%' },
+      shelf: { x: '3%', y: '74%', width: '94%', height: '24%' },
+      safe: { x: '0%', y: '98%', width: '100%', height: '2%' }
+    });
   });
 
   test('offers every v1.5 demo scene while retaining attack and defense compatibility', () => {
@@ -254,6 +291,15 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       'gameplayPaceArcadeRally',
       'portraitBattleMode',
       'portraitBattleModeTakeover74',
+      'portraitArenaVariant',
+      'portraitArenaVariantSplitArena',
+      'portraitArenaVariantClassic',
+      'portraitArenaVariantHelp',
+      'portraitArenaVariantPreviewSplit',
+      'portraitArenaVariantPreviewClassic',
+      'portraitArenaLikebarReserved',
+      'portraitArenaEggShelf',
+      'portraitBattlePreviewHelp',
       'overlayProfile',
       'overlayProfileTikTokStudio',
       'overlayProfileSummary'
@@ -261,5 +307,7 @@ describe.each(['de', 'en', 'es', 'fr'])('Stream Monsters creator locale %s', loc
       expect(translations[key]).toEqual(expect.any(String));
       expect(translations[key]).not.toHaveLength(0);
     }
+    expect(translations.portraitArenaVariantSplitArena).toMatch(/Split Arena/i);
+    expect(translations.portraitArenaVariantClassic).toMatch(/Classic/i);
   });
 });

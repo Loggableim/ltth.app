@@ -1,0 +1,1718 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Stream Monsters bounded arena acceptance</title>
+  <style>
+    body[data-effect-capture="true"],
+    body[data-text-ink-capture="true"] {
+      background:transparent!important;
+    }
+    body[data-effect-capture="true"] #streammonsters-overlay > :not(#portrait-arena),
+    body[data-effect-capture="true"] #portrait-arena > :not(#battle),
+    body[data-effect-capture="true"] #battle > :not(#battle-effects-canvas) {
+      visibility:hidden!important;
+    }
+    body[data-effect-capture="true"] #streammonsters-overlay,
+    body[data-effect-capture="true"] #portrait-arena,
+    body[data-effect-capture="true"] #battle {
+      border:0!important;
+      background:transparent!important;
+      filter:none!important;
+      box-shadow:none!important;
+    }
+    body[data-effect-capture="true"] #streammonsters-overlay::before,
+    body[data-effect-capture="true"] #streammonsters-overlay::after,
+    body[data-effect-capture="true"] #portrait-arena::before,
+    body[data-effect-capture="true"] #portrait-arena::after,
+    body[data-effect-capture="true"] #battle::before,
+    body[data-effect-capture="true"] #battle::after {
+      display:none!important;
+    }
+    body[data-effect-capture="true"] #portrait-exception-lane {
+      visibility:hidden!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay * {
+      visibility:hidden!important;
+      animation:none!important;
+      transition:none!important;
+    }
+    body[data-text-ink-restoring="true"] #streammonsters-overlay * {
+      animation:none!important;
+      transition:none!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-neutral="true"] {
+      animation:none!important;
+      transition:none!important;
+      border-color:transparent!important;
+      outline:none!important;
+      background:transparent!important;
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      opacity:1!important;
+      mix-blend-mode:normal!important;
+      background-blend-mode:normal!important;
+      isolation:auto!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-neutral="true"]::before,
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-neutral="true"]::after {
+      visibility:hidden!important;
+      color:transparent!important;
+      border-color:transparent!important;
+      background:transparent!important;
+      filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"] {
+      visibility:visible!important;
+      border-color:transparent!important;
+      outline:none!important;
+      color:#fff!important;
+      background:transparent!important;
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      opacity:1!important;
+      mix-blend-mode:normal!important;
+      -webkit-text-fill-color:#fff!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"] * {
+      visibility:hidden!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"]::before,
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"]::after {
+      visibility:hidden!important;
+      color:transparent!important;
+      border-color:transparent!important;
+      background:transparent!important;
+      filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-unclip="true"] {
+      overflow:visible!important;
+      contain:none!important;
+      clip-path:none!important;
+      mask:none!important;
+      -webkit-mask:none!important;
+      min-width:0!important;
+      min-height:0!important;
+      border-color:transparent!important;
+      background:transparent!important;
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      opacity:1!important;
+      mix-blend-mode:normal!important;
+    }
+  </style>
+</head>
+<body>
+<script>
+'use strict';
+
+const ROOT = '/app/plugins/streamalchemy/';
+const SELECTED_CHOICES = Object.freeze([
+  Object.freeze({ slot: 1, key: 'B', name: 'Guard' }),
+  Object.freeze({ slot: 2, key: 'C', name: 'Nova' })
+]);
+const NOW_MS = 1_000;
+const MATCH_ID = 'portrait-arena-acceptance';
+const FIGHTERS = Object.freeze([
+  Object.freeze({
+    slot: 1,
+    name: 'Ash',
+    viewerName: '@Ari',
+    templateId: 'ashfang',
+    element: 'Ember',
+    level: 7,
+    hp: 31,
+    maxHp: 38,
+    shield: 2,
+    charge: 68,
+    skills: Object.freeze([
+      Object.freeze({
+        choice: 'A',
+        icon: '\u2726',
+        name: 'Bite',
+        shortText: 'A swift bite.',
+        type: 'attack',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'B',
+        icon: '\u25c6',
+        name: 'Guard',
+        shortText: 'Raises a shield.',
+        type: 'defense',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'C',
+        icon: '\u2605',
+        name: 'Nova',
+        shortText: 'A focused lunar strike.',
+        type: 'special',
+        element: 'Lunar',
+        chargeRequired: 100,
+        available: false
+      })
+    ])
+  }),
+  Object.freeze({
+    slot: 2,
+    name: 'Luna',
+    viewerName: '@Nox',
+    templateId: 'selene',
+    element: 'Lunar',
+    level: 8,
+    hp: 27,
+    maxHp: 36,
+    shield: 1,
+    charge: 92,
+    skills: Object.freeze([
+      Object.freeze({
+        choice: 'A',
+        icon: '\u2726',
+        name: 'Bite',
+        shortText: 'A swift bite.',
+        type: 'attack',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'B',
+        icon: '\u25c6',
+        name: 'Guard',
+        shortText: 'Raises a shield.',
+        type: 'defense',
+        available: true
+      }),
+      Object.freeze({
+        choice: 'C',
+        icon: '\u2605',
+        name: 'Nova',
+        shortText: 'A focused lunar strike.',
+        type: 'special',
+        element: 'Lunar',
+        chargeRequired: 100,
+        available: false
+      })
+    ])
+  })
+]);
+const MATCH = Object.freeze({
+  matchId: MATCH_ID,
+  state: 'roster',
+  roundNumber: 3,
+  fighters: FIGHTERS
+});
+const ACTION = Object.freeze({
+  rulesVersion: 8,
+  matchId: MATCH_ID,
+  eventId: `${MATCH_ID}:action:1`,
+  eventSequence: 1,
+  round: 3,
+  actorSlot: 1,
+  targetSlot: 2,
+  choice: 'C',
+  skill: Object.freeze({
+    icon: '\u2605',
+    name: 'Nova',
+    shortText: 'A focused lunar strike.',
+    type: 'special',
+    element: 'Lunar'
+  }),
+  hits: Object.freeze([
+    Object.freeze({
+      index: 1,
+      hpDamage: 7,
+      shieldAbsorbed: 0,
+      evaded: false
+    })
+  ]),
+  outcomes: Object.freeze([
+    Object.freeze({ type: 'heal', amount: 2 })
+  ]),
+  actorState: Object.freeze({
+    slot: 1,
+    hp: 31,
+    maxHp: 38,
+    shield: 2,
+    charge: 68
+  }),
+  targetState: Object.freeze({
+    slot: 2,
+    hp: 20,
+    maxHp: 36,
+    shield: 1,
+    charge: 92
+  })
+});
+const COMPLETION = Object.freeze({
+  eventId: `${MATCH_ID}:completed`,
+  matchId: MATCH_ID,
+  winnerSlot: 1,
+  winner: Object.freeze({ viewerName: '@Ari', name: 'Ash' }),
+  terminalReason: 'knockout',
+  knockout: Object.freeze({ round: 3, remainingHp: 31, maxHp: 38 }),
+  ratingChanges: Object.freeze([
+    Object.freeze({ slot: 1, before: 1_000, after: 1_012, delta: 12 })
+  ])
+});
+const READY_EGG = Object.freeze({
+  visualId: 'portrait-acceptance-lunar-ready',
+  state: 'ready',
+  provenance: 'gift',
+  ownershipState: 'owned',
+  adoptionStatus: 'owned',
+  displayName: '@Mika',
+  element: 'Lunar',
+  variant: 'charged',
+  imageUrl: '/plugins/streamalchemy/assets/eggs/lunar-charged.png',
+  queuePosition: 2,
+  timing: Object.freeze({ expiresAtMs: NOW_MS + 25_000 })
+});
+const ARENA_LABELS = Object.freeze({
+  round: 'ROUND {round}',
+  roster: 'ROSTER',
+  knockout: 'KO',
+  knockoutResult: 'KO',
+  winner: '{name} WINS',
+  lead: '{name} LEADS',
+  tied: 'TIED',
+  resultSummary: 'Round {round} \u00b7 {hp}/{maxHp} HP',
+  compactResultSummary: 'R{round} \u00b7 {hp} HP',
+  ratingChanged: '{name} {delta}',
+  ratingUnchanged: '{name} {after}',
+  damageMetric: 'Damage {amount}',
+  shieldAbsorbedMetric: 'Block {amount}',
+  shieldGainMetric: 'Shield +{amount}',
+  healMetric: 'Heal {amount}'
+});
+const EGG_LABELS = Object.freeze({
+  eggCardOwner: 'Owner: {owner}',
+  eggCardElement: '{element} egg',
+  eggCardOwned: 'OWNED',
+  eggCardReady: 'READY \u00b7 {command}',
+  eggCardRotTimer: 'ROT IN {time}',
+  eggFocusOwner: '{owner}',
+  eggFocusPosition: '#{position}',
+  eggCardAria: '{owner} \u00b7 {element} \u00b7 {status} \u00b7 {timer}'
+});
+const LIFECYCLE_COPY = Object.freeze({
+  eggLifecycleReadyTitle: 'Egg ready to hatch',
+  eggLifecycleReadyCopy: 'Hatch it now before it expires.'
+});
+let activeRenderer = null;
+let pendingEffect = null;
+let scheduledFrame = null;
+let frameClock = 0;
+let arenaView = null;
+let eggStageView = null;
+let pendingCompletion = null;
+let releaseCompletion = null;
+let pendingNotice = null;
+let releaseNotice = null;
+let textInkProbeTargets = new Map();
+let activeTextInkProbe = null;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Unable to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+function node(id) {
+  return document.getElementById(id);
+}
+
+function rectRecord(rect) {
+  if (!rect) return null;
+  return {
+    left: rect.left,
+    top: rect.top,
+    right: rect.right,
+    bottom: rect.bottom,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+function intersects(left, right) {
+  return Boolean(left && right) && !(
+    left.right <= right.left ||
+    right.right <= left.left ||
+    left.bottom <= right.top ||
+    right.bottom <= left.top
+  );
+}
+
+function intersectsBeyondTolerance(left, right, tolerance = 1) {
+  return Boolean(left && right) && !(
+    left.right <= right.left + tolerance ||
+    right.right <= left.left + tolerance ||
+    left.bottom <= right.top + tolerance ||
+    right.bottom <= left.top + tolerance
+  );
+}
+
+function stableSelector(element) {
+  if (!element) return null;
+  if (element.id) return `#${element.id}`;
+  for (const attribute of [
+    'data-egg-focus-timer',
+    'data-egg-focus-state',
+    'data-egg-notice-title',
+    'data-egg-notice-action',
+    'data-skill',
+    'data-slot'
+  ]) {
+    if (element.hasAttribute(attribute)) {
+      const value = element.getAttribute(attribute);
+      return value ? `[${attribute}="${value}"]` : `[${attribute}]`;
+    }
+  }
+  const className = Array.from(element.classList || [])[0];
+  if (className) return `.${className}`;
+  return element.tagName?.toLowerCase() || null;
+}
+
+function clipsAxis(style, axis) {
+  const value = axis === 'x' ? style.overflowX : style.overflowY;
+  return ['hidden', 'clip', 'auto', 'scroll'].includes(value);
+}
+
+function firstClippingAncestor(element, subjectRect) {
+  let first = null;
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    const style = getComputedStyle(current);
+    const clipX = clipsAxis(style, 'x');
+    const clipY = clipsAxis(style, 'y');
+    if (!clipX && !clipY) {
+      if (current === node('streammonsters-overlay')) break;
+      continue;
+    }
+    const clipRect = current.getBoundingClientRect();
+    const clippedX = clipX && (
+      subjectRect.left < clipRect.left - 1 ||
+      subjectRect.right > clipRect.right + 1
+    );
+    const extendsY = clipY && (
+      subjectRect.top < clipRect.top - 1 ||
+      subjectRect.bottom > clipRect.bottom + 1
+    );
+    const clippedY = clipY && (
+      subjectRect.bottom <= clipRect.top + 1 ||
+      subjectRect.top >= clipRect.bottom - 1
+    );
+    const record = {
+      selector: stableSelector(current),
+      rect: rectRecord(clipRect),
+      clipX,
+      clipY,
+      overflowX: style.overflowX,
+      overflowY: style.overflowY,
+      clippedX,
+      extendsY,
+      clippedY
+    };
+    first ||= record;
+    if (clippedX || clippedY) return record;
+    if (current === node('streammonsters-overlay')) break;
+  }
+  return first;
+}
+
+function partialExtensionAncestors(element, subjectRect) {
+  const matches = [];
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    const style = getComputedStyle(current);
+    const clipX = clipsAxis(style, 'x');
+    const clipY = clipsAxis(style, 'y');
+    if (clipX || clipY) {
+      const clipRect = current.getBoundingClientRect();
+      const extendsX = clipX && (
+        subjectRect.left < clipRect.left - 0.01 ||
+        subjectRect.right > clipRect.right + 0.01
+      );
+      const extendsY = clipY && (
+        subjectRect.top < clipRect.top - 0.01 ||
+        subjectRect.bottom > clipRect.bottom + 0.01
+      );
+      const fullyClippedX = clipX && (
+        subjectRect.right <= clipRect.left + 0.01 ||
+        subjectRect.left >= clipRect.right - 0.01
+      );
+      const fullyClippedY = clipY && (
+        subjectRect.bottom <= clipRect.top + 0.01 ||
+        subjectRect.top >= clipRect.bottom - 0.01
+      );
+      if (
+        (extendsX && !fullyClippedX) ||
+        (extendsY && !fullyClippedY)
+      ) {
+        matches.push({
+          element: current,
+          record: {
+            selector: stableSelector(current),
+            rect: rectRecord(clipRect),
+            clipX,
+            clipY,
+            overflowX: style.overflowX,
+            overflowY: style.overflowY,
+            extendsX,
+            extendsY
+          }
+        });
+      }
+    }
+    if (current === node('streammonsters-overlay')) break;
+  }
+  return matches;
+}
+
+function verticalExtensionAncestors(extensionAncestors) {
+  return extensionAncestors.filter(ancestor => ancestor.record.extendsY);
+}
+
+function isPainted(element) {
+  if (!element?.isConnected) return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  let visibleRect = {
+    left: 0,
+    top: 0,
+    right: innerWidth,
+    bottom: innerHeight
+  };
+  if (!intersects(rect, visibleRect)) return false;
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    const style = getComputedStyle(current);
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      Number(style.opacity) <= 0.001
+    ) return false;
+    const clipX = clipsAxis(style, 'x');
+    const clipY = clipsAxis(style, 'y');
+    if (!clipX && !clipY) {
+      if (current === node('streammonsters-overlay')) break;
+      continue;
+    }
+    const clipRect = current.getBoundingClientRect();
+    visibleRect = {
+      left: clipX ? Math.max(visibleRect.left, clipRect.left) : visibleRect.left,
+      top: clipY ? Math.max(visibleRect.top, clipRect.top) : visibleRect.top,
+      right: clipX
+        ? Math.min(visibleRect.right, clipRect.right)
+        : visibleRect.right,
+      bottom: clipY
+        ? Math.min(visibleRect.bottom, clipRect.bottom)
+        : visibleRect.bottom
+    };
+    if (!intersects(rect, visibleRect)) return false;
+    if (current === node('streammonsters-overlay')) break;
+  }
+  return true;
+}
+
+function formatLifecycleCopy(template, params = {}) {
+  return String(template || '').replace(/\{([^}]+)\}/g, (_, key) => (
+    params[key] == null ? '' : String(params[key])
+  ));
+}
+
+async function finishPendingProductionPresentations() {
+  const completion = pendingCompletion;
+  const notice = pendingNotice;
+  pendingCompletion = null;
+  pendingNotice = null;
+  const finishCompletion = releaseCompletion;
+  const finishNotice = releaseNotice;
+  releaseCompletion = null;
+  releaseNotice = null;
+  finishCompletion?.();
+  finishNotice?.();
+  if (completion) await completion;
+  if (notice) await notice;
+}
+
+async function createProductionViews(reducedMotion) {
+  await finishPendingProductionPresentations();
+  arenaView?.destroy?.();
+  eggStageView?.destroy?.();
+
+  const silentOutput = {
+    play: () => Promise.resolve(),
+    status: () => ({ renderer: 'css', fallbackReason: null })
+  };
+  arenaView = window.StreamMonstersArenaView.createArenaView({
+    document,
+    audio: silentOutput,
+    effects: silentOutput,
+    presentationEffects: silentOutput,
+    labels: ARENA_LABELS,
+    clock: {
+      now: () => NOW_MS,
+      wait: milliseconds => {
+        if (
+          Number(milliseconds) ===
+          Number(window.StreamMonstersArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS)
+        ) {
+          return new Promise(resolve => {
+            releaseCompletion = resolve;
+          });
+        }
+        return Promise.resolve();
+      }
+    }
+  });
+  eggStageView = window.StreamMonstersEggStageView.createEggStageView({
+    document,
+    now: () => NOW_MS,
+    reducedMotion,
+    labels: EGG_LABELS,
+    getHatchReference: () => '!hatch 2',
+    getAdoptReference: () => '!adopt',
+    setTimeout: () => 1,
+    clearTimeout: () => {}
+  });
+
+  arenaView.applySnapshot({ battle: { matches: [MATCH] } });
+  arenaView.openChoice({
+    ...MATCH,
+    round: 3,
+    deadlineMs: NOW_MS + 6_000,
+    choices: ['A', 'B', 'C']
+  });
+  eggStageView.applySnapshot([READY_EGG]);
+}
+
+async function driveProductionPhase(phase) {
+  if (phase === 'sealed') {
+    arenaView.lockChoice({
+      matchId: MATCH_ID,
+      decision: {
+        slot: SELECTED_CHOICES[0].slot,
+        choice: SELECTED_CHOICES[0].key,
+        source: 'viewer',
+        locked: true
+      }
+    });
+    return;
+  }
+
+  if (phase === 'revealed') {
+    for (const choice of SELECTED_CHOICES) {
+      arenaView.lockChoice({
+        matchId: MATCH_ID,
+        decision: {
+          slot: choice.slot,
+          choice: choice.key,
+          source: 'viewer',
+          locked: true
+        }
+      });
+    }
+    arenaView.revealChoices({
+      choices: SELECTED_CHOICES.map(choice => ({
+        slot: choice.slot,
+        choice: choice.key,
+        source: 'viewer'
+      }))
+    });
+    return;
+  }
+
+  if (phase === 'action') {
+    await arenaView.playAction(ACTION);
+    return;
+  }
+
+  if (phase === 'completed') {
+    await arenaView.playAction(ACTION);
+    pendingCompletion = arenaView.complete(COMPLETION);
+    await Promise.resolve();
+    await Promise.resolve();
+    arenaView.applySnapshot({
+      battle: {
+        matches: [{ ...MATCH, state: 'finalizing', cursor: 1 }]
+      }
+    });
+    return;
+  }
+
+  if (phase === 'egg-exception') {
+    const notice = window.StreamMonstersEggStageView.buildEventPresentation(
+      'egg_ready',
+      {
+        eventId: 'portrait-acceptance:egg-ready',
+        eggStage: READY_EGG
+      },
+      {
+        nowMs: NOW_MS,
+        commands: {
+          adopt: '!adopt',
+          eggs: '!eggs',
+          hatch: '!hatch 2',
+          monsters: '!monsters'
+        }
+      }
+    );
+    if (!notice) throw new Error('Production egg-ready presentation was not built');
+    const title = formatLifecycleCopy(
+      LIFECYCLE_COPY[notice.titleKey] || notice.titleKey,
+      notice.params
+    );
+    const action = notice.commands?.length
+      ? notice.commands.join(' \u00b7 ')
+      : formatLifecycleCopy(
+          LIFECYCLE_COPY[notice.copyKey] || notice.copyKey,
+          notice.params
+        );
+    pendingNotice =
+      window.StreamMonstersEggStageView.presentCompactLifecycleNotice({
+        document,
+        node: node('egg-lifecycle-notice'),
+        title,
+        action,
+        durationMs: notice.durationMs,
+        wait: () => new Promise(resolve => {
+          releaseNotice = resolve;
+        })
+      });
+  }
+}
+
+function measuredOrigins() {
+  const battleRect = node('battle').getBoundingClientRect();
+  return {
+    origin: window.StreamMonstersPortraitArena.normalizedRectCenter(
+      node('arena-image-1').getBoundingClientRect(),
+      battleRect
+    ),
+    targetOrigin: window.StreamMonstersPortraitArena.normalizedRectCenter(
+      node('arena-image-2').getBoundingClientRect(),
+      battleRect
+    )
+  };
+}
+
+async function probeWebGpu() {
+  if (!navigator.gpu?.requestAdapter) {
+    return { available: false, status: 'skipped-no-adapter' };
+  }
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return { available: false, status: 'skipped-no-adapter' };
+    return { available: true, status: 'available' };
+  } catch (_) {
+    return { available: false, status: 'skipped-no-adapter' };
+  }
+}
+
+async function renderEffect(rendererName, reducedMotion) {
+  activeRenderer?.destroy?.();
+  activeRenderer = null;
+  pendingEffect = null;
+  scheduledFrame = null;
+  frameClock = 0;
+
+  const requestedWebGpu = rendererName === 'WebGPU';
+  if (requestedWebGpu) {
+    const availability = await probeWebGpu();
+    if (!availability.available) return availability;
+  }
+
+  let canvas = node('battle-effects-canvas');
+  canvas.className = '';
+  canvas.removeAttribute('style');
+  const forceCss = rendererName === 'CSS fallback';
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  if (forceCss) {
+    HTMLCanvasElement.prototype.getContext = function getAcceptanceContext(
+      contextType,
+      ...args
+    ) {
+      if (this.id === 'battle-effects-canvas') return null;
+      return originalGetContext.call(this, contextType, ...args);
+    };
+  }
+
+  try {
+    activeRenderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
+      canvas,
+      navigator: requestedWebGpu ? navigator : {},
+      quality: 'high',
+      matchMedia: query => ({
+        matches: reducedMotion && query === '(prefers-reduced-motion: reduce)'
+      }),
+      requestAnimationFrame: callback => {
+        scheduledFrame = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {
+        scheduledFrame = null;
+      },
+      now: () => frameClock,
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      diagnostics: () => {}
+    });
+    await activeRenderer.init();
+  } finally {
+    if (forceCss) HTMLCanvasElement.prototype.getContext = originalGetContext;
+  }
+
+  const statusAfterInit = activeRenderer.status();
+  if (requestedWebGpu && !reducedMotion && statusAfterInit.renderer !== 'webgpu') {
+    return {
+      available: true,
+      status: 'failed-renderer-fallback',
+      backend: statusAfterInit.renderer,
+      fallbackReason: statusAfterInit.fallbackReason
+    };
+  }
+
+  const origins = measuredOrigins();
+  pendingEffect = activeRenderer.play('attack', {
+    element: 'Lunar',
+    actorSlot: 1,
+    targetSlot: 2,
+    origin: origins.origin,
+    targetOrigin: origins.targetOrigin,
+    damage: 7,
+    healing: 2,
+    quality: 'high'
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  const sampleProgress = 0.82;
+  frameClock =
+    window.StreamMonstersEffectsRenderer.SCENE_DURATIONS.attack * sampleProgress;
+  const callback = scheduledFrame;
+  scheduledFrame = null;
+  callback?.(frameClock);
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+
+  canvas = node('battle-effects-canvas');
+  const computed = getComputedStyle(canvas);
+  return {
+    available: true,
+    status: reducedMotion && requestedWebGpu
+      ? 'reduced-motion-fallback'
+      : 'rendered',
+    backend: canvas.dataset.rendererBackend,
+    fallbackReason: canvas.dataset.fallbackReason || null,
+    cssVariables: {
+      originX: computed.getPropertyValue('--sm-effect-origin-x').trim(),
+      originY: computed.getPropertyValue('--sm-effect-origin-y').trim(),
+      targetX: computed.getPropertyValue('--sm-effect-target-x').trim(),
+      targetY: computed.getPropertyValue('--sm-effect-target-y').trim()
+    },
+    measuredOrigins: origins,
+    samplePhase: 'impact',
+    sampleProgress
+  };
+}
+
+function selectorAncestry(element) {
+  const ancestry = [];
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    ancestry.push(stableSelector(current));
+    if (current === document.body) break;
+  }
+  return ancestry;
+}
+
+function collectTextGeometry() {
+  const roots = [node('portrait-arena'), node('portrait-exception-lane')];
+  const records = [];
+  textInkProbeTargets = new Map();
+  for (const root of roots) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let textNode = walker.nextNode();
+    while (textNode) {
+      const text = textNode.textContent.replace(/\s+/g, ' ').trim();
+      const parent = textNode.parentElement;
+      if (text && parent && isPainted(parent)) {
+        const range = document.createRange();
+        range.selectNodeContents(textNode);
+        const rangeRect = range.getBoundingClientRect();
+        const elementRect = parent.getBoundingClientRect();
+        const style = getComputedStyle(parent);
+        const clippingAncestor = firstClippingAncestor(parent, rangeRect);
+        const extensionAncestors = partialExtensionAncestors(parent, rangeRect);
+        const verticalAncestors = verticalExtensionAncestors(
+          extensionAncestors
+        );
+        const noWrap = ['nowrap', 'pre'].includes(style.whiteSpace);
+        const horizontalTooWide = (
+          noWrap &&
+          parent.scrollWidth > parent.clientWidth
+        );
+        const record = {
+          selector: stableSelector(parent),
+          ancestry: selectorAncestry(parent),
+          text,
+          painted: true,
+          overflowX: style.overflowX,
+          overflowY: style.overflowY,
+          whiteSpace: style.whiteSpace,
+          textOverflow: style.textOverflow,
+          textStyle: {
+            fontFamily: style.fontFamily,
+            fontSize: style.fontSize,
+            fontStyle: style.fontStyle,
+            fontWeight: style.fontWeight,
+            fontStretch: style.fontStretch,
+            fontVariant: style.fontVariant,
+            lineHeight: style.lineHeight,
+            letterSpacing: style.letterSpacing,
+            textTransform: style.textTransform,
+            textRendering: style.textRendering
+          },
+          clientWidth: parent.clientWidth,
+          scrollWidth: parent.scrollWidth,
+          clientHeight: parent.clientHeight,
+          scrollHeight: parent.scrollHeight,
+          rangeRect: rectRecord(rangeRect),
+          elementRect: rectRecord(elementRect),
+          firstClippingAncestor: clippingAncestor,
+          partialExtensionAncestor: extensionAncestors[0]?.record || null,
+          partialExtensionAncestors: extensionAncestors.map(
+            ancestor => ancestor.record
+          ),
+          verticalExtensionAncestor: verticalAncestors[0]?.record || null,
+          verticalExtensionAncestors: verticalAncestors.map(
+            ancestor => ancestor.record
+          ),
+          horizontalClipped: horizontalTooWide,
+          verticalClipped: Boolean(clippingAncestor?.clippedY)
+        };
+        if (extensionAncestors.length > 0) {
+          record.inkProbeId = `text-ink-${textInkProbeTargets.size + 1}`;
+          textInkProbeTargets.set(record.inkProbeId, {
+            element: parent,
+            textNode,
+            clipAncestors: extensionAncestors
+          });
+        }
+        records.push(record);
+      }
+      textNode = walker.nextNode();
+    }
+  }
+  return records;
+}
+
+function textInkRestoreState() {
+  return Array.from(
+    node('streammonsters-overlay').querySelectorAll('*')
+  ).map(element => {
+    const style = getComputedStyle(element);
+    return {
+      selector: stableSelector(element),
+      display: style.display,
+      visibility: style.visibility
+    };
+  });
+}
+
+function prepareTextInkProbe(probeId) {
+  if (activeTextInkProbe) {
+    throw new Error('A rendered-ink probe is already active');
+  }
+  const target = textInkProbeTargets.get(String(probeId || ''));
+  if (!target) throw new Error(`Unknown rendered-ink probe: ${probeId}`);
+  const restoreState = textInkRestoreState();
+  const neutralized = [];
+  for (
+    let current = target.element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    current.dataset.textInkNeutral = 'true';
+    neutralized.push(current);
+    if (current === node('streammonsters-overlay')) break;
+  }
+  target.element.dataset.activeTextInkProbe = 'true';
+  document.body.dataset.textInkCapture = 'true';
+  activeTextInkProbe = {
+    element: target.element,
+    textNode: target.textNode,
+    clipAncestors: target.clipAncestors,
+    neutralized,
+    unclipped: [],
+    restoreState
+  };
+  return new Promise(resolve => requestAnimationFrame(() => {
+    const range = document.createRange();
+    range.selectNodeContents(target.textNode);
+    const rangeRect = range.getBoundingClientRect();
+    const elementRect = target.element.getBoundingClientRect();
+    const clipRecords = target.clipAncestors.map(({ element, record }) => ({
+      ...record,
+      rect: rectRecord(element.getBoundingClientRect())
+    }));
+    const fontSize = Number.parseFloat(getComputedStyle(target.element).fontSize);
+    const padding = Math.max(
+      8,
+      Math.ceil((Number.isFinite(fontSize) ? fontSize : 12) * 1.5)
+    );
+    const left = Math.max(
+      0,
+      Math.floor(Math.min(rangeRect.left, elementRect.left) - padding)
+    );
+    const top = Math.max(
+      0,
+      Math.floor(Math.min(rangeRect.top, elementRect.top) - padding)
+    );
+    const right = Math.min(
+      innerWidth,
+      Math.ceil(Math.max(rangeRect.right, elementRect.right) + padding)
+    );
+    const bottom = Math.min(
+      innerHeight,
+      Math.ceil(Math.max(rangeRect.bottom, elementRect.bottom) + padding)
+    );
+    resolve({
+      probeId,
+      capture: {
+        x: left,
+        y: top,
+        width: Math.max(1, right - left),
+        height: Math.max(1, bottom - top)
+      },
+      rangeRect: rectRecord(rangeRect),
+      elementRect: rectRecord(elementRect),
+      clipRecords
+    });
+  }));
+}
+
+function unclipTextInkProbe() {
+  if (!activeTextInkProbe) {
+    throw new Error('No rendered-ink probe is active');
+  }
+  for (const { element } of activeTextInkProbe.clipAncestors) {
+    element.dataset.textInkUnclip = 'true';
+    activeTextInkProbe.unclipped.push(element);
+  }
+  return new Promise(resolve => requestAnimationFrame(() => {
+    const range = document.createRange();
+    range.selectNodeContents(activeTextInkProbe.textNode);
+    resolve({
+      unclippedRangeRect: rectRecord(range.getBoundingClientRect()),
+      unclippedElementRect: rectRecord(
+        activeTextInkProbe.element.getBoundingClientRect()
+      ),
+      unclippedClipRecords: activeTextInkProbe.clipAncestors.map(
+        ({ element, record }) => ({
+          ...record,
+          rect: rectRecord(element.getBoundingClientRect())
+        })
+      )
+    });
+  }));
+}
+
+function restoreTextInkProbe() {
+  if (!activeTextInkProbe) return Promise.resolve(false);
+  const probe = activeTextInkProbe;
+  document.body.dataset.textInkRestoring = 'true';
+  delete probe.element.dataset.activeTextInkProbe;
+  for (const element of probe.unclipped) {
+    delete element.dataset.textInkUnclip;
+  }
+  delete document.body.dataset.textInkCapture;
+  return new Promise(resolve => requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      for (const element of probe.neutralized) {
+        delete element.dataset.textInkNeutral;
+      }
+      delete document.body.dataset.textInkRestoring;
+      requestAnimationFrame(() => {
+        const currentState = textInkRestoreState();
+        const stateMatches = (
+          JSON.stringify(currentState) === JSON.stringify(probe.restoreState)
+        );
+        const stateDifferences = probe.restoreState.flatMap((before, index) => {
+          const after = currentState[index];
+          return JSON.stringify(before) === JSON.stringify(after)
+            ? []
+            : [{ index, before, after }];
+        }).slice(0, 12);
+        activeTextInkProbe = null;
+        resolve({
+          restored: true,
+          stateMatches,
+          stateDifferences
+        });
+      });
+    });
+  }));
+}
+
+function collectToplineContract() {
+  const records = [
+    ['round', node('arena-round')],
+    ['countdown', node('arena-countdown')],
+    ['lead', node('arena-lead')]
+  ].filter(([, element]) => (
+    element?.textContent.trim() && isPainted(element)
+  )).map(([name, element]) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return {
+      name,
+      text: element.textContent.replace(/\s+/g, ' ').trim(),
+      rangeRect: rectRecord(range.getBoundingClientRect()),
+      elementRect: rectRecord(element.getBoundingClientRect())
+    };
+  });
+  const overlaps = [];
+  for (let left = 0; left < records.length; left += 1) {
+    for (let right = left + 1; right < records.length; right += 1) {
+      if (
+        intersectsBeyondTolerance(
+          records[left].rangeRect,
+          records[right].rangeRect,
+          0.5
+        )
+      ) {
+        overlaps.push({
+          left: records[left],
+          right: records[right]
+        });
+      }
+    }
+  }
+  return {
+    records,
+    overlaps,
+    pass: overlaps.length === 0
+  };
+}
+
+function collectCountdownContract() {
+  const countdown = node('arena-countdown');
+  const text = countdown?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const painted = isPainted(countdown);
+  return {
+    text,
+    painted,
+    pass: text ? painted : !painted
+  };
+}
+
+function collectLeadContract() {
+  const lead = node('arena-lead');
+  return {
+    text: lead?.textContent.replace(/\s+/g, ' ').trim() || '',
+    painted: isPainted(lead),
+    rect: lead ? rectRecord(lead.getBoundingClientRect()) : null
+  };
+}
+
+function selectionSemantics(phase) {
+  const cards = Array.from(
+    document.querySelectorAll('[data-skill-deck] .arena-skill-card')
+  );
+  const selected = cards.filter(card => (
+    card.classList.contains('selected') ||
+    card.getAttribute('aria-selected') === 'true' ||
+    Boolean(card.dataset.selectedChoice) ||
+    /selected choice/i.test(card.getAttribute('aria-label') || '')
+  )).map(card => ({
+    deck: card.closest('[data-skill-deck]')?.dataset.skillDeck || null,
+    key: card.dataset.skill || null,
+    name: card.querySelector('.skill-name')?.textContent.trim() || null,
+    selectedClass: card.classList.contains('selected'),
+    ariaSelected: card.getAttribute('aria-selected'),
+    selectedChoice: card.dataset.selectedChoice || null,
+    accessibleLabel: card.getAttribute('aria-label') || null
+  }));
+  const selectionSpecificEvidence = selected.flatMap(record => [
+    record.key,
+    record.name,
+    record.selectedChoice,
+    record.accessibleLabel
+  ]).filter(Boolean).join(' ');
+  return {
+    phase,
+    selected,
+    selectionSpecificEvidence,
+    earlyDisclosure: (
+      phase === 'sealed' &&
+      selected.length > 0
+    ),
+    revealedTogether: (
+      phase === 'revealed' &&
+      selected.length === 2 &&
+      selected.some(record => (
+        record.deck === '1' &&
+        record.key === 'B' &&
+        record.name === 'Guard' &&
+        record.selectedClass &&
+        record.ariaSelected === 'true'
+      )) &&
+      selected.some(record => (
+        record.deck === '2' &&
+        record.key === 'C' &&
+        record.name === 'Nova' &&
+        record.selectedClass &&
+        record.ariaSelected === 'true'
+      ))
+    )
+  };
+}
+
+function collectMotionState() {
+  const arena = node('portrait-arena');
+  const repeated = arena.getAnimations({ subtree: true })
+    .filter(animation => {
+      const timing = animation.effect?.getComputedTiming?.() || {};
+      return (
+        animation.playState === 'running' &&
+        (timing.iterations === Infinity || Number(timing.iterations) > 1)
+      );
+    })
+    .map(animation => ({
+      playState: animation.playState,
+      iterations: animation.effect?.getComputedTiming?.().iterations
+    }));
+  const transforms = Array.from(
+    arena.querySelectorAll('.arena-sprite-wrap')
+  ).filter(isPainted).map(element => ({
+    id: element.parentElement?.id || element.className,
+    transform: getComputedStyle(element).transform
+  }));
+  return {
+    runningRepeatedAnimations: repeated,
+    transforms,
+    hasTransformDisplacement: transforms.some(record => (
+      record.transform !== 'none' &&
+      record.transform !== 'matrix(1, 0, 0, 1, 0, 0)'
+    ))
+  };
+}
+
+function settleOneShotStageAnimations() {
+  for (const animation of node('portrait-arena').getAnimations({ subtree: true })) {
+    const timing = animation.effect?.getComputedTiming?.() || {};
+    if (
+      timing.iterations !== Infinity &&
+      Number(timing.iterations) <= 1 &&
+      Number.isFinite(Number(timing.endTime))
+    ) {
+      try {
+        animation.finish();
+      } catch (_) {}
+    }
+  }
+}
+
+function disclosureRecord(phase) {
+  const scope = [
+    node('arena-topline'),
+    node('arena-fighter-1'),
+    node('arena-fighter-2')
+  ];
+  const text = scope.map(element => element.textContent).join(' ');
+  const attributes = [];
+  for (const element of scope) {
+    for (const attribute of Array.from(element.attributes || [])) {
+      if (/^(data-choice|data-choice-source|aria-label)$/.test(attribute.name)) {
+        attributes.push(`${attribute.name}=${attribute.value}`);
+      }
+    }
+  }
+  const selected = selectionSemantics(phase);
+  const selectedPattern = /\bB\b|\bC\b|Guard|Nova/i;
+  return {
+    phase,
+    text,
+    attributes,
+    selectionSemantics: selected,
+    earlyDisclosure: phase === 'sealed' && (
+      selectedPattern.test(text) ||
+      attributes.some(value => selectedPattern.test(value)) ||
+      selected.earlyDisclosure
+    ),
+    revealedTogether: phase === 'revealed' && (
+      attributes.some(value => /data-choice=B/.test(value)) &&
+      attributes.some(value => /data-choice=C/.test(value)) &&
+      selected.revealedTogether
+    )
+  };
+}
+
+function elementPaintRecord(element) {
+  return {
+    selector: stableSelector(element),
+    ancestry: selectorAncestry(element),
+    rect: rectRecord(element.getBoundingClientRect())
+  };
+}
+
+function hudElementRecord(element, hudRect) {
+  if (!element) {
+    return {
+      selector: null,
+      painted: false,
+      insideHud: false,
+      rect: null
+    };
+  }
+  const rect = rectRecord(element.getBoundingClientRect());
+  return {
+    selector: stableSelector(element),
+    painted: isPainted(element),
+    insideHud: (
+      rect.left >= hudRect.left - 1 &&
+      rect.top >= hudRect.top - 1 &&
+      rect.right <= hudRect.right + 1 &&
+      rect.bottom <= hudRect.bottom + 1
+    ),
+    rect
+  };
+}
+
+function collectHudContract() {
+  return [1, 2].map(slot => {
+    const fighter = node(`arena-fighter-${slot}`);
+    const hud = fighter.querySelector('.fighter-hud');
+    const hudRect = rectRecord(hud.getBoundingClientRect());
+    const name = hudElementRecord(node(`arena-name-${slot}`), hudRect);
+    const level = hudElementRecord(node(`arena-level-${slot}`), hudRect);
+    const hpRow = hudElementRecord(
+      hud.querySelector('.fighter-hp-row'),
+      hudRect
+    );
+    const hpMeter = hudElementRecord(
+      hud.querySelector('.arena-meter.arena-hp'),
+      hudRect
+    );
+    const hpFill = hudElementRecord(node(`arena-hp-${slot}`), hudRect);
+    const hpBar = {
+      meter: hpMeter,
+      fill: hpFill,
+      nonzero: Boolean(
+        hpMeter.rect?.width > 0 &&
+        hpMeter.rect?.height > 0 &&
+        hpFill.rect?.width > 0 &&
+        hpFill.rect?.height > 0
+      ),
+      insideHud: hpMeter.insideHud && hpFill.insideHud,
+      painted: hpMeter.painted && hpFill.painted
+    };
+    return {
+      slot,
+      hud: elementPaintRecord(hud),
+      name,
+      level,
+      hpRow,
+      hpBar,
+      pass: (
+        name.painted &&
+        name.insideHud &&
+        level.painted &&
+        level.insideHud &&
+        hpRow.painted &&
+        hpRow.insideHud &&
+        hpBar.painted &&
+        hpBar.nonzero &&
+        hpBar.insideHud
+      )
+    };
+  });
+}
+
+function visibilityRecord(element) {
+  return {
+    ...elementPaintRecord(element),
+    painted: isPainted(element)
+  };
+}
+
+function completedOwnership() {
+  const fighters = [1, 2].map(slot => {
+    const fighter = node(`arena-fighter-${slot}`);
+    return {
+      slot,
+      fighter: visibilityRecord(fighter),
+      hud: visibilityRecord(fighter.querySelector('.fighter-hud')),
+      image: visibilityRecord(node(`arena-image-${slot}`))
+    };
+  });
+  const competingInformation = [
+    node('arena-topline'),
+    node('arena-choice-surface'),
+    node('arena-action-card')
+  ].map(visibilityRecord);
+  const result = {
+    surface: visibilityRecord(node('arena-result')),
+    winner: visibilityRecord(node('arena-result-winner')),
+    compactSummary: visibilityRecord(node('arena-result-compact-summary'))
+  };
+  return {
+    fighters,
+    competingInformation,
+    result,
+    pass: (
+      fighters.every(record => (
+        !record.fighter.painted &&
+        !record.hud.painted &&
+        !record.image.painted
+      )) &&
+      competingInformation.every(record => !record.painted) &&
+      result.surface.painted &&
+      result.winner.painted &&
+      result.compactSummary.painted
+    )
+  };
+}
+
+function normalizedPseudoContent(value) {
+  const content = String(value || '').trim();
+  if (!content || content === 'none' || content === 'normal') return '';
+  return content.replace(/^["']|["']$/g, '');
+}
+
+function renderedElementText(element) {
+  const text = element?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const transform = element ? getComputedStyle(element).textTransform : 'none';
+  if (transform === 'uppercase') return text.toUpperCase();
+  if (transform === 'lowercase') return text.toLowerCase();
+  return text;
+}
+
+function collectActionContract() {
+  const action = node('arena-action-card');
+  const definitions = [
+    ['actor', 'arena-action-player'],
+    ['key', 'arena-action-key'],
+    ['skill', 'arena-action-skill'],
+    ['copy', 'arena-action-copy'],
+    ['legacyMetrics', 'arena-action-metrics'],
+    ['compactMetric', 'arena-action-compact-metric']
+  ];
+  const parts = definitions.map(([role, id]) => {
+    const element = node(id);
+    return {
+      role,
+      id,
+      text: element?.textContent.replace(/\s+/g, ' ').trim() || '',
+      renderedText: renderedElementText(element),
+      painted: isPainted(element),
+      beforeContent: element
+        ? normalizedPseudoContent(getComputedStyle(element, '::before').content)
+        : '',
+      rect: element ? rectRecord(element.getBoundingClientRect()) : null
+    };
+  });
+  const paintedParts = parts.filter(part => part.painted);
+  const legacyMetricChildren = Array.from(
+    node('arena-action-metrics')?.querySelectorAll('[data-action-metric]') || []
+  ).map(element => ({
+    text: element.textContent.replace(/\s+/g, ' ').trim(),
+    painted: isPainted(element)
+  }));
+  const compactMetric = node('arena-action-compact-metric');
+  const visibleMetrics = [
+    ...legacyMetricChildren.filter(metric => metric.painted),
+    ...(isPainted(compactMetric) ? [{
+      text: compactMetric.textContent.replace(/\s+/g, ' ').trim(),
+      painted: true
+    }] : [])
+  ];
+  const targetHpText =
+    node('arena-hp-text-2')?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const renderedTargetHp = Number.parseInt(targetHpText, 10);
+  const actionStyle = getComputedStyle(action);
+  return {
+    visible: isPainted(action),
+    visualState: action?.classList.contains('visible') ? 'recover' : 'inactive',
+    parts,
+    paintedParts: paintedParts.map(part => part.role),
+    renderedText: paintedParts.map(part => part.renderedText).join(' \u00b7 '),
+    separators: paintedParts.slice(1).map(part => part.beforeContent),
+    hiddenCompetitors: {
+      actor: !parts.find(part => part.role === 'actor')?.painted,
+      copy: !parts.find(part => part.role === 'copy')?.painted,
+      legacyMetrics: !parts.find(part => part.role === 'legacyMetrics')?.painted,
+      feed: !isPainted(node('arena-feed')),
+      extraMetrics: legacyMetricChildren.every(metric => !metric.painted)
+    },
+    legacyMetricChildren,
+    metricCount: visibleMetrics.length,
+    targetHp: {
+      before: 27,
+      expected: 20,
+      rendered: Number.isFinite(renderedTargetHp) ? renderedTargetHp : null,
+      text: targetHpText,
+      changed: Number.isFinite(renderedTargetHp) && renderedTargetHp !== 27
+    },
+    whiteSpace: actionStyle.whiteSpace,
+    gridTemplateRows: actionStyle.gridTemplateRows,
+    noWrap: actionStyle.whiteSpace === 'nowrap',
+    overflow: (
+      action.scrollWidth > action.clientWidth + 1 ||
+      action.scrollHeight > action.clientHeight + 1
+    )
+  };
+}
+
+function collectImpactContract(phase) {
+  const impact = node('arena-impact');
+  const transientClasses = [
+    'visible',
+    'damage-number',
+    'shield-number',
+    'heal-number',
+    'retaliation-number'
+  ].filter(className => impact?.classList.contains(className));
+  const text = impact?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const painted = isPainted(impact);
+  const expectsClear = [
+    'choice',
+    'sealed',
+    'revealed',
+    'action',
+    'completed',
+    'egg-exception'
+  ].includes(phase);
+  return {
+    phase,
+    expectsClear,
+    painted,
+    text,
+    transientClasses,
+    pass: !expectsClear || (
+      !painted &&
+      !text &&
+      transientClasses.length === 0
+    )
+  };
+}
+
+function collectLayout(phase, effect) {
+  const arena = node('portrait-arena');
+  const likebar = window.StreamMonstersPortraitArena.viewportZones(
+    innerWidth,
+    innerHeight
+  ).likebar;
+  const exceptionTarget = window.StreamMonstersPortraitArena.viewportZones(
+    innerWidth,
+    innerHeight
+  ).exception;
+  const arenaRect = arena.getBoundingClientRect();
+  const exceptionRect = node('portrait-exception-lane').getBoundingClientRect();
+  const stageSelectors = [
+    '#arena-topline',
+    '#arena-lead',
+    '#arena-fighter-1 .fighter-hud',
+    '#arena-fighter-2 .fighter-hud',
+    '#arena-image-1',
+    '#arena-image-2',
+    '#arena-choice-surface',
+    '#arena-action-card',
+    '#arena-result',
+    '#battle-effects-canvas'
+  ];
+  const informationSelectors = [
+    '#arena-topline',
+    '#arena-lead',
+    '#arena-fighter-1 .fighter-hud',
+    '#arena-fighter-2 .fighter-hud',
+    '#arena-choice-surface',
+    '#arena-action-card',
+    '#arena-result'
+  ];
+  const recordsFor = selectors => selectors
+    .map(selector => document.querySelector(selector))
+    .filter(isPainted)
+    .map(element => ({
+      selector: element.id ? `#${element.id}` : (
+        `#${element.closest('[id]')?.id} .${element.classList[0]}`
+      ),
+      rect: rectRecord(element.getBoundingClientRect())
+    }));
+  const stageRects = recordsFor(stageSelectors);
+  const informationRects = recordsFor(informationSelectors);
+  const overlaps = [];
+  for (let left = 0; left < informationRects.length; left += 1) {
+    for (let right = left + 1; right < informationRects.length; right += 1) {
+      if (intersects(informationRects[left].rect, informationRects[right].rect)) {
+        overlaps.push([
+          informationRects[left].selector,
+          informationRects[right].selector
+        ]);
+      }
+    }
+  }
+
+  const allowedExceptions = [node('egg-shelf'), node('egg-lifecycle-notice')];
+  const exceptionIntruders = Array.from(
+    node('streammonsters-overlay').querySelectorAll('*')
+  ).filter(element => (
+    isPainted(element) &&
+    intersects(rectRecord(element.getBoundingClientRect()), exceptionTarget) &&
+    !allowedExceptions.some(allowed => (
+      element === allowed || allowed.contains(element)
+    )) &&
+    element !== node('portrait-exception-lane') &&
+    element !== node('streammonsters-overlay')
+  )).map(element => element.id || element.className || element.tagName.toLowerCase());
+
+  const shelfRect = rectRecord(node('egg-shelf').getBoundingClientRect());
+  const notice = node('egg-lifecycle-notice');
+  const noticeRect = isPainted(notice)
+    ? rectRecord(notice.getBoundingClientRect())
+    : null;
+  const textGeometry = collectTextGeometry();
+  const visibleArenaDescendants = Array.from(
+    arena.querySelectorAll('*')
+  ).filter(isPainted).map(elementPaintRecord);
+  const likebarViolations = stageRects.filter(record => (
+    intersectsBeyondTolerance(record.rect, likebar)
+  ));
+
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    arena: rectRecord(arenaRect),
+    likebar,
+    exception: rectRecord(exceptionRect),
+    stageRects,
+    informationRects,
+    overlaps,
+    likebarViolations,
+    exceptionIntruders,
+    shelf: shelfRect,
+    notice: noticeRect,
+    shelfNoticeOverlap: intersects(shelfRect, noticeRect),
+    textGeometry,
+    toplineContract: collectToplineContract(),
+    countdownContract: collectCountdownContract(),
+    leadContract: collectLeadContract(),
+    visibleArenaDescendants,
+    hudContract: collectHudContract(),
+    completedOwnership: completedOwnership(),
+    action: collectActionContract(),
+    impactContract: collectImpactContract(phase),
+    effect,
+    disclosure: disclosureRecord(phase),
+    reducedMotion: collectMotionState()
+  };
+}
+
+async function showArenaCase({
+  variant,
+  phase,
+  renderer,
+  reducedMotion = false
+}) {
+  node('portrait-arena').dataset.arenaVariant =
+    window.StreamMonstersPortraitArena.normalizeVariant(variant);
+  await createProductionViews(reducedMotion);
+  await driveProductionPhase(phase);
+  await Promise.all(Array.from(document.images).map(image => (
+    image.complete ? Promise.resolve() : image.decode().catch(() => {})
+  )));
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  settleOneShotStageAnimations();
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  const effect = await renderEffect(renderer, reducedMotion);
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  return collectLayout(phase, effect);
+}
+
+async function bootstrap() {
+  const source = await fetch(`${ROOT}streammonsters-overlay.html`, {
+    cache: 'no-store'
+  }).then(response => {
+    if (!response.ok) throw new Error(`Overlay fetch failed: HTTP ${response.status}`);
+    return response.text();
+  });
+  const parsed = new DOMParser().parseFromString(source, 'text/html');
+  for (const style of parsed.querySelectorAll('style')) {
+    document.head.appendChild(document.importNode(style, true));
+  }
+  const overlay = document.importNode(
+    parsed.querySelector('#streammonsters-overlay'),
+    true
+  );
+  document.body.appendChild(overlay);
+  await loadScript(`${ROOT}streammonsters-rules-v8-pacing.js`);
+  await loadScript(`${ROOT}streammonsters-arena-director.js`);
+  await loadScript(`${ROOT}streammonsters-portrait-arena.js`);
+  await loadScript(`${ROOT}streammonsters-arena-view.js`);
+  await loadScript(`${ROOT}streammonsters-egg-stage-view.js`);
+  await loadScript(`${ROOT}streammonsters-effects-renderer.js`);
+  await createProductionViews(false);
+  window.harnessReady = true;
+}
+
+window.showArenaCase = showArenaCase;
+window.probeArenaWebGpu = probeWebGpu;
+window.prepareTextInkProbe = prepareTextInkProbe;
+window.unclipTextInkProbe = unclipTextInkProbe;
+window.restoreTextInkProbe = restoreTextInkProbe;
+window.setArenaEffectCapture = enabled => {
+  if (enabled) document.body.dataset.effectCapture = 'true';
+  else delete document.body.dataset.effectCapture;
+};
+window.addEventListener('pagehide', () => {
+  restoreTextInkProbe();
+  activeRenderer?.destroy?.();
+  activeRenderer = null;
+  pendingEffect = null;
+  releaseCompletion?.();
+  releaseNotice?.();
+  arenaView?.destroy?.();
+  eggStageView?.destroy?.();
+});
+bootstrap().catch(error => {
+  window.harnessError = String(error?.stack || error);
+});
+</script>
+</body>
+</html>

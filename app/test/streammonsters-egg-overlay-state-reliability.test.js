@@ -41,7 +41,10 @@ function freeEgg(visualId, overrides = {}) {
   };
 }
 
-async function createOverlayHarness(snapshot) {
+async function createOverlayHarness(snapshot, {
+  portrait = false,
+  lifecycleCommands = null
+} = {}) {
   const html = fs.readFileSync(path.join(
     process.cwd(),
     'plugins',
@@ -65,8 +68,8 @@ async function createOverlayHarness(snapshot) {
       window.clearTimeout = id => timers.delete(id);
       window.setInterval = () => ++timerId;
       window.clearInterval = () => {};
-      window.matchMedia = () => ({
-        matches: false,
+      window.matchMedia = query => ({
+        matches: query === '(orientation: portrait)' ? portrait : false,
         addEventListener: () => {},
         removeEventListener: () => {}
       });
@@ -106,7 +109,24 @@ async function createOverlayHarness(snapshot) {
       });
       window.StreamMonstersOverlayRuntime = runtime;
       window.StreamMonstersArenaDirector = ArenaDirector;
-      window.StreamMonstersEggStageView = EggStageView;
+      window.StreamMonstersEggStageView = lifecycleCommands
+        ? {
+            ...EggStageView,
+            buildEventPresentation(type, payload, options) {
+              const notice = EggStageView.buildEventPresentation(
+                type,
+                payload,
+                options
+              );
+              return notice ? { ...notice, commands: lifecycleCommands } : notice;
+            }
+          }
+        : EggStageView;
+      window.StreamMonstersPortraitArena = {
+        normalizeVariant(value, fallback = 'classic') {
+          return ['split-arena', 'classic'].includes(value) ? value : fallback;
+        }
+      };
       window.StreamMonstersEffectsRenderer = {
         createEffectsRenderer: () => ({
           init: async () => true,
@@ -148,6 +168,9 @@ async function createOverlayHarness(snapshot) {
     dom,
     socketHandlers,
     arenaCalls,
+    pendingTimerDurations() {
+      return [...timers.values()].map(timer => timer.milliseconds);
+    },
     async runPendingTimers(maxPasses = 80) {
       let idlePasses = 0;
       for (let pass = 0; pass < maxPasses; pass += 1) {
@@ -176,6 +199,148 @@ async function createOverlayHarness(snapshot) {
 }
 
 describe('Stream Monsters egg overlay state reliability', () => {
+  test('production compact lifecycle presenter owns show wait hide and clear', async () => {
+    const documentLike = new JSDOM(`
+      <!doctype html>
+      <div id="egg-lifecycle-notice" hidden>
+        <strong data-egg-notice-title></strong>
+        <span data-egg-notice-action></span>
+      </div>
+    `).window.document;
+    let finish;
+    const waited = [];
+    const presentation = EggStageView.presentCompactLifecycleNotice({
+      document: documentLike,
+      title: 'Egg ready to hatch',
+      action: '!hatch 2',
+      durationMs: 12_000,
+      wait: milliseconds => {
+        waited.push(milliseconds);
+        return new Promise(resolve => { finish = resolve; });
+      }
+    });
+    const notice = documentLike.getElementById('egg-lifecycle-notice');
+
+    expect(notice.hidden).toBe(false);
+    expect(notice.querySelector('[data-egg-notice-title]').textContent)
+      .toBe('Egg ready to hatch');
+    expect(notice.querySelector('[data-egg-notice-action]').textContent)
+      .toBe('!hatch 2');
+    expect(waited).toEqual([12_000]);
+
+    finish();
+    await expect(presentation).resolves.toBe(true);
+    expect(notice.hidden).toBe(true);
+    expect(notice.querySelector('[data-egg-notice-title]').textContent).toBe('');
+    expect(notice.querySelector('[data-egg-notice-action]').textContent).toBe('');
+  });
+
+  test('uses only the compact two-line lifecycle notice in portrait and clears it', async () => {
+    const offer = freeEgg('portrait-lifecycle', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }
+    });
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: {
+        hatchDurationMs: 90_000,
+        notificationDurationMs: 12_000,
+        portraitArenaVariant: 'split-arena'
+      },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    }, {
+      portrait: true,
+      lifecycleCommands: ['!adopt', '!eggs']
+    });
+    try {
+      harness.socketHandlers.get('streammonsters:free_egg_public')({
+        eventId: 'portrait-lifecycle-public',
+        correlationId: offer.visualId,
+        eggStage: offer
+      });
+      for (let attempt = 0; attempt < 5; attempt += 1) await flush();
+
+      const notice = harness.dom.window.document.getElementById(
+        'egg-lifecycle-notice'
+      );
+      const card = harness.dom.window.document.getElementById('card');
+      expect(notice).not.toBeNull();
+      if (!notice) return;
+      expect(notice.hidden).toBe(false);
+      expect(Array.from(notice.children).filter(child => !child.hidden))
+        .toHaveLength(2);
+      expect(notice.querySelector('[data-egg-notice-title]').textContent.trim())
+        .not.toBe('');
+      const action = notice.querySelector('[data-egg-notice-action]').textContent;
+      expect(action).toBe('!adopt \u00b7 !eggs');
+      expect([...action].filter(character => character === '\u00b7')).toHaveLength(1);
+      expect(action).not.toContain('\u00c2');
+      const overlaySource = fs.readFileSync(path.join(
+        process.cwd(),
+        'plugins',
+        'streamalchemy',
+        'streammonsters-overlay.html'
+      ), 'utf8');
+      const compactJoinLine = overlaySource.split(/\r?\n/).find(line => (
+        line.includes('const action = notice.commands')
+      ));
+      expect(compactJoinLine).toContain("join(' \\u00b7 ')");
+      expect(compactJoinLine).not.toContain('\u00c2');
+      expect(overlaySource).toContain(
+        'StreamMonstersEggStageView.presentCompactLifecycleNotice'
+      );
+      expect(card.classList.contains('visible')).toBe(false);
+      expect(card.hasAttribute('data-presentation')).toBe(false);
+      expect(harness.pendingTimerDurations()).toContain(5_000);
+
+      await harness.runPendingTimers();
+      expect(notice.hidden).toBe(true);
+      expect(notice.querySelector('[data-egg-notice-title]').textContent).toBe('');
+      expect(notice.querySelector('[data-egg-notice-action]').textContent).toBe('');
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('keeps the existing full lifecycle card path in landscape', async () => {
+    const offer = freeEgg('landscape-lifecycle', {
+      timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }
+    });
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: {
+        hatchDurationMs: 90_000,
+        notificationDurationMs: 12_000,
+        portraitArenaVariant: 'classic'
+      },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: [offer]
+    });
+    try {
+      harness.socketHandlers.get('streammonsters:free_egg_public')({
+        eventId: 'landscape-lifecycle-public',
+        correlationId: offer.visualId,
+        eggStage: offer
+      });
+      for (let attempt = 0; attempt < 5; attempt += 1) await flush();
+
+      expect(harness.dom.window.document.getElementById('card').classList)
+        .toContain('visible');
+      expect(harness.dom.window.document.getElementById('card').dataset.presentation)
+        .toBe('egg-offer');
+      const notice = harness.dom.window.document.getElementById(
+        'egg-lifecycle-notice'
+      );
+      expect(notice).not.toBeNull();
+      if (!notice) return;
+      expect(notice.hidden).toBe(true);
+    } finally {
+      await harness.close();
+    }
+  });
+
   test('routes rivalry, READY and streak sockets through the shared arena director once', async () => {
     const harness = await createOverlayHarness({
       hype: { points: 0 },
@@ -398,11 +563,8 @@ describe('Stream Monsters egg overlay state reliability', () => {
       expect(hint.textContent).not.toMatch(/^NEXT\b/i);
       expect(hint.textContent.trim()).not.toBe('');
       expect(hint.dataset.eggNext).toBeUndefined();
-      const persistent = harness.dom.window.document.getElementById(
-        'egg-next-persistent'
-      );
-      expect(persistent.hidden).toBe(true);
-      expect(persistent.textContent).toBe('');
+      expect(harness.dom.window.document.getElementById('egg-next-persistent'))
+        .toBeNull();
     } finally {
       await harness.close();
     }
@@ -484,7 +646,7 @@ describe('Stream Monsters egg overlay state reliability', () => {
     }
   });
 
-  test('keeps the urgent adopt NEXT visible during an unrelated transient card and reconnect', async () => {
+  test('keeps urgent adopt guidance in the egg-focus rail during a transient card', async () => {
     const offer = freeEgg('offer-visible-next', {
       timing: { publicAtMs: 1_000, expiresAtMs: 31_000 }
     });
@@ -496,12 +658,16 @@ describe('Stream Monsters egg overlay state reliability', () => {
       eggStage: [offer]
     });
     try {
-      const persistent = harness.dom.window.document.getElementById(
-        'egg-next-persistent'
+      const focus = harness.dom.window.document.querySelector('[data-egg-focus]');
+      expect(focus.hidden).toBe(false);
+      expect(focus.querySelector('[data-egg-focus-command]').textContent).toBe('!adopt');
+      expect(harness.dom.window.document.getElementById('egg-next-persistent')).toBeNull();
+      const landscapeNext = harness.dom.window.document.querySelector(
+        '[data-egg-next-landscape]'
       );
-      expect(persistent).not.toBeNull();
-      expect(persistent.hidden).toBe(false);
-      expect(persistent.textContent).toContain('!adopt');
+      expect(landscapeNext).not.toBeNull();
+      expect(landscapeNext.hidden).toBe(false);
+      expect(landscapeNext.textContent).toContain('!adopt');
 
       harness.socketHandlers.get('streammonsters:achievement_unlocked')({
         eventId: 'unrelated-visible-card',
@@ -511,12 +677,11 @@ describe('Stream Monsters egg overlay state reliability', () => {
       });
       await flush();
 
-      const card = harness.dom.window.document.getElementById('card');
-      const hint = harness.dom.window.document.getElementById('hint');
-      expect(card.classList).toContain('visible');
-      expect(hint.textContent).toContain('!adopt');
-      expect(persistent.hidden).toBe(false);
-      expect(persistent.textContent).toContain('!adopt');
+      expect(harness.dom.window.document.getElementById('card').classList).toContain('visible');
+      expect(harness.dom.window.document.getElementById('hint').textContent).toContain('!adopt');
+      expect(focus.querySelector('[data-egg-focus-command]').textContent).toBe('!adopt');
+      expect(landscapeNext.hidden).toBe(false);
+      expect(landscapeNext.textContent).toContain('!adopt');
     } finally {
       await harness.close();
     }

@@ -132,6 +132,7 @@ class BattleMatchService {
     secondsPerLocale = 6,
     gameplayPace = 'arcade-rally',
     portraitBattleMode = 'takeover-74',
+    portraitArenaVariant = 'classic',
     sweepIntervalMs = RULES_V8_PACING.SERVICE_SWEEP_MS,
     autoStart = true
   }) {
@@ -166,6 +167,9 @@ class BattleMatchService {
     this.portraitBattleMode = portraitBattleMode === 'takeover-74'
       ? portraitBattleMode
       : 'takeover-74';
+    this.portraitArenaVariant = ['split-arena', 'classic'].includes(
+      portraitArenaVariant
+    ) ? portraitArenaVariant : 'classic';
     this.rulesV8Pacing = RULES_V8_PACING;
     this.sweepIntervalMs = Math.max(
       RULES_V8_PACING.SERVICE_SWEEP_MS,
@@ -207,16 +211,24 @@ class BattleMatchService {
     };
   }
 
-  setPresentationConfig({ gameplayPace, portraitBattleMode } = {}) {
+  setPresentationConfig({
+    gameplayPace,
+    portraitBattleMode,
+    portraitArenaVariant
+  } = {}) {
     this.gameplayPace = gameplayPace === 'arcade-rally'
       ? gameplayPace
       : 'arcade-rally';
     this.portraitBattleMode = portraitBattleMode === 'takeover-74'
       ? portraitBattleMode
       : 'takeover-74';
+    this.portraitArenaVariant = ['split-arena', 'classic'].includes(
+      portraitArenaVariant
+    ) ? portraitArenaVariant : 'classic';
     return {
       gameplayPace: this.gameplayPace,
-      portraitBattleMode: this.portraitBattleMode
+      portraitBattleMode: this.portraitBattleMode,
+      portraitArenaVariant: this.portraitArenaVariant
     };
   }
 
@@ -3319,6 +3331,7 @@ class BattleMatchService {
       rulesVersion: this.rulesVersion,
       gameplayPace: this.gameplayPace,
       portraitBattleMode: this.portraitBattleMode,
+      portraitArenaVariant: this.portraitArenaVariant,
       matches: matchIds.map(({ match_id: matchId }) => {
         const match = this.getMatch(matchId);
         const cursor = this.db.prepare(`

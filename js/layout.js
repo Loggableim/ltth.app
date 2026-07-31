@@ -340,10 +340,12 @@
         if (!toggle || !panel) return;
 
         const isMobile = () => window.innerWidth <= 767;
+        let openedByToggle = false;
 
-        function openMega() {
+        function openMega(byToggle = false) {
             mega.classList.add('open');
             toggle.setAttribute('aria-expanded', 'true');
+            openedByToggle = byToggle;
             mega.dispatchEvent(new Event('ltth:open'));
             // Position panel below navbar on desktop
             if (!isMobile()) {
@@ -361,13 +363,15 @@
             clearTimeout(closeTimer);
             mega.classList.remove('open');
             toggle.setAttribute('aria-expanded', 'false');
+            openedByToggle = false;
         }
 
         // Toggle on click (works for both desktop and mobile)
         toggle.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            mega.classList.contains('open') ? closeMega() : openMega();
+            if (mega.classList.contains('open') && openedByToggle) closeMega();
+            else openMega(true);
         });
 
         // Desktop: also open on hover; re-evaluated on resize (debounced + guarded)

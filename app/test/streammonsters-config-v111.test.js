@@ -152,7 +152,8 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
         1_800_000
       ],
       gameplayPace: 'arcade-rally',
-      portraitBattleMode: 'takeover-74'
+      portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'split-arena'
     }));
     expect(plugin.loadConfig({
       streamMonsters: { hatchDurationMs: 120_000 }
@@ -160,6 +161,28 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     expect(plugin.loadConfig({
       streamMonsters: { hatchDurationMs: 1_800_000 }
     }).streamMonsters.hatchDurationMs).toBe(1_800_000);
+  });
+
+  test('defaults only absent stored Stream Monsters config to the split arena', () => {
+    const plugin = new StreamAlchemyPlugin({
+      getConfig: jest.fn(),
+      setConfig: jest.fn()
+    });
+
+    expect(plugin.loadConfig({}).streamMonsters.portraitArenaVariant)
+      .toBe('split-arena');
+    expect(plugin.loadConfig({
+      streamMonsters: {}
+    }).streamMonsters.portraitArenaVariant).toBe('classic');
+    expect(plugin.loadConfig({
+      streamMonsters: { portraitArenaVariant: 'unknown' }
+    }).streamMonsters.portraitArenaVariant).toBe('classic');
+    expect(plugin.loadConfig({
+      streamMonsters: { portraitArenaVariant: 'split-arena' }
+    }).streamMonsters.portraitArenaVariant).toBe('split-arena');
+    expect(plugin.loadConfig({
+      streamMonsters: { portraitArenaVariant: 'classic' }
+    }).streamMonsters.portraitArenaVariant).toBe('classic');
   });
 
   test.each([75_000, 240_000])(
@@ -290,6 +313,61 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     expect(plugin.loadConfig(saved)).toEqual(reloaded);
   });
 
+  test.each([
+    ['missing', {}],
+    ['invalid', { portraitArenaVariant: 'wide' }]
+  ])('migrates an existing %s arena variant to classic exactly once', (_label, legacyVariant) => {
+    let saved = null;
+    const plugin = new StreamAlchemyPlugin({
+      getConfig: jest.fn(),
+      setConfig: (_key, value) => {
+        saved = value;
+      }
+    });
+    const legacy = {
+      streamMonsters: {
+        hatchDurationMs: 120_000,
+        ...legacyVariant
+      }
+    };
+
+    plugin.config = plugin.loadConfig(legacy);
+    expect(plugin.config.streamMonsters.portraitArenaVariant).toBe('classic');
+    expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
+    expect(saved.streamMonsters.portraitArenaVariant).toBe('classic');
+
+    plugin.config = plugin.loadConfig(saved);
+    expect(plugin.persistSanitizedConfigIfNeeded(saved)).toBe(false);
+  });
+
+  test('persists arena variant changes through partial admin updates', async () => {
+    const subject = createConfigRouteSubject();
+    const postConfig = async body => {
+      const result = response();
+      await subject.find('POST', '/api/streammonsters/config')(
+        localRequest(body),
+        result
+      );
+      return result;
+    };
+
+    let result = await postConfig({ portraitArenaVariant: 'split-arena' });
+    expect(result.statusCode).toBe(200);
+    expect(subject.persisted().streamMonsters.portraitArenaVariant)
+      .toBe('split-arena');
+
+    result = await postConfig({ notificationDurationMs: 10_000 });
+    expect(result.statusCode).toBe(200);
+    expect(subject.persisted().streamMonsters.portraitArenaVariant)
+      .toBe('split-arena');
+
+    result = await postConfig({ portraitArenaVariant: 'classic' });
+    expect(result.statusCode).toBe(200);
+    expect(result.payload.config.portraitArenaVariant).toBe('classic');
+    expect(subject.routes.publicConfig(subject.plugin.config.streamMonsters)
+      .portraitArenaVariant).toBe('classic');
+  });
+
   test('accepts canonical enums and 90 seconds through the real admin route and reloads them', async () => {
     const subject = createConfigRouteSubject({
       streamMonsters: { hatchDurationMs: 120_000 }
@@ -322,7 +400,11 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
   test.each([
     [{ gameplayPace: 'cinematic' }, 'STREAM_MONSTERS_GAMEPLAY_PACE_INVALID'],
     [{ portraitBattleMode: 'fullscreen' }, 'STREAM_MONSTERS_PORTRAIT_BATTLE_MODE_INVALID'],
-    [{ portraitBattleMode: false }, 'STREAM_MONSTERS_PORTRAIT_BATTLE_MODE_INVALID']
+    [{ portraitBattleMode: false }, 'STREAM_MONSTERS_PORTRAIT_BATTLE_MODE_INVALID'],
+    [{ portraitArenaVariant: 'wide' }, 'STREAM_MONSTERS_PORTRAIT_ARENA_VARIANT_INVALID'],
+    [{ portraitArenaVariant: null }, 'STREAM_MONSTERS_PORTRAIT_ARENA_VARIANT_INVALID'],
+    [{ portraitArenaVariant: true }, 'STREAM_MONSTERS_PORTRAIT_ARENA_VARIANT_INVALID'],
+    [{ portraitArenaVariant: false }, 'STREAM_MONSTERS_PORTRAIT_ARENA_VARIANT_INVALID']
   ])('rejects malformed canonical configuration through the real route', async (body, error) => {
     const subject = createConfigRouteSubject();
     const res = response();
@@ -354,6 +436,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       rulesVersion: 8,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'split-arena',
       autoStart: false
     });
     const routes = new StreamMonstersRoutes({
@@ -368,17 +451,32 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     expect(routes.publicConfig({
       enabled: true,
       gameplayPace: 'arcade-rally',
-      portraitBattleMode: 'takeover-74'
+      portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'split-arena'
     })).toEqual(expect.objectContaining({
       hatchDurationMs: 90_000,
       gameplayPace: 'arcade-rally',
-      portraitBattleMode: 'takeover-74'
+      portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'split-arena'
     }));
     expect(service.getPublicSnapshot()).toEqual(expect.objectContaining({
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'split-arena',
       matches: []
     }));
+
+    const plugin = new StreamAlchemyPlugin({
+      getConfig: jest.fn(),
+      setConfig: jest.fn()
+    });
+    plugin.config = plugin.loadConfig({});
+    plugin.streamMonstersBattleMatchService = service;
+    plugin.updateConfig({
+      streamMonsters: { portraitArenaVariant: 'classic' }
+    });
+    expect(service.getPublicSnapshot().portraitArenaVariant).toBe('classic');
+
     service.destroy();
     sqlite.close();
   });

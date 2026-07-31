@@ -204,6 +204,9 @@ class StreamMonstersRoutes {
           rulesVersion: this.currentRulesVersion(config),
           gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
           portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
+          portraitArenaVariant: this.normalizePortraitArenaVariant(
+            config.portraitArenaVariant
+          ),
           matches: []
         },
         recentEvents,
@@ -216,6 +219,9 @@ class StreamMonstersRoutes {
         rulesVersion: this.currentRulesVersion(config),
         gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
         portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
+        portraitArenaVariant: this.normalizePortraitArenaVariant(
+          config.portraitArenaVariant
+        ),
         matches: []
       };
       res.json({ success: true, ...snapshot });
@@ -248,6 +254,9 @@ class StreamMonstersRoutes {
         rulesVersion: this.currentRulesVersion(config),
         gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
         portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
+        portraitArenaVariant: this.normalizePortraitArenaVariant(
+          config.portraitArenaVariant
+        ),
         matches: []
       };
       res.json({
@@ -1456,6 +1465,12 @@ class StreamMonstersRoutes {
     ) {
       throw new Error('STREAM_MONSTERS_PORTRAIT_BATTLE_MODE_INVALID');
     }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'portraitArenaVariant') &&
+      !['split-arena', 'classic'].includes(input.portraitArenaVariant)
+    ) {
+      throw new Error('STREAM_MONSTERS_PORTRAIT_ARENA_VARIANT_INVALID');
+    }
   }
 
   getEggRepairPlan() {
@@ -1770,6 +1785,9 @@ class StreamMonstersRoutes {
     if (input.portraitBattleMode === true || input.portraitBattleMode === 'takeover-74') {
       safe.portraitBattleMode = 'takeover-74';
     }
+    if (['split-arena', 'classic'].includes(input.portraitArenaVariant)) {
+      safe.portraitArenaVariant = input.portraitArenaVariant;
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'overlayProfiles')) {
       safe.overlayProfiles = fixedOverlayProfiles();
     }
@@ -1955,6 +1973,10 @@ class StreamMonstersRoutes {
     return value === 'takeover-74' ? value : 'takeover-74';
   }
 
+  normalizePortraitArenaVariant(value) {
+    return ['split-arena', 'classic'].includes(value) ? value : 'classic';
+  }
+
   publicConfig(config = {}, { includeCreator = false } = {}) {
     const result = {
       enabled: Boolean(config.enabled),
@@ -1971,6 +1993,9 @@ class StreamMonstersRoutes {
       ],
       gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
       portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
+      portraitArenaVariant: this.normalizePortraitArenaVariant(
+        config.portraitArenaVariant
+      ),
       eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(
         Number(config.eggExpiryMs)
       ) ? Number(config.eggExpiryMs) : 86_400_000,

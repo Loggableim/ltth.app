@@ -23,6 +23,7 @@
   "defaults": {
     "hatchDurationMs": 90000,
     "portraitBattleMode": "takeover-74",
+    "portraitArenaVariant": "split-arena",
     "portraitProfile": "tiktok-live-studio-1080x1920"
   },
   "locales": [
@@ -36,6 +37,15 @@
   const PUBLIC_CATALOG = window.STREAM_MONSTERS_PUBLIC_CATALOG || {
     templates: []
   };
+  const RULES_V8_PACING = window.StreamMonstersRulesV8Pacing;
+  if (!RULES_V8_PACING) {
+    throw new Error('Stream Monsters Rules v8 pacing source is required');
+  }
+  const RULES_V8_SECONDS = Object.freeze({
+    roster: RULES_V8_PACING.ROSTER_MS / 1000,
+    skill: RULES_V8_PACING.SKILL_CHOICE_MS / 1000,
+    stat: RULES_V8_PACING.STAT_CHOICE_MS / 1000
+  });
   const ELEMENTS = {
     Ember: { color: '#ff765e' },
     Tide: { color: '#57c9ff' },
@@ -68,6 +78,7 @@
   const RULES_V8_COPY = {
     de: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel}: zwei Spieler, echte Entscheidungen`,
+      arenaLead: 'Portrait-Overlay: Status, klare A / B / C-Wahl, kompaktes Ergebnis. Die unteren 26 % bleiben für TikTok-Chat und Kamera reserviert.',
       subscription: PRODUCT_PROJECTION.access.description.de,
       rulesCards: [
         ['🥚', 'Brut & Auto-Hatch', 'Standard: 90 Sekunden. Presets: 30 Sek., 1 Min., 90 Sek., 2 Min., 5 Min., 10 Min. oder 30 Min. Auto-Hatch ist standardmäßig aktiv und brütet bereite Eier für Zuschauer mit Aktivität in den letzten 300 Sekunden automatisch aus.'],
@@ -76,9 +87,9 @@
       ],
       arenaSteps: [
         ['1 · Match', '!battle paart nach Arena-Wertung und Monsterlevel. Nach 30 Sekunden erweitert sich die Suche.'],
-        ['2 · Monster wählen', 'Beide haben 8 Sekunden für !choose &lt;slot&gt;. Ohne Wahl wird das aktive Monster verwendet.'],
-        ['3 · Skills versiegeln', 'Je Runde: A Angriff, B Verteidigung, C Special. Die Skillwahl dauert 6 Sekunden bei einer Sprache und 10 Sekunden bei zwei Sprachen. Die erste Wahl bleibt bis zur gemeinsamen Aufdeckung geheim.'],
-        ['4 · Werte & Special', 'Eine neue Statwahl dauert 10 Sekunden. Special lädt passiv mit 5 Prozentpunkten pro Sekunde, höchstens 30 % pro Runde. C ist bei 100 % verfügbar.'],
+        ['2 · Monster wählen', `Beide haben ${RULES_V8_SECONDS.roster} Sekunden für !choose &lt;slot&gt;. Ohne Wahl wird das aktive Monster verwendet.`],
+        ['3 · Skills versiegeln', `Je Runde: A Angriff, B Verteidigung, C Special. Die Skillwahl dauert ${RULES_V8_SECONDS.skill} Sekunden. Die erste Wahl bleibt bis zur gemeinsamen Aufdeckung geheim.`],
+        ['4 · Werte & Special', `Eine neue Statwahl dauert ${RULES_V8_SECONDS.stat} Sekunden. Special lädt passiv mit 5 Prozentpunkten pro Sekunde, höchstens 30 % pro Runde. C ist bei 100 % verfügbar.`],
         ['5 · Arena Collapse', 'Ab Runde 5 verursacht Arena Collapse am Rundenende neutralen Schaden in Höhe Runde minus 4. Er ignoriert Schilde und kann nie K.-o. verursachen. Neue Schilde zählen zunächst halb, später nur zu 25 % und ab Runde 11 gar nicht.'],
         ['6 · Kampfende', 'Ein Kampf endet nur durch K.-o. oder Aufgabe – nie durch ein Rundenlimit.']
       ],
@@ -90,6 +101,7 @@
     },
     en: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel}: two players, real choices`,
+      arenaLead: 'Portrait overlay: status, clear A / B / C choice, compact result. The lower 26% stays reserved for TikTok chat and camera.',
       subscription: PRODUCT_PROJECTION.access.description.en,
       rulesCards: [
         ['🥚', 'Incubation & Auto-Hatch', 'Default: 90 seconds. Presets: 30 sec., 1 min., 90 sec., 2 min., 5 min., 10 min. or 30 min. Auto-Hatch is on by default and hatches ready eggs for viewers active within the last 300 seconds.'],
@@ -98,9 +110,9 @@
       ],
       arenaSteps: [
         ['1 · Match', '!battle matches by Arena Rating and monster level. The search widens after 30 seconds.'],
-        ['2 · Choose monster', 'Both players have 8 seconds for !choose &lt;slot&gt;. Without a choice, the active monster is used.'],
-        ['3 · Seal skills', 'Each round uses A attack, B defense or C special. Skill choice lasts 6 seconds with one language and 10 seconds with two languages. The first choice stays hidden until both reveal together.'],
-        ['4 · Stats & Special', 'A new stat choice lasts 10 seconds. Special charges passively by 5 percentage points per second, capped at 30% per round. C unlocks at 100%.'],
+        ['2 · Choose monster', `Both players have ${RULES_V8_SECONDS.roster} seconds for !choose &lt;slot&gt;. Without a choice, the active monster is used.`],
+        ['3 · Seal skills', `Each round uses A attack, B defense or C special. Skill choice lasts ${RULES_V8_SECONDS.skill} seconds. The first choice stays hidden until both reveal together.`],
+        ['4 · Stats & Special', `A new stat choice lasts ${RULES_V8_SECONDS.stat} seconds. Special charges passively by 5 percentage points per second, capped at 30% per round. C unlocks at 100%.`],
         ['5 · Arena Collapse', 'From round 5, Arena Collapse deals neutral end-of-round damage equal to round minus 4. It ignores shields and can never cause K.O. New shields are halved first, later fall to 25%, and reach zero from round 11.'],
         ['6 · Battle end', 'A battle ends only by K.O. or Forfeit, never by a round limit.']
       ],
@@ -112,6 +124,7 @@
     },
     es: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel}: dos jugadores, decisiones reales`,
+      arenaLead: 'Overlay vertical: estado, elección clara A / B / C y resultado compacto. El 26 % inferior queda reservado para el chat de TikTok y la cámara.',
       subscription: PRODUCT_PROJECTION.access.description.es,
       rulesCards: [
         ['🥚', 'Incubación y eclosión automática', 'Predeterminado: 90 segundos. Ajustes: 30 s, 1 min., 90 s, 2 min., 5 min., 10 min. o 30 min. La eclosión automática está activa por defecto para huevos listos de viewers con actividad durante los últimos 300 segundos.'],
@@ -120,9 +133,9 @@
       ],
       arenaSteps: [
         ['1 · Match', '!battle empareja por rating de arena y nivel. La búsqueda se amplía tras 30 segundos.'],
-        ['2 · Elige monstruo', 'Ambos jugadores tienen 8 segundos para !choose &lt;slot&gt;. Sin elección se usa el monstruo activo.'],
-        ['3 · Sella habilidades', 'Cada ronda usa A ataque, B defensa o C especial. La elección dura 6 segundos con un idioma y 10 segundos con dos. La primera elección permanece oculta hasta revelar ambas juntas.'],
-        ['4 · Estadísticas y especial', 'Una nueva elección de estadística dura 10 segundos. El especial carga pasivamente 5 puntos porcentuales por segundo, con un máximo de 30 % por ronda. C se activa al 100 %.'],
+        ['2 · Elige monstruo', `Ambos jugadores tienen ${RULES_V8_SECONDS.roster} segundos para !choose &lt;slot&gt;. Sin elección se usa el monstruo activo.`],
+        ['3 · Sella habilidades', `Cada ronda usa A ataque, B defensa o C especial. La elección dura ${RULES_V8_SECONDS.skill} segundos. La primera elección permanece oculta hasta revelar ambas juntas.`],
+        ['4 · Estadísticas y especial', `Una nueva elección de estadística dura ${RULES_V8_SECONDS.stat} segundos. El especial carga pasivamente 5 puntos porcentuales por segundo, con un máximo de 30 % por ronda. C se activa al 100 %.`],
         ['5 · Arena Collapse', 'Desde la ronda 5, Arena Collapse inflige al final daño neutral igual a ronda menos 4. Ignora escudos y nunca causa K.O. Los escudos nuevos cuentan primero a la mitad, después al 25 % y desde la ronda 11 a cero.'],
         ['6 · Fin del combate', 'El combate solo termina por K.O. o abandono, nunca por límite de rondas.']
       ],
@@ -134,6 +147,7 @@
     },
     fr: {
       arenaTitle: `${PRODUCT_PROJECTION.arenaLabel} : deux joueurs, de vrais choix`,
+      arenaLead: 'Overlay vertical : statut, choix A / B / C clair et résultat compact. Les 26 % inférieurs restent réservés au chat TikTok et à la caméra.',
       subscription: PRODUCT_PROJECTION.access.description.fr,
       rulesCards: [
         ['🥚', 'Incubation et éclosion automatique', 'Par défaut : 90 secondes. Réglages : 30 s, 1 min, 90 s, 2 min, 5 min, 10 min ou 30 min. L’éclosion automatique est active par défaut pour les œufs prêts des viewers actifs durant les 300 dernières secondes.'],
@@ -142,9 +156,9 @@
       ],
       arenaSteps: [
         ['1 · Match', '!battle associe selon le rating d’arène et le niveau. La recherche s’élargit après 30 secondes.'],
-        ['2 · Choisis un monstre', 'Les deux joueurs ont 8 secondes pour !choose &lt;slot&gt;. Sans choix, le monstre actif est utilisé.'],
-        ['3 · Scelle les compétences', 'Chaque manche utilise A attaque, B défense ou C spécial. Le choix dure 6 secondes avec une langue et 10 secondes avec deux. Le premier choix reste caché jusqu’à la révélation commune.'],
-        ['4 · Statistiques et spécial', 'Un nouveau choix de statistique dure 10 secondes. Le spécial charge passivement de 5 points de pourcentage par seconde, avec un maximum de 30 % par manche. C se débloque à 100 %.'],
+        ['2 · Choisis un monstre', `Les deux joueurs ont ${RULES_V8_SECONDS.roster} secondes pour !choose &lt;slot&gt;. Sans choix, le monstre actif est utilisé.`],
+        ['3 · Scelle les compétences', `Chaque manche utilise A attaque, B défense ou C spécial. Le choix dure ${RULES_V8_SECONDS.skill} secondes. Le premier choix reste caché jusqu’à la révélation commune.`],
+        ['4 · Statistiques et spécial', `Un nouveau choix de statistique dure ${RULES_V8_SECONDS.stat} secondes. Le spécial charge passivement de 5 points de pourcentage par seconde, avec un maximum de 30 % par manche. C se débloque à 100 %.`],
         ['5 · Arena Collapse', 'À partir de la manche 5, Arena Collapse inflige en fin de manche des dégâts neutres égaux à manche moins 4. Ils ignorent les boucliers et ne causent jamais de K.-O. Les nouveaux boucliers sont d’abord divisés par deux, puis passent à 25 %, et à zéro dès la manche 11.'],
         ['6 · Fin du combat', 'Le combat se termine uniquement par K.-O. ou abandon, jamais par une limite de manches.']
       ],
@@ -273,5 +287,7 @@
   }
   const params=new URLSearchParams(location.search);const lang=['de','en','es','fr'].includes(params.get('lang'))?params.get('lang'):(['de','en','es','fr'].includes(localStorage.getItem('ltthLanguage'))?localStorage.getItem('ltthLanguage'):(navigator.language||'de').slice(0,2));
   document.querySelectorAll('.sm-language button').forEach(button=>button.addEventListener('click',()=>{const next=button.dataset.lang;localStorage.setItem('ltthLanguage',next);const url=new URL(location.href);url.searchParams.set('lang',next);history.replaceState({},'',url);render(next);}));render(lang);
-  document.addEventListener('DOMContentLoaded',async()=>{if(window.LTTHLayout)await window.LTTHLayout.init();});
+  const initializeLayout=async()=>{if(window.LTTHLayout)await window.LTTHLayout.init();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeLayout,{once:true});
+  else initializeLayout();
 })();

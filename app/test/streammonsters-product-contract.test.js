@@ -63,6 +63,7 @@ describe('Stream Monsters product contract', () => {
     expect(contract.defaults).toEqual(expect.objectContaining({
       hatchDurationMs: 90_000,
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'split-arena',
       portraitProfile: 'tiktok-live-studio-1080x1920'
     }));
     expect(contract.locales).toEqual(['de', 'en', 'es', 'fr']);
@@ -87,6 +88,7 @@ describe('Stream Monsters product contract', () => {
     try {
       contract.defaults.hatchDurationMs = 91_234;
       contract.defaults.portraitBattleMode = 'contract-test-mode';
+      contract.defaults.portraitArenaVariant = 'contract-test-variant';
       delete require.cache[pluginPath];
       const StreamAlchemyPlugin = require(pluginPath);
       const plugin = new StreamAlchemyPlugin({ pluginDir: path.dirname(pluginPath) });
@@ -94,6 +96,7 @@ describe('Stream Monsters product contract', () => {
 
       expect(fresh.hatchDurationMs).toBe(91_234);
       expect(fresh.portraitBattleMode).toBe('contract-test-mode');
+      expect(fresh.portraitArenaVariant).toBe('contract-test-variant');
       expect(fresh.rulesVersion).toBe(8);
     } finally {
       Object.assign(contract.defaults, original);
