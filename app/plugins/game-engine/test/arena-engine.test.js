@@ -5319,7 +5319,7 @@ describe('ArenaGame', () => {
     expect(Array.from(arena.food.values()).every(food => food.source === 'death-drop')).toBe(true);
   });
 
-  it('scales large absorb reward growth beyond 400 mass under the 666 cap', () => {
+  it('scales large growth beyond 400 mass under the 666 cap', () => {
     function resolveAbsorb(maxMass) {
       const { arena } = createArena({
         maxMass,
@@ -5370,8 +5370,8 @@ describe('ArenaGame', () => {
     Object.assign(predator, {
       x: 720,
       y: 420,
-      mass: 235,
-      lives: arena._massToLives(235, config),
+      mass: 600,
+      lives: arena._massToLives(600, config),
       vx: 1,
       vy: 0,
       weapon: null,
@@ -5420,8 +5420,8 @@ describe('ArenaGame', () => {
     Object.assign(predator, {
       x: 720,
       y: 420,
-      mass: 145,
-      lives: arena._massToLives(145, config),
+      mass: 400,
+      lives: arena._massToLives(400, config),
       vx: 1,
       vy: 0,
       weapon: null,

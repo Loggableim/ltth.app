@@ -3658,7 +3658,7 @@ class ArenaGame {
     const maxMass = Math.max(1, Number(config.maxMass) || DEFAULT_CONFIG.maxMass);
     const predatorMass = this._clamp(Number(player.mass) || Number(config.baseMass) || DEFAULT_CONFIG.baseMass, config.minMass, maxMass);
     const preyMass = Math.max(1, Number(other.mass) || Number(config.baseMass) || DEFAULT_CONFIG.baseMass);
-    const balanceCap = Math.min(maxMass, 260);
+    const balanceCap = maxMass;
     const dominance = this._clamp((predatorMass - balanceCap * 0.46) / Math.max(1, balanceCap * 0.42), 0, 1);
     const capPressure = this._clamp((predatorMass - balanceCap * 0.82) / Math.max(1, balanceCap * 0.18), 0, 1);
     const preyGap = this._clamp((predatorMass / preyMass - 1.7) / 3.5, 0, 1);
