@@ -157,15 +157,16 @@ describe('Stream Monsters 1.11 living shelf animation lifecycle', () => {
     expect(afterMotion).toEqual(beforeMotion);
   });
 
-  test('uses responsive visible capacity so countdown chips cannot crowd narrow shelves', () => {
-    expect(EggStageView.visibleCapacity(477)).toBeLessThan(8);
-    expect(EggStageView.visibleCapacity(1_080)).toBe(8);
+  test('keeps the lower egg rail at six cards and changes complete pages', () => {
+    expect(EggStageView.visibleCapacity(477)).toBe(6);
+    expect(EggStageView.visibleCapacity(1_080)).toBe(6);
 
     const narrow = EggStageView.buildShelfModel(
       Array.from({ length: 9 }, (_, index) => egg(`egg-${index}`)),
       { maxVisible: EggStageView.visibleCapacity(477) }
     );
     expect(narrow.visible).toHaveLength(EggStageView.visibleCapacity(477));
-    expect(narrow.overflow?.label).toBe(`+${9 - narrow.visible.length}`);
+    expect(narrow.pageCount).toBe(2);
+    expect(narrow.overflow).toBeNull();
   });
 });

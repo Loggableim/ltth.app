@@ -314,7 +314,8 @@ describe('Stream Monsters plugin integration', () => {
     plugin.updateConfig({
       streamMonsters: {
         autoHatchActiveViewers: false,
-        autoHatchActiveWindowSeconds: 30
+        autoHatchActiveWindowSeconds: 30,
+        unhatchedEggStealActivityWindowSeconds: 30
       }
     });
     expect(plugin.streamMonstersEngine.config).toEqual(expect.objectContaining({
@@ -326,17 +327,21 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersViewerActivity).toBeNull();
   });
 
-  test('runs owned-ready rescue after owner auto-hatch and keeps config dependencies synced', async () => {
+  test('runs the separate inactive-egg steal service after forced owner auto-hatch', async () => {
     const { api } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
 
-    expect(plugin.config.streamMonsters.ownedReadyEggRescueGraceSeconds).toBe(600);
-    expect(plugin.streamMonstersOwnedReadyEggRescues).toBeDefined();
-    expect(plugin.streamMonstersChatCommands.ownedReadyEggRescueService)
-      .toBe(plugin.streamMonstersOwnedReadyEggRescues);
-    expect(plugin.streamMonstersRoutes.ownedReadyEggRescueService)
-      .toBe(plugin.streamMonstersOwnedReadyEggRescues);
+    expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
+      unhatchedEggStealEnabled: true,
+      unhatchedEggStealGraceSeconds: 600,
+      unhatchedEggStealActivityWindowSeconds: 300
+    }));
+    expect(plugin.streamMonstersUnhatchedEggSteals).toBeDefined();
+    expect(plugin.streamMonstersChatCommands.unhatchedEggStealService)
+      .toBe(plugin.streamMonstersUnhatchedEggSteals);
+    expect(plugin.streamMonstersRoutes.unhatchedEggStealService)
+      .toBe(plugin.streamMonstersUnhatchedEggSteals);
 
     const order = [];
     jest.spyOn(plugin.streamMonstersEngine, 'markReadyEggs')
@@ -351,12 +356,12 @@ describe('Stream Monsters plugin integration', () => {
       });
     jest.spyOn(plugin.streamMonstersStore, 'getReadyEggs')
       .mockReturnValue([{ egg_id: 'remaining-ready' }]);
-    jest.spyOn(plugin.streamMonstersOwnedReadyEggRescues, 'observeReadyEgg')
+    jest.spyOn(plugin.streamMonstersUnhatchedEggSteals, 'observeReadyEgg')
       .mockImplementation(() => {
         order.push('observe');
         return null;
       });
-    jest.spyOn(plugin.streamMonstersOwnedReadyEggRescues, 'sweep')
+    jest.spyOn(plugin.streamMonstersUnhatchedEggSteals, 'sweep')
       .mockImplementation(() => {
         order.push('sweep');
         return { published: [], closed: [] };
@@ -367,10 +372,16 @@ describe('Stream Monsters plugin integration', () => {
 
     plugin.updateConfig({
       streamMonsters: {
-        ownedReadyEggRescueGraceSeconds: 60
+        unhatchedEggStealGraceSeconds: 60,
+        unhatchedEggStealActivityWindowSeconds: 45
       }
     });
-    expect(plugin.streamMonstersOwnedReadyEggRescues.graceSeconds).toBe(60);
+    expect(plugin.streamMonstersUnhatchedEggSteals.getConfig()).toEqual(
+      expect.objectContaining({
+        unhatchedEggStealGraceSeconds: 60,
+        unhatchedEggStealActivityWindowSeconds: 45
+      })
+    );
     await plugin.destroy();
   });
 

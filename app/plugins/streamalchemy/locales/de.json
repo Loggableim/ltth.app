@@ -395,6 +395,10 @@
           "eggLifecycleRescuePublicCopy": "Adoptiere es mit {{command}}, bevor der Verfalls-Timer null erreicht.",
           "eggLifecycleRescueClaimedTitle": "Brutbereites Ei gerettet",
           "eggLifecycleRescueClaimedCopy": "Dasselbe Ei gehört jetzt dem Retter und kann sofort ausgebrütet werden.",
+          "eggLifecycleStealPublicTitle": "Herrenloses Ready-Ei",
+          "eggLifecycleStealPublicCopy": "Der Besitzer ist inaktiv. Stehle das Ei mit {{command}}, bevor es verfällt.",
+          "eggLifecycleStealClaimedTitle": "Ready-Ei gestohlen",
+          "eggLifecycleStealClaimedCopy": "Das Ei liegt jetzt in deinem Inventar und kann sofort ausgebrütet werden.",
           "eggLifecycleWaitTitle": "Das Ei brütet noch",
           "eggLifecycleWaitCopy": "Noch {time} bis zum Schlüpfen.",
           "eggLifecycleWaitQueuedCopy": "Warteschlange #{position} · noch {time}.",
@@ -598,6 +602,10 @@
           "freeEggDropsEnabled": "Wiederkehrende Gratis-Eier",
           "freeEggCooldownSeconds": "Gratis-Ei-Cooldown (Sekunden)",
           "freeEggCooldownHelp": "Nach diesem Cooldown kann ein Viewer wieder ein persönliches Gratis-Ei-Angebot erhalten.",
+          "unhatchedEggStealEnabled": "Brutbereite Eier stehlbar machen",
+          "unhatchedEggStealGraceSeconds": "Ready-Frist bis Diebstahl (Sekunden)",
+          "unhatchedEggStealActivityWindowSeconds": "Aktivitätsfenster des Besitzers (Sekunden)",
+          "unhatchedEggStealHelp": "Aktive Besitzer lassen ihre brutbereiten Eier automatisch schlüpfen. Bei Inaktivität wird das Ei nach der Ready-Frist mit !steal freigegeben.",
           "ownedReadyEggRescueGraceSeconds": "Rettungsfrist für brutbereite Eier (Sekunden)",
           "ownedReadyEggRescueGraceHelp": "Nach dieser Frist kann ein nicht ausgebrütetes eigenes Ei bis zu seinem bestehenden Verfallszeitpunkt adoptiert werden. 0 deaktiviert die Funktion.",
           "autoHatchActiveViewers": "Aktive Zuschauer automatisch schlüpfen lassen",
@@ -611,6 +619,7 @@
           "eggShelfPublic": "Gratis · {command}",
           "eggShelfPublicCountdown": "Frei · {time} · {command}",
           "eggShelfRescuePublicCountdown": "Adoptierbar · {time} · {command}",
+          "eggShelfStealPublicCountdown": "Stehlbar · {time} · {command}",
           "eggShelfAdoptSummary": "{count} frei · nur berechtigt · {command}",
           "eggFocusOwner": "Besitzer: {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -630,6 +639,7 @@
           "eggCardReserved": "RESERVIERT FÜR {owner} · {command}",
           "eggCardPublic": "JETZT ADOPTIEREN · {command}",
           "eggCardRescuePublic": "RETTUNG · JETZT ADOPTIEREN · {command}",
+          "eggCardStealPublic": "JETZT STEHLEN · {command}",
           "eggCardRot": "VERROTTET",
           "eggCardRotTimer": "VERROTTET IN {time}",
           "eggCardTimerUnavailable": "--:--",
@@ -688,6 +698,7 @@
           "cooldownNone": "keiner",
           "commandDisabled": "Befehl deaktiviert",
           "commandAdopt": "Gratis-Ei adoptieren",
+          "commandSteal": "Brutbereites Ei stehlen",
           "statusConnected": "Verbunden",
           "statusDisconnected": "Getrennt",
           "statusEnabled": "Aktiviert",
@@ -1090,7 +1101,9 @@
           "chatResultCommandDisabled": "Dieser Befehl ist derzeit deaktiviert.",
           "chatResultExecutionFailed": "Der Befehl konnte nicht abgeschlossen werden.",
           "chatResultUnknown": "Das Befehlsergebnis ist nicht verfügbar.",
-          "ownedReadyEggRescueClaimed": "Brutbereites Ei gerettet. Nutze {{command}}, bevor es verfällt."
+          "ownedReadyEggRescueClaimed": "Brutbereites Ei gerettet. Nutze {{command}}, bevor es verfällt.",
+          "stealOwnReadyEgg": "Brüte zuerst dein bereites Ei mit {{command}} {{slot}} aus.",
+          "unhatchedEggStealClaimed": "Ready-Ei gestohlen. Nutze {{command}}, bevor es verfällt."
         }
       }
     }

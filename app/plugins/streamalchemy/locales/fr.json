@@ -395,6 +395,10 @@
           "eggLifecycleRescuePublicCopy": "Adoptez-le avec {{command}} avant que le compte à rebours n’arrive à zéro.",
           "eggLifecycleRescueClaimedTitle": "Œuf prêt sauvé",
           "eggLifecycleRescueClaimedCopy": "Le même œuf appartient maintenant à son sauveteur et peut éclore immédiatement.",
+          "eggLifecycleStealPublicTitle": "Œuf prêt abandonné",
+          "eggLifecycleStealPublicCopy": "Son propriétaire est inactif. Volez-le avec {{command}} avant son expiration.",
+          "eggLifecycleStealClaimedTitle": "Œuf prêt volé",
+          "eggLifecycleStealClaimedCopy": "L’œuf est maintenant dans votre inventaire et peut éclore immédiatement.",
           "eggLifecycleWaitTitle": "L’œuf incube encore",
           "eggLifecycleWaitCopy": "Encore {time} avant l’éclosion.",
           "eggLifecycleWaitQueuedCopy": "File #{position} · encore {time}.",
@@ -598,6 +602,10 @@
           "freeEggDropsEnabled": "Œufs gratuits récurrents",
           "freeEggCooldownSeconds": "Délai de l’œuf gratuit (secondes)",
           "freeEggCooldownHelp": "Après ce délai, un spectateur peut recevoir une nouvelle offre personnelle d’œuf gratuit.",
+          "unhatchedEggStealEnabled": "Autoriser le vol des œufs prêts",
+          "unhatchedEggStealGraceSeconds": "Délai prêt avant vol (secondes)",
+          "unhatchedEggStealActivityWindowSeconds": "Fenêtre d’activité du propriétaire (secondes)",
+          "unhatchedEggStealHelp": "Les propriétaires actifs font éclore automatiquement leurs œufs prêts. L’œuf d’un propriétaire inactif devient disponible avec !steal après son délai prêt.",
           "ownedReadyEggRescueGraceSeconds": "Délai de sauvetage des œufs prêts (secondes)",
           "ownedReadyEggRescueGraceHelp": "Après ce délai, un œuf possédé non éclos peut être adopté jusqu’à son expiration actuelle. Utilisez 0 pour désactiver.",
           "autoHatchActiveViewers": "Éclosion automatique pour les spectateurs actifs",
@@ -611,6 +619,7 @@
           "eggShelfPublic": "Gratuit · {command}",
           "eggShelfPublicCountdown": "Libre · {time} · {command}",
           "eggShelfRescuePublicCountdown": "Adoptable · {time} · {command}",
+          "eggShelfStealPublicCountdown": "Volable · {time} · {command}",
           "eggShelfAdoptSummary": "{count} gratuits · éligibles uniquement · {command}",
           "eggFocusOwner": "Propriétaire : {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -630,6 +639,7 @@
           "eggCardReserved": "RÉSERVÉ À {owner} · {command}",
           "eggCardPublic": "ADOPTEZ MAINTENANT · {command}",
           "eggCardRescuePublic": "SAUVETAGE · ADOPTEZ MAINTENANT · {command}",
+          "eggCardStealPublic": "VOLEZ · {command}",
           "eggCardRot": "POURRI",
           "eggCardRotTimer": "POURRIT DANS {time}",
           "eggCardTimerUnavailable": "--:--",
@@ -688,6 +698,7 @@
           "cooldownNone": "aucun",
           "commandDisabled": "Commande désactivée",
           "commandAdopt": "Adopter un œuf gratuit",
+          "commandSteal": "Voler un œuf prêt",
           "statusConnected": "Connecté",
           "statusDisconnected": "Déconnecté",
           "statusEnabled": "Activé",
@@ -1090,7 +1101,9 @@
           "chatResultCommandDisabled": "Cette commande est actuellement désactivée.",
           "chatResultExecutionFailed": "La commande n’a pas pu être exécutée.",
           "chatResultUnknown": "Le résultat de la commande est indisponible.",
-          "ownedReadyEggRescueClaimed": "Œuf prêt sauvé. Utilisez {{command}} avant son expiration."
+          "ownedReadyEggRescueClaimed": "Œuf prêt sauvé. Utilisez {{command}} avant son expiration.",
+          "stealOwnReadyEgg": "Faites d’abord éclore votre œuf prêt avec {{command}} {{slot}}.",
+          "unhatchedEggStealClaimed": "Œuf prêt volé. Utilisez {{command}} avant son expiration."
         }
       }
     }

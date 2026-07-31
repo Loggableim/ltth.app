@@ -820,7 +820,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     }));
   });
 
-  test('orchestrates !adopt as personal free, rescue, then public free with retry safety', () => {
+  test('keeps !adopt limited to personal and public free eggs', () => {
     const calls = [];
     const freeEggDropService = {
       adopt: jest.fn(input => {
@@ -860,21 +860,19 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     expect(first).toEqual(expect.objectContaining({
       success: true,
       status: 'claimed',
-      rescueId: 'opaque-rescue'
+      offerId: 'public-free'
     }));
     expect(retry).toEqual(first);
     expect(calls).toEqual([
       'free:reserved',
-      'rescue',
+      'free:public',
       'free:reserved',
-      'rescue'
+      'free:public'
     ]);
-    expect(freeEggDropService.adopt).not.toHaveBeenCalledWith(
-      expect.objectContaining({ offerScope: 'public' })
-    );
+    expect(ownedReadyEggRescueService.adopt).not.toHaveBeenCalled();
   });
 
-  test('uses one real adoption receipt when a later personal offer appears after rescue', () => {
+  test('keeps a no-offer !adopt receipt terminal even if a personal offer arrives later', () => {
     const subject = createSubject({ graceSeconds: 1 });
     if (!subject) return;
     createReadyEgg(subject.store, {
@@ -930,14 +928,14 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     const replay = commands.execute(context, 'adopt');
 
     expect(first).toEqual(expect.objectContaining({
-      success: true,
-      adoptionSource: 'rescue'
+      success: false,
+      status: 'no_offer'
     }));
     expect(replay).toEqual(first);
     expect(subject.store.getFreeEggOffer('later-personal-offer')).toEqual(
       expect.objectContaining({ status: 'reserved' })
     );
-    expect(subject.store.getViewerEggs('rescuer-shared-receipt')).toHaveLength(1);
+    expect(subject.store.getViewerEggs('rescuer-shared-receipt')).toHaveLength(0);
     expect(subject.sqlite.prepare(`
       SELECT COUNT(*) AS count
       FROM streammonsters_free_egg_claims
@@ -1116,7 +1114,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     }));
   });
 
-  test('adds each public rescue once and keeps every claimed rescue out of reconnect snapshots', () => {
+  test('keeps legacy rescue rows out of the live reconnect snapshot contract', () => {
     const subject = createSubject({ graceSeconds: 1 });
     if (!subject) return;
     createReadyEgg(subject.store, {
@@ -1190,31 +1188,13 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     const publicIds = subject.service.listPublic(2_000)
       .map(stage => stage.visualId);
     expect(publicIds).toHaveLength(2);
-    publicIds.forEach(visualId => {
-      expect(publicState.eggStage.filter(stage => (
-        stage.visualId === visualId
-      ))).toEqual([
-        expect.objectContaining({
-          state: 'public',
-          adoptable: true
-        })
-      ]);
-      expect(creatorState.eggStage.filter(stage => (
-        stage.visualId === visualId
-      ))).toEqual([
-        expect.objectContaining({
-          state: 'public',
-          adoptable: true
-        })
-      ]);
-    });
+    expect(publicState.eggStage).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ state: 'public', adoptable: true })
+    ]));
+    expect(creatorState.eggStage).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ state: 'public', adoptable: true })
+    ]));
 
-    const claimedGiftVisualId = publicState.eggStage.find(stage => (
-      stage.provenance === 'gift' && stage.state === 'public'
-    )).visualId;
-    const claimedFreeVisualId = publicState.eggStage.find(stage => (
-      stage.provenance === 'free' && stage.state === 'public'
-    )).visualId;
     const giftClaim = subject.service.adopt({
       userId: 'rescuer-route-gift',
       eventId: 'route-gift-claim',
@@ -1227,14 +1207,12 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     });
     const claimedState = readState();
     const delayedReconnectState = readState();
-    for (const visualId of [claimedGiftVisualId, claimedFreeVisualId]) {
-      expect(claimedState.eggStage).not.toEqual(expect.arrayContaining([
-        expect.objectContaining({ visualId })
-      ]));
-      expect(delayedReconnectState.eggStage).not.toEqual(expect.arrayContaining([
-        expect.objectContaining({ visualId })
-      ]));
-    }
+    expect(claimedState.eggStage).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ state: 'public', adoptable: true })
+    ]));
+    expect(delayedReconnectState.eggStage).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ state: 'public', adoptable: true })
+    ]));
     for (const [claim, userId] of [
       [giftClaim, 'rescuer-route-gift'],
       [freeClaim, 'rescuer-route-free']
@@ -1251,23 +1229,32 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     }
   });
 
-  test('exposes and validates the 0..86400 rescue grace creator control', () => {
+  test('exposes and validates the steal timing creator controls', () => {
     const html = fs.readFileSync(path.join(
       __dirname,
       '../plugins/streamalchemy/streammonsters-ui.html'
     ), 'utf8');
-    expect(html).toContain('id="ownedReadyEggRescueGraceSeconds"');
+    expect(html).toContain('id="unhatchedEggStealGraceSeconds"');
+    expect(html).toContain('id="unhatchedEggStealActivityWindowSeconds"');
     expect(html).toContain('min="0" max="86400"');
 
     expect(CreatorRuntime.buildConfigPayload({
-      values: { ownedReadyEggRescueGraceSeconds: 60 }
+      values: {
+        unhatchedEggStealGraceSeconds: 60,
+        unhatchedEggStealActivityWindowSeconds: 30
+      }
     })).toEqual(expect.objectContaining({
-      ownedReadyEggRescueGraceSeconds: 60
+      unhatchedEggStealGraceSeconds: 60,
+      unhatchedEggStealActivityWindowSeconds: 30
     }));
     expect(CreatorRuntime.buildConfigPayload({
-      values: { ownedReadyEggRescueGraceSeconds: 100_000 }
+      values: {
+        unhatchedEggStealGraceSeconds: 100_000,
+        unhatchedEggStealActivityWindowSeconds: 29
+      }
     })).toEqual(expect.objectContaining({
-      ownedReadyEggRescueGraceSeconds: 600
+      unhatchedEggStealGraceSeconds: 600,
+      unhatchedEggStealActivityWindowSeconds: 300
     }));
   });
 

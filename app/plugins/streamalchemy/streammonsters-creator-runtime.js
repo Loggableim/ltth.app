@@ -27,6 +27,7 @@
   const COMMAND_ACTIONS = Object.freeze([
     'eggs',
     'adopt',
+    'steal',
     'hatch',
     'inventory',
     'monsters',
@@ -43,7 +44,7 @@
     Object.freeze({
       id: 'eggs',
       titleKey: 'commandGroupEggs',
-      commands: Object.freeze(['eggs', 'hatch', 'adopt'])
+      commands: Object.freeze(['eggs', 'hatch', 'adopt', 'steal'])
     }),
     Object.freeze({
       id: 'collection',
@@ -181,8 +182,9 @@
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
     const freeEggCooldownSeconds = Number(values.freeEggCooldownSeconds);
-    const ownedReadyEggRescueGraceSeconds = Number(
-      values.ownedReadyEggRescueGraceSeconds
+    const unhatchedEggStealGraceSeconds = Number(values.unhatchedEggStealGraceSeconds);
+    const unhatchedEggStealActivityWindowSeconds = Number(
+      values.unhatchedEggStealActivityWindowSeconds
     );
     const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
     const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
@@ -238,12 +240,19 @@
         freeEggCooldownSeconds <= 31_536_000
         ? Math.round(freeEggCooldownSeconds)
         : 86_400,
-      ownedReadyEggRescueGraceSeconds:
-        Number.isFinite(ownedReadyEggRescueGraceSeconds) &&
-        ownedReadyEggRescueGraceSeconds >= 0 &&
-        ownedReadyEggRescueGraceSeconds <= 86_400
-          ? Math.round(ownedReadyEggRescueGraceSeconds)
+      unhatchedEggStealEnabled: values.unhatchedEggStealEnabled !== false,
+      unhatchedEggStealGraceSeconds:
+        Number.isFinite(unhatchedEggStealGraceSeconds) &&
+        unhatchedEggStealGraceSeconds >= 0 &&
+        unhatchedEggStealGraceSeconds <= 86_400
+          ? Math.round(unhatchedEggStealGraceSeconds)
           : 600,
+      unhatchedEggStealActivityWindowSeconds:
+        Number.isFinite(unhatchedEggStealActivityWindowSeconds) &&
+        unhatchedEggStealActivityWindowSeconds >= 30 &&
+        unhatchedEggStealActivityWindowSeconds <= 86_400
+          ? Math.round(unhatchedEggStealActivityWindowSeconds)
+          : 300,
       autoHatchActiveViewers: values.autoHatchActiveViewers !== false,
       autoHatchActiveWindowSeconds: Number.isFinite(autoHatchActiveWindowSeconds) &&
         autoHatchActiveWindowSeconds >= 30 &&
@@ -579,8 +588,8 @@
     )).length;
     return {
       total: eggs.length,
-      visible: Math.min(8, eggs.length),
-      overflow: Math.max(0, eggs.length - 8),
+      visible: Math.min(6, eggs.length),
+      overflow: Math.max(0, eggs.length - 6),
       publicFree,
       ready,
       incubating

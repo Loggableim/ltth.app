@@ -401,38 +401,26 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     }
   );
 
-  test('keeps the same overflow preview node across countdown ticks', () => {
+  test('keeps visible page nodes stable across countdown ticks', () => {
     const { dom, view, intervals, setNow } = shelfFixture();
     view.applySnapshot(Array.from({ length: 6 }, (_, index) => (
       egg(`egg-${index + 1}`)
     )));
 
-    const before = dom.window.document.querySelector(
-      '[data-egg-overflow] [data-egg-id]'
-    );
-    const countBefore = dom.window.document.querySelector(
-      '[data-egg-overflow-count]'
-    );
+    const before = dom.window.document.querySelector('[data-egg-id="egg-1"]');
     expect(before).not.toBeNull();
-    expect(countBefore).not.toBeNull();
 
     setNow(11_000);
     intervals.get(1_000)();
 
-    const after = dom.window.document.querySelector(
-      '[data-egg-overflow] [data-egg-id]'
-    );
-    const countAfter = dom.window.document.querySelector(
-      '[data-egg-overflow-count]'
-    );
+    const after = dom.window.document.querySelector('[data-egg-id="egg-1"]');
     expect(after).toBe(before);
-    expect(countAfter).toBe(countBefore);
     expect(after.classList.contains('landing')).toBe(false);
     view.destroy();
     dom.window.close();
   });
 
-  test('keeps 3-second landscape overflow and 5-second portrait focus rotations independent', () => {
+  test('rotates full six-card pages while leaving the portrait focus model independent', () => {
     const { dom, view, intervals } = shelfFixture();
     view.applySnapshot([
       egg('ready', { state: 'ready' }),
@@ -447,19 +435,16 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     ]);
     const focus = dom.window.document.querySelector('[data-egg-focus]');
     const beforeFocusId = focus.dataset.eggId;
-    const beforeOverflowId = dom.window.document.querySelector(
-      '[data-egg-overflow]'
-    ).dataset.previewEggId;
+    const firstPageIds = [...dom.window.document.querySelectorAll('[data-egg-id]')]
+      .map(item => item.dataset.eggId);
 
-    expect(intervals.has(3_000)).toBe(true);
     expect(intervals.has(5_000)).toBe(true);
-    intervals.get(3_000)();
-    expect(focus.dataset.eggId).toBe(beforeFocusId);
-    expect(dom.window.document.querySelector('[data-egg-overflow]').dataset.previewEggId)
-      .not.toBe(beforeOverflowId);
-
-    intervals.get(5_000)();
-    expect(focus.dataset.eggId).toBe('ready');
+    view.rotatePage();
+    const secondPageIds = [...dom.window.document.querySelectorAll('[data-egg-id]')]
+      .map(item => item.dataset.eggId);
+    expect(secondPageIds).not.toEqual(firstPageIds);
+    view.rotateFocus();
+    expect(focus.dataset.eggId).not.toBe(beforeFocusId);
     view.destroy();
     dom.window.close();
   });

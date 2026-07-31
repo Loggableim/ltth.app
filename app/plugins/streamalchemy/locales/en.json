@@ -395,6 +395,10 @@
           "eggLifecycleRescuePublicCopy": "Adopt it with {{command}} before the rot timer reaches zero.",
           "eggLifecycleRescueClaimedTitle": "Ready egg rescued",
           "eggLifecycleRescueClaimedCopy": "The same egg now belongs to its rescuer and is ready to hatch.",
+          "eggLifecycleStealPublicTitle": "Abandoned ready egg",
+          "eggLifecycleStealPublicCopy": "Its owner is inactive. Steal it with {{command}} before it expires.",
+          "eggLifecycleStealClaimedTitle": "Ready egg stolen",
+          "eggLifecycleStealClaimedCopy": "The egg is now in your inventory and can hatch immediately.",
           "eggLifecycleWaitTitle": "The egg is still incubating",
           "eggLifecycleWaitCopy": "{time} remains before it can hatch.",
           "eggLifecycleWaitQueuedCopy": "Queue #{position} · {time} remaining.",
@@ -598,6 +602,10 @@
           "freeEggDropsEnabled": "Recurring free eggs",
           "freeEggCooldownSeconds": "Free egg cooldown (seconds)",
           "freeEggCooldownHelp": "After this cooldown, a viewer can receive another personal free-egg offer.",
+          "unhatchedEggStealEnabled": "Allow ready-egg steals",
+          "unhatchedEggStealGraceSeconds": "Ready time before steal (seconds)",
+          "unhatchedEggStealActivityWindowSeconds": "Owner activity window (seconds)",
+          "unhatchedEggStealHelp": "Active owners hatch their ready eggs automatically. An inactive owner's egg becomes available with !steal after its ready time.",
           "ownedReadyEggRescueGraceSeconds": "Ready-egg rescue grace (seconds)",
           "ownedReadyEggRescueGraceHelp": "After this grace, an unhatched owned egg becomes adoptable until its existing expiry. Set 0 to disable.",
           "autoHatchActiveViewers": "Auto-hatch active viewers",
@@ -611,6 +619,7 @@
           "eggShelfPublic": "Free · {command}",
           "eggShelfPublicCountdown": "Free · {time} · {command}",
           "eggShelfRescuePublicCountdown": "Adoptable · {time} · {command}",
+          "eggShelfStealPublicCountdown": "Stealable · {time} · {command}",
           "eggShelfAdoptSummary": "{count} free · eligible only · {command}",
           "eggFocusOwner": "Owner: {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -630,6 +639,7 @@
           "eggCardReserved": "RESERVED FOR {owner} · {command}",
           "eggCardPublic": "ADOPT NOW · {command}",
           "eggCardRescuePublic": "GRACE · ADOPT NOW · {command}",
+          "eggCardStealPublic": "STEAL NOW · {command}",
           "eggCardRot": "ROTTEN",
           "eggCardRotTimer": "ROT IN {time}",
           "eggCardTimerUnavailable": "--:--",
@@ -688,6 +698,7 @@
           "cooldownNone": "none",
           "commandDisabled": "Command disabled",
           "commandAdopt": "Adopt a free egg",
+          "commandSteal": "Steal a ready egg",
           "statusConnected": "Connected",
           "statusDisconnected": "Disconnected",
           "statusEnabled": "Enabled",
@@ -1090,7 +1101,9 @@
           "chatResultCommandDisabled": "That command is currently disabled.",
           "chatResultExecutionFailed": "The command could not be completed.",
           "chatResultUnknown": "The command result is unavailable.",
-          "ownedReadyEggRescueClaimed": "Ready egg rescued. Use {{command}} before it expires."
+          "ownedReadyEggRescueClaimed": "Ready egg rescued. Use {{command}} before it expires.",
+          "stealOwnReadyEgg": "Hatch your ready egg first with {{command}} {{slot}}.",
+          "unhatchedEggStealClaimed": "Ready egg stolen. Use {{command}} before it expires."
         }
       }
     }

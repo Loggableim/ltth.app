@@ -460,6 +460,8 @@ streammonsters:free_egg_public
 streammonsters:free_egg_reserved
 streammonsters:owned_ready_egg_claimed
 streammonsters:owned_ready_egg_public
+streammonsters:unhatched_egg_steal_claimed
+streammonsters:unhatched_egg_steal_public
 streammonsters:gift_combo
 streammonsters:hatch_started
 streammonsters:hype_changed

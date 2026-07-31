@@ -24,7 +24,7 @@ function egg(visualId, overrides = {}) {
 }
 
 describe('Stream Monsters 1.10 living egg shelf', () => {
-  test('prioritizes public free offers, ready eggs, then incubating eggs in a stable 8 +N shelf', () => {
+  test('rotates complete six-egg pages so free, stealable and incubating eggs are never pinned', () => {
     const Shelf = loadShelf();
     const eggs = [
       ...Array.from({ length: 7 }, (_, index) => egg(`incubating-${index}`)),
@@ -41,26 +41,46 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
         state: 'public',
         adoptionStatus: 'public',
         adoptable: true
+      }),
+      egg('steal-a', {
+        provenance: 'gift',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        offerType: 'steal',
+        sourceOwnerDisplayName: 'Original Owner'
       })
     ];
 
-    const first = Shelf.buildShelfModel(eggs, { maxVisible: 8, rotationIndex: 0 });
-    const rotated = Shelf.buildShelfModel(eggs, { maxVisible: 8, rotationIndex: 1 });
+    const first = Shelf.buildShelfModel(eggs, { maxVisible: 6, rotationIndex: 0 });
+    const rotated = Shelf.buildShelfModel(eggs, { maxVisible: 6, rotationIndex: 1 });
 
     expect(first.visible.map(entry => entry.visualId).slice(0, 4)).toEqual([
       'public-a',
       'public-b',
+      'steal-a',
       'ready-a',
-      'ready-b'
     ]);
-    expect(first.visible).toHaveLength(8);
-    expect(first.overflow).toEqual(expect.objectContaining({
-      count: 3,
-      label: '+3',
-      preview: expect.objectContaining({ visualId: 'incubating-4' })
+    expect(first.visible).toHaveLength(6);
+    expect(first).toEqual(expect.objectContaining({
+      pageCount: 2,
+      pageIndex: 0,
+      overflow: null
     }));
-    expect(rotated.overflow.preview.visualId).toBe('incubating-5');
-    expect(Shelf.buildShelfModel(eggs, { maxVisible: 8, rotationIndex: 0 })).toEqual(first);
+    expect(rotated).toEqual(expect.objectContaining({
+      pageCount: 2,
+      pageIndex: 1
+    }));
+    expect(rotated.visible.map(entry => entry.visualId)).toEqual([
+      'incubating-1',
+      'incubating-2',
+      'incubating-3',
+      'incubating-4',
+      'incubating-5',
+      'incubating-6'
+    ]);
+    expect(rotated.visible.map(entry => entry.visualId)).not.toContain('public-a');
+    expect(Shelf.buildShelfModel(eggs, { maxVisible: 6, rotationIndex: 0 })).toEqual(first);
     expect(first.visible[0].motion).toEqual(
       Shelf.deterministicEggMotion('public-a', 0)
     );
@@ -307,7 +327,7 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(reduced.visible[0].motion.phase).toBe('settled');
   });
 
-  test('keeps the gold ring on an overflowing public egg without rendering a per-egg callout', () => {
+  test('keeps free-eggs highlighted when their complete page rotates into view', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
       <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
@@ -322,11 +342,10 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
       adoptionStatus: 'public',
       adoptable: true
     })));
-    const overflow = dom.window.document.querySelector('[data-egg-overflow]');
-
-    expect(overflow.querySelector('[data-adopt-callout]')).toBeNull();
-    expect(overflow.querySelector('.gold-ring')).not.toBeNull();
-    expect(overflow.querySelector('.gold-ring')).not.toBeNull();
+    expect(dom.window.document.querySelector('[data-adopt-callout]')).toBeNull();
+    expect(dom.window.document.querySelectorAll('.gold-ring')).toHaveLength(6);
+    view.rotatePage();
+    expect(dom.window.document.querySelectorAll('.gold-ring')).toHaveLength(3);
     view.destroy();
   });
 });

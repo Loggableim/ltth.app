@@ -15,6 +15,9 @@ function createCommands(options = {}) {
     engine,
     battleService: new BattleService({ store, now: () => now }),
     collection: options.collection || null,
+    freeEggDropService: options.freeEggDropService || null,
+    ownedReadyEggRescueService: options.ownedReadyEggRescueService || null,
+    unhatchedEggStealService: options.unhatchedEggStealService || null,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => now
   });
@@ -25,7 +28,7 @@ function createCommands(options = {}) {
     engine.processGift({ userId, giftId, giftName: `Gift ${giftId}`, coinValue: 1 });
     return engine.hatchReadyEggs(userId)[0];
   };
-  return { store, commands, emitted, hatch, setNow: value => { now = value; } };
+  return { store, engine, commands, emitted, hatch, setNow: value => { now = value; } };
 }
 
 describe('Stream Monsters chat commands', () => {
@@ -112,5 +115,58 @@ describe('Stream Monsters chat commands', () => {
     expect(commands.execute({ userId: 'viewer-b' }, 'inventory').status).toBe('inventory');
     expect(commands.execute({ userId: 'viewer-a' }, 'battle').status).toBe('queued');
     expect(commands.execute({ userId: 'viewer-b' }, 'battle').status).toBe('started');
+  });
+
+  test('keeps adopt limited to free eggs and routes steal to the separate service', () => {
+    const freeEggDropService = {
+      adopt: () => ({ success: false, status: 'no_offer' })
+    };
+    const ownedReadyEggRescueService = {
+      adopt: () => ({ success: true, status: 'claimed', adoptionSource: 'rescue' })
+    };
+    const unhatchedEggStealService = {
+      steal: () => ({ success: true, status: 'claimed', adoptionSource: 'steal' })
+    };
+    const { commands } = createCommands({
+      freeEggDropService,
+      ownedReadyEggRescueService,
+      unhatchedEggStealService
+    });
+
+    expect(commands.execute({ userId: 'viewer-a' }, 'adopt')).toEqual(
+      expect.objectContaining({ success: false, status: 'no_offer' })
+    );
+    expect(commands.execute({ userId: 'viewer-a' }, 'steal')).toEqual(
+      expect.objectContaining({ success: true, adoptionSource: 'steal' })
+    );
+  });
+
+  test('does not let a viewer steal while they still own a ready egg', () => {
+    const unhatchedEggStealService = { steal: jest.fn() };
+    const { store, engine, commands } = createCommands({ unhatchedEggStealService });
+    store.upsertGiftMapping({
+      giftId: 99,
+      giftName: 'Ready Gift',
+      element: 'Ember',
+      effect: 'spawn',
+      enabled: true
+    });
+    engine.processGift({
+      userId: 'ready-owner',
+      giftId: 99,
+      giftName: 'Ready Gift',
+      coinValue: 1
+    });
+    engine.markReadyEggs();
+
+    expect(commands.execute({ userId: 'ready-owner' }, 'steal')).toEqual(
+      expect.objectContaining({
+        success: false,
+        status: 'own_ready_egg',
+        messageKey: 'stealOwnReadyEgg',
+        params: expect.objectContaining({ command: '!hatch', slot: 1 })
+      })
+    );
+    expect(unhatchedEggStealService.steal).not.toHaveBeenCalled();
   });
 });

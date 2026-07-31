@@ -44,6 +44,7 @@ describe('Stream Monsters creator controls', () => {
     expect(COMMAND_ACTIONS).toEqual([
       'eggs',
       'adopt',
+      'steal',
       'hatch',
       'inventory',
       'monsters',
@@ -144,7 +145,9 @@ describe('Stream Monsters creator controls', () => {
       notificationDurationMs: 12_000,
       freeEggDropsEnabled: true,
       freeEggCooldownSeconds: 86_400,
-      ownedReadyEggRescueGraceSeconds: 600,
+      unhatchedEggStealEnabled: true,
+      unhatchedEggStealGraceSeconds: 600,
+      unhatchedEggStealActivityWindowSeconds: 300,
       autoHatchActiveViewers: true,
       autoHatchActiveWindowSeconds: 300,
       tutorialHintsEnabled: true,
@@ -158,6 +161,31 @@ describe('Stream Monsters creator controls', () => {
       audioChannels: { master: { enabled: true, volume: 0.8 } },
       giftMappingCustomized: true
     });
+  });
+
+  test('builds editable steal timing controls with safe defaults', () => {
+    expect(COMMAND_ACTIONS).toContain('steal');
+    expect(buildConfigPayload({
+      values: {
+        unhatchedEggStealEnabled: true,
+        unhatchedEggStealGraceSeconds: '780',
+        unhatchedEggStealActivityWindowSeconds: '120'
+      }
+    })).toEqual(expect.objectContaining({
+      unhatchedEggStealEnabled: true,
+      unhatchedEggStealGraceSeconds: 780,
+      unhatchedEggStealActivityWindowSeconds: 120
+    }));
+    expect(buildConfigPayload({
+      values: {
+        unhatchedEggStealGraceSeconds: '86401',
+        unhatchedEggStealActivityWindowSeconds: '29'
+      }
+    })).toEqual(expect.objectContaining({
+      unhatchedEggStealEnabled: true,
+      unhatchedEggStealGraceSeconds: 600,
+      unhatchedEggStealActivityWindowSeconds: 300
+    }));
   });
 
   test('saves a selected portrait arena variant and preserves a valid current selection when omitted', () => {

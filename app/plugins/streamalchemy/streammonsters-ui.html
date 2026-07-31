@@ -316,7 +316,7 @@
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveObsLabel">OBS</span><strong id="liveObs">configured</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.livePluginLabel">Plugin</span><strong id="livePlugin">enabled</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveQueueLabel">Egg queue</span><strong id="liveQueue">0</strong></div>
-      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveEggShelfLabel">Living egg shelf</span><strong id="liveEggShelf">0 / 8 · +0</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveEggShelfLabel">Living egg shelf</span><strong id="liveEggShelf">0 / 6 · +0</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveHypeLabel">Hype</span><strong id="liveHype">0%</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveBattleLabel">Battle phase</span><strong id="liveBattlePhase">idle</strong></div>
       <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveCountdownLabel">Countdown</span><strong id="liveCountdown">—</strong></div>
@@ -389,15 +389,14 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack"><option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry · bundled</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
-          <label><span data-i18n="plugins.streamalchemy.ui.monsters.ownedReadyEggRescueGraceSeconds">Ready-egg rescue grace (seconds)</span><input id="ownedReadyEggRescueGraceSeconds" type="number" min="0" max="86400" step="1" value="600"></label>
-          <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveViewers">Auto-hatch active viewers</span><input id="autoHatchActiveViewers" type="checkbox" checked></label>
-          <label><span data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveWindowSeconds">Auto-hatch active window (seconds)</span><input id="autoHatchActiveWindowSeconds" type="number" min="30" max="900" step="1" value="300"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealEnabled">Allow ready-egg steals</span><input id="unhatchedEggStealEnabled" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealGraceSeconds">Ready time before steal (seconds)</span><input id="unhatchedEggStealGraceSeconds" type="number" min="0" max="86400" step="1" value="600"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealActivityWindowSeconds">Owner activity window (seconds)</span><input id="unhatchedEggStealActivityWindowSeconds" type="number" min="30" max="86400" step="1" value="300"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
-        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.ownedReadyEggRescueGraceHelp">After this grace, an unhatched owned egg becomes adoptable until its existing expiry. Set 0 to disable.</p>
-        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.autoHatchActiveHelp">Ready owned eggs hatch only after the viewer has recently interacted in this stream.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealHelp">Active owners hatch their ready eggs automatically. An inactive owner's egg becomes available with !steal after its ready time.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
         <div id="presentationModeStatus" class="badge" role="status" aria-live="polite"></div>
         <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
@@ -459,6 +458,11 @@
           <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandAdopt">Adopt a free egg</strong><code data-command="adopt">!adopt</code></header>
           <div class="alias-fields"><label id="alias-adopt-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasAdoptEnabled" data-alias-command="adopt" data-alias-mode="enabled" value="adopt, adoptieren"></label><label id="alias-adopt-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasAdoptDisabled" data-alias-command="adopt" data-alias-mode="disabled" value="adoptar, adopter"></label></div>
           <div class="language-toggles"><label><input type="checkbox" data-alias-locale="adopt" data-locale="de" data-alias="adoptieren" checked>DE</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="en" data-alias="adopt" checked>EN</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="es" data-alias="adoptar">ES</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="fr" data-alias="adopter">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="steal">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandSteal">Steal a ready egg</strong><code data-command="steal">!steal</code></header>
+          <div class="alias-fields"><label id="alias-steal-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasStealEnabled" data-alias-command="steal" data-alias-mode="enabled" value="steal, stehlen"></label><label id="alias-steal-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasStealDisabled" data-alias-command="steal" data-alias-mode="disabled" value=""></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="steal" data-locale="de" data-alias="stehlen" checked>DE</label><label><input type="checkbox" data-alias-locale="steal" data-locale="en" data-alias="steal" checked>EN</label></div>
         </article>
         <article class="alias-row" data-command-alias="hatch">
           <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandHatch">Hatch</strong><code data-command="hatch">!hatch [slot]</code></header>
@@ -1152,6 +1156,7 @@
       rank:'commandRank',
       quests:'commandQuests',
       adopt:'commandAdopt',
+      steal:'commandSteal',
       monstershelp:'commandHelp'
     };
     const formatCooldown = milliseconds => {
@@ -1562,10 +1567,10 @@
         notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
         freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
         freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
-        ownedReadyEggRescueGraceSeconds:
-          byId('ownedReadyEggRescueGraceSeconds').value,
-        autoHatchActiveViewers:byId('autoHatchActiveViewers').checked,
-        autoHatchActiveWindowSeconds:byId('autoHatchActiveWindowSeconds').value,
+        unhatchedEggStealEnabled:byId('unhatchedEggStealEnabled').checked,
+        unhatchedEggStealGraceSeconds:byId('unhatchedEggStealGraceSeconds').value,
+        unhatchedEggStealActivityWindowSeconds:
+          byId('unhatchedEggStealActivityWindowSeconds').value,
         tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
         tutorialHintIntervalSeconds:byId('tutorialHintIntervalSeconds').value,
         overlayLanguage:collectOverlayLanguage(),
@@ -1701,13 +1706,13 @@
     byId('freeEggCooldownSeconds').value = String(
       state.config?.freeEggCooldownSeconds || 86400
     );
-    byId('ownedReadyEggRescueGraceSeconds').value = String(
-      state.config?.ownedReadyEggRescueGraceSeconds ?? 600
+    byId('unhatchedEggStealEnabled').checked =
+      state.config?.unhatchedEggStealEnabled !== false;
+    byId('unhatchedEggStealGraceSeconds').value = String(
+      state.config?.unhatchedEggStealGraceSeconds ?? 600
     );
-    byId('autoHatchActiveViewers').checked =
-      state.config?.autoHatchActiveViewers !== false;
-    byId('autoHatchActiveWindowSeconds').value = String(
-      state.config?.autoHatchActiveWindowSeconds || 300
+    byId('unhatchedEggStealActivityWindowSeconds').value = String(
+      state.config?.unhatchedEggStealActivityWindowSeconds || 300
     );
     byId('tutorialHintsEnabled').checked =
       state.config?.tutorialHintsEnabled !== false;
@@ -1804,7 +1809,7 @@
       liveQueue:String(view.queue),
       liveEggShelf:(() => {
         const shelf = creatorRuntime.buildEggShelfDiagnostics(liveState.eggStage);
-        return `${shelf.visible} / 8 · +${shelf.overflow} · ${shelf.publicFree} public`;
+        return `${shelf.visible} / 6 · +${shelf.overflow} · ${shelf.publicFree} public`;
       })(),
       liveHype:`${view.hype}%`,
       liveBattlePhase:localizedStatus(view.battlePhase),
@@ -1871,21 +1876,19 @@
   };
   const renderRetentionTimerWarning = () => {
     const cooldown = Number(byId('freeEggCooldownSeconds').value);
-    const rescueGrace = Number(
-      byId('ownedReadyEggRescueGraceSeconds').value
-    );
-    const activeWindow = Number(byId('autoHatchActiveWindowSeconds').value);
+    const stealGrace = Number(byId('unhatchedEggStealGraceSeconds').value);
+    const activityWindow = Number(byId('unhatchedEggStealActivityWindowSeconds').value);
     const interval = Number(byId('tutorialHintIntervalSeconds').value);
     const warning = byId('retentionTimerWarning');
     const invalid = !Number.isFinite(cooldown) ||
       cooldown < 60 ||
       cooldown > 31536000 ||
-      !Number.isFinite(rescueGrace) ||
-      rescueGrace < 0 ||
-      rescueGrace > 86400 ||
-      !Number.isFinite(activeWindow) ||
-      activeWindow < 30 ||
-      activeWindow > 900 ||
+      !Number.isFinite(stealGrace) ||
+      stealGrace < 0 ||
+      stealGrace > 86400 ||
+      !Number.isFinite(activityWindow) ||
+      activityWindow < 30 ||
+      activityWindow > 86400 ||
       !Number.isFinite(interval) ||
       interval < 60 ||
       interval > 300;
@@ -2002,9 +2005,9 @@
   for (const id of [
     'freeEggDropsEnabled',
     'freeEggCooldownSeconds',
-    'ownedReadyEggRescueGraceSeconds',
-    'autoHatchActiveViewers',
-    'autoHatchActiveWindowSeconds',
+    'unhatchedEggStealEnabled',
+    'unhatchedEggStealGraceSeconds',
+    'unhatchedEggStealActivityWindowSeconds',
     'tutorialHintsEnabled',
     'tutorialHintIntervalSeconds'
   ]) {

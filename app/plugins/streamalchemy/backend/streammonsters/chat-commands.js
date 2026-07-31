@@ -32,6 +32,7 @@ class ChatCommands {
     collection = null,
     freeEggDropService = null,
     ownedReadyEggRescueService = null,
+    unhatchedEggStealService = null,
     emit = () => {},
     now = () => Date.now(),
     queueTtlMs = 5 * 60 * 1000,
@@ -45,6 +46,7 @@ class ChatCommands {
     this.collection = collection;
     this.freeEggDropService = freeEggDropService;
     this.ownedReadyEggRescueService = ownedReadyEggRescueService;
+    this.unhatchedEggStealService = unhatchedEggStealService;
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
@@ -69,7 +71,7 @@ class ChatCommands {
     if (!userId) return { success: false, status: 'ignored' };
     if (![
       'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
-      'evolve', 'battle', 'leavebattle', 'rank', 'quests', 'adopt', 'monstershelp'
+      'evolve', 'battle', 'leavebattle', 'rank', 'quests', 'adopt', 'steal', 'monstershelp'
     ].includes(command)) {
       return { success: false, status: 'ignored' };
     }
@@ -84,6 +86,7 @@ class ChatCommands {
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
     if (command === 'evolve') return this.evolve(userId, commandArgs[0], context);
     if (command === 'adopt') return this.adopt(userId, context);
+    if (command === 'steal') return this.steal(userId, context);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
@@ -136,7 +139,7 @@ class ChatCommands {
   }
 
   adopt(userId, context = {}) {
-    if (!this.freeEggDropService && !this.ownedReadyEggRescueService) {
+    if (!this.freeEggDropService) {
       return {
         success: false,
         status: 'ignored'
@@ -203,18 +206,11 @@ class ChatCommands {
         message: 'You adopted a free egg. Check your eggs to follow incubation.'
       };
     }
-    const rescue = this.ownedReadyEggRescueService?.adopt(input) || {
-      success: false,
-      status: 'no_rescue'
-    };
-    if (rescue.success) {
-      return this.rescueAdoptionResult(rescue);
-    }
     const result = this.freeEggDropService?.adopt({
       ...input,
       offerScope: 'public',
       recordFailure: true
-    }) || rescue;
+    }) || { success: false, status: 'no_offer' };
     if (result.success) {
       return {
         ...result,
@@ -242,6 +238,77 @@ class ChatCommands {
       messageKey: 'ownedReadyEggRescueClaimed',
       params: { command: hatchCommand },
       message: `Ready egg rescued. Use ${hatchCommand} before it expires.`
+    };
+  }
+
+  steal(userId, context = {}) {
+    if (!this.unhatchedEggStealService) {
+      return { success: false, status: 'disabled', message: 'Egg steals are unavailable.' };
+    }
+    const readyEggs = this.store.getViewerEggs(userId, 'ready');
+    const hatchCommand = this.commandReference('hatch') || '!hatch';
+    if (readyEggs.length) {
+      const slot = this.store.getViewerEggs(userId)
+        .filter(egg => ['incubating', 'queued', 'ready'].includes(egg.state))
+        .findIndex(egg => egg.egg_id === readyEggs[0].egg_id) + 1;
+      return {
+        success: false,
+        status: 'own_ready_egg',
+        messageKey: 'stealOwnReadyEgg',
+        params: { command: hatchCommand, slot: Math.max(1, slot) },
+        message: `Hatch your ready egg first with ${hatchCommand} ${Math.max(1, slot)}.`
+      };
+    }
+    const rawData = context.rawData || {};
+    const displayName = [
+      context.nickname, rawData.nickname, context.displayName, rawData.displayName,
+      context.username, rawData.username, context.uniqueId, rawData.uniqueId
+    ].map(value => publicViewerName(value)).find(Boolean) || null;
+    const avatarRef = [
+      context.avatarRef, rawData.avatarRef, context.profilePictureUrl,
+      rawData.profilePictureUrl, context.avatarThumb, rawData.avatarThumb,
+      context.avatar, rawData.avatar
+    ].map(value => {
+      const candidate = String(value || '').trim();
+      if (/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(candidate)) {
+        return candidate;
+      }
+      return avatarProxyReference(candidate);
+    }).find(Boolean) || null;
+    const streamKey = this.engine.streamKey || 'offline';
+    const eventId = normalizeIngressEventId({
+      namespace: 'steal',
+      context,
+      rawData,
+      nowMs: this.now(),
+      fingerprint: {
+        streamKey,
+        userId,
+        message: rawData.comment || rawData.message || rawData.text || 'steal'
+      }
+    });
+    const result = this.unhatchedEggStealService.steal({
+      userId,
+      streamKey,
+      eventId,
+      displayName,
+      avatarRef,
+      nowMs: this.now()
+    });
+    if (result.success) {
+      const hatchReference = this.commandReference('hatch') || '!hatch';
+      return {
+        ...result,
+        messageKey: 'unhatchedEggStealClaimed',
+        params: { command: hatchReference },
+        message: `Ready egg stolen. Use ${hatchReference} before it expires.`
+      };
+    }
+    return {
+      ...result,
+      message: result.status === 'no_steal'
+        ? 'There is no stealable ready egg right now.'
+        : result.message || 'Egg steals are unavailable.'
     };
   }
 
