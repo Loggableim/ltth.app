@@ -288,9 +288,12 @@ describe('music-bot catalog', () => {
 
   it('loads canonical radio scoring inputs, linked artist spacing, and provider cooldowns together', () => {
     const { db, catalog } = createCatalog();
-    const track = { title: 'Radio score', artist: 'One & Two', provider: 'youtube', providerId: 'radio-score' };
+    const track = { title: 'Radio score', artist: 'One & Two', genres: ['Rock'], releaseYear: 1998, provider: 'youtube', providerId: 'radio-score' };
     const completed = catalog.recordCompleted(track, {
       id: 'radio-completed', finishedAt: 100, duration: 100, playedSeconds: 100, requestedBy: 'AutoDJ'
+    });
+    catalog.recordCompleted(track, {
+      id: 'radio-short-complete', finishedAt: 95, duration: 100, playedSeconds: 89, requestedBy: 'AutoDJ'
     });
     catalog.recordSkipped(track, {
       id: 'radio-skipped', finishedAt: 90, duration: 100, playedSeconds: 10, requestedBy: 'AutoDJ'
@@ -302,18 +305,27 @@ describe('music-bot catalog', () => {
       url: 'https://soundcloud.com/example/radio-score'
     });
     catalog.setFeedback(completed.song.id, 'up');
+    catalog.recordLivePreference(completed.song.id, 'more');
     catalog.recordSourceFailure(alternate.source.id, 'network', 1_000_000);
 
     expect(catalog.getRadioCandidates([completed.song.id], { now: 1_000_001 })).toEqual([
       expect.objectContaining({
         songId: completed.song.id,
         feedback: 'up',
-        completePlays: 1,
+        feedbackUpdatedAt: expect.any(Number),
+        completePlays: 2,
+        fullCompletions: 1,
         earlySkips: 1,
+        implicitEvidenceUpdatedAt: 100,
         lastPlayedAt: 100,
+        releaseYear: 1998,
+        genreAffinities: { rock: 1 },
+        genreAffinityUpdatedAt: { rock: expect.any(Number) },
+        radioAffinity: 1,
+        radioAffinityUpdatedAt: expect.any(Number),
         artists: [
-          expect.objectContaining({ name: 'One', affinity: 1, lastPlayedAt: 100 }),
-          expect.objectContaining({ name: 'Two', affinity: 1, lastPlayedAt: 100 })
+          expect.objectContaining({ name: 'One', affinity: 2, affinityUpdatedAt: expect.any(Number), lastPlayedAt: 100 }),
+          expect.objectContaining({ name: 'Two', affinity: 2, affinityUpdatedAt: expect.any(Number), lastPlayedAt: 100 })
         ],
         sources: expect.arrayContaining([
           expect.objectContaining({ provider: 'youtube', cooldownUntil: null }),
@@ -367,6 +379,31 @@ describe('music-bot catalog', () => {
         genreSource: 'manual',
         radioAffinity: 0
       })
+    ]);
+    db.close();
+  });
+
+  it('migrates legacy song metadata and exposes a valid release year to radio candidates', () => {
+    const { db, catalog } = createCatalog((legacyDb) => {
+      legacyDb.exec(`
+        CREATE TABLE plugin_music_bot_song_metadata (
+          song_id INTEGER PRIMARY KEY, album TEXT, normalized_album TEXT, bpm REAL, updated_at INTEGER NOT NULL
+        );
+        INSERT INTO plugin_music_bot_song_metadata (song_id, album, normalized_album, bpm, updated_at)
+        VALUES (42, 'Legacy Album', 'legacy album', 120, 100);
+      `);
+    });
+    const columns = db.prepare('PRAGMA table_info(plugin_music_bot_song_metadata)').all();
+    const resolved = catalog.resolveOrUpsert({
+      title: 'Decade Anchor', artist: 'Metadata Artist', upload_date: '20010405',
+      provider: 'youtube', providerId: 'decade-anchor'
+    });
+
+    expect(columns).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'release_year' })]));
+    expect(db.prepare('SELECT release_year AS releaseYear FROM plugin_music_bot_song_metadata WHERE song_id = 42').get())
+      .toEqual({ releaseYear: null });
+    expect(catalog.getRadioCandidates([resolved.song.id])).toEqual([
+      expect.objectContaining({ releaseYear: 2001 })
     ]);
     db.close();
   });
@@ -490,6 +527,103 @@ describe('music-bot catalog', () => {
     });
     expect(() => catalog.recordCompleted({}, { id: 'event-3' })).not.toThrow();
     expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_play_events').get().count).toBe(4);
+    db.close();
+  });
+
+  it('keeps streamer playlist ratings isolated and returns liked catalog seeds', () => {
+    const { db, catalog } = createCatalog();
+    const liked = catalog.resolveOrUpsert({
+      title: 'Streamer favourite', artist: 'Curator Artist', genres: ['Indie'],
+      provider: 'youtube', providerId: 'streamer-liked'
+    });
+    const disliked = catalog.resolveOrUpsert({
+      title: 'Streamer skip', artist: 'Other Artist', provider: 'youtube', providerId: 'streamer-disliked'
+    });
+    catalog.setFeedback(liked.song.id, 'down');
+
+    expect(catalog.setStreamerPlaylistFeedback(liked.song.id, 'up')).toMatchObject({
+      songId: liked.song.id,
+      state: 'up',
+      updatedAt: expect.any(Number)
+    });
+    expect(catalog.setStreamerPlaylistFeedback(disliked.song.id, 'down')).toMatchObject({
+      songId: disliked.song.id,
+      state: 'down'
+    });
+    expect(catalog.getFeedback(liked.song.id)).toMatchObject({ state: 'down' });
+    expect(catalog.getStreamerPlaylistFeedback(liked.song.id)).toMatchObject({ state: 'up' });
+    expect(catalog.getRadioCandidates([liked.song.id])).toEqual([
+      expect.objectContaining({ feedback: 'down', radioAffinity: 0 })
+    ]);
+    expect(catalog.listStreamerPlaylistLikedSeeds()).toEqual([
+      expect.objectContaining({
+        songId: liked.song.id,
+        title: 'Streamer favourite',
+        streamerPlaylistFeedback: 'up',
+        streamerPlaylistFeedbackUpdatedAt: expect.any(Number),
+        genres: ['indie'],
+        artists: [expect.objectContaining({ name: 'Curator Artist' })]
+      })
+    ]);
+    expect(catalog.setStreamerPlaylistFeedback(liked.song.id, 'up')).toMatchObject({ state: 'neutral' });
+    expect(catalog.listStreamerPlaylistLikedSeeds()).toEqual([]);
+    expect(db.prepare('SELECT state FROM plugin_music_bot_feedback WHERE song_id = ?').get(liked.song.id))
+      .toEqual({ state: -1 });
+    db.close();
+  });
+
+  it('persists, enriches, and transitions isolated streamer playlist suggestions', () => {
+    const { db, catalog } = createCatalog();
+    const seed = catalog.resolveOrUpsert({
+      title: 'Seed song', artist: 'Seed Artist', provider: 'youtube', providerId: 'streamer-seed'
+    });
+    const first = catalog.resolveOrUpsert({
+      title: 'Top suggestion', artist: 'Suggested Artist', genres: ['Rock'],
+      provider: 'youtube', providerId: 'streamer-suggestion-top'
+    });
+    const second = catalog.resolveOrUpsert({
+      title: 'Second suggestion', artist: 'Second Artist', provider: 'youtube', providerId: 'streamer-suggestion-second'
+    });
+
+    expect(catalog.upsertStreamerPlaylistSuggestion({
+      songId: second.song.id, seedSongId: seed.song.id, score: 0.2
+    })).toMatchObject({ songId: second.song.id, seedSongId: seed.song.id, score: 0.2, status: 'pending' });
+    expect(catalog.upsertStreamerPlaylistSuggestion({
+      songId: first.song.id, seedSongId: seed.song.id, score: 0.9
+    })).toMatchObject({ songId: first.song.id, seedSongId: seed.song.id, score: 0.9, status: 'pending' });
+
+    expect(catalog.listStreamerPlaylistSuggestions()).toEqual([
+      expect.objectContaining({
+        songId: first.song.id,
+        seedSongId: seed.song.id,
+        score: 0.9,
+        status: 'pending',
+        title: 'Top suggestion',
+        genres: ['rock'],
+        artists: [expect.objectContaining({ name: 'Suggested Artist' })]
+      }),
+      expect.objectContaining({ songId: second.song.id, score: 0.2, status: 'pending' })
+    ]);
+    expect(catalog.updateStreamerPlaylistSuggestionStatus(first.song.id, 'accepted')).toMatchObject({
+      songId: first.song.id,
+      status: 'accepted',
+      updatedAt: expect.any(Number)
+    });
+    expect(catalog.upsertStreamerPlaylistSuggestion({
+      songId: first.song.id, seedSongId: seed.song.id, score: 0.95
+    })).toMatchObject({
+      songId: first.song.id, score: 0.95, status: 'accepted'
+    });
+    expect(catalog.listStreamerPlaylistSuggestions()).toEqual([
+      expect.objectContaining({ songId: second.song.id, status: 'pending' })
+    ]);
+    expect(catalog.listStreamerPlaylistSuggestions({ status: 'accepted' })).toEqual([
+      expect.objectContaining({ songId: first.song.id, status: 'accepted' })
+    ]);
+    expect(() => catalog.upsertStreamerPlaylistSuggestion({ songId: first.song.id, score: Number.NaN }))
+      .toThrow(expect.objectContaining({ name: 'MusicCatalogError', code: 'CATALOG_INVALID_STREAMER_PLAYLIST_SUGGESTION' }));
+    expect(() => catalog.updateStreamerPlaylistSuggestionStatus(999, 'accepted'))
+      .toThrow(expect.objectContaining({ name: 'MusicCatalogError', code: 'STREAMER_PLAYLIST_SUGGESTION_NOT_FOUND' }));
     db.close();
   });
 });

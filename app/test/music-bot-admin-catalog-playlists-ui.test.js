@@ -82,4 +82,20 @@ describe('Music Bot catalog and playlist admin UI contract', () => {
     expect(main).toContain("'/api/plugins/music-bot/catalog/songs/:songId/genres'");
     expect(main).toContain('this.musicCatalog.setSongGenres');
   });
+  test('keeps streamer playlist curation separate from radio feedback and exposes the projected radio plan', () => {
+    expect(html).toContain('id="streamer-playlist-curation"');
+    expect(script).toContain('data-streamer-playlist-feedback="up"');
+    expect(script).toContain('data-streamer-playlist-feedback="down"');
+    expect(script).toContain("post('/streamer-playlist/feedback'");
+    expect(script).toContain("get('/streamer-playlist')");
+    expect(script).toContain('/streamer-playlist/suggestions/');
+    expect(script).toContain("post('/artist-radio/start')");
+    expect(script).toContain("post('/artist-radio/stop')");
+    expect(script).toContain("get('/radio/plan')");
+    expect(script).toContain("candidate.position || index + 1");
+    expect(script).toContain("playlist.id === 'streamer-playlist'");
+    expect(main).toContain("'/api/plugins/music-bot/streamer-playlist/feedback'");
+    expect(main).toContain("'/api/plugins/music-bot/artist-radio/start'");
+    expect(main).toContain("'/api/plugins/music-bot/radio/plan'");
+  });
 });

@@ -518,7 +518,7 @@
           <input type="number" id="auto-dj-history-plays" min="1" value="2">
         </label>
         <label class="field">
-          <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.historyShare">Verlaufsanteil im Radio-Mix (%)</span>
+          <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.historyShare">Vertraute Titel aus Verlauf im Radio-Mix (%)</span>
           <input type="number" id="auto-dj-mix-history-percent" min="0" max="100" value="80">
         </label>
         <label class="field">
@@ -598,7 +598,20 @@
             <button id="radio-feedback-less" class="btn ghost small" type="button" data-i18n="plugins.music-bot.music_bot.ui.autoDj.feedbackLess">Weniger davon</button>
             <span id="radio-feedback-status" class="text-secondary" aria-live="polite"></span>
           </div>
+          <div class="radio-plan-header">
+            <strong data-i18n="plugins.music-bot.music_bot.ui.autoDj.radioPlanTitle">DJ-Plan: naechste 5 Titel</strong>
+          </div>
           <div id="radio-preview-list" class="radio-preview-list" aria-live="polite"></div>
+          <section id="streamer-playlist-curation" class="streamer-playlist-curation" aria-labelledby="streamer-playlist-title">
+            <div class="streamer-playlist-header">
+              <div>
+                <h4 id="streamer-playlist-title" data-i18n="plugins.music-bot.music_bot.ui.autoDj.streamerPlaylistTitle">Streamer Playlist</h4>
+                <p class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.autoDj.streamerPlaylistDescription">Daumen im Player kuratieren nur diese Playlist, nicht das allgemeine Radio.</p>
+              </div>
+              <span id="streamer-playlist-summary" class="pill" aria-live="polite"></span>
+            </div>
+            <div id="streamer-playlist-suggestions" class="streamer-playlist-suggestions" aria-live="polite"></div>
+          </section>
         </section>
         <label class="field span-2">
           <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.playlistLinks">Playlist-Links (einer pro Zeile oder kommagetrennt; danach folgt das passende Playlist-Radio)</span>

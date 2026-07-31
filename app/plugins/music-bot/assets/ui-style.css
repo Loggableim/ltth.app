@@ -667,6 +667,26 @@ html[data-musicbot-locked] [data-playback-action] {
   margin-bottom: 18px;
   color: var(--musicbot-muted);
 }
+.now-playing-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.now-playing-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.now-playing-curation-hint,
+.now-playing-action-status {
+  font-size: 12px;
+  color: var(--musicbot-muted);
+}
+
+.now-playing-action-status { min-height: 1.2em; }
+
 
 .now-playing.empty {
   padding: 18px;
@@ -1119,6 +1139,37 @@ input[type="range"] {
   color: var(--musicbot-muted);
   font-size: 12px;
 }
+.radio-plan-header { margin-top: 4px; }
+
+.streamer-playlist-curation {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--musicbot-border);
+}
+
+.streamer-playlist-header,
+.streamer-playlist-suggestion,
+.streamer-suggestion-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.streamer-playlist-header h4 { margin: 0 0 2px; }
+.streamer-playlist-header p { margin: 0; }
+.streamer-playlist-suggestions { display: grid; gap: 8px; }
+.streamer-playlist-suggestion {
+  padding: 10px;
+  border: 1px solid var(--musicbot-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--musicbot-surface) 88%, transparent);
+}
+.streamer-playlist-suggestion strong,
+.streamer-playlist-suggestion span { display: block; }
+
 
 .catalog-genre-editor {
   flex: 1 1 170px;

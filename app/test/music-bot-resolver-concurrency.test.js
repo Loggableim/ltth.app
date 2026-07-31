@@ -330,6 +330,7 @@ describe('MusicResolver provider cascade and subscribers', () => {
       extractor: 'youtube',
       webpage_url: 'https://www.youtube.com/watch?v=metadata-id',
       album: 'Neon Roads',
+      upload_date: '19981008',
       bpm: 127.5,
       genres: ['Electronic', 'Dance'],
       categories: ['Music']
@@ -339,6 +340,7 @@ describe('MusicResolver provider cascade and subscribers', () => {
       album: 'Neon Roads',
       bpm: 127.5,
       genres: ['Electronic', 'Dance'],
+      releaseYear: 1998,
       categories: ['Music']
     });
   });

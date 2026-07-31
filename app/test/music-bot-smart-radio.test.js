@@ -111,7 +111,7 @@ describe('Music Bot Smart Radio', () => {
     expect(pool.eligible.map((entry) => entry.songId)).toEqual([1]);
   });
 
-  test('applies request seeds to exactly two Auto-DJ tracks and favours compatible BPM', async () => {
+  test('blends multiple request seeds over a bounded six-track fade-out and favours compatible BPM', async () => {
     const songs = [
       candidate(1, { bpm: 127, genres: ['rock'], artists: [{ id: 1, name: 'Viewer Artist', affinity: 0, lastPlayedAt: null }] }),
       candidate(2, { bpm: 129, genres: ['rock'], artists: [{ id: 2, name: 'Viewer Artist', affinity: 0, lastPlayedAt: null }] }),
@@ -120,6 +120,7 @@ describe('Music Bot Smart Radio', () => {
     const { autoDJ } = createCatalogAutoDJ({ requestSeedsEnabled: true, bpmTransitionsEnabled: true }, songs);
     autoDJ.setRadioContext({ title: 'Current', artist: 'Current Artist', bpm: 128, genres: ['electronic'] });
     autoDJ.setRequestSeed({ title: 'Viewer Request', artist: 'Viewer Artist', genres: ['rock'] });
+    autoDJ.setRequestSeed({ title: 'Second Viewer Request', artist: 'Second Artist', genres: ['jazz'] });
 
     const first = await autoDJ.getNextSong();
     autoDJ.markTrackStarted(first.song);
@@ -135,10 +136,49 @@ describe('Music Bot Smart Radio', () => {
       expect.objectContaining({ code: 'request-seed' })
     ]));
     expect(third.song.catalogSongId).toBe(3);
-    expect(third.song.radioReasons).not.toEqual(expect.arrayContaining([
+    expect(third.song.radioReasons).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'request-seed' })
     ]));
+    expect(autoDJ.getStatus()).toMatchObject({ requestProfileCount: 2, requestSeedRemaining: 4 });
+
+    autoDJ.markTrackStarted(third.song);
+    autoDJ.markTrackStarted({ requestedBy: 'AutoDJ' });
+    autoDJ.markTrackStarted({ requestedBy: 'AutoDJ' });
+    autoDJ.markTrackStarted({ requestedBy: 'AutoDJ' });
+
     expect(autoDJ.getStatus().requestSeedRemaining).toBe(0);
+    expect(autoDJ.getStatus().requestProfileCount).toBe(0);
+  });
+
+  test('rewards long-tail choices, diversity and half-time or double-time BPM transitions', () => {
+    const { autoDJ } = createCatalogAutoDJ({ bpmTransitionsEnabled: true }, []);
+    autoDJ.setRadioContext({ title: 'Current', artist: 'Current Artist', bpm: 140 });
+    const candidateTrack = candidate(1, {
+      bpm: 70,
+      completePlays: 0,
+      genres: ['rock'],
+      releaseYear: 1995,
+      artists: [{ id: 1, name: 'Diverse Artist', affinity: 0, lastPlayedAt: null }]
+    });
+
+    const fresh = autoDJ._scoreCatalogCandidate(candidateTrack, { playlistId: 'source-a' });
+
+    expect(fresh).toMatchObject({ bpmRelation: 'double-time' });
+    expect(fresh.bpmDistance).toBe(0);
+    expect(fresh.bpmFactor).toBeGreaterThan(1);
+    expect(fresh.longTailFactor).toBeGreaterThan(1);
+    expect(fresh.diversityFactor).toBe(1);
+
+    autoDJ.markTrackStarted({
+      requestedBy: 'AutoDJ',
+      artist: 'Diverse Artist',
+      genres: ['rock'],
+      releaseYear: 1995,
+      radioPlaylistId: 'source-a'
+    });
+    const repeated = autoDJ._scoreCatalogCandidate(candidateTrack, { playlistId: 'source-a' });
+
+    expect(repeated.diversityFactor).toBeLessThan(1);
   });
 
   test('keeps the 20 percent novelty budget and never selects two new tracks in a row', () => {
@@ -211,7 +251,71 @@ describe('Music Bot Smart Radio', () => {
 
     expect(autoDJ._pickRelatedToSeed).toHaveBeenCalledWith(
       expect.objectContaining({ catalogSongId: 2 }),
-      expect.any(Object)
+      expect.any(Object),
+      expect.any(Number)
     );
+  });
+
+  test('runs a manual song radio from the current track even when normal Auto-DJ is disabled', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async () => ({
+        success: true,
+        song: {
+          title: 'Artist radio follow-up',
+          artist: 'Station Artist',
+          youtubeId: 'station-follow-up',
+          url: 'https://www.youtube.com/watch?v=station-follow-up'
+        }
+      }))
+    };
+    const autoDJ = new AutoDJ(
+      { enabled: false, mode: 'history' },
+      resolver,
+      createDbMock(),
+      { log: jest.fn() },
+      { now: () => Date.UTC(2026, 6, 21, 12, 0, 0) }
+    );
+
+    expect(autoDJ.startArtistRadio({
+      title: 'Station seed',
+      artist: 'Station Artist',
+      youtubeId: 'station-seed'
+    })).toBe(true);
+
+    const next = await autoDJ.getNextSong();
+
+    expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(
+      'https://www.youtube.com/watch?v=station-seed&list=RDstation-seed',
+      2
+    );
+    expect(next.song).toMatchObject({
+      title: 'Artist radio follow-up',
+      radioStation: 'artist',
+      radioStationSeed: 'station-seed'
+    });
+    expect(autoDJ.getStatus().artistRadio).toMatchObject({ active: true, youtubeId: 'station-seed' });
+
+    expect(autoDJ.stopArtistRadio()).toBe(true);
+    await expect(autoDJ.getNextSong()).resolves.toBeNull();
+  });
+
+  test('reserves a five-title DJ plan so its first title is the actual next Auto-DJ track', async () => {
+    const songs = [
+      candidate(1),
+      candidate(2, { feedback: 'up' }),
+      candidate(3),
+      candidate(4),
+      candidate(5)
+    ];
+    const { autoDJ, playlistStore } = createCatalogAutoDJ({}, songs);
+
+    const plan = await autoDJ.getRadioPlan(5);
+    const next = await autoDJ.getNextSong();
+
+    expect(plan).toHaveLength(5);
+    expect(plan.map((entry) => entry.position)).toEqual([1, 2, 3, 4, 5]);
+    expect(next.song.catalogSongId).toBe(plan[0].songId);
+    expect((await autoDJ.getRadioPlan(4)).map((entry) => entry.songId)).toEqual(plan.slice(1).map((entry) => entry.songId));
+    expect(playlistStore.advanceRadioCursor).not.toHaveBeenCalled();
   });
 });

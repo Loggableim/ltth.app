@@ -123,6 +123,8 @@ function bootMusicBotUi(options = {}) {
   const catalogPayload = options.catalogPayload || [];
   const giftCatalogPayload = options.giftCatalogPayload || { catalog: [] };
   const bansPayload = options.bansPayload || [];
+  const radioPlanPayload = options.radioPlanPayload || [];
+  const streamerPlaylistPayload = options.streamerPlaylistPayload || { playlist: null, suggestions: [] };
   const translations = options.translations;
   const productionLocale = options.productionLocale;
   const i18nReady = options.i18nReady;
@@ -161,6 +163,8 @@ function bootMusicBotUi(options = {}) {
     if (target.includes('/history')) return createJsonResponse({ success: true, history: historyPayload, total: historyPayload.length });
     if (target.includes('/catalog/search')) return createJsonResponse({ success: true, songs: catalogPayload });
     if (target.includes('/radio/playlist-sources')) return createJsonResponse({ success: true, sources: radioSourcesPayload });
+    if (target.includes('/radio/plan')) return createJsonResponse({ success: true, plan: radioPlanPayload });
+    if (target.includes('/streamer-playlist')) return createJsonResponse({ success: true, ...streamerPlaylistPayload });
     if (target.includes('/playlists/') && !target.includes('/playlist-imports')) {
       return createJsonResponse({ success: true, playlist: playlistDetails[target.split('/').pop()] });
     }
@@ -2238,6 +2242,62 @@ describe('Music Bot runtime and UI regressions', () => {
     searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     expect(previewFrame.src).toContain('controls=0');
     expect(previewFrame.src).toContain('enablejsapi=1');
+  });
+
+  test('curates only the Streamer Playlist from the player and renders five projected DJ titles', async () => {
+    const postTargets = [];
+    const { dom, fetchMock } = bootMusicBotUi({
+      statusPayload: {
+        nowPlaying: {
+          id: 'curation-song',
+          youtubeId: 'curation-video',
+          title: 'Current curation song',
+          artist: 'Curation Artist',
+          duration: 180,
+          state: 'playing'
+        }
+      },
+      radioPlanPayload: Array.from({ length: 5 }, (_item, index) => ({
+        position: index + 1,
+        title: `Planned ${index + 1}`,
+        artist: 'Radio Artist',
+        score: 1.2
+      })),
+      streamerPlaylistPayload: {
+        playlist: { id: 'streamer-playlist', name: 'Streamer Playlist', itemCount: 1 },
+        suggestions: [{ songId: 22, title: 'Suggested title', artist: 'Suggested artist', score: 2.1 }]
+      },
+      postHandler: async (target, request) => {
+        postTargets.push([target, JSON.parse(request.body || '{}')]);
+        if (target.endsWith('/streamer-playlist/feedback')) {
+          return createJsonResponse({ success: true, feedback: { state: 'up' } });
+        }
+        if (target.endsWith('/artist-radio/start')) {
+          return createJsonResponse({ success: true, status: { artistRadio: { active: true } } });
+        }
+        if (target.endsWith('/streamer-playlist/suggestions/22')) {
+          return createJsonResponse({ success: true, action: 'accept' });
+        }
+        return createJsonResponse({ success: true });
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    expect(document.getElementById('radio-preview-list').textContent).toContain('Planned 5');
+    expect(document.querySelector('[data-streamer-playlist-feedback="up"]')).not.toBeNull();
+    expect(document.querySelector('[data-artist-radio-action="start"]')).not.toBeNull();
+    expect(document.querySelector('[data-streamer-suggestion-action="accept"]')).not.toBeNull();
+
+    document.querySelector('[data-streamer-playlist-feedback="up"]').click();
+    document.querySelector('[data-artist-radio-action="start"]').click();
+    document.querySelector('[data-streamer-suggestion-action="accept"]').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(postTargets).toContainEqual(['/api/plugins/music-bot/streamer-playlist/feedback', { direction: 'up' }]);
+    expect(postTargets).toContainEqual(['/api/plugins/music-bot/artist-radio/start', {}]);
+    expect(postTargets).toContainEqual(['/api/plugins/music-bot/streamer-playlist/suggestions/22', { action: 'accept' }]);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/radio/live-feedback'))).toBe(false);
   });
 
   test('persists Auto-DJ playlist URLs and keeps an explicitly selected related-title mode', async () => {

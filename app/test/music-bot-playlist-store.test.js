@@ -134,4 +134,50 @@ describe('music-bot playlist store', () => {
       .toMatchObject({ playlistId: light.id, songId: lightSong.id });
     db.close();
   });
+  it('initializes the protected Streamer Playlist beside a pre-existing user playlist with the same visible name', () => {
+    const db = new Database(':memory:');
+    const api = { getDatabase: () => db, log: jest.fn() };
+    const catalog = new MusicCatalog(api);
+    db.prepare(
+      `CREATE TABLE plugin_music_bot_playlists (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, normalized_name TEXT NOT NULL UNIQUE, mode TEXT NOT NULL,
+        is_protected INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+      )`
+    ).run();
+    db.prepare(
+      `INSERT INTO plugin_music_bot_playlists
+       (id, name, normalized_name, mode, is_protected, revision, created_at, updated_at)
+       VALUES ('legacy-streamer-name', 'Streamer Playlist', 'streamer playlist', 'ordered', 0, 1, 1, 1)`
+    ).run();
+
+    const store = new PlaylistStore(api, catalog);
+    const streamer = store.getStreamerPlaylist();
+    const modeUpdated = store.update(streamer.id, { mode: 'shuffle' }, streamer.revision);
+    const reloaded = new PlaylistStore(api, catalog).getStreamerPlaylist();
+
+    expect(streamer).toMatchObject({ id: 'streamer-playlist', name: 'Streamer Playlist', isProtected: true });
+    expect(modeUpdated).toMatchObject({ id: 'streamer-playlist', name: 'Streamer Playlist', mode: 'shuffle' });
+    expect(reloaded).toMatchObject({ id: 'streamer-playlist', name: 'Streamer Playlist', isProtected: true });
+    expect(store.list().filter((playlist) => playlist.name === 'Streamer Playlist')).toHaveLength(2);
+    db.close();
+  });
+
+  it('allows item management but rejects rename and deletion of the protected Streamer Playlist', () => {
+    const { db, catalog, store } = createStore();
+    const streamer = store.getStreamerPlaylist();
+    const song = catalog.resolveOrUpsert({
+      title: 'Streamer pick', artist: 'Streamer', provider: 'youtube', providerId: 'streamer-pick'
+    }).song;
+
+    const added = store.addItem(streamer.id, song.id, streamer.revision).playlist;
+    expect(added.items).toEqual([expect.objectContaining({ songId: song.id })]);
+    expect(() => store.rename(added.id, 'Renamed', added.revision)).toThrow(
+      expect.objectContaining({ code: 'PLAYLIST_PROTECTED' })
+    );
+    expect(() => store.delete(added.id, added.revision)).toThrow(
+      expect.objectContaining({ code: 'PLAYLIST_PROTECTED' })
+    );
+    expect(store.removeItem(added.id, song.id, added.revision)).toMatchObject({ removed: true, playlist: { items: [] } });
+    db.close();
+  });
 });

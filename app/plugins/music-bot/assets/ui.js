@@ -16,6 +16,34 @@
     health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed resolverUnknownState healthLoadFailed',
     overlay: 'copyFailed copySuccess'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
+  Object.assign(RUNTIME_I18N_SECTIONS, Object.fromEntries([
+    ['streamerPlaylistFeedbackAria', 'player'],
+    ['streamerPlaylistUp', 'player'],
+    ['streamerPlaylistDown', 'player'],
+    ['streamerPlaylistOnly', 'player'],
+    ['streamerPlaylistSaving', 'player'],
+    ['streamerPlaylistSaved', 'player'],
+    ['streamerPlaylistNeutral', 'player'],
+    ['streamerPlaylistFailed', 'player'],
+    ['songRadioStart', 'player'],
+    ['songRadioStop', 'player'],
+    ['songRadioUnavailable', 'player'],
+    ['songRadioStarted', 'player'],
+    ['songRadioStopped', 'player'],
+    ['songRadioFailed', 'player'],
+    ['radioPlanTitle', 'autoDj'],
+    ['radioPlanCount', 'autoDj'],
+    ['streamerPlaylistTitle', 'autoDj'],
+    ['streamerPlaylistDescription', 'autoDj'],
+    ['streamerPlaylistCount', 'autoDj'],
+    ['streamerPlaylistEmpty', 'autoDj'],
+    ['streamerSuggestionAccept', 'autoDj'],
+    ['streamerSuggestionReject', 'autoDj'],
+    ['streamerSuggestionSaving', 'autoDj'],
+    ['streamerSuggestionFailed', 'autoDj'],
+    ['streamerSuggestionAccepted', 'autoDj'],
+    ['streamerSuggestionRejected', 'autoDj']
+  ]));
   const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
     player: 'seek seekAria',
     history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral toolbarLabel searchLabel searchPlaceholder periodLabel periodAll period24h period7d period30d outcomeLabel outcomeAll outcomeCompleted outcomeSkipped outcomeEarlySkip outcomeFailed feedbackFilterLabel feedbackAll bannedFilterLabel bannedAll bannedOnly bannedExclude sortLabel sortNewest sortOldest reset previous next pageStatus replayQueue replayPlay copyLink addToPlaylist playlistSelect playlistProtected replaySuccess queueSuccess playSuccess copySuccess playlistSuccess actionFailed',
@@ -255,6 +283,9 @@
   const radioFeedbackMore = document.getElementById('radio-feedback-more');
   const radioFeedbackLess = document.getElementById('radio-feedback-less');
   const radioFeedbackStatus = document.getElementById('radio-feedback-status');
+  const streamerPlaylistCuration = document.getElementById('streamer-playlist-curation');
+  const streamerPlaylistSummary = document.getElementById('streamer-playlist-summary');
+  const streamerPlaylistSuggestions = document.getElementById('streamer-playlist-suggestions');
   const aliasInputs = document.querySelectorAll('.alias-input');
   const aliasSave = document.getElementById('alias-save');
   const rejectAge = document.getElementById('reject-age');
@@ -1504,6 +1535,15 @@
     renderHistory(latestHistoryTracks);
   });
   socket.on('musicbot:radio-feedback', () => refreshRadioPreview());
+  socket.on('musicbot:streamer-playlist', () => {
+    refreshStreamerPlaylistCuration();
+    refreshPlaylists();
+  });
+  socket.on('musicbot:artist-radio', (payload) => {
+    if (payload?.status) latestAutoDjStatus = payload.status;
+    renderNowPlaying(latestNowPlayingTrack);
+    refreshRadioPreview();
+  });
   socket.on('musicbot:playlist-import-progress', async (payload) => {
     const status = payload?.status || 'running';
     if (playlistImportProgress) {
@@ -1816,9 +1856,11 @@
     }
 
     await refreshAutoDjStatus();
+    await refreshRadioPreview();
     await refreshBans();
     await refreshGiftCatalog();
     await refreshPlaylists();
+    await refreshStreamerPlaylistCuration();
   }
 
   function syncHistoryFilters() {
@@ -1931,9 +1973,28 @@
     const banButton = track.id
       ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(track.id)}" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(tr('banLabel', 'Sperren'))}</button>`
       : '';
+    const artistRadioActive = Boolean(latestAutoDjStatus?.artistRadio?.active);
+    const canStartSongRadio = Boolean(track.youtubeId || track.provider === 'youtube' || track.source === 'youtube'
+      || String(track.url || '').includes('youtube.com') || String(track.url || '').includes('youtu.be'));
+    const radioAction = artistRadioActive ? 'stop' : 'start';
+    const radioLabel = artistRadioActive
+      ? tr('songRadioStop', 'Song-Radio stoppen')
+      : tr('songRadioStart', 'Song-Radio aus diesem Titel starten');
+    const radioDisabled = !artistRadioActive && !canStartSongRadio;
+    const nowPlayingActions = `
+      <div class="now-playing-actions">
+        <span class="now-playing-curation-hint">${escapeHtml(tr('streamerPlaylistOnly', 'Nur fuer Streamer Playlist'))}</span>
+        <div class="now-playing-action-buttons" role="group" aria-label="${escapeHtml(tr('streamerPlaylistFeedbackAria', 'Streamer Playlist Bewertung und Song-Radio'))}">
+          <button class="btn ghost small" type="button" data-streamer-playlist-feedback="up" aria-label="${escapeHtml(tr('streamerPlaylistUp', 'Fuer Streamer Playlist: gefaellt mir'))}">&#128077;</button>
+          <button class="btn ghost small" type="button" data-streamer-playlist-feedback="down" aria-label="${escapeHtml(tr('streamerPlaylistDown', 'Nicht fuer Streamer Playlist'))}">&#128078;</button>
+          <button class="btn ghost small" type="button" data-artist-radio-action="${radioAction}"${radioDisabled ? ' disabled' : ''}>${escapeHtml(radioDisabled ? tr('songRadioUnavailable', 'Song-Radio nur fuer YouTube-Titel') : radioLabel)}</button>
+        </div>
+        <span class="text-secondary now-playing-action-status" data-streamer-playlist-status aria-live="polite"></span>
+      </div>`;
     nowPlayingEl.innerHTML = `
       <p class="title">🎵 ${escapeHtml(track.title)}</p>
       <p class="meta">${escapeHtml(track.artist || '')} • ${escapeHtml(tr('requestedBy', 'Angefragt von'))} <strong>${escapeHtml(track.requestedBy || tr('viewerFallback', 'Zuschauer'))}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
+      ${nowPlayingActions}
       ${banButton}
     `;
     const actualState = track.state || 'playing';
@@ -1953,6 +2014,56 @@
       updateSeekControl();
     }
   }
+  function setNowPlayingActionStatus(message) {
+    const status = nowPlayingEl?.querySelector('[data-streamer-playlist-status]');
+    if (status) status.textContent = message || '';
+  }
+
+  nowPlayingEl?.addEventListener('click', async (event) => {
+    const feedbackButton = event.target.closest('[data-streamer-playlist-feedback]');
+    if (feedbackButton) {
+      if (feedbackButton.disabled) return;
+      const direction = feedbackButton.dataset.streamerPlaylistFeedback;
+      feedbackButton.disabled = true;
+      setNowPlayingActionStatus(tr('streamerPlaylistSaving', 'Wird fuer die Streamer Playlist gespeichert ...'));
+      const result = await post('/streamer-playlist/feedback', { direction });
+      feedbackButton.disabled = false;
+      if (!result?.success) {
+        setNowPlayingActionStatus(result?.error || tr('streamerPlaylistFailed', 'Streamer-Playlist-Bewertung konnte nicht gespeichert werden.'));
+        return;
+      }
+      const feedbackState = result.feedback?.state || direction;
+      const message = feedbackState === 'neutral'
+        ? tr('streamerPlaylistNeutral', 'Streamer-Playlist-Bewertung entfernt.')
+        : tr('streamerPlaylistSaved', 'Streamer Playlist aktualisiert.');
+      setNowPlayingActionStatus(message);
+      showToast('success', tr('playerToastTitle', 'Player'), message);
+      await Promise.all([refreshStreamerPlaylistCuration(), refreshPlaylists()]);
+      return;
+    }
+
+    const radioButton = event.target.closest('[data-artist-radio-action]');
+    if (!radioButton || radioButton.disabled) return;
+    const action = radioButton.dataset.artistRadioAction;
+    radioButton.disabled = true;
+    const result = action === 'stop'
+      ? await post('/artist-radio/stop')
+      : await post('/artist-radio/start');
+    radioButton.disabled = false;
+    if (!result?.success) {
+      setNowPlayingActionStatus(result?.error || tr('songRadioFailed', 'Song-Radio konnte nicht geaendert werden.'));
+      return;
+    }
+    latestAutoDjStatus = result.status || latestAutoDjStatus;
+    renderNowPlaying(latestNowPlayingTrack);
+    const message = action === 'stop'
+      ? tr('songRadioStopped', 'Song-Radio beendet.')
+      : tr('songRadioStarted', 'Song-Radio aus diesem Titel gestartet.');
+    setNowPlayingActionStatus(message);
+    showToast('success', tr('playerToastTitle', 'Player'), message);
+    await refreshRadioPreview();
+  });
+
 
   async function patch(path, body) {
     return request(path, 'PATCH', body);
@@ -2425,7 +2536,7 @@
       return;
     }
     if (!playlists.length) await refreshPlaylists();
-    const available = playlists.filter((playlist) => !playlist.isProtected);
+    const available = playlists.filter((playlist) => !playlist.isProtected || playlist.id === 'streamer-playlist');
     historyPlaylistMenu.dataset.songId = String(songId);
     historyPlaylistMenu.innerHTML = available.length
       ? `<label class="history-playlist-picker"><span>${escapeHtml(catalogTr('playlistSelect', 'Playlist auswählen'))}</span><select data-history-playlist-select><option value="">${escapeHtml(catalogTr('playlistSelect', 'Playlist auswählen'))}</option>${available.map((playlist) => `<option value="${escapeHtml(playlist.id)}">${escapeHtml(playlist.name)}</option>`).join('')}</select></label>`
@@ -2441,7 +2552,7 @@
       const result = await get(`/playlists/${encodeURIComponent(playlistId)}`);
       playlist = result?.playlist;
     }
-    if (!playlist || playlist.isProtected) return;
+    if (!playlist || (playlist.isProtected && playlist.id !== 'streamer-playlist')) return;
     const result = await post(`/playlists/${encodeURIComponent(playlist.id)}/items`, {
       songId: Number(songId), revision: playlist.revision
     });
@@ -2766,8 +2877,8 @@
 
   async function refreshRadioPreview() {
     if (!radioPreviewList) return;
-    const result = await get('/radio/preview');
-    renderRadioPreview(result?.candidates || [], Boolean(result?.disabled));
+    const result = await get('/radio/plan');
+    renderRadioPreview(result?.plan || [], Boolean(result?.disabled));
   }
 
   function renderRadioPreview(candidates = [], disabled = false) {
@@ -2776,7 +2887,7 @@
       radioPreviewStatus.textContent = disabled
         ? tr('radioPreviewDisabled', 'Vorschau deaktiviert')
         : (candidates.length
-          ? tr('radioCandidateCount', '{count} Kandidaten', { count: candidates.length })
+          ? tr('radioPlanCount', '{count} geplante Titel', { count: candidates.length })
           : tr('radioNoCandidates', 'Keine passenden Kandidaten'));
     }
     if (disabled) {
@@ -2795,9 +2906,60 @@
       const reasons = (candidate.reasons || []).map((reason) => escapeHtml(reason.text || reason.code)).join(' · ');
       const score = escapeHtml(tr('radioScore', 'Score {score}', { score: Number(candidate.score || 0).toFixed(2) }));
       const fallbackReason = escapeHtml(tr('radioScoreReason', 'Radio-Score'));
-      return `<article class="radio-preview-item"><div><strong>${index + 1}. ${title}</strong><span>${artist}</span><span class="text-secondary">${details}</span></div><span class="pill">${score}</span><div class="radio-preview-reasons">${reasons || fallbackReason}</div></article>`;
+      return `<article class="radio-preview-item"><div><strong>${candidate.position || index + 1}. ${title}</strong><span>${artist}</span><span class="text-secondary">${details}</span></div><span class="pill">${score}</span><div class="radio-preview-reasons">${reasons || fallbackReason}</div></article>`;
     }).join('');
   }
+  async function refreshStreamerPlaylistCuration() {
+    if (!streamerPlaylistCuration) return;
+    const result = await get('/streamer-playlist');
+    if (!result?.success) {
+      if (streamerPlaylistSummary) streamerPlaylistSummary.textContent = result?.error || '';
+      return;
+    }
+    renderStreamerPlaylistCuration(result.playlist || {}, result.suggestions || []);
+  }
+
+  function renderStreamerPlaylistCuration(playlist = {}, suggestions = []) {
+    if (streamerPlaylistSummary) {
+      const count = Number(playlist.itemCount ?? playlist.items?.length ?? 0);
+      streamerPlaylistSummary.textContent = tr('streamerPlaylistCount', '{count} kuratierte Titel', { count });
+    }
+    if (!streamerPlaylistSuggestions) return;
+    const pending = suggestions.filter((suggestion) => suggestion?.songId !== undefined && suggestion?.songId !== null);
+    if (!pending.length) {
+      streamerPlaylistSuggestions.innerHTML = `<p class="text-secondary">${escapeHtml(tr('streamerPlaylistEmpty', 'Noch keine offenen Vorschlaege.'))}</p>`;
+      return;
+    }
+    streamerPlaylistSuggestions.innerHTML = pending.map((suggestion) => {
+      const songId = Number(suggestion.songId);
+      if (!Number.isInteger(songId)) return '';
+      const title = escapeHtml(suggestion.title || tr('radioUnknownTitle', 'Unbekannter Titel'));
+      const artist = escapeHtml(suggestion.artist || '');
+      return `<article class="streamer-playlist-suggestion"><div><strong>${title}</strong><span class="text-secondary">${artist}</span></div><div class="streamer-suggestion-actions"><button class="btn ghost small" type="button" data-streamer-suggestion-action="accept" data-streamer-suggestion-song-id="${songId}">${escapeHtml(tr('streamerSuggestionAccept', 'Uebernehmen'))}</button><button class="btn ghost small" type="button" data-streamer-suggestion-action="reject" data-streamer-suggestion-song-id="${songId}">${escapeHtml(tr('streamerSuggestionReject', 'Ablehnen'))}</button></div></article>`;
+    }).join('');
+  }
+
+  streamerPlaylistSuggestions?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-streamer-suggestion-action]');
+    if (!button || button.disabled) return;
+    const songId = Number(button.dataset.streamerSuggestionSongId);
+    const action = button.dataset.streamerSuggestionAction;
+    if (!Number.isInteger(songId) || !['accept', 'reject'].includes(action)) return;
+    button.disabled = true;
+    if (streamerPlaylistSummary) streamerPlaylistSummary.textContent = tr('streamerSuggestionSaving', 'Vorschlag wird gespeichert ...');
+    const result = await post(`/streamer-playlist/suggestions/${songId}`, { action });
+    button.disabled = false;
+    if (!result?.success) {
+      if (streamerPlaylistSummary) streamerPlaylistSummary.textContent = result?.error || tr('streamerSuggestionFailed', 'Vorschlag konnte nicht aktualisiert werden.');
+      return;
+    }
+    const message = action === 'accept'
+      ? tr('streamerSuggestionAccepted', 'Vorschlag zur Streamer Playlist hinzugefuegt.')
+      : tr('streamerSuggestionRejected', 'Vorschlag abgelehnt.');
+    showToast('success', tr('playerToastTitle', 'Player'), message);
+    await Promise.all([refreshStreamerPlaylistCuration(), refreshPlaylists()]);
+  });
+
 
   async function sendLiveRadioFeedback(direction) {
     if (radioFeedbackStatus) radioFeedbackStatus.textContent = tr('radioFeedbackSaving', 'Wird gespeichert …');

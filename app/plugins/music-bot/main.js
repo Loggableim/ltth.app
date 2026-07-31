@@ -1909,6 +1909,68 @@ class MusicBotPlugin extends EventEmitter {
     return Boolean(requestedBy) && !['autodj', 'fallback', 'system'].includes(requestedBy);
   }
 
+  async _rebuildStreamerPlaylistSuggestions() {
+    if (!this.musicCatalog?.listStreamerPlaylistLikedSeeds
+      || !this.musicCatalog?.upsertStreamerPlaylistSuggestion
+      || !this.playlistStore?.getStreamerPlaylist
+      || !this.autoDJ?.getRadioPlan) return [];
+    try {
+      const now = Date.now();
+      const normalize = (value) => String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .trim();
+      const playlist = this.playlistStore.getStreamerPlaylist();
+      const includedSongIds = new Set((playlist.items || []).map((item) => Number(item.songId)));
+      const seeds = this.musicCatalog.listStreamerPlaylistLikedSeeds({ limit: 20, now });
+      const plan = await this.autoDJ.getRadioPlan(10) || [];
+      const suggestions = [];
+      plan.forEach((candidate) => {
+        const songId = Number(candidate?.songId);
+        if (!Number.isInteger(songId) || songId <= 0 || includedSongIds.has(songId)) return;
+        const candidateArtists = String(candidate.artist || '')
+          .split(/[,&]/)
+          .map(normalize)
+          .filter(Boolean);
+        const candidateGenres = Array.isArray(candidate.genres)
+          ? candidate.genres.map(normalize).filter(Boolean)
+          : [];
+        let best = null;
+        seeds.forEach((seed) => {
+          const seedArtists = (seed.artists || []).map((artist) => normalize(artist?.name)).filter(Boolean);
+          const seedGenres = Array.isArray(seed.genres) ? seed.genres.map(normalize).filter(Boolean) : [];
+          const artistMatch = seedArtists.some((artist) => candidateArtists.includes(artist));
+          const genreMatches = candidateGenres.filter((genre) => seedGenres.includes(genre)).length;
+          const rawMatch = (artistMatch ? 1.4 : 0) + (genreMatches * 0.45);
+          if (rawMatch <= 0) return;
+          const ageMs = Math.max(0, now - Number(seed.streamerPlaylistFeedbackUpdatedAt || now));
+          const ageWeight = Math.pow(0.5, ageMs / (30 * 24 * 60 * 60 * 1000));
+          const weightedMatch = rawMatch * ageWeight;
+          if (!best || weightedMatch > best.weightedMatch) {
+            best = { songId: Number(seed.songId), weightedMatch };
+          }
+        });
+        if (!best || !Number.isInteger(best.songId) || best.songId <= 0) return;
+        const score = Number(((Number(candidate.score) || 0) + best.weightedMatch).toFixed(4));
+        this.musicCatalog.upsertStreamerPlaylistSuggestion({
+          songId,
+          seedSongId: best.songId,
+          score
+        });
+        suggestions.push({
+          ...candidate,
+          seedSongId: best.songId,
+          score
+        });
+      });
+      return suggestions.sort((left, right) => right.score - left.score || left.songId - right.songId);
+    } catch (error) {
+      this.api.log?.(`[music-bot] Streamer Playlist suggestions could not be rebuilt: ${error.message}`, 'warn');
+      return [];
+    }
+  }
+
   _registerRoutes() {
     const uiPath = path.join(__dirname, 'ui.html');
     const assetsPath = path.join(__dirname, 'assets');
@@ -2105,6 +2167,165 @@ class MusicBotPlugin extends EventEmitter {
       res.json({ success: true, candidates: this.autoDJ?.getRadioPreview?.(3) || [] });
     });
 
+    this.api.registerRoute('get', '/api/plugins/music-bot/radio/plan', async (req, res) => {
+      if (!this.config.autoDJ?.previewEnabled) {
+        res.json({ success: true, plan: [], disabled: true });
+        return;
+      }
+      const plan = this.autoDJ?.getRadioPlan ? await this.autoDJ.getRadioPlan(5) : [];
+      res.json({ success: true, plan });
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/artist-radio/start', async (req, res) => {
+      if (!this.autoDJ?.startArtistRadio || !this.playbackEngine?.getNowPlaying) {
+        res.status(503).json({ success: false, error: 'Auto-DJ is unavailable' });
+        return;
+      }
+      const track = this.playbackEngine.getNowPlaying();
+      if (!track) {
+        res.status(409).json({ success: false, error: 'No current track is available as a song-radio seed' });
+        return;
+      }
+      try {
+        const started = this.autoDJ.startArtistRadio(track);
+        if (!started) {
+          res.status(400).json({
+            success: false,
+            error: 'Current track cannot start a song radio',
+            status: this.autoDJ.getStatus?.()
+          });
+          return;
+        }
+        this._invalidateRadioPrefetch('artist-radio-start');
+        this._cancelNextSongVote('artist-radio-start');
+        const status = this.autoDJ.getStatus?.();
+        this.api.emit('musicbot:artist-radio', { action: 'started', status });
+        res.json({ success: true, status });
+      } catch (error) {
+        this.api.log?.(`[music-bot] Could not start song radio: ${error.message}`, 'warn');
+        res.status(400).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/artist-radio/stop', async (req, res) => {
+      if (!this.autoDJ?.stopArtistRadio) {
+        res.status(503).json({ success: false, error: 'Auto-DJ is unavailable' });
+        return;
+      }
+      const stopped = this.autoDJ.stopArtistRadio();
+      this._invalidateRadioPrefetch('artist-radio-stop');
+      this._cancelNextSongVote('artist-radio-stop');
+      const status = this.autoDJ.getStatus?.();
+      this.api.emit('musicbot:artist-radio', { action: 'stopped', stopped, status });
+      res.json({ success: true, stopped, status });
+    });
+
+    this.api.registerRoute('get', '/api/plugins/music-bot/streamer-playlist', async (req, res) => {
+      if (!this.musicCatalog?.listStreamerPlaylistSuggestions || !this.playlistStore?.getStreamerPlaylist) {
+        res.status(503).json({ success: false, error: 'Streamer Playlist is unavailable' });
+        return;
+      }
+      const playlist = this.playlistStore.getStreamerPlaylist();
+      const suggestions = this.musicCatalog.listStreamerPlaylistSuggestions({ status: 'pending', limit: 20 });
+      res.json({ success: true, playlist, suggestions });
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/streamer-playlist/feedback', async (req, res) => {
+      if (!this.musicCatalog?.resolveOrUpsert || !this.musicCatalog?.setStreamerPlaylistFeedback
+        || !this.playlistStore?.getStreamerPlaylist) {
+        res.status(503).json({ success: false, error: 'Streamer Playlist is unavailable' });
+        return;
+      }
+      const direction = String(req.body?.direction || '').toLowerCase();
+      if (!['up', 'down'].includes(direction)) {
+        res.status(400).json({ success: false, error: 'direction must be up or down' });
+        return;
+      }
+      const track = this.playbackEngine?.getNowPlaying?.();
+      if (!track) {
+        res.status(404).json({ success: false, error: 'No current track is available for Streamer Playlist feedback' });
+        return;
+      }
+      try {
+        const resolved = this.musicCatalog.resolveOrUpsert(track);
+        const songId = Number(resolved?.song?.id);
+        if (!Number.isInteger(songId) || songId <= 0) {
+          res.status(404).json({ success: false, error: 'Current track could not be catalogued' });
+          return;
+        }
+        const feedback = this.musicCatalog.setStreamerPlaylistFeedback(songId, direction);
+        let playlist = this.playlistStore.getStreamerPlaylist();
+        const existing = (playlist.items || []).some((item) => Number(item.songId) === songId);
+        if (feedback.state === 'up') {
+          const added = this.playlistStore.addItem(playlist.id, songId, playlist.revision);
+          playlist = added.playlist;
+          this.musicCatalog.upsertStreamerPlaylistSuggestion?.({
+            songId,
+            seedSongId: songId,
+            score: 1,
+            status: 'accepted'
+          });
+        } else if (existing) {
+          const removed = this.playlistStore.removeItem(playlist.id, songId, playlist.revision);
+          playlist = removed.playlist;
+        }
+        if (feedback.state === 'down') {
+          this.musicCatalog.upsertStreamerPlaylistSuggestion?.({
+            songId,
+            seedSongId: null,
+            score: 0,
+            status: 'rejected'
+          });
+        }
+        this.autoDJ?.invalidateRadioPlan?.('streamer-playlist-feedback');
+        const suggestions = await this._rebuildStreamerPlaylistSuggestions(songId);
+        this._invalidateRadioPrefetch('streamer-playlist-feedback');
+        this.api.emit('musicbot:streamer-playlist', { feedback, playlist, suggestions });
+        this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'streamer-feedback' });
+        res.json({ success: true, feedback, playlist, suggestions });
+      } catch (error) {
+        const status = error?.code === 'CATALOG_SONG_NOT_FOUND' ? 404 : 400;
+        res.status(status).json({ success: false, error: error.message, code: error?.code });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/streamer-playlist/suggestions/:songId', async (req, res) => {
+      if (!this.musicCatalog?.updateStreamerPlaylistSuggestionStatus || !this.playlistStore?.getStreamerPlaylist) {
+        res.status(503).json({ success: false, error: 'Streamer Playlist is unavailable' });
+        return;
+      }
+      const songId = Number(req.params.songId);
+      const action = String(req.body?.action || '').toLowerCase();
+      if (!Number.isInteger(songId) || songId <= 0 || !['accept', 'reject'].includes(action)) {
+        res.status(400).json({ success: false, error: 'songId and action (accept or reject) are required' });
+        return;
+      }
+      try {
+        let playlist = this.playlistStore.getStreamerPlaylist();
+        const existing = (playlist.items || []).some((item) => Number(item.songId) === songId);
+        if (action === 'accept' && !existing) {
+          const added = this.playlistStore.addItem(playlist.id, songId, playlist.revision);
+          playlist = added.playlist;
+        } else if (action === 'reject' && existing) {
+          const removed = this.playlistStore.removeItem(playlist.id, songId, playlist.revision);
+          playlist = removed.playlist;
+        }
+        const suggestion = this.musicCatalog.updateStreamerPlaylistSuggestionStatus(
+          songId,
+          action === 'accept' ? 'accepted' : 'rejected'
+        );
+        this.autoDJ?.invalidateRadioPlan?.('streamer-playlist-suggestion');
+        const suggestions = this.musicCatalog.listStreamerPlaylistSuggestions?.({ status: 'pending', limit: 20 }) || [];
+        this._invalidateRadioPrefetch('streamer-playlist-suggestion');
+        this.api.emit('musicbot:streamer-playlist', { action, suggestion, playlist, suggestions });
+        this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'streamer-suggestion' });
+        res.json({ success: true, action, suggestion, playlist, suggestions });
+      } catch (error) {
+        const status = error?.code === 'STREAMER_PLAYLIST_SUGGESTION_NOT_FOUND' ? 404 : 400;
+        res.status(status).json({ success: false, error: error.message, code: error?.code });
+      }
+    });
+
     this.api.registerRoute('post', '/api/plugins/music-bot/radio/live-feedback', async (req, res) => {
       if (!this.config.autoDJ?.liveFeedbackEnabled) {
         res.status(403).json({ success: false, error: 'Live feedback is disabled' });
@@ -2129,6 +2350,7 @@ class MusicBotPlugin extends EventEmitter {
         }
         this.api.emit('musicbot:radio-feedback', feedback);
         this.api.emit('musicbot:history-update', { songId, refresh: true });
+        this.autoDJ?.invalidateRadioPlan?.('live-feedback');
         res.json({ success: true, feedback });
       } catch (error) {
         const status = error?.code === 'CATALOG_SONG_NOT_FOUND' ? 404 : 400;
@@ -3672,7 +3894,7 @@ class MusicBotPlugin extends EventEmitter {
       next = this.queueManager.shiftNext();
     }
     if (!next) {
-      const fallbackTrack = await this._playFallbackTrack();
+      const fallbackTrack = this.autoDJ?.hasArtistRadio?.() ? null : await this._playFallbackTrack();
       if (fallbackTrack) {
         this._schedulePreCache();
         return { success: true, song: fallbackTrack };
@@ -4047,7 +4269,7 @@ class MusicBotPlugin extends EventEmitter {
 
   _openNextSongVote(track) {
     this._cancelNextSongVote('replaced');
-    if (!this.config.autoDJ?.enabled || !this.config.autoDJ?.chatVotingEnabled) return this._getNextSongVoteStatus();
+    if (!this.config.autoDJ?.enabled || !this.config.autoDJ?.chatVotingEnabled || this.autoDJ?.hasArtistRadio?.()) return this._getNextSongVoteStatus();
     if (this.queueManager?.getQueue?.().length > 0) return this._getNextSongVoteStatus();
     const duration = Number(track?.duration);
     const closeBefore = Number(this.config.autoDJ?.chatVoteCloseBeforeEndSeconds) || 20;
@@ -4252,7 +4474,7 @@ class MusicBotPlugin extends EventEmitter {
       && generation === this._lifecycleGeneration
       && (typeof supervisorContext?.isCurrent !== 'function' || supervisorContext.isCurrent())
     );
-    if (!isCurrent() || this._isSafetyLocked() || !this.autoDJ || !this.config.autoDJ?.enabled) {
+    if (!isCurrent() || this._isSafetyLocked() || !this.autoDJ || (!this.config.autoDJ?.enabled && !this.autoDJ.hasArtistRadio?.())) {
       return null;
     }
     if (this.queueManager?.getQueue?.().length > 0) return null;
@@ -4806,7 +5028,7 @@ class MusicBotPlugin extends EventEmitter {
     if (
       this._destroyed
       || this._isSafetyLocked()
-      || !this.config.autoDJ?.enabled
+      || (!this.config.autoDJ?.enabled && !this.autoDJ?.hasArtistRadio?.())
       || this.config.autoDJ?.chatVotingEnabled
       || !this.autoDJ
       || !Number.isFinite(durationSeconds)

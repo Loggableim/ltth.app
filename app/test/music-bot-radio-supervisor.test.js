@@ -366,20 +366,48 @@ describe('music-bot catalog radio selection', () => {
     expect(autoDJ._pickFromMix).not.toHaveBeenCalled();
   });
 
-  test('uses an injectable exact 60/40 familiar/discovery boundary', async () => {
+  test('uses the configured familiar/discovery boundary for Smart Radio', async () => {
     const candidate = radioCandidate(1);
     const playlistItems = [{ songId: 1, playlistId: 'mix', weight: 1, mode: 'shuffle', position: 0, itemCount: 1 }];
-    const familiar = createCatalogAutoDJ({ candidates: [candidate], playlistItems, random: () => 0.599999 });
+    const familiar = createCatalogAutoDJ({ candidates: [candidate], playlistItems, random: () => 0.249999 });
+    familiar.autoDJ.updateConfig({ ...familiar.autoDJ.config, mixHistoryPercent: 25 });
     await expect(familiar.autoDJ.getNextSong()).resolves.toMatchObject({
       song: { catalogSongId: 1 }, selectionSource: 'familiar'
     });
 
     const discoveryTrack = { title: 'Discovery', youtubeId: 'discover-1', url: 'https://youtu.be/discover-1' };
     const resolver = { resolvePlaylistEntry: jest.fn(async () => ({ success: true, song: discoveryTrack })) };
-    const discovery = createCatalogAutoDJ({ candidates: [candidate], playlistItems, random: () => 0.6, resolver });
+    const discovery = createCatalogAutoDJ({ candidates: [candidate], playlistItems, random: () => 0.25, resolver });
+    discovery.autoDJ.updateConfig({ ...discovery.autoDJ.config, mixHistoryPercent: 25 });
     await expect(discovery.autoDJ.getNextSong()).resolves.toMatchObject({
       song: { title: 'Discovery' }, selectionSource: 'discovery'
     });
+  });
+
+  test('uses the same async discovery selection for a displayed DJ plan and the next Auto-DJ track', async () => {
+    const candidate = radioCandidate(1);
+    const playlistItems = [{ songId: 1, playlistId: 'mix', weight: 1, mode: 'shuffle', position: 0, itemCount: 1 }];
+    const discoveryTrack = {
+      title: 'Planned Discovery',
+      youtubeId: 'planned-discovery',
+      url: 'https://youtu.be/planned-discovery',
+      catalogSongId: 1,
+      sourceId: 100
+    };
+    const resolver = { resolvePlaylistEntry: jest.fn(async () => ({ success: true, song: discoveryTrack })) };
+    const { autoDJ } = createCatalogAutoDJ({ candidates: [candidate], playlistItems, random: () => 0.25, resolver });
+    autoDJ.updateConfig({ ...autoDJ.config, mixHistoryPercent: 25 });
+
+    const plan = await autoDJ.getRadioPlan(1);
+    const resolverCallsAfterPlan = resolver.resolvePlaylistEntry.mock.calls.length;
+    const next = await autoDJ.getNextSong();
+
+    expect(plan).toEqual([expect.objectContaining({ title: 'Planned Discovery', selectionSource: 'discovery' })]);
+    expect(next).toMatchObject({
+      song: { title: 'Planned Discovery' },
+      selectionSource: 'discovery'
+    });
+    expect(resolver.resolvePlaylistEntry).toHaveBeenCalledTimes(resolverCallsAfterPlan);
   });
 
   test('applies the exact upvote, artist-affinity and implicit play/skip factors', async () => {
@@ -457,6 +485,22 @@ describe('music-bot catalog radio selection', () => {
     expect(autoDJ.playedSongIds.has(7)).toBe(true);
     expect(autoDJ.playedInSession.has('session-video')).toBe(true);
   });
+  test('expires the in-memory catalog repeat guard after the configured cooldown', () => {
+    let now = 50_000_000;
+    const candidate = radioCandidate(7);
+    const playlistItems = [{ songId: 7, playlistId: 'repeat', weight: 1, mode: 'ordered', position: 0, itemCount: 1 }];
+    const { autoDJ } = createCatalogAutoDJ({ candidates: [candidate], playlistItems, now: () => now });
+    autoDJ.markTrackStarted({ catalogSongId: 7, youtubeId: 'session-video' });
+    autoDJ.currentRadioContext = null;
+
+    expect(autoDJ._isCatalogCandidateHardEligible(candidate, now)).toBe(false);
+
+    now += (12 * 60 * 60 * 1000) + 1;
+
+    expect(autoDJ._isCatalogCandidateHardEligible(candidate, now)).toBe(true);
+    expect(autoDJ.playedSongIds.has(7)).toBe(false);
+  });
+
 
   test('relaxes 90 minute artist spacing only when the otherwise-hard-valid pool is empty', async () => {
     const now = 30_000_000;

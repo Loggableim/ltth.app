@@ -16,16 +16,22 @@ class AutoDJ {
     this.mixSeedIndex = 0;
     this.lastPlaylistTrack = null;
     this.playedInSession = new Set();
-    this.playedSongIds = new Set();
+    this.playedSongIds = new Map();
     this.consecutiveCount = 0;
     this.selectionSource = null;
     this.blockedCount = 0;
     this.lastSelection = null;
     this.lastResult = { state: 'idle', message: 'Auto-DJ bereit.' };
     this.currentRadioContext = null;
-    this.requestSeed = null;
+    this.manualRadioSeed = null;
+    this.requestSeeds = [];
     this.recentNovelty = [];
     this.genreSelectionCounts = new Map();
+    this.recentSelections = [];
+    this.radioPlan = [];
+    this.pendingRadioPlanSongIds = new Set();
+    this.radioPlanPromise = null;
+    this.radioPlanRevision = 0;
     this.updateConfig(config);
     this.isActive = this.config.enabled;
   }
@@ -111,6 +117,7 @@ class AutoDJ {
       5,
       120
     );
+    this.invalidateRadioPlan('config-update');
     if (!this.config.enabled) {
       this.isActive = false;
       this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
@@ -136,7 +143,7 @@ class AutoDJ {
   }
 
   async onQueueEmpty() {
-    if (!this.config.enabled) {
+    if (!this.config.enabled && !this.hasArtistRadio()) {
       this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
       return null;
     }
@@ -146,15 +153,15 @@ class AutoDJ {
   }
 
   async getNextSong(force = false) {
-    if (!this.config.enabled) {
+    if (!this.config.enabled && !this.hasArtistRadio()) {
       this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
       return null;
     }
-    if (!force && !this.isActive) {
+    if (!force && !this.isActive && !this.hasArtistRadio()) {
       this._setResult('idle', 'Auto-DJ wartet auf einen freien Queue-Slot.');
       return null;
     }
-    if (!force && this.consecutiveCount >= this.config.maxConsecutiveAutoDJ) {
+    if (!force && !this.hasArtistRadio() && this.consecutiveCount >= this.config.maxConsecutiveAutoDJ) {
       this.isActive = false;
       this._setResult(
         'limit-reached',
@@ -194,9 +201,15 @@ class AutoDJ {
     this.mixSeedIndex = 0;
     this.lastPlaylistTrack = null;
     this.currentRadioContext = null;
-    this.requestSeed = null;
+    this.manualRadioSeed = null;
+    this.requestSeeds = [];
+    this.recentSelections = [];
     this.recentNovelty = [];
     this.genreSelectionCounts.clear();
+    this.radioPlan = [];
+    this.pendingRadioPlanSongIds.clear();
+    this.radioPlanPromise = null;
+    this.radioPlanRevision += 1;
   }
 
   markTrackStarted(track) {
@@ -206,7 +219,9 @@ class AutoDJ {
       this.playedInSession.add(track.youtubeId);
     }
     const songId = Number(track?.catalogSongId ?? track?.songId);
-    if (Number.isInteger(songId) && songId > 0) this.playedSongIds.add(songId);
+    const isReservedPlanTrack = Number(track?.radioPlanRevision) === this.radioPlanRevision;
+    if (Number.isInteger(songId) && songId > 0) this.playedSongIds.set(songId, this.now());
+    if (Number.isInteger(songId) && songId > 0) this.pendingRadioPlanSongIds.delete(songId);
     if (track?.radioNovelty) {
       this.recentNovelty.push(true);
       this.recentNovelty = this.recentNovelty.slice(-10);
@@ -214,20 +229,56 @@ class AutoDJ {
       this.recentNovelty.push(false);
       this.recentNovelty = this.recentNovelty.slice(-10);
     }
-    if (track?.radioRequestSeed && this.requestSeed?.remaining > 0) {
-      this.requestSeed.remaining -= 1;
-      if (this.requestSeed.remaining <= 0) this.requestSeed = null;
-    }
+    if (track?.requestedBy === 'AutoDJ' || track?.radioRequestSeed) this._consumeRequestSeedInfluence();
+    this._rememberDiversity(track);
     this.setRadioContext(track);
+    if (!isReservedPlanTrack) this.invalidateRadioPlan('external-track-started');
     this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`, {
       title: track?.title || 'Unbekannter Titel'
     });
   }
 
   setPlaybackSeed(track) {
+    this.invalidateRadioPlan('playback-seed');
     this.setRadioContext(track);
     if (!track?.youtubeId) return false;
     this.lastPlaylistTrack = { ...track };
+    return true;
+  }
+
+  startArtistRadio(track) {
+    const provider = String(track?.provider || track?.source || 'youtube').toLowerCase();
+    const youtubeId = String(track?.youtubeId || track?.providerId || '').trim();
+    if (provider !== 'youtube' || !youtubeId) {
+      this._setResult('artist-radio-seed-required', 'Song-Radio benoetigt einen YouTube-Titel als Startpunkt.');
+      return false;
+    }
+    this.invalidateRadioPlan('artist-radio-start');
+    this.manualRadioSeed = {
+      ...track,
+      youtubeId,
+      startedAt: this.now()
+    };
+    this.isActive = true;
+    this.setRadioContext(this.manualRadioSeed);
+    this._setResult('artist-radio-ready', `Song-Radio startet ab: ${track?.title || youtubeId}`, {
+      title: track?.title || '',
+      artist: track?.artist || '',
+      youtubeId
+    });
+    return true;
+  }
+
+  hasArtistRadio() {
+    return Boolean(this.manualRadioSeed?.youtubeId);
+  }
+
+  stopArtistRadio() {
+    if (!this.manualRadioSeed) return false;
+    this.manualRadioSeed = null;
+    this.invalidateRadioPlan('artist-radio-stop');
+    this.isActive = Boolean(this.config.enabled);
+    this._setResult('artist-radio-stopped', 'Song-Radio beendet.');
     return true;
   }
 
@@ -248,46 +299,155 @@ class AutoDJ {
   setRequestSeed(track) {
     if (!this.config.requestSeedsEnabled || !track || typeof track !== 'object') return false;
     const artist = String(track.artist || '').trim();
+    const artistKey = this._normalizeText(artist);
     const genres = this._normalizeGenres(track.genres || track.categories || []);
-    if (!artist && genres.length === 0) return false;
-    this.requestSeed = {
+    if (!artistKey && genres.length === 0) return false;
+
+    const now = this.now();
+    this._pruneRequestSeeds(now);
+    const key = `${artistKey}|${genres.join('|')}`;
+    const existing = this.requestSeeds.find((seed) => seed.key === key);
+    if (existing) {
+      existing.weight = Math.min(3, Number(existing.weight || 1) + 1);
+      existing.remaining = Math.max(Number(existing.remaining) || 0, 6);
+      existing.addedAt = now;
+      this.invalidateRadioPlan('request-seed');
+      return true;
+    }
+    this.requestSeeds.push({
+      key,
       artist,
-      artistKey: this._normalizeText(artist),
+      artistKey,
       genres,
-      remaining: 2
-    };
+      weight: 1,
+      remaining: 6,
+      addedAt: now
+    });
+    this.requestSeeds = this.requestSeeds.slice(-6);
+    this.invalidateRadioPlan('request-seed');
     return true;
   }
+
+  _getActiveRequestSeeds(now = this.now()) {
+    const maximumAgeMs = 12 * 60 * 60 * 1000;
+    return this.requestSeeds.filter((seed) => {
+      const remaining = Number(seed?.remaining);
+      const addedAt = Number(seed?.addedAt);
+      return remaining > 0 && Number.isFinite(addedAt) && now - addedAt < maximumAgeMs;
+    });
+  }
+
+  _pruneRequestSeeds(now = this.now()) {
+    this.requestSeeds = this._getActiveRequestSeeds(now);
+  }
+
+  _consumeRequestSeedInfluence() {
+    const now = this.now();
+    this.requestSeeds = this._getActiveRequestSeeds(now).map((seed) => ({
+      ...seed,
+      remaining: Math.max(0, Number(seed.remaining) - 1)
+    })).filter((seed) => seed.remaining > 0);
+  }
+
+  _getRequestSeedRemaining() {
+    return this._getActiveRequestSeeds().reduce((remaining, seed) => (
+      Math.max(remaining, Number(seed.remaining) || 0)
+    ), 0);
+  }
+
+  _rememberDiversity(track) {
+    if (!track || typeof track !== 'object') return;
+    const artistKeys = Array.isArray(track.radioArtistKeys)
+      ? track.radioArtistKeys.map((artist) => this._normalizeText(artist)).filter(Boolean)
+      : String(track.artist || '').split(',').map((artist) => this._normalizeText(artist)).filter(Boolean);
+    const genres = this._normalizeGenres(track.genres || track.categories || []);
+    const decade = this._getDecade(track.releaseYear);
+    const playlistId = String(track.radioPlaylistId || '').trim() || null;
+    if (!artistKeys.length && !genres.length && !decade && !playlistId) return;
+    this.recentSelections.push({ artistKeys, genres, decade, playlistId });
+    this.recentSelections = this.recentSelections.slice(-12);
+    if (track.radioGenreTarget) {
+      this.genreSelectionCounts.set(
+        track.radioGenreTarget,
+        (this.genreSelectionCounts.get(track.radioGenreTarget) || 0) + 1
+      );
+    }
+  }
+
+  _getDecade(releaseYear) {
+    const year = Number(releaseYear);
+    if (!Number.isInteger(year) || year < 1880 || year > 2100) return null;
+    return Math.floor(year / 10) * 10;
+  }
+
+  _getDiversityScore(candidate, playlistId = null) {
+    const recent = this.recentSelections.slice(-8);
+    const artistKeys = (candidate?.artists || []).map((artist) => this._normalizeText(artist.name)).filter(Boolean);
+    const genres = this._normalizeGenres(candidate?.genres || []);
+    const decade = this._getDecade(candidate?.releaseYear);
+    const normalizedPlaylistId = String(playlistId || '').trim() || null;
+    const artistRepeats = recent.filter((entry) => entry.artistKeys.some((artist) => artistKeys.includes(artist))).length;
+    const genreRepeats = recent.filter((entry) => entry.genres.some((genre) => genres.includes(genre))).length;
+    const decadeRepeats = decade ? recent.filter((entry) => entry.decade === decade).length : 0;
+    const playlistRepeats = normalizedPlaylistId
+      ? recent.filter((entry) => entry.playlistId === normalizedPlaylistId).length
+      : 0;
+    const artistFactor = this._clamp(0.55, 1, 1 - (artistRepeats * 0.14));
+    const genreFactor = this._clamp(0.68, 1, 1 - (genreRepeats * 0.07));
+    const decadeFactor = this._clamp(0.72, 1, 1 - (decadeRepeats * 0.08));
+    const playlistFactor = this._clamp(0.7, 1, 1 - (playlistRepeats * 0.1));
+    return {
+      artistDiversityFactor: artistFactor,
+      genreDiversityFactor: genreFactor,
+      decadeDiversityFactor: decadeFactor,
+      playlistDiversityFactor: playlistFactor,
+      diversityFactor: artistFactor * genreFactor * decadeFactor * playlistFactor
+    };
+  }
+
 
   markPlaybackFailed(error) {
     const detail = error?.message || error || 'Unbekannter Fehler';
     this._setResult('error', `Wiedergabe fehlgeschlagen: ${detail}`, { error: detail });
   }
 
-  getSelectionBlocks(now = Date.now()) {
+  getSelectionBlocks(now = this.now()) {
     const cooldownMs = this._getRepeatCooldownMs();
+    const artistSpacingMs = Math.max(0, Number(this.config.artistSpacingMinutes) || 0) * 60 * 1000;
+    const oldestRelevant = now - Math.max(cooldownMs, artistSpacingMs);
     const blocks = {
       youtubeIds: new Set(),
       titleKeys: new Set(),
-      artistKeys: new Set()
+      artistKeys: new Set(),
+      now
     };
 
     const addTrack = (track) => {
-      const youtubeId = String(track.youtubeId || '').trim();
-      const titleKey = this._normalizeText(track.titleKey ?? track.title);
-      const artistKey = this._normalizeText(track.artistKey ?? track.artist);
+      const youtubeId = String(track?.youtubeId || '').trim();
+      const titleKey = this._normalizeText(track?.titleKey ?? track?.title);
       if (youtubeId) blocks.youtubeIds.add(youtubeId);
       if (titleKey) blocks.titleKeys.add(titleKey);
+    };
+    const addArtist = (track) => {
+      const artistKey = this._normalizeText(track?.artistKey ?? track?.artist);
       if (artistKey) blocks.artistKeys.add(artistKey);
     };
 
     try {
       const history = this.db.prepare(
-        `SELECT youtubeId, title, artist
+        `SELECT youtubeId, title, artist, finishedAt
          FROM plugin_music_bot_history
          WHERE COALESCE(skipped, 0) = 0 AND finishedAt >= ?`
-      ).all(now - cooldownMs);
-      history.forEach(addTrack);
+      ).all(oldestRelevant);
+      history.forEach((track) => {
+        const finishedAt = Number(track?.finishedAt);
+        const withinCooldown = !Number.isFinite(finishedAt) || finishedAt >= now - cooldownMs;
+        const withinArtistSpacing = artistSpacingMs > 0 && (
+          !Number.isFinite(finishedAt) || finishedAt >= now - artistSpacingMs
+        );
+        if (withinCooldown) addTrack(track);
+        if (withinArtistSpacing) addArtist(track);
+      });
 
       const exclusions = this.db.prepare(
         `SELECT youtubeId, titleKey, artistKey
@@ -304,16 +464,52 @@ class AutoDJ {
 
   isTrackBlocked(track, blocks) {
     const youtubeId = String(track?.youtubeId || '').trim();
-    const titleKey = this._normalizeText(track?.title);
-    const artistKey = this._normalizeText(track?.artist);
+    const titleKey = this._normalizeText(track?.titleKey ?? track?.title);
     return Boolean(
-      (youtubeId && blocks.youtubeIds.has(youtubeId)) ||
-      (titleKey && blocks.titleKeys.has(titleKey)) ||
-      (artistKey && blocks.artistKeys.has(artistKey))
+      (youtubeId && blocks?.youtubeIds?.has(youtubeId)) ||
+      (titleKey && blocks?.titleKeys?.has(titleKey))
     );
   }
 
-  recordFailedTrack(track, reason, now = Date.now()) {
+  getTrackEligibility(track, { blocks, now = this.now(), checkArtistSpacing = true } = {}) {
+    if (!track || typeof track !== 'object') return { eligible: false, reason: 'invalid-track' };
+    const selectionBlocks = blocks || this.getSelectionBlocks(now);
+    if (this.isBanned(track)) return { eligible: false, reason: 'banned' };
+    if (this.isTrackBlocked(track, selectionBlocks)) return { eligible: false, reason: 'repeat-cooldown' };
+
+    const songId = Number(track.catalogSongId ?? track.songId);
+    if (songId > 0 && songId === Number(this.currentRadioContext?.catalogSongId)) {
+      return { eligible: false, reason: 'current-track' };
+    }
+    if (Number.isInteger(songId) && songId > 0) {
+      if (this._isCatalogSongRecentlyPlayed(songId, now)) {
+        return { eligible: false, reason: 'session-cooldown' };
+      }
+    } else if (track.youtubeId && this.playedInSession.has(track.youtubeId)) {
+      return { eligible: false, reason: 'session-repeat' };
+    }
+
+    if (checkArtistSpacing) {
+      const artistKey = this._normalizeText(track.artist);
+      if (artistKey && selectionBlocks.artistKeys.has(artistKey)) {
+        return { eligible: false, reason: 'artist-spacing' };
+      }
+    }
+    return { eligible: true, reason: null };
+  }
+
+  _isCatalogSongRecentlyPlayed(songId, now = this.now()) {
+    const playedAt = Number(this.playedSongIds.get(songId));
+    if (!Number.isFinite(playedAt) || playedAt <= 0) return false;
+    if (playedAt >= now - this._getRepeatCooldownMs()) return true;
+    this.playedSongIds.delete(songId);
+    return false;
+  }
+
+  recordFailedTrack(track, reason, now = this.now()) {
+    const songId = Number(track?.catalogSongId ?? track?.songId);
+    if (Number.isInteger(songId) && songId > 0) this.pendingRadioPlanSongIds.delete(songId);
+    this.invalidateRadioPlan('track-failed');
     const createdAt = now;
     try {
       this.db.prepare(
@@ -361,7 +557,14 @@ class AutoDJ {
       previewEnabled: this.config.previewEnabled,
       chatVotingEnabled: this.config.chatVotingEnabled,
       chatVoteCloseBeforeEndSeconds: this.config.chatVoteCloseBeforeEndSeconds,
-      requestSeedRemaining: this.requestSeed?.remaining || 0,
+      requestSeedRemaining: this._getRequestSeedRemaining(),
+      requestProfileCount: this._getActiveRequestSeeds().length,
+      artistRadio: {
+        active: this.hasArtistRadio(),
+        title: this.manualRadioSeed?.title || '',
+        artist: this.manualRadioSeed?.artist || '',
+        youtubeId: this.manualRadioSeed?.youtubeId || ''
+      },
       lastPlaylistTrack: this.lastPlaylistTrack
         ? {
           title: this.lastPlaylistTrack.title,
@@ -375,6 +578,19 @@ class AutoDJ {
 
   async _selectTrack() {
     try {
+      if (this.hasArtistRadio()) {
+        const track = await this._pickArtistRadio();
+        if (track) {
+          this.selectionSource = 'artist-radio';
+          return track;
+        }
+        return null;
+      }
+      if (this.radioPlanPromise) await this.radioPlanPromise;
+      if (this._hasReservedRadioPlan()) {
+        const planned = this._takeReservedRadioPlanTrack();
+        if (planned) return planned;
+      }
       switch (this.config.mode) {
         case 'playlist':
           return this._pickFromPlaylist();
@@ -405,7 +621,9 @@ class AutoDJ {
 
   async _pickFromPlaylist() {
     const playlist = this.config.playlist || this.config.playlistUrls;
-    const attempts = Array.isArray(playlist) ? playlist.length : 0;
+    const attempts = Array.isArray(playlist) ? Math.max(playlist.length, 4) : 0;
+    const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
     for (let i = 0; i < attempts; i += 1) {
       const item = this._nextPlaylistItem();
       if (!item) break;
@@ -414,11 +632,15 @@ class AutoDJ {
         const resolved = this.musicResolver.resolvePlaylistEntry
           ? await this.musicResolver.resolvePlaylistEntry(item, playlistItem)
           : await this.musicResolver.resolve(item);
-        if (resolved?.success) {
-          this.playlistTrackIndices.set(item, playlistItem + 1);
-          this.lastPlaylistTrack = resolved.song;
-          return resolved.song;
+        if (!resolved?.success || !resolved.song) continue;
+        this.playlistTrackIndices.set(item, playlistItem + 1);
+        const eligibility = this.getTrackEligibility(resolved.song, { blocks, now });
+        if (!eligibility.eligible) {
+          this.blockedCount += 1;
+          continue;
         }
+        this.lastPlaylistTrack = resolved.song;
+        return resolved.song;
       } catch (error) {
         this.api.log?.(`[music-bot] AutoDJ playlist resolve failed: ${error.message}`, 'error');
       }
@@ -441,10 +663,11 @@ class AutoDJ {
       return null;
     }
 
+    const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
     const encodedId = encodeURIComponent(seed.youtubeId);
     const radioUrl = `https://www.youtube.com/watch?v=${encodedId}&list=RD${encodedId}`;
     let playlistItem = this.relatedTrackIndices.get(radioUrl) || 2;
-    let fallback = null;
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
       let resolved;
@@ -456,24 +679,24 @@ class AutoDJ {
         continue;
       }
       playlistItem += 1;
-      if (!resolved?.success || !resolved.song) continue;
-
-      if (resolved.song.youtubeId === seed.youtubeId) continue;
-      if (!fallback) fallback = resolved.song;
-      if (!resolved.song.youtubeId || !this.playedInSession.has(resolved.song.youtubeId)) {
-        this.relatedTrackIndices.set(radioUrl, playlistItem);
-        return resolved.song;
+      if (!resolved?.success || !resolved.song || resolved.song.youtubeId === seed.youtubeId) continue;
+      const eligibility = this.getTrackEligibility(resolved.song, { blocks, now });
+      if (!eligibility.eligible) {
+        this.blockedCount += 1;
+        continue;
       }
+      this.relatedTrackIndices.set(radioUrl, playlistItem);
+      return resolved.song;
     }
 
     this.relatedTrackIndices.set(radioUrl, playlistItem);
-    return fallback;
+    return null;
   }
 
   async _pickFromCatalogRadio() {
     this.selectionSource = null;
     this.lastSelection = null;
-    const familiarFirst = this.random() < 0.6;
+    const familiarFirst = this.random() * 100 < this.config.mixHistoryPercent;
     if (familiarFirst) {
       const familiar = this._pickCatalogFamiliar();
       if (familiar) {
@@ -512,9 +735,10 @@ class AutoDJ {
       };
     }
     const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
     const candidates = this.catalog?.getRadioCandidates?.(songIds, { now }) || [];
     const bySongId = new Map(candidates.map((candidate) => [Number(candidate.songId), candidate]));
-    const hardEligible = candidates.filter((candidate) => this._isCatalogCandidateHardEligible(candidate, now));
+    const hardEligible = candidates.filter((candidate) => this._isCatalogCandidateHardEligible(candidate, now, blocks));
     this.blockedCount = candidates.length - hardEligible.length;
     const genreFilterApplied = this._hasSelectedGenres();
     const genreEligible = genreFilterApplied
@@ -595,16 +819,13 @@ class AutoDJ {
 
     const scored = group.items.map((item) => {
       const candidate = pool.bySongId.get(Number(item.songId));
-      return { item, candidate, ...this._scoreCatalogCandidate(candidate) };
+      return { item, candidate, ...this._scoreCatalogCandidate(candidate, { playlistId: group.playlistId }) };
     }).filter((entry) => entry.candidate && (!genreTarget || this._candidateHasGenre(entry.candidate, genreTarget)));
     const selected = group.mode === 'shuffle'
       ? this._chooseWeighted(scored, (entry) => entry.score)
       : scored[0];
     if (!selected) return null;
 
-    if (genreTarget) {
-      this.genreSelectionCounts.set(genreTarget, (this.genreSelectionCounts.get(genreTarget) || 0) + 1);
-    }
 
     if (group.mode === 'ordered') {
       const length = Math.max(1, Number(selected.item.itemCount) || group.items.length);
@@ -636,6 +857,7 @@ class AutoDJ {
     return this._catalogCandidateToTrack(selected.candidate, {
       ...selected,
       genreTarget,
+      playlistId: group.playlistId,
       albumSpacingRelaxed: pool.albumSpacingRelaxed,
       artistSpacingRelaxed: pool.artistSpacingRelaxed
     });
@@ -648,13 +870,19 @@ class AutoDJ {
     const discoveryCandidates = genreTarget
       ? pool.eligible.filter((candidate) => this._candidateHasGenre(candidate, genreTarget))
       : pool.eligible;
+    const discoveryEntries = discoveryCandidates.map((candidate) => {
+      const playlistId = this._getCandidatePlaylistId(pool.items, candidate);
+      return { candidate, playlistId, ...this._scoreCatalogCandidate(candidate, { playlistId }) };
+    });
     const seedEntry = this._chooseWeighted(
-      discoveryCandidates.map((candidate) => ({ candidate, ...this._scoreCatalogCandidate(candidate) })),
+      discoveryEntries,
       (entry) => entry.score
     );
     if (!seedEntry) return null;
     const seed = this._catalogCandidateToTrack(seedEntry.candidate);
-    let discovered = await this._pickRelatedToSeed(seed, this.getSelectionBlocks(this.now()));
+    const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
+    let discovered = await this._pickRelatedToSeed(seed, blocks, now);
     if (!discovered && this.musicResolver?.resolve) {
       const query = [seed.artist, seed.title].filter(Boolean).join(' ');
       if (query) {
@@ -666,22 +894,28 @@ class AutoDJ {
         }
       }
     }
-    if (!discovered || this.isBanned(discovered)) return null;
-    if (discovered.youtubeId && this.playedInSession.has(discovered.youtubeId)) return null;
+    if (!discovered || !this.getTrackEligibility(discovered, { blocks, now }).eligible) return null;
 
     try {
       const resolved = this.catalog.resolveOrUpsert(discovered);
       const songId = Number(resolved?.song?.id);
       const canonical = Number.isInteger(songId)
-        ? this.catalog.getRadioCandidates?.([songId], { now: this.now() })?.find((candidate) => Number(candidate.songId) === songId)
+        ? this.catalog.getRadioCandidates?.([songId], { now })?.find((candidate) => Number(candidate.songId) === songId)
         : null;
-      if (canonical && !this._isCatalogCandidateHardEligible(canonical, this.now())) return null;
+      if (canonical && !this._isCatalogCandidateHardEligible(canonical, now, blocks)) return null;
       if (canonical && this._hasSelectedGenres() && !this._matchesSelectedGenre(canonical)) return null;
       if (canonical && genreTarget && !this._candidateHasGenre(canonical, genreTarget)) return null;
+      const canonicalArtists = (canonical?.artists || []).map((artist) => artist.name).filter(Boolean);
       discovered = {
         ...discovered,
         catalogSongId: Number.isInteger(songId) ? songId : undefined,
-        sourceId: resolved?.source?.id || discovered.sourceId
+        sourceId: resolved?.source?.id || discovered.sourceId,
+        releaseYear: canonical?.releaseYear || discovered.releaseYear,
+        genres: canonical?.genres || discovered.genres,
+        radioArtistKeys: canonicalArtists,
+        radioPlaylistId: seedEntry.playlistId,
+        radioGenreTarget: genreTarget,
+        radioRequestSeed: Boolean(seedEntry.requestSeedMatched)
       };
     } catch (error) {
       this.api.log?.(`[music-bot] AutoDJ discovery catalog lookup failed: ${error.message}`, 'warn');
@@ -694,17 +928,23 @@ class AutoDJ {
       artistSpacingRelaxed: pool.artistSpacingRelaxed,
       candidates: []
     };
-    if (genreTarget) {
-      this.genreSelectionCounts.set(genreTarget, (this.genreSelectionCounts.get(genreTarget) || 0) + 1);
-    }
     return discovered;
   }
 
-  _isCatalogCandidateHardEligible(candidate, now) {
+  _isCatalogCandidateHardEligible(candidate, now, blocks = this.getSelectionBlocks(now)) {
     if (!candidate || candidate.feedback === 'down') return false;
     const songId = Number(candidate.songId);
-    if (songId > 0 && songId === Number(this.currentRadioContext?.catalogSongId)) return false;
-    if (this.playedSongIds.has(songId)) return false;
+    const candidateTrack = {
+      title: candidate.title,
+      artist: (candidate.artists || []).map((artist) => artist.name).filter(Boolean).join(', '),
+      catalogSongId: songId
+    };
+    const eligibility = this.getTrackEligibility(candidateTrack, {
+      blocks,
+      now,
+      checkArtistSpacing: false
+    });
+    if (!eligibility.eligible) return false;
     const cooldownStartedAt = now - this._getRepeatCooldownMs();
     if (candidate.lastPlayedAt !== null && candidate.lastPlayedAt !== undefined
       && Number(candidate.lastPlayedAt) >= cooldownStartedAt) return false;
@@ -712,9 +952,13 @@ class AutoDJ {
   }
 
   isTrackHardEligible(track, now = this.now()) {
-    if (!track || this.isBanned(track)) return false;
-    if (track.youtubeId && this.playedInSession.has(track.youtubeId)) return false;
-    const songId = Number(track.catalogSongId ?? track.songId);
+    const songId = Number(track?.catalogSongId ?? track?.songId);
+    const eligibility = this.getTrackEligibility(track, {
+      blocks: this.getSelectionBlocks(now),
+      now,
+      checkArtistSpacing: !Number.isInteger(songId) || songId <= 0
+    });
+    if (!eligibility.eligible) return false;
     if (!Number.isInteger(songId) || songId <= 0 || !this.catalog?.getRadioCandidates) return true;
     const candidate = this.catalog.getRadioCandidates([songId], { now })
       .find((entry) => Number(entry.songId) === songId);
@@ -741,18 +985,35 @@ class AutoDJ {
     return lastPlayedAt >= now - (this.config.albumSpacingMinutes * 60 * 1000);
   }
 
-  _scoreCatalogCandidate(candidate) {
+  _scoreCatalogCandidate(candidate, { playlistId = null } = {}) {
+    const now = this.now();
     const completePlays = Math.max(0, Number(candidate?.completePlays) || 0);
+    const fullCompletions = Math.min(completePlays, Math.max(0, Number(candidate?.fullCompletions) || 0));
     const earlySkips = Math.max(0, Number(candidate?.earlySkips) || 0);
-    const implicitSongFactor = this._clamp(0.5, 1.5, 1 + (completePlays * 0.03) - (earlySkips * 0.10));
+    const implicitRawFactor = this._clamp(
+      0.5,
+      1.5,
+      1 + (completePlays * 0.03) + (fullCompletions * 0.06) - (earlySkips * 0.10)
+    );
+    const implicitSongFactor = this._decayFactor(
+      implicitRawFactor,
+      candidate?.implicitEvidenceUpdatedAt,
+      now
+    );
     const explicitSongFactor = candidate?.feedback === 'up' ? 3 : 1;
     const songFactor = explicitSongFactor * implicitSongFactor;
-    const affinities = (candidate?.artists || []).map((artist) => Number(artist.affinity) || 0);
+    const affinities = (candidate?.artists || []).map((artist) => this._decayFeedback(
+      artist.affinity,
+      artist.affinityUpdatedAt,
+      now
+    ));
     const affinity = affinities.length ? Math.max(...affinities) : 0;
     const artistFactor = this._clamp(0.4, 2.5, 1 + (affinity * 0.25));
-    const radioAffinity = Number(candidate?.radioAffinity) || 0;
+    const radioAffinity = this._decayFeedback(candidate?.radioAffinity, candidate?.radioAffinityUpdatedAt, now);
     const radioAffinityFactor = this._clamp(0.5, 1.6, 1 + (radioAffinity * 0.15));
-    const genreScores = Object.values(candidate?.genreAffinities || {}).map(Number).filter(Number.isFinite);
+    const genreScores = Object.entries(candidate?.genreAffinities || {}).map(([genre, score]) => (
+      this._decayFeedback(score, candidate?.genreAffinityUpdatedAt?.[genre], now)
+    )).filter(Number.isFinite);
     const genreAffinity = genreScores.length ? Math.max(...genreScores) : 0;
     const genreFactor = this._clamp(0.5, 1.6, 1 + (genreAffinity * 0.12));
     const candidateBpm = Number(candidate?.bpm);
@@ -760,10 +1021,14 @@ class AutoDJ {
     const hasBpmTransition = this.config.bpmTransitionsEnabled
       && Number.isFinite(candidateBpm) && candidateBpm > 0
       && Number.isFinite(contextBpm) && contextBpm > 0;
-    const bpmDistance = hasBpmTransition ? Math.abs(candidateBpm - contextBpm) : null;
+    const bpmTransition = hasBpmTransition
+      ? this._getBpmTransition(candidateBpm, contextBpm)
+      : { distance: null, relation: null };
     const bpmFactor = hasBpmTransition
-      ? this._clamp(0.65, 1.3, 1.25 - (bpmDistance / 100))
+      ? this._clamp(0.65, 1.3, 1.25 - (bpmTransition.distance / 100))
       : 1;
+    const longTailFactor = this._clamp(0.8, 1.2, 1 + ((10 - completePlays) * 0.02));
+    const diversity = this._getDiversityScore(candidate, playlistId);
     const requestSeed = this._getRequestSeedScore(candidate);
     return {
       explicitSongFactor,
@@ -773,12 +1038,44 @@ class AutoDJ {
       radioAffinityFactor,
       genreFactor,
       bpmFactor,
-      bpmDistance,
+      bpmDistance: bpmTransition.distance,
+      bpmRelation: bpmTransition.relation,
+      longTailFactor,
+      ...diversity,
       requestSeedFactor: requestSeed.factor,
       requestSeedActive: requestSeed.active,
       requestSeedMatched: requestSeed.matched,
-      score: songFactor * artistFactor * radioAffinityFactor * genreFactor * bpmFactor * requestSeed.factor
+      requestSeedMatchCount: requestSeed.matchCount,
+      score: songFactor * artistFactor * radioAffinityFactor * genreFactor * bpmFactor
+        * longTailFactor * diversity.diversityFactor * requestSeed.factor
     };
+  }
+
+  _decayFeedback(value, updatedAt, now = this.now()) {
+    const raw = Number(value) || 0;
+    const timestamp = Number(updatedAt);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return raw;
+    const ageMs = Math.max(0, now - timestamp);
+    return raw * Math.pow(0.5, ageMs / (30 * 24 * 60 * 60 * 1000));
+  }
+
+  _decayFactor(factor, updatedAt, now = this.now()) {
+    const timestamp = Number(updatedAt);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return factor;
+    const ageMs = Math.max(0, now - timestamp);
+    const weight = Math.pow(0.5, ageMs / (30 * 24 * 60 * 60 * 1000));
+    return 1 + ((factor - 1) * weight);
+  }
+
+  _getBpmTransition(candidateBpm, contextBpm) {
+    const options = [
+      { relation: 'direct', distance: Math.abs(candidateBpm - contextBpm) },
+      { relation: 'double-time', distance: Math.abs((candidateBpm * 2) - contextBpm) },
+      { relation: 'half-time', distance: Math.abs((candidateBpm / 2) - contextBpm) }
+    ];
+    return options.reduce((best, option) => (
+      option.distance < best.distance ? option : best
+    ), options[0]);
   }
 
   _catalogCandidateToTrack(candidate, scoring = {}) {
@@ -794,9 +1091,13 @@ class AutoDJ {
       catalogSongId: Number(candidate.songId),
       album: candidate.album || null,
       bpm: Number(candidate.bpm) || null,
+      releaseYear: Number(candidate.releaseYear) || null,
       genres: Array.isArray(candidate.genres) ? [...candidate.genres] : [],
+      radioArtistKeys: (candidate.artists || []).map((artist) => artist.name).filter(Boolean),
+      radioPlaylistId: String(scoring.playlistId || '').trim() || null,
+      radioGenreTarget: scoring.genreTarget || null,
       radioNovelty: this._isNovelCandidate(candidate, now),
-      radioRequestSeed: Boolean(scoring.requestSeedActive),
+      radioRequestSeed: Boolean(scoring.requestSeedMatched),
       radioReasons: this._buildCandidateReasons(candidate, scoring),
       ...this._sourceToTrack(primary),
       alternativeSources: alternatives
@@ -809,10 +1110,14 @@ class AutoDJ {
     const pool = this._loadCatalogPool();
     if (!pool.eligible.length) return [];
     const target = pool.genreTarget;
-    const entries = pool.eligible.map((candidate) => ({
-      candidate,
-      ...this._scoreCatalogCandidate(candidate)
-    })).sort((left, right) => (
+    const entries = pool.eligible.map((candidate) => {
+      const playlistId = this._getCandidatePlaylistId(pool.items, candidate);
+      return {
+        candidate,
+        playlistId,
+        ...this._scoreCatalogCandidate(candidate, { playlistId })
+      };
+    }).sort((left, right) => (
       right.score - left.score || Number(left.candidate.songId) - Number(right.candidate.songId)
     ));
     const prioritised = target
@@ -835,6 +1140,264 @@ class AutoDJ {
     }));
   }
 
+  invalidateRadioPlan(_reason = 'invalidated') {
+    this.radioPlan = [];
+    this.pendingRadioPlanSongIds.clear();
+    this.radioPlanPromise = null;
+    this.radioPlanRevision += 1;
+    return this.radioPlanRevision;
+  }
+
+  _canBuildRadioPlan() {
+    return !this.hasArtistRadio()
+      && this.config.mode === 'mix'
+      && Boolean(this.catalog && this.playlistStore && this._hasConfiguredCatalogRadioSources());
+  }
+
+  _hasReservedRadioPlan() {
+    return !this.hasArtistRadio()
+      && this.config.mode === 'mix'
+      && Array.isArray(this.radioPlan)
+      && this.radioPlan.length > 0;
+  }
+
+  _clonePlanData(value) {
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  _capturePlanningState(cursorState = null) {
+    return {
+      playedInSession: [...this.playedInSession],
+      playedSongIds: [...this.playedSongIds.entries()],
+      playlistTrackIndices: [...this.playlistTrackIndices.entries()],
+      relatedTrackIndices: [...this.relatedTrackIndices.entries()],
+      mixSeedIndex: this.mixSeedIndex,
+      lastPlaylistTrack: this._clonePlanData(this.lastPlaylistTrack),
+      currentRadioContext: this._clonePlanData(this.currentRadioContext),
+      requestSeeds: this._clonePlanData(this.requestSeeds),
+      recentNovelty: [...this.recentNovelty],
+      genreSelectionCounts: [...this.genreSelectionCounts.entries()],
+      recentSelections: this._clonePlanData(this.recentSelections),
+      selectionSource: this.selectionSource,
+      lastSelection: this._clonePlanData(this.lastSelection),
+      blockedCount: this.blockedCount,
+      cursorState: cursorState ? this._clonePlanData(cursorState) : null
+    };
+  }
+
+  _restorePlanningState(state) {
+    if (!state || typeof state !== 'object') return;
+    this.playedInSession = new Set(state.playedInSession || []);
+    this.playedSongIds = new Map(state.playedSongIds || []);
+    this.playlistTrackIndices = new Map(state.playlistTrackIndices || []);
+    this.relatedTrackIndices = new Map(state.relatedTrackIndices || []);
+    this.mixSeedIndex = Number(state.mixSeedIndex) || 0;
+    this.lastPlaylistTrack = this._clonePlanData(state.lastPlaylistTrack) || null;
+    this.currentRadioContext = this._clonePlanData(state.currentRadioContext) || null;
+    this.requestSeeds = this._clonePlanData(state.requestSeeds) || [];
+    this.recentNovelty = [...(state.recentNovelty || [])];
+    this.genreSelectionCounts = new Map(state.genreSelectionCounts || []);
+    this.recentSelections = this._clonePlanData(state.recentSelections) || [];
+    this.selectionSource = state.selectionSource || null;
+    this.lastSelection = this._clonePlanData(state.lastSelection) || null;
+    this.blockedCount = Number(state.blockedCount) || 0;
+  }
+
+  _createPlanningPlaylistStore(initialCursorState = null) {
+    const sourceStore = this.playlistStore;
+    const cursors = new Map(Object.entries(initialCursorState || {}));
+    const updates = [];
+    const getPlaylistId = (source) => String(source?.playlistId || source?.id || '');
+    const getSources = () => {
+      const sources = typeof sourceStore?.getRadioSources === 'function'
+        ? sourceStore.getRadioSources.call(sourceStore)
+        : [];
+      return (Array.isArray(sources) ? sources : []).map((source) => {
+        const playlistId = getPlaylistId(source);
+        const cursor = cursors.has(playlistId)
+          ? Number(cursors.get(playlistId)) || 0
+          : Number(source?.cursor) || 0;
+        return { ...source, cursor };
+      });
+    };
+    const virtualStore = Object.create(sourceStore || null);
+    virtualStore.getRadioSources = getSources;
+    virtualStore.getRadioCandidates = (...args) => {
+      const candidates = typeof sourceStore?.getRadioCandidates === 'function'
+        ? sourceStore.getRadioCandidates.apply(sourceStore, args)
+        : [];
+      const sourcesByPlaylist = new Map(getSources().map((source) => [getPlaylistId(source), source]));
+      const grouped = new Map();
+      (Array.isArray(candidates) ? candidates : []).forEach((item) => {
+        const playlistId = String(item?.playlistId || '');
+        if (!grouped.has(playlistId)) grouped.set(playlistId, []);
+        grouped.get(playlistId).push(item);
+      });
+      return [...grouped.entries()].flatMap(([playlistId, items]) => {
+        const ordered = items.slice().sort((left, right) => (
+          Number(left?.position) - Number(right?.position)
+        ));
+        if (ordered.length < 2) return ordered;
+        const source = sourcesByPlaylist.get(playlistId);
+        const cursor = cursors.has(playlistId)
+          ? Number(cursors.get(playlistId)) || 0
+          : Number(source?.cursor) || 0;
+        let start = ordered.findIndex((item) => Number(item?.position) >= cursor);
+        if (start < 0) start = 0;
+        return [...ordered.slice(start), ...ordered.slice(0, start)];
+      });
+    };
+    virtualStore.advanceRadioCursor = (playlistId, cursor) => {
+      const id = String(playlistId || '');
+      const next = Math.max(0, Math.floor(Number(cursor) || 0));
+      cursors.set(id, next);
+      updates.push({ playlistId: id, cursor: next });
+      return { playlistId: id, cursor: next };
+    };
+    virtualStore.getPlanningCursorState = () => Object.fromEntries(cursors.entries());
+    virtualStore.getPlanningCursorUpdates = () => updates.map((update) => ({ ...update }));
+    return virtualStore;
+  }
+
+  _createPlanSelector(initialState = null) {
+    const playlistStore = this._createPlanningPlaylistStore(initialState?.cursorState);
+    const planner = new AutoDJ(this.config, this.musicResolver, this.db, this.api, {
+      catalog: this.catalog,
+      playlistStore,
+      now: this.now,
+      random: this.random
+    });
+    planner._restorePlanningState(initialState || this._capturePlanningState());
+    planner.isActive = true;
+    return { planner, playlistStore };
+  }
+
+  _applyPlannedSelectionState(state) {
+    if (!state || typeof state !== 'object') return;
+    this.playlistTrackIndices = new Map(state.playlistTrackIndices || []);
+    this.relatedTrackIndices = new Map(state.relatedTrackIndices || []);
+    this.mixSeedIndex = Number(state.mixSeedIndex) || 0;
+    this.lastPlaylistTrack = this._clonePlanData(state.lastPlaylistTrack) || null;
+    this.selectionSource = state.selectionSource || null;
+    this.lastSelection = this._clonePlanData(state.lastSelection) || null;
+    this.blockedCount = Number(state.blockedCount) || 0;
+  }
+
+  async _buildRadioPlan(targetLength, revision) {
+    const plan = Array.isArray(this.radioPlan) ? [...this.radioPlan] : [];
+    const initialState = plan.length
+      ? plan[plan.length - 1].stateAfterStart
+      : this._capturePlanningState();
+    const { planner, playlistStore } = this._createPlanSelector(initialState);
+
+    while (plan.length < targetLength) {
+      const updateStart = playlistStore.getPlanningCursorUpdates().length;
+      let track;
+      try {
+        track = await planner._pickFromCatalogRadio();
+      } catch (error) {
+        this.api.log?.(`[music-bot] DJ plan selection failed: ${error.message}`, 'warn');
+        break;
+      }
+      if (!track) break;
+
+      const selectionState = planner._capturePlanningState(playlistStore.getPlanningCursorState());
+      const selectionSource = planner.selectionSource;
+      const lastSelection = planner._clonePlanData(planner.lastSelection);
+      const cursorUpdates = playlistStore.getPlanningCursorUpdates().slice(updateStart);
+      planner.markTrackStarted({ ...track, requestedBy: 'AutoDJ' });
+      const stateAfterStart = planner._capturePlanningState(playlistStore.getPlanningCursorState());
+      const songId = Number(track.catalogSongId ?? track.songId);
+      const matchingScore = lastSelection?.candidates?.find((candidate) => (
+        Number(candidate.songId) === songId
+      ))?.score;
+      const key = Number.isInteger(songId) && songId > 0
+        ? `song:${songId}`
+        : `source:${track.youtubeId || track.providerId || track.url || track.title || plan.length}`;
+      plan.push({
+        key,
+        songId: Number.isInteger(songId) && songId > 0 ? songId : null,
+        track: this._clonePlanData(track),
+        selectionSource,
+        lastSelection,
+        selectionState,
+        stateAfterStart,
+        cursorUpdates,
+        score: Number(matchingScore) || 0,
+        reasons: this._clonePlanData(track.radioReasons) || [],
+        isNovel: Boolean(track.radioNovelty)
+      });
+    }
+
+    if (revision === this.radioPlanRevision) this.radioPlan = plan;
+    return this.radioPlan;
+  }
+
+  async _ensureRadioPlan(limit = 5) {
+    if (!this._canBuildRadioPlan()) return [];
+    const safeLimit = this._normalizeInteger(limit, 5, 1, 10);
+    const targetLength = safeLimit;
+    if (this.radioPlan.length >= targetLength) return this.radioPlan;
+    if (this.radioPlanPromise) {
+      await this.radioPlanPromise;
+      return this.radioPlan;
+    }
+    const revision = this.radioPlanRevision;
+    const operation = this._buildRadioPlan(targetLength, revision);
+    this.radioPlanPromise = operation;
+    try {
+      await operation;
+    } finally {
+      if (this.radioPlanPromise === operation) this.radioPlanPromise = null;
+    }
+    return this.radioPlan;
+  }
+
+  _takeReservedRadioPlanTrack() {
+    while (this.radioPlan.length) {
+      const entry = this.radioPlan.shift();
+      const track = entry?.track;
+      const songId = Number(entry?.songId);
+      if (!track || !this.isTrackHardEligible(track)) {
+        this.invalidateRadioPlan('reserved-plan-ineligible');
+        return null;
+      }
+      this._applyPlannedSelectionState(entry.selectionState);
+      (entry.cursorUpdates || []).forEach((update) => {
+        this.playlistStore.advanceRadioCursor?.(update.playlistId, update.cursor);
+      });
+      if (Number.isInteger(songId) && songId > 0) this.pendingRadioPlanSongIds.add(songId);
+      this.selectionSource = entry.selectionSource;
+      this.lastSelection = this._clonePlanData(entry.lastSelection) || null;
+      return {
+        ...track,
+        radioPlanRevision: this.radioPlanRevision,
+        radioPlanSongId: Number.isInteger(songId) && songId > 0 ? songId : undefined
+      };
+    }
+    return null;
+  }
+
+  async getRadioPlan(limit = 5) {
+    const safeLimit = this._normalizeInteger(limit, 5, 1, 10);
+    const plan = await this._ensureRadioPlan(safeLimit);
+    return plan.slice(0, safeLimit).map((entry, index) => ({
+      id: `plan:${this.radioPlanRevision}:${entry.key}`,
+      songId: entry.songId,
+      title: entry.track.title,
+      artist: entry.track.artist,
+      album: entry.track.album || null,
+      bpm: Number(entry.track.bpm) || null,
+      genres: Array.isArray(entry.track.genres) ? [...entry.track.genres] : [],
+      score: entry.score,
+      reasons: entry.reasons,
+      isNovel: entry.isNovel,
+      selectionSource: entry.selectionSource,
+      position: index + 1
+    }));
+  }
+
   getTrackForPreview(previewId) {
     const match = /^catalog:(\d+):/.exec(String(previewId || ''));
     const songId = Number(match?.[1]);
@@ -842,7 +1405,8 @@ class AutoDJ {
     const pool = this._loadCatalogPool();
     const candidate = pool.eligible.find((entry) => Number(entry.songId) === songId);
     if (!candidate) return null;
-    const scoring = this._scoreCatalogCandidate(candidate);
+    const playlistId = this._getCandidatePlaylistId(pool.items, candidate);
+    const scoring = this._scoreCatalogCandidate(candidate, { playlistId });
     const selectedGenre = this.config.selectedGenres
       .filter((genre) => this._candidateHasGenre(candidate, genre))
       .reduce((best, genre) => {
@@ -851,9 +1415,6 @@ class AutoDJ {
           ? genre
           : best;
       }, null);
-    if (selectedGenre) {
-      this.genreSelectionCounts.set(selectedGenre, (this.genreSelectionCounts.get(selectedGenre) || 0) + 1);
-    }
     this.selectionSource = 'vote';
     this.lastSelection = {
       type: 'vote',
@@ -865,6 +1426,7 @@ class AutoDJ {
     return this._catalogCandidateToTrack(candidate, {
       ...scoring,
       genreTarget: selectedGenre,
+      playlistId,
       albumSpacingRelaxed: pool.albumSpacingRelaxed,
       artistSpacingRelaxed: pool.artistSpacingRelaxed
     });
@@ -880,6 +1442,12 @@ class AutoDJ {
 
   _candidateHasGenre(candidate, genre) {
     return Array.isArray(candidate?.genres) && candidate.genres.includes(genre);
+  }
+
+  _getCandidatePlaylistId(items, candidate) {
+    const item = (items || []).find((entry) => Number(entry.songId) === Number(candidate?.songId));
+    const playlistId = String(item?.playlistId || '').trim();
+    return playlistId || null;
   }
 
   _getBalancedGenreTarget(candidates) {
@@ -910,16 +1478,35 @@ class AutoDJ {
   }
 
   _getRequestSeedScore(candidate) {
-    const seed = this.requestSeed;
-    const active = Boolean(this.config.requestSeedsEnabled && seed?.remaining > 0);
-    if (!active) return { active: false, matched: false, factor: 1 };
-    const artistMatch = seed.artistKey && (candidate?.artists || []).some((artist) => (
-      this._normalizeText(artist.name) === seed.artistKey
-    ));
-    const genreMatch = seed.genres.some((genre) => this._candidateHasGenre(candidate, genre));
-    if (artistMatch) return { active: true, matched: true, factor: 1.45 };
-    if (genreMatch) return { active: true, matched: true, factor: 1.25 };
-    return { active: true, matched: false, factor: 1 };
+    const now = this.now();
+    const seeds = this.config.requestSeedsEnabled ? this._getActiveRequestSeeds(now) : [];
+    if (!seeds.length) return { active: false, matched: false, matchCount: 0, factor: 1 };
+
+    let boost = 0;
+    let matchCount = 0;
+    seeds.forEach((seed) => {
+      const ageMs = Math.max(0, now - Number(seed.addedAt));
+      const recency = Math.pow(0.5, ageMs / (2 * 60 * 60 * 1000));
+      const remaining = this._clamp(0.2, 1, Number(seed.remaining) / 6);
+      const strength = this._clamp(0.25, 3, Number(seed.weight) || 1) * recency * remaining;
+      const artistMatch = seed.artistKey && (candidate?.artists || []).some((artist) => (
+        this._normalizeText(artist.name) === seed.artistKey
+      ));
+      const genreMatch = seed.genres.some((genre) => this._candidateHasGenre(candidate, genre));
+      if (artistMatch) {
+        boost += 0.4 * strength;
+        matchCount += 1;
+      } else if (genreMatch) {
+        boost += 0.22 * strength;
+        matchCount += 1;
+      }
+    });
+    return {
+      active: true,
+      matched: matchCount > 0,
+      matchCount,
+      factor: this._clamp(1, 1.75, 1 + boost)
+    };
   }
 
   _buildCandidateReasons(candidate, scoring = {}) {
@@ -932,10 +1519,19 @@ class AutoDJ {
       reasons.push({ code: 'genre-balance', text: `Ausgleich: ${scoring.genreTarget}` });
     }
     if (Number(scoring.bpmFactor) !== 1 && Number.isFinite(Number(scoring.bpmDistance))) {
-      reasons.push({ code: 'bpm-transition', text: `BPM-Uebergang: ${Math.round(scoring.bpmDistance)} BPM Abstand` });
+      const relation = scoring.bpmRelation === 'double-time'
+        ? ' (Doubletime)'
+        : (scoring.bpmRelation === 'half-time' ? ' (Halftime)' : '');
+      reasons.push({ code: 'bpm-transition', text: `BPM-Uebergang${relation}: ${Math.round(scoring.bpmDistance)} BPM Abstand` });
     }
     if (scoring.requestSeedMatched) {
       reasons.push({ code: 'request-seed', text: 'Stilvorlage eines Viewer-Requests' });
+    }
+    if (Number(scoring.longTailFactor) > 1) {
+      reasons.push({ code: 'long-tail', text: 'Long-Tail-Bonus fuer selten gespielte Titel' });
+    }
+    if (Number(scoring.diversityFactor) < 1) {
+      reasons.push({ code: 'diversity', text: 'Diversitaetsabstand zu kuerzlich gespielten Titeln' });
     }
     if (Number(candidate?.radioAffinity) > 0 || Number(scoring.radioAffinityFactor) > 1) {
       reasons.push({ code: 'live-feedback', text: 'Passt zu deinem Live-Feedback' });
@@ -1013,14 +1609,17 @@ class AutoDJ {
 
   async _pickFromMix() {
     const candidates = this._loadHistoryCandidates();
-    const blocks = this.getSelectionBlocks();
+    const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
     this.selectionSource = null;
-    this.blockedCount = candidates.filter((candidate) => this.isTrackBlocked(candidate, blocks)).length;
+    this.blockedCount = candidates.filter((candidate) => !this.getTrackEligibility(
+      this._toTrack(candidate), { blocks, now }
+    ).eligible).length;
 
-    const pickHistory = () => this._pickFromHistoryCandidates(candidates, blocks, { allowPlayedFallback: false });
+    const pickHistory = () => this._pickFromHistoryCandidates(candidates, blocks);
     const pickRadio = async () => {
       const seed = this._nextMixSeed(candidates, blocks);
-      return seed ? this._pickRelatedToSeed(seed, blocks) : null;
+      return seed ? this._pickRelatedToSeed(seed, blocks, now) : null;
     };
 
     if (this.random() * 100 < this.config.mixHistoryPercent) {
@@ -1050,9 +1649,10 @@ class AutoDJ {
     return null;
   }
 
-  async _pickRelatedToSeed(seed, blocks) {
+  async _pickRelatedToSeed(seed, blocks, now = this.now()) {
     if (!seed?.youtubeId || !this.musicResolver.resolvePlaylistEntry) return null;
 
+    const selectionBlocks = blocks || this.getSelectionBlocks(now);
     const encodedId = encodeURIComponent(seed.youtubeId);
     const radioUrl = `https://www.youtube.com/watch?v=${encodedId}&list=RD${encodedId}`;
     let playlistItem = this.relatedTrackIndices.get(radioUrl) || 2;
@@ -1067,20 +1667,37 @@ class AutoDJ {
         continue;
       }
       playlistItem += 1;
-      if (!resolved?.success || !resolved.song) continue;
-
-      if (this.isTrackBlocked(resolved.song, blocks)) {
+      if (!resolved?.success || !resolved.song || resolved.song.youtubeId === seed.youtubeId) continue;
+      const eligibility = this.getTrackEligibility(resolved.song, { blocks: selectionBlocks, now });
+      if (!eligibility.eligible) {
         this.blockedCount += 1;
         continue;
       }
-      if (resolved.song.youtubeId === seed.youtubeId) continue;
-      if (resolved.song.youtubeId && this.playedInSession.has(resolved.song.youtubeId)) continue;
-
       this.relatedTrackIndices.set(radioUrl, playlistItem);
       return resolved.song;
     }
 
+    this.relatedTrackIndices.set(radioUrl, playlistItem);
     return null;
+  }
+
+  async _pickArtistRadio() {
+    const seed = this.manualRadioSeed;
+    if (!seed?.youtubeId) return null;
+    const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
+    const track = await this._pickRelatedToSeed(seed, blocks, now);
+    if (!track) {
+      this._setResult('artist-radio-empty', 'Song-Radio fand keinen passenden Folgetitel.');
+      return null;
+    }
+    return {
+      ...track,
+      radioStation: 'artist',
+      radioStationSeed: seed.youtubeId,
+      radioStationArtist: seed.artist || '',
+      radioPlaylistId: 'artist-radio'
+    };
   }
 
   _seedRandomModeFromHistory() {
@@ -1101,8 +1718,11 @@ class AutoDJ {
 
   async _pickFromHistory() {
     const candidates = this._loadHistoryCandidates();
-    const blocks = this.getSelectionBlocks();
-    this.blockedCount = candidates.filter((candidate) => this.isTrackBlocked(candidate, blocks)).length;
+    const now = this.now();
+    const blocks = this.getSelectionBlocks(now);
+    this.blockedCount = candidates.filter((candidate) => !this.getTrackEligibility(
+      this._toTrack(candidate), { blocks, now }
+    ).eligible).length;
     const candidate = this._pickFromHistoryCandidates(candidates, blocks);
     if (!candidate) return this._pickRelatedToLastPlaylistTrack();
     return candidate;
@@ -1125,10 +1745,8 @@ class AutoDJ {
       .all(minPlays);
   }
 
-  _pickFromHistoryCandidates(candidates, blocks, { allowPlayedFallback = true } = {}) {
-    const eligible = this._getEligibleHistoryCandidates(candidates, blocks);
-    const candidate = eligible.find((row) => !this.playedInSession.has(row.youtubeId))
-      || (allowPlayedFallback ? eligible[0] : null);
+  _pickFromHistoryCandidates(candidates, blocks) {
+    const candidate = this._getEligibleHistoryCandidates(candidates, blocks)[0] || null;
     return candidate ? this._toTrack(candidate) : null;
   }
 
@@ -1143,9 +1761,12 @@ class AutoDJ {
 
   _getEligibleHistoryCandidates(candidates, blocks) {
     const minPlays = Math.max(Number(this.config.historyMinPlays) || 1, 1);
+    const blockNow = Number(blocks?.now);
+    const now = Number.isFinite(blockNow) ? blockNow : this.now();
+    const selectionBlocks = blocks || this.getSelectionBlocks(now);
     return candidates.filter((candidate) => (
-      Number(candidate.plays) >= minPlays &&
-      (!blocks || !this.isTrackBlocked(candidate, blocks))
+      Number(candidate.plays) >= minPlays
+      && this.getTrackEligibility(this._toTrack(candidate), { blocks: selectionBlocks, now }).eligible
     ));
   }
 

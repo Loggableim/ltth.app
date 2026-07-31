@@ -676,7 +676,7 @@ describe('Music Bot core features', () => {
     expect(engine.getNowPlaying().id).toEqual(expect.any(String));
   });
 
-  test('blocks matching video IDs, titles, and artists for the configured cooldown', () => {
+  test('blocks matching video IDs and titles without turning the song cooldown into an artist ban', () => {
     const now = Date.UTC(2026, 6, 14, 12, 0, 0);
     const db = createAutoDjDb({
       recentHistory: [{ youtubeId: 'seen-id', title: 'Same Song!', artist: 'Artist One' }],
@@ -688,6 +688,7 @@ describe('Music Bot core features', () => {
     expect(autoDJ.isTrackBlocked({ youtubeId: 'seen-id', title: 'Other', artist: 'Other' }, blocks)).toBe(true);
     expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'same song', artist: 'Artist One' }, blocks)).toBe(true);
     expect(autoDJ.isTrackBlocked({ youtubeId: 'bad-id', title: 'Fresh', artist: 'Fresh' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'Fresh title', artist: 'Artist One' }, blocks)).toBe(false);
     expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'Fresh', artist: 'Fresh' }, blocks)).toBe(false);
   });
 
@@ -893,7 +894,7 @@ describe('Music Bot core features', () => {
     expect(autoDJ.getStatus().selectionSource).not.toBe('history-fallback');
   });
 
-  test('preserves history-mode fallback to a session-played candidate', async () => {
+  test('does not reuse a session-played history candidate when the pool is thin', async () => {
     const candidate = {
       youtubeId: 'session-played', title: 'Session Played', artist: 'History Artist',
       url: 'https://www.youtube.com/watch?v=session-played', plays: 2
@@ -908,7 +909,54 @@ describe('Music Bot core features', () => {
 
     const result = await autoDJ.getNextSong();
 
-    expect(result.song.youtubeId).toBe(candidate.youtubeId);
+    expect(result).toBeNull();
+  });
+
+  test('skips cooldown-blocked entries before picking a playlist track', async () => {
+    const playlistUrl = 'https://www.youtube.com/playlist?list=cooldown';
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async (_url, index) => ({
+        success: true,
+        song: index === 1
+          ? { youtubeId: 'playlist-seen', title: 'Recently played', artist: 'Artist One' }
+          : { youtubeId: 'playlist-fresh', title: 'Fresh playlist title', artist: 'Artist Two' }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'playlist',
+      playlistUrls: [playlistUrl]
+    }, resolver, createAutoDjDb({
+      recentHistory: [{ youtubeId: 'playlist-seen', title: 'Recently played', artist: 'Artist One' }]
+    }), { log: jest.fn() });
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.youtubeId).toBe('playlist-fresh');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(1, playlistUrl, 1);
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(2, playlistUrl, 2);
+  });
+
+  test('skips cooldown-blocked related-radio tracks before choosing a random suggestion', async () => {
+    const radioUrl = 'https://www.youtube.com/watch?v=playlist-seed&list=RDplaylist-seed';
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async (_url, index) => ({
+        success: true,
+        song: index === 2
+          ? { youtubeId: 'related-seen', title: 'Recently played related', artist: 'Artist One' }
+          : { youtubeId: 'related-fresh', title: 'Fresh related title', artist: 'Artist Two' }
+      }))
+    };
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'random' }, resolver, createAutoDjDb({
+      recentHistory: [{ youtubeId: 'related-seen', title: 'Recently played related', artist: 'Artist One' }]
+    }), { log: jest.fn() });
+    autoDJ.lastPlaylistTrack = { youtubeId: 'playlist-seed', title: 'Playlist seed', artist: 'Seed Artist' };
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.youtubeId).toBe('related-fresh');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(1, radioUrl, 2);
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(2, radioUrl, 3);
   });
 
   test('skips blocked radio suggestions and accepts the next fresh suggestion', async () => {
@@ -927,7 +975,7 @@ describe('Music Bot core features', () => {
       historyMinPlays: 2,
       historyShuffled: false
     }, resolver, createAutoDjDb({
-      exclusions: [{ youtubeId: '', titleKey: '', artistKey: 'blocked artist' }],
+      exclusions: [{ youtubeId: 'blocked-radio', titleKey: '', artistKey: '' }],
       historyCandidates: [{
         youtubeId: 'seed-2', title: 'Seed', artist: 'Seed Artist',
         url: 'https://www.youtube.com/watch?v=seed-2', plays: 2

@@ -2,6 +2,9 @@ const { randomUUID } = require('crypto');
 
 const VIEWER_RADIO_ID = 'viewer-radio';
 const VIEWER_RADIO_NAME = 'Viewer Radio';
+const STREAMER_PLAYLIST_ID = 'streamer-playlist';
+const STREAMER_PLAYLIST_NAME = 'Streamer Playlist';
+const STREAMER_PLAYLIST_NORMALIZED_NAME = '__system_streamer_playlist__';
 
 class PlaylistError extends Error {
   constructor(code, message) {
@@ -19,6 +22,7 @@ class PlaylistStore {
     this._withTransaction(() => {
       this._ensureTables();
       this._ensureViewerRadio();
+      this._ensureStreamerPlaylist();
     });
   }
 
@@ -69,6 +73,10 @@ class PlaylistStore {
     return this.get(VIEWER_RADIO_ID);
   }
 
+  getStreamerPlaylist() {
+    return this.get(STREAMER_PLAYLIST_ID);
+  }
+
   rename(id, name, revision) {
     return this.update(id, { name }, revision);
   }
@@ -86,9 +94,11 @@ class PlaylistStore {
       const now = Date.now();
       try {
         this.db.prepare(
-          `UPDATE plugin_music_bot_playlists SET name = ?, normalized_name = ?, mode = ?, revision = revision + 1, updated_at = ?
+          `UPDATE plugin_music_bot_playlists
+           SET name = ?, normalized_name = CASE WHEN ? THEN ? ELSE normalized_name END,
+            mode = ?, revision = revision + 1, updated_at = ?
            WHERE id = ?`
-        ).run(cleanName, cleanName.toLocaleLowerCase(), cleanMode, now, id);
+        ).run(cleanName, hasName ? 1 : 0, cleanName.toLocaleLowerCase(), cleanMode, now, id);
       } catch (error) {
         if (/unique/i.test(error.message)) throw new PlaylistError('PLAYLIST_NAME_CONFLICT', 'Playlist name already exists');
         throw error;
@@ -380,6 +390,16 @@ class PlaylistStore {
     ).run(VIEWER_RADIO_ID, VIEWER_RADIO_NAME, VIEWER_RADIO_NAME.toLowerCase(), now, now);
   }
 
+  _ensureStreamerPlaylist() {
+    const now = Date.now();
+    this.db.prepare(
+      `INSERT INTO plugin_music_bot_playlists
+       (id, name, normalized_name, mode, is_protected, revision, created_at, updated_at)
+       VALUES (?, ?, ?, 'ordered', 1, 1, ?, ?)
+       ON CONFLICT(id) DO NOTHING`
+    ).run(STREAMER_PLAYLIST_ID, STREAMER_PLAYLIST_NAME, STREAMER_PLAYLIST_NORMALIZED_NAME, now, now);
+  }
+
   _playlist(id) {
     const row = this.db.prepare(
       `SELECT id, name, mode, is_protected AS isProtected, revision, created_at AS createdAt, updated_at AS updatedAt
@@ -440,7 +460,7 @@ class PlaylistStore {
   }
 
   _assertMutable(playlist) {
-    if (playlist.isProtected) throw new PlaylistError('PLAYLIST_PROTECTED', 'Viewer Radio cannot be renamed or deleted');
+    if (playlist.isProtected) throw new PlaylistError('PLAYLIST_PROTECTED', 'Protected playlists cannot be renamed or deleted');
   }
 
   _name(value) {
@@ -464,5 +484,7 @@ class PlaylistStore {
 
 PlaylistStore.PlaylistError = PlaylistError;
 PlaylistStore.VIEWER_RADIO_ID = VIEWER_RADIO_ID;
+PlaylistStore.STREAMER_PLAYLIST_ID = STREAMER_PLAYLIST_ID;
+PlaylistStore.STREAMER_PLAYLIST_NAME = STREAMER_PLAYLIST_NAME;
 
 module.exports = PlaylistStore;

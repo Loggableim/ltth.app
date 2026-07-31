@@ -451,6 +451,9 @@ class MusicResolver extends EventEmitter {
   _songFromData(data = {}, fallbackUrl = '', meta = {}, isUrl = false) {
     const ageLimit = Number.isFinite(meta.ageLimit) ? meta.ageLimit : Number(data.age_limit ?? NaN);
     const bpm = Number(data.bpm);
+    const releaseYearValue = data.release_year ?? data.releaseYear ?? data.release_date ?? data.releaseDate ?? data.year ?? data.upload_date ?? data.uploadDate;
+    const releaseYearMatch = String(releaseYearValue || '').match(/(18\d{2}|19\d{2}|20\d{2}|2100)/);
+    const releaseYear = releaseYearMatch ? Number(releaseYearMatch[1]) : null;
     const categories = Array.isArray(data.categories) && data.categories.length ? data.categories : (meta.categories || []);
     const genres = Array.isArray(data.genres) && data.genres.length ? data.genres : categories;
     const channelName = data.channel || data.uploader || meta.channelName || '';
@@ -481,6 +484,7 @@ class MusicResolver extends EventEmitter {
       channelName,
       ageLimit: Number.isFinite(ageLimit) ? ageLimit : null,
       album: typeof data.album === 'string' && data.album.trim() ? data.album.trim() : null,
+      releaseYear,
       bpm: Number.isFinite(bpm) && bpm > 0 ? bpm : null,
       genres,
       categories
