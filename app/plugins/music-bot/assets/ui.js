@@ -18,7 +18,7 @@
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
   const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
     player: 'seek seekAria',
-    history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral',
+    history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral toolbarLabel searchLabel searchPlaceholder periodLabel periodAll period24h period7d period30d outcomeLabel outcomeAll outcomeCompleted outcomeSkipped outcomeEarlySkip outcomeFailed feedbackFilterLabel feedbackAll bannedFilterLabel bannedAll bannedOnly bannedExclude sortLabel sortNewest sortOldest reset previous next pageStatus replayQueue replayPlay copyLink addToPlaylist playlistSelect playlistProtected replaySuccess queueSuccess playSuccess copySuccess playlistSuccess actionFailed',
     catalog: 'catalogSearch catalogDescription addToPlaylist catalogEmpty networkTitle postFailed getFailed deleteFailed requestFailed genres genrePlaceholder saveGenres genresSaved genresSaveFailed',
     playlists: 'playlistsDescription newPlaylist playbackMode ordered shuffle create radioDescription saveRadioSources playlistName save delete importUrl import protected playlistEmpty playlistItemsEmpty remove radioWeight importQueued importCompleted importFailed importAborted importError playlistConflict viewerRadio radioSources importRunning'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
@@ -194,6 +194,16 @@
   const heroMpvStatus = document.getElementById('hero-mpv-status');
   const heroAutodjStatus = document.getElementById('hero-autodj-status');
   const historyListEl = document.getElementById('history-list');
+  const historySearch = document.getElementById('history-search');
+  const historyPeriod = document.getElementById('history-period');
+  const historyOutcome = document.getElementById('history-outcome');
+  const historyFeedbackFilter = document.getElementById('history-feedback-filter');
+  const historyBanned = document.getElementById('history-banned');
+  const historySort = document.getElementById('history-sort');
+  const historyReset = document.getElementById('history-reset');
+  const historyPrevious = document.getElementById('history-previous');
+  const historyNext = document.getElementById('history-next');
+  const historyPlaylistMenu = document.getElementById('history-playlist-menu');
   const requestFeedback = document.getElementById('request-feedback');
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
@@ -358,6 +368,16 @@
   let seekTransitioning = false;
   let historyOffset = 0;
   let historyTotal = 0;
+  let historyRequestGeneration = 0;
+  const historyFilters = {
+    q: '',
+    outcome: '',
+    feedback: '',
+    banned: '',
+    from: '',
+    to: '',
+    sort: 'finished_desc'
+  };
   const HISTORY_PAGE_SIZE = 50;
   const canonicalSongState = new Map();
   let selectedPlaylist = null;
@@ -1550,6 +1570,10 @@
       control.disabled = locked;
       control.setAttribute('aria-disabled', String(locked));
     });
+    document.querySelectorAll('[data-history-replay="play"]').forEach((control) => {
+      control.disabled = locked;
+      control.setAttribute('aria-disabled', String(locked));
+    });
     updateSeekControl();
   }
 
@@ -1797,18 +1821,55 @@
     await refreshPlaylists();
   }
 
-  async function refreshHistory({ reset = false } = {}) {
-    if (reset) historyOffset = 0;
-    const historyData = await get(`/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`);
-    if (!historyData?.history) {
+  function syncHistoryFilters() {
+    const period = historyPeriod?.value || '';
+    const now = Date.now();
+    const periodMs = { '24h': 24 * 60 * 60 * 1000, '7d': 7 * 24 * 60 * 60 * 1000, '30d': 30 * 24 * 60 * 60 * 1000 }[period] || 0;
+    historyFilters.q = historySearch?.value?.trim() || '';
+    historyFilters.outcome = historyOutcome?.value || '';
+    historyFilters.feedback = historyFeedbackFilter?.value || '';
+    historyFilters.banned = historyBanned?.value || '';
+    historyFilters.sort = historySort?.value || 'finished_desc';
+    historyFilters.from = periodMs ? new Date(now - periodMs).toISOString() : '';
+    historyFilters.to = periodMs ? new Date(now).toISOString() : '';
+  }
+
+  function historyQueryString() {
+    const params = new URLSearchParams({ limit: String(HISTORY_PAGE_SIZE), offset: String(historyOffset) });
+    Object.entries(historyFilters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    return params.toString();
+  }
+
+  function updateHistoryPagination(pageLength = latestHistoryTracks.length) {
+    const start = historyTotal > 0 ? historyOffset + 1 : 0;
+    const end = historyTotal > 0 ? Math.min(historyOffset + pageLength, historyTotal) : 0;
+    if (historyPageStatus) {
+      historyPageStatus.textContent = catalogTr('pageStatus', '{from}–{to} / {total}', {
+        from: start, to: end, total: historyTotal
+      });
+    }
+    if (historyPrevious) historyPrevious.disabled = historyOffset <= 0;
+    if (historyNext) historyNext.disabled = historyOffset + pageLength >= historyTotal || pageLength === 0;
+    if (historyLoadMore) historyLoadMore.disabled = true;
+  }
+
+  async function refreshHistory({ reset = false, offset = null } = {}) {
+    if (Number.isInteger(offset) && offset >= 0) historyOffset = offset;
+    else if (reset) historyOffset = 0;
+    syncHistoryFilters();
+    const requestGeneration = ++historyRequestGeneration;
+    const historyData = await get(`/history?${historyQueryString()}`);
+    if (requestGeneration !== historyRequestGeneration) return;
+    const rows = historyData?.history || historyData?.items;
+    if (!Array.isArray(rows)) {
       showToast('warn', tr('historyToastTitle', 'Verlauf'), tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
       return;
     }
-    historyTotal = Number(historyData.total) || historyData.history.length;
-    renderHistory(historyData.history, { append: !reset && historyOffset > 0, initializeCanonical: reset });
-    historyOffset += historyData.history.length;
-    if (historyLoadMore) historyLoadMore.disabled = historyOffset >= historyTotal || historyData.history.length === 0;
-    if (historyPageStatus) historyPageStatus.textContent = `${Math.min(historyOffset, historyTotal)} / ${historyTotal}`;
+    historyTotal = Number(historyData.total) || rows.length;
+    renderHistory(rows, { initializeCanonical: reset || historyOffset === 0 });
+    updateHistoryPagination(rows.length);
   }
 
   async function get(path) {
@@ -2227,9 +2288,41 @@
     return `${mins}:${secs}`;
   }
 
-  function renderHistory(history = [], { append = false, initializeCanonical = false } = {}) {
+  function historyUrl(value) {
+    try {
+      const url = new URL(String(value || ''));
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  function historyDateLabel(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat(window.i18n?.currentLocale || document.documentElement.lang || 'de', {
+        dateStyle: 'short', timeStyle: 'short'
+      }).format(date);
+    } catch (_error) {
+      return date.toLocaleString();
+    }
+  }
+
+  function historyOutcomeLabel(outcome) {
+    const labels = {
+      completed: catalogTr('outcomeCompleted', 'Abgeschlossen'),
+      skipped: catalogTr('outcomeSkipped', 'Übersprungen'),
+      early_skip: catalogTr('outcomeEarlySkip', 'Früh übersprungen'),
+      failed: catalogTr('outcomeFailed', 'Fehlgeschlagen')
+    };
+    return labels[String(outcome || '').toLowerCase()] || String(outcome || '');
+  }
+
+  function renderHistory(history = [], { initializeCanonical = false } = {}) {
     const rows = Array.isArray(history) ? history.slice() : [];
-    latestHistoryTracks = append ? latestHistoryTracks.concat(rows) : rows;
+    latestHistoryTracks = rows;
     if (initializeCanonical) canonicalSongState.clear();
     rows.forEach((item) => {
       const songId = String(item.songId || item.id);
@@ -2240,6 +2333,7 @@
     if (!latestHistoryTracks.length) {
       historyListEl.classList.add('empty');
       historyListEl.innerHTML = `<p>${escapeHtml(catalogTr('historyEmpty', 'No history yet.'))}</p>`;
+      updateHistoryPagination(0);
       return;
     }
     historyListEl.classList.remove('empty');
@@ -2247,37 +2341,167 @@
       .map((item) => {
         const songId = String(item.songId || item.id || '');
         const canonical = canonicalSongState.get(songId) || { feedback: 'neutral' };
+        const eventId = String(item.id || '');
+        const url = historyUrl(item.url);
+        const durationSeconds = Number(item.playedSeconds ?? item.duration);
+        const duration = Number.isFinite(durationSeconds) && durationSeconds > 0 ? formatDuration(durationSeconds) : '';
+        const date = historyDateLabel(item.finishedAt || item.startedAt);
+        const artist = item.artist || item.channelName || item.provider || '';
         const thumb = isValidYouTubeId(item.youtubeId)
-          ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
-          : '<span class="queue-thumb-placeholder">🎵</span>';
-        const banButton = item.id
-          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(songId)}" data-catalog-event-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="${escapeHtml(catalogTr('banTrack', 'Ban track'))}">!</button>`
+          ? `<img src="https://i.ytimg.com/vi/${escapeHtml(item.youtubeId)}/default.jpg" class="history-item-thumb" alt="">`
+          : '<span class="history-item-thumb-placeholder" aria-hidden="true">&#9835;</span>';
+        const banButton = eventId
+          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(songId)}" data-catalog-event-id="${escapeHtml(eventId)}" aria-haspopup="dialog" aria-expanded="false" aria-label="${escapeHtml(catalogTr('banTrack', 'Ban track'))}">!</button>`
           : '';
         const vote = (state, symbol, label) => `<button class="btn ghost small history-feedback ${canonical.feedback === state ? 'is-active' : ''}" type="button" data-history-feedback="${state}" data-song-id="${escapeHtml(songId)}" aria-pressed="${canonical.feedback === state}">${symbol}<span class="sr-only">${escapeHtml(label)}</span></button>`;
         const banBadge = item.banned ? `<span class="history-ban-badge" aria-label="${escapeHtml(catalogTr('historyBanned', 'Banned'))}">${escapeHtml(catalogTr('historyBanned', 'Banned'))}</span>` : '';
+        const outcomeBadge = item.outcome ? `<span class="history-item-badge">${escapeHtml(historyOutcomeLabel(item.outcome))}</span>` : '';
+        const copyButton = url
+          ? `<button class="btn ghost small" type="button" data-history-copy="${escapeHtml(url)}" aria-label="${escapeHtml(catalogTr('copyLink', 'Link kopieren'))}">${escapeHtml(catalogTr('copyLink', 'Link kopieren'))}</button>`
+          : '';
+        const playlistButton = Number.isInteger(Number(songId)) && Number(songId) > 0
+          ? `<button class="btn ghost small" type="button" data-history-playlist="${escapeHtml(songId)}" aria-label="${escapeHtml(catalogTr('addToPlaylist', 'Zur Playlist'))}">${escapeHtml(catalogTr('addToPlaylist', 'Zur Playlist'))}</button>`
+          : '';
+        const replayQueue = eventId
+          ? `<button class="btn ghost small" type="button" data-history-replay="queue" data-history-event-id="${escapeHtml(eventId)}">${escapeHtml(catalogTr('replayQueue', 'In Queue'))}</button>`
+          : '';
+        const replayPlay = eventId
+          ? `<button class="btn primary small" type="button" data-history-replay="play" data-history-event-id="${escapeHtml(eventId)}" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>${escapeHtml(catalogTr('replayPlay', 'Jetzt spielen'))}</button>`
+          : '';
         const upLabel = catalogTr('voteUp', 'Like');
         const downLabel = catalogTr('voteDown', 'Not for radio');
         const neutralLabel = catalogTr('voteNeutral', 'Neutral');
-        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || tr('viewerFallback', 'Zuschauer'))}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
+        const meta = [item.requestedBy || tr('viewerFallback', 'Zuschauer'), artist, date, duration]
+          .filter(Boolean)
+          .map((value) => `<span>${escapeHtml(value)}</span>`)
+          .join('');
+        return `<article class="item history-item" data-song-id="${escapeHtml(songId)}" data-history-event-id="${escapeHtml(eventId)}">
+          ${thumb}
+          <div class="history-item-main">
+            <div class="history-item-heading">
+              <strong class="history-item-title">${escapeHtml(item.title || 'Untitled')}</strong>
+              <div class="history-item-badges">${outcomeBadge}${banBadge}</div>
+            </div>
+            <div class="history-item-meta">${meta}</div>
+          </div>
+          <div class="history-item-actions">
+            ${replayQueue}${replayPlay}${copyButton}${playlistButton}
+            ${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banButton}
+          </div>
+        </article>`;
       })
       .join('');
+    updateHistoryPagination(latestHistoryTracks.length);
   }
 
-  historyLoadMore?.addEventListener('click', () => refreshHistory());
-  historyListEl?.addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-history-feedback]');
-    if (!button) return;
-    const songId = button.dataset.songId;
-    const state = button.dataset.historyFeedback;
-    const result = await post(`/catalog/songs/${songId}/feedback`, { state });
+  async function replayHistory(eventId, mode) {
+    const result = await post(`/history/${encodeURIComponent(eventId)}/replay`, { mode });
     if (!result?.success) {
-      showToast('warn', tr('historyToastTitle', 'Verlauf'), result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), result?.error || catalogTr('actionFailed', 'Aktion konnte nicht ausgeführt werden.'));
       return;
     }
-    const previous = canonicalSongState.get(songId) || {};
-    canonicalSongState.set(songId, { ...previous, feedback: result.feedback?.state || result.state || 'neutral' });
-    renderHistory(latestHistoryTracks);
+    const message = mode === 'play'
+      ? catalogTr('playSuccess', 'Titel wird jetzt gespielt.')
+      : catalogTr('queueSuccess', 'Titel zur Queue hinzugefügt.');
+    showToast('success', tr('historyToastTitle', 'Verlauf'), message);
+    await renderQueueFromServer();
+    await refreshHistory({ reset: true });
+  }
+
+  async function copyHistoryLink(url) {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+      await navigator.clipboard.writeText(url);
+      showToast('success', tr('historyToastTitle', 'Verlauf'), catalogTr('copySuccess', 'Link kopiert.'));
+    } catch (_error) {
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), catalogTr('actionFailed', 'Aktion konnte nicht ausgeführt werden.'));
+    }
+  }
+
+  async function openHistoryPlaylistMenu(songId, trigger) {
+    if (!historyPlaylistMenu) return;
+    if (historyPlaylistMenu.dataset.songId === String(songId) && !historyPlaylistMenu.hidden) {
+      historyPlaylistMenu.hidden = true;
+      return;
+    }
+    if (!playlists.length) await refreshPlaylists();
+    const available = playlists.filter((playlist) => !playlist.isProtected);
+    historyPlaylistMenu.dataset.songId = String(songId);
+    historyPlaylistMenu.innerHTML = available.length
+      ? `<label class="history-playlist-picker"><span>${escapeHtml(catalogTr('playlistSelect', 'Playlist auswählen'))}</span><select data-history-playlist-select><option value="">${escapeHtml(catalogTr('playlistSelect', 'Playlist auswählen'))}</option>${available.map((playlist) => `<option value="${escapeHtml(playlist.id)}">${escapeHtml(playlist.name)}</option>`).join('')}</select></label>`
+      : `<p class="text-secondary">${escapeHtml(catalogTr('playlistProtected', 'Keine bearbeitbare Playlist vorhanden.'))}</p>`;
+    historyPlaylistMenu.hidden = false;
+    historyPlaylistMenu.style.anchorName = trigger ? '--history-playlist-trigger' : '';
+    historyPlaylistMenu.querySelector('select')?.focus();
+  }
+
+  async function addHistoryToPlaylist(playlistId, songId) {
+    let playlist = playlists.find((candidate) => String(candidate.id) === String(playlistId));
+    if (!playlist || !Number.isInteger(Number(playlist.revision))) {
+      const result = await get(`/playlists/${encodeURIComponent(playlistId)}`);
+      playlist = result?.playlist;
+    }
+    if (!playlist || playlist.isProtected) return;
+    const result = await post(`/playlists/${encodeURIComponent(playlist.id)}/items`, {
+      songId: Number(songId), revision: playlist.revision
+    });
+    if (!result?.success) {
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), result?.error || catalogTr('actionFailed', 'Aktion konnte nicht ausgeführt werden.'));
+      return;
+    }
+    showToast('success', tr('historyToastTitle', 'Verlauf'), catalogTr('playlistSuccess', 'Titel zur Playlist hinzugefügt.'));
+    historyPlaylistMenu.hidden = true;
+    await refreshPlaylists();
+  }
+
+  historyListEl?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-history-feedback]');
+    if (button) {
+      const songId = button.dataset.songId;
+      const state = button.dataset.historyFeedback;
+      const result = await post(`/catalog/songs/${songId}/feedback`, { state });
+      if (!result?.success) {
+        showToast('warn', tr('historyToastTitle', 'Verlauf'), result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
+        return;
+      }
+      const previous = canonicalSongState.get(songId) || {};
+      canonicalSongState.set(songId, { ...previous, feedback: result.feedback?.state || result.state || 'neutral' });
+      renderHistory(latestHistoryTracks);
+      return;
+    }
+    const replayButton = event.target.closest('[data-history-replay]');
+    if (replayButton && !replayButton.disabled) {
+      await replayHistory(replayButton.dataset.historyEventId, replayButton.dataset.historyReplay);
+      return;
+    }
+    const copyButton = event.target.closest('[data-history-copy]');
+    if (copyButton) {
+      await copyHistoryLink(copyButton.dataset.historyCopy);
+      return;
+    }
+    const playlistButton = event.target.closest('[data-history-playlist]');
+    if (playlistButton) await openHistoryPlaylistMenu(playlistButton.dataset.historyPlaylist, playlistButton);
   });
+
+  historyPlaylistMenu?.addEventListener('change', async (event) => {
+    const select = event.target.closest('[data-history-playlist-select]');
+    if (!select?.value) return;
+    await addHistoryToPlaylist(select.value, historyPlaylistMenu.dataset.songId);
+  });
+
+  const requestHistoryRefresh = () => refreshHistory({ reset: true });
+  historySearch?.addEventListener('input', debounce(requestHistoryRefresh));
+  [historyPeriod, historyOutcome, historyFeedbackFilter, historyBanned, historySort].forEach((control) => {
+    control?.addEventListener('change', requestHistoryRefresh);
+  });
+  historyReset?.addEventListener('click', () => {
+    if (historySearch) historySearch.value = '';
+    [historyPeriod, historyOutcome, historyFeedbackFilter, historyBanned].forEach((control) => { if (control) control.value = ''; });
+    if (historySort) historySort.value = 'finished_desc';
+    requestHistoryRefresh();
+  });
+  historyPrevious?.addEventListener('click', () => refreshHistory({ offset: Math.max(0, historyOffset - HISTORY_PAGE_SIZE) }));
+  historyNext?.addEventListener('click', () => refreshHistory({ offset: historyOffset + HISTORY_PAGE_SIZE }));
 
   async function searchCatalog(query = catalogSearchInput?.value || '') {
     if (!catalogSearchResults) return;

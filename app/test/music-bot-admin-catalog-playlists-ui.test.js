@@ -28,16 +28,25 @@ describe('Music Bot catalog and playlist admin UI contract', () => {
     expect(script).not.toContain('latestRuntime?.activePlaybackId || track?.id || null');
   });
 
-  test('renders newest-first paginated history with canonical feedback and ban state', () => {
+  test('renders filtered paginated history with canonical feedback, replay, and playlist actions', () => {
     ['history-load-more', 'history-page-status', 'history-list'].forEach((id) => {
       expect(html).toContain(`id="${id}"`);
     });
-    expect(script).toContain("get(`/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`)");
+    ['history-search', 'history-period', 'history-outcome', 'history-feedback-filter', 'history-banned', 'history-sort', 'history-reset', 'history-previous', 'history-next'].forEach((id) => {
+      expect(html).toContain(`id="${id}"`);
+    });
+    expect(script).toContain('const historyFilters =');
+    expect(script).toContain('URLSearchParams');
+    expect(script).toContain('historyRequestGeneration');
     expect(script).toContain('const HISTORY_PAGE_SIZE = 50;');
     expect(script).toContain("post(`/catalog/songs/${songId}/feedback`");
     expect(script).toContain('canonicalSongState');
     expect(script).toContain('history-feedback');
     expect(script).toContain('history-ban-badge');
+    expect(script).toContain('data-history-replay');
+    expect(script).toContain('data-history-copy');
+    expect(script).toContain('data-history-playlist');
+    expect(script).toContain('`/history/${encodeURIComponent(eventId)}/replay`');
     expect(script).toContain("socket.on('musicbot:history-update'");
   });
 

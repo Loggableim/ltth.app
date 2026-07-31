@@ -134,6 +134,21 @@ describe('Music Bot admin broadcast-console redesign', () => {
     expect(css).toMatch(/\.playlist-source\s+\[data-radio-weight\][\s\S]*?min-width:\s*44px/s);
   });
 
+  test('gives history a dedicated filter toolbar, pagination, and responsive card contract', () => {
+    const historyPanel = document.getElementById('musicbot-panel-history');
+    [
+      '#history-search', '#history-period', '#history-outcome', '#history-feedback-filter',
+      '#history-banned', '#history-sort', '#history-reset', '#history-previous', '#history-next',
+      '#history-page-status'
+    ].forEach((selector) => expect(historyPanel.querySelector(selector)).not.toBeNull());
+    expect(historyPanel.querySelector('.queue-item')).toBeNull();
+    expect(css).toMatch(/\.history-item\s*\{/);
+    expect(css).toMatch(/\.history-item-actions[\s\S]*?flex-wrap:\s*wrap/);
+    expect(css).toMatch(/@media\s*\(max-width:\s*440px\)[\s\S]*?\.history-item/);
+    expect(css).toMatch(/\.history-item[^\{]*\{[^}]*min-width:\s*0/s);
+    expect(css).toMatch(/grid-template-columns:\s*64px\s+minmax\(0,\s*1fr\)\s+minmax\(180px,\s*420px\)/);
+  });
+
   test('does not observe invalid theme roots during the Music Bot bootstrap', () => {
     const roots = runThemeBootstrapWithInvalidRoots(
       path.join(__dirname, '..', 'plugins', 'music-bot', 'ui.html'),

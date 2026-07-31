@@ -1228,6 +1228,47 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(Array.from(dom.window.document.querySelectorAll('.history-ban-badge'))).toHaveLength(1);
   });
 
+  test('sends history filters as a fresh query and replays a selected event into the queue', async () => {
+    const { dom, fetchMock } = bootMusicBotUi({
+      historyPayload: [{
+        id: 'event-1', songId: 4, title: 'Filtered history song', requestedBy: 'Viewer',
+        url: 'https://www.youtube.com/watch?v=history01', outcome: 'failed'
+      }],
+      postHandler: async (target) => target.includes('/history/event-1/replay')
+        ? createJsonResponse({ success: true, mode: 'queue', song: { id: 4, title: 'Filtered history song' } })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    document.getElementById('history-search').value = 'filtered';
+    document.getElementById('history-period').value = '7d';
+    document.getElementById('history-outcome').value = 'failed';
+    document.getElementById('history-feedback-filter').value = 'down';
+    document.getElementById('history-banned').value = 'only';
+    document.getElementById('history-sort').value = 'finished_asc';
+    document.getElementById('history-search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 260));
+
+    const historyCalls = fetchMock.mock.calls
+      .filter(([target]) => String(target).includes('/plugins/music-bot/history?'));
+    const query = new URL(historyCalls.at(-1)[0], 'http://localhost').searchParams;
+    expect(query.get('q')).toBe('filtered');
+    expect(query.get('outcome')).toBe('failed');
+    expect(query.get('feedback')).toBe('down');
+    expect(query.get('banned')).toBe('only');
+    expect(query.get('sort')).toBe('finished_asc');
+    expect(query.get('from')).toBeTruthy();
+    expect(query.get('to')).toBeTruthy();
+
+    document.querySelector('[data-history-replay="queue"]').click();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    const replayCall = fetchMock.mock.calls.find(([target]) => String(target).includes('/history/event-1/replay'));
+    expect(replayCall).toBeDefined();
+    expect(JSON.parse(replayCall[1].body)).toEqual({ mode: 'queue' });
+  });
+
   test.each(['en', 'es', 'fr'])('renders dynamic catalog-admin surfaces through production i18n in %s', async (locale) => {
     const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
     const playlist = { id: 'viewer-radio', name: 'Viewer Radio', mode: 'ordered', itemCount: 1, isProtected: true };

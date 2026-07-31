@@ -737,12 +737,65 @@
           <p class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.history.description">Letzte gespielte Songs</p>
         </div>
       </div>
+      <div class="history-toolbar" role="search" aria-label="Verlauf durchsuchen" data-i18n-aria-label="plugins.music-bot.music_bot.ui.history.toolbarLabel">
+        <label class="history-filter history-filter-search">
+          <span data-i18n="plugins.music-bot.music_bot.ui.history.searchLabel">Suche</span>
+          <input id="history-search" type="search" autocomplete="off" placeholder="Titel, Künstler oder Nutzer" data-i18n-placeholder="plugins.music-bot.music_bot.ui.history.searchPlaceholder">
+        </label>
+        <label class="history-filter">
+          <span data-i18n="plugins.music-bot.music_bot.ui.history.periodLabel">Zeitraum</span>
+          <select id="history-period">
+            <option value="" data-i18n="plugins.music-bot.music_bot.ui.history.periodAll">Alle</option>
+            <option value="24h" data-i18n="plugins.music-bot.music_bot.ui.history.period24h">Letzte 24 Stunden</option>
+            <option value="7d" data-i18n="plugins.music-bot.music_bot.ui.history.period7d">Letzte 7 Tage</option>
+            <option value="30d" data-i18n="plugins.music-bot.music_bot.ui.history.period30d">Letzte 30 Tage</option>
+          </select>
+        </label>
+        <label class="history-filter">
+          <span data-i18n="plugins.music-bot.music_bot.ui.history.outcomeLabel">Ergebnis</span>
+          <select id="history-outcome">
+            <option value="" data-i18n="plugins.music-bot.music_bot.ui.history.outcomeAll">Alle</option>
+            <option value="completed" data-i18n="plugins.music-bot.music_bot.ui.history.outcomeCompleted">Abgeschlossen</option>
+            <option value="skipped" data-i18n="plugins.music-bot.music_bot.ui.history.outcomeSkipped">Übersprungen</option>
+            <option value="early_skip" data-i18n="plugins.music-bot.music_bot.ui.history.outcomeEarlySkip">Früh übersprungen</option>
+            <option value="failed" data-i18n="plugins.music-bot.music_bot.ui.history.outcomeFailed">Fehlgeschlagen</option>
+          </select>
+        </label>
+        <label class="history-filter">
+          <span data-i18n="plugins.music-bot.music_bot.ui.history.feedbackFilterLabel">Bewertung</span>
+          <select id="history-feedback-filter">
+            <option value="" data-i18n="plugins.music-bot.music_bot.ui.history.feedbackAll">Alle</option>
+            <option value="up" data-i18n="plugins.music-bot.music_bot.ui.history.voteUp">Gefällt mir</option>
+            <option value="down" data-i18n="plugins.music-bot.music_bot.ui.history.voteDown">Nicht fürs Radio</option>
+            <option value="neutral" data-i18n="plugins.music-bot.music_bot.ui.history.voteNeutral">Neutral</option>
+          </select>
+        </label>
+        <label class="history-filter">
+          <span data-i18n="plugins.music-bot.music_bot.ui.history.bannedFilterLabel">Sperrstatus</span>
+          <select id="history-banned">
+            <option value="" data-i18n="plugins.music-bot.music_bot.ui.history.bannedAll">Alle</option>
+            <option value="only" data-i18n="plugins.music-bot.music_bot.ui.history.bannedOnly">Nur gesperrte</option>
+            <option value="exclude" data-i18n="plugins.music-bot.music_bot.ui.history.bannedExclude">Nicht gesperrte</option>
+          </select>
+        </label>
+        <label class="history-filter">
+          <span data-i18n="plugins.music-bot.music_bot.ui.history.sortLabel">Sortierung</span>
+          <select id="history-sort">
+            <option value="finished_desc" data-i18n="plugins.music-bot.music_bot.ui.history.sortNewest">Neueste zuerst</option>
+            <option value="finished_asc" data-i18n="plugins.music-bot.music_bot.ui.history.sortOldest">Älteste zuerst</option>
+          </select>
+        </label>
+        <button id="history-reset" class="btn ghost history-reset" type="button" data-i18n="plugins.music-bot.music_bot.ui.history.reset">Zurücksetzen</button>
+      </div>
       <div id="history-list" class="list empty">
         <p data-i18n="plugins.music-bot.music_bot.ui.history.empty">Noch keine History.</p>
       </div>
+      <div id="history-playlist-menu" class="history-playlist-menu" hidden></div>
       <div class="actions history-pagination">
-        <button id="history-load-more" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.history.loadMore">Mehr laden</button>
+        <button id="history-previous" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.history.previous" disabled>Zurück</button>
         <span id="history-page-status" class="text-secondary" aria-live="polite"></span>
+        <button id="history-next" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.history.next" disabled>Weiter</button>
+        <button id="history-load-more" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.history.loadMore" hidden>Mehr laden</button>
       </div>
     </section>
 
