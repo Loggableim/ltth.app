@@ -3279,6 +3279,7 @@ class ArenaGame {
     if (normalizedSource === 'life-drop') {
       return Math.max(0, Number(config?.lifeDropFadeMs) || DEFAULT_CONFIG.lifeDropFadeMs);
     }
+    if (normalizedSource === 'ambient') return 48000;
     const lifetime = this._foodLifetimeMs(normalizedSource, config || DEFAULT_CONFIG);
     return Math.max(5000, Math.min(26000, lifetime * 0.28));
   }

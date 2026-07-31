@@ -2456,6 +2456,26 @@ describe('ArenaGame', () => {
     expect(arena.food.size).toBe(1);
   });
 
+  it('serializes a long ambient fade window with food pacing', () => {
+    const { arena } = createArena({
+      maxFood: 3,
+      foodBurstDespawnMs: 100000,
+      lifeDropFadeMs: 55000
+    });
+    const config = arena.getConfig();
+
+    arena.food.clear();
+    arena.spawnFood(1);
+    const ambient = [...arena.food.values()][0];
+
+    expect(ambient).toEqual(expect.objectContaining({
+      source: 'ambient',
+      fadeOutMs: 48000
+    }));
+    expect(arena._foodFadeOutMs('death-drop', config)).toBe(26000);
+    expect(arena._foodFadeOutMs('life-drop', config)).toBe(55000);
+  });
+
   it('uses adaptive ambient food catch-up when active players deplete the arena', () => {
     let now = 1000;
     const { arena } = createArena({
@@ -7339,13 +7359,15 @@ describe('Arena overlay rendering contract', () => {
 
   it('keeps the overlay rendering contract for gentle food fades', () => {
     const overlay = readOverlay();
+    const arenaSource = fs.readFileSync(path.join(__dirname, '..', 'games', 'arena.js'), 'utf8');
     const foodOpacityFor = overlay.slice(
       overlay.indexOf('function foodOpacityFor'),
       overlay.indexOf('function drawFood')
     );
 
+    expect(foodOpacityFor).toContain('spawnFadeMs');
     expect(foodOpacityFor).toContain('1400');
-    expect(foodOpacityFor).toContain('48000');
+    expect(arenaSource).toContain("if (normalizedSource === 'ambient') return 48000;");
   });
 
   it('renders selectable large-player transparency modes in Canvas and Pixi', () => {
@@ -7721,6 +7743,7 @@ describe('Arena admin and backend integration contract', () => {
     expect(ui).toContain('arenaGiftSelectionMode = true');
     expect(ui).toContain('id="arena-food-spawn-interval"');
     expect(ui).toContain('id="arena-food-spawn-batch-size"');
+    expect(ui).toContain('<input type="number" id="arena-food-spawn-batch-size" min="1" max="3" step="1">');
     expect(ui).toContain('id="arena-food-despawn-ms"');
     expect(ui).toContain('id="arena-food-burst-despawn-ms"');
     expect(ui).toContain('foodSpawnIntervalMs');

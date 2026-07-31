@@ -2017,7 +2017,8 @@
       const fadeOutMs = clampNumber(food.fadeOutMs, 4000, 90000, food.source === 'life-drop' ? 55000 : 18000);
       const remainingMs = Number(food.expiresAt) - wallNow;
       const ageMs = Math.max(0, wallNow - Number(food.spawnedAt));
-      const spawnEase = clampNumber(ageMs / 600, 0, 1, 1);
+      const spawnFadeMs = food.source === 'ambient' ? 1400 : 600;
+      const spawnEase = clampNumber(ageMs / spawnFadeMs, 0, 1, 1);
       const fadeEase = food.source === 'life-drop'
         ? clampNumber(remainingMs / Math.max(fadeOutMs, 1), 0.16, 1, 1)
         : clampNumber(remainingMs / Math.max(fadeOutMs, 1), 0.04, 1, 1);
