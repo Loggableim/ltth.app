@@ -1249,7 +1249,9 @@ class GameEnginePlugin {
     if (Number(stored?.inactivityShrinkPerSecond) === 5) {
       config.inactivityShrinkPerSecond = this.defaultConfigs.arena.inactivityShrinkPerSecond;
     }
-    if ([90, 140, 170].includes(Number(stored?.maxMass))) {
+    const legacyMassCaps = [90, 140, 170, 260, 520];
+    const noisyAmbientProfile = Number(stored?.foodSpawnBatchSize) > 3;
+    if (legacyMassCaps.includes(Number(stored?.maxMass))) {
       config.maxMass = this.defaultConfigs.arena.maxMass;
     }
     if ([2500, 6000, 9000].includes(Number(stored?.maxLives))) {
@@ -1270,11 +1272,21 @@ class GameEnginePlugin {
     if (Number(stored?.maxFood) === 90 || Number(stored?.maxFood) === 50) {
       config.maxFood = this.defaultConfigs.arena.maxFood;
     }
+    if (Number(stored?.maxFood) === 130) {
+      config.maxFood = this.defaultConfigs.arena.maxFood;
+    }
     if ([90, 52, 25].includes(Number(stored?.maxFoodRender))) {
+      config.maxFoodRender = this.defaultConfigs.arena.maxFoodRender;
+    }
+    if (Number(stored?.maxFoodRender) === 72) {
       config.maxFoodRender = this.defaultConfigs.arena.maxFoodRender;
     }
     if (Number(stored?.foodValue) === 2.25) {
       config.foodValue = this.defaultConfigs.arena.foodValue;
+    }
+    if (noisyAmbientProfile) {
+      config.foodSpawnIntervalMs = this.defaultConfigs.arena.foodSpawnIntervalMs;
+      config.foodSpawnBatchSize = this.defaultConfigs.arena.foodSpawnBatchSize;
     }
     if (!Number.isFinite(Number(config.foodSpawnIntervalMs)) || Number(config.foodSpawnIntervalMs) < 0) {
       config.foodSpawnIntervalMs = this.defaultConfigs.arena.foodSpawnIntervalMs;

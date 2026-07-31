@@ -10,11 +10,8 @@ const LEGACY_DEFAULT_TARGET_FPS = 30;
 const PREVIOUS_HIGH_DEFAULT_TARGET_FPS = 60;
 const LEGACY_DEFAULT_INACTIVITY_GRACE_MS = 15000;
 const LEGACY_DEFAULT_INACTIVITY_SHRINK_PER_SECOND = 5;
-const LEGACY_DEFAULT_MAX_MASS = 90;
 const LEGACY_DEFAULT_MAX_LIVES = 2500;
-const PREVIOUS_DEFAULT_MAX_MASS = 140;
 const PREVIOUS_DEFAULT_MAX_LIVES = 6000;
-const PREVIOUS_ACTION_MAX_MASS = 170;
 const PREVIOUS_ACTION_MAX_LIVES = 9000;
 const LEGACY_DEFAULT_MAX_FOOD = 90;
 const LEGACY_DEFAULT_MAX_FOOD_RENDER = 52;
@@ -172,8 +169,8 @@ const DEFAULT_CONFIG = {
   largeBallTransparencyStartMass: 55,
   largeBallMinOpacity: 0.42,
   maxPlayers: 80,
-  maxFood: 130,
-  maxFoodRender: 72,
+  maxFood: 72,
+  maxFoodRender: 66,
   renderScale: 0.7,
   adaptiveResolutionEnabled: true,
   targetFps: 45,
@@ -209,7 +206,7 @@ const DEFAULT_CONFIG = {
   spawnThreatClearanceRatio: 1,
   baseMass: 18,
   minMass: 8,
-  maxMass: 520,
+  maxMass: 666,
   baseLives: 100,
   spawnDelayMs: 15000,
   spawnBaseLives: 45,
@@ -243,9 +240,9 @@ const DEFAULT_CONFIG = {
   energyDecayPerSecond: 1.2,
   foodValue: 1.35,
   foodRadius: 5,
-  foodSpawnIntervalMs: 1600,
-  foodSpawnBatchSize: 2,
-  foodDespawnMs: 120000,
+  foodSpawnIntervalMs: 2400,
+  foodSpawnBatchSize: 1,
+  foodDespawnMs: 150000,
   foodBurstDespawnMs: 90000,
   lifeDropDespawnMs: 180000,
   lifeDropFadeMs: 55000,
@@ -7694,11 +7691,9 @@ class ArenaGame {
     if (Number(stored?.inactivityShrinkPerSecond) === LEGACY_DEFAULT_INACTIVITY_SHRINK_PER_SECOND) {
       config.inactivityShrinkPerSecond = DEFAULT_CONFIG.inactivityShrinkPerSecond;
     }
-    if (
-      Number(stored?.maxMass) === LEGACY_DEFAULT_MAX_MASS ||
-      Number(stored?.maxMass) === PREVIOUS_DEFAULT_MAX_MASS ||
-      Number(stored?.maxMass) === PREVIOUS_ACTION_MAX_MASS
-    ) {
+    const legacyMassCaps = [90, 140, 170, 260, 520];
+    const noisyAmbientProfile = Number(stored?.foodSpawnBatchSize) > 3;
+    if (legacyMassCaps.includes(Number(stored?.maxMass))) {
       config.maxMass = DEFAULT_CONFIG.maxMass;
     }
     if (
@@ -7748,6 +7743,9 @@ class ArenaGame {
     ) {
       config.maxFood = DEFAULT_CONFIG.maxFood;
     }
+    if (Number(stored?.maxFood) === 130) {
+      config.maxFood = DEFAULT_CONFIG.maxFood;
+    }
     if (
       Number(stored?.maxFoodRender) === LEGACY_DEFAULT_MAX_FOOD_RENDER ||
       Number(stored?.maxFoodRender) === PREVIOUS_SPARSE_MAX_FOOD_RENDER ||
@@ -7755,8 +7753,15 @@ class ArenaGame {
     ) {
       config.maxFoodRender = DEFAULT_CONFIG.maxFoodRender;
     }
+    if (Number(stored?.maxFoodRender) === 72) {
+      config.maxFoodRender = DEFAULT_CONFIG.maxFoodRender;
+    }
     if (Number(stored?.foodValue) === LEGACY_DEFAULT_FOOD_VALUE) {
       config.foodValue = DEFAULT_CONFIG.foodValue;
+    }
+    if (noisyAmbientProfile) {
+      config.foodSpawnIntervalMs = DEFAULT_CONFIG.foodSpawnIntervalMs;
+      config.foodSpawnBatchSize = DEFAULT_CONFIG.foodSpawnBatchSize;
     }
     if (!Number.isFinite(Number(config.foodSpawnIntervalMs)) || Number(config.foodSpawnIntervalMs) < 0) {
       config.foodSpawnIntervalMs = DEFAULT_CONFIG.foodSpawnIntervalMs;
