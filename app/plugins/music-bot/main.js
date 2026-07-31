@@ -57,6 +57,31 @@ const MPV_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
 const GIFT_EVENT_DEDUPE_TTL_MS = 10 * 60 * 1000;
 const MAX_TRACKED_GIFT_EVENT_IDS = 10000;
 const MUSIC_BOT_BUILD_FINGERPRINT = 'music-bot-radio-supervisor-v1';
+const HISTORY_OUTCOMES = new Set(['completed', 'skipped', 'early_skip', 'failed']);
+const HISTORY_FEEDBACK = new Set(['up', 'down', 'neutral']);
+const HISTORY_BAN_FILTERS = new Set(['only', 'exclude']);
+const HISTORY_SORTS = new Set(['finished_desc', 'finished_asc']);
+
+function normalizeHistoryQuery(query = {}) {
+  const limit = Math.min(Math.max(Number(query.limit) || 50, 1), 200);
+  const offset = Math.max(Number(query.offset) || 0, 0);
+  const q = String(query.q || '').trim();
+  const outcome = String(query.outcome || '').trim();
+  const feedback = String(query.feedback || '').trim();
+  const banned = String(query.banned || '').trim();
+  const sort = String(query.sort || '').trim();
+  return {
+    limit,
+    offset,
+    q,
+    outcome: HISTORY_OUTCOMES.has(outcome) ? outcome : '',
+    feedback: HISTORY_FEEDBACK.has(feedback) ? feedback : '',
+    banned: HISTORY_BAN_FILTERS.has(banned) ? banned : '',
+    from: String(query.from || '').trim(),
+    to: String(query.to || '').trim(),
+    sort: HISTORY_SORTS.has(sort) ? sort : 'finished_desc'
+  };
+}
 
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -2500,28 +2525,100 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/history', async (req, res) => {
-      const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
-      const offset = Math.max(Number(req.query.offset) || 0, 0);
+      const historyQuery = normalizeHistoryQuery(req.query || {});
       try {
         if (this.musicCatalog) {
-          const page = this.musicCatalog.getHistory({ limit, offset });
+          const page = this.musicCatalog.getHistory(historyQuery);
           const history = page.items.map((item) => ({
             ...item,
             banned: Boolean(this._checkBans(item, 'dashboard'))
           }));
-          return res.json({ success: true, history, total: page.total, limit: page.limit, offset: page.offset });
+          return res.json({
+            success: true,
+            history,
+            total: page.total,
+            limit: page.limit,
+            offset: page.offset,
+            filters: page.filters || historyQuery
+          });
         }
         const rows = this.db
           .prepare('SELECT * FROM plugin_music_bot_history ORDER BY finishedAt DESC LIMIT ? OFFSET ?')
-          .all(limit, offset);
+          .all(historyQuery.limit, historyQuery.offset);
         const total = this.db
           .prepare('SELECT COUNT(*) as count FROM plugin_music_bot_history')
           .get().count;
-        res.json({ success: true, history: rows, total, limit, offset });
+        res.json({
+          success: true,
+          history: rows,
+          total,
+          limit: historyQuery.limit,
+          offset: historyQuery.offset,
+          filters: historyQuery
+        });
       } catch (error) {
         this.api.log(`[music-bot] Failed to load history: ${error.message}`, 'error');
-        res.json({ success: true, history: this.queueManager.getHistory() });
+        res.json({ success: true, history: this.queueManager.getHistory(), filters: historyQuery });
       }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/history/:eventId/replay', async (req, res) => {
+      const mode = req.body?.mode === 'play' || req.body?.mode === 'queue' ? req.body.mode : null;
+      if (!mode) {
+        res.status(400).json({ success: false, error: 'Invalid replay mode' });
+        return;
+      }
+      if (mode === 'play' && this._isSafetyLocked()) {
+        res.status(423).json(this._lockedResult());
+        return;
+      }
+      const event = this.musicCatalog?.getHistoryEvent?.(req.params?.eventId);
+      if (!event) {
+        res.status(404).json({ success: false, error: 'History event not found' });
+        return;
+      }
+      const url = String(event.url || '').trim();
+      if (!url) {
+        res.status(422).json({ success: false, error: 'History event has no replayable source' });
+        return;
+      }
+      const result = await this._handleDashboardRequest(url, 'dashboard');
+      if (!result?.success) {
+        res.status(400).json(result || { success: false, error: 'Replay failed' });
+        return;
+      }
+      if (mode === 'queue') {
+        res.json({ ...result, success: true, mode });
+        return;
+      }
+
+      const queuedSongId = result.song?.id;
+      const queue = this.queueManager.getQueue();
+      const queueIndex = queuedSongId
+        ? queue.findIndex((song) => song.id === queuedSongId)
+        : -1;
+      if (queueIndex < 0) {
+        res.status(409).json({ success: false, error: 'Replay song is no longer in the queue' });
+        return;
+      }
+      const moved = this.queueManager.reorderSong(queueIndex, 0);
+      if (!moved.success) {
+        res.status(400).json(moved);
+        return;
+      }
+      const current = this.playbackEngine.getNowPlaying();
+      const transition = current
+        ? await this._skipCurrent('history-replay')
+        : await this._playNextFromQueue();
+      this._emitQueue();
+      res.status(transition.success === false ? 400 : 200).json({
+        ...result,
+        ...transition,
+        success: transition.success !== false,
+        mode,
+        position: 0,
+        track: transition.next || transition.song || result.song
+      });
     });
 
     this.api.registerRoute('delete', '/api/plugins/music-bot/queue/:index', async (req, res) => {

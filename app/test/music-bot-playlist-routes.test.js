@@ -27,6 +27,62 @@ function response() {
 }
 
 describe('music-bot playlist routes and lifecycle', () => {
+  it('registers filterable history and replay routes without bypassing safety', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.musicCatalog = {
+      getHistory: jest.fn(() => ({
+        items: [], total: 0, limit: 50, offset: 0,
+        filters: { q: 'Artist', outcome: '', feedback: '', banned: '', from: '', to: '', sort: 'finished_asc' }
+      })),
+      getHistoryEvent: jest.fn(() => ({ id: 'event-1', songId: 7, title: 'Replay', url: 'https://youtu.be/replay' }))
+    };
+    plugin._handleDashboardRequest = jest.fn(async () => ({ success: true, song: { id: 'queued-1' }, position: 1 }));
+    plugin._isSafetyLocked = jest.fn(() => false);
+    plugin.queueManager = {
+      getQueue: jest.fn(() => [{ id: 'queued-1' }]),
+      reorderSong: jest.fn(() => ({ success: true, position: 0 }))
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => ({ id: 'current' })) };
+    plugin._skipCurrent = jest.fn(async () => ({ success: true, next: { id: 'queued-1' } }));
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const history = api.routes.get('get:/api/plugins/music-bot/history');
+    const replay = api.routes.get('post:/api/plugins/music-bot/history/:eventId/replay');
+    expect(history).toEqual(expect.any(Function));
+    expect(replay).toEqual(expect.any(Function));
+
+    const historyResponse = response();
+    await history({ query: { q: '  Artist ', outcome: 'invalid', sort: 'finished_asc' } }, historyResponse);
+    expect(plugin.musicCatalog.getHistory).toHaveBeenCalledWith(expect.objectContaining({
+      q: 'Artist', outcome: '', sort: 'finished_asc'
+    }));
+    expect(historyResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      filters: expect.objectContaining({ q: 'Artist', sort: 'finished_asc' })
+    }));
+
+    const replayResponse = response();
+    await replay({ params: { eventId: 'event-1' }, body: { mode: 'queue' } }, replayResponse);
+    expect(plugin._handleDashboardRequest).toHaveBeenCalledWith('https://youtu.be/replay', 'dashboard');
+    expect(replayResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true, mode: 'queue'
+    }));
+
+    const playResponse = response();
+    await replay({ params: { eventId: 'event-1' }, body: { mode: 'play' } }, playResponse);
+    expect(plugin.queueManager.reorderSong).toHaveBeenCalledWith(0, 0);
+    expect(plugin._skipCurrent).toHaveBeenCalledWith('history-replay');
+    expect(playResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true, mode: 'play'
+    }));
+
+    plugin._isSafetyLocked.mockReturnValue(true);
+    const lockedResponse = response();
+    await replay({ params: { eventId: 'event-1' }, body: { mode: 'play' } }, lockedResponse);
+    expect(lockedResponse.status).toHaveBeenCalledWith(423);
+  });
+
   it('registers additive playlist routes, maps revision conflicts to 409, and broadcasts import progress', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
