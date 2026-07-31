@@ -674,6 +674,216 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     await completion;
   });
 
+  test('clears a held result when a different match owns the arena without letting the old timer clear it', async () => {
+    mountArena();
+    const resultResolvers = [];
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: milliseconds => (
+          milliseconds === 8_000
+            ? new Promise(resolve => resultResolvers.push(resolve))
+            : Promise.resolve()
+        ),
+        now: () => 1_000
+      }
+    });
+    const oldFighters = [
+      { slot: 1, name: 'Ashfang', viewerName: '@old-winner', hp: 11, maxHp: 30 },
+      { slot: 2, name: 'Ripple', viewerName: '@old-loser', hp: 0, maxHp: 30 }
+    ];
+    view.applyMatch({
+      matchId: 'held-old-result',
+      state: 'action',
+      roundNumber: 9,
+      fighters: oldFighters
+    });
+
+    const oldCompletion = view.complete({
+      eventId: 'held-old-result:completed',
+      matchId: 'held-old-result',
+      winnerSlot: 1,
+      terminalReason: 'knockout',
+      winner: { name: 'Ashfang', viewerName: '@old-winner' },
+      knockout: { round: 9, remainingHp: 11, maxHp: 30 },
+      nextArenaHint: {
+        kind: 'close_result',
+        avoidsImmediateRematch: true
+      },
+      combatReport: {
+        decisiveSkill: {
+          round: 9,
+          ownerSlot: 1,
+          choice: 'C',
+          skillName: 'Old Inferno'
+        },
+        fighters: [{
+          slot: 1,
+          playerName: '@old-winner',
+          monsterName: 'Ashfang',
+          damageDealt: 29,
+          rating: { after: 1016, delta: 16 }
+        }, {
+          slot: 2,
+          playerName: '@old-loser',
+          monsterName: 'Ripple',
+          damageDealt: 12,
+          rating: { after: 984, delta: -16 }
+        }]
+      }
+    });
+
+    const result = document.getElementById('arena-result');
+    const report = document.getElementById('arena-result-report');
+    expect(result.classList).toContain('visible');
+    expect(document.getElementById('arena-result-winner').textContent)
+      .toContain('@old-winner');
+    expect(document.getElementById('arena-result-compact-summary').textContent)
+      .toMatch(/9.*11/);
+    expect(document.getElementById('arena-result-next').textContent).not.toBe('');
+    expect(document.getElementById('arena-feed').textContent).not.toBe('');
+    expect(report.hidden).toBe(false);
+    expect(report.textContent).toContain('Old Inferno');
+
+    view.applyMatch({
+      matchId: 'held-old-result',
+      state: 'finalizing',
+      roundNumber: 9,
+      fighters: oldFighters
+    });
+    expect(result.classList).toContain('visible');
+    expect(document.getElementById('arena-result-winner').textContent)
+      .toContain('@old-winner');
+
+    view.applyMatch({
+      matchId: 'fresh-result-owner',
+      state: 'roster',
+      fighters: [
+        { slot: 1, name: 'Oakheart', viewerName: '@new-left', hp: 17, maxHp: 30 },
+        { slot: 2, name: 'Voltkit', viewerName: '@new-right', hp: 30, maxHp: 30 }
+      ]
+    });
+
+    expect(result.classList).not.toContain('visible');
+    for (const id of [
+      'arena-result-ko',
+      'arena-result-winner',
+      'arena-result-monster',
+      'arena-result-summary',
+      'arena-result-compact-summary',
+      'arena-result-ratings',
+      'arena-result-next',
+      'arena-feed'
+    ]) {
+      expect(document.getElementById(id).textContent).toBe('');
+    }
+    expect(report.hidden).toBe(true);
+    expect(report.childElementCount).toBe(0);
+    expect(document.getElementById('battle').dataset.phase).toBe('roster');
+    expect(document.getElementById('arena-name-1').textContent).toBe('Oakheart');
+
+    resultResolvers.shift()();
+    await oldCompletion;
+
+    expect(document.getElementById('battle').classList).toContain('visible');
+    expect(document.getElementById('battle').dataset.phase).toBe('roster');
+    expect(result.classList).not.toContain('visible');
+    expect(document.getElementById('arena-name-1').textContent).toBe('Oakheart');
+
+    const newCompletion = view.complete({
+      eventId: 'fresh-result-owner:completed',
+      matchId: 'fresh-result-owner',
+      winnerSlot: 1,
+      terminalReason: 'forfeit',
+      winner: { name: 'Oakheart', viewerName: '@new-left' }
+    });
+    const compactSummary = document.getElementById(
+      'arena-result-compact-summary'
+    ).textContent;
+    expect(compactSummary).toMatch(/1.*17/);
+    expect(compactSummary).not.toContain('9');
+    expect(document.getElementById('battle').dataset.phase).toBe('completed');
+
+    resultResolvers.shift()();
+    await newCompletion;
+  });
+
+  test('clears the whole held result surface when an empty snapshot takes ownership', async () => {
+    mountArena();
+    let finishResult;
+    const view = ArenaView.createArenaView({
+      document,
+      clock: {
+        wait: milliseconds => (
+          milliseconds === 8_000
+            ? new Promise(resolve => { finishResult = resolve; })
+            : Promise.resolve()
+        ),
+        now: () => 1_000
+      }
+    });
+    view.applyMatch({
+      matchId: 'empty-reset-result',
+      state: 'action',
+      roundNumber: 7,
+      fighters: [
+        { slot: 1, name: 'Selene', viewerName: '@reset-left', hp: 13, maxHp: 30 },
+        { slot: 2, name: 'Ripple', viewerName: '@reset-right', hp: 0, maxHp: 30 }
+      ]
+    });
+    const completion = view.complete({
+      eventId: 'empty-reset-result:completed',
+      matchId: 'empty-reset-result',
+      winnerSlot: 1,
+      terminalReason: 'knockout',
+      winner: { name: 'Selene', viewerName: '@reset-left' },
+      knockout: { round: 7, remainingHp: 13, maxHp: 30 },
+      ratingChanges: [
+        { slot: 1, before: 1000, after: 1016, delta: 16 },
+        { slot: 2, before: 1000, after: 984, delta: -16 }
+      ],
+      nextArenaHint: {
+        kind: 'close_result',
+        avoidsImmediateRematch: true
+      }
+    });
+
+    expect(document.getElementById('arena-result').classList).toContain('visible');
+    expect(document.getElementById('arena-result-ratings').textContent).not.toBe('');
+    expect(document.getElementById('arena-result-next').textContent).not.toBe('');
+    expect(document.getElementById('arena-feed').textContent).not.toBe('');
+
+    expect(view.applySnapshot({ battle: { matches: [] } })).toBeNull();
+
+    expect(document.getElementById('arena-result').classList)
+      .not.toContain('visible');
+    for (const id of [
+      'arena-result-ko',
+      'arena-result-winner',
+      'arena-result-monster',
+      'arena-result-summary',
+      'arena-result-compact-summary',
+      'arena-result-ratings',
+      'arena-result-next',
+      'arena-feed'
+    ]) {
+      expect(document.getElementById(id).textContent).toBe('');
+    }
+    const report = document.getElementById('arena-result-report');
+    expect(report.hidden).toBe(true);
+    expect(report.childElementCount).toBe(0);
+    expect(document.getElementById('battle').dataset.terminal).toBeUndefined();
+    expect(document.getElementById('battle').classList).not.toContain('visible');
+
+    finishResult();
+    await completion;
+
+    expect(document.getElementById('arena-result').classList)
+      .not.toContain('visible');
+    expect(document.getElementById('arena-result-winner').textContent).toBe('');
+    expect(document.getElementById('arena-feed').textContent).toBe('');
+  });
+
   test('renders a backend double knockout as a draw with one Elo block', async () => {
     mountArena();
     const audio = { play: jest.fn(async () => true) };

@@ -1181,15 +1181,35 @@
       return normalized;
     }
 
+    function resetResultSurface() {
+      node('arena-result')?.classList.remove('visible');
+      for (const id of [
+        'arena-result-ko',
+        'arena-result-winner',
+        'arena-result-monster',
+        'arena-result-summary',
+        'arena-result-compact-summary',
+        'arena-result-ratings',
+        'arena-result-next',
+        'arena-feed'
+      ]) {
+        setText(id, '');
+      }
+      renderCombatReport(null);
+      if (arena) delete arena.dataset.terminal;
+    }
+
     function resetFighters() {
       resetFighterVisuals();
       clearArenaStamps();
       clearActionCard();
+      resetResultSurface();
       stateBySlot.clear();
       activeChargeWindow = null;
       renderVisibleComposite = null;
       acceptedEventIds.clear();
       lastEventSequence = 0;
+      lastRound = 1;
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         if (fighter) {
@@ -2345,7 +2365,6 @@
         activeDeadlineMs = 0;
         resetFighters();
         arena?.classList.remove('visible');
-        node('arena-result')?.classList.remove('visible');
         clearActionCard();
         setText('arena-countdown', '');
         setBattleSurface(false, 'snapshot_empty');
