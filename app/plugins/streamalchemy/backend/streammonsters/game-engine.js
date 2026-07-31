@@ -297,9 +297,9 @@ class StreamMonstersEngine {
     return hatched;
   }
 
-  autoHatchReadyEggs({ isViewerActive } = {}) {
+  autoHatchReadyEggs({ isViewerActive, force = false } = {}) {
     if (
-      this.config.autoHatchActiveViewers === false ||
+      (!force && this.config.autoHatchActiveViewers === false) ||
       typeof isViewerActive !== 'function'
     ) {
       return [];

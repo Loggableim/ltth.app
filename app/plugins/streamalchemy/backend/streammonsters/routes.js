@@ -79,7 +79,7 @@ class StreamMonstersRoutes {
     collection = null,
     onboarding = null,
     battleMatchService = null,
-    ownedReadyEggRescueService = null,
+    unhatchedEggStealService = null,
     giftCatalogProvider,
     configProvider,
     now = () => Date.now(),
@@ -102,7 +102,7 @@ class StreamMonstersRoutes {
     this.collection = collection;
     this.onboarding = onboarding;
     this.battleMatchService = battleMatchService;
-    this.ownedReadyEggRescueService = ownedReadyEggRescueService;
+    this.unhatchedEggStealService = unhatchedEggStealService;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.now = now;
@@ -1313,18 +1313,24 @@ class StreamMonstersRoutes {
       : 600;
   }
 
+  normalizeUnhatchedEggStealGraceSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 0 && seconds <= 86_400
+      ? Math.round(seconds)
+      : 600;
+  }
+
   eggStageSnapshot(streamKey = 'offline') {
     const projectedStage = this.eggStageProjector.snapshot(streamKey);
-    const visibleStage = this.ownedReadyEggRescueService
-      ?.excludeClaimedStageEntries?.(projectedStage) || projectedStage;
+    const visibleStage = projectedStage;
     const byVisualId = new Map(
       visibleStage
         .map(stage => [stage.visualId, stage])
     );
-    const publicRescues = this.ownedReadyEggRescueService?.listPublic?.(
+    const publicSteals = this.unhatchedEggStealService?.listPublic?.(
       this.now()
     ) || [];
-    publicRescues.forEach(stage => {
+    publicSteals.forEach(stage => {
       if (stage?.visualId) byVisualId.set(stage.visualId, stage);
     });
     return [...byVisualId.values()].sort((left, right) => (
@@ -1337,6 +1343,13 @@ class StreamMonstersRoutes {
   normalizeAutoHatchActiveWindowSeconds(value) {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 30 && seconds <= 900
+      ? Math.round(seconds)
+      : 300;
+  }
+
+  normalizeUnhatchedEggStealActivityWindowSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 30 && seconds <= 86_400
       ? Math.round(seconds)
       : 300;
   }
@@ -1392,6 +1405,24 @@ class StreamMonstersRoutes {
       const seconds = Number(input.freeEggCooldownSeconds);
       if (!Number.isFinite(seconds) || seconds < 60 || seconds > 31_536_000) {
         throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealEnabled') &&
+      typeof input.unhatchedEggStealEnabled !== 'boolean'
+    ) {
+      throw new Error('STREAM_MONSTERS_STEAL_ENABLED_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealGraceSeconds')) {
+      const seconds = Number(input.unhatchedEggStealGraceSeconds);
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 86_400) {
+        throw new Error('STREAM_MONSTERS_STEAL_GRACE_INVALID');
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealActivityWindowSeconds')) {
+      const seconds = Number(input.unhatchedEggStealActivityWindowSeconds);
+      if (!Number.isFinite(seconds) || seconds < 30 || seconds > 86_400) {
+        throw new Error('STREAM_MONSTERS_STEAL_ACTIVITY_WINDOW_INVALID');
       }
     }
     if (Object.prototype.hasOwnProperty.call(
@@ -1751,6 +1782,20 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (typeof input.unhatchedEggStealEnabled === 'boolean') {
+      safe.unhatchedEggStealEnabled = input.unhatchedEggStealEnabled;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealGraceSeconds')) {
+      safe.unhatchedEggStealGraceSeconds = this.normalizeUnhatchedEggStealGraceSeconds(
+        input.unhatchedEggStealGraceSeconds
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealActivityWindowSeconds')) {
+      safe.unhatchedEggStealActivityWindowSeconds =
+        this.normalizeUnhatchedEggStealActivityWindowSeconds(
+          input.unhatchedEggStealActivityWindowSeconds
+        );
+    }
     if (Object.prototype.hasOwnProperty.call(
       input,
       'ownedReadyEggRescueGraceSeconds'
@@ -2026,6 +2071,14 @@ class StreamMonstersRoutes {
       result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
         config.freeEggCooldownSeconds
       );
+      result.unhatchedEggStealEnabled = config.unhatchedEggStealEnabled !== false;
+      result.unhatchedEggStealGraceSeconds = this.normalizeUnhatchedEggStealGraceSeconds(
+        config.unhatchedEggStealGraceSeconds
+      );
+      result.unhatchedEggStealActivityWindowSeconds =
+        this.normalizeUnhatchedEggStealActivityWindowSeconds(
+          config.unhatchedEggStealActivityWindowSeconds
+        );
       result.ownedReadyEggRescueGraceSeconds =
         this.normalizeOwnedReadyEggRescueGraceSeconds(
           config.ownedReadyEggRescueGraceSeconds

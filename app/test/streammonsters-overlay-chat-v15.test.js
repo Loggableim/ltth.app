@@ -40,7 +40,8 @@ function fixture({
     eggQueued: 'Egg is queued',
     eggQueuePosition: 'Queue position {position}',
     eggQueuePending: 'Incubation starts when a slot opens',
-    commandUnavailable: 'Command result unavailable'
+    commandUnavailable: 'Command result unavailable',
+    stealOwnReadyEgg: 'Hatch your ready egg first with {command} {slot}.'
   };
   const translate = (key, params = {}) => {
     const template = labels[key] || key;
@@ -241,6 +242,22 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(snapshots[0].detailText).toContain("Collector's monsters");
     expect(snapshots[0].detailHtml).toContain('data-placement="upper"');
     expect(snapshots[0].detailHtml).toContain(`data-count="${count}"`);
+  });
+
+  test('renders the hatch-first hint for a viewer who tries to steal with a ready egg', async () => {
+    const { view, snapshots } = fixture();
+
+    await view.show({
+      displayName: 'Egg Keeper',
+      result: {
+        status: 'own_ready_egg',
+        messageKey: 'stealOwnReadyEgg',
+        params: { command: '!hatch', slot: 2 }
+      }
+    });
+
+    expect(snapshots[0].compactText)
+      .toContain('Hatch your ready egg first with !hatch 2.');
   });
 
   test('rotates collections larger than six as readable six-card pages', async () => {

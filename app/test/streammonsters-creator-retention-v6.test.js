@@ -164,8 +164,9 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       .toEqual(expect.objectContaining({
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
-        autoHatchActiveViewers: true,
-        autoHatchActiveWindowSeconds: 300,
+        unhatchedEggStealEnabled: true,
+        unhatchedEggStealGraceSeconds: 600,
+        unhatchedEggStealActivityWindowSeconds: 300,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90
       }));
@@ -175,8 +176,9 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       localRequest({
         freeEggDropsEnabled: false,
         freeEggCooldownSeconds: 60,
-        autoHatchActiveViewers: false,
-        autoHatchActiveWindowSeconds: 30,
+        unhatchedEggStealEnabled: false,
+        unhatchedEggStealGraceSeconds: 60,
+        unhatchedEggStealActivityWindowSeconds: 30,
         tutorialHintsEnabled: false,
         tutorialHintIntervalSeconds: 60
       }),
@@ -185,8 +187,9 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     expect(low.payload.config).toEqual(expect.objectContaining({
       freeEggDropsEnabled: false,
       freeEggCooldownSeconds: 60,
-      autoHatchActiveViewers: false,
-      autoHatchActiveWindowSeconds: 30,
+      unhatchedEggStealEnabled: false,
+      unhatchedEggStealGraceSeconds: 60,
+      unhatchedEggStealActivityWindowSeconds: 30,
       tutorialHintsEnabled: false,
       tutorialHintIntervalSeconds: 60
     }));
@@ -195,14 +198,16 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     await harness.find('POST', '/api/streammonsters/config')(
       localRequest({
         freeEggCooldownSeconds: 31_536_000,
-        autoHatchActiveWindowSeconds: 900,
+        unhatchedEggStealGraceSeconds: 86_400,
+        unhatchedEggStealActivityWindowSeconds: 86_400,
         tutorialHintIntervalSeconds: 300
       }),
       high
     );
     expect(high.payload.config).toEqual(expect.objectContaining({
       freeEggCooldownSeconds: 31_536_000,
-      autoHatchActiveWindowSeconds: 900,
+      unhatchedEggStealGraceSeconds: 86_400,
+      unhatchedEggStealActivityWindowSeconds: 86_400,
       tutorialHintIntervalSeconds: 300
     }));
   });
@@ -211,9 +216,11 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     [{ freeEggDropsEnabled: 'yes' }, 'STREAM_MONSTERS_FREE_EGG_ENABLED_INVALID'],
     [{ freeEggCooldownSeconds: 59 }, 'STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID'],
     [{ freeEggCooldownSeconds: 31_536_001 }, 'STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID'],
-    [{ autoHatchActiveViewers: 'yes' }, 'STREAM_MONSTERS_AUTO_HATCH_ENABLED_INVALID'],
-    [{ autoHatchActiveWindowSeconds: 29 }, 'STREAM_MONSTERS_AUTO_HATCH_WINDOW_INVALID'],
-    [{ autoHatchActiveWindowSeconds: 901 }, 'STREAM_MONSTERS_AUTO_HATCH_WINDOW_INVALID'],
+    [{ unhatchedEggStealEnabled: 'yes' }, 'STREAM_MONSTERS_STEAL_ENABLED_INVALID'],
+    [{ unhatchedEggStealGraceSeconds: -1 }, 'STREAM_MONSTERS_STEAL_GRACE_INVALID'],
+    [{ unhatchedEggStealGraceSeconds: 86_401 }, 'STREAM_MONSTERS_STEAL_GRACE_INVALID'],
+    [{ unhatchedEggStealActivityWindowSeconds: 29 }, 'STREAM_MONSTERS_STEAL_ACTIVITY_WINDOW_INVALID'],
+    [{ unhatchedEggStealActivityWindowSeconds: 86_401 }, 'STREAM_MONSTERS_STEAL_ACTIVITY_WINDOW_INVALID'],
     [{ tutorialHintsEnabled: 1 }, 'STREAM_MONSTERS_TUTORIAL_HINTS_ENABLED_INVALID'],
     [{ tutorialHintIntervalSeconds: 59 }, 'STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID'],
     [{ tutorialHintIntervalSeconds: 301 }, 'STREAM_MONSTERS_TUTORIAL_HINT_INTERVAL_INVALID']
@@ -628,8 +635,9 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
     for (const id of [
       'freeEggDropsEnabled',
       'freeEggCooldownSeconds',
-      'autoHatchActiveViewers',
-      'autoHatchActiveWindowSeconds',
+      'unhatchedEggStealEnabled',
+      'unhatchedEggStealGraceSeconds',
+      'unhatchedEggStealActivityWindowSeconds',
       'tutorialHintsEnabled',
       'tutorialHintIntervalSeconds',
       'freeEggOfferCounts',
@@ -644,11 +652,14 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
     expect(document.getElementById('freeEggCooldownSeconds').type).toBe('number');
     expect(document.getElementById('freeEggCooldownSeconds').min).toBe('60');
     expect(document.getElementById('freeEggCooldownSeconds').max).toBe('31536000');
-    expect(document.getElementById('autoHatchActiveWindowSeconds').min).toBe('30');
-    expect(document.getElementById('autoHatchActiveWindowSeconds').max).toBe('900');
+    expect(document.getElementById('unhatchedEggStealGraceSeconds').min).toBe('0');
+    expect(document.getElementById('unhatchedEggStealGraceSeconds').max).toBe('86400');
+    expect(document.getElementById('unhatchedEggStealActivityWindowSeconds').min).toBe('30');
+    expect(document.getElementById('unhatchedEggStealActivityWindowSeconds').max).toBe('86400');
     expect(document.getElementById('tutorialHintIntervalSeconds').min).toBe('60');
     expect(document.getElementById('tutorialHintIntervalSeconds').max).toBe('300');
     expect(document.querySelector('[data-command-alias="adopt"]')).not.toBeNull();
+    expect(document.querySelector('[data-command-alias="steal"]')).not.toBeNull();
     expect(document.body.textContent).toContain('Rules v8');
   });
 
@@ -662,9 +673,10 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
         'freeEggDropsEnabled',
         'freeEggCooldownSeconds',
         'freeEggCooldownHelp',
-        'autoHatchActiveViewers',
-        'autoHatchActiveWindowSeconds',
-        'autoHatchActiveHelp',
+        'unhatchedEggStealEnabled',
+        'unhatchedEggStealGraceSeconds',
+        'unhatchedEggStealActivityWindowSeconds',
+        'unhatchedEggStealHelp',
         'tutorialHintsEnabled',
         'tutorialHintIntervalSeconds',
         'tutorialHintHelp',
@@ -672,6 +684,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
         'freeEggNextCleanup',
         'retentionTimerWarning',
         'commandAdopt',
+        'commandSteal',
         'demoFreeOffer',
         'demoFreeRelease',
         'demoFreeClaim',

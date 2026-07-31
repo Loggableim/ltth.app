@@ -5,7 +5,7 @@
 }(typeof globalThis === 'object' ? globalThis : this, () => {
   'use strict';
 
-  const MAX_VISIBLE_EGGS = 8;
+  const MAX_VISIBLE_EGGS = 6;
   const ADOPT_CALLOUT_MS = 8_000;
   const COUNTDOWN_INTERVAL_MS = 1_000;
 
@@ -17,9 +17,14 @@
   }
 
   function isPublicFreeEgg(egg = {}) {
-    return egg.provenance === 'free' &&
+    return (egg.offerType === 'free' || egg.provenance === 'free') &&
       !isOwnedReadyRescue(egg) &&
+      !isStealableEgg(egg) &&
       isPublicAdoptableEgg(egg);
+  }
+
+  function isStealableEgg(egg = {}) {
+    return egg.offerType === 'steal' && isPublicAdoptableEgg(egg);
   }
 
   function isPublicAdoptableEgg(egg = {}) {
@@ -61,7 +66,8 @@
     nowMs = Date.now(),
     labels = {},
     hatchReference = '!hatch',
-    adoptReference = '!adopt'
+    adoptReference = '!adopt',
+    stealReference = '!steal'
   } = {}) {
     const timing = egg.timing || {};
     if (egg.state === 'ready') {
@@ -85,12 +91,14 @@
         0,
         Number(timing.expiresAtMs ?? timing.expiryAtMs) - Number(nowMs)
       ));
-      const template = isPublicFreeEgg(egg)
-        ? labels.public || 'Free · {time} · {command}'
-        : labels.rescuePublic || 'Adoptable · {time} · {command}';
+      const template = isStealableEgg(egg)
+        ? labels.stealPublic || 'Stealable · {time} · {command}'
+        : isPublicFreeEgg(egg)
+          ? labels.public || 'Free · {time} · {command}'
+          : labels.rescuePublic || 'Adoptable · {time} · {command}';
       return replaceTokens(template, {
         time,
-        command: adoptReference
+        command: isStealableEgg(egg) ? stealReference : adoptReference
       });
     }
     return replaceTokens(labels.incubating || 'Hatches in {time}', {
@@ -269,6 +277,25 @@
       };
     }
 
+    if (normalizedType === 'unhatched_egg_steal_public') {
+      if (
+        !isStealableEgg(egg) ||
+        (egg.state && egg.state !== 'public') ||
+        (egg.adoptionStatus && egg.adoptionStatus !== 'public')
+      ) return null;
+      return {
+        ...common,
+        kind: 'unhatched_egg_steal_public',
+        titleKey: 'eggLifecycleStealPublicTitle',
+        copyKey: 'eggLifecycleStealPublicCopy',
+        durationMs: readableDuration(
+          nowMs,
+          timing.expiresAtMs ?? timing.expiryAtMs
+        ),
+        commands: commandList('steal')
+      };
+    }
+
     if (['free_egg_claimed', 'owned_ready_egg_claimed'].includes(normalizedType)) {
       return {
         ...common,
@@ -281,6 +308,16 @@
         copyKey: normalizedType === 'owned_ready_egg_claimed'
           ? 'eggLifecycleRescueClaimedCopy'
           : 'eggLifecycleFreeClaimedCopy',
+        commands: ownedEggCommands()
+      };
+    }
+
+    if (normalizedType === 'unhatched_egg_steal_claimed') {
+      return {
+        ...common,
+        kind: 'unhatched_egg_steal_claimed',
+        titleKey: 'eggLifecycleStealClaimedTitle',
+        copyKey: 'eggLifecycleStealClaimedCopy',
         commands: ownedEggCommands()
       };
     }
@@ -454,11 +491,7 @@
     };
   }
 
-  function visibleCapacity(width) {
-    const viewportWidth = Math.max(0, Number(width) || 0);
-    if (viewportWidth > 0 && viewportWidth <= 520) return 5;
-    if (viewportWidth > 0 && viewportWidth <= 760) return 6;
-    if (viewportWidth > 0 && viewportWidth <= 920) return 7;
+  function visibleCapacity(_width) {
     return MAX_VISIBLE_EGGS;
   }
 
@@ -494,6 +527,7 @@
     if (
       type === 'free_egg_claimed' ||
       type === 'owned_ready_egg_claimed' ||
+      type === 'unhatched_egg_steal_claimed' ||
       type === 'egg_stage_removed' ||
       type === 'egg_expired' ||
       isClaimedFreeInventoryEgg(egg) ||
@@ -512,6 +546,7 @@
       .filter(Boolean)
       .filter(egg => egg.state !== 'expired' && !isClaimedFreeInventoryEgg(egg));
     const adopt = boundedText(commands.adopt, 48);
+    const steal = boundedText(commands.steal, 48);
     const hatch = boundedText(commands.hatch, 48);
     const deadline = egg => {
       const value = Number(
@@ -525,8 +560,14 @@
       deadline(left) - deadline(right) ||
       left.visualId.localeCompare(right.visualId)
     );
+    const urgentSteal = eggs
+      .filter(isStealableEgg)
+      .sort(byDeadlineThenId)[0];
+    if (urgentSteal && steal) {
+      return { kind: 'steal', command: steal, visualId: urgentSteal.visualId };
+    }
     const urgentOffer = eggs
-      .filter(isPublicAdoptableEgg)
+      .filter(egg => isPublicAdoptableEgg(egg) && !isStealableEgg(egg))
       .sort(byDeadlineThenId)[0];
     if (urgentOffer && adopt) {
       return { kind: 'adopt', command: adopt, visualId: urgentOffer.visualId };
@@ -610,21 +651,17 @@
   } = {}) {
     const normalized = orderedStageEggs(eggStage, reducedMotion);
     const visibleLimit = Math.max(1, Math.min(MAX_VISIBLE_EGGS, Number(maxVisible) || 1));
-    const visible = normalized.slice(0, visibleLimit);
-    const hidden = normalized.slice(visibleLimit);
-    const boundedRotation = hidden.length
-      ? ((Number(rotationIndex) || 0) % hidden.length + hidden.length) % hidden.length
-      : 0;
+    const pageCount = Math.max(1, Math.ceil(normalized.length / visibleLimit));
+    const pageIndex = ((Number(rotationIndex) || 0) % pageCount + pageCount) % pageCount;
+    const visible = normalized.slice(
+      pageIndex * visibleLimit,
+      (pageIndex + 1) * visibleLimit
+    );
     return {
       visible,
-      overflow: hidden.length
-        ? {
-            count: hidden.length,
-            label: `+${hidden.length}`,
-            preview: hidden[boundedRotation],
-            rotationIndex: boundedRotation
-          }
-        : null,
+      overflow: null,
+      pageCount,
+      pageIndex,
       total: normalized.length,
       adoptable: normalized.filter(isPublicAdoptableEgg).length,
       ready: normalized.filter(egg => egg.state === 'ready').length,
@@ -664,6 +701,7 @@
       : () => staticLabels;
     const getHatchReference = options.getHatchReference || (() => '!hatch');
     const getAdoptReference = options.getAdoptReference || (() => '!adopt');
+    const getStealReference = options.getStealReference || (() => '!steal');
     const getElementName = typeof options.getElementName === 'function'
       ? options.getElementName
       : element => element;
@@ -671,9 +709,9 @@
     const landingTimers = new Map();
     const eggsById = new Map();
     const pendingLandingIds = new Set();
-    let overflowRotationIndex = 0;
+    let pageRotationIndex = 0;
     let focusRotationIndex = 0;
-    let overflowRotationTimer = null;
+    let pageRotationTimer = null;
     let focusRotationTimer = null;
     let countdownTimer = null;
 
@@ -740,10 +778,14 @@
         });
       }
       if (isPublicAdoptableEgg(egg)) {
-        const template = isOwnedReadyRescue(egg)
+        const template = isStealableEgg(egg)
+          ? labels.eggCardStealPublic || 'STEAL NOW · {command}'
+          : isOwnedReadyRescue(egg)
           ? labels.eggCardRescuePublic || 'GRACE · ADOPT NOW · {command}'
           : labels.eggCardPublic || 'ADOPT NOW · {command}';
-        return replaceTokens(template, { command: getAdoptReference() });
+        return replaceTokens(template, {
+          command: isStealableEgg(egg) ? getStealReference() : getAdoptReference()
+        });
       }
       if (egg.state === 'expired') return labels.eggCardRot || 'ROTTEN';
       return [
@@ -760,11 +802,25 @@
       const element = boundedText(getElementName(egg.element), 48) || egg.element;
       const status = eggCardStatus(egg);
       const timer = eggTimerText(egg);
+      const command = isStealableEgg(egg)
+        ? getStealReference()
+        : isPublicFreeEgg(egg)
+          ? getAdoptReference()
+          : egg.state === 'ready'
+            ? getHatchReference()
+            : egg.state === 'incubating'
+              ? labels.eggCardIncubating || 'INCUBATING'
+              : status;
+      const sourceOwner = isStealableEgg(egg)
+        ? safeViewerName(egg.sourceOwnerDisplayName || egg.displayName) || 'Viewer'
+        : '';
       const lines = [
+        ['command', command],
         ['owner', replaceTokens(labels.eggCardOwner || 'Owner: {owner}', { owner })],
         ['element', replaceTokens(labels.eggCardElement || 'Element: {element}', { element })],
         ['status', status],
-        ['timer', timer]
+        ['timer', timer],
+        ['sourceOwner', sourceOwner]
       ];
       for (const [name, text] of lines) {
         let line = item.querySelector(`[data-egg-${name}]`);
@@ -821,13 +877,20 @@
         nowMs: now(),
         labels:currentLabels(),
         hatchReference: getHatchReference(),
-        adoptReference: getAdoptReference()
+        adoptReference: getAdoptReference(),
+        stealReference: getStealReference()
       });
       item.appendChild(timing);
       updateEggCardMetadata(item, egg);
 
       if (isPublicAdoptableEgg(egg)) {
+        item.classList.add('public-offer');
+      }
+      if (isPublicFreeEgg(egg)) {
         item.classList.add('gold-ring', 'public-free');
+      }
+      if (isStealableEgg(egg)) {
+        item.classList.add('offer-steal');
       }
       return item;
     }
@@ -888,15 +951,18 @@
       if (timing) {
         timing.textContent = shelfTiming(egg, {
           nowMs: now(),
-          labels:currentLabels(),
-          hatchReference: getHatchReference(),
-          adoptReference: getAdoptReference()
+        labels:currentLabels(),
+        hatchReference: getHatchReference(),
+        adoptReference: getAdoptReference(),
+        stealReference: getStealReference()
         });
       }
       updateEggCardMetadata(item, egg);
       const publicEgg = isPublicAdoptableEgg(egg);
-      item.classList.toggle('gold-ring', publicEgg);
-      item.classList.toggle('public-free', publicEgg);
+      item.classList.toggle('public-offer', publicEgg);
+      item.classList.toggle('gold-ring', isPublicFreeEgg(egg));
+      item.classList.toggle('public-free', isPublicFreeEgg(egg));
+      item.classList.toggle('offer-steal', isStealableEgg(egg));
       return item;
     }
 
@@ -1015,7 +1081,7 @@
       const command = egg.state === 'ready'
         ? getHatchReference()
         : (egg.state === 'reserved' || isPublicAdoptableEgg(egg))
-          ? getAdoptReference()
+          ? (isStealableEgg(egg) ? getStealReference() : getAdoptReference())
           : '';
       const commandLine = ensureLine('command', 'egg-focus-command');
       commandLine.textContent = command;
@@ -1045,7 +1111,7 @@
       );
       const model = buildShelfModel([...eggsById.values()], {
         maxVisible: visibleCapacity(viewportWidth),
-        rotationIndex:overflowRotationIndex,
+        rotationIndex:pageRotationIndex,
         reducedMotion
       });
       if (slots) {
@@ -1088,7 +1154,11 @@
     }
 
     function applyEvent(type, payload = {}) {
-      if (type === 'free_egg_claimed' || type === 'owned_ready_egg_claimed') {
+      if (
+        type === 'free_egg_claimed' ||
+        type === 'owned_ready_egg_claimed' ||
+        type === 'unhatched_egg_steal_claimed'
+      ) {
         const removedId = boundedText(
           payload.removedEggStage?.visualId ||
           payload.eggStage?.visualId ||
@@ -1128,8 +1198,8 @@
       return true;
     }
 
-    function rotateOverflow() {
-      overflowRotationIndex += 1;
+    function rotatePage() {
+      pageRotationIndex += 1;
       return render();
     }
 
@@ -1139,7 +1209,7 @@
     }
 
     if (typeof options.setInterval === 'function') {
-      overflowRotationTimer = options.setInterval(rotateOverflow, 3_000);
+      pageRotationTimer = options.setInterval(rotatePage, 5_000);
       focusRotationTimer = options.setInterval(rotateFocus, 5_000);
       countdownTimer = options.setInterval(render, COUNTDOWN_INTERVAL_MS);
     }
@@ -1148,20 +1218,21 @@
       applyEvent,
       applySnapshot,
       model: () => buildShelfModel([...eggsById.values()], {
-        rotationIndex:overflowRotationIndex,
+        rotationIndex:pageRotationIndex,
         reducedMotion
       }),
       nextAction: commands => selectNextEggAction([...eggsById.values()], commands),
       render,
+      rotatePage,
       rotateFocus,
-      rotateOverflow,
+      rotateOverflow: rotatePage,
       destroy() {
         for (const handle of landingTimers.values()) cancel(handle);
         landingTimers.clear();
-        if (overflowRotationTimer != null && typeof options.clearInterval === 'function') {
-          options.clearInterval(overflowRotationTimer);
+        if (pageRotationTimer != null && typeof options.clearInterval === 'function') {
+          options.clearInterval(pageRotationTimer);
         }
-        overflowRotationTimer = null;
+        pageRotationTimer = null;
         if (focusRotationTimer != null && typeof options.clearInterval === 'function') {
           options.clearInterval(focusRotationTimer);
         }
@@ -1191,6 +1262,7 @@
     isPublicAdoptableEgg,
     isPublicFreeEgg,
     isReservedFreeEgg,
+    isStealableEgg,
     presentCompactLifecycleNotice,
     reduceEggStage,
     selectNextEggAction,

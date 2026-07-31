@@ -377,9 +377,21 @@
         result.wait?.remainingMs ?? result.wait?.remaining_ms,
         0
       );
-      const messageParams = remainingMs > 0
-        ? { remaining: formatRemaining(remainingMs) }
+      const resultParams = result.params && typeof result.params === 'object'
+        ? Object.fromEntries(
+            Object.entries(result.params)
+              .slice(0, 8)
+              .map(([key, value]) => [
+                boundedText(key, '', 48),
+                boundedText(value, '', 160)
+              ])
+              .filter(([key]) => key)
+          )
         : {};
+      const messageParams = {
+        ...resultParams,
+        ...(remainingMs > 0 ? { remaining: formatRemaining(remainingMs) } : {})
+      };
       const message = boundedText(
         localize(result.messageKey || 'commandUnavailable', messageParams),
         localize('commandUnavailable'),

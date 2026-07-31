@@ -34,6 +34,8 @@
     'free_egg_claimed',
     'owned_ready_egg_public',
     'owned_ready_egg_claimed',
+    'unhatched_egg_steal_public',
+    'unhatched_egg_steal_claimed',
     'egg_stage_removed',
     'stat_choice_opened',
     'monster_stat_prompt',
@@ -49,6 +51,8 @@
     'free_egg_claimed',
     'owned_ready_egg_public',
     'owned_ready_egg_claimed',
+    'unhatched_egg_steal_public',
+    'unhatched_egg_steal_claimed',
     'egg_ready',
     'egg_stage_updated',
     'egg_boosted',
@@ -123,6 +127,8 @@
     'chatResultLeft',
     'chatResultRank',
     'chatResultQuests',
+    'stealOwnReadyEgg',
+    'unhatchedEggStealClaimed',
     'chatResultCommandDisabled',
     'chatResultExecutionFailed',
     'chatResultUnknown'
@@ -696,7 +702,7 @@
           data.egg?.egg_id || data.egg?.id || data.eggId || data.userId;
         return eggId ? `hatch:${eggId}` : null;
       }
-      if (type.startsWith('free_egg_')) {
+      if (type.startsWith('free_egg_') || type.startsWith('unhatched_egg_steal_')) {
         const eggId = data.eggStage?.visualId || data.egg_stage?.visualId;
         return eggId ? `hatch:${eggId}` : null;
       }
@@ -756,6 +762,8 @@
         'free_egg_claimed',
         'owned_ready_egg_public',
         'owned_ready_egg_claimed',
+        'unhatched_egg_steal_public',
+        'unhatched_egg_steal_claimed',
         'egg_stage_removed'
       ].includes(type)) {
         return `${targetGroupKey}:${type}`;

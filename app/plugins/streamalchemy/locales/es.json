@@ -395,6 +395,10 @@
           "eggLifecycleRescuePublicCopy": "Adóptalo con {{command}} antes de que el temporizador llegue a cero.",
           "eggLifecycleRescueClaimedTitle": "Huevo listo rescatado",
           "eggLifecycleRescueClaimedCopy": "El mismo huevo ahora pertenece a quien lo rescató y está listo para eclosionar.",
+          "eggLifecycleStealPublicTitle": "Huevo listo abandonado",
+          "eggLifecycleStealPublicCopy": "Su dueño está inactivo. Róbalo con {{command}} antes de que caduque.",
+          "eggLifecycleStealClaimedTitle": "Huevo listo robado",
+          "eggLifecycleStealClaimedCopy": "El huevo está ahora en tu inventario y puede eclosionar de inmediato.",
           "eggLifecycleWaitTitle": "El huevo sigue incubando",
           "eggLifecycleWaitCopy": "Faltan {time} para que pueda eclosionar.",
           "eggLifecycleWaitQueuedCopy": "Cola #{position} · faltan {time}.",
@@ -598,6 +602,10 @@
           "freeEggDropsEnabled": "Huevos gratis recurrentes",
           "freeEggCooldownSeconds": "Espera del huevo gratis (segundos)",
           "freeEggCooldownHelp": "Tras esta espera, un espectador puede recibir otra oferta personal de huevo gratis.",
+          "unhatchedEggStealEnabled": "Permitir robar huevos listos",
+          "unhatchedEggStealGraceSeconds": "Tiempo listo antes del robo (segundos)",
+          "unhatchedEggStealActivityWindowSeconds": "Ventana de actividad del dueño (segundos)",
+          "unhatchedEggStealHelp": "Los dueños activos incuban automáticamente sus huevos listos. El huevo de un dueño inactivo queda disponible con !steal tras su tiempo listo.",
           "ownedReadyEggRescueGraceSeconds": "Gracia de rescate para huevos listos (segundos)",
           "ownedReadyEggRescueGraceHelp": "Tras esta gracia, un huevo propio sin eclosionar se puede adoptar hasta su caducidad actual. Usa 0 para desactivarlo.",
           "autoHatchActiveViewers": "Eclosión automática para espectadores activos",
@@ -611,6 +619,7 @@
           "eggShelfPublic": "Gratis · {command}",
           "eggShelfPublicCountdown": "Libre · {time} · {command}",
           "eggShelfRescuePublicCountdown": "Adoptable · {time} · {command}",
+          "eggShelfStealPublicCountdown": "Robable · {time} · {command}",
           "eggShelfAdoptSummary": "{count} gratis · solo aptos · {command}",
           "eggFocusOwner": "Dueño: {owner}",
           "eggFocusPosition": "{position} / {total}",
@@ -630,6 +639,7 @@
           "eggCardReserved": "RESERVADO PARA {owner} · {command}",
           "eggCardPublic": "ADOPTA AHORA · {command}",
           "eggCardRescuePublic": "RESCATE · ADOPTA AHORA · {command}",
+          "eggCardStealPublic": "ROBA AHORA · {command}",
           "eggCardRot": "PODRIDO",
           "eggCardRotTimer": "SE PUDRE EN {time}",
           "eggCardTimerUnavailable": "--:--",
@@ -688,6 +698,7 @@
           "cooldownNone": "ninguno",
           "commandDisabled": "Comando desactivado",
           "commandAdopt": "Adoptar un huevo gratis",
+          "commandSteal": "Robar un huevo listo",
           "statusConnected": "Conectado",
           "statusDisconnected": "Desconectado",
           "statusEnabled": "Activado",
@@ -1090,7 +1101,9 @@
           "chatResultCommandDisabled": "Ese comando está desactivado.",
           "chatResultExecutionFailed": "No se pudo completar el comando.",
           "chatResultUnknown": "El resultado del comando no está disponible.",
-          "ownedReadyEggRescueClaimed": "Huevo listo rescatado. Usa {{command}} antes de que caduque."
+          "ownedReadyEggRescueClaimed": "Huevo listo rescatado. Usa {{command}} antes de que caduque.",
+          "stealOwnReadyEgg": "Primero eclosiona tu huevo listo con {{command}} {{slot}}.",
+          "unhatchedEggStealClaimed": "Huevo listo robado. Usa {{command}} antes de que caduque."
         }
       }
     }
