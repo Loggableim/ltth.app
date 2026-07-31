@@ -167,24 +167,25 @@ async function createPresenterHarness({
             }
           }
         : {
-            createEggStageView:() => ({
-              applyEvent:(type, payload) => {
-                eggEvents.push([type, payload?.eventId]);
-                return true;
-              },
-              applySnapshot:() => ({ total:0, visible:[], overflow:null }),
-              destroy:() => {}
-            }),
-            buildAdoptionNotice:(type, payload) => (
-              type === 'free_egg_public'
-                ? {
-                  kind:'public',
-                  viewer:payload.playerName || '@viewer',
-                  durationMs:8_000
-                }
-                : null
-            )
-          };
+          createEggStageView:() => ({
+            applyEvent:(type, payload) => {
+              eggEvents.push([type, payload?.eventId]);
+              return true;
+            },
+            applySnapshot:() => ({ total:0, visible:[], overflow:null }),
+            destroy:() => {}
+          }),
+          buildHatchRevealNotice:EggStageView.buildHatchRevealNotice,
+          buildAdoptionNotice:(type, payload) => (
+            type === 'free_egg_public'
+              ? {
+                kind:'public',
+                viewer:payload.playerName || '@viewer',
+                durationMs:8_000
+              }
+              : null
+          )
+        };
       window.StreamMonstersChatView = {
         createChatView:() => ({ show:async () => {} }),
         displayName:(payload, fallback) => (
@@ -202,14 +203,27 @@ async function createPresenterHarness({
   await socketHandlers.get('connect')();
   for (let attempt = 0; attempt < 10; attempt += 1) await flush();
 
-  const card = () => ({
-    visible:dom.window.document.getElementById('card').classList.contains('visible'),
-    title:dom.window.document.getElementById('title').textContent,
-    subtitle:dom.window.document.getElementById('subtitle').textContent,
-    hint:dom.window.document.getElementById('hint').textContent,
-    imageUrl:dom.window.document.getElementById('art').getAttribute('src') || '',
-    locale:dom.window.document.documentElement.lang
-  });
+  const card = () => {
+    const hatchReveal = dom.window.document.getElementById('hatch-reveal');
+    if (!hatchReveal.hidden) {
+      return {
+        visible:true,
+        title:hatchReveal.querySelector('[data-hatch-name]').textContent,
+        subtitle:hatchReveal.querySelector('[data-hatch-context]')?.textContent || '',
+        hint:'',
+        imageUrl:hatchReveal.querySelector('[data-hatch-art]').getAttribute('src') || '',
+        locale:dom.window.document.documentElement.lang
+      };
+    }
+    return {
+      visible:dom.window.document.getElementById('card').classList.contains('visible'),
+      title:dom.window.document.getElementById('title').textContent,
+      subtitle:dom.window.document.getElementById('subtitle').textContent,
+      hint:dom.window.document.getElementById('hint').textContent,
+      imageUrl:dom.window.document.getElementById('art').getAttribute('src') || '',
+      locale:dom.window.document.documentElement.lang
+    };
+  };
   const runNextTimer = async () => {
     const next = [...timers.entries()].sort((left, right) => (
       left[1].dueAtMs - right[1].dueAtMs || left[0] - right[0]
@@ -504,6 +518,28 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         expect(harness.arenaEvents.filter(([type]) => type === 'egg_hatched'))
           .toHaveLength(1);
       }
+    } finally {
+      harness.close();
+    }
+  });
+
+  test('keeps the localized auto-hatch outcome on the dedicated hatch reveal', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'de',
+      locales:['de']
+    });
+    try {
+      const first = await harness.emit('streammonsters:egg_hatched', {
+        eventId:'auto-hatch-reveal',
+        criticalFinal:true,
+        autoHatch:true,
+        playerName:'@alpha',
+        egg:{ element:'Ember' },
+        monster:{ name:'Ashfang', element:'Ember' }
+      });
+      expect(first.visible).toBe(true);
+      expect(first.title).toMatch(/Ashfang ist da/);
+      expect(first.subtitle).toMatch(/automatisch geschlüpft/i);
     } finally {
       harness.close();
     }

@@ -8,6 +8,7 @@
     :root {
       --ink:#f8f7ff; --muted:#bdc5dc; --violet:#a984ff; --cyan:#55dcff; --mint:#6ef1b8; --gold:#ffd76f;
       --arena-gameplay-height:74%; --arena-safe-zone-height:26%;
+      --hatch-safe-bottom:var(--arena-safe-zone-height);
       --egg-shelf-lane-height:124px;
       --arena-glass:#10182be8; --arena-edge:#b4a1ff80; --arena-danger:#ff5f86; --arena-shield:#5be7ff;
     }
@@ -182,6 +183,64 @@
       transform:translate(-50%,-18px); transition:.3s; text-align:center;
     }
     #toast.visible { opacity:1; transform:translate(-50%,0); }
+    #hatch-reveal {
+      position:fixed; inset:0 0 var(--hatch-safe-bottom); z-index:4;
+      display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); align-items:center;
+      gap:clamp(18px,3vw,44px); padding:clamp(22px,4vh,54px) clamp(28px,6vw,84px); overflow:hidden;
+      pointer-events:none;
+    }
+    #hatch-reveal[hidden] { display:none; }
+    #hatch-reveal [data-hatch-masthead] {
+      display:grid; justify-items:start; gap:clamp(7px,1vh,13px); min-width:0;
+      text-align:left;
+    }
+    #hatch-reveal [data-hatch-kicker] {
+      color:#cbeeff; font-size:clamp(12px,1.4vw,20px); font-weight:1000; letter-spacing:.15em;
+      text-transform:uppercase; text-shadow:0 3px 14px #091428;
+    }
+    #hatch-reveal [data-hatch-name] {
+      max-width:100%; margin:0; color:#fff; font-size:clamp(42px,6vw,92px); line-height:.92;
+      overflow-wrap:anywhere; text-shadow:0 5px 24px #080d1f;
+    }
+    #hatch-reveal [data-hatch-skills] {
+      display:flex; flex-wrap:wrap; justify-content:flex-start; gap:7px;
+    }
+    .hatch-skill-chip {
+      max-width:100%; padding:6px 11px; border:1px solid #b7efff88; border-radius:999px;
+      color:#edfbff; background:#101a35d9; box-shadow:0 7px 20px #0008;
+      font-size:clamp(12px,1.2vw,17px); font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    #hatch-reveal [data-hatch-owner] {
+      max-width:100%; padding:6px 11px; border:1px solid #ffde8e8c; border-radius:999px;
+      color:#fff4c8; background:#281d33c9; font-size:clamp(12px,1.3vw,18px); font-weight:900;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    #hatch-reveal [data-hatch-context] {
+      max-width:100%; color:#d9e9ff; font-size:clamp(12px,1.25vw,18px); font-weight:800;
+      line-height:1.15; text-shadow:0 3px 14px #091428;
+    }
+    #hatch-reveal [data-hatch-hero] {
+      position:relative; display:grid; place-items:end center; min-height:0; height:100%; overflow:hidden;
+      background:radial-gradient(ellipse at 50% 78%,#6655b560,transparent 63%);
+    }
+    #hatch-reveal [data-hatch-hero]::before {
+      content:""; position:absolute; inset:16% 2% 0; border-radius:50% 50% 32% 32%;
+      background:radial-gradient(ellipse,#a88bff40 0 14%,#58dfff20 34%,transparent 70%);
+      filter:blur(5px);
+    }
+    #hatch-reveal [data-hatch-hero][data-empty="true"]::after {
+      content:attr(data-element); position:relative; display:grid; place-items:center; width:45%; aspect-ratio:1;
+      border:3px solid #8eeaff; border-radius:40% 60% 48% 52%; color:#fff; background:#24224ed9;
+      font-size:clamp(18px,2vw,30px); font-weight:1000; text-align:center; text-transform:uppercase;
+    }
+    #hatch-reveal [data-hatch-art] {
+      position:relative; z-index:1; display:block; width:100%; height:100%; object-fit:contain;
+      filter:drop-shadow(0 22px 28px #000b);
+    }
+    #hatch-reveal [data-hatch-hero][data-empty="true"] [data-hatch-art] { display:none; }
+    #hatch-reveal.charged [data-hatch-hero] {
+      background:radial-gradient(ellipse at 50% 78%,#ffe69e8c,transparent 24%),radial-gradient(ellipse at 50% 78%,#8b61ee73,transparent 66%);
+    }
     #card {
       position:relative; display:grid; grid-template-columns:158px minmax(250px,1fr); gap:18px;
       width:min(610px,calc(100vw - 76px)); min-height:190px; padding:18px; border:1px solid #6d77a5; border-radius:27px;
@@ -1146,6 +1205,23 @@
         position:absolute; inset:0; padding:50px 8px 8px;
       }
       #arcade-choreography { position:absolute; inset:0; }
+      #hatch-reveal {
+        display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:clamp(8px,1.6vh,18px);
+        padding:clamp(14px,2.6vh,34px) clamp(16px,4vw,44px) clamp(8px,1.5vh,20px);
+      }
+      #hatch-reveal [data-hatch-masthead] {
+        display:grid; justify-items:center; gap:clamp(4px,.8vh,9px); min-width:0;
+      }
+      #hatch-reveal [data-hatch-kicker] { font-size:clamp(11px,2.5vw,18px); }
+      #hatch-reveal [data-hatch-name] { font-size:clamp(40px,9vw,76px); text-align:center; }
+      #hatch-reveal [data-hatch-skills] { justify-content:center; }
+      .hatch-skill-chip { font-size:clamp(11px,2.6vw,18px); }
+      #hatch-reveal [data-hatch-owner] { font-size:clamp(11px,2.5vw,17px); }
+      #hatch-reveal [data-hatch-context] { font-size:clamp(11px,2.5vw,17px); text-align:center; }
+      #hatch-reveal [data-hatch-hero] {
+        display:grid; place-items:end center; overflow:hidden;
+      }
+      #hatch-reveal [data-hatch-art] { object-position:center bottom; }
       #card { grid-template-columns:1fr; width:calc(100% - 16px); text-align:center; }
       #card:not([data-presentation="hatch"]):not([data-presentation="egg-offer"]) {
         min-height:250px; padding:22px 18px;
@@ -2073,6 +2149,16 @@
   <section id="chat-detail" data-placement="upper" role="status" aria-atomic="true"></section>
   <div id="chat-card"></div>
   </section>
+  <section id="hatch-reveal" aria-live="polite" aria-atomic="true" hidden>
+    <header data-hatch-masthead>
+      <div data-hatch-kicker></div>
+      <h1 data-hatch-name></h1>
+      <div data-hatch-skills></div>
+      <div data-hatch-owner></div>
+      <div data-hatch-context hidden></div>
+    </header>
+    <div data-hatch-hero><img data-hatch-art alt=""></div>
+  </section>
   <section id="portrait-exception-lane">
     <div id="egg-lifecycle-notice" role="status" aria-live="polite" hidden>
       <strong data-egg-notice-title></strong>
@@ -2953,6 +3039,115 @@
       }
     });
   };
+  const setHatchRevealSkills = (skills = []) => {
+    const rail = node('hatch-reveal').querySelector('[data-hatch-skills]');
+    rail.replaceChildren();
+    const publicSkills = (Array.isArray(skills) ? skills : []).slice(0, 3);
+    const visibleSkills = publicSkills.length ? publicSkills : [
+      { name:`A · ${text('skillAttack', 'Attack')}` },
+      { name:`B · ${text('skillDefense', 'Defense')}` },
+      { name:`C · ${text('skillSpecial', 'Special')}` }
+    ];
+    for (const skill of visibleSkills) {
+      const name = value(skill?.name || skill?.label || skill?.id, '');
+      if (!name) continue;
+      const chip = document.createElement('span');
+      chip.className = 'hatch-skill-chip';
+      chip.textContent = name;
+      rail.appendChild(chip);
+    }
+    rail.hidden = rail.childElementCount === 0;
+  };
+  const clearHatchReveal = () => {
+    const reveal = node('hatch-reveal');
+    reveal.hidden = true;
+    reveal.classList.remove('charged');
+    reveal.querySelector('[data-hatch-kicker]').textContent = '';
+    reveal.querySelector('[data-hatch-name]').textContent = '';
+    reveal.querySelector('[data-hatch-owner]').textContent = '';
+    reveal.querySelector('[data-hatch-owner]').hidden = true;
+    reveal.querySelector('[data-hatch-context]').textContent = '';
+    reveal.querySelector('[data-hatch-context]').hidden = true;
+    const hero = reveal.querySelector('[data-hatch-hero]');
+    delete hero.dataset.element;
+    delete hero.dataset.empty;
+    const art = reveal.querySelector('[data-hatch-art]');
+    art.removeAttribute('src');
+    art.alt = '';
+    art.onerror = null;
+    const skills = reveal.querySelector('[data-hatch-skills]');
+    skills.replaceChildren();
+    skills.hidden = true;
+  };
+  const showHatchReveal = async data => {
+    const reveal = node('hatch-reveal');
+    const hero = reveal.querySelector('[data-hatch-hero]');
+    const art = reveal.querySelector('[data-hatch-art]');
+    const startedAt = Date.now();
+    const deadlineMs = startedAt + 12_000;
+    const hatchNotice = window.StreamMonstersEggStageView?.buildHatchRevealNotice?.(
+      data,
+      { commands:{ monsters:commandReference('monster') } }
+    );
+    const autoHatchNotice = hatchNotice?.automatic ? hatchNotice : null;
+    const render = () => {
+      const monster = data?.monster || {};
+      const element = monster.element || data?.egg?.element;
+      const owner = value(data?.owner?.displayName, publicDisplayName(data));
+      const imageUrl = itemImageUrl(monster) || itemImageUrl(data?.egg);
+      reveal.querySelector('[data-hatch-kicker]').textContent = autoHatchNotice
+        ? text(
+          autoHatchNotice.titleKey,
+          lifecycleFallbacks[autoHatchNotice.titleKey],
+          autoHatchNotice.params
+        )
+        : text(
+          'monsterKicker',
+          '{element} · {personality}',
+          { element:elementName(element), personality:personalityName(monster.personality) }
+        );
+      reveal.querySelector('[data-hatch-name]').textContent = text(
+        'hatchedTitle',
+        '{name} ist da!',
+        { name:itemName(monster) }
+      );
+      const ownerLabel = reveal.querySelector('[data-hatch-owner]');
+      ownerLabel.textContent = owner;
+      ownerLabel.hidden = !owner;
+      const context = reveal.querySelector('[data-hatch-context]');
+      context.textContent = autoHatchNotice
+        ? text(
+          autoHatchNotice.copyKey,
+          lifecycleFallbacks[autoHatchNotice.copyKey],
+          autoHatchNotice.params
+        )
+        : '';
+      context.hidden = !context.textContent;
+      setHatchRevealSkills(monster.skills);
+      hero.dataset.element = elementName(element);
+      hero.dataset.empty = imageUrl ? 'false' : 'true';
+      art.alt = itemName(monster);
+      art.onerror = () => {
+        hero.dataset.empty = 'true';
+        art.removeAttribute('src');
+      };
+      if (imageUrl) art.src = imageUrl;
+      else art.removeAttribute('src');
+      reveal.classList.toggle('charged', data?.egg?.variant === 'charged');
+      reveal.hidden = false;
+    };
+    try {
+      await criticalLocaleSequencer.run({
+        key:`egg_hatched:${data?.eventId || data?.correlationId || 'event'}`,
+        deadlineMs,
+        renderPage:render
+      });
+      const remaining = Math.max(0, deadlineMs - Date.now());
+      if (remaining > 0) await wait(remaining);
+    } finally {
+      clearHatchReveal();
+    }
+  };
   const lifecycleFallbacks = Object.freeze({
     eggLifecycleGiftOwnedTitle:'Gift egg in inventory',
     eggLifecycleGiftOwnedCopy:'It belongs to you immediately. No adoption needed.',
@@ -3398,54 +3593,11 @@
       }),
       2_800
     ));
-    if (type === 'egg_hatched') {
-      const hatchNotice = window.StreamMonstersEggStageView
-        ?.buildHatchRevealNotice?.(data, {
-          commands:{ monsters:commandReference('monster') }
-        });
-      const autoHatchNotice = hatchNotice?.automatic ? hatchNotice : null;
-      return presentArcadeScene(
-        type,
-        data,
-        showCriticalCard(type, data, () => ({
-          kicker:autoHatchNotice
-            ? text(
-              autoHatchNotice.titleKey,
-              lifecycleFallbacks[autoHatchNotice.titleKey],
-              autoHatchNotice.params
-            )
-            : text('monsterKicker', '{element} · {personality}', {
-              element:elementName(data?.monster?.element || data?.egg?.element),
-              personality:personalityName(data?.monster?.personality)
-            }),
-          title:text('hatchedTitle', '{name} ist da!', {
-            name:itemName(data?.monster)
-          }),
-          subtitle:autoHatchNotice
-            ? text(
-              autoHatchNotice.copyKey,
-              lifecycleFallbacks[autoHatchNotice.copyKey],
-              autoHatchNotice.params
-            )
-            : text(
-              'hatchedCopy',
-              '28 faire Startpunkte · gehört {viewer} dauerhaft.',
-              { viewer:publicDisplayName(data) }
-            ),
-          hint:autoHatchNotice
-            ? autoHatchNotice.commands.join(' · ')
-            : commandHint('monsterCardHint', '{monster} [slot] shows the card')
-        }), {
-          imageUrl:itemImageUrl(data?.monster) || itemImageUrl(data?.egg),
-          element:data?.monster?.element || data?.egg?.element,
-          charged:data?.egg?.variant === 'charged',
-          progress:100,
-          presentation:'hatch',
-          owner:data?.owner,
-          duration:12_000
-        })
-      );
-    }
+    if (type === 'egg_hatched') return presentArcadeScene(
+      type,
+      data,
+      showHatchReveal(data)
+    );
     if (type === 'monster_discovered') return presentArcadeScene(
       type,
       data,
