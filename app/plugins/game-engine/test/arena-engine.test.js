@@ -110,12 +110,6 @@ describe('ArenaGame', () => {
       }));
     }
 
-    const legacyBurst = createArena({ foodSpawnBatchSize: 4 }).arena.getConfig();
-    expect(legacyBurst).toEqual(expect.objectContaining({
-      foodSpawnIntervalMs: 2400,
-      foodSpawnBatchSize: 1
-    }));
-
     for (const foodSpawnBatchSize of [1, 2, 3]) {
       const intentionalPacing = createArena({
         foodSpawnIntervalMs: 5000,
@@ -126,6 +120,18 @@ describe('ArenaGame', () => {
         foodSpawnBatchSize
       }));
     }
+  });
+
+  it('migrates batch 4 with an explicit legacy interval to ambient runtime pacing', () => {
+    const legacyBurst = createArena({
+      foodSpawnIntervalMs: 6000,
+      foodSpawnBatchSize: 4
+    }).arena.getConfig();
+
+    expect(legacyBurst).toEqual(expect.objectContaining({
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1
+    }));
   });
 
   it('defaults the optional upper ability legend off while exposing an explicit enablement', () => {
@@ -7132,12 +7138,6 @@ describe('GameEnginePlugin arena integration', () => {
       }));
     }
 
-    const legacyBurst = plugin._getConfigWithDefaults('arena', { foodSpawnBatchSize: 4 });
-    expect(legacyBurst).toEqual(expect.objectContaining({
-      foodSpawnIntervalMs: 2400,
-      foodSpawnBatchSize: 1
-    }));
-
     for (const foodSpawnBatchSize of [1, 2, 3]) {
       const intentionalPacing = plugin._getConfigWithDefaults('arena', {
         foodSpawnIntervalMs: 5000,
@@ -7148,6 +7148,19 @@ describe('GameEnginePlugin arena integration', () => {
         foodSpawnBatchSize
       }));
     }
+  });
+
+  it('migrates batch 4 with an explicit legacy interval to ambient admin pacing', () => {
+    const { plugin } = createPlugin();
+    const legacyBurst = plugin._getConfigWithDefaults('arena', {
+      foodSpawnIntervalMs: 6000,
+      foodSpawnBatchSize: 4
+    });
+
+    expect(legacyBurst).toEqual(expect.objectContaining({
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1
+    }));
   });
 
   it('adds curated gift weapon defaults to arena admin config responses without overwriting custom mappings', () => {
