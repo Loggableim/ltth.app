@@ -5,22 +5,122 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Stream Monsters bounded arena acceptance</title>
   <style>
+    body[data-effect-capture="true"],
+    body[data-text-ink-capture="true"] {
+      background:transparent!important;
+    }
+    body[data-effect-capture="true"] #streammonsters-overlay > :not(#portrait-arena),
     body[data-effect-capture="true"] #portrait-arena > :not(#battle),
     body[data-effect-capture="true"] #battle > :not(#battle-effects-canvas) {
       visibility:hidden!important;
     }
+    body[data-effect-capture="true"] #streammonsters-overlay,
     body[data-effect-capture="true"] #portrait-arena,
     body[data-effect-capture="true"] #battle {
       border:0!important;
       background:transparent!important;
+      filter:none!important;
       box-shadow:none!important;
     }
+    body[data-effect-capture="true"] #streammonsters-overlay::before,
+    body[data-effect-capture="true"] #streammonsters-overlay::after,
+    body[data-effect-capture="true"] #portrait-arena::before,
+    body[data-effect-capture="true"] #portrait-arena::after,
     body[data-effect-capture="true"] #battle::before,
     body[data-effect-capture="true"] #battle::after {
       display:none!important;
     }
     body[data-effect-capture="true"] #portrait-exception-lane {
       visibility:hidden!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay * {
+      visibility:hidden!important;
+      animation:none!important;
+      transition:none!important;
+    }
+    body[data-text-ink-restoring="true"] #streammonsters-overlay * {
+      animation:none!important;
+      transition:none!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-neutral="true"] {
+      animation:none!important;
+      transition:none!important;
+      border-color:transparent!important;
+      outline:none!important;
+      background:transparent!important;
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      opacity:1!important;
+      mix-blend-mode:normal!important;
+      background-blend-mode:normal!important;
+      isolation:auto!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-neutral="true"]::before,
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-neutral="true"]::after {
+      visibility:hidden!important;
+      color:transparent!important;
+      border-color:transparent!important;
+      background:transparent!important;
+      filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"] {
+      visibility:visible!important;
+      border-color:transparent!important;
+      outline:none!important;
+      color:#fff!important;
+      background:transparent!important;
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      opacity:1!important;
+      mix-blend-mode:normal!important;
+      -webkit-text-fill-color:#fff!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"] * {
+      visibility:hidden!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"]::before,
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-active-text-ink-probe="true"]::after {
+      visibility:hidden!important;
+      color:transparent!important;
+      border-color:transparent!important;
+      background:transparent!important;
+      filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+    }
+    body[data-text-ink-capture="true"] #streammonsters-overlay
+      [data-text-ink-unclip="true"] {
+      overflow:visible!important;
+      contain:none!important;
+      clip-path:none!important;
+      mask:none!important;
+      -webkit-mask:none!important;
+      min-width:0!important;
+      min-height:0!important;
+      border-color:transparent!important;
+      background:transparent!important;
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      opacity:1!important;
+      mix-blend-mode:normal!important;
     }
   </style>
 </head>
@@ -230,6 +330,8 @@ let pendingCompletion = null;
 let releaseCompletion = null;
 let pendingNotice = null;
 let releaseNotice = null;
+let textInkProbeTargets = new Map();
+let activeTextInkProbe = null;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -331,6 +433,8 @@ function firstClippingAncestor(element, subjectRect) {
     const record = {
       selector: stableSelector(current),
       rect: rectRecord(clipRect),
+      clipX,
+      clipY,
       overflowX: style.overflowX,
       overflowY: style.overflowY,
       clippedX,
@@ -342,6 +446,62 @@ function firstClippingAncestor(element, subjectRect) {
     if (current === node('streammonsters-overlay')) break;
   }
   return first;
+}
+
+function partialExtensionAncestors(element, subjectRect) {
+  const matches = [];
+  for (
+    let current = element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    const style = getComputedStyle(current);
+    const clipX = clipsAxis(style, 'x');
+    const clipY = clipsAxis(style, 'y');
+    if (clipX || clipY) {
+      const clipRect = current.getBoundingClientRect();
+      const extendsX = clipX && (
+        subjectRect.left < clipRect.left - 0.01 ||
+        subjectRect.right > clipRect.right + 0.01
+      );
+      const extendsY = clipY && (
+        subjectRect.top < clipRect.top - 0.01 ||
+        subjectRect.bottom > clipRect.bottom + 0.01
+      );
+      const fullyClippedX = clipX && (
+        subjectRect.right <= clipRect.left + 0.01 ||
+        subjectRect.left >= clipRect.right - 0.01
+      );
+      const fullyClippedY = clipY && (
+        subjectRect.bottom <= clipRect.top + 0.01 ||
+        subjectRect.top >= clipRect.bottom - 0.01
+      );
+      if (
+        (extendsX && !fullyClippedX) ||
+        (extendsY && !fullyClippedY)
+      ) {
+        matches.push({
+          element: current,
+          record: {
+            selector: stableSelector(current),
+            rect: rectRecord(clipRect),
+            clipX,
+            clipY,
+            overflowX: style.overflowX,
+            overflowY: style.overflowY,
+            extendsX,
+            extendsY
+          }
+        });
+      }
+    }
+    if (current === node('streammonsters-overlay')) break;
+  }
+  return matches;
+}
+
+function verticalExtensionAncestors(extensionAncestors) {
+  return extensionAncestors.filter(ancestor => ancestor.record.extendsY);
 }
 
 function isPainted(element) {
@@ -705,6 +865,7 @@ function selectorAncestry(element) {
 function collectTextGeometry() {
   const roots = [node('portrait-arena'), node('portrait-exception-lane')];
   const records = [];
+  textInkProbeTargets = new Map();
   for (const root of roots) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let textNode = walker.nextNode();
@@ -718,12 +879,16 @@ function collectTextGeometry() {
         const elementRect = parent.getBoundingClientRect();
         const style = getComputedStyle(parent);
         const clippingAncestor = firstClippingAncestor(parent, rangeRect);
+        const extensionAncestors = partialExtensionAncestors(parent, rangeRect);
+        const verticalAncestors = verticalExtensionAncestors(
+          extensionAncestors
+        );
         const noWrap = ['nowrap', 'pre'].includes(style.whiteSpace);
         const horizontalTooWide = (
           noWrap &&
-          parent.scrollWidth > parent.clientWidth + 1
+          parent.scrollWidth > parent.clientWidth
         );
-        records.push({
+        const record = {
           selector: stableSelector(parent),
           ancestry: selectorAncestry(parent),
           text,
@@ -732,6 +897,18 @@ function collectTextGeometry() {
           overflowY: style.overflowY,
           whiteSpace: style.whiteSpace,
           textOverflow: style.textOverflow,
+          textStyle: {
+            fontFamily: style.fontFamily,
+            fontSize: style.fontSize,
+            fontStyle: style.fontStyle,
+            fontWeight: style.fontWeight,
+            fontStretch: style.fontStretch,
+            fontVariant: style.fontVariant,
+            lineHeight: style.lineHeight,
+            letterSpacing: style.letterSpacing,
+            textTransform: style.textTransform,
+            textRendering: style.textRendering
+          },
           clientWidth: parent.clientWidth,
           scrollWidth: parent.scrollWidth,
           clientHeight: parent.clientHeight,
@@ -739,14 +916,179 @@ function collectTextGeometry() {
           rangeRect: rectRecord(rangeRect),
           elementRect: rectRecord(elementRect),
           firstClippingAncestor: clippingAncestor,
+          partialExtensionAncestor: extensionAncestors[0]?.record || null,
+          partialExtensionAncestors: extensionAncestors.map(
+            ancestor => ancestor.record
+          ),
+          verticalExtensionAncestor: verticalAncestors[0]?.record || null,
+          verticalExtensionAncestors: verticalAncestors.map(
+            ancestor => ancestor.record
+          ),
           horizontalClipped: horizontalTooWide,
           verticalClipped: Boolean(clippingAncestor?.clippedY)
-        });
+        };
+        if (extensionAncestors.length > 0) {
+          record.inkProbeId = `text-ink-${textInkProbeTargets.size + 1}`;
+          textInkProbeTargets.set(record.inkProbeId, {
+            element: parent,
+            textNode,
+            clipAncestors: extensionAncestors
+          });
+        }
+        records.push(record);
       }
       textNode = walker.nextNode();
     }
   }
   return records;
+}
+
+function textInkRestoreState() {
+  return Array.from(
+    node('streammonsters-overlay').querySelectorAll('*')
+  ).map(element => {
+    const style = getComputedStyle(element);
+    return {
+      selector: stableSelector(element),
+      display: style.display,
+      visibility: style.visibility
+    };
+  });
+}
+
+function prepareTextInkProbe(probeId) {
+  if (activeTextInkProbe) {
+    throw new Error('A rendered-ink probe is already active');
+  }
+  const target = textInkProbeTargets.get(String(probeId || ''));
+  if (!target) throw new Error(`Unknown rendered-ink probe: ${probeId}`);
+  const restoreState = textInkRestoreState();
+  const neutralized = [];
+  for (
+    let current = target.element;
+    current && current instanceof Element;
+    current = current.parentElement
+  ) {
+    current.dataset.textInkNeutral = 'true';
+    neutralized.push(current);
+    if (current === node('streammonsters-overlay')) break;
+  }
+  target.element.dataset.activeTextInkProbe = 'true';
+  document.body.dataset.textInkCapture = 'true';
+  activeTextInkProbe = {
+    element: target.element,
+    textNode: target.textNode,
+    clipAncestors: target.clipAncestors,
+    neutralized,
+    unclipped: [],
+    restoreState
+  };
+  return new Promise(resolve => requestAnimationFrame(() => {
+    const range = document.createRange();
+    range.selectNodeContents(target.textNode);
+    const rangeRect = range.getBoundingClientRect();
+    const elementRect = target.element.getBoundingClientRect();
+    const clipRecords = target.clipAncestors.map(({ element, record }) => ({
+      ...record,
+      rect: rectRecord(element.getBoundingClientRect())
+    }));
+    const fontSize = Number.parseFloat(getComputedStyle(target.element).fontSize);
+    const padding = Math.max(
+      8,
+      Math.ceil((Number.isFinite(fontSize) ? fontSize : 12) * 1.5)
+    );
+    const left = Math.max(
+      0,
+      Math.floor(Math.min(rangeRect.left, elementRect.left) - padding)
+    );
+    const top = Math.max(
+      0,
+      Math.floor(Math.min(rangeRect.top, elementRect.top) - padding)
+    );
+    const right = Math.min(
+      innerWidth,
+      Math.ceil(Math.max(rangeRect.right, elementRect.right) + padding)
+    );
+    const bottom = Math.min(
+      innerHeight,
+      Math.ceil(Math.max(rangeRect.bottom, elementRect.bottom) + padding)
+    );
+    resolve({
+      probeId,
+      capture: {
+        x: left,
+        y: top,
+        width: Math.max(1, right - left),
+        height: Math.max(1, bottom - top)
+      },
+      rangeRect: rectRecord(rangeRect),
+      elementRect: rectRecord(elementRect),
+      clipRecords
+    });
+  }));
+}
+
+function unclipTextInkProbe() {
+  if (!activeTextInkProbe) {
+    throw new Error('No rendered-ink probe is active');
+  }
+  for (const { element } of activeTextInkProbe.clipAncestors) {
+    element.dataset.textInkUnclip = 'true';
+    activeTextInkProbe.unclipped.push(element);
+  }
+  return new Promise(resolve => requestAnimationFrame(() => {
+    const range = document.createRange();
+    range.selectNodeContents(activeTextInkProbe.textNode);
+    resolve({
+      unclippedRangeRect: rectRecord(range.getBoundingClientRect()),
+      unclippedElementRect: rectRecord(
+        activeTextInkProbe.element.getBoundingClientRect()
+      ),
+      unclippedClipRecords: activeTextInkProbe.clipAncestors.map(
+        ({ element, record }) => ({
+          ...record,
+          rect: rectRecord(element.getBoundingClientRect())
+        })
+      )
+    });
+  }));
+}
+
+function restoreTextInkProbe() {
+  if (!activeTextInkProbe) return Promise.resolve(false);
+  const probe = activeTextInkProbe;
+  document.body.dataset.textInkRestoring = 'true';
+  delete probe.element.dataset.activeTextInkProbe;
+  for (const element of probe.unclipped) {
+    delete element.dataset.textInkUnclip;
+  }
+  delete document.body.dataset.textInkCapture;
+  return new Promise(resolve => requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      for (const element of probe.neutralized) {
+        delete element.dataset.textInkNeutral;
+      }
+      delete document.body.dataset.textInkRestoring;
+      requestAnimationFrame(() => {
+        const currentState = textInkRestoreState();
+        const stateMatches = (
+          JSON.stringify(currentState) === JSON.stringify(probe.restoreState)
+        );
+        const stateDifferences = probe.restoreState.flatMap((before, index) => {
+          const after = currentState[index];
+          return JSON.stringify(before) === JSON.stringify(after)
+            ? []
+            : [{ index, before, after }];
+        }).slice(0, 12);
+        activeTextInkProbe = null;
+        resolve({
+          restored: true,
+          stateMatches,
+          stateDifferences
+        });
+      });
+    });
+  }));
 }
 
 function collectToplineContract() {
@@ -798,6 +1140,15 @@ function collectCountdownContract() {
     text,
     painted,
     pass: text ? painted : !painted
+  };
+}
+
+function collectLeadContract() {
+  const lead = node('arena-lead');
+  return {
+    text: lead?.textContent.replace(/\s+/g, ' ').trim() || '',
+    painted: isPainted(lead),
+    rect: lead ? rectRecord(lead.getBoundingClientRect()) : null
   };
 }
 
@@ -1060,6 +1411,129 @@ function completedOwnership() {
   };
 }
 
+function normalizedPseudoContent(value) {
+  const content = String(value || '').trim();
+  if (!content || content === 'none' || content === 'normal') return '';
+  return content.replace(/^["']|["']$/g, '');
+}
+
+function renderedElementText(element) {
+  const text = element?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const transform = element ? getComputedStyle(element).textTransform : 'none';
+  if (transform === 'uppercase') return text.toUpperCase();
+  if (transform === 'lowercase') return text.toLowerCase();
+  return text;
+}
+
+function collectActionContract() {
+  const action = node('arena-action-card');
+  const definitions = [
+    ['actor', 'arena-action-player'],
+    ['key', 'arena-action-key'],
+    ['skill', 'arena-action-skill'],
+    ['copy', 'arena-action-copy'],
+    ['legacyMetrics', 'arena-action-metrics'],
+    ['compactMetric', 'arena-action-compact-metric']
+  ];
+  const parts = definitions.map(([role, id]) => {
+    const element = node(id);
+    return {
+      role,
+      id,
+      text: element?.textContent.replace(/\s+/g, ' ').trim() || '',
+      renderedText: renderedElementText(element),
+      painted: isPainted(element),
+      beforeContent: element
+        ? normalizedPseudoContent(getComputedStyle(element, '::before').content)
+        : '',
+      rect: element ? rectRecord(element.getBoundingClientRect()) : null
+    };
+  });
+  const paintedParts = parts.filter(part => part.painted);
+  const legacyMetricChildren = Array.from(
+    node('arena-action-metrics')?.querySelectorAll('[data-action-metric]') || []
+  ).map(element => ({
+    text: element.textContent.replace(/\s+/g, ' ').trim(),
+    painted: isPainted(element)
+  }));
+  const compactMetric = node('arena-action-compact-metric');
+  const visibleMetrics = [
+    ...legacyMetricChildren.filter(metric => metric.painted),
+    ...(isPainted(compactMetric) ? [{
+      text: compactMetric.textContent.replace(/\s+/g, ' ').trim(),
+      painted: true
+    }] : [])
+  ];
+  const targetHpText =
+    node('arena-hp-text-2')?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const renderedTargetHp = Number.parseInt(targetHpText, 10);
+  const actionStyle = getComputedStyle(action);
+  return {
+    visible: isPainted(action),
+    visualState: action?.classList.contains('visible') ? 'recover' : 'inactive',
+    parts,
+    paintedParts: paintedParts.map(part => part.role),
+    renderedText: paintedParts.map(part => part.renderedText).join(' \u00b7 '),
+    separators: paintedParts.slice(1).map(part => part.beforeContent),
+    hiddenCompetitors: {
+      actor: !parts.find(part => part.role === 'actor')?.painted,
+      copy: !parts.find(part => part.role === 'copy')?.painted,
+      legacyMetrics: !parts.find(part => part.role === 'legacyMetrics')?.painted,
+      feed: !isPainted(node('arena-feed')),
+      extraMetrics: legacyMetricChildren.every(metric => !metric.painted)
+    },
+    legacyMetricChildren,
+    metricCount: visibleMetrics.length,
+    targetHp: {
+      before: 27,
+      expected: 20,
+      rendered: Number.isFinite(renderedTargetHp) ? renderedTargetHp : null,
+      text: targetHpText,
+      changed: Number.isFinite(renderedTargetHp) && renderedTargetHp !== 27
+    },
+    whiteSpace: actionStyle.whiteSpace,
+    gridTemplateRows: actionStyle.gridTemplateRows,
+    noWrap: actionStyle.whiteSpace === 'nowrap',
+    overflow: (
+      action.scrollWidth > action.clientWidth + 1 ||
+      action.scrollHeight > action.clientHeight + 1
+    )
+  };
+}
+
+function collectImpactContract(phase) {
+  const impact = node('arena-impact');
+  const transientClasses = [
+    'visible',
+    'damage-number',
+    'shield-number',
+    'heal-number',
+    'retaliation-number'
+  ].filter(className => impact?.classList.contains(className));
+  const text = impact?.textContent.replace(/\s+/g, ' ').trim() || '';
+  const painted = isPainted(impact);
+  const expectsClear = [
+    'choice',
+    'sealed',
+    'revealed',
+    'action',
+    'completed',
+    'egg-exception'
+  ].includes(phase);
+  return {
+    phase,
+    expectsClear,
+    painted,
+    text,
+    transientClasses,
+    pass: !expectsClear || (
+      !painted &&
+      !text &&
+      transientClasses.length === 0
+    )
+  };
+}
+
 function collectLayout(phase, effect) {
   const arena = node('portrait-arena');
   const likebar = window.StreamMonstersPortraitArena.viewportZones(
@@ -1074,6 +1548,7 @@ function collectLayout(phase, effect) {
   const exceptionRect = node('portrait-exception-lane').getBoundingClientRect();
   const stageSelectors = [
     '#arena-topline',
+    '#arena-lead',
     '#arena-fighter-1 .fighter-hud',
     '#arena-fighter-2 .fighter-hud',
     '#arena-image-1',
@@ -1085,6 +1560,7 @@ function collectLayout(phase, effect) {
   ];
   const informationSelectors = [
     '#arena-topline',
+    '#arena-lead',
     '#arena-fighter-1 .fighter-hud',
     '#arena-fighter-2 .fighter-hud',
     '#arena-choice-surface',
@@ -1132,15 +1608,6 @@ function collectLayout(phase, effect) {
   const noticeRect = isPainted(notice)
     ? rectRecord(notice.getBoundingClientRect())
     : null;
-  const action = node('arena-action-card');
-  const visibleMetrics = Array.from(
-    action.querySelectorAll('[data-action-metric]')
-  ).filter(isPainted);
-  const actionStyle = getComputedStyle(action);
-  const actionText = Array.from(action.children)
-    .filter(isPainted)
-    .map(element => element.textContent.trim())
-    .filter(Boolean);
   const textGeometry = collectTextGeometry();
   const visibleArenaDescendants = Array.from(
     arena.querySelectorAll('*')
@@ -1165,22 +1632,12 @@ function collectLayout(phase, effect) {
     textGeometry,
     toplineContract: collectToplineContract(),
     countdownContract: collectCountdownContract(),
+    leadContract: collectLeadContract(),
     visibleArenaDescendants,
     hudContract: collectHudContract(),
     completedOwnership: completedOwnership(),
-    action: {
-      visible: isPainted(action),
-      visualState: phase === 'action' ? 'recover' : 'inactive',
-      text: actionText.join(' · '),
-      metricCount: visibleMetrics.length,
-      whiteSpace: actionStyle.whiteSpace,
-      gridTemplateRows: actionStyle.gridTemplateRows,
-      noWrap: actionStyle.whiteSpace === 'nowrap',
-      overflow: (
-        action.scrollWidth > action.clientWidth + 1 ||
-        action.scrollHeight > action.clientHeight + 1
-      )
-    },
+    action: collectActionContract(),
+    impactContract: collectImpactContract(phase),
     effect,
     disclosure: disclosureRecord(phase),
     reducedMotion: collectMotionState()
@@ -1236,11 +1693,15 @@ async function bootstrap() {
 
 window.showArenaCase = showArenaCase;
 window.probeArenaWebGpu = probeWebGpu;
+window.prepareTextInkProbe = prepareTextInkProbe;
+window.unclipTextInkProbe = unclipTextInkProbe;
+window.restoreTextInkProbe = restoreTextInkProbe;
 window.setArenaEffectCapture = enabled => {
   if (enabled) document.body.dataset.effectCapture = 'true';
   else delete document.body.dataset.effectCapture;
 };
 window.addEventListener('pagehide', () => {
+  restoreTextInkProbe();
   activeRenderer?.destroy?.();
   activeRenderer = null;
   pendingEffect = null;

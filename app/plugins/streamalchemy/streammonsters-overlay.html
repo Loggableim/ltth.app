@@ -1438,6 +1438,10 @@
         max-height:100%; padding:clamp(3px,.8vh,7px) clamp(8px,2.8vw,16px);
         overflow:hidden; transform:none; text-overflow:ellipsis; white-space:nowrap;
       }
+      #portrait-arena[data-arena-variant="split-arena"] #arena-lead,
+      #portrait-arena[data-arena-variant="classic"] #arena-lead {
+        display:none;
+      }
       #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="action"] #arena-countdown:empty,
       #portrait-arena[data-arena-variant="classic"] #battle[data-phase="action"] #arena-countdown:empty,
       #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="completed"] #arena-countdown:empty,
@@ -1564,7 +1568,7 @@
       }
       #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-name,
       #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-name {
-        grid-area:name; min-width:0; overflow:hidden; font-size:clamp(9px,2.5vw,14px);
+        grid-area:name; min-width:0; overflow:hidden; font-size:clamp(9px,2vw,21px);
         line-height:1; text-overflow:ellipsis; white-space:nowrap;
       }
       #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="action"] #arena-action-card,

@@ -183,8 +183,9 @@ function percentValue(value) {
   return Number.isFinite(parsed) ? parsed / 100 : null;
 }
 
-async function alphaMetrics(page, png) {
-  return page.evaluate(async base64 => {
+async function alphaMetrics(page, png, likebar = null) {
+  return page.evaluate(async input => {
+    const { base64, likebar } = input;
     const binary = atob(base64);
     const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
     const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
@@ -199,11 +200,21 @@ async function alphaMetrics(page, png) {
     let minY = canvas.height;
     let maxX = -1;
     let maxY = -1;
+    let likebarAlphaPixels = 0;
     for (let index = 3, pixel = 0; index < pixels.length; index += 4, pixel += 1) {
       if (pixels[index] <= 8) continue;
       alphaPixels += 1;
       const x = pixel % canvas.width;
       const y = Math.floor(pixel / canvas.width);
+      if (
+        likebar &&
+        x >= likebar.left &&
+        x < likebar.right &&
+        y >= likebar.top &&
+        y < likebar.bottom
+      ) {
+        likebarAlphaPixels += 1;
+      }
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x);
@@ -213,9 +224,13 @@ async function alphaMetrics(page, png) {
       width: canvas.width,
       height: canvas.height,
       alphaPixels,
-      bounds: alphaPixels ? { minX, minY, maxX, maxY } : null
+      bounds: alphaPixels ? { minX, minY, maxX, maxY } : null,
+      likebarAlphaPixels
     };
-  }, png.toString('base64'));
+  }, {
+    base64: png.toString('base64'),
+    likebar
+  });
 }
 
 async function paintedPixelMetrics(page, png) {
@@ -269,40 +284,376 @@ async function captureEffectMetrics(page, layout) {
   await page.evaluate(() => window.setArenaEffectCapture(true));
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
   try {
-    const arenaPng = await page.screenshot({
-      clip: {
-        x: layout.arena.left,
-        y: layout.arena.top,
-        width: layout.arena.width,
-        height: layout.arena.height
-      },
+    const viewportPng = await page.screenshot({
       omitBackground: true
     });
-    const likebarPng = await page.screenshot({
-      clip: {
-        x: layout.likebar.left,
-        y: layout.likebar.top,
-        width: layout.likebar.width,
-        height: layout.likebar.height
-      },
-      omitBackground: true
-    });
-    const arenaAlpha = await alphaMetrics(page, arenaPng);
-    const likebarAlpha = await alphaMetrics(page, likebarPng);
-    const viewportBounds = arenaAlpha.bounds ? {
-      left: layout.arena.left + arenaAlpha.bounds.minX,
-      top: layout.arena.top + arenaAlpha.bounds.minY,
-      right: layout.arena.left + arenaAlpha.bounds.maxX + 1,
-      bottom: layout.arena.top + arenaAlpha.bounds.maxY + 1
+    const viewportAlpha = await alphaMetrics(
+      page,
+      viewportPng,
+      layout.likebar
+    );
+    const viewportBounds = viewportAlpha.bounds ? {
+      left: viewportAlpha.bounds.minX,
+      top: viewportAlpha.bounds.minY,
+      right: viewportAlpha.bounds.maxX + 1,
+      bottom: viewportAlpha.bounds.maxY + 1
     } : null;
     return {
-      alphaPixels: arenaAlpha.alphaPixels,
+      viewport: {
+        width: viewportAlpha.width,
+        height: viewportAlpha.height
+      },
+      alphaPixels: viewportAlpha.alphaPixels,
       bounds: viewportBounds,
-      likebarAlphaPixels: likebarAlpha.alphaPixels
+      likebarAlphaPixels: viewportAlpha.likebarAlphaPixels
     };
   } finally {
     await page.evaluate(() => window.setArenaEffectCapture(false));
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
+  }
+}
+
+function canonicalNumber(value) {
+  return Number.isFinite(Number(value))
+    ? Math.round(Number(value) * 64) / 64
+    : null;
+}
+
+function canonicalRect(rect) {
+  if (!rect) return null;
+  return Object.fromEntries(
+    ['left', 'top', 'right', 'bottom', 'width', 'height']
+      .map(key => [key, canonicalNumber(rect[key])])
+  );
+}
+
+function relativeRect(rect, origin) {
+  if (!rect || !origin) return null;
+  return {
+    left: canonicalNumber(rect.left - origin.left),
+    top: canonicalNumber(rect.top - origin.top),
+    right: canonicalNumber(rect.right - origin.left),
+    bottom: canonicalNumber(rect.bottom - origin.top),
+    width: canonicalNumber(rect.width),
+    height: canonicalNumber(rect.height)
+  };
+}
+
+function textInkProbeKey(record) {
+  return JSON.stringify({
+    selector: record.selector,
+    ancestry: record.ancestry,
+    text: record.text,
+    textStyle: record.textStyle,
+    client: [
+      record.clientWidth,
+      record.clientHeight
+    ],
+    rangeRect: relativeRect(record.rangeRect, record.elementRect),
+    elementRect: {
+      width: canonicalNumber(record.elementRect?.width),
+      height: canonicalNumber(record.elementRect?.height)
+    },
+    clipping: (record.partialExtensionAncestors || []).map(ancestor => ({
+      selector: ancestor.selector,
+      rect: relativeRect(ancestor.rect, record.elementRect),
+      clipX: ancestor.clipX,
+      clipY: ancestor.clipY,
+      overflowX: ancestor.overflowX,
+      overflowY: ancestor.overflowY
+    }))
+  });
+}
+
+function maximumRectShift(left, right) {
+  if (!left || !right) return Number.POSITIVE_INFINITY;
+  return Math.max(...['left', 'top', 'right', 'bottom'].map(edge => (
+    Math.abs(Number(left[edge]) - Number(right[edge]))
+  )));
+}
+
+async function compareAlphaMasks(
+  page,
+  clippedPng,
+  unclippedPng,
+  capture,
+  clipRecords
+) {
+  return page.evaluate(async input => {
+    const decode = async base64 => {
+      const binary = atob(base64);
+      const bytes = Uint8Array.from(
+        binary,
+        character => character.charCodeAt(0)
+      );
+      const bitmap = await createImageBitmap(
+        new Blob([bytes], { type: 'image/png' })
+      );
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(bitmap, 0, 0);
+      return {
+        width: canvas.width,
+        height: canvas.height,
+        pixels: context.getImageData(0, 0, canvas.width, canvas.height).data
+      };
+    };
+    const boundsRecord = (bounds, count) => count ? bounds : null;
+    const extendBounds = (bounds, x, y) => ({
+      minX: Math.min(bounds.minX, x),
+      minY: Math.min(bounds.minY, y),
+      maxX: Math.max(bounds.maxX, x),
+      maxY: Math.max(bounds.maxY, y)
+    });
+    const clipped = await decode(input.clippedBase64);
+    const unclipped = await decode(input.unclippedBase64);
+    if (
+      clipped.width !== unclipped.width ||
+      clipped.height !== unclipped.height
+    ) {
+      throw new Error(
+        `Rendered-ink mask dimensions differ: ` +
+        `${clipped.width}x${clipped.height} vs ` +
+        `${unclipped.width}x${unclipped.height}`
+      );
+    }
+    const alphaThreshold = 8;
+    const edgeTolerance = 1;
+    let clippedAlphaPixels = 0;
+    let unclippedAlphaPixels = 0;
+    let missingAlphaPixels = 0;
+    let missingOutsideGuardPixels = 0;
+    let missingOutsideXGuardPixels = 0;
+    let missingOutsideYGuardPixels = 0;
+    let unclippedOutsideGuardPixels = 0;
+    let clippedBounds = {
+      minX: clipped.width,
+      minY: clipped.height,
+      maxX: -1,
+      maxY: -1
+    };
+    let unclippedBounds = { ...clippedBounds };
+    let missingOutsideBounds = { ...clippedBounds };
+    for (
+      let index = 3, pixel = 0;
+      index < clipped.pixels.length;
+      index += 4, pixel += 1
+    ) {
+      const x = pixel % clipped.width;
+      const y = Math.floor(pixel / clipped.width);
+      const globalX = input.capture.x + x + 0.5;
+      const globalY = input.capture.y + y + 0.5;
+      const clippedPainted = clipped.pixels[index] > alphaThreshold;
+      const unclippedPainted = unclipped.pixels[index] > alphaThreshold;
+      const outsideXGuard = input.clipRecords.some(clip => (
+        clip.clipX && (
+          globalX < clip.rect.left - edgeTolerance ||
+          globalX > clip.rect.right + edgeTolerance
+        )
+      ));
+      const outsideYGuard = input.clipRecords.some(clip => (
+        clip.clipY && (
+          globalY < clip.rect.top - edgeTolerance ||
+          globalY > clip.rect.bottom + edgeTolerance
+        )
+      ));
+      const outsideGuard = outsideXGuard || outsideYGuard;
+      if (clippedPainted) {
+        clippedAlphaPixels += 1;
+        clippedBounds = extendBounds(clippedBounds, x, y);
+      }
+      if (unclippedPainted) {
+        unclippedAlphaPixels += 1;
+        unclippedBounds = extendBounds(unclippedBounds, x, y);
+        if (outsideGuard) unclippedOutsideGuardPixels += 1;
+      }
+      if (unclippedPainted && !clippedPainted) {
+        missingAlphaPixels += 1;
+        if (outsideGuard) {
+          missingOutsideGuardPixels += 1;
+          if (outsideXGuard) missingOutsideXGuardPixels += 1;
+          if (outsideYGuard) missingOutsideYGuardPixels += 1;
+          missingOutsideBounds = extendBounds(missingOutsideBounds, x, y);
+        }
+      }
+    }
+    const missingAlphaRatio = unclippedAlphaPixels > 0
+      ? missingAlphaPixels / unclippedAlphaPixels
+      : 1;
+    return {
+      alphaThreshold,
+      edgeTolerance,
+      maskDifferenceToleranceRatio: 0.05,
+      clippedAlphaPixels,
+      unclippedAlphaPixels,
+      missingAlphaPixels,
+      missingAlphaRatio,
+      missingOutsideGuardPixels,
+      missingOutsideXGuardPixels,
+      missingOutsideYGuardPixels,
+      unclippedOutsideGuardPixels,
+      clippedBounds: boundsRecord(clippedBounds, clippedAlphaPixels),
+      unclippedBounds: boundsRecord(unclippedBounds, unclippedAlphaPixels),
+      missingOutsideBounds: boundsRecord(
+        missingOutsideBounds,
+        missingOutsideGuardPixels
+      )
+    };
+  }, {
+    clippedBase64: clippedPng.toString('base64'),
+    unclippedBase64: unclippedPng.toString('base64'),
+    capture,
+    clipRecords
+  });
+}
+
+async function captureTextInkProbe(page, record) {
+  let prepared = null;
+  let result = null;
+  let restoreError = null;
+  try {
+    prepared = await page.evaluate(probeId => (
+      window.prepareTextInkProbe(probeId)
+    ), record.inkProbeId);
+    const clippedPng = await page.screenshot({
+      clip: prepared.capture,
+      omitBackground: true
+    });
+    const unclipped = await page.evaluate(() => window.unclipTextInkProbe());
+    const unclippedPng = await page.screenshot({
+      clip: prepared.capture,
+      omitBackground: true
+    });
+    const comparison = await compareAlphaMasks(
+      page,
+      clippedPng,
+      unclippedPng,
+      prepared.capture,
+      prepared.clipRecords
+    );
+    const viewportBounds = bounds => bounds ? {
+      left: prepared.capture.x + bounds.minX,
+      top: prepared.capture.y + bounds.minY,
+      right: prepared.capture.x + bounds.maxX + 1,
+      bottom: prepared.capture.y + bounds.maxY + 1
+    } : null;
+    const geometryShift = maximumRectShift(
+      prepared.rangeRect,
+      unclipped.unclippedRangeRect
+    );
+    const valid = (
+      comparison.clippedAlphaPixels > 0 &&
+      comparison.unclippedAlphaPixels > 0 &&
+      geometryShift <= 0.25
+    );
+    const clipped = (
+      comparison.missingOutsideGuardPixels > 0 ||
+      comparison.missingAlphaRatio >
+        comparison.maskDifferenceToleranceRatio
+    );
+    result = {
+      status: !valid
+        ? 'invalid'
+        : (clipped ? 'clipped' : 'passed'),
+      pass: valid && !clipped,
+      alphaThreshold: comparison.alphaThreshold,
+      edgeTolerance: comparison.edgeTolerance,
+      maskDifferenceToleranceRatio:
+        comparison.maskDifferenceToleranceRatio,
+      rangeShiftTolerance: 0.25,
+      clippedAlphaPixels: comparison.clippedAlphaPixels,
+      unclippedAlphaPixels: comparison.unclippedAlphaPixels,
+      missingAlphaPixels: comparison.missingAlphaPixels,
+      missingAlphaRatio: comparison.missingAlphaRatio,
+      missingOutsideGuardPixels: comparison.missingOutsideGuardPixels,
+      missingOutsideXGuardPixels:
+        comparison.missingOutsideXGuardPixels,
+      missingOutsideYGuardPixels:
+        comparison.missingOutsideYGuardPixels,
+      unclippedOutsideGuardPixels:
+        comparison.unclippedOutsideGuardPixels,
+      clippedBounds: viewportBounds(comparison.clippedBounds),
+      unclippedBounds: viewportBounds(comparison.unclippedBounds),
+      missingOutsideBounds: viewportBounds(comparison.missingOutsideBounds),
+      capture: prepared.capture,
+      rangeRect: prepared.rangeRect,
+      unclippedRangeRect: unclipped.unclippedRangeRect,
+      geometryShift,
+      clipRecords: prepared.clipRecords,
+      unclippedClipRecords: unclipped.unclippedClipRecords
+    };
+  } catch (error) {
+    result = {
+      status: 'invalid',
+      pass: false,
+      error: String(error.stack || error)
+    };
+  } finally {
+    if (prepared) {
+      try {
+        const restored = await page.evaluate(() => window.restoreTextInkProbe());
+        if (!restored?.restored) {
+          throw new Error('Rendered-ink probe did not restore');
+        }
+        if (!restored.stateMatches) {
+          throw new Error(
+            'Rendered-ink probe changed computed display/visibility state: ' +
+            JSON.stringify(restored.stateDifferences)
+          );
+        }
+        result = {
+          ...result,
+          restoreStateMatches: restored.stateMatches,
+          restoreStateDifferences: restored.stateDifferences
+        };
+      } catch (error) {
+        restoreError = error;
+      }
+    }
+  }
+  if (restoreError) {
+    result = {
+      ...result,
+      status: 'invalid',
+      pass: false,
+      restoreError: String(restoreError.stack || restoreError)
+    };
+  }
+  return result;
+}
+
+async function attachTextInkProbes(page, row, inkProbeCache, evidence) {
+  for (const record of row.textGeometry) {
+    if (!record.partialExtensionAncestor) continue;
+    evidence.textInkProbeSummary.candidateRecords += 1;
+    const key = textInkProbeKey(record);
+    let probe = inkProbeCache.get(key);
+    if (!probe) {
+      probe = await captureTextInkProbe(page, record);
+      probe = {
+        key,
+        representative: {
+          viewport: row.viewport,
+          variant: row.variant,
+          phase: row.phase,
+          renderer: row.renderer,
+          motion: row.motion,
+          selector: record.selector,
+          ancestry: record.ancestry,
+          text: record.text
+        },
+        ...probe
+      };
+      inkProbeCache.set(key, probe);
+      evidence.inkProbes.push(probe);
+      evidence.textInkProbeSummary.executed += 1;
+    } else {
+      evidence.textInkProbeSummary.reused += 1;
+    }
+    record.inkProbeKey = key;
+    record.inkProbe = probe;
   }
 }
 
@@ -369,18 +720,28 @@ function validateLayout(row, targets, webgpu) {
     failures.push(`${label} information overlap: ${overlap.join(' / ')}`);
   }
   for (const record of row.textGeometry) {
-    if (!record.horizontalClipped && !record.verticalClipped) continue;
-    const axis = record.horizontalClipped ? 'horizontal' : 'vertical';
-    failures.push(
-      `${label} ${axis} text clipping ${record.selector} "${record.text}" ` +
-      `client=${record.clientWidth}x${record.clientHeight} ` +
-      `scroll=${record.scrollWidth}x${record.scrollHeight} ` +
-      `range=${JSON.stringify(record.rangeRect)} ` +
-      `element=${JSON.stringify(record.elementRect)} ` +
-      `clip=${JSON.stringify(record.firstClippingAncestor)} ` +
-      `overflow=${record.overflowX}/${record.overflowY} ` +
-      `ancestry=${record.ancestry.join(' > ')}`
-    );
+    if (record.horizontalClipped || record.verticalClipped) {
+      const axis = record.horizontalClipped ? 'horizontal' : 'vertical';
+      failures.push(
+        `${label} ${axis} text clipping ${record.selector} "${record.text}" ` +
+        `client=${record.clientWidth}x${record.clientHeight} ` +
+        `scroll=${record.scrollWidth}x${record.scrollHeight} ` +
+        `range=${JSON.stringify(record.rangeRect)} ` +
+        `element=${JSON.stringify(record.elementRect)} ` +
+        `clip=${JSON.stringify(record.firstClippingAncestor)} ` +
+        `overflow=${record.overflowX}/${record.overflowY} ` +
+        `ancestry=${record.ancestry.join(' > ')}`
+      );
+    }
+    if (record.partialExtensionAncestor && !record.inkProbe?.pass) {
+      failures.push(
+        `${label} rendered ink clipping ${record.selector} "${record.text}": ` +
+        `${JSON.stringify(record.inkProbe || {
+          status: 'missing',
+          clip: record.partialExtensionAncestor
+        })}`
+      );
+    }
   }
   if (!row.toplineContract.pass) {
     failures.push(
@@ -394,11 +755,19 @@ function validateLayout(row, targets, webgpu) {
       `${JSON.stringify(row.countdownContract)}`
     );
   }
-  if (
-    row.viewport.width === 324 &&
-    row.viewport.height === 581 &&
-    FIGHTER_HUD_PHASES.includes(row.phase)
-  ) {
+  check(() => assert.equal(
+    row.leadContract.painted,
+    false,
+    `${label} redundant portrait lead is painted: ` +
+    `${JSON.stringify(row.leadContract)}`
+  ));
+  if (!row.impactContract.pass) {
+    failures.push(
+      `${label} stale transient impact outside action: ` +
+      `${JSON.stringify(row.impactContract)}`
+    );
+  }
+  if (FIGHTER_HUD_PHASES.includes(row.phase)) {
     for (const hud of row.hudContract) {
       if (hud.pass) continue;
       failures.push(
@@ -417,7 +786,34 @@ function validateLayout(row, targets, webgpu) {
   }
 
   if (row.phase === 'action') {
+    const expectedActionParts = ['key', 'skill', 'compactMetric'];
     check(() => assert.equal(row.action.visible, true, `${label} action is hidden`));
+    check(() => assert.deepEqual(
+      row.action.paintedParts,
+      expectedActionParts,
+      `${label} action painted parts are not exact`
+    ));
+    check(() => assert.deepEqual(
+      row.action.separators,
+      ['\u00b7', '\u00b7'],
+      `${label} action separators are not painted by production CSS`
+    ));
+    check(() => assert.equal(
+      row.action.renderedText,
+      'C · NOVA · −7 HP',
+      `${label} action text is not the exact compact production copy`
+    ));
+    check(() => assert.deepEqual(
+      row.action.hiddenCompetitors,
+      {
+        actor: true,
+        copy: true,
+        legacyMetrics: true,
+        feed: true,
+        extraMetrics: true
+      },
+      `${label} competing action copy or metrics are painted`
+    ));
     check(() => assert.equal(
       row.action.metricCount,
       1,
@@ -433,6 +829,22 @@ function validateLayout(row, targets, webgpu) {
       row.action.gridTemplateRows.trim().split(/\s+/).length,
       1,
       `${label} action is not one grid line`
+    ));
+    check(() => assert.equal(
+      row.action.targetHp.changed,
+      true,
+      `${label} production action did not change target HP`
+    ));
+    check(() => assert.deepEqual(
+      row.action.targetHp,
+      {
+        before: 27,
+        expected: 20,
+        rendered: 20,
+        text: '20 / 36',
+        changed: true
+      },
+      `${label} production action target HP is not the expected 27 to 20`
     ));
   }
   if (row.phase === 'sealed') {
@@ -559,16 +971,72 @@ function rendererFilename(row) {
   ].join('-');
 }
 
-async function preparePage(browser, port, viewport, motion) {
+function serializeCleanupError(error, resource, scope) {
+  return {
+    resource,
+    scope,
+    name: String(error?.name || 'Error'),
+    message: String(error?.message || error),
+    stack: String(error?.stack || error)
+  };
+}
+
+function updateCloseFlags(evidence) {
+  for (const resource of ['page', 'context']) {
+    const stats = evidence.cleanup[resource];
+    evidence.cleanup[`${resource}Closed`] = (
+      stats.created > 0 &&
+      stats.created === stats.closeResolved &&
+      stats.failed === 0
+    );
+  }
+}
+
+async function closeTrackedResource(resource, resourceName, scope, evidence) {
+  if (!resource) return null;
+  const stats = evidence.cleanup[resourceName];
+  stats.attempted += 1;
+  try {
+    await resource.close();
+    stats.closeResolved += 1;
+    updateCloseFlags(evidence);
+    return null;
+  } catch (error) {
+    stats.failed += 1;
+    evidence.cleanup.errors.push(
+      serializeCleanupError(error, resourceName, scope)
+    );
+    updateCloseFlags(evidence);
+    return error;
+  }
+}
+
+async function closeTrackedPageContext(page, context, scope, evidence) {
+  const errors = [];
+  const pageError = await closeTrackedResource(page, 'page', scope, evidence);
+  if (pageError) errors.push(pageError);
+  const contextError = await closeTrackedResource(
+    context,
+    'context',
+    scope,
+    evidence
+  );
+  if (contextError) errors.push(contextError);
+  return errors;
+}
+
+async function preparePage(browser, port, viewport, motion, evidence, scope) {
   const context = await browser.newContext({
     viewport,
     deviceScaleFactor: 1,
     reducedMotion: motion === 'reduced' ? 'reduce' : 'no-preference',
     colorScheme: 'dark'
   });
+  evidence.cleanup.context.created += 1;
   let page = null;
   try {
     page = await context.newPage();
+    evidence.cleanup.page.created += 1;
     await page.goto(`http://127.0.0.1:${port}${fixtureUrl}`, {
       waitUntil: 'networkidle'
     });
@@ -577,8 +1045,18 @@ async function preparePage(browser, port, viewport, motion) {
     if (harnessError) throw new Error(harnessError);
     return { context, page };
   } catch (error) {
-    await page?.close().catch(() => {});
-    await context.close().catch(() => {});
+    const cleanupErrors = await closeTrackedPageContext(
+      page,
+      context,
+      `${scope}/prepare`,
+      evidence
+    );
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(
+        [error, ...cleanupErrors],
+        `Page preparation and cleanup failed for ${scope}`
+      );
+    }
     throw error;
   }
 }
@@ -594,7 +1072,9 @@ async function refreshSmallReferences(browser, port, evidence) {
           browser,
           port,
           viewport,
-          'normal'
+          'normal',
+          evidence,
+          `fresh-reference/${variant}/${phase}`
         ));
         const layout = await page.evaluate(options => window.showArenaCase(options), {
           variant,
@@ -623,8 +1103,18 @@ async function refreshSmallReferences(browser, port, evidence) {
           capture.shelfRegionPaint = shelfRegionPaint;
         }
       } finally {
-        await page?.close().catch(() => {});
-        await context?.close().catch(() => {});
+        const cleanupErrors = await closeTrackedPageContext(
+          page,
+          context,
+          `fresh-reference/${variant}/${phase}`,
+          evidence
+        );
+        if (cleanupErrors.length > 0) {
+          throw new AggregateError(
+            cleanupErrors,
+            `Fresh-reference cleanup failed for ${variant}/${phase}`
+          );
+        }
       }
     }
   }
@@ -653,6 +1143,15 @@ async function main() {
     webgpu: null,
     rows: [],
     captures: [],
+    inkProbes: [],
+    textInkProbeSummary: {
+      candidateRecords: 0,
+      executed: 0,
+      reused: 0,
+      passed: 0,
+      clipped: 0,
+      invalid: 0
+    },
     summary: null,
     cleanup: {
       pageClosed: false,
@@ -661,7 +1160,20 @@ async function main() {
       serverClosed: false,
       portClosed: false,
       randomLoopbackPort: false,
-      livePort3000Untouched: true
+      livePort3000Untouched: true,
+      page: {
+        created: 0,
+        attempted: 0,
+        closeResolved: 0,
+        failed: 0
+      },
+      context: {
+        created: 0,
+        attempted: 0,
+        closeResolved: 0,
+        failed: 0
+      },
+      errors: []
     }
   };
   let port = null;
@@ -676,6 +1188,7 @@ async function main() {
       args: ['--enable-unsafe-webgpu']
     });
 
+    const inkProbeCache = new Map();
     let webgpuRecorded = false;
     for (const [width, height] of VIEWPORTS) {
       const viewport = { width, height };
@@ -684,7 +1197,14 @@ async function main() {
         let context = null;
         let page = null;
         try {
-          ({ context, page } = await preparePage(browser, port, viewport, motion));
+          ({ context, page } = await preparePage(
+            browser,
+            port,
+            viewport,
+            motion,
+            evidence,
+            `matrix/${width}x${height}/${motion}`
+          ));
           if (!webgpuRecorded) {
             evidence.webgpu = await page.evaluate(() => window.probeArenaWebGpu());
             webgpuRecorded = true;
@@ -715,10 +1235,7 @@ async function main() {
                   status: null,
                   failures: []
                 };
-                const validation = validateLayout(row, targets, evidence.webgpu);
-                row.status = validation.status;
-                row.failures.push(...validation.failures);
-
+                let effectFailure = null;
                 if (phase === 'action' && row.effect.available === true) {
                   try {
                     const alpha = await captureEffectMetrics(page, row);
@@ -768,9 +1285,21 @@ async function main() {
                       }
                     }
                   } catch (error) {
-                    row.status = 'failed';
-                    row.failures.push(String(error.message || error));
+                    effectFailure = String(error.message || error);
                   }
+                }
+                await attachTextInkProbes(
+                  page,
+                  row,
+                  inkProbeCache,
+                  evidence
+                );
+                const validation = validateLayout(row, targets, evidence.webgpu);
+                row.status = validation.status;
+                row.failures.push(...validation.failures);
+                if (effectFailure) {
+                  row.status = 'failed';
+                  row.failures.push(effectFailure);
                 }
 
                 if (shouldCaptureReference(row)) {
@@ -802,10 +1331,18 @@ async function main() {
             }
           }
         } finally {
-          await page?.close().catch(() => {});
-          evidence.cleanup.pageClosed = true;
-          await context?.close().catch(() => {});
-          evidence.cleanup.contextClosed = true;
+          const cleanupErrors = await closeTrackedPageContext(
+            page,
+            context,
+            `matrix/${width}x${height}/${motion}`,
+            evidence
+          );
+          if (cleanupErrors.length > 0) {
+            throw new AggregateError(
+              cleanupErrors,
+              `Matrix cleanup failed for ${width}x${height}/${motion}`
+            );
+          }
         }
       }
     }
@@ -828,6 +1365,20 @@ async function main() {
       evidence.matrix.expectedRows,
       'Browser evidence contains duplicate or missing dimensions'
     );
+    evidence.textInkProbeSummary.passed = evidence.inkProbes.filter(
+      probe => probe.status === 'passed'
+    ).length;
+    evidence.textInkProbeSummary.clipped = evidence.inkProbes.filter(
+      probe => probe.status === 'clipped'
+    ).length;
+    evidence.textInkProbeSummary.invalid = evidence.inkProbes.filter(
+      probe => probe.status === 'invalid'
+    ).length;
+    assert.equal(
+      evidence.textInkProbeSummary.executed,
+      evidence.inkProbes.length,
+      'Rendered-ink evidence contains duplicate or missing executions'
+    );
     await refreshSmallReferences(browser, port, evidence);
     assert.ok(
       requests.every(request => (
@@ -847,15 +1398,25 @@ async function main() {
     failure ||= error;
   } finally {
     if (browser) {
-      await browser.close().catch(error => {
+      try {
+        await browser.close();
+        evidence.cleanup.browserClosed = true;
+      } catch (error) {
+        evidence.cleanup.errors.push(
+          serializeCleanupError(error, 'browser', 'final')
+        );
         failure ||= error;
-      });
-      evidence.cleanup.browserClosed = true;
+      }
     }
     if (server.listening) {
-      await closeServer(server).catch(error => {
+      try {
+        await closeServer(server);
+      } catch (error) {
+        evidence.cleanup.errors.push(
+          serializeCleanupError(error, 'server', 'final')
+        );
         failure ||= error;
-      });
+      }
     }
     evidence.cleanup.serverClosed = !server.listening;
     if (port != null) {
@@ -863,6 +1424,19 @@ async function main() {
       if (!evidence.cleanup.portClosed) {
         failure ||= new Error('Random loopback acceptance port remained open');
       }
+    }
+    updateCloseFlags(evidence);
+    if (
+      evidence.cleanup.page.created > 0 &&
+      !evidence.cleanup.pageClosed
+    ) {
+      failure ||= new Error('One or more acceptance pages did not close cleanly');
+    }
+    if (
+      evidence.cleanup.context.created > 0 &&
+      !evidence.cleanup.contextClosed
+    ) {
+      failure ||= new Error('One or more acceptance contexts did not close cleanly');
     }
   }
 

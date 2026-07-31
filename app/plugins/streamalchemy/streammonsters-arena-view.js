@@ -760,11 +760,25 @@
       }
     }
 
+    function clearTransientImpact() {
+      const impact = node('arena-impact');
+      if (!impact) return;
+      impact.classList.remove(
+        'visible',
+        'damage-number',
+        'shield-number',
+        'heal-number',
+        'retaliation-number'
+      );
+      impact.textContent = '';
+    }
+
     function clearActionCard() {
       activeActionAriaLabel = '';
       const actionCard = node('arena-action-card');
       actionCard?.classList.remove('visible');
       actionCard?.removeAttribute('aria-label');
+      clearTransientImpact();
     }
 
     function renderActionCard(action = {}) {
@@ -1830,6 +1844,7 @@
           node('arena-special')?.classList.remove('visible');
           node('arena-combo')?.classList.remove('visible');
           node('arena-element-light')?.classList.remove('visible');
+          clearTransientImpact();
           break;
         case 'winner':
           actor?.classList.add('winner');
@@ -1858,6 +1873,7 @@
       const action = unwrapAction(payload);
       if (!acceptAction(action)) return false;
       resetFighterVisuals();
+      clearTransientImpact();
       if (payload.round != null || payload.roundNumber != null || payload.action?.round != null) {
         lastRound = Math.max(
           1,

@@ -101,6 +101,8 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(runnerSource).toContain('row.toplineContract.pass');
     expect(fixtureSource).toContain('collectCountdownContract');
     expect(runnerSource).toContain('row.countdownContract.pass');
+    expect(fixtureSource).toContain('collectLeadContract');
+    expect(runnerSource).toContain('row.leadContract.painted');
     expect(fixtureSource).toContain(
       "loadScript(`${ROOT}streammonsters-rules-v8-pacing.js`)"
     );
@@ -157,9 +159,83 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(runnerSource).toContain('row.visibleArenaDescendants');
     expect(runnerSource).toContain('shelfRegionPaint');
     expect(runnerSource).toContain('omitBackground: false');
+    expect(fixtureSource).toContain(
+      'parent.scrollWidth > parent.clientWidth'
+    );
+    expect(fixtureSource).not.toContain(
+      'parent.scrollWidth > parent.clientWidth + 1'
+    );
     expect(runnerSource).not.toContain(
       'parent.scrollHeight > parent.clientHeight + 1'
     );
+  });
+
+  test('requires transparent effect proof from the full viewport', () => {
+    const fixtureSource = fs.readFileSync(acceptanceFixturePath, 'utf8');
+    const runnerSource = fs.readFileSync(acceptanceRunnerPath, 'utf8');
+
+    expect(fixtureSource).toContain(
+      'body[data-effect-capture="true"] #streammonsters-overlay > :not(#portrait-arena)'
+    );
+    expect(runnerSource).toContain(
+      'const viewportPng = await page.screenshot({'
+    );
+    expect(runnerSource).not.toMatch(
+      /const arenaPng = await page\.screenshot\(\{[\s\S]*?x: layout\.arena\.left/
+    );
+    expect(runnerSource).toContain('viewportAlpha.likebarAlphaPixels');
+  });
+
+  test('binds exact action, ink, all-viewport HUD, and cleanup evidence', () => {
+    const fixtureSource = fs.readFileSync(acceptanceFixturePath, 'utf8');
+    const runnerSource = fs.readFileSync(acceptanceRunnerPath, 'utf8');
+
+    expect(fixtureSource).toContain('prepareTextInkProbe');
+    expect(fixtureSource).toContain('unclipTextInkProbe');
+    expect(fixtureSource).toContain('restoreTextInkProbe');
+    expect(fixtureSource).toContain('verticalExtensionAncestor');
+    expect(fixtureSource).toContain('partialExtensionAncestor');
+    expect(fixtureSource).toContain('clipX');
+    expect(fixtureSource).toContain('clipY');
+    expect(fixtureSource).toContain('data-text-ink-neutral');
+    expect(fixtureSource).toContain('data-text-ink-restoring');
+    expect(fixtureSource).toContain('backdrop-filter:none!important');
+    expect(fixtureSource).toContain('mix-blend-mode:normal!important');
+    expect(fixtureSource).toContain('animation:none!important');
+    expect(runnerSource).toContain('captureTextInkProbe');
+    expect(runnerSource).toContain('compareAlphaMasks');
+    expect(runnerSource).toContain('clippedPng');
+    expect(runnerSource).toContain('unclippedPng');
+    expect(runnerSource).toContain('missingOutsideGuardPixels');
+    expect(runnerSource).toContain('missingOutsideXGuardPixels');
+    expect(runnerSource).toContain('missingOutsideYGuardPixels');
+    expect(runnerSource).toContain('missingAlphaRatio');
+    expect(runnerSource).toContain('restoreStateMatches');
+    expect(runnerSource).toContain('inkProbeCache');
+    expect(runnerSource).toContain('evidence.inkProbes');
+    const matrixLoopSource = runnerSource.slice(
+      runnerSource.indexOf('for (const [width, height] of VIEWPORTS)')
+    );
+    expect(
+      matrixLoopSource.indexOf('await captureEffectMetrics(page, row)')
+    ).toBeLessThan(
+      matrixLoopSource.indexOf('await attachTextInkProbes(')
+    );
+    const probeKeySource = runnerSource.match(
+      /function textInkProbeKey\([^)]*\) \{[\s\S]*?\n\}/
+    )?.[0] || '';
+    expect(probeKeySource).toContain('record.textStyle');
+    expect(probeKeySource).not.toContain('row.variant');
+    expect(probeKeySource).not.toContain('row.phase');
+    expect(runnerSource).toContain('row.action.paintedParts');
+    expect(runnerSource).toContain("['key', 'skill', 'compactMetric']");
+    expect(runnerSource).toContain("'C \u00b7 NOVA \u00b7 \u22127 HP'");
+    expect(runnerSource).toContain('row.action.targetHp.changed');
+    expect(fixtureSource).toContain('impactContract');
+    expect(runnerSource).toContain('row.impactContract');
+    expect(runnerSource).not.toContain('row.viewport.width === 324');
+    expect(runnerSource).toContain('cleanup.errors');
+    expect(runnerSource).not.toContain('.close().catch(() => {})');
   });
 
   test('exports the canonical variants and normalized portrait rectangles', () => {
@@ -450,6 +526,35 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(bySelector('#battle')?.style.inset).toBe('0px');
     expect(bySelector('#battle')?.style.overflow).toBe('hidden');
     dom.window.close();
+  });
+
+  test('removes the redundant lead from bounded portrait variants only', () => {
+    const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
+    const rules = styleRules(dom.window.document);
+    const portraitLeadRule = rules.find(rule => (
+      rule.media.includes('orientation: portrait') &&
+      rule.selector.split(',').map(selector => selector.trim()).includes(
+        '#portrait-arena[data-arena-variant="split-arena"] #arena-lead'
+      ) &&
+      rule.selector.split(',').map(selector => selector.trim()).includes(
+        '#portrait-arena[data-arena-variant="classic"] #arena-lead'
+      )
+    ));
+    const landscapeLeadRule = rules.find(rule => (
+      rule.media.includes('orientation: landscape') &&
+      rule.selector === '#battle[data-phase="action"] #arena-lead'
+    ));
+
+    expect(portraitLeadRule?.style.display).toBe('none');
+    expect(landscapeLeadRule?.style.display).not.toBe('none');
+    dom.window.close();
+  });
+
+  test('keeps short bounded-portrait skill names complete at mid widths', () => {
+    const html = fs.readFileSync(overlayPath, 'utf8');
+    expect(html).toContain(
+      'font-size:clamp(9px,2vw,21px);'
+    );
   });
 
   test('loads the arena helper before effects and ArenaView consumers', () => {

@@ -229,6 +229,64 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#arena-feed').textContent).toContain('Tidal Renewal');
   });
 
+  test('clears the transient impact when an action timeline recovers', async () => {
+    mountArena();
+    const view = ArenaView.createArenaView({
+      document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'impact-recover',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ash', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Luna', hp: 20, maxHp: 30 }
+      ]
+    });
+
+    await view.playAction({
+      matchId: 'impact-recover',
+      eventId: 'impact-recover:action:1',
+      eventSequence: 1,
+      actorSlot: 1,
+      targetSlot: 2,
+      choice: 'C',
+      skill: { name: 'Renew', type: 'special', element: 'Grove' },
+      outcomes: [{ type: 'heal', amount: 2 }]
+    });
+
+    const impact = document.getElementById('arena-impact');
+    expect(impact.textContent).toBe('');
+    expect(Array.from(impact.classList)).toEqual([]);
+  });
+
+  test('clears a stale transient impact before opening the next choice', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    const impact = document.getElementById('arena-impact');
+    impact.textContent = '+2 ♥';
+    impact.classList.add(
+      'visible',
+      'damage-number',
+      'shield-number',
+      'heal-number',
+      'retaliation-number'
+    );
+
+    view.openChoice({
+      matchId: 'impact-next-choice',
+      round: 2,
+      choices: ['A', 'B', 'C'],
+      fighters: [
+        { slot: 1, name: 'Ash', hp: 20, maxHp: 30 },
+        { slot: 2, name: 'Luna', hp: 20, maxHp: 30 }
+      ]
+    });
+
+    expect(impact.textContent).toBe('');
+    expect(Array.from(impact.classList)).toEqual([]);
+  });
+
   test('keeps battle effects inside the takeover and presentation effects on the global layer', async () => {
     mountArena();
     const battleEffects = {
@@ -1456,8 +1514,13 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
 
     await play('aria-destroy', 3);
     expect(actionCard.hasAttribute('aria-label')).toBe(true);
+    const impact = document.getElementById('arena-impact');
+    impact.textContent = '+2 ♥';
+    impact.classList.add('visible', 'heal-number');
     view.destroy();
     expect(actionCard.getAttribute('aria-label')).toBeNull();
+    expect(impact.textContent).toBe('');
+    expect(Array.from(impact.classList)).toEqual([]);
     expect(dom.portraitMediaQuery.removeEventListener)
       .toHaveBeenCalledWith('change', expect.any(Function));
     expect(dom.orientationListenerCount()).toBe(0);
@@ -2389,6 +2452,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
 
   test('localizes every director-owned arena label instead of leaking German into other locales', async () => {
     mountArena();
+    const impactCopies = [];
     const view = ArenaView.createArenaView({
       document,
       labels: {
@@ -2405,7 +2469,13 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         special: 'Spécial',
         skillCopyLunarAttack: 'Une frappe lunaire rend un peu de santé.'
       },
-      clock: { wait: async () => {}, now: () => 1_000 }
+      clock: {
+        wait: async () => {
+          const impactCopy = document.querySelector('#arena-impact').textContent;
+          if (impactCopy) impactCopies.push(impactCopy);
+        },
+        now: () => 1_000
+      }
     });
     view.applyMatch({
       matchId: 'localized',
@@ -2442,7 +2512,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       .toContain('Une frappe lunaire rend un peu de santé.');
     expect(document.querySelector('#arena-skill-prompt').textContent)
       .not.toContain('English fallback');
-    expect(document.querySelector('#arena-impact').textContent).toBe('ESQUIVÉ');
+    expect(impactCopies).toContain('ESQUIVÉ');
+    expect(document.querySelector('#arena-impact').textContent).toBe('');
     await view.complete({ winnerSlot: 1 });
     expect(document.querySelector('#arena-feed').textContent).toBe('Selene gagne !');
   });
