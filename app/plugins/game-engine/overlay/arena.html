@@ -1800,9 +1800,9 @@
       if (config?.directAbilitiesEnabled === false) return [];
       const languages = infoRotatorLanguageSequence(config);
       const definitions = [
-        { iconText: 'RUN', label: { de: 'F?higkeit', en: 'Ability' }, text: { de: '!boost - Tempo', en: '!boost - Speed' } },
-        { iconText: 'SHD', label: { de: 'F?higkeit', en: 'Ability' }, text: { de: '!shield - Schutz', en: '!shield - Shield' } },
-        { iconText: 'BMB', label: { de: 'F?higkeit', en: 'Ability' }, text: { de: '!bomb - Wurf', en: '!bomb - Throw' } }
+        { iconText: 'RUN', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!boost - Tempo', en: '!boost - Speed' } },
+        { iconText: 'SHD', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!shield - Schutz', en: '!shield - Shield' } },
+        { iconText: 'BMB', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!bomb - Wurf', en: '!bomb - Throw' } }
       ];
       return definitions.map((definition, index) => {
         const language = languages[index % languages.length] || 'de';

@@ -7151,6 +7151,7 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain("if (config?.directAbilitiesEnabled === false) return [];");
     expect(overlay).toContain("kind: 'ability'");
     expect(overlay).toContain('!boost');
+    expect(overlay).toContain('F\\u00e4higkeit');
     expect(overlay).toContain('!shield');
     expect(overlay).toContain('!bomb');
     expect(ui).toContain('id="arena-top-overlay-show-ability-legend"');
