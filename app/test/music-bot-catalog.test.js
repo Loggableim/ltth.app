@@ -199,6 +199,78 @@ describe('music-bot catalog', () => {
     db.close();
   });
 
+  it('filters history by search, playback outcome, feedback, date, ban state, sort, and pagination', () => {
+    const { db, catalog } = createCatalog();
+    const base = Date.UTC(2026, 6, 1, 12, 0, 0);
+    const artistSong = catalog.recordCompleted({
+      title: 'Artist Song', artist: 'Artist', provider: 'youtube', providerId: 'artist-song',
+      channelName: 'Artist Channel'
+    }, { id: 'history-artist', finishedAt: base + 4_000, duration: 200, playedSeconds: 200, requestedBy: 'viewer-one' });
+    const skippedSong = catalog.recordSkipped({
+      title: 'Skipped Song', artist: 'Other Artist', provider: 'youtube', providerId: 'skipped-song'
+    }, { id: 'history-skipped', finishedAt: base + 3_000, duration: 200, playedSeconds: 150, requestedBy: 'viewer-two' });
+    const earlySong = catalog.recordSkipped({
+      title: 'Early Song', artist: 'Other Artist', provider: 'youtube', providerId: 'early-song'
+    }, { id: 'history-early', finishedAt: base + 2_000, duration: 200, playedSeconds: 20, requestedBy: 'viewer-three' });
+    const failedSong = catalog.recordFailed({
+      title: 'Failed Song', artist: 'Failed Artist', provider: 'youtube', providerId: 'failed-song'
+    }, { id: 'history-failed', finishedAt: base + 1_000, duration: 200, playedSeconds: 0, requestedBy: 'viewer-four' });
+    const bannedSong = catalog.recordCompleted({
+      title: 'Banned Song', artist: 'Banned Artist', provider: 'youtube', providerId: 'banned-song'
+    }, { id: 'history-banned', finishedAt: base + 5_000, duration: 200, playedSeconds: 200, requestedBy: 'viewer-five' });
+
+    catalog.setFeedback(failedSong.song.id, 'down');
+    db.exec(`
+      CREATE TABLE plugin_music_bot_bans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        value TEXT NOT NULL,
+        reason TEXT,
+        banned_by TEXT,
+        created_at INTEGER NOT NULL
+      );
+    `);
+    db.prepare(
+      'INSERT INTO plugin_music_bot_bans (type, value, created_at) VALUES (?, ?, ?)'
+    ).run('track', bannedSong.source.trackKey, base);
+
+    expect(catalog.getHistory({ q: 'artist song', limit: 10 }).items).toEqual([
+      expect.objectContaining({ id: 'history-artist', title: 'Artist Song', artist: 'Artist' })
+    ]);
+    expect(catalog.getHistory({ outcome: 'failed' })).toMatchObject({
+      total: 1,
+      items: [expect.objectContaining({ id: 'history-failed', outcome: 'failed' })]
+    });
+    expect(catalog.getHistory({ outcome: 'early_skip' }).items).toEqual([
+      expect.objectContaining({ id: 'history-early', outcome: 'early_skip' })
+    ]);
+    expect(catalog.getHistory({ feedback: 'down' }).items).toEqual([
+      expect.objectContaining({ id: 'history-failed', feedback: 'down' })
+    ]);
+    expect(catalog.getHistory({ banned: 'only' }).items).toEqual([
+      expect.objectContaining({ id: 'history-banned', banned: true })
+    ]);
+    expect(catalog.getHistory({ banned: 'exclude' }).items)
+      .toEqual(expect.not.arrayContaining([expect.objectContaining({ id: 'history-banned' })]));
+
+    const day = new Date(base).toISOString().slice(0, 10);
+    expect(catalog.getHistory({ from: day, to: day }).total).toBe(5);
+    expect(catalog.getHistory({ q: 'viewer-two' }).items).toEqual([
+      expect.objectContaining({ id: skippedSong.event.id, requestedBy: 'viewer-two' })
+    ]);
+    expect(catalog.getHistory({ sort: 'finished_asc' }).items[0].id).toBe('history-failed');
+    expect(catalog.getHistory({ sort: 'finished_asc' }).items.at(-1).id).toBe('history-banned');
+    expect(catalog.getHistory({ outcome: 'completed', offset: 1, limit: 1 })).toMatchObject({
+      total: 2,
+      offset: 1,
+      limit: 1,
+      items: [expect.objectContaining({ id: 'history-artist' })]
+    });
+    expect(catalog.getHistory({ q: 'does-not-exist' })).toMatchObject({ total: 0, items: [] });
+
+    db.close();
+  });
+
   it('applies source cooldown policy and clears failure state on success', () => {
     const { db, catalog } = createCatalog();
     const source = catalog.resolveOrUpsert({ title: 'Source', artist: 'Artist', provider: 'youtube', providerId: 'source' }).source;

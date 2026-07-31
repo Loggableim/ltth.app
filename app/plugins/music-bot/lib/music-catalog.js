@@ -5,7 +5,26 @@ const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * ONE_DAY;
 const LEGACY_DUAL_WRITE_WINDOW_MS = 1000;
+const HISTORY_OUTCOMES = new Set(['completed', 'skipped', 'early_skip', 'failed']);
+const HISTORY_FEEDBACK = new Set(['up', 'down', 'neutral']);
+const HISTORY_BAN_FILTERS = new Set(['only', 'exclude']);
+const HISTORY_SORTS = new Set(['finished_desc', 'finished_asc']);
 const UNRELIABLE_ARTISTS = new Set(['', 'unknown', 'unknown artist', 'various artists', 'youtube']);
+
+function historyDateBoundary(value, endOfDay) {
+  if (value instanceof Date) {
+    const timestamp = value.getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const timestamp = Date.parse(raw);
+  if (!Number.isFinite(timestamp)) return null;
+  return endOfDay && /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? timestamp + ONE_DAY - 1
+    : timestamp;
+}
 const VERSION_QUALIFIER = '(?:live|remix|acoustic|instrumental|cover|karaoke|sped\\s*up|slowed|nightcore|reverb)';
 const GENRE_ALIASES = {
   alternative: 'alternative', ambient: 'ambient', blues: 'blues', chill: 'chill',
@@ -403,28 +422,143 @@ class MusicCatalog {
     return { sourceId, failureCount: 0, cooldownUntil: null };
   }
 
-  getHistory({ limit = 50, offset = 0 } = {}) {
+  getHistory({ limit = 50, offset = 0, q = '', outcome = '', feedback = '', banned = '', from = '', to = '', sort = 'finished_desc' } = {}) {
     const safeLimit = Math.max(1, Math.min(250, Number(limit) || 50));
     const safeOffset = Math.max(0, Number(offset) || 0);
+    const normalizedQuery = normalizeText(q);
+    const rawOutcome = String(outcome || '').trim();
+    const rawFeedback = String(feedback || '').trim();
+    const rawBanned = String(banned || '').trim();
+    const rawSort = String(sort || '').trim();
+    const normalizedOutcome = HISTORY_OUTCOMES.has(rawOutcome) ? rawOutcome : '';
+    const normalizedFeedback = HISTORY_FEEDBACK.has(rawFeedback) ? rawFeedback : '';
+    const normalizedBanned = HISTORY_BAN_FILTERS.has(rawBanned) ? rawBanned : '';
+    const normalizedSort = HISTORY_SORTS.has(rawSort) ? rawSort : 'finished_desc';
+    const fromTimestamp = historyDateBoundary(from, false);
+    const toTimestamp = historyDateBoundary(to, true);
+    const conditions = [];
+    const parameters = [];
+
+    if (normalizedQuery) {
+      const search = `%${normalizedQuery}%`;
+      conditions.push(`(
+        songs.normalized_title LIKE ?
+        OR LOWER(COALESCE(sources.channel_name, '')) LIKE ?
+        OR LOWER(COALESCE(events.requested_by, '')) LIKE ?
+        OR EXISTS (
+          SELECT 1 FROM plugin_music_bot_song_artists search_links
+          JOIN plugin_music_bot_artists search_artists ON search_artists.id = search_links.artist_id
+          WHERE search_links.song_id = songs.id AND search_artists.normalized_name LIKE ?
+        )
+      )`);
+      parameters.push(search, search, search, search);
+    }
+    if (normalizedOutcome) {
+      conditions.push('events.outcome = ?');
+      parameters.push(normalizedOutcome);
+    }
+    if (normalizedFeedback) {
+      const feedbackState = normalizedFeedback === 'up' ? 1 : (normalizedFeedback === 'down' ? -1 : 0);
+      conditions.push('COALESCE(feedback.state, 0) = ?');
+      parameters.push(feedbackState);
+    }
+    if (fromTimestamp !== null) {
+      conditions.push('events.finished_at >= ?');
+      parameters.push(fromTimestamp);
+    }
+    if (toTimestamp !== null) {
+      conditions.push('events.finished_at <= ?');
+      parameters.push(toTimestamp);
+    }
+
+    const banExpression = this._historyBanExpression();
+    if (normalizedBanned === 'only') conditions.push(`(${banExpression})`);
+    if (normalizedBanned === 'exclude') conditions.push(`NOT (${banExpression})`);
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const order = normalizedSort === 'finished_asc'
+      ? 'events.finished_at ASC, events.id ASC'
+      : 'events.finished_at DESC, events.id DESC';
+    const fromClause = `
+      FROM plugin_music_bot_play_events events JOIN plugin_music_bot_songs songs ON songs.id = events.song_id
+      LEFT JOIN plugin_music_bot_sources sources ON sources.id = events.source_id
+      LEFT JOIN plugin_music_bot_feedback feedback ON feedback.song_id = songs.id`;
+    const total = this.db.prepare(
+      `SELECT COUNT(*) AS count${fromClause} ${where}`
+    ).get(...parameters).count;
     const items = this.db.prepare(
       `SELECT events.id, events.legacy_history_id AS legacyHistoryId, events.song_id AS songId,
        songs.title, events.outcome, events.started_at AS startedAt, events.finished_at AS finishedAt,
        events.duration, events.played_seconds AS playedSeconds, events.requested_by AS requestedBy,
        sources.track_key AS trackKey, sources.url, sources.channel_id AS channelId, sources.channel_name AS channelName,
        sources.provider, sources.provider_id AS providerId, COALESCE(feedback.state, 0) AS feedbackState,
+       (${banExpression}) AS banned,
        (SELECT GROUP_CONCAT(artists.name, ' & ') FROM plugin_music_bot_song_artists song_artists
         JOIN plugin_music_bot_artists artists ON artists.id = song_artists.artist_id
         WHERE song_artists.song_id = songs.id) AS artist
-       FROM plugin_music_bot_play_events events JOIN plugin_music_bot_songs songs ON songs.id = events.song_id
-       LEFT JOIN plugin_music_bot_sources sources ON sources.id = events.source_id
-       LEFT JOIN plugin_music_bot_feedback feedback ON feedback.song_id = songs.id
-       ORDER BY events.finished_at DESC, events.id DESC LIMIT ? OFFSET ?`
-    ).all(safeLimit, safeOffset).map((item) => ({
+       ${fromClause}
+       ${where}
+       ORDER BY ${order} LIMIT ? OFFSET ?`
+    ).all(...parameters, safeLimit, safeOffset).map((item) => ({
       ...item,
+      banned: Boolean(item.banned),
       feedback: item.feedbackState > 0 ? 'up' : (item.feedbackState < 0 ? 'down' : 'neutral')
     }));
-    const total = this.db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_play_events').get().count;
-    return { items, total, limit: safeLimit, offset: safeOffset };
+    return {
+      items,
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      filters: {
+        q: normalizedQuery,
+        outcome: normalizedOutcome,
+        feedback: normalizedFeedback,
+        banned: normalizedBanned,
+        from: fromTimestamp === null ? '' : String(from || '').trim(),
+        to: toTimestamp === null ? '' : String(to || '').trim(),
+        sort: normalizedSort
+      }
+    };
+  }
+
+  _historyBanExpression() {
+    if (!this._hasTable('plugin_music_bot_bans')) return '0';
+    return `
+      EXISTS (
+        SELECT 1 FROM plugin_music_bot_bans history_url_bans
+        WHERE history_url_bans.type = 'url'
+          AND sources.url IS NOT NULL
+          AND LOWER(sources.url) LIKE '%' || LOWER(history_url_bans.value) || '%'
+      )
+      OR EXISTS (
+        SELECT 1 FROM plugin_music_bot_bans history_track_bans
+        WHERE history_track_bans.type = 'track'
+          AND LOWER(COALESCE(sources.track_key, '')) = LOWER(history_track_bans.value)
+      )
+      OR EXISTS (
+        SELECT 1 FROM plugin_music_bot_bans history_keyword_bans
+        WHERE history_keyword_bans.type = 'keyword'
+          AND (
+            LOWER(COALESCE(songs.title, '')) LIKE '%' || LOWER(history_keyword_bans.value) || '%'
+            OR LOWER(COALESCE(sources.channel_name, '')) LIKE '%' || LOWER(history_keyword_bans.value) || '%'
+          )
+      )
+      OR EXISTS (
+        SELECT 1 FROM plugin_music_bot_bans history_channel_bans
+        WHERE history_channel_bans.type = 'channel'
+          AND (
+            COALESCE(sources.channel_id, '') = history_channel_bans.value
+            OR LOWER(COALESCE(sources.channel_name, '')) = LOWER(history_channel_bans.value)
+          )
+      )
+      OR EXISTS (
+        SELECT 1 FROM plugin_music_bot_bans history_artist_bans
+        JOIN plugin_music_bot_song_artists history_artist_links
+          ON history_artist_links.song_id = songs.id
+        JOIN plugin_music_bot_artists history_artists
+          ON history_artists.id = history_artist_links.artist_id
+        WHERE history_artist_bans.type = 'artist'
+          AND LOWER(history_artists.name) = LOWER(history_artist_bans.value)
+      )`;
   }
 
   getHistoryEvent(eventId) {
