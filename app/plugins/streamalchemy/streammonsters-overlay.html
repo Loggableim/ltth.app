@@ -1456,13 +1456,57 @@
       #portrait-arena[data-arena-variant="split-arena"] .fighter-hud,
       #portrait-arena[data-arena-variant="classic"] .fighter-hud {
         position:relative; inset:auto; z-index:12; grid-row:hud-start / hud-end;
-        grid-column:1; align-self:stretch; width:auto; min-width:0; max-height:100%;
-        padding:clamp(4px,.8vh,8px) clamp(6px,1.8vw,10px); overflow:hidden;
+        grid-column:1; align-self:stretch; display:grid; grid-template-rows:auto auto auto;
+        align-content:start; gap:clamp(1px,.2vh,3px); width:auto; min-width:0; max-height:100%;
+        padding:clamp(2px,.45vh,5px) clamp(4px,1.2vw,8px); overflow:hidden;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-heading,
+      #portrait-arena[data-arena-variant="classic"] .fighter-heading {
+        align-items:center; gap:clamp(2px,.7vw,5px); min-width:0; margin-bottom:0;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-identity,
+      #portrait-arena[data-arena-variant="classic"] .fighter-identity {
+        display:flex; flex:1 1 auto; align-items:baseline; gap:clamp(2px,.6vw,5px);
+        min-width:0; white-space:nowrap;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-name,
+      #portrait-arena[data-arena-variant="classic"] .fighter-name {
+        flex:0 1 auto; min-width:0; font-size:clamp(10px,2.4vw,18px); line-height:1;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-owner,
+      #portrait-arena[data-arena-variant="classic"] .fighter-owner {
+        flex:1 1 auto; min-width:0; font-size:clamp(7px,1.35vw,11px); line-height:1;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-level,
+      #portrait-arena[data-arena-variant="classic"] .fighter-level {
+        font-size:clamp(8px,1.5vw,12px); line-height:1;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-hp-row,
+      #portrait-arena[data-arena-variant="classic"] .fighter-hp-row {
+        gap:clamp(3px,.8vw,6px); font-size:clamp(8px,1.35vw,11px); line-height:1;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-hud > .arena-hp,
+      #portrait-arena[data-arena-variant="classic"] .fighter-hud > .arena-hp {
+        height:clamp(4px,.55vh,7px); margin-top:0;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-shield,
+      #portrait-arena[data-arena-variant="split-arena"] .arena-charge,
+      #portrait-arena[data-arena-variant="split-arena"] .arena-meter-labels,
+      #portrait-arena[data-arena-variant="classic"] .arena-shield,
+      #portrait-arena[data-arena-variant="classic"] .arena-charge,
+      #portrait-arena[data-arena-variant="classic"] .arena-meter-labels {
+        display:none;
       }
       #portrait-arena[data-arena-variant="split-arena"] .arena-sprite-wrap,
       #portrait-arena[data-arena-variant="classic"] .arena-sprite-wrap {
         position:relative; inset:auto; z-index:6; grid-row:fighter-start / fighter-end;
         grid-column:1; min-width:0; min-height:0; overflow:visible;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="choice"] .arena-sprite-wrap,
+      #portrait-arena[data-arena-variant="classic"] #battle[data-phase="choice"] .arena-sprite-wrap,
+      #portrait-arena[data-arena-variant="split-arena"] #battle[data-phase="choice"] #arena-fighter-2 .arena-sprite-wrap,
+      #portrait-arena[data-arena-variant="classic"] #battle[data-phase="choice"] #arena-fighter-2 .arena-sprite-wrap {
+        inset:auto;
       }
       #portrait-arena[data-arena-variant="split-arena"] .arena-sprite {
         max-width:84%; max-height:100%;
@@ -1471,7 +1515,7 @@
         max-width:100%; max-height:100%;
       }
       #portrait-arena[data-arena-variant="classic"] .fighter-hud {
-        padding:clamp(5px,1vh,9px) clamp(8px,2.2vw,13px);
+        padding:clamp(2px,.45vh,5px) clamp(5px,1.5vw,9px);
         border-width:2px;
       }
       #portrait-arena[data-arena-variant="split-arena"] #arena-choice-surface,
@@ -1671,6 +1715,24 @@
         from { opacity:0; transform:scale(.82); }
         38% { opacity:.9; }
         to { opacity:0; transform:scale(1.08); }
+      }
+    }
+    @media (orientation: portrait) and (max-width: 360px) {
+      #portrait-arena[data-arena-variant="split-arena"] .fighter-owner,
+      #portrait-arena[data-arena-variant="classic"] .fighter-owner {
+        display:none;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-deck,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-deck {
+        gap:1px;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card {
+        column-gap:1px; padding-right:1px; padding-left:1px;
+      }
+      #portrait-arena[data-arena-variant="split-arena"] .arena-skill-card .skill-choice,
+      #portrait-arena[data-arena-variant="classic"] .arena-skill-card .skill-choice {
+        width:14px; height:14px; font-size:9px;
       }
     }
     @media (prefers-reduced-motion: reduce) {
