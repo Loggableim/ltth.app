@@ -646,7 +646,7 @@
         }
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip",
-      "sha256": "742db0b70694042b7e5cfcb7d4ab3ad0ef442ce0ab2466226086c0ccc0733716",
+      "sha256": "634af6e44c2d1d204de4738f0ed88a30645c00036d7c8d47fe709d58bc3d5516",
       "rollbackVersions": [
         {
           "version": "1.11.1",

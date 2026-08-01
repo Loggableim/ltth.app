@@ -89,11 +89,11 @@
     "1.12.0": {
       "manifestId": "stream-monsters",
       "sourcePath": "app/plugins/stream-monsters",
-      "sourceCommit": "faaedebb7e87cd47d303245d452b7a01149d5be4",
-      "sourceTree": "1fae7b3c275a1060a575c9317277724f62051996",
+      "sourceCommit": "0fa5a7fc0c3abccc3b62a147f75841042184f548",
+      "sourceTree": "a51a332a37215ee8d75d73626e235d87cc2c3f60",
       "manifestVersion": "1.12.0",
       "package": "plugin-store/packages/stream-monsters-1.12.0.zip",
-      "sha256": "742db0b70694042b7e5cfcb7d4ab3ad0ef442ce0ab2466226086c0ccc0733716"
+      "sha256": "634af6e44c2d1d204de4738f0ed88a30645c00036d7c8d47fe709d58bc3d5516"
     }
   }
 }
