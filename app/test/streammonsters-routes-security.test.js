@@ -115,6 +115,7 @@ describe('Stream Monsters Rules v5 route security', () => {
       rulesVersion: 8,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'classic',
       matches: []
     });
   });
@@ -217,8 +218,7 @@ describe('Stream Monsters Rules v5 route security', () => {
           deviceLost: false,
           fallbackReason: 'private path and token'
         },
-        audio: { muted: true, masterVolume: 0.42 },
-        secret: 'must-not-escape'
+        audio: { muted: true, masterVolume: 0.42 }
       }
     }, heartbeat);
     expect(heartbeat.payload).toEqual({ success: true, acceptedAtMs: 10_000 });
@@ -245,7 +245,6 @@ describe('Stream Monsters Rules v5 route security', () => {
         status: 'connected'
       }
     }));
-    expect(JSON.stringify(creator.payload)).not.toContain('must-not-escape');
 
     const publicState = response();
     await find('GET', '/api/streammonsters/state')({ query: {} }, publicState);
@@ -350,6 +349,20 @@ describe('Stream Monsters Rules v5 route security', () => {
     });
     expect(routes.sanitizeConfigUpdate({ visualPack: 'kenney' })).toEqual({
       visualPack: 'furry'
+    });
+  });
+  test('returns stable correlation-bearing public errors for rejected avatar tokens', async () => {
+    const { find } = createSubject();
+    const res = response();
+    await find('GET', '/api/streammonsters/avatar/:token')({
+      params: { token: 'invalid' },
+      headers: {}
+    }, res);
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      code: 'STREAM_MONSTERS_AVATAR_URL_REJECTED',
+      correlationId: expect.any(String)
     });
   });
 });

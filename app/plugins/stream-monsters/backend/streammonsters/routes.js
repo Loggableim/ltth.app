@@ -15,7 +15,7 @@ const { V8_RULES_VERSION } = require('./battle-rules-v5');
 const EggStageProjector = require('./egg-stage-projector');
 const {
   avatarUrlFromToken,
-  fetchAvatar
+  fetchCachedAvatar
 } = require('./avatar-proxy');
 const {
   evolutionStatGrant,
@@ -127,6 +127,7 @@ class StreamMonstersRoutes {
     this.adminAuth = createAdminAuth();
     this.assetCatalogCache = null;
     this.overlayHeartbeat = null;
+    this.overlayHeartbeatRequests = new Map();
   }
 
   register() {
@@ -183,15 +184,17 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('GET', '/api/streammonsters/avatar/:token', async (req, res) => {
       const url = avatarUrlFromToken(req.params?.token);
-      if (!url) return res.status(400).json({ error: 'avatar_url_rejected' });
+      if (!url) {
+        return this.sendPublicError(res, 400, 'STREAM_MONSTERS_AVATAR_URL_REJECTED');
+      }
       try {
-        const avatar = await fetchAvatar(url.href);
+        const avatar = await fetchCachedAvatar(url.href);
         res.set('Content-Type', avatar.contentType);
         res.set('Cache-Control', 'public, max-age=300');
         return res.send(avatar.body);
       } catch (error) {
         this.api.log?.(`[STREAM MONSTERS] Avatar proxy rejected: ${error.message}`, 'warn');
-        return res.status(502).json({ error: 'avatar_unavailable' });
+        return this.sendPublicError(res, 502, 'STREAM_MONSTERS_AVATAR_UNAVAILABLE');
       }
     });
     const sendOverlaySources = this.protectAdmin((req, res) => {
@@ -216,8 +219,24 @@ class StreamMonstersRoutes {
       'GET', '/api/streammonsters/overlay-sources', sendOverlaySources
     );
     this.api.registerRoute('POST', '/api/streammonsters/overlay/heartbeat', (req, res) => {
-      const heartbeat = this.recordOverlayHeartbeat(req.body);
-      return res.json({ success: true, acceptedAtMs: heartbeat.lastSeenAtMs });
+      if (this.isCrossSiteMutation(req)) {
+        return this.sendPublicError(res, 403, 'STREAM_MONSTERS_CROSS_SITE_MUTATION_DENIED');
+      }
+      try {
+        this.validateOverlayHeartbeat(req.body);
+      } catch (error) {
+        return this.sendPublicError(res, 400, 'STREAM_MONSTERS_HEARTBEAT_INVALID');
+      }
+      if (!this.consumeOverlayHeartbeatRequest(req)) {
+        return this.sendPublicError(res, 429, 'STREAM_MONSTERS_HEARTBEAT_RATE_LIMITED');
+      }
+      try {
+        const heartbeat = this.recordOverlayHeartbeat(req.body);
+        return res.json({ success: true, acceptedAtMs: heartbeat.lastSeenAtMs });
+      } catch (error) {
+        this.api.log?.(`[STREAM MONSTERS] Public heartbeat rejected: ${error.code || 'invalid'}`, 'warn');
+        return this.sendPublicError(res, 400, 'STREAM_MONSTERS_HEARTBEAT_INVALID');
+      }
     });
     this.api.registerRoute('GET', '/api/streammonsters/state', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
@@ -1201,10 +1220,72 @@ class StreamMonstersRoutes {
   }
 
   protectAdmin(handler) {
-    return (req, res, next) => this.adminAuth(req, res, () => handler(req, res, next));
+    return (req, res, next) => {
+      if (this.isCrossSiteMutation(req)) {
+        return this.sendPublicError(res, 403, 'STREAM_MONSTERS_CROSS_SITE_MUTATION_DENIED');
+      }
+      return this.adminAuth(req, res, () => handler(req, res, next));
+    };
+  }
+
+  sendPublicError(res, status, code) {
+    return res.status(status).json({ success: false, code, correlationId: crypto.randomUUID() });
+  }
+
+  isCrossSiteMutation(req = {}) {
+    const method = String(req.method || 'POST').toUpperCase();
+    if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return false;
+    const headers = req.headers || {};
+    if (String(headers['sec-fetch-site'] || '').toLowerCase() === 'cross-site') return true;
+    const origin = String(headers.origin || '').trim();
+    if (!origin) return false;
+    try {
+      return new URL(origin).host.toLowerCase() !== String(headers.host || '').trim().toLowerCase();
+    } catch (_) {
+      return true;
+    }
+  }
+
+  consumeOverlayHeartbeatRequest(req = {}) {
+    const nowMs = this.now();
+    const address = String(req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown')
+      .replace(/^::ffff:/, '').slice(0, 128);
+    const recent = (this.overlayHeartbeatRequests.get(address) || [])
+      .filter(seenAtMs => nowMs - seenAtMs < 60_000);
+    if (recent.length >= 15) {
+      this.overlayHeartbeatRequests.set(address, recent);
+      return false;
+    }
+    recent.push(nowMs);
+    this.overlayHeartbeatRequests.set(address, recent);
+    return true;
+  }
+
+  validateOverlayHeartbeat(input) {
+    const isRecord = value => value && typeof value === 'object' && !Array.isArray(value);
+    const reject = () => { throw Object.assign(new Error('invalid heartbeat payload'), { code: 'STREAM_MONSTERS_HEARTBEAT_INVALID' }); };
+    const assertKeys = (value, allowed) => {
+      if (!isRecord(value) || Object.keys(value).some(key => !allowed.has(key))) reject();
+    };
+    assertKeys(input, new Set(['layout', 'renderer', 'audio']));
+    if (!['portrait', 'landscape'].includes(input.layout)) reject();
+    if (input.renderer !== undefined) {
+      assertKeys(input.renderer, new Set(['backend', 'quality', 'fps', 'deviceLost', 'fallbackReason']));
+      if ((input.renderer.backend !== undefined && !['webgpu', 'canvas2d', 'css', 'waiting'].includes(input.renderer.backend)) ||
+          (input.renderer.quality !== undefined && !['auto', 'high', 'medium', 'low'].includes(input.renderer.quality)) ||
+          (input.renderer.fps !== undefined && (!Number.isFinite(input.renderer.fps) || input.renderer.fps < 0 || input.renderer.fps > 240)) ||
+          (input.renderer.deviceLost !== undefined && typeof input.renderer.deviceLost !== 'boolean') ||
+          (input.renderer.fallbackReason !== undefined && typeof input.renderer.fallbackReason !== 'string')) reject();
+    }
+    if (input.audio !== undefined) {
+      assertKeys(input.audio, new Set(['muted', 'masterVolume']));
+      if ((input.audio.muted !== undefined && typeof input.audio.muted !== 'boolean') ||
+          (input.audio.masterVolume !== undefined && (!Number.isFinite(input.audio.masterVolume) || input.audio.masterVolume < 0 || input.audio.masterVolume > 1))) reject();
+    }
   }
 
   recordOverlayHeartbeat(input = {}) {
+    this.validateOverlayHeartbeat(input);
     const allowedBackends = new Set(['webgpu', 'canvas2d', 'css', 'waiting']);
     const allowedQualities = new Set(['auto', 'high', 'medium', 'low']);
     const allowedLayouts = new Set(['portrait', 'landscape']);

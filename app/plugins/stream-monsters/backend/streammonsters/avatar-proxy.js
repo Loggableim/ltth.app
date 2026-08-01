@@ -134,9 +134,71 @@ async function fetchAvatar(value, {
   }
 }
 
+function createCachedAvatarFetcher({
+  fetchImpl = global.fetch,
+  now = () => Date.now(),
+  ttlMs = 300_000,
+  maxEntries = 512,
+  maxConcurrent = 4,
+  timeoutMs = TIMEOUT_MS,
+  maximumBytes = MAX_BYTES
+} = {}) {
+  const cache = new Map();
+  const inFlight = new Map();
+  const queue = [];
+  const boundedEntries = Math.max(1, Math.min(512, Number(maxEntries) || 512));
+  const boundedConcurrency = Math.max(1, Math.min(4, Number(maxConcurrent) || 4));
+  let active = 0;
+  const drain = () => {
+    while (active < boundedConcurrency && queue.length) {
+      const next = queue.shift();
+      active += 1;
+      let operationResult;
+      try {
+        operationResult = next.operation();
+      } catch (error) {
+        operationResult = Promise.reject(error);
+      }
+      Promise.resolve(operationResult).then(next.resolve, next.reject).finally(() => {
+        active -= 1;
+        drain();
+      });
+    }
+  };
+  const schedule = operation => new Promise((resolve, reject) => {
+    queue.push({ operation, resolve, reject });
+    drain();
+  });
+  return value => {
+    const url = parseAllowedAvatarUrl(value);
+    if (!url) return Promise.reject(new Error('STREAM_MONSTERS_AVATAR_URL_REJECTED'));
+    const key = url.href;
+    const cached = cache.get(key);
+    if (cached && cached.expiresAtMs > now()) {
+      cache.delete(key);
+      cache.set(key, cached);
+      return Promise.resolve(cached.avatar);
+    }
+    cache.delete(key);
+    if (inFlight.has(key)) return inFlight.get(key);
+    const request = schedule(() => fetchAvatar(key, { fetchImpl, timeoutMs, maximumBytes }))
+      .then(avatar => {
+        cache.set(key, { avatar, expiresAtMs: now() + ttlMs });
+        while (cache.size > boundedEntries) cache.delete(cache.keys().next().value);
+        return avatar;
+      })
+      .finally(() => inFlight.delete(key));
+    inFlight.set(key, request);
+    return request;
+  };
+}
+
+const fetchCachedAvatar = createCachedAvatarFetcher();
 module.exports = {
   avatarProxyReference,
   avatarUrlFromToken,
   fetchAvatar,
+  fetchCachedAvatar,
+  createCachedAvatarFetcher,
   parseAllowedAvatarUrl
 };

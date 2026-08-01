@@ -195,7 +195,7 @@ function collectStreamMonstersManifestDependencies({ appRoot }) {
   const pluginDir = path.join(
     path.resolve(appRoot),
     'plugins',
-    'streamalchemy'
+    'stream-monsters'
   );
   const dependencies = [
     ...collectAudioDependencies(pluginDir),

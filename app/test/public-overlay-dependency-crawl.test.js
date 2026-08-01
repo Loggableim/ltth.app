@@ -52,13 +52,13 @@ const surfaceSources = [
   'plugins/spotlight/overlays/single-overlay.js',
   'plugins/spotlight/overlays/multihud.html',
   'plugins/spotlight/overlays/multihud.js',
-  'plugins/streamalchemy/streammonsters-overlay.html',
-  'plugins/streamalchemy/streammonsters-effects-renderer.js',
-  'plugins/streamalchemy/streammonsters-overlay-runtime.js',
-  'plugins/streamalchemy/streammonsters-arena-director.js',
-  'plugins/streamalchemy/streammonsters-audio-engine.js',
-  'plugins/streamalchemy/streammonsters-arena-view.js',
-  'plugins/streamalchemy/streammonsters-chat-view.js',
+  'plugins/stream-monsters/streammonsters-overlay.html',
+  'plugins/stream-monsters/streammonsters-effects-renderer.js',
+  'plugins/stream-monsters/streammonsters-overlay-runtime.js',
+  'plugins/stream-monsters/streammonsters-arena-director.js',
+  'plugins/stream-monsters/streammonsters-audio-engine.js',
+  'plugins/stream-monsters/streammonsters-arena-view.js',
+  'plugins/stream-monsters/streammonsters-chat-view.js',
   'plugins/stt-ticker/overlay/ticker.html',
   'plugins/talking-heads/overlay.html',
   'plugins/talking-heads/assets/overlay.js',
@@ -183,7 +183,7 @@ describe('registered overlay dependency crawl', () => {
     ]);
     expect(allowedNonReads).toEqual([
       {
-        source: 'plugins/streamalchemy/streammonsters-overlay.html',
+        source: 'plugins/stream-monsters/streammonsters-overlay.html',
         method: 'POST',
         pathname: '/api/streammonsters/overlay/heartbeat'
       }

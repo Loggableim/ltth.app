@@ -163,6 +163,9 @@ const HTTP_RULES = Object.freeze([
 
   rule(['GET', 'HEAD'], exact('/api/streammonsters/state')),
   rule(['GET', 'HEAD'], exact('/api/stream-monsters/state')),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/avatar\/[A-Za-z0-9_-]{16,1024}$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/stream-monsters\/avatar\/[A-Za-z0-9_-]{16,1024}$/)),
+
   rule(['GET', 'HEAD'], exact('/api/streammonsters/battle-state')),
   rule(['GET', 'HEAD'], exact('/api/stream-monsters/battle-state')),
   rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/battles\/[A-Za-z0-9_-]+\/replay$/)),
@@ -171,8 +174,8 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/api\/stream-monsters\/art\/kenney-[a-f0-9]{16}\.svg$/)),
   rule(['POST'], exact('/api/streammonsters/overlay/heartbeat')),
   rule(['POST'], exact('/api/stream-monsters/overlay/heartbeat')),
-  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
-  rule(['GET', 'HEAD'], pattern(/^\/plugins\/stream-monsters\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|portrait-arena|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/stream-monsters\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|portrait-arena|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/streammonsters-egg-stage-view.js')),
   rule(['GET', 'HEAD'], exact('/plugins/stream-monsters/streammonsters-egg-stage-view.js')),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/locales\/(?:de|en|es|fr)\.json$/)),
@@ -462,6 +465,7 @@ streammonsters:battle_skill_prompt
 streammonsters:battle_skill_used
 streammonsters:battle_special_charged
 streammonsters:battle_started
+streammonsters:config_updated
 streammonsters:chat_result
 streammonsters:egg_boosted
 streammonsters:egg_expired
