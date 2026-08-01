@@ -286,6 +286,22 @@ class StreamMonstersDatabase {
       CREATE INDEX IF NOT EXISTS streammonsters_free_egg_events_stream
         ON streammonsters_free_egg_events(stream_key, created_at_ms);
 
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_retention (
+        user_id TEXT PRIMARY KEY,
+        last_active_at_ms INTEGER NOT NULL,
+        archived_at_ms INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_viewer_retention_due
+        ON streammonsters_viewer_retention(last_active_at_ms, archived_at_ms);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_archives (
+        user_id TEXT PRIMARY KEY, archived_at_ms INTEGER NOT NULL, purged_at_ms INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_free_egg_cooldowns (
+        user_id TEXT PRIMARY KEY, expires_at_ms INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS streammonsters_viewer_identities (
         platform_user_id TEXT PRIMARY KEY,
         canonical_user_id TEXT NOT NULL UNIQUE,
@@ -1368,6 +1384,17 @@ class StreamMonstersDatabase {
       userId,
       userId
     ));
+  }
+
+  touchViewerRetention(userId, nowMs = Date.now()) {
+    const id = String(userId || '').trim();
+    if (!id) return false;
+    this.db.prepare(`
+      INSERT INTO streammonsters_viewer_retention (user_id, last_active_at_ms, archived_at_ms)
+      VALUES (?, ?, NULL)
+      ON CONFLICT(user_id) DO UPDATE SET last_active_at_ms = excluded.last_active_at_ms, archived_at_ms = NULL
+    `).run(id, Number(nowMs) || Date.now());
+    return true;
   }
 
   getStarterClaim(userId) {

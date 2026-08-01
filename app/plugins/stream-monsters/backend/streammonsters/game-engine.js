@@ -6,6 +6,10 @@ const { safeAssetReference } = EggStageProjector;
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
 const ACTIVE_INCUBATOR_SLOTS = 3;
+const MAX_GIFT_REPEAT_COUNT = 10_000;
+const MAX_NORMAL_GIFT_REPEATS = 250;
+const OVERFLOW_REPEATS_PER_ESSENCE = 25;
+const MAX_OVERFLOW_ESSENCE = 30;
 
 const MONSTER_NAMES = [
   'Fizzlet', 'Mossbit', 'Crystaroo', 'Nimblet', 'Pebblin', 'Glowmunk',
@@ -122,6 +126,36 @@ class StreamMonstersEngine {
     return this.store.runInTransaction(() => this.processGiftAtomic(input));
   }
 
+  processGiftBatch(input = {}) {
+    const repeatCount = Number(input.repeatCount ?? 1);
+    if (!Number.isSafeInteger(repeatCount) || repeatCount < 1 || repeatCount > MAX_GIFT_REPEAT_COUNT) {
+      throw new Error('STREAM_MONSTERS_GIFT_REPEAT_COUNT_INVALID');
+    }
+    const normalRepeatCount = Math.min(repeatCount, MAX_NORMAL_GIFT_REPEATS);
+    const overflowEssence = Math.min(MAX_OVERFLOW_ESSENCE, Math.floor(
+      Math.max(0, repeatCount - MAX_NORMAL_GIFT_REPEATS) / OVERFLOW_REPEATS_PER_ESSENCE
+    ));
+    return this.store.runInTransaction(() => {
+      let processedCount = 0;
+      for (let index = 0; index < normalRepeatCount; index += 1) {
+        const result = this.processGiftAtomic({
+          ...input,
+          eventKey: input.eventKey ? `${input.eventKey}:repeat-${index + 1}` : null
+        });
+        if (result.type !== 'duplicate') processedCount += 1;
+      }
+      if (overflowEssence > 0) {
+        const gift = this.describeGift(input);
+        const element = gift.element === 'Random'
+          ? ELEMENTS[this.hashNumber(`${input.eventKey || ''}:${input.userId}:${input.giftId}:overflow`) % ELEMENTS.length]
+          : gift.element;
+        this.collection?.addEssence?.(input.userId, element, overflowEssence,
+          `gift-overflow:${input.eventKey || `${input.userId}:${input.giftId}:${repeatCount}`}`);
+      }
+      return { processedCount, normalRepeatCount, overflowEssence, duplicate: processedCount === 0 };
+    });
+  }
+
   processGiftAtomic({
     userId,
     displayName = null,
@@ -133,6 +167,7 @@ class StreamMonstersEngine {
   }) {
     if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
     const createdAtMs = this.now();
+    this.store.touchViewerRetention?.(userId, createdAtMs);
     const normalizedEventKey = eventKey ? String(eventKey) : null;
     if (
       normalizedEventKey &&
@@ -663,5 +698,7 @@ class StreamMonstersEngine {
 }
 
 module.exports = StreamMonstersEngine;
+module.exports.MAX_GIFT_REPEAT_COUNT = MAX_GIFT_REPEAT_COUNT;
+module.exports.MAX_NORMAL_GIFT_REPEATS = MAX_NORMAL_GIFT_REPEATS;
 module.exports.ELEMENTS = ELEMENTS;
 module.exports.EGG_COLORS = EGG_COLORS;

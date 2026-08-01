@@ -1961,6 +1961,11 @@ class StreamMonstersPlugin {
     return `${source}:stable:${fingerprint}`;
   }
 
+  normalizeGiftRepeatCount(value) {
+    const count = Number(value);
+    return Number.isSafeInteger(count) && count >= 1 && count <= 10_000 ? count : null;
+  }
+
   async handleStreamMonstersGift(data = {}) {
     const correlationId = randomUUID();
     const userId = this.resolveStreamMonstersViewerId({
@@ -1970,7 +1975,11 @@ class StreamMonstersPlugin {
     const giftId = Number.parseInt(data.giftId, 10);
     const giftName = data.giftName || data.name;
     const coinValue = Number.parseInt(data.diamondCount ?? data.coins ?? 0, 10) || 0;
-    const repeatCount = Math.max(Number.parseInt(data.repeatCount || 1, 10) || 1, 1);
+    const repeatCount = this.normalizeGiftRepeatCount(data.repeatCount ?? 1);
+    if (repeatCount === null) {
+      this.logStructured('gift_ignored', { correlationId, viewerId: userId, status: 'invalid_repeat_count' }, 'warn');
+      return;
+    }
     if (!userId || !giftId || !giftName) {
       this.logStructured('gift_ignored', {
         correlationId,
@@ -2016,23 +2025,17 @@ class StreamMonstersPlugin {
         );
       }
     }
-    let processedCount = 0;
-    for (let index = 0; index < repeatCount; index += 1) {
-      const result = this.streamMonstersEngine.processGift({
-        userId,
-        displayName: this.streamMonstersViewerDisplayName(data, userId),
-        avatarRef: this.streamMonstersViewerAvatarRef(data),
-        giftId,
-        giftName,
-        coinValue,
-        eventKey: eventPrefix ? `${eventPrefix}:repeat-${index + 1}` : null
-      });
-      if (result.type !== 'duplicate') processedCount += 1;
-    }
+    const result = this.streamMonstersEngine.processGiftBatch({
+      userId,
+      displayName: this.streamMonstersViewerDisplayName(data, userId),
+      avatarRef: this.streamMonstersViewerAvatarRef(data),
+      giftId, giftName, coinValue, repeatCount, eventKey: eventPrefix || null
+    });
     this.logStructured('gift_processed', {
       correlationId,
       viewerId: userId,
-      count: processedCount
+      count: result.processedCount,
+      overflowEssence: result.overflowEssence
     });
   }
 
