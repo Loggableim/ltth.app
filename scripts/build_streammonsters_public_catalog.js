@@ -17,7 +17,7 @@ function readRulesVersion(repoRoot) {
     repoRoot,
     'app',
     'plugins',
-    'streamalchemy',
+    'stream-monsters',
     'backend',
     'streammonsters',
     'battle-rules-v8.js'
@@ -35,7 +35,7 @@ function readMonsterLocales(repoRoot) {
       repoRoot,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'locales',
       `${locale}.json`
     );
@@ -105,7 +105,7 @@ function buildPublicCatalog({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
     resolvedRepoRoot,
     'app',
     'plugins',
-    'streamalchemy',
+    'stream-monsters',
     'backend',
     'streammonsters',
     'catalog.js'

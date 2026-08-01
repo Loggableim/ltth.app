@@ -4,10 +4,10 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const catalog = require(
-  '../plugins/streamalchemy/backend/streammonsters/catalog'
+  '../plugins/stream-monsters/backend/streammonsters/catalog'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const {
   buildPublicCatalog
@@ -77,7 +77,7 @@ function monsterLocales() {
       REPO_ROOT,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'locales',
       `${locale}.json`
     ), 'utf8'));
@@ -97,7 +97,7 @@ function renderPublicGuide(locale) {
   });
   for (const relativePath of [
     'js/streammonsters-catalog.generated.js',
-    'app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js',
+    'app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js',
     'js/streammonsters-guide.js'
   ]) {
     dom.window.eval(fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8'));
@@ -118,15 +118,15 @@ describe('Stream Monsters 1.12 Season 1 catalog contract', () => {
 
     catalog.TEMPLATE_CATALOG.forEach(template => {
       expect(template.assetPath).toBe(
-        `/plugins/streamalchemy/assets/streammonsters/furry/` +
+        `/plugins/stream-monsters/assets/streammonsters/furry/` +
         `${template.templateId}.webp`
       );
       expect(catalog.getEvolutionAssetPath(template, 2)).toBe(
-        `/plugins/streamalchemy/assets/streammonsters/furry/evolution/` +
+        `/plugins/stream-monsters/assets/streammonsters/furry/evolution/` +
         `${template.element.toLowerCase()}/${template.templateId}-stage2.webp`
       );
       expect(catalog.getEvolutionAssetPath(template, 3)).toBe(
-        `/plugins/streamalchemy/assets/streammonsters/furry/evolution/` +
+        `/plugins/stream-monsters/assets/streammonsters/furry/evolution/` +
         `${template.element.toLowerCase()}/${template.templateId}-stage3.webp`
       );
     });
@@ -233,7 +233,7 @@ describe('Stream Monsters 1.12 Season 1 catalog contract', () => {
       REPO_ROOT,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-ui.html'
     ), 'utf8');
     const document = new JSDOM(creatorHtml).window.document;

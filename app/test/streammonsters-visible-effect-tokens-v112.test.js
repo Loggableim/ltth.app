@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const expected = Object.freeze({
   arenaEffectDamage: 'DMG {power}',
   arenaEffectShield: 'SHIELD {power}',
