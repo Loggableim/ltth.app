@@ -44,7 +44,9 @@
     'monster_stat_prompt',
     'monster_discovered',
     'monster_evolved',
-    'monster_visual_evolved'
+    'monster_visual_evolved',
+    'mastery_unlocked',
+    'stream_mission_completed'
   ]);
   const COALESCED_TYPES = new Set(['hype_changed', 'chat_result']);
   const EGG_STAGE_TYPES = new Set([
@@ -81,7 +83,8 @@
     'monster_stat_auto_assigned',
     'arena_rating_changed',
     'quest_completed',
-    'achievement_unlocked'
+    'achievement_unlocked',
+    'collection_shown'
   ]);
   const REPLAYABLE_RECENT_TYPES = new Set([
     ...CRITICAL_TYPES,
@@ -96,7 +99,10 @@
     'arena_rating_changed',
     'win_streak',
     'upset',
-    'rivalry'
+    'rivalry',
+    'collection_shown',
+    'mastery_unlocked',
+    'stream_mission_completed'
   ]);
   const RECENT_TYPE_ALIASES = Object.freeze({
     season_rank_changed: 'rank_card',
@@ -646,13 +652,17 @@
   function createPriorityQueue({
     maxSize = 30,
     staleAfterMs = 10000,
-    criticalGroupHoldMs = 1200
+    criticalGroupHoldMs = 1200,
+    maxCriticalOverflow = 20
   } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
+    const boundedCriticalOverflow = Math.max(0, Number(maxCriticalOverflow) || 0);
+    const criticalLimit = boundedMaxSize + boundedCriticalOverflow;
     const maxFingerprintCount = Math.max(64, boundedMaxSize * 4);
     const seenFingerprints = new Map();
     let snapshotEvent = null;
+    let resyncPending = false;
     let sequence = 0;
     let activeGroupKey = null;
     let activeGroupDeadlineMs = 0;
@@ -662,7 +672,7 @@
     let activeGroupBattleId = null;
 
     function priority(type, data = {}) {
-      if (type === 'state_snapshot') return 4;
+      if (type === 'state_snapshot' || type === 'state_resync_required') return 4;
       if (CRITICAL_TYPES.has(type)) return 3;
       if (type === 'chat_result' && data?.result?.status === 'egg_not_ready') return 2;
       return DURABLE_TYPES.has(type) ? 2 : 1;
@@ -863,7 +873,24 @@
       }
     }
 
+    function compactCriticalOverflow(enqueuedAt) {
+      if (resyncPending) return;
+      resyncPending = true;
+      entries.length = 0;
+      entries.push({
+        type: 'state_resync_required',
+        data: { reason: 'critical_overflow' },
+        enqueuedAt,
+        priority: priority('state_resync_required'),
+        sequence: sequence += 1,
+        groupKey: null,
+        fingerprint: null,
+        coalescingKey: null
+      });
+    }
+
     function enqueue(type, data, enqueuedAt = Date.now()) {
+      if (resyncPending) return false;
       const semanticKey = coalescingKey(type, data);
       const targetGroupKey = groupKey(type, data);
       const fingerprint = eventFingerprint(type, data, targetGroupKey, semanticKey);
@@ -889,6 +916,9 @@
         coalescingKey: semanticKey
       });
       trim();
+      if (entries.filter(entry => entry.priority === 3).length > criticalLimit) {
+        compactCriticalOverflow(enqueuedAt);
+      }
       return true;
     }
 
@@ -971,6 +1001,7 @@
     function beginSnapshot() {
       snapshotEvent = null;
       entries.length = 0;
+      resyncPending = false;
       seenFingerprints.clear();
       activeGroupKey = null;
       activeGroupBattleId = null;

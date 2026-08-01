@@ -891,6 +891,10 @@
   let catalogOffset = 0;
   let catalogQuery = '';
   let catalogTotal = 0;
+  let catalogAbortController = null;
+  let catalogRequestSequence = 0;
+  let viewerAbortController = null;
+  let viewerRequestSequence = 0;
   let currentGcceState = {};
   let currentLiveStatus = {};
   let currentCreatorState = {};
@@ -1051,15 +1055,26 @@
     root.replaceChildren(giftRow(gift));
   };
   const loadCatalog = async (query = '', { append = false } = {}) => {
+    const requestSequence = ++catalogRequestSequence;
+    catalogAbortController?.abort();
+    catalogAbortController = new AbortController();
     const normalizedQuery = String(query || '').trim();
     if (!append || normalizedQuery !== catalogQuery) {
       catalogQuery = normalizedQuery;
       catalogOffset = 0;
     }
-    const payload = await request(
-      `/api/streammonsters/gift-catalog?q=${encodeURIComponent(catalogQuery)}` +
-      `&offset=${catalogOffset}&limit=${CATALOG_PAGE_SIZE}`
-    );
+    let payload;
+    try {
+      payload = await request(
+        `/api/streammonsters/gift-catalog?q=${encodeURIComponent(catalogQuery)}` +
+        `&offset=${catalogOffset}&limit=${CATALOG_PAGE_SIZE}`,
+        { signal:catalogAbortController.signal }
+      );
+    } catch (error) {
+      if (requestSequence !== catalogRequestSequence) return null;
+      throw error;
+    }
+    if (requestSequence !== catalogRequestSequence) return null;
     catalogTotal = Number(payload.total) || 0;
     byId('catalogTotal').textContent = catalogTotal;
     const root = byId('giftCatalog');
@@ -1068,6 +1083,7 @@
     catalogOffset += (payload.gifts || []).length;
     byId('giftCatalogMore').hidden = catalogOffset >= catalogTotal;
     if (!root.children.length) root.textContent = text('noGifts', 'Keine Geschenke gefunden.');
+    return payload;
   };
   const loadMappings = async () => {
     const payload = await request('/api/streammonsters/gift-mappings');
@@ -1529,7 +1545,7 @@
       return summary;
     }
   };
-  const loadMonsterCatalog = async (userId = '') => {
+  const loadMonsterCatalog = async (userId = '', options = {}) => {
     const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
     const route = userId
       ? '/api/streammonsters/creator-catalog'
@@ -1540,10 +1556,22 @@
   };
   const loadViewer = async () => {
     const userId = byId('viewerSearch').value.trim();
-    if (!userId) return;
-    const payload = await request(`/api/streammonsters/creator-state?userId=${encodeURIComponent(userId)}`);
-    renderViewer(payload.viewer || {});
-    await loadMonsterCatalog(userId);
+    if (!userId) return null;
+    const requestSequence = ++viewerRequestSequence;
+    viewerAbortController?.abort();
+    viewerAbortController = new AbortController();
+    const options = { signal:viewerAbortController.signal };
+    let payload;
+    try {
+      payload = await request(`/api/streammonsters/creator-state?userId=${encodeURIComponent(userId)}`, options);
+      if (requestSequence !== viewerRequestSequence) return null;
+      renderViewer(payload.viewer || {});
+      await loadMonsterCatalog(userId, options);
+    } catch (error) {
+      if (requestSequence !== viewerRequestSequence) return null;
+      throw error;
+    }
+    return requestSequence === viewerRequestSequence ? payload : null;
   };
   const renderLeaderboard = (entries, { targetId, type }) => {
     const root = byId(targetId);
@@ -2114,6 +2142,8 @@
   window.addEventListener('pagehide', () => {
     clearInterval(liveCountdownTimer);
     clearInterval(liveStateRefreshTimer);
+    catalogAbortController?.abort();
+    viewerAbortController?.abort();
   }, { once:true });
   if (window.i18n?.onLanguageChange) {
     window.i18n.onLanguageChange(() => {

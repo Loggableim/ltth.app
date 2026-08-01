@@ -3527,6 +3527,18 @@
     };
   };
   const present = async ({ type, data }) => {
+    if (type === 'state_resync_required') {
+      const reconnectCycle = beginReconnectEggSnapshot(
+        reconnectController.generation() + 1
+      );
+      snapshotReady = false;
+      const completed = await reconnectController.reconnect();
+      if (reconnectCycle !== activeReconnectCycle) return;
+      snapshotReady = reconnectController.isSnapshotReady();
+      if (completed) finishReconnectEggSnapshot(reconnectCycle);
+      else clearReconnectEggSnapshot(reconnectCycle);
+      return;
+    }
     if (type === 'state_snapshot') {
       const reconnectCycle = reconnectSnapshotCycles.get(data) || activeReconnectCycle;
       if (reconnectCycle !== activeReconnectCycle) return;
@@ -3745,6 +3757,29 @@
       data,
       showHatchReveal(data)
     );
+    if (type === 'collection_shown') return showCard({
+      kicker:text('collectionShownKicker', 'Collection'),
+      title:text('collectionShownTitle', '{count} Monster im Streamdex', {
+        count:Array.isArray(data?.cards) ? data.cards.length : 0
+      }),
+      subtitle:text('collectionShownCopy', 'Die aktuelle Sammlung ist jetzt im Stream sichtbar.'),
+      progress:100,
+      charged:Boolean(data?.rotate)
+    });
+    if (type === 'mastery_unlocked') return showCriticalCard(type, data, () => ({
+      kicker:text('masteryUnlockedKicker', 'Meisterschaft freigeschaltet'),
+      title:text('masteryUnlockedTitle', '{unlock}', { unlock:value(data?.unlock, 'Mastery') }),
+      subtitle:text('masteryUnlockedCopy', 'Ein neuer Sammlerbonus ist aktiv.'),
+      progress:100
+    }), { duration:8_000, charged:true, cue:'progress.level' });
+    if (type === 'stream_mission_completed') return showCriticalCard(type, data, () => ({
+      kicker:text('streamMissionKicker', 'Stream-Mission geschafft'),
+      title:text('streamMissionTitle', '{mission}', {
+        mission:value(data?.mission?.mission_key, 'Mission').replaceAll('_', ' ')
+      }),
+      subtitle:text('streamMissionCopy', 'Die Community-Belohnung wurde freigeschaltet.'),
+      progress:100
+    }), { duration:8_000, charged:true, cue:'win' });
     if (type === 'monster_discovered') return presentArcadeScene(
       type,
       data,
@@ -4313,6 +4348,9 @@
     'streammonsters:egg_stage_updated':'egg_stage_updated',
     'streammonsters:hatch_started':'hatch_started',
     'streammonsters:egg_hatched':'egg_hatched',
+    'streammonsters:collection_shown':'collection_shown',
+    'streammonsters:mastery_unlocked':'mastery_unlocked',
+    'streammonsters:stream_mission_completed':'stream_mission_completed',
     'streammonsters:monster_discovered':'monster_discovered',
     'streammonsters:monster_evolved':'monster_evolved',
     'streammonsters:monster_visual_evolved':'monster_visual_evolved',

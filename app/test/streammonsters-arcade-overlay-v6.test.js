@@ -8,6 +8,7 @@ const ArenaView = require('../plugins/stream-monsters/streammonsters-arena-view'
 const EggStageView = require('../plugins/stream-monsters/streammonsters-egg-stage-view');
 const AudioEngine = require('../plugins/stream-monsters/streammonsters-audio-engine');
 const OverlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const PublicEventProjector = require(
   '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
@@ -763,7 +764,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -835,7 +836,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     expect(dom.window.document.querySelectorAll('.arcade-crack')).toHaveLength(3);
   });
 
-  test('keeps every critical correlation group intact under overload', () => {
+  test('compacts critical overload into one resync sentinel at the configured bound', () => {
     const queue = OverlayRuntime.createPriorityQueue({ maxSize: 2, maxCriticalOverflow: 0 });
     queue.enqueue('chat_result', { eventId: 'chat-1' }, 1);
     const types = [
@@ -852,11 +853,36 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
       correlationId: 'critical-flow-1'
     }, index + 2));
 
-    const critical = queue.snapshot().filter(entry => entry.priority === 3);
-    expect(critical).toHaveLength(types.length);
-    expect(critical.map(entry => entry.type)).toEqual(types);
-    expect(new Set(critical.map(entry => entry.groupKey)))
-      .toEqual(new Set(['critical:critical-flow-1']));
+    const snapshot = queue.snapshot();
+    expect(snapshot).toHaveLength(1);
+    expect(snapshot[0]).toEqual(expect.objectContaining({
+      type: 'state_resync_required',
+      data: expect.objectContaining({ reason: 'critical_overflow' })
+    }));
+    expect(queue.size()).toBeLessThanOrEqual(3);
+  });
+
+  test('uses abortable, sequence-guarded catalog and viewer requests', () => {
+    const ui = fs.readFileSync(path.join(
+      __dirname, '..', 'plugins', 'stream-monsters', 'streammonsters-ui.html'
+    ), 'utf8');
+
+    expect(ui).toContain('new AbortController()');
+    expect(ui).toContain('catalogRequestSequence');
+    expect(ui).toContain('viewerRequestSequence');
+    expect(ui).toContain('signal:catalogAbortController.signal');
+    expect(ui).toContain('signal:viewerAbortController.signal');
+  });
+
+  test('registers collection, mastery and mission events for live delivery', () => {
+    const html = fs.readFileSync(path.join(
+      __dirname, '..', 'plugins', 'stream-monsters', 'streammonsters-overlay.html'
+    ), 'utf8');
+
+    for (const type of ['collection_shown', 'mastery_unlocked', 'stream_mission_completed']) {
+      expect(html).toContain(`'streammonsters:${type}':'${type}'`);
+      expect(html).toContain(`type === '${type}'`);
+    }
   });
 
   test('holds a staggered critical group until its finale and releases it on timeout', () => {
@@ -904,7 +930,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const socketHandlers = new Map();
@@ -945,6 +971,7 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
           };
         });
         window.StreamMonstersOverlayRuntime = OverlayRuntime;
+        window.StreamMonstersPresentation = Presentation;
         window.StreamMonstersEffectsRenderer = {
           createEffectsRenderer: () => ({
             init: () => {},

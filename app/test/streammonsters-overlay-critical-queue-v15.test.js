@@ -126,7 +126,7 @@ describe('Stream Monsters public critical overlay queue', () => {
     );
   });
 
-  test('retains every critical group under overload and evicts only noncritical work', () => {
+  test('caps critical overflow and emits one resync sentinel', () => {
     const queue = runtime.createPriorityQueue({
       maxSize: 3,
       maxCriticalOverflow: 0
@@ -156,17 +156,24 @@ describe('Stream Monsters public critical overlay queue', () => {
 
     const snapshot = queue.snapshot();
     expect(snapshot[0]).toEqual(expect.objectContaining({ type: 'state_snapshot' }));
-    expect(snapshot.slice(1).map(({ type, groupKey }) => ({ type, groupKey })))
-      .toEqual(expected);
-    expect(snapshot.some(entry => entry.priority < 3)).toBe(false);
-    expect(queue.size()).toBe(1 + expected.length);
+    expect(snapshot.slice(1)).toEqual([
+      expect.objectContaining({
+        type: 'state_resync_required',
+        data: expect.objectContaining({ reason: 'critical_overflow' })
+      })
+    ]);
+    expect(queue.size()).toBeLessThanOrEqual(2);
+  });
 
-    const drained = [];
-    for (let entry = queue.shift(101); entry; entry = queue.shift(101)) {
-      drained.push({ type: entry.type, groupKey: entry.groupKey });
-    }
-    expect(drained[0].type).toBe('state_snapshot');
-    expect(drained.slice(1)).toEqual(expected);
+  test('replays collection, mastery and mission completion after a reconnect', () => {
+    const replay = runtime.replayableRecentEvents({ recentEvents: [
+      { sequence: 1, type: 'streammonsters:collection_shown', payload: { cards: [] } },
+      { sequence: 2, type: 'streammonsters:mastery_unlocked', payload: { unlock: 'palette' } },
+      { sequence: 3, type: 'streammonsters:stream_mission_completed', payload: { mission: { mission_key: 'six_hatches' } } }
+    ] });
+    expect(replay.map(event => event.type)).toEqual([
+      'collection_shown', 'mastery_unlocked', 'stream_mission_completed'
+    ]);
   });
 
   test('normalizes planned battle aliases before queue dedupe to render one logical event', () => {
