@@ -206,6 +206,22 @@ describe('Stream Monsters 1.12 shared presentation contract', () => {
     }
   });
 
+
+  test('rejects an audio owner whose layer is off in every profile', () => {
+    const presentation = Presentation.createDefaultPresentation();
+    presentation.audioOwner = 'arena';
+    for (const profileId of PROFILE_IDS) {
+      presentation.profiles[profileId].layers.arena.mode = 'off';
+    }
+
+    expect(Presentation.validatePresentation(presentation)).toEqual(expect.objectContaining({
+      valid: false,
+      errors: expect.arrayContaining([
+        expect.objectContaining({ code: 'audio_owner_inactive', audioOwner: 'arena' })
+      ])
+    }));
+  });
+
   test('validates overlay view/profile and keeps the unchanged composite URL valid', () => {
     expect(Presentation.parseOverlayQuery('')).toEqual({ view: 'full', profile: null });
     expect(Presentation.parseOverlayQuery('?view=egg-rail&profile=portrait-720'))
@@ -332,5 +348,42 @@ describe('Stream Monsters 1.12 presentation routes and markup', () => {
     expect(overlayHtml).toContain('data-sm-layer="egg-rail"');
     expect(overlayHtml).toContain('font-family:ui-monospace');
     expect(overlayHtml).toContain('phaseObserver.disconnect()');
+  });
+
+  test('isolates every active visual surface into its configured OBS layer', () => {
+    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const overlay = new JSDOM(fs.readFileSync(
+      path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8'
+    )).window.document;
+    const expectedLayerById = {
+      'effects-canvas': 'arena',
+      'arcade-choreography': 'arena',
+      'reveal-stage': 'notifications',
+      'arena-stat-card': 'primary-cta',
+      'hatch-reveal': 'reveal'
+    };
+
+    for (const [id, layerId] of Object.entries(expectedLayerById)) {
+      expect(overlay.getElementById(id)?.dataset.smLayer).toBe(layerId);
+    }
+
+    const presentation = Presentation.createDefaultPresentation();
+    for (const profileId of PROFILE_IDS) {
+      for (const layerId of LAYER_IDS) {
+        presentation.profiles[profileId].layers[layerId].mode = 'dedicated';
+      }
+      for (const view of LAYER_IDS) {
+        Presentation.applyPresentation({
+          document: overlay,
+          presentation,
+          profile: profileId,
+          view
+        });
+        for (const [id, layerId] of Object.entries(expectedLayerById)) {
+          expect(overlay.getElementById(id).dataset.presentationExcluded)
+            .toBe(String(layerId !== view));
+        }
+      }
+    }
   });
 });

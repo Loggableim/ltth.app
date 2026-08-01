@@ -189,6 +189,13 @@
         errors.push({ code: 'profile_missing', profileId: currentProfileId });
         continue;
       }
+      if (input.audioOwner !== 'full' && profile.layers?.[input.audioOwner]?.mode === 'off') {
+        errors.push({
+          code: 'audio_owner_inactive',
+          audioOwner: input.audioOwner,
+          profileId: currentProfileId
+        });
+      }
       for (const safeZoneId of SAFE_ZONE_IDS) {
         if (!validateRect(profile.safeZones?.[safeZoneId])) {
           errors.push({

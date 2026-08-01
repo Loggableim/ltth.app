@@ -1968,8 +1968,8 @@
   <div id="phase-announcer" data-sm-announcer role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="critical-status-announcer" data-sm-announcer role="alert" aria-live="assertive" aria-atomic="true"></div>
   <section id="portrait-arena" data-arena-variant="classic">
-  <canvas id="effects-canvas" aria-hidden="true"></canvas>
-  <section id="arcade-choreography" aria-hidden="true">
+  <canvas id="effects-canvas" data-sm-layer="arena" aria-hidden="true"></canvas>
+  <section id="arcade-choreography" data-sm-layer="arena" aria-hidden="true">
     <div id="arcade-portal"></div>
     <div id="arcade-roulette"></div>
     <div id="arcade-energy"></div>
@@ -1983,7 +1983,7 @@
   <img id="brand" data-sm-layer="branding" src="/plugins/stream-monsters/assets/branding/stream-monsters-logo.png" alt="">
   <div id="hype" data-sm-layer="hype" style="--hype:0%"><span id="hype-value">0%</span></div>
   <div id="toast" data-sm-layer="notifications"></div>
-  <div id="reveal-stage" data-layout="landscape" data-anchor="bottom-center" data-scale="100">
+  <div id="reveal-stage" data-sm-layer="notifications" data-layout="landscape" data-anchor="bottom-center" data-scale="100">
   <section id="card" role="status" aria-atomic="true">
     <div id="art-wrap"><img id="art" alt=""></div>
     <div>
@@ -2229,7 +2229,7 @@
       <div id="arena-result-next"></div>
     </div>
   </section>
-  <section id="arena-stat-card">
+  <section id="arena-stat-card" data-sm-layer="primary-cta">
     <span id="arena-stat-kicker">NEXT</span>
     <strong id="arena-stat-title"></strong>
     <span id="arena-stat-meta"></span>
