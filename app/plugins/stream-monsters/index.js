@@ -386,6 +386,7 @@ class StreamMonstersPlugin {
       if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
       this.handleStreamMonstersDisconnect(data);
     });
+    try {
     this.streamMonstersFreeEggDrops.start();
     this.streamMonstersBattleMatchService.start();
     this.streamMonstersDeadlineScheduler = new DeadlineScheduler({
@@ -397,7 +398,16 @@ class StreamMonstersPlugin {
       )
     });
     this.streamMonstersDeadlineScheduler.start();
-    this.flushStreamMonstersOutbox();
+      this.flushStreamMonstersOutbox();
+    } catch (error) {
+      this.streamMonstersDeadlineScheduler?.stop();
+      this.streamMonstersDeadlineScheduler = null;
+      this.streamMonstersFreeEggDrops?.stop?.();
+      this.streamMonstersBattleMatchService?.destroy?.();
+      this.removeStreamMonstersGCCELifecycle();
+      this.deactivateStreamMonstersGCCE();
+      throw error;
+    }
 
     this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime initialized', 'info');
   }
@@ -1079,7 +1089,7 @@ class StreamMonstersPlugin {
         status: 'ready_active_viewer'
       });
     }
-    const remainingReadyEggs = this.streamMonstersStore?.getReadyEggs?.() || [];
+    const remainingReadyEggs = this.streamMonstersStore?.getReadyEggs?.(250) || [];
     remainingReadyEggs.forEach(egg => {
       this.streamMonstersUnhatchedEggSteals?.observeReadyEgg?.(egg.egg_id);
     });
@@ -1804,7 +1814,7 @@ class StreamMonstersPlugin {
     };
     let shouldEmit = true;
     if (projector.isCritical(eventType) && this.streamMonstersStore?.appendPublicEvent) {
-      const persisted = this.streamMonstersStore.appendPublicEvent({
+      const persisted = this.streamMonstersStore.appendCriticalEvent({
         eventId,
         correlationId,
         streamKey: this.streamMonstersEngine?.streamKey || 'offline',
@@ -1812,21 +1822,15 @@ class StreamMonstersPlugin {
         payload: emitted,
         createdAtMs: Date.now()
       });
-      const queued = this.streamMonstersStore.enqueueOutboxEvent?.({
-        eventId,
-        correlationId,
-        streamKey: this.streamMonstersEngine?.streamKey || 'offline',
-        eventType,
-        payload: emitted,
-        createdAtMs: Date.now()
-      });
-      shouldEmit = Boolean(persisted.inserted && queued !== false);
+
+      shouldEmit = Boolean(persisted.inserted);
+
       this.streamMonstersStore.prunePublicEvents?.(
         Date.now() - (6 * 60 * 60 * 1000),
         500
       );
     }
-    if (shouldEmit) {
+    const deliver = () => {
       this.api.emit(eventType, emitted);
       if (projector.isCritical(eventType)) {
         this.streamMonstersStore?.acknowledgeOutboxEvent?.(eventId);
@@ -1844,7 +1848,9 @@ class StreamMonstersPlugin {
         projector.isCritical(eventType),
         payload
       );
-    }
+      this.streamMonstersDeadlineScheduler?.deadlineChanged?.();
+    };
+    if (shouldEmit) this.streamMonstersStore?.afterCommit?.(deliver) || deliver();
     this.logStructured('socket_emit', diagnostic, 'debug');
     const domainEvents = {
       'streammonsters:egg_hatched': 'hatch_completed',

@@ -2981,6 +2981,17 @@ class StreamMonstersDatabase {
     return insert.changes > 0;
   }
 
+  appendCriticalEvent(input) {
+    const append = () => {
+      const persisted = this.appendPublicEvent(input);
+      const queued = this.enqueueOutboxEvent(input);
+      return { ...persisted, queued, inserted: persisted.inserted && queued };
+    };
+    return this.transactionDepth > 0
+      ? append()
+      : this.runInImmediateTransaction(append);
+  }
+
   pendingOutboxEvents(limit = 100) {
     return this.db.prepare(`
       SELECT event_id, correlation_id, stream_key, event_type, payload_json, created_at_ms

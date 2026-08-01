@@ -3,6 +3,9 @@ const Store = require('../plugins/stream-monsters/backend/streammonsters/databas
 const FreeEggDropService = require(
   '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
+const DeadlineScheduler = require(
+  '../plugins/stream-monsters/backend/streammonsters/deadline-scheduler'
+);
 
 function createService() {
   const store = new Store(new Database(':memory:'));
@@ -82,3 +85,37 @@ describe('Stream Monsters runtime deadline ownership', () => {
     }
   });
 });
+
+  test('rearms an earlier deadline after a transition changes the schedule', () => {
+    const timers = [];
+    let deadline = 10_000;
+    const scheduler = new DeadlineScheduler({ getDeadline: () => deadline, runDue: () => {}, now: () => 0, setTimer: (callback, delay) => { timers.push({ callback, delay, unref() {} }); return timers[timers.length - 1]; }, clearTimer: timer => { timer.cleared = true; } });
+    scheduler.start();
+    deadline = 500;
+    scheduler.deadlineChanged();
+    expect(timers[0].cleared).toBe(true);
+    expect(timers[1].delay).toBe(500);
+    scheduler.stop();
+  });
+
+  test('rolls back the public event and outbox together on a failed domain transition', () => {
+    const service = createService();
+    const input = { eventId: 'atomic-transition-1', correlationId: 'cycle-1', streamKey: 'creator:1', eventType: 'streammonsters:egg_ready', payload: { eventId: 'atomic-transition-1' }, createdAtMs: 1 };
+    try {
+      expect(() => service.store.runInImmediateTransaction(() => { service.store.appendCriticalEvent(input); throw new Error('rollback'); })).toThrow('rollback');
+      expect(service.store.pendingOutboxEvents()).toEqual([]);
+      expect(service.store.getRecentPublicEvents('creator:1', { limit: 10 })).toEqual([]);
+    } finally {
+      service.destroy();
+    }
+  });
+
+  test('uses the deadline indexes for due egg queries', () => {
+    const service = createService();
+    try {
+      const plan = service.store.db.prepare(`EXPLAIN QUERY PLAN SELECT egg_id FROM streammonsters_eggs WHERE state = 'incubating' AND ready_at_ms <= 1000 ORDER BY ready_at_ms ASC, egg_id ASC LIMIT 250`).all().map(row => row.detail).join(' ');
+      expect(plan).toContain('streammonsters_eggs_state_ready_deadline');
+    } finally {
+      service.destroy();
+    }
+  });

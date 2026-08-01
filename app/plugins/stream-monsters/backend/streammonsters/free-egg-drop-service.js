@@ -23,7 +23,7 @@ class FreeEggDropService {
   }
 
   emitAfterCommit(event, payload) {
-    this.store.afterCommit(() => this.emit(event, payload));
+    this.emit(event, payload);
   }
 
   onFirstChat({

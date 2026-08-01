@@ -53,7 +53,7 @@ class StreamMonstersEngine {
   }
 
   emitAfterCommit(event, payload) {
-    this.store.afterCommit(() => this.emit(event, payload));
+    this.emit(event, payload);
   }
 
   projectEggStage(egg) {
@@ -297,14 +297,15 @@ class StreamMonstersEngine {
     return hatched;
   }
 
-  autoHatchReadyEggs({ isViewerActive, force = false } = {}) {
+  autoHatchReadyEggs({ isViewerActive, force = false, limit = 250 } = {}) {
     if (
       (!force && this.config.autoHatchActiveViewers === false) ||
       typeof isViewerActive !== 'function'
     ) {
       return [];
     }
-    const readyEggs = this.store.getReadyEggs?.() || [];
+    const maximum = Math.max(1, Math.min(250, Number(limit) || 250));
+    const readyEggs = this.store.getReadyEggs?.(maximum) || [];
     const activeViewerIds = [...new Set(
       readyEggs
         .map(egg => egg.user_id)
@@ -312,7 +313,7 @@ class StreamMonstersEngine {
     )];
     const hatched = [];
     for (const userId of activeViewerIds) {
-      while (this.store.getViewerEggs(userId, 'ready').length) {
+      while (hatched.length < maximum && this.store.getViewerEggs(userId, 'ready').length) {
         try {
           hatched.push(this.hatchEgg(userId, null, { autoHatch: true }));
         } catch (error) {

@@ -50,6 +50,11 @@ class DeadlineScheduler {
     }, Math.max(0, Number(deadline) - Number(this.now())));
     this.timer?.unref?.();
   }
+
+  deadlineChanged() {
+    this.rearm();
+  }
 }
+
 
 module.exports = DeadlineScheduler;
