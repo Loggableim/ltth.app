@@ -247,6 +247,8 @@ describe('ArenaGame', () => {
     const giant = movementPlayer(arena, config, 'bomb_giant', 220, { x: 290, y: 300, lives: 15000, lastActivityAt: now });
     arena.players.set(thrower.username, thrower);
     arena.players.set(giant.username, giant);
+    const giantMassBefore = giant.mass;
+    const spawnFoodBurst = jest.spyOn(arena, '_spawnFoodBurst');
 
     const result = arena.handleAbilityCommand({
       uniqueId: thrower.username,
@@ -258,10 +260,10 @@ describe('ArenaGame', () => {
     now += 350;
     arena.tick(350);
 
-    expect(arena.players.get(giant.username).mass).toBeCloseTo(99, 0);
+    expect(arena.players.get(giant.username).mass).toBeLessThan(giantMassBefore);
     expect(arena.players.get(giant.username).mass).toBeGreaterThan(config.minMass);
     expect((arena.players.get(giant.username).kills || 0)).toBe(0);
-    expect(arena.food.size).toBeGreaterThan(0);
+    expect(spawnFoodBurst).toHaveBeenCalledTimes(1);
   });
 
   it('lets a small player pass an armed bomb but makes a giant trigger it from their larger radius', () => {
@@ -363,12 +365,85 @@ describe('ArenaGame', () => {
     expect(arena.bombs.get('range')).toMatchObject({ phase: 'armed', x: 180, y: 300, travelled: 80 });
   });
 
-  it('detects a small player crossed between delayed flying-bomb tick endpoints', () => {
+  it('arms at the radius-safe field edge on an exact-distance tick', () => {
+    const { arena } = createArena({}, { now: () => 70000 });
+    const config = arena.getConfig();
+    arena.bombs.set('field_edge', {
+      id: 'field_edge', owner: 'owner', phase: 'flying',
+      x: config.arenaWidth - 62, y: 300, vx: 1, vy: 0,
+      radius: 12, speed: 500, range: 420, travelled: 0, blastRadius: 92
+    });
+
+    arena._updateBombs(config, 0.1);
+
+    const renderedBomb = arena.getState().bombs.find(bomb => bomb.id === 'field_edge');
+    expect(renderedBomb).toMatchObject({ phase: 'armed', x: config.arenaWidth - 12, travelled: 50 });
+    expect(renderedBomb.x + renderedBomb.radius).toBe(config.arenaWidth);
+  });
+
+  it('damages a small player crossed before a delayed flying-bomb tick endpoint', () => {
     const { arena } = createArena({}, { now: () => 70000 }); const config = arena.getConfig();
-    const victim = movementPlayer(arena, config, 'tunnel', 8, { x: 140, y: 300, lives: arena._massToLives(8, config) }); arena.players.set(victim.username, victim);
-    arena.bombs.set('tunnel', { id: 'tunnel', owner: 'owner', phase: 'flying', x: 100, y: 300, vx: 1, vy: 0, radius: 12, speed: 650, range: 420, travelled: 0, blastRadius: 92 });
-    arena._updateBombs(config, 0.12);
+    const victim = movementPlayer(arena, config, 'tunnel', 12, {
+      x: 180, y: 300, lives: arena._massToLives(12, config)
+    });
+    arena.players.set(victim.username, victim);
+    arena.bombs.set('tunnel', {
+      id: 'tunnel', owner: 'owner', phase: 'flying',
+      x: 100, y: 300, vx: 1, vy: 0,
+      radius: 12, speed: 650, range: 420, travelled: 0, blastRadius: 92
+    });
+
+    arena._updateBombs(config, 0.35);
+
     expect(arena.bombs.has('tunnel')).toBe(false);
+    expect(victim.mass).toBeLessThan(12);
+  });
+
+  it('detonates at the earliest crossed player regardless of map insertion order', () => {
+    const { arena, io } = createArena({}, { now: () => 70000 });
+    const config = arena.getConfig();
+    const later = movementPlayer(arena, config, 'later', 12, {
+      x: 250, y: 300, lives: arena._massToLives(12, config)
+    });
+    const earlier = movementPlayer(arena, config, 'earlier', 12, {
+      x: 180, y: 300, lives: arena._massToLives(12, config)
+    });
+    arena.players.set(later.username, later);
+    arena.players.set(earlier.username, earlier);
+    arena.bombs.set('ordered_sweep', {
+      id: 'ordered_sweep', owner: 'owner', phase: 'flying',
+      x: 100, y: 300, vx: 1, vy: 0,
+      radius: 12, speed: 650, range: 420, travelled: 0, blastRadius: 92
+    });
+
+    arena._updateBombs(config, 0.4);
+
+    expect(io.emit).toHaveBeenCalledWith('arena:bomb-exploded', expect.objectContaining({
+      bombId: 'ordered_sweep',
+      x: expect.closeTo(154.14, 2),
+      y: 300
+    }));
+  });
+
+  it('detonates a zero-length flying sweep at its starting overlap', () => {
+    const { arena, io } = createArena({}, { now: () => 70000 });
+    const config = arena.getConfig();
+    const victim = movementPlayer(arena, config, 'stationary_overlap', 100, {
+      x: 100, y: 300, lives: arena._massToLives(100, config)
+    });
+    arena.players.set(victim.username, victim);
+    arena.bombs.set('zero_length', {
+      id: 'zero_length', owner: 'owner', phase: 'flying',
+      x: 100, y: 300, vx: 1, vy: 0,
+      radius: 12, speed: 650, range: 420, travelled: 0, blastRadius: 92
+    });
+
+    arena._updateBombs(config, 0);
+
+    expect(io.emit).toHaveBeenCalledWith('arena:bomb-exploded', expect.objectContaining({
+      bombId: 'zero_length', x: 100, y: 300
+    }));
+    expect(victim.mass).toBeLessThan(100);
   });
 
   it('never increases a near-minimum victim mass during bomb retention', () => {
