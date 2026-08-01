@@ -1987,7 +1987,7 @@ func (l *Launcher) applyFixAction(action string) (map[string]interface{}, error)
 				return nil, err
 			}
 		}
-		if err := l.installDependencies(); err != nil {
+		if err := l.installAndVerifyProductionDependencies(); err != nil {
 			return nil, err
 		}
 		return map[string]interface{}{"success": true, "action": action}, nil
@@ -2803,6 +2803,78 @@ func (l *Launcher) verifyProductionDependencies() error {
 	return nil
 }
 
+func productionNativeModulePath(appDir string) string {
+	return filepath.Join(appDir, "node_modules", "better-sqlite3", "build", "Release", "better_sqlite3.node")
+}
+
+func productionDependencyInstallFailure(cause error, stderrOutput string, appDir string) error {
+	nativeModulePath := productionNativeModulePath(appDir)
+	normalizedStderr := strings.ToLower(stderrOutput)
+	if strings.Contains(normalizedStderr, "eperm") &&
+		strings.Contains(normalizedStderr, "unlink") &&
+		strings.Contains(normalizedStderr, strings.ToLower(nativeModulePath)) {
+		return fmt.Errorf("npm ci --omit=dev could not replace native module %s because it is locked by another process; stop or finish the LTTH server, test runner, or Node process using this installation, then retry: %w", nativeModulePath, cause)
+	}
+	return fmt.Errorf("npm ci --omit=dev failed: %w", cause)
+}
+
+var productionNativeModuleProcessIDs = findProductionNativeModuleProcessIDs
+
+func ensureProductionNativeModuleIsNotLoaded(appDir string) error {
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+
+	nativeModulePath := productionNativeModulePath(appDir)
+	processIDs, err := productionNativeModuleProcessIDs(nativeModulePath)
+	if err != nil {
+		return fmt.Errorf("cannot inspect active native module users before production dependency repair: %w", err)
+	}
+	if len(processIDs) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(processIDs))
+	for _, processID := range processIDs {
+		ids = append(ids, strconv.Itoa(processID))
+	}
+	return fmt.Errorf("production dependency repair cannot start because native module %s is locked by another process (PID %s); stop or finish the LTTH server, test runner, or Node process using this installation, then retry", nativeModulePath, strings.Join(ids, ", "))
+}
+
+func findProductionNativeModuleProcessIDs(nativeModulePath string) ([]int, error) {
+	escapedModulePath := strings.ReplaceAll(filepath.Clean(nativeModulePath), "'", "''")
+	script := fmt.Sprintf(
+		"$target = '%s'; Get-Process | ForEach-Object {{ try {{ if ($_.Modules | Where-Object {{ [string]::Equals($_.FileName, $target, [System.StringComparison]::OrdinalIgnoreCase) }}) {{ Write-Output ('PID:' + $_.Id) }} }} catch {{}} }}",
+		escapedModulePath,
+	)
+	output, err := hiddenCommand("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script).CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("process module inspection failed: %w", err)
+	}
+
+	return parseProductionNativeModuleProcessIDs(string(output)), nil
+}
+
+func parseProductionNativeModuleProcessIDs(output string) []int {
+	seen := make(map[int]struct{})
+	for _, line := range strings.Split(output, "\n") {
+		markedProcessID, found := strings.CutPrefix(strings.TrimSpace(line), "PID:")
+		if !found {
+			continue
+		}
+		processID, err := strconv.Atoi(strings.TrimSpace(markedProcessID))
+		if err != nil || processID <= 0 {
+			continue
+		}
+		seen[processID] = struct{}{}
+	}
+	processIDs := make([]int, 0, len(seen))
+	for processID := range seen {
+		processIDs = append(processIDs, processID)
+	}
+	sort.Ints(processIDs)
+	return processIDs
+}
+
 func (l *Launcher) ensureProductionDependencies() (bool, error) {
 	l.startupGate.Lock()
 	defer l.startupGate.Unlock()
@@ -2848,6 +2920,9 @@ func (l *Launcher) installAndVerifyProductionDependencies() error {
 }
 
 func (l *Launcher) installAndVerifyProductionDependenciesLocked() error {
+	if err := ensureProductionNativeModuleIsNotLoaded(l.appDir); err != nil {
+		return err
+	}
 	if err := l.runDependencyInstallerLocked(); err != nil {
 		return err
 	}
@@ -2966,6 +3041,11 @@ func (l *Launcher) installDependencies() error {
 	return l.installDependenciesLocked()
 }
 
+func waitForCommandOutputReaders(stdoutDone, stderrDone <-chan struct{}) {
+	<-stdoutDone
+	<-stderrDone
+}
+
 func (l *Launcher) installDependenciesLocked() error {
 	l.dependenciesVerified = false
 	l.logger.Println("[INFO] Starting npm ci --omit=dev...")
@@ -3011,8 +3091,9 @@ func (l *Launcher) installDependenciesLocked() error {
 	heartbeatTicker := time.NewTicker(3 * time.Second)
 	defer heartbeatTicker.Stop()
 
-	// Channel to signal when stdout reading is done
-	stdoutDone := make(chan bool)
+	// Channels signal that both output streams have been completely drained.
+	stdoutDone := make(chan struct{})
+	stderrDone := make(chan struct{})
 
 	go func() {
 		scanner := bufio.NewScanner(stdout)
@@ -3037,12 +3118,13 @@ func (l *Launcher) installDependenciesLocked() error {
 				lastUpdate = time.Now()
 			}
 		}
-		stdoutDone <- true
+		close(stdoutDone)
 	}()
 
 	// Log errors and collect stderr output for fallback error reporting
 	var stderrBuf bytes.Buffer
 	go func() {
+		defer close(stderrDone)
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -3076,8 +3158,7 @@ func (l *Launcher) installDependenciesLocked() error {
 	err = cmd.Wait()
 	installComplete = true
 
-	// Wait for stdout processing to complete
-	<-stdoutDone
+	waitForCommandOutputReaders(stdoutDone, stderrDone)
 
 	if err != nil {
 		stderrOutput := stderrBuf.String()
@@ -3085,7 +3166,7 @@ func (l *Launcher) installDependenciesLocked() error {
 		if stderrOutput != "" {
 			l.logger.Printf("[ERROR] npm stderr output: %s\n", stderrOutput)
 		}
-		return fmt.Errorf("npm ci --omit=dev failed: %w", err)
+		return productionDependencyInstallFailure(err, stderrOutput, l.appDir)
 	}
 
 	l.logger.Println("[SUCCESS] npm ci --omit=dev completed successfully")
