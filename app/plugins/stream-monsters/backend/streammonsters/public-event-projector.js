@@ -334,7 +334,8 @@ function projectBattleSkill(skill = null) {
     elementRelation: ['advantage', 'disadvantage', 'neutral'].includes(
       skill.elementRelation
     ) ? skill.elementRelation : 'neutral',
-    available: skill.available !== false
+    available: skill.available !== false,
+    visible: skill.visible !== false
   };
   const effects = projectBattleSkillEffects(skill.effects);
   if (effects.length) projected.effects = effects;

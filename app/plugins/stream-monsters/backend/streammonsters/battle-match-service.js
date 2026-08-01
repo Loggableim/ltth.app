@@ -1197,6 +1197,10 @@ class BattleMatchService {
         ? 'disadvantage'
         : 'neutral';
     const baseCharge = Math.max(0, Math.min(100, Number(charge) || 0));
+    const viewerStats = this.store.getViewerBattleStats?.(participant.viewerId);
+    const firstBattle = viewerStats
+      ? Math.max(0, Number(viewerStats.battle_count) || 0) === 0
+      : false;
     const defenseLocked = this.isDefenseLocked(match);
     return ['A', 'B', 'C'].map((choice, index) => {
       const skill = roster.skills?.find(entry => entry?.choice === choice) ||
@@ -1254,6 +1258,8 @@ class BattleMatchService {
         shortTextKey: skill.shortTextKey,
         elementRelation,
         available,
+        visible: choice !== 'C' || !firstBattle ||
+          specialAvailability.available,
         ...(effects.length ? { effects } : {}),
         ...(choice === 'B' && defenseLocked ? {
           unavailableReason: 'arena_collapse_defense_locked'

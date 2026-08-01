@@ -998,7 +998,7 @@
         const card = deck.querySelector(`[data-skill="${choice}"]`);
         if (!card) continue;
         const skill = skills.find(entry => entry?.choice === choice);
-        card.hidden = !skill;
+        card.hidden = !skill || skill.visible === false;
         card.classList.remove(
           'charging',
           'ready',
@@ -1100,8 +1100,8 @@
         setSkillText(
           'skill-charge',
           ready
-            ? `${chargePercent}% · ${formatLabel('specialReady')}`
-            : `${chargePercent}% \u00b7 ${formatLabel('specialMissing', {
+            ? `${required} / ${required} · ${formatLabel('specialReady')}`
+            : `${Math.floor(charge)} / ${required} · ${formatLabel('specialMissing', {
                 amount:missingCharge
               })}`
         );
