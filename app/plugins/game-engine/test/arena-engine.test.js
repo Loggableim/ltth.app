@@ -241,7 +241,13 @@ describe('ArenaGame', () => {
 
   it('throws a bomb in one random cardinal direction and leaves a large target alive after the shockwave', () => {
     let now = 60000;
-    const { arena } = createArena({ maxFood: 0 }, { now: () => now, random: () => 0 });
+    let randomCall = 0;
+    const random = () => {
+      randomCall += 1;
+      if (randomCall === 1) return 0;
+      return randomCall % 2 === 0 ? 0.25 : 1;
+    };
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => now, random });
     const config = arena.getConfig();
     const thrower = movementPlayer(arena, config, 'bomb_thrower', 40, { x: 120, y: 300, lives: 500, lastActivityAt: now });
     const giant = movementPlayer(arena, config, 'bomb_giant', 220, { x: 290, y: 300, lives: 15000, lastActivityAt: now });
@@ -264,6 +270,7 @@ describe('ArenaGame', () => {
     expect(arena.players.get(giant.username).mass).toBeGreaterThan(config.minMass);
     expect((arena.players.get(giant.username).kills || 0)).toBe(0);
     expect(spawnFoodBurst).toHaveBeenCalledTimes(1);
+    expect(arena.food.size).toBeGreaterThan(0);
   });
 
   it('lets a small player pass an armed bomb but makes a giant trigger it from their larger radius', () => {
