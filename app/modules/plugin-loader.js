@@ -128,11 +128,15 @@ class PluginAPI {
 
                     await handler(req, res, next);
                 } catch (error) {
-                    this.log(`Route error in ${fullPaths[0]}: ${error.message}`, 'error');
+                    const correlationId = crypto.randomUUID();
+                    this.log(
+                        `Route error in ${fullPaths[0]} [${correlationId}]: ${error.message}`,
+                        'error'
+                    );
                     res.status(500).json({
                         success: false,
-                        error: 'Plugin route error',
-                        message: error.message
+                        code: 'PLUGIN_ROUTE_ERROR',
+                        correlationId
                     });
                 }
             });
@@ -1854,8 +1858,9 @@ class PluginLoader extends EventEmitter {
         const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
         const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
         const installed = this.resolvePluginInstallation(safePluginId);
-        if (!installed) return false;
-        const pluginPath = assertPathInside(this.pluginsDir, installed.path, 'Plugin reload path');
+        if (!installed?.path) return false;
+        const pluginPath = assertPathInside(
+            this.pluginsDir, installed.path, 'Plugin reload path');
         try {
             if (!await this.unloadPlugin(safePluginId)) throw new Error(`Failed to unload plugin ${safePluginId}`);
             const loaded = await this.loadPlugin(pluginPath);

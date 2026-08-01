@@ -66,6 +66,56 @@ describe('plugin route lifecycle', () => {
     fs.rmSync(base, { recursive: true, force: true });
   });
 
+  test('returns a stable correlation envelope without exposing route failures', async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-route-error-'));
+    try {
+      const pluginsDir = path.join(base, 'plugins');
+      const pluginDir = path.join(pluginsDir, 'route-error-test');
+      fs.mkdirSync(pluginDir, { recursive: true });
+      fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({
+        id: 'route-error-test',
+        name: 'Route Error Test',
+        version: '1.0.0',
+        entry: 'main.js',
+        enabled: true
+      }));
+      fs.writeFileSync(path.join(pluginDir, 'main.js'), `
+        module.exports = class RouteErrorTestPlugin {
+          constructor(api) { this.api = api; }
+          async init() {
+            this.api.registerRoute('GET', '/api/route-error-test', () => {
+              throw new Error('PRIVATE_DB_PASSWORD=do-not-expose');
+            });
+          }
+        };
+      `);
+      const app = express();
+      const log = createLogger();
+      const loader = new PluginLoader(
+        pluginsDir,
+        app,
+        { on: jest.fn(), sockets: { sockets: new Map() } },
+        {},
+        log,
+        { getPluginDataDir: () => path.join(base, 'data') },
+        'default'
+      );
+      expect(await loader.loadPlugin(pluginDir)).toBeTruthy();
+
+      const response = await request(app).get('/api/route-error-test').expect(500);
+
+      expect(response.body).toEqual({
+        success: false,
+        code: 'PLUGIN_ROUTE_ERROR',
+        correlationId: expect.stringMatching(/^[0-9a-f-]{36}$/i)
+      });
+      expect(JSON.stringify(response.body)).not.toContain('PRIVATE_DB_PASSWORD');
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('PRIVATE_DB_PASSWORD'));
+    } finally {
+      fs.rmSync(base, { recursive: true, force: true });
+    }
+  });
+
   test('reloads modules required from the plugin directory', () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-reload-'));
     const scriptPath = path.join(base, 'verify-reload.js');
