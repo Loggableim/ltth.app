@@ -7365,8 +7365,10 @@ describe('Arena overlay rendering contract', () => {
       overlay.indexOf('function drawFood')
     );
 
-    expect(foodOpacityFor).toContain('spawnFadeMs');
-    expect(foodOpacityFor).toContain('1400');
+    expect(foodOpacityFor).toContain("const spawnFadeMs = food.source === 'ambient' ? 1400 : 600;");
+    expect(foodOpacityFor).toContain('const spawnEase = clampNumber(ageMs / spawnFadeMs, 0, 1, 1);');
+    expect(foodOpacityFor).toContain("food.source === 'life-drop'");
+    expect(foodOpacityFor).toContain('clampNumber(remainingMs / Math.max(fadeOutMs, 1), 0.16, 1, 1)');
     expect(arenaSource).toContain("if (normalizedSource === 'ambient') return 48000;");
   });
 
