@@ -8031,7 +8031,7 @@ describe('Arena left info and German shield alias contracts', () => {
     expect(overlay).toContain('"stream-left-panel"');
     expect(overlay).toContain('data-arena-info-placement="stream-left-panel"');
     expect(overlay).toContain('body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator');
-    expect(overlay).toContain('!schild (auch !shield)');
+    expect(overlay).toContain('!schild/!shield: ${shieldDurationSeconds}s Schutz, ${abilityChargeSeconds}s CD');
     expect(overlay).toContain('shieldDurationMs');
     expect(overlay).toContain('abilityChargeMs');
     expect(abilitiesAt).toBeGreaterThanOrEqual(0);
@@ -8050,11 +8050,35 @@ describe('Arena left info and German shield alias contracts', () => {
   });
 });
 describe('Arena left info review regressions', () => {
+  it('reserves a three-line portrait ability card so shield duration and cooldown stay visible', () => {
+    const overlay = fs.readFileSync(path.join(__dirname, '..', 'overlay', 'arena.html'), 'utf8');
+    const portraitPanelStart = overlay.indexOf('body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator {');
+    const portraitPanel = overlay.slice(portraitPanelStart, overlay.indexOf('@media (orientation: landscape)', portraitPanelStart));
+
+    expect(portraitPanel).toContain('min-height: clamp(104px, 10vh, 150px);');
+    expect(overlay).toContain('body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator[data-info-kind="ability"] #arena-info-text');
+    expect(overlay).toContain('-webkit-line-clamp: 3;');
+    expect(overlay).toContain('!schild/!shield: ${shieldDurationSeconds}s Schutz, ${abilityChargeSeconds}s CD');
+  });
+
+  it('keeps English-only shield copy English while preserving both aliases and localized dashboard text', () => {
+    const overlay = fs.readFileSync(path.join(__dirname, '..', 'overlay', 'arena.html'), 'utf8');
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
+
+    expect(overlay).toContain('preferGermanInAlternating: true');
+    expect(overlay).toContain("const textLanguage = definition.preferGermanInAlternating && languages.length > 1 ? 'de' : language;");
+    expect(overlay).toContain('!schild/!shield: ${shieldDurationSeconds}s shield, ${abilityChargeSeconds}s CD');
+    expect(ui).toContain('value="stream-left-panel" data-i18n="plugins.game-engine.labels.linkes_infofeld_stream"');
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', `${locale}.json`), 'utf8'));
+      expect(catalog.plugins['game-engine'].labels.linkes_infofeld_stream).toBeTruthy();
+    }
+  });
   it('keeps the German shield alias copy in the default de-en ability rotation', () => {
     const overlay = fs.readFileSync(path.join(__dirname, '..', 'overlay', 'arena.html'), 'utf8');
 
-    expect(overlay).toContain('alwaysGermanAlias: true');
-    expect(overlay).toContain("const textLanguage = definition.alwaysGermanAlias ? 'de' : language;");
+    expect(overlay).toContain('preferGermanInAlternating: true');
+    expect(overlay).toContain("const textLanguage = definition.preferGermanInAlternating && languages.length > 1 ? 'de' : language;");
     expect(overlay).toContain('text: definition.text[textLanguage]');
   });
 

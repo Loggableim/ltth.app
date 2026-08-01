@@ -897,13 +897,17 @@
       left: clamp(16px, 3.3vw, 42px);
       top: var(--arena-stream-left-panel-top, 280px);
       width: var(--arena-stream-left-panel-width, min(39vw, 470px));
-      min-height: clamp(82px, 8.5vh, 132px);
+      min-height: clamp(104px, 10vh, 150px);
       height: auto;
       margin-top: 0;
       z-index: 4;
       padding: clamp(9px, calc(10px * var(--arena-ui-scale)), 15px) clamp(10px, calc(12px * var(--arena-ui-scale)), 18px);
       grid-template-columns: var(--arena-info-icon-size) minmax(0, 1fr);
       box-shadow: 0 12px 26px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator[data-info-kind="ability"] #arena-info-text {
+      -webkit-line-clamp: 3;
     }
 
     @media (orientation: landscape) {
@@ -1842,13 +1846,13 @@
       const boostDurationSeconds = Math.max(1, Math.round((Number(config?.boostDurationMs) || 6000) / 1000));
       const shieldDurationSeconds = Math.max(1, Math.round((Number(config?.shieldDurationMs) || 8000) / 1000));
       const definitions = [
-        { iconText: 'RUN', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!boost - Tempo: ${boostDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!boost - Speed: ${boostDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
-        { iconText: 'SHD', alwaysGermanAlias: true, label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!schild (auch !shield) - Schutz: ${shieldDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!shield - Shield: ${shieldDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
+        { iconText: 'RUN', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!boost: ${boostDurationSeconds}s Tempo, ${abilityChargeSeconds}s CD`, en: `!boost: ${boostDurationSeconds}s speed, ${abilityChargeSeconds}s CD` } },
+        { iconText: 'SHD', preferGermanInAlternating: true, label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!schild/!shield: ${shieldDurationSeconds}s Schutz, ${abilityChargeSeconds}s CD`, en: `!schild/!shield: ${shieldDurationSeconds}s shield, ${abilityChargeSeconds}s CD` } },
         { iconText: 'BMB', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!bomb - Wurf', en: '!bomb - Throw' } }
       ];
       return definitions.map((definition, index) => {
         const language = languages[index % languages.length] || 'de';
-        const textLanguage = definition.alwaysGermanAlias ? 'de' : language;
+        const textLanguage = definition.preferGermanInAlternating && languages.length > 1 ? 'de' : language;
         return {
           kind: 'ability',
           label: definition.label[language],
