@@ -1572,12 +1572,15 @@ class StreamMonstersDatabase {
     return result.changes === 1 ? this.getFreeEggOffer(offerId) : null;
   }
 
-  createFreeEggClaim({ claimId, offerId, streamKey, userId, claimEventId, claimedAtMs }) {
+  createFreeEggClaim({ claimId, offerId, streamKey, userId, claimEventId, claimedAtMs, cooldownExpiresAtMs = null }) {
     this.db.prepare(`
       INSERT INTO streammonsters_free_egg_claims (
         claim_id, offer_id, stream_key, user_id, claim_event_id, claimed_at_ms
       ) VALUES (?, ?, ?, ?, ?, ?)
     `).run(claimId, offerId, streamKey, userId, claimEventId, claimedAtMs);
+    if (Number.isFinite(Number(cooldownExpiresAtMs)) && Number(cooldownExpiresAtMs) > claimedAtMs) {
+      this.db.prepare('INSERT INTO streammonsters_free_egg_cooldowns (user_id, expires_at_ms) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET expires_at_ms = excluded.expires_at_ms').run(userId, cooldownExpiresAtMs);
+    }
   }
 
   getLatestFreeEggClaim(userId) {

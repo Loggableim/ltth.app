@@ -10,6 +10,9 @@ const StreamMonstersChatCommands = require('./backend/streammonsters/chat-comman
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
 const DeadlineScheduler = require('./backend/streammonsters/deadline-scheduler');
+const ViewerRetentionService = require(
+  './backend/streammonsters/viewer-retention-service'
+);
 const UnhatchedEggStealService = require(
   './backend/streammonsters/unhatched-egg-steal-service'
 );
@@ -188,6 +191,10 @@ class StreamMonstersPlugin {
       assetRegistry: this.streamMonstersAssetRegistry
     });
     this.streamMonstersStore.initialize();
+    this.streamMonstersRetention = new ViewerRetentionService({
+      store: this.streamMonstersStore,
+      config: this.config.streamMonsters
+    });
     this.streamMonstersOnboarding = new ViewerOnboardingService({
       store: this.streamMonstersStore
     });
@@ -388,6 +395,7 @@ class StreamMonstersPlugin {
     });
     try {
     this.streamMonstersFreeEggDrops.start();
+    this.streamMonstersRetention.start();
     this.streamMonstersBattleMatchService.start();
     this.streamMonstersDeadlineScheduler = new DeadlineScheduler({
       getDeadline: nowMs => this.streamMonstersStore?.getNextEggDeadline?.(nowMs),
@@ -403,6 +411,7 @@ class StreamMonstersPlugin {
       this.streamMonstersDeadlineScheduler?.stop();
       this.streamMonstersDeadlineScheduler = null;
       this.streamMonstersFreeEggDrops?.stop?.();
+      this.streamMonstersRetention?.stop?.();
       this.streamMonstersBattleMatchService?.destroy?.();
       this.removeStreamMonstersGCCELifecycle();
       this.deactivateStreamMonstersGCCE();
@@ -445,6 +454,8 @@ class StreamMonstersPlugin {
         eggExpiryMs: 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: 28,
+        retentionActiveDays: 30,
+        retentionPurgeDays: 240,
         freeEggDropsEnabled: true,
         freeEggCooldownSeconds: 86_400,
         ownedReadyEggRescueGraceSeconds: 600,
@@ -481,6 +492,13 @@ class StreamMonstersPlugin {
           : 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: this.normalizeSeasonDuration(storedStreamMonsters.seasonDurationDays),
+        retentionActiveDays: this.normalizeRetentionActiveDays(
+          storedStreamMonsters.retentionActiveDays
+        ),
+        retentionPurgeDays: this.normalizeRetentionPurgeDays(
+          storedStreamMonsters.retentionPurgeDays,
+          this.normalizeRetentionActiveDays(storedStreamMonsters.retentionActiveDays)
+        ),
         freeEggDropsEnabled: storedStreamMonsters.freeEggDropsEnabled !== false,
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           storedStreamMonsters.freeEggCooldownSeconds
@@ -632,6 +650,33 @@ class StreamMonstersPlugin {
     return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
       ? Math.round(seconds)
       : 86_400;
+  }
+
+  validateRetentionConfig(activeValue, purgeValue) {
+    const activeDays = Number(activeValue);
+    const purgeDays = Number(purgeValue);
+    if (!Number.isInteger(activeDays) || activeDays < 1 || activeDays > 90) {
+      const error = new Error('STREAM_MONSTERS_RETENTION_ACTIVE_INVALID');
+      error.code = error.message;
+      throw error;
+    }
+    if (!Number.isInteger(purgeDays) || purgeDays < 30 || purgeDays > 730 || purgeDays <= activeDays) {
+      const error = new Error('STREAM_MONSTERS_RETENTION_PURGE_INVALID');
+      error.code = error.message;
+      throw error;
+    }
+  }
+
+  normalizeRetentionActiveDays(value) {
+    const days = Number(value);
+    return Number.isInteger(days) && days >= 1 && days <= 90 ? days : 30;
+  }
+
+  normalizeRetentionPurgeDays(value, activeDays = 30) {
+    const days = Number(value);
+    return Number.isInteger(days) && days >= 30 && days <= 730 && days > activeDays
+      ? days
+      : 240;
   }
 
   normalizeOwnedReadyEggRescueGraceSeconds(value) {
@@ -891,6 +936,11 @@ class StreamMonstersPlugin {
       }
     };
 
+    this.validateRetentionConfig(
+      mergedStreamMonsters.retentionActiveDays,
+      mergedStreamMonsters.retentionPurgeDays
+    );
+
     const candidateConfig = {
       ...this.config,
       revision: nextRevision,
@@ -914,6 +964,13 @@ class StreamMonstersPlugin {
           : 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: this.normalizeSeasonDuration(mergedStreamMonsters.seasonDurationDays),
+        retentionActiveDays: this.normalizeRetentionActiveDays(
+          mergedStreamMonsters.retentionActiveDays
+        ),
+        retentionPurgeDays: this.normalizeRetentionPurgeDays(
+          mergedStreamMonsters.retentionPurgeDays,
+          this.normalizeRetentionActiveDays(mergedStreamMonsters.retentionActiveDays)
+        ),
         freeEggDropsEnabled: mergedStreamMonsters.freeEggDropsEnabled !== false,
         freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
           mergedStreamMonsters.freeEggCooldownSeconds
@@ -1016,6 +1073,10 @@ class StreamMonstersPlugin {
         freeEggCooldownSeconds: streamConfig.freeEggCooldownSeconds
       });
     }
+    this.streamMonstersRetention?.setConfig?.({
+      activeDays: streamConfig.retentionActiveDays,
+      purgeDays: streamConfig.retentionPurgeDays
+    });
     this.streamMonstersUnhatchedEggSteals?.setConfig?.({
       unhatchedEggStealEnabled: streamConfig.unhatchedEggStealEnabled,
       unhatchedEggStealGraceSeconds: streamConfig.unhatchedEggStealGraceSeconds,
@@ -1050,6 +1111,8 @@ class StreamMonstersPlugin {
       this.streamMonstersTutorialHintFlushTimer = null;
     }
     this.streamMonstersFreeEggDrops?.destroy();
+    this.streamMonstersRetention?.stop?.();
+    this.streamMonstersRetention = null;
     this.streamMonstersViewerActivity?.destroy?.();
     this.streamMonstersViewerActivity = null;
     this.streamMonstersBattleMatchService?.destroy();

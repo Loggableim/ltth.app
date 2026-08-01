@@ -13,6 +13,7 @@ const CollectionService = require(
 const ViewerRetentionService = require(
   '../plugins/stream-monsters/backend/streammonsters/viewer-retention-service'
 );
+const StreamMonstersPlugin = require('../plugins/stream-monsters');
 
 function createSubject() {
   const sqlite = new Database(':memory:');
@@ -100,5 +101,55 @@ describe('Stream Monsters creator retention', () => {
       ]));
     expect(store.db.prepare(`SELECT user_id FROM streammonsters_viewer_progress WHERE user_id = 'stale-a'`).get())
       .toBeUndefined();
+  });
+});
+
+
+describe('Stream Monsters retention safeguards', () => {
+  test('rejects out-of-range and inverted retention windows', () => {
+    const { store } = createSubject();
+    const service = new ViewerRetentionService({ store });
+    expect(() => service.setConfig({ activeDays: 0, purgeDays: 240 })).toThrow('STREAM_MONSTERS_RETENTION_ACTIVE_INVALID');
+    expect(() => service.setConfig({ activeDays: 30, purgeDays: 30 })).toThrow('STREAM_MONSTERS_RETENTION_PURGE_INVALID');
+    expect(service.setConfig({})).toEqual({ activeDays: 30, purgeDays: 240 });
+  });
+
+  test('retains identities and a cooldown ledger while they are still required', () => {
+    const { store } = createSubject();
+    const now = 300 * 86_400_000;
+    store.touchViewerRetention('identity-viewer', 1);
+    store.resolveViewerIdentity({ platformUserId: '7123456789012345678', legacyUserId: 'identity-viewer', updatedAtMs: 1 });
+    store.touchViewerRetention('cooldown-viewer', 1);
+    store.db.prepare('INSERT INTO streammonsters_free_egg_cooldowns (user_id, expires_at_ms) VALUES (?, ?)').run('cooldown-viewer', now + 1);
+    const service = new ViewerRetentionService({ store, now: () => now });
+    service.run();
+    expect(store.db.prepare('SELECT 1 FROM streammonsters_viewer_identities WHERE canonical_user_id = ?').get('tiktok:7123456789012345678')).toBeDefined();
+    expect(store.db.prepare('SELECT 1 FROM streammonsters_viewer_archives WHERE user_id = ?').get('cooldown-viewer')).toBeUndefined();
+  });
+});
+
+describe('Stream Monsters retention configuration', () => {
+  test('validates the candidate before persistence and configures the retention service', () => {
+    const api = {
+      getConfig: () => ({}),
+      setConfig: jest.fn(() => true)
+    };
+    const plugin = new StreamMonstersPlugin(api);
+    plugin.config = plugin.loadConfig({});
+    expect(() => plugin.updateConfig({ streamMonsters: {
+      retentionActiveDays: 90,
+      retentionPurgeDays: 90
+    } })).toThrow('STREAM_MONSTERS_RETENTION_PURGE_INVALID');
+    expect(api.setConfig).not.toHaveBeenCalled();
+
+    const next = plugin.updateConfig({ streamMonsters: {
+      retentionActiveDays: 14,
+      retentionPurgeDays: 60
+    } }, { expectedRevision: 0 });
+    expect(next.streamMonsters).toMatchObject({
+      retentionActiveDays: 14,
+      retentionPurgeDays: 60
+    });
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
   });
 });

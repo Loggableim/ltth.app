@@ -42,6 +42,7 @@ class ViewerRetentionService {
             AND NOT EXISTS (SELECT 1 FROM streammonsters_event_outbox outbox WHERE outbox.delivered_at_ms IS NULL AND outbox.payload_json LIKE '%' || retention.user_id || '%')
             AND NOT EXISTS (SELECT 1 FROM streammonsters_free_egg_offers offer WHERE offer.source_user_id = retention.user_id OR (offer.claimed_by_user_id = retention.user_id AND offer.status IN ('reserved', 'public')))
             AND NOT EXISTS (SELECT 1 FROM streammonsters_free_egg_cooldowns cooldown WHERE cooldown.user_id = retention.user_id AND cooldown.expires_at_ms > ?)
+            AND NOT EXISTS (SELECT 1 FROM streammonsters_viewer_identities identity WHERE identity.canonical_user_id = retention.user_id)
             AND NOT EXISTS (SELECT 1 FROM streammonsters_eggs egg JOIN streammonsters_monsters monster ON monster.egg_id = egg.egg_id WHERE egg.user_id = retention.user_id)
           ORDER BY retention.last_active_at_ms ASC, retention.user_id ASC LIMIT ?
         `).all(activeCutoff, now, BATCH_SIZE);

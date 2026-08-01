@@ -432,7 +432,7 @@ class StreamMonstersRoutes {
       const expectedRevision = req.body?.expectedRevision;
       let update = null;
       try {
-        this.validateRetentionConfigUpdate(req.body);
+        this.validateRetentionConfigUpdate({ ...current, ...(req.body || {}) });
         update = this.sanitizeConfigUpdate(req.body);
       } catch (error) {
         return res.status(400).json({ success: false, error: error.message });
@@ -1617,6 +1617,14 @@ class StreamMonstersRoutes {
         throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
       }
     }
+    const activeDays = Number(input.retentionActiveDays ?? 30);
+    const purgeDays = Number(input.retentionPurgeDays ?? 240);
+    if (!Number.isInteger(activeDays) || activeDays < 1 || activeDays > 90) {
+      throw new Error('STREAM_MONSTERS_RETENTION_ACTIVE_INVALID');
+    }
+    if (!Number.isInteger(purgeDays) || purgeDays < 30 || purgeDays > 730 || purgeDays <= activeDays) {
+      throw new Error('STREAM_MONSTERS_RETENTION_PURGE_INVALID');
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'eggShelfVisibleCount')) {
       const count = Number(input.eggShelfVisibleCount);
       if (!Number.isInteger(count) || count < 1 || count > 6) {
@@ -1998,6 +2006,12 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'retentionActiveDays')) {
+      safe.retentionActiveDays = Math.round(Number(input.retentionActiveDays));
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'retentionPurgeDays')) {
+      safe.retentionPurgeDays = Math.round(Number(input.retentionPurgeDays));
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'eggShelfVisibleCount')) {
       safe.eggShelfVisibleCount = this.normalizeEggShelfVisibleCount(
         input.eggShelfVisibleCount
@@ -2311,6 +2325,12 @@ class StreamMonstersRoutes {
     if (includeCreator) {
       result.creatorName = config.creatorName || '';
       result.freeEggDropsEnabled = config.freeEggDropsEnabled !== false;
+      result.retentionActiveDays = Number.isInteger(Number(config.retentionActiveDays))
+        ? Number(config.retentionActiveDays)
+        : 30;
+      result.retentionPurgeDays = Number.isInteger(Number(config.retentionPurgeDays))
+        ? Number(config.retentionPurgeDays)
+        : 240;
       result.freeEggCooldownSeconds = this.normalizeFreeEggCooldownSeconds(
         config.freeEggCooldownSeconds
       );

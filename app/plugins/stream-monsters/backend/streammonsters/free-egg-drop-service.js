@@ -168,7 +168,8 @@ class FreeEggDropService {
         streamKey: input.streamKey,
         userId: input.userId,
         claimEventId: input.eventId,
-        claimedAtMs: input.nowMs
+        claimedAtMs: input.nowMs,
+        cooldownExpiresAtMs: input.nowMs + this.config.freeEggCooldownSeconds * 1_000
       });
       this.engine.progression?.recordEggReceived(
         input.userId,
