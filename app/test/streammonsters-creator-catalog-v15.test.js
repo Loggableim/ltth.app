@@ -53,6 +53,13 @@ describe('Stream Monsters bundled monster catalog', () => {
     handler({ query: { userId: 'must-not-be-resolved' } }, res);
 
     expect(res.payload.templates).toHaveLength(24);
+    expect(res.payload.templates.find(template => template.templateId === 'cinder'))
+      .toEqual(expect.objectContaining({
+        name: 'Cinderfox',
+        species: 'Fox',
+        epithet: 'Smoke Dancer',
+        season: 'season-1'
+      }));
     expect(res.payload.total).toBe(24);
     expect(res.payload.formsTotal).toBe(72);
     expect(res.payload.assetIntegrity).toEqual({
@@ -104,6 +111,40 @@ describe('Stream Monsters bundled monster catalog', () => {
       template.mastery === null
     ))).toBe(true);
     expect(JSON.stringify(res.payload)).not.toContain('private-viewer');
+  });
+
+  test('projects canonical persisted defaults without changing custom names', () => {
+    const cinder = { monster_id: 'cinder-1', template_id: 'cinder', name: 'Cinder' };
+    const axi = { monster_id: 'axi-1', template_id: 'axi', name: 'Axi' };
+    const pulse = { monster_id: 'pulse-1', template_id: 'pulse', name: 'Pulse' };
+    const custom = { monster_id: 'custom-1', template_id: 'cinder', name: 'Captain Cinder' };
+    const persisted = [cinder, axi, pulse, custom];
+    const before = JSON.parse(JSON.stringify(persisted));
+    const routes = new StreamMonstersRoutes({
+      api: {},
+      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      store: {
+        resolveKnownViewerId: userId => userId,
+        getViewerProgress: () => null,
+        getViewerEggs: () => [],
+        getViewerMonsters: () => persisted,
+        getSelectedMonster: () => cinder,
+        getViewerAchievements: () => []
+      },
+      engine: {},
+      configProvider: {}
+    });
+
+    const state = routes.viewerState('viewer-1');
+
+    expect(state.monsters.map(monster => monster.name)).toEqual([
+      'Cinderfox',
+      'Axolume',
+      'Pulsebyte',
+      'Captain Cinder'
+    ]);
+    expect(state.selectedMonster.name).toBe('Cinderfox');
+    expect(persisted).toEqual(before);
   });
 
   test('rejects missing and hash-mismatched package assets from integrity totals', () => {

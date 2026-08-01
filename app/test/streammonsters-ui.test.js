@@ -20,8 +20,8 @@ describe('Stream Monsters Rules v5 creator surface', () => {
     expect(document.getElementById('visual-library')).not.toBeNull();
     expect(document.getElementById('art-lab')).toBeNull();
     expect(document.getElementById('runtimeWizard')).toBeNull();
-    expect(document.querySelectorAll('#visualPack option')).toHaveLength(1);
-    expect(document.querySelector('#visualPack option').value).toBe('furry');
+    expect(document.getElementById('visualPack')).toBeNull();
+    expect(document.getElementById('demoTemplate')).not.toBeNull();
     expect(creatorHtml()).not.toMatch(
       /\/api\/(?:streamalchemy|streammonsters\/(?:pool|local-runtime))/
     );

@@ -1,5 +1,6 @@
 const { createHash } = require('crypto');
 const { sanitizeCombatReport } = require('./battle-report');
+const { projectDefaultMonsterName } = require('./catalog');
 
 const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:egg_spawned',
@@ -144,14 +145,19 @@ function projectStats(stats = {}) {
 
 function projectMonster(monster = null) {
   if (!monster || typeof monster !== 'object') return null;
+  const templateId = boundedText(
+    monster.templateId ?? monster.template_id,
+    48
+  );
+  const sourceName = boundedText(monster.name, 64) || 'Monster';
   return {
-    name: boundedText(monster.name, 64) || 'Monster',
+    name: projectDefaultMonsterName(templateId, sourceName),
     element: boundedText(monster.element, 24),
     rarity: boundedText(monster.rarity, 32),
     level: Math.max(1, finiteNumber(monster.level, 1)),
     xp: Math.max(0, finiteNumber(monster.xp, 0)),
     personality: boundedText(monster.personality, 48),
-    templateId: boundedText(monster.templateId ?? monster.template_id, 48),
+    templateId,
     evolutionStage: Math.max(
       1,
       finiteNumber(monster.evolutionStage ?? monster.evolution_stage, 1)

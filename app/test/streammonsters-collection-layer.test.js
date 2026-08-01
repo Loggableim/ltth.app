@@ -313,7 +313,8 @@ describe('Stream Monsters 1.4 collection layer', () => {
     TEMPLATE_CATALOG.forEach(template => {
       expect(template).toEqual(expect.objectContaining({
         templateId: expect.any(String), element: expect.any(String), name: expect.any(String),
-        species: expect.any(String), assetPath: expect.any(String),
+        species: expect.any(String), epithet: expect.any(String),
+        season: 'season-1', assetPath: expect.any(String),
         skills: expect.objectContaining({ attack: expect.any(Object), defense: expect.any(Object), special: expect.any(Object) })
       }));
     });

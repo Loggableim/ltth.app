@@ -20,6 +20,8 @@
       "role": "striker",
       "name": "Ashfang",
       "species": "Wolf",
+      "epithet": "Blaze Hunter",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -44,19 +46,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Flammenzahn",
+                  "name": "Flamefang",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Ashfang: Flamefang",
+                  "name": "Flamefang",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Ashfang: Colmillo Ígneo",
+                  "name": "Flamefang",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Ashfang: Croc de Flamme",
+                  "name": "Flamefang",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -80,19 +82,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Glutwacht",
+                  "name": "Ash Guard",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Ashfang: Cinder Ward",
+                  "name": "Ash Guard",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Ashfang: Guardia de Ascuas",
+                  "name": "Ash Guard",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Ashfang: Garde de Braise",
+                  "name": "Ash Guard",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -116,19 +118,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Infernoherz",
+                  "name": "Wildfire Rush",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Ashfang: Inferno Heart",
+                  "name": "Wildfire Rush",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Ashfang: Corazón Infernal",
+                  "name": "Wildfire Rush",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Ashfang: Cœur Infernal",
+                  "name": "Wildfire Rush",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -159,19 +161,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Flammenzahn II",
+                  "name": "Inferno Fang",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Ashfang: Flamefang II",
+                  "name": "Inferno Fang",
                   "effect": "Stage II strengthens this skill: Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Ashfang: Colmillo Ígneo II",
+                  "name": "Inferno Fang",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Ashfang: Croc de Flamme II",
+                  "name": "Inferno Fang",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -181,7 +183,7 @@
               "id": "ashfang:B",
               "type": "defense",
               "icon": "🛡️",
-              "nameKey": "skillNameAshfangBStage1",
+              "nameKey": "skillNameAshfangBStage2",
               "effectKey": "skillEffectAshfangBStage1",
               "effects": [
                 {
@@ -195,19 +197,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Glutwacht",
+                  "name": "Ember Aegis",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Ashfang: Cinder Ward",
+                  "name": "Ember Aegis",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Ashfang: Guardia de Ascuas",
+                  "name": "Ember Aegis",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Ashfang: Garde de Braise",
+                  "name": "Ember Aegis",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -217,7 +219,7 @@
               "id": "ashfang:C",
               "type": "special",
               "icon": "☄️",
-              "nameKey": "skillNameAshfangCStage1",
+              "nameKey": "skillNameAshfangCStage2",
               "effectKey": "skillEffectAshfangCStage1",
               "effects": [
                 {
@@ -231,19 +233,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Infernoherz",
+                  "name": "Furnace Roar",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Ashfang: Inferno Heart",
+                  "name": "Furnace Roar",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Ashfang: Corazón Infernal",
+                  "name": "Furnace Roar",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Ashfang: Cœur Infernal",
+                  "name": "Furnace Roar",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -260,7 +262,7 @@
               "id": "ashfang:A:stage-2",
               "type": "attack",
               "icon": "🔥",
-              "nameKey": "skillNameAshfangAStage2",
+              "nameKey": "skillNameAshfangAStage3",
               "effectKey": "skillEffectAshfangAStage2",
               "effects": [
                 {
@@ -274,19 +276,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Flammenzahn II",
+                  "name": "Solar Maul",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Ashfang: Flamefang II",
+                  "name": "Solar Maul",
                   "effect": "Stage II strengthens this skill: Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Ashfang: Colmillo Ígneo II",
+                  "name": "Solar Maul",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Ashfang: Croc de Flamme II",
+                  "name": "Solar Maul",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -296,7 +298,7 @@
               "id": "ashfang:B",
               "type": "defense",
               "icon": "🛡️",
-              "nameKey": "skillNameAshfangBStage1",
+              "nameKey": "skillNameAshfangBStage3",
               "effectKey": "skillEffectAshfangBStage1",
               "effects": [
                 {
@@ -310,19 +312,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Glutwacht",
+                  "name": "Blaze Rampart",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Ashfang: Cinder Ward",
+                  "name": "Blaze Rampart",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Ashfang: Guardia de Ascuas",
+                  "name": "Blaze Rampart",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Ashfang: Garde de Braise",
+                  "name": "Blaze Rampart",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -346,19 +348,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ashfang: Infernoherz III",
+                  "name": "Sunfire Break",
                   "effect": "Stufe III verstärkt dieses Spezial: Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Ashfang: Inferno Heart III",
+                  "name": "Sunfire Break",
                   "effect": "Stage III empowers this Special: Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Ashfang: Corazón Infernal III",
+                  "name": "Sunfire Break",
                   "effect": "La etapa III potencia este especial: Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Ashfang: Cœur Infernal III",
+                  "name": "Sunfire Break",
                   "effect": "Le stade III renforce ce spécial : Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -372,8 +374,10 @@
       "templateId": "cinder",
       "element": "Ember",
       "role": "trickster",
-      "name": "Cinder",
+      "name": "Cinderfox",
       "species": "Fox",
+      "epithet": "Smoke Dancer",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -398,19 +402,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Flammenzahn",
+                  "name": "Ember Pounce",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Cinder: Flamefang",
+                  "name": "Ember Pounce",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Cinder: Colmillo Ígneo",
+                  "name": "Ember Pounce",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Cinder: Croc de Flamme",
+                  "name": "Ember Pounce",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -438,19 +442,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Glutwacht",
+                  "name": "Smoke Feint",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Cinder: Cinder Ward",
+                  "name": "Smoke Feint",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Cinder: Guardia de Ascuas",
+                  "name": "Smoke Feint",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Cinder: Garde de Braise",
+                  "name": "Smoke Feint",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -478,19 +482,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Infernoherz",
+                  "name": "Foxfire Ruse",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Cinder: Inferno Heart",
+                  "name": "Foxfire Ruse",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Cinder: Corazón Infernal",
+                  "name": "Foxfire Ruse",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Cinder: Cœur Infernal",
+                  "name": "Foxfire Ruse",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -521,19 +525,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Flammenzahn II",
+                  "name": "Soot Sprint",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Cinder: Flamefang II",
+                  "name": "Soot Sprint",
                   "effect": "Stage II strengthens this skill: Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Cinder: Colmillo Ígneo II",
+                  "name": "Soot Sprint",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Cinder: Croc de Flamme II",
+                  "name": "Soot Sprint",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -543,7 +547,7 @@
               "id": "cinder:B",
               "type": "defense",
               "icon": "🛡️",
-              "nameKey": "skillNameCinderBStage1",
+              "nameKey": "skillNameCinderBStage2",
               "effectKey": "skillEffectCinderBStage1",
               "effects": [
                 {
@@ -561,19 +565,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Glutwacht",
+                  "name": "Cinder Mirage",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Cinder: Cinder Ward",
+                  "name": "Cinder Mirage",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Cinder: Guardia de Ascuas",
+                  "name": "Cinder Mirage",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Cinder: Garde de Braise",
+                  "name": "Cinder Mirage",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -583,7 +587,7 @@
               "id": "cinder:C",
               "type": "special",
               "icon": "☄️",
-              "nameKey": "skillNameCinderCStage1",
+              "nameKey": "skillNameCinderCStage2",
               "effectKey": "skillEffectCinderCStage1",
               "effects": [
                 {
@@ -601,19 +605,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Infernoherz",
+                  "name": "Ember Masque",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Cinder: Inferno Heart",
+                  "name": "Ember Masque",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Cinder: Corazón Infernal",
+                  "name": "Ember Masque",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Cinder: Cœur Infernal",
+                  "name": "Ember Masque",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -630,7 +634,7 @@
               "id": "cinder:A:stage-2",
               "type": "attack",
               "icon": "🔥",
-              "nameKey": "skillNameCinderAStage2",
+              "nameKey": "skillNameCinderAStage3",
               "effectKey": "skillEffectCinderAStage2",
               "effects": [
                 {
@@ -644,19 +648,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Flammenzahn II",
+                  "name": "Wildspark Lunge",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Cinder: Flamefang II",
+                  "name": "Wildspark Lunge",
                   "effect": "Stage II strengthens this skill: Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Cinder: Colmillo Ígneo II",
+                  "name": "Wildspark Lunge",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Cinder: Croc de Flamme II",
+                  "name": "Wildspark Lunge",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -666,7 +670,7 @@
               "id": "cinder:B",
               "type": "defense",
               "icon": "🛡️",
-              "nameKey": "skillNameCinderBStage1",
+              "nameKey": "skillNameCinderBStage3",
               "effectKey": "skillEffectCinderBStage1",
               "effects": [
                 {
@@ -684,19 +688,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Glutwacht",
+                  "name": "Ashen Vanish",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Cinder: Cinder Ward",
+                  "name": "Ashen Vanish",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Cinder: Guardia de Ascuas",
+                  "name": "Ashen Vanish",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Cinder: Garde de Braise",
+                  "name": "Ashen Vanish",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -724,19 +728,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cinder: Infernoherz III",
+                  "name": "Foxfire Inferno",
                   "effect": "Stufe III verstärkt dieses Spezial: Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Cinder: Inferno Heart III",
+                  "name": "Foxfire Inferno",
                   "effect": "Stage III empowers this Special: Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Cinder: Corazón Infernal III",
+                  "name": "Foxfire Inferno",
                   "effect": "La etapa III potencia este especial: Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Cinder: Cœur Infernal III",
+                  "name": "Foxfire Inferno",
                   "effect": "Le stade III renforce ce spécial : Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -752,6 +756,8 @@
       "role": "guardian",
       "name": "Embergrin",
       "species": "Hyena",
+      "epithet": "Cinder Guard",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -776,19 +782,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Flammenzahn",
+                  "name": "Coal Crunch",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Embergrin: Flamefang",
+                  "name": "Coal Crunch",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Embergrin: Colmillo Ígneo",
+                  "name": "Coal Crunch",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Embergrin: Croc de Flamme",
+                  "name": "Coal Crunch",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -812,19 +818,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Glutwacht",
+                  "name": "Scorchhide",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Embergrin: Cinder Ward",
+                  "name": "Scorchhide",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Embergrin: Guardia de Ascuas",
+                  "name": "Scorchhide",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Embergrin: Garde de Braise",
+                  "name": "Scorchhide",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -852,19 +858,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Infernoherz",
+                  "name": "Laughing Furnace",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Embergrin: Inferno Heart",
+                  "name": "Laughing Furnace",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Embergrin: Corazón Infernal",
+                  "name": "Laughing Furnace",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Embergrin: Cœur Infernal",
+                  "name": "Laughing Furnace",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -881,7 +887,7 @@
               "id": "embergrin:A",
               "type": "attack",
               "icon": "🔥",
-              "nameKey": "skillNameEmbergrinAStage1",
+              "nameKey": "skillNameEmbergrinAStage2",
               "effectKey": "skillEffectEmbergrinAStage1",
               "effects": [
                 {
@@ -895,19 +901,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Flammenzahn",
+                  "name": "Furnace Bite",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Embergrin: Flamefang",
+                  "name": "Furnace Bite",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Embergrin: Colmillo Ígneo",
+                  "name": "Furnace Bite",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Embergrin: Croc de Flamme",
+                  "name": "Furnace Bite",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -931,19 +937,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Glutwacht II",
+                  "name": "Cinder Carapace",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Embergrin: Cinder Ward II",
+                  "name": "Cinder Carapace",
                   "effect": "Stage II strengthens this skill: Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Embergrin: Guardia de Ascuas II",
+                  "name": "Cinder Carapace",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Embergrin: Garde de Braise II",
+                  "name": "Cinder Carapace",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -953,7 +959,7 @@
               "id": "embergrin:C",
               "type": "special",
               "icon": "☄️",
-              "nameKey": "skillNameEmbergrinCStage1",
+              "nameKey": "skillNameEmbergrinCStage2",
               "effectKey": "skillEffectEmbergrinCStage1",
               "effects": [
                 {
@@ -971,19 +977,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Infernoherz",
+                  "name": "Blazeguard Roar",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Embergrin: Inferno Heart",
+                  "name": "Blazeguard Roar",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Embergrin: Corazón Infernal",
+                  "name": "Blazeguard Roar",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Embergrin: Cœur Infernal",
+                  "name": "Blazeguard Roar",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -1000,7 +1006,7 @@
               "id": "embergrin:A",
               "type": "attack",
               "icon": "🔥",
-              "nameKey": "skillNameEmbergrinAStage1",
+              "nameKey": "skillNameEmbergrinAStage3",
               "effectKey": "skillEffectEmbergrinAStage1",
               "effects": [
                 {
@@ -1014,19 +1020,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Flammenzahn",
+                  "name": "Magma Maw",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Embergrin: Flamefang",
+                  "name": "Magma Maw",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Embergrin: Colmillo Ígneo",
+                  "name": "Magma Maw",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Embergrin: Croc de Flamme",
+                  "name": "Magma Maw",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -1036,7 +1042,7 @@
               "id": "embergrin:B:stage-2",
               "type": "defense",
               "icon": "🛡️",
-              "nameKey": "skillNameEmbergrinBStage2",
+              "nameKey": "skillNameEmbergrinBStage3",
               "effectKey": "skillEffectEmbergrinBStage2",
               "effects": [
                 {
@@ -1050,19 +1056,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Glutwacht II",
+                  "name": "Inferno Bulwark",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Embergrin: Cinder Ward II",
+                  "name": "Inferno Bulwark",
                   "effect": "Stage II strengthens this skill: Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Embergrin: Guardia de Ascuas II",
+                  "name": "Inferno Bulwark",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Embergrin: Garde de Braise II",
+                  "name": "Inferno Bulwark",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -1090,19 +1096,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Embergrin: Infernoherz III",
+                  "name": "Pyre Fortress",
                   "effect": "Stufe III verstärkt dieses Spezial: Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Embergrin: Inferno Heart III",
+                  "name": "Pyre Fortress",
                   "effect": "Stage III empowers this Special: Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Embergrin: Corazón Infernal III",
+                  "name": "Pyre Fortress",
                   "effect": "La etapa III potencia este especial: Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Embergrin: Cœur Infernal III",
+                  "name": "Pyre Fortress",
                   "effect": "Le stade III renforce ce spécial : Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -1118,6 +1124,8 @@
       "role": "sustain",
       "name": "Pyrra",
       "species": "Red Panda",
+      "epithet": "Phoenix Mender",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -1146,19 +1154,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Flammenzahn",
+                  "name": "Ember Petal",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Pyrra: Flamefang",
+                  "name": "Ember Petal",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Pyrra: Colmillo Ígneo",
+                  "name": "Ember Petal",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Pyrra: Croc de Flamme",
+                  "name": "Ember Petal",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -1186,19 +1194,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Glutwacht",
+                  "name": "Warm Nest",
                   "effect": "Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Pyrra: Cinder Ward",
+                  "name": "Warm Nest",
                   "effect": "Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Pyrra: Guardia de Ascuas",
+                  "name": "Warm Nest",
                   "effect": "Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Pyrra: Garde de Braise",
+                  "name": "Warm Nest",
                   "effect": "Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -1222,19 +1230,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Infernoherz",
+                  "name": "Phoenix Bloom",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Pyrra: Inferno Heart",
+                  "name": "Phoenix Bloom",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Pyrra: Corazón Infernal",
+                  "name": "Phoenix Bloom",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Pyrra: Cœur Infernal",
+                  "name": "Phoenix Bloom",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -1251,7 +1259,7 @@
               "id": "pyrra:A",
               "type": "attack",
               "icon": "🔥",
-              "nameKey": "skillNamePyrraAStage1",
+              "nameKey": "skillNamePyrraAStage2",
               "effectKey": "skillEffectPyrraAStage1",
               "effects": [
                 {
@@ -1269,19 +1277,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Flammenzahn",
+                  "name": "Kindled Wing",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Pyrra: Flamefang",
+                  "name": "Kindled Wing",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Pyrra: Colmillo Ígneo",
+                  "name": "Kindled Wing",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Pyrra: Croc de Flamme",
+                  "name": "Kindled Wing",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -1309,19 +1317,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Glutwacht II",
+                  "name": "Cinder Cocoon",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Pyrra: Cinder Ward II",
+                  "name": "Cinder Cocoon",
                   "effect": "Stage II strengthens this skill: Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Pyrra: Guardia de Ascuas II",
+                  "name": "Cinder Cocoon",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Pyrra: Garde de Braise II",
+                  "name": "Cinder Cocoon",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -1331,7 +1339,7 @@
               "id": "pyrra:C",
               "type": "special",
               "icon": "☄️",
-              "nameKey": "skillNamePyrraCStage1",
+              "nameKey": "skillNamePyrraCStage2",
               "effectKey": "skillEffectPyrraCStage1",
               "effects": [
                 {
@@ -1345,19 +1353,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Infernoherz",
+                  "name": "Radiant Rebirth",
                   "effect": "Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Pyrra: Inferno Heart",
+                  "name": "Radiant Rebirth",
                   "effect": "Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Pyrra: Corazón Infernal",
+                  "name": "Radiant Rebirth",
                   "effect": "Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Pyrra: Cœur Infernal",
+                  "name": "Radiant Rebirth",
                   "effect": "Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -1374,7 +1382,7 @@
               "id": "pyrra:A",
               "type": "attack",
               "icon": "🔥",
-              "nameKey": "skillNamePyrraAStage1",
+              "nameKey": "skillNamePyrraAStage3",
               "effectKey": "skillEffectPyrraAStage1",
               "effects": [
                 {
@@ -1392,19 +1400,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Flammenzahn",
+                  "name": "Solar Plume",
                   "effect": "Verursacht Schaden und hinterlässt Brand für die nächste Runde."
                 },
                 "en": {
-                  "name": "Pyrra: Flamefang",
+                  "name": "Solar Plume",
                   "effect": "Deals damage and leaves Burn for the next round."
                 },
                 "es": {
-                  "name": "Pyrra: Colmillo Ígneo",
+                  "name": "Solar Plume",
                   "effect": "Inflige daño y deja Quemadura para la ronda siguiente."
                 },
                 "fr": {
-                  "name": "Pyrra: Croc de Flamme",
+                  "name": "Solar Plume",
                   "effect": "Inflige des dégâts et applique Brûlure au prochain tour."
                 }
               }
@@ -1414,7 +1422,7 @@
               "id": "pyrra:B:stage-2",
               "type": "defense",
               "icon": "🛡️",
-              "nameKey": "skillNamePyrraBStage2",
+              "nameKey": "skillNamePyrraBStage3",
               "effectKey": "skillEffectPyrraBStage2",
               "effects": [
                 {
@@ -1432,19 +1440,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Glutwacht II",
+                  "name": "Dawn Sanctuary",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Feuerschild, der einmal Schaden zurückwirft."
                 },
                 "en": {
-                  "name": "Pyrra: Cinder Ward II",
+                  "name": "Dawn Sanctuary",
                   "effect": "Stage II strengthens this skill: Raises a fire shield that returns damage once."
                 },
                 "es": {
-                  "name": "Pyrra: Guardia de Ascuas II",
+                  "name": "Dawn Sanctuary",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de fuego que devuelve daño una vez."
                 },
                 "fr": {
-                  "name": "Pyrra: Garde de Braise II",
+                  "name": "Dawn Sanctuary",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de feu qui renvoie une fois des dégâts."
                 }
               }
@@ -1468,19 +1476,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pyrra: Infernoherz III",
+                  "name": "Eternal Sunrise",
                   "effect": "Stufe III verstärkt dieses Spezial: Schwerer Flammenschaden plus Heilung; benötigt volle Spezialladung."
                 },
                 "en": {
-                  "name": "Pyrra: Inferno Heart III",
+                  "name": "Eternal Sunrise",
                   "effect": "Stage III empowers this Special: Heavy flame damage plus healing; requires full Special charge."
                 },
                 "es": {
-                  "name": "Pyrra: Corazón Infernal III",
+                  "name": "Eternal Sunrise",
                   "effect": "La etapa III potencia este especial: Gran daño de fuego más curación; requiere la carga especial completa."
                 },
                 "fr": {
-                  "name": "Pyrra: Cœur Infernal III",
+                  "name": "Eternal Sunrise",
                   "effect": "Le stade III renforce ce spécial : Lourds dégâts de flamme et soin ; exige la charge spéciale complète."
                 }
               },
@@ -1496,6 +1504,8 @@
       "role": "trickster",
       "name": "Ripple",
       "species": "Otter",
+      "epithet": "Current Dancer",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -1520,19 +1530,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Strömungsschnitt",
+                  "name": "Current Flick",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Ripple: Current Cut",
+                  "name": "Current Flick",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Ripple: Corte de Corriente",
+                  "name": "Current Flick",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Ripple: Entaille du Courant",
+                  "name": "Current Flick",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -1560,19 +1570,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Nebelwacht",
+                  "name": "Mist Slip",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Ripple: Mist Ward",
+                  "name": "Mist Slip",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Ripple: Guardia de Niebla",
+                  "name": "Mist Slip",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Ripple: Garde de Brume",
+                  "name": "Mist Slip",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -1600,19 +1610,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Gezeitenerneuerung",
+                  "name": "Undertow Twist",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Ripple: Tidal Renewal",
+                  "name": "Undertow Twist",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Ripple: Renovación de Marea",
+                  "name": "Undertow Twist",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Ripple: Renouveau des Marées",
+                  "name": "Undertow Twist",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -1643,19 +1653,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Strömungsschnitt II",
+                  "name": "Riptide Jab",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Ripple: Current Cut II",
+                  "name": "Riptide Jab",
                   "effect": "Stage II strengthens this skill: Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Ripple: Corte de Corriente II",
+                  "name": "Riptide Jab",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Ripple: Entaille du Courant II",
+                  "name": "Riptide Jab",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -1665,7 +1675,7 @@
               "id": "ripple:B",
               "type": "defense",
               "icon": "🌫️",
-              "nameKey": "skillNameRippleBStage1",
+              "nameKey": "skillNameRippleBStage2",
               "effectKey": "skillEffectRippleBStage1",
               "effects": [
                 {
@@ -1683,19 +1693,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Nebelwacht",
+                  "name": "Foam Mirage",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Ripple: Mist Ward",
+                  "name": "Foam Mirage",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Ripple: Guardia de Niebla",
+                  "name": "Foam Mirage",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Ripple: Garde de Brume",
+                  "name": "Foam Mirage",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -1705,7 +1715,7 @@
               "id": "ripple:C",
               "type": "special",
               "icon": "💧",
-              "nameKey": "skillNameRippleCStage1",
+              "nameKey": "skillNameRippleCStage2",
               "effectKey": "skillEffectRippleCStage1",
               "effects": [
                 {
@@ -1723,19 +1733,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Gezeitenerneuerung",
+                  "name": "Whirlpool Ruse",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Ripple: Tidal Renewal",
+                  "name": "Whirlpool Ruse",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Ripple: Renovación de Marea",
+                  "name": "Whirlpool Ruse",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Ripple: Renouveau des Marées",
+                  "name": "Whirlpool Ruse",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -1752,7 +1762,7 @@
               "id": "ripple:A:stage-2",
               "type": "attack",
               "icon": "🌊",
-              "nameKey": "skillNameRippleAStage2",
+              "nameKey": "skillNameRippleAStage3",
               "effectKey": "skillEffectRippleAStage2",
               "effects": [
                 {
@@ -1766,19 +1776,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Strömungsschnitt II",
+                  "name": "Torrent Snap",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Ripple: Current Cut II",
+                  "name": "Torrent Snap",
                   "effect": "Stage II strengthens this skill: Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Ripple: Corte de Corriente II",
+                  "name": "Torrent Snap",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Ripple: Entaille du Courant II",
+                  "name": "Torrent Snap",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -1788,7 +1798,7 @@
               "id": "ripple:B",
               "type": "defense",
               "icon": "🌫️",
-              "nameKey": "skillNameRippleBStage1",
+              "nameKey": "skillNameRippleBStage3",
               "effectKey": "skillEffectRippleBStage1",
               "effects": [
                 {
@@ -1806,19 +1816,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Nebelwacht",
+                  "name": "Vapor Veil",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Ripple: Mist Ward",
+                  "name": "Vapor Veil",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Ripple: Guardia de Niebla",
+                  "name": "Vapor Veil",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Ripple: Garde de Brume",
+                  "name": "Vapor Veil",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -1846,19 +1856,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ripple: Gezeitenerneuerung III",
+                  "name": "Maelstrom Masque",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Ripple: Tidal Renewal III",
+                  "name": "Maelstrom Masque",
                   "effect": "Stage III empowers this Special: A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Ripple: Renovación de Marea III",
+                  "name": "Maelstrom Masque",
                   "effect": "La etapa III potencia este especial: Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Ripple: Renouveau des Marées III",
+                  "name": "Maelstrom Masque",
                   "effect": "Le stade III renforce ce spécial : Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -1874,6 +1884,8 @@
       "role": "guardian",
       "name": "Brine",
       "species": "Seal",
+      "epithet": "Harbor Guard",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -1898,19 +1910,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Strömungsschnitt",
+                  "name": "Salt Slam",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Brine: Current Cut",
+                  "name": "Salt Slam",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Brine: Corte de Corriente",
+                  "name": "Salt Slam",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Brine: Entaille du Courant",
+                  "name": "Salt Slam",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -1934,19 +1946,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Nebelwacht",
+                  "name": "Harbor Shell",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Brine: Mist Ward",
+                  "name": "Harbor Shell",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Brine: Guardia de Niebla",
+                  "name": "Harbor Shell",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Brine: Garde de Brume",
+                  "name": "Harbor Shell",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -1974,19 +1986,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Gezeitenerneuerung",
+                  "name": "Breakwater Roar",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Brine: Tidal Renewal",
+                  "name": "Breakwater Roar",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Brine: Renovación de Marea",
+                  "name": "Breakwater Roar",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Brine: Renouveau des Marées",
+                  "name": "Breakwater Roar",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2003,7 +2015,7 @@
               "id": "brine:A",
               "type": "attack",
               "icon": "🌊",
-              "nameKey": "skillNameBrineAStage1",
+              "nameKey": "skillNameBrineAStage2",
               "effectKey": "skillEffectBrineAStage1",
               "effects": [
                 {
@@ -2017,19 +2029,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Strömungsschnitt",
+                  "name": "Brine Breaker",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Brine: Current Cut",
+                  "name": "Brine Breaker",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Brine: Corte de Corriente",
+                  "name": "Brine Breaker",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Brine: Entaille du Courant",
+                  "name": "Brine Breaker",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2053,19 +2065,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Nebelwacht II",
+                  "name": "Reef Rampart",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Brine: Mist Ward II",
+                  "name": "Reef Rampart",
                   "effect": "Stage II strengthens this skill: Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Brine: Guardia de Niebla II",
+                  "name": "Reef Rampart",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Brine: Garde de Brume II",
+                  "name": "Reef Rampart",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2075,7 +2087,7 @@
               "id": "brine:C",
               "type": "special",
               "icon": "💧",
-              "nameKey": "skillNameBrineCStage1",
+              "nameKey": "skillNameBrineCStage2",
               "effectKey": "skillEffectBrineCStage1",
               "effects": [
                 {
@@ -2093,19 +2105,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Gezeitenerneuerung",
+                  "name": "Citadel Surge",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Brine: Tidal Renewal",
+                  "name": "Citadel Surge",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Brine: Renovación de Marea",
+                  "name": "Citadel Surge",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Brine: Renouveau des Marées",
+                  "name": "Citadel Surge",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2122,7 +2134,7 @@
               "id": "brine:A",
               "type": "attack",
               "icon": "🌊",
-              "nameKey": "skillNameBrineAStage1",
+              "nameKey": "skillNameBrineAStage3",
               "effectKey": "skillEffectBrineAStage1",
               "effects": [
                 {
@@ -2136,19 +2148,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Strömungsschnitt",
+                  "name": "Tidal Hammer",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Brine: Current Cut",
+                  "name": "Tidal Hammer",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Brine: Corte de Corriente",
+                  "name": "Tidal Hammer",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Brine: Entaille du Courant",
+                  "name": "Tidal Hammer",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2158,7 +2170,7 @@
               "id": "brine:B:stage-2",
               "type": "defense",
               "icon": "🌫️",
-              "nameKey": "skillNameBrineBStage2",
+              "nameKey": "skillNameBrineBStage3",
               "effectKey": "skillEffectBrineBStage2",
               "effects": [
                 {
@@ -2172,19 +2184,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Nebelwacht II",
+                  "name": "Ocean Bastion",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Brine: Mist Ward II",
+                  "name": "Ocean Bastion",
                   "effect": "Stage II strengthens this skill: Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Brine: Guardia de Niebla II",
+                  "name": "Ocean Bastion",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Brine: Garde de Brume II",
+                  "name": "Ocean Bastion",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2212,19 +2224,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Brine: Gezeitenerneuerung III",
+                  "name": "Leviathan Wall",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Brine: Tidal Renewal III",
+                  "name": "Leviathan Wall",
                   "effect": "Stage III empowers this Special: A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Brine: Renovación de Marea III",
+                  "name": "Leviathan Wall",
                   "effect": "La etapa III potencia este especial: Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Brine: Renouveau des Marées III",
+                  "name": "Leviathan Wall",
                   "effect": "Le stade III renforce ce spécial : Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2240,6 +2252,8 @@
       "role": "striker",
       "name": "Reefbite",
       "species": "Shark",
+      "epithet": "Reef Hunter",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -2264,19 +2278,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Strömungsschnitt",
+                  "name": "Razor Tide",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Reefbite: Current Cut",
+                  "name": "Razor Tide",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Reefbite: Corte de Corriente",
+                  "name": "Razor Tide",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Reefbite: Entaille du Courant",
+                  "name": "Razor Tide",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2300,19 +2314,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Nebelwacht",
+                  "name": "Foam Guard",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Reefbite: Mist Ward",
+                  "name": "Foam Guard",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Reefbite: Guardia de Niebla",
+                  "name": "Foam Guard",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Reefbite: Garde de Brume",
+                  "name": "Foam Guard",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2336,19 +2350,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Gezeitenerneuerung",
+                  "name": "Sharkwave Charge",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Reefbite: Tidal Renewal",
+                  "name": "Sharkwave Charge",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Reefbite: Renovación de Marea",
+                  "name": "Sharkwave Charge",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Reefbite: Renouveau des Marées",
+                  "name": "Sharkwave Charge",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2379,19 +2393,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Strömungsschnitt II",
+                  "name": "Reef Ripper",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Reefbite: Current Cut II",
+                  "name": "Reef Ripper",
                   "effect": "Stage II strengthens this skill: Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Reefbite: Corte de Corriente II",
+                  "name": "Reef Ripper",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Reefbite: Entaille du Courant II",
+                  "name": "Reef Ripper",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2401,7 +2415,7 @@
               "id": "reefbite:B",
               "type": "defense",
               "icon": "🌫️",
-              "nameKey": "skillNameReefbiteBStage1",
+              "nameKey": "skillNameReefbiteBStage2",
               "effectKey": "skillEffectReefbiteBStage1",
               "effects": [
                 {
@@ -2415,19 +2429,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Nebelwacht",
+                  "name": "Coral Screen",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Reefbite: Mist Ward",
+                  "name": "Coral Screen",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Reefbite: Guardia de Niebla",
+                  "name": "Coral Screen",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Reefbite: Garde de Brume",
+                  "name": "Coral Screen",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2437,7 +2451,7 @@
               "id": "reefbite:C",
               "type": "special",
               "icon": "💧",
-              "nameKey": "skillNameReefbiteCStage1",
+              "nameKey": "skillNameReefbiteCStage2",
               "effectKey": "skillEffectReefbiteCStage1",
               "effects": [
                 {
@@ -2451,19 +2465,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Gezeitenerneuerung",
+                  "name": "Riptide Ravage",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Reefbite: Tidal Renewal",
+                  "name": "Riptide Ravage",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Reefbite: Renovación de Marea",
+                  "name": "Riptide Ravage",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Reefbite: Renouveau des Marées",
+                  "name": "Riptide Ravage",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2480,7 +2494,7 @@
               "id": "reefbite:A:stage-2",
               "type": "attack",
               "icon": "🌊",
-              "nameKey": "skillNameReefbiteAStage2",
+              "nameKey": "skillNameReefbiteAStage3",
               "effectKey": "skillEffectReefbiteAStage2",
               "effects": [
                 {
@@ -2494,19 +2508,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Strömungsschnitt II",
+                  "name": "Abyss Fang",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Reefbite: Current Cut II",
+                  "name": "Abyss Fang",
                   "effect": "Stage II strengthens this skill: Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Reefbite: Corte de Corriente II",
+                  "name": "Abyss Fang",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Reefbite: Entaille du Courant II",
+                  "name": "Abyss Fang",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2516,7 +2530,7 @@
               "id": "reefbite:B",
               "type": "defense",
               "icon": "🌫️",
-              "nameKey": "skillNameReefbiteBStage1",
+              "nameKey": "skillNameReefbiteBStage3",
               "effectKey": "skillEffectReefbiteBStage1",
               "effects": [
                 {
@@ -2530,19 +2544,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Nebelwacht",
+                  "name": "Deepsea Ward",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Reefbite: Mist Ward",
+                  "name": "Deepsea Ward",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Reefbite: Guardia de Niebla",
+                  "name": "Deepsea Ward",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Reefbite: Garde de Brume",
+                  "name": "Deepsea Ward",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2566,19 +2580,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Reefbite: Gezeitenerneuerung III",
+                  "name": "Kraken Break",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Reefbite: Tidal Renewal III",
+                  "name": "Kraken Break",
                   "effect": "Stage III empowers this Special: A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Reefbite: Renovación de Marea III",
+                  "name": "Kraken Break",
                   "effect": "La etapa III potencia este especial: Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Reefbite: Renouveau des Marées III",
+                  "name": "Kraken Break",
                   "effect": "Le stade III renforce ce spécial : Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2592,8 +2606,10 @@
       "templateId": "axi",
       "element": "Tide",
       "role": "sustain",
-      "name": "Axi",
+      "name": "Axolume",
       "species": "Axolotl",
+      "epithet": "Tide Mender",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -2622,19 +2638,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Strömungsschnitt",
+                  "name": "Lumen Ripple",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Axi: Current Cut",
+                  "name": "Lumen Ripple",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Axi: Corte de Corriente",
+                  "name": "Lumen Ripple",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Axi: Entaille du Courant",
+                  "name": "Lumen Ripple",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2658,19 +2674,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Nebelwacht",
+                  "name": "Aqua Mend",
                   "effect": "Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Axi: Mist Ward",
+                  "name": "Aqua Mend",
                   "effect": "Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Axi: Guardia de Niebla",
+                  "name": "Aqua Mend",
                   "effect": "Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Axi: Garde de Brume",
+                  "name": "Aqua Mend",
                   "effect": "Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2694,19 +2710,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Gezeitenerneuerung",
+                  "name": "Prism Tide",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Axi: Tidal Renewal",
+                  "name": "Prism Tide",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Axi: Renovación de Marea",
+                  "name": "Prism Tide",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Axi: Renouveau des Marées",
+                  "name": "Prism Tide",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2723,7 +2739,7 @@
               "id": "axi:A",
               "type": "attack",
               "icon": "🌊",
-              "nameKey": "skillNameAxiAStage1",
+              "nameKey": "skillNameAxiAStage2",
               "effectKey": "skillEffectAxiAStage1",
               "effects": [
                 {
@@ -2741,19 +2757,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Strömungsschnitt",
+                  "name": "Glow Current",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Axi: Current Cut",
+                  "name": "Glow Current",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Axi: Corte de Corriente",
+                  "name": "Glow Current",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Axi: Entaille du Courant",
+                  "name": "Glow Current",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2777,19 +2793,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Nebelwacht II",
+                  "name": "Lagoon Halo",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Axi: Mist Ward II",
+                  "name": "Lagoon Halo",
                   "effect": "Stage II strengthens this skill: Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Axi: Guardia de Niebla II",
+                  "name": "Lagoon Halo",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Axi: Garde de Brume II",
+                  "name": "Lagoon Halo",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2799,7 +2815,7 @@
               "id": "axi:C",
               "type": "special",
               "icon": "💧",
-              "nameKey": "skillNameAxiCStage1",
+              "nameKey": "skillNameAxiCStage2",
               "effectKey": "skillEffectAxiCStage1",
               "effects": [
                 {
@@ -2813,19 +2829,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Gezeitenerneuerung",
+                  "name": "Luma Wave",
                   "effect": "Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Axi: Tidal Renewal",
+                  "name": "Luma Wave",
                   "effect": "A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Axi: Renovación de Marea",
+                  "name": "Luma Wave",
                   "effect": "Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Axi: Renouveau des Marées",
+                  "name": "Luma Wave",
                   "effect": "Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2842,7 +2858,7 @@
               "id": "axi:A",
               "type": "attack",
               "icon": "🌊",
-              "nameKey": "skillNameAxiAStage1",
+              "nameKey": "skillNameAxiAStage3",
               "effectKey": "skillEffectAxiAStage1",
               "effects": [
                 {
@@ -2860,19 +2876,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Strömungsschnitt",
+                  "name": "Aurora Stream",
                   "effect": "Verursacht Schaden und schwächt den nächsten gegnerischen Treffer."
                 },
                 "en": {
-                  "name": "Axi: Current Cut",
+                  "name": "Aurora Stream",
                   "effect": "Deals damage and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Axi: Corte de Corriente",
+                  "name": "Aurora Stream",
                   "effect": "Inflige daño y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Axi: Entaille du Courant",
+                  "name": "Aurora Stream",
                   "effect": "Inflige des dégâts et affaiblit le prochain coup ennemi."
                 }
               }
@@ -2882,7 +2898,7 @@
               "id": "axi:B:stage-2",
               "type": "defense",
               "icon": "🌫️",
-              "nameKey": "skillNameAxiBStage2",
+              "nameKey": "skillNameAxiBStage3",
               "effectKey": "skillEffectAxiBStage2",
               "effects": [
                 {
@@ -2896,19 +2912,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Nebelwacht II",
+                  "name": "Crystal Spring",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt Nebelschild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Axi: Mist Ward II",
+                  "name": "Crystal Spring",
                   "effect": "Stage II strengthens this skill: Creates mist shield and restores health."
                 },
                 "es": {
-                  "name": "Axi: Guardia de Niebla II",
+                  "name": "Crystal Spring",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de niebla y recupera salud."
                 },
                 "fr": {
-                  "name": "Axi: Garde de Brume II",
+                  "name": "Crystal Spring",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier de brume et restaure de la santé."
                 }
               }
@@ -2932,19 +2948,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Axi: Gezeitenerneuerung III",
+                  "name": "Ocean Renewal",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine mächtige Welle, die Schaden verursacht und Gesundheit heilt."
                 },
                 "en": {
-                  "name": "Axi: Tidal Renewal III",
+                  "name": "Ocean Renewal",
                   "effect": "Stage III empowers this Special: A powerful wave that deals damage and restores health."
                 },
                 "es": {
-                  "name": "Axi: Renovación de Marea III",
+                  "name": "Ocean Renewal",
                   "effect": "La etapa III potencia este especial: Una ola potente que inflige daño y recupera salud."
                 },
                 "fr": {
-                  "name": "Axi: Renouveau des Marées III",
+                  "name": "Ocean Renewal",
                   "effect": "Le stade III renforce ce spécial : Une vague puissante qui inflige des dégâts et restaure de la santé."
                 }
               },
@@ -2960,6 +2976,8 @@
       "role": "trickster",
       "name": "Mosswhisker",
       "species": "Mouse",
+      "epithet": "Briar Dancer",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -2984,19 +3002,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Dornenhieb",
+                  "name": "Briar Sneak",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Mosswhisker: Briar Bash",
+                  "name": "Briar Sneak",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Mosswhisker: Golpe de Zarzas",
+                  "name": "Briar Sneak",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Frappe de Ronces",
+                  "name": "Briar Sneak",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3020,19 +3038,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Rindenbastion",
+                  "name": "Moss Mantle",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Mosswhisker: Bark Bastion",
+                  "name": "Moss Mantle",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Mosswhisker: Bastión de Corteza",
+                  "name": "Moss Mantle",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Bastion d’Écorce",
+                  "name": "Moss Mantle",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3064,19 +3082,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Smaragdschwur",
+                  "name": "Burrow Bloom",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Mosswhisker: Verdant Oath",
+                  "name": "Burrow Bloom",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Mosswhisker: Juramento Verde",
+                  "name": "Burrow Bloom",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Serment Verdoyant",
+                  "name": "Burrow Bloom",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3107,19 +3125,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Dornenhieb II",
+                  "name": "Thorn Scurry",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Mosswhisker: Briar Bash II",
+                  "name": "Thorn Scurry",
                   "effect": "Stage II strengthens this skill: Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Mosswhisker: Golpe de Zarzas II",
+                  "name": "Thorn Scurry",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Frappe de Ronces II",
+                  "name": "Thorn Scurry",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3129,7 +3147,7 @@
               "id": "mosswhisker:B",
               "type": "defense",
               "icon": "🪵",
-              "nameKey": "skillNameMosswhiskerBStage1",
+              "nameKey": "skillNameMosswhiskerBStage2",
               "effectKey": "skillEffectMosswhiskerBStage1",
               "effects": [
                 {
@@ -3143,19 +3161,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Rindenbastion",
+                  "name": "Leaf Decoy",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Mosswhisker: Bark Bastion",
+                  "name": "Leaf Decoy",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Mosswhisker: Bastión de Corteza",
+                  "name": "Leaf Decoy",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Bastion d’Écorce",
+                  "name": "Leaf Decoy",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3165,7 +3183,7 @@
               "id": "mosswhisker:C",
               "type": "special",
               "icon": "🌳",
-              "nameKey": "skillNameMosswhiskerCStage1",
+              "nameKey": "skillNameMosswhiskerCStage2",
               "effectKey": "skillEffectMosswhiskerCStage1",
               "effects": [
                 {
@@ -3187,19 +3205,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Smaragdschwur",
+                  "name": "Root Ruse",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Mosswhisker: Verdant Oath",
+                  "name": "Root Ruse",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Mosswhisker: Juramento Verde",
+                  "name": "Root Ruse",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Serment Verdoyant",
+                  "name": "Root Ruse",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3216,7 +3234,7 @@
               "id": "mosswhisker:A:stage-2",
               "type": "attack",
               "icon": "🌿",
-              "nameKey": "skillNameMosswhiskerAStage2",
+              "nameKey": "skillNameMosswhiskerAStage3",
               "effectKey": "skillEffectMosswhiskerAStage2",
               "effects": [
                 {
@@ -3230,19 +3248,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Dornenhieb II",
+                  "name": "Bramble Blitz",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Mosswhisker: Briar Bash II",
+                  "name": "Bramble Blitz",
                   "effect": "Stage II strengthens this skill: Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Mosswhisker: Golpe de Zarzas II",
+                  "name": "Bramble Blitz",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Frappe de Ronces II",
+                  "name": "Bramble Blitz",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3252,7 +3270,7 @@
               "id": "mosswhisker:B",
               "type": "defense",
               "icon": "🪵",
-              "nameKey": "skillNameMosswhiskerBStage1",
+              "nameKey": "skillNameMosswhiskerBStage3",
               "effectKey": "skillEffectMosswhiskerBStage1",
               "effects": [
                 {
@@ -3266,19 +3284,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Rindenbastion",
+                  "name": "Grove Mirage",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Mosswhisker: Bark Bastion",
+                  "name": "Grove Mirage",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Mosswhisker: Bastión de Corteza",
+                  "name": "Grove Mirage",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Bastion d’Écorce",
+                  "name": "Grove Mirage",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3310,19 +3328,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Mosswhisker: Smaragdschwur III",
+                  "name": "Emerald Masque",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Mosswhisker: Verdant Oath III",
+                  "name": "Emerald Masque",
                   "effect": "Stage III empowers this Special: Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Mosswhisker: Juramento Verde III",
+                  "name": "Emerald Masque",
                   "effect": "La etapa III potencia este especial: Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Mosswhisker: Serment Verdoyant III",
+                  "name": "Emerald Masque",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3338,6 +3356,8 @@
       "role": "sustain",
       "name": "Cloverhop",
       "species": "Rabbit",
+      "epithet": "Bloom Mender",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -3366,19 +3386,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Dornenhieb",
+                  "name": "Clover Kick",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Cloverhop: Briar Bash",
+                  "name": "Clover Kick",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Cloverhop: Golpe de Zarzas",
+                  "name": "Clover Kick",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Cloverhop: Frappe de Ronces",
+                  "name": "Clover Kick",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3402,19 +3422,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Rindenbastion",
+                  "name": "Meadow Mend",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Cloverhop: Bark Bastion",
+                  "name": "Meadow Mend",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Cloverhop: Bastión de Corteza",
+                  "name": "Meadow Mend",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Cloverhop: Bastion d’Écorce",
+                  "name": "Meadow Mend",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3442,19 +3462,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Smaragdschwur",
+                  "name": "Lucky Sprout",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Cloverhop: Verdant Oath",
+                  "name": "Lucky Sprout",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Cloverhop: Juramento Verde",
+                  "name": "Lucky Sprout",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Cloverhop: Serment Verdoyant",
+                  "name": "Lucky Sprout",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3471,7 +3491,7 @@
               "id": "cloverhop:A",
               "type": "attack",
               "icon": "🌿",
-              "nameKey": "skillNameCloverhopAStage1",
+              "nameKey": "skillNameCloverhopAStage2",
               "effectKey": "skillEffectCloverhopAStage1",
               "effects": [
                 {
@@ -3489,19 +3509,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Dornenhieb",
+                  "name": "Petal Bound",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Cloverhop: Briar Bash",
+                  "name": "Petal Bound",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Cloverhop: Golpe de Zarzas",
+                  "name": "Petal Bound",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Cloverhop: Frappe de Ronces",
+                  "name": "Petal Bound",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3525,19 +3545,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Rindenbastion II",
+                  "name": "Bloom Shelter",
                   "effect": "Stufe II verstärkt diesen Skill: Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Cloverhop: Bark Bastion II",
+                  "name": "Bloom Shelter",
                   "effect": "Stage II strengthens this skill: Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Cloverhop: Bastión de Corteza II",
+                  "name": "Bloom Shelter",
                   "effect": "La etapa II refuerza esta habilidad: Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Cloverhop: Bastion d’Écorce II",
+                  "name": "Bloom Shelter",
                   "effect": "Le stade II renforce cette compétence : Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3547,7 +3567,7 @@
               "id": "cloverhop:C",
               "type": "special",
               "icon": "🌳",
-              "nameKey": "skillNameCloverhopCStage1",
+              "nameKey": "skillNameCloverhopCStage2",
               "effectKey": "skillEffectCloverhopCStage1",
               "effects": [
                 {
@@ -3565,19 +3585,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Smaragdschwur",
+                  "name": "Garden Grace",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Cloverhop: Verdant Oath",
+                  "name": "Garden Grace",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Cloverhop: Juramento Verde",
+                  "name": "Garden Grace",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Cloverhop: Serment Verdoyant",
+                  "name": "Garden Grace",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3594,7 +3614,7 @@
               "id": "cloverhop:A",
               "type": "attack",
               "icon": "🌿",
-              "nameKey": "skillNameCloverhopAStage1",
+              "nameKey": "skillNameCloverhopAStage3",
               "effectKey": "skillEffectCloverhopAStage1",
               "effects": [
                 {
@@ -3612,19 +3632,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Dornenhieb",
+                  "name": "Verdant Vault",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Cloverhop: Briar Bash",
+                  "name": "Verdant Vault",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Cloverhop: Golpe de Zarzas",
+                  "name": "Verdant Vault",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Cloverhop: Frappe de Ronces",
+                  "name": "Verdant Vault",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3634,7 +3654,7 @@
               "id": "cloverhop:B:stage-2",
               "type": "defense",
               "icon": "🪵",
-              "nameKey": "skillNameCloverhopBStage2",
+              "nameKey": "skillNameCloverhopBStage3",
               "effectKey": "skillEffectCloverhopBStage2",
               "effects": [
                 {
@@ -3648,19 +3668,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Rindenbastion II",
+                  "name": "Spring Haven",
                   "effect": "Stufe II verstärkt diesen Skill: Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Cloverhop: Bark Bastion II",
+                  "name": "Spring Haven",
                   "effect": "Stage II strengthens this skill: Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Cloverhop: Bastión de Corteza II",
+                  "name": "Spring Haven",
                   "effect": "La etapa II refuerza esta habilidad: Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Cloverhop: Bastion d’Écorce II",
+                  "name": "Spring Haven",
                   "effect": "Le stade II renforce cette compétence : Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3688,19 +3708,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cloverhop: Smaragdschwur III",
+                  "name": "Evergrove Blessing",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Cloverhop: Verdant Oath III",
+                  "name": "Evergrove Blessing",
                   "effect": "Stage III empowers this Special: Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Cloverhop: Juramento Verde III",
+                  "name": "Evergrove Blessing",
                   "effect": "La etapa III potencia este especial: Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Cloverhop: Serment Verdoyant III",
+                  "name": "Evergrove Blessing",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3716,6 +3736,8 @@
       "role": "guardian",
       "name": "Oakheart",
       "species": "Deer",
+      "epithet": "Grove Guard",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -3740,19 +3762,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Dornenhieb",
+                  "name": "Antler Briar",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Oakheart: Briar Bash",
+                  "name": "Antler Briar",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Oakheart: Golpe de Zarzas",
+                  "name": "Antler Briar",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Oakheart: Frappe de Ronces",
+                  "name": "Antler Briar",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3772,19 +3794,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Rindenbastion",
+                  "name": "Bark Bastion",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Oakheart: Bark Bastion",
+                  "name": "Bark Bastion",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Oakheart: Bastión de Corteza",
+                  "name": "Bark Bastion",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Oakheart: Bastion d’Écorce",
+                  "name": "Bark Bastion",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3812,19 +3834,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Smaragdschwur",
+                  "name": "Forest Oath",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Oakheart: Verdant Oath",
+                  "name": "Forest Oath",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Oakheart: Juramento Verde",
+                  "name": "Forest Oath",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Oakheart: Serment Verdoyant",
+                  "name": "Forest Oath",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3841,7 +3863,7 @@
               "id": "oakheart:A",
               "type": "attack",
               "icon": "🌿",
-              "nameKey": "skillNameOakheartAStage1",
+              "nameKey": "skillNameOakheartAStage2",
               "effectKey": "skillEffectOakheartAStage1",
               "effects": [
                 {
@@ -3855,19 +3877,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Dornenhieb",
+                  "name": "Root Ram",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Oakheart: Briar Bash",
+                  "name": "Root Ram",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Oakheart: Golpe de Zarzas",
+                  "name": "Root Ram",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Oakheart: Frappe de Ronces",
+                  "name": "Root Ram",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3887,19 +3909,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Rindenbastion II",
+                  "name": "Oak Fortress",
                   "effect": "Stufe II verstärkt diesen Skill: Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Oakheart: Bark Bastion II",
+                  "name": "Oak Fortress",
                   "effect": "Stage II strengthens this skill: Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Oakheart: Bastión de Corteza II",
+                  "name": "Oak Fortress",
                   "effect": "La etapa II refuerza esta habilidad: Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Oakheart: Bastion d’Écorce II",
+                  "name": "Oak Fortress",
                   "effect": "Le stade II renforce cette compétence : Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -3909,7 +3931,7 @@
               "id": "oakheart:C",
               "type": "special",
               "icon": "🌳",
-              "nameKey": "skillNameOakheartCStage1",
+              "nameKey": "skillNameOakheartCStage2",
               "effectKey": "skillEffectOakheartCStage1",
               "effects": [
                 {
@@ -3927,19 +3949,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Smaragdschwur",
+                  "name": "Grove Citadel",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Oakheart: Verdant Oath",
+                  "name": "Grove Citadel",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Oakheart: Juramento Verde",
+                  "name": "Grove Citadel",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Oakheart: Serment Verdoyant",
+                  "name": "Grove Citadel",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -3956,7 +3978,7 @@
               "id": "oakheart:A",
               "type": "attack",
               "icon": "🌿",
-              "nameKey": "skillNameOakheartAStage1",
+              "nameKey": "skillNameOakheartAStage3",
               "effectKey": "skillEffectOakheartAStage1",
               "effects": [
                 {
@@ -3970,19 +3992,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Dornenhieb",
+                  "name": "Elderwood Charge",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Oakheart: Briar Bash",
+                  "name": "Elderwood Charge",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Oakheart: Golpe de Zarzas",
+                  "name": "Elderwood Charge",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Oakheart: Frappe de Ronces",
+                  "name": "Elderwood Charge",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -3992,7 +4014,7 @@
               "id": "oakheart:B:stage-2",
               "type": "defense",
               "icon": "🪵",
-              "nameKey": "skillNameOakheartBStage2",
+              "nameKey": "skillNameOakheartBStage3",
               "effectKey": "skillEffectOakheartBStage2",
               "effects": [
                 {
@@ -4002,19 +4024,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Rindenbastion II",
+                  "name": "Ancient Rampart",
                   "effect": "Stufe II verstärkt diesen Skill: Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Oakheart: Bark Bastion II",
+                  "name": "Ancient Rampart",
                   "effect": "Stage II strengthens this skill: Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Oakheart: Bastión de Corteza II",
+                  "name": "Ancient Rampart",
                   "effect": "La etapa II refuerza esta habilidad: Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Oakheart: Bastion d’Écorce II",
+                  "name": "Ancient Rampart",
                   "effect": "Le stade II renforce cette compétence : Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -4042,19 +4064,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Oakheart: Smaragdschwur III",
+                  "name": "Worldtree Stand",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Oakheart: Verdant Oath III",
+                  "name": "Worldtree Stand",
                   "effect": "Stage III empowers this Special: Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Oakheart: Juramento Verde III",
+                  "name": "Worldtree Stand",
                   "effect": "La etapa III potencia este especial: Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Oakheart: Serment Verdoyant III",
+                  "name": "Worldtree Stand",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -4070,6 +4092,8 @@
       "role": "striker",
       "name": "Fernmask",
       "species": "Raccoon",
+      "epithet": "Thorn Hunter",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -4094,19 +4118,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Dornenhieb",
+                  "name": "Thorn Swipe",
                   "effect": "Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Fernmask: Briar Bash",
+                  "name": "Thorn Swipe",
                   "effect": "Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Fernmask: Golpe de Zarzas",
+                  "name": "Thorn Swipe",
                   "effect": "Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Fernmask: Frappe de Ronces",
+                  "name": "Thorn Swipe",
                   "effect": "Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -4126,19 +4150,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Rindenbastion",
+                  "name": "Fern Guard",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Fernmask: Bark Bastion",
+                  "name": "Fern Guard",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Fernmask: Bastión de Corteza",
+                  "name": "Fern Guard",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Fernmask: Bastion d’Écorce",
+                  "name": "Fern Guard",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -4166,19 +4190,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Smaragdschwur",
+                  "name": "Masked Ambush",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Fernmask: Verdant Oath",
+                  "name": "Masked Ambush",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Fernmask: Juramento Verde",
+                  "name": "Masked Ambush",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Fernmask: Serment Verdoyant",
+                  "name": "Masked Ambush",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -4209,19 +4233,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Dornenhieb II",
+                  "name": "Vine Ripper",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Fernmask: Briar Bash II",
+                  "name": "Vine Ripper",
                   "effect": "Stage II strengthens this skill: Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Fernmask: Golpe de Zarzas II",
+                  "name": "Vine Ripper",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Fernmask: Frappe de Ronces II",
+                  "name": "Vine Ripper",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -4231,7 +4255,7 @@
               "id": "fernmask:B",
               "type": "defense",
               "icon": "🪵",
-              "nameKey": "skillNameFernmaskBStage1",
+              "nameKey": "skillNameFernmaskBStage2",
               "effectKey": "skillEffectFernmaskBStage1",
               "effects": [
                 {
@@ -4241,19 +4265,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Rindenbastion",
+                  "name": "Leaf Armor",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Fernmask: Bark Bastion",
+                  "name": "Leaf Armor",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Fernmask: Bastión de Corteza",
+                  "name": "Leaf Armor",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Fernmask: Bastion d’Écorce",
+                  "name": "Leaf Armor",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -4263,7 +4287,7 @@
               "id": "fernmask:C",
               "type": "special",
               "icon": "🌳",
-              "nameKey": "skillNameFernmaskCStage1",
+              "nameKey": "skillNameFernmaskCStage2",
               "effectKey": "skillEffectFernmaskCStage1",
               "effects": [
                 {
@@ -4281,19 +4305,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Smaragdschwur",
+                  "name": "Briar Onslaught",
                   "effect": "Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Fernmask: Verdant Oath",
+                  "name": "Briar Onslaught",
                   "effect": "Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Fernmask: Juramento Verde",
+                  "name": "Briar Onslaught",
                   "effect": "Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Fernmask: Serment Verdoyant",
+                  "name": "Briar Onslaught",
                   "effect": "Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -4310,7 +4334,7 @@
               "id": "fernmask:A:stage-2",
               "type": "attack",
               "icon": "🌿",
-              "nameKey": "skillNameFernmaskAStage2",
+              "nameKey": "skillNameFernmaskAStage3",
               "effectKey": "skillEffectFernmaskAStage2",
               "effects": [
                 {
@@ -4324,19 +4348,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Dornenhieb II",
+                  "name": "Canopy Rend",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und umhüllt den Kämpfer mit Dornen."
                 },
                 "en": {
-                  "name": "Fernmask: Briar Bash II",
+                  "name": "Canopy Rend",
                   "effect": "Stage II strengthens this skill: Deals damage and coats the fighter in thorns."
                 },
                 "es": {
-                  "name": "Fernmask: Golpe de Zarzas II",
+                  "name": "Canopy Rend",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y cubre al luchador de espinas."
                 },
                 "fr": {
-                  "name": "Fernmask: Frappe de Ronces II",
+                  "name": "Canopy Rend",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et couvre le combattant d’épines."
                 }
               }
@@ -4346,7 +4370,7 @@
               "id": "fernmask:B",
               "type": "defense",
               "icon": "🪵",
-              "nameKey": "skillNameFernmaskBStage1",
+              "nameKey": "skillNameFernmaskBStage3",
               "effectKey": "skillEffectFernmaskBStage1",
               "effects": [
                 {
@@ -4356,19 +4380,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Rindenbastion",
+                  "name": "Jungle Aegis",
                   "effect": "Baut den stärksten reinen Schild der Arena auf."
                 },
                 "en": {
-                  "name": "Fernmask: Bark Bastion",
+                  "name": "Jungle Aegis",
                   "effect": "Builds the strongest pure shield in the arena."
                 },
                 "es": {
-                  "name": "Fernmask: Bastión de Corteza",
+                  "name": "Jungle Aegis",
                   "effect": "Crea el escudo puro más fuerte de la arena."
                 },
                 "fr": {
-                  "name": "Fernmask: Bastion d’Écorce",
+                  "name": "Jungle Aegis",
                   "effect": "Crée le bouclier pur le plus puissant de l’arène."
                 }
               }
@@ -4396,19 +4420,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Fernmask: Smaragdschwur III",
+                  "name": "Wildwood Hunt",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Schaden, gewährt Schild und stellt Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Fernmask: Verdant Oath III",
+                  "name": "Wildwood Hunt",
                   "effect": "Stage III empowers this Special: Deals damage, grants shield and restores health."
                 },
                 "es": {
-                  "name": "Fernmask: Juramento Verde III",
+                  "name": "Wildwood Hunt",
                   "effect": "La etapa III potencia este especial: Inflige daño, concede escudo y recupera salud."
                 },
                 "fr": {
-                  "name": "Fernmask: Serment Verdoyant III",
+                  "name": "Wildwood Hunt",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts, accorde un bouclier et restaure de la santé."
                 }
               },
@@ -4424,6 +4448,8 @@
       "role": "trickster",
       "name": "Zephyr",
       "species": "Bat",
+      "epithet": "Wind Dancer",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -4449,19 +4475,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Doppelböe",
+                  "name": "Twin Gust",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Zephyr: Twin Gust",
+                  "name": "Twin Gust",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Zephyr: Ráfaga Gemela",
+                  "name": "Twin Gust",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Zephyr: Rafale Jumelle",
+                  "name": "Twin Gust",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -4485,19 +4511,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Himmelsschleier",
+                  "name": "Sky Veil",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Zephyr: Sky Veil",
+                  "name": "Sky Veil",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Zephyr: Velo Celeste",
+                  "name": "Sky Veil",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Zephyr: Voile Céleste",
+                  "name": "Sky Veil",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -4522,19 +4548,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Sturmsturz",
+                  "name": "Tempest Trick",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Zephyr: Tempest Dive",
+                  "name": "Tempest Trick",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Zephyr: Picado de Tempestad",
+                  "name": "Tempest Trick",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Zephyr: Plongeon de Tempête",
+                  "name": "Tempest Trick",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -4566,19 +4592,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Doppelböe II",
+                  "name": "Slipstream Cut",
                   "effect": "Stufe II verstärkt diesen Skill: Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Zephyr: Twin Gust II",
+                  "name": "Slipstream Cut",
                   "effect": "Stage II strengthens this skill: Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Zephyr: Ráfaga Gemela II",
+                  "name": "Slipstream Cut",
                   "effect": "La etapa II refuerza esta habilidad: Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Zephyr: Rafale Jumelle II",
+                  "name": "Slipstream Cut",
                   "effect": "Le stade II renforce cette compétence : Frappe deux fois en succession rapide."
                 }
               }
@@ -4588,7 +4614,7 @@
               "id": "zephyr:B",
               "type": "defense",
               "icon": "🪽",
-              "nameKey": "skillNameZephyrBStage1",
+              "nameKey": "skillNameZephyrBStage2",
               "effectKey": "skillEffectZephyrBStage1",
               "effects": [
                 {
@@ -4602,19 +4628,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Himmelsschleier",
+                  "name": "Cloud Decoy",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Zephyr: Sky Veil",
+                  "name": "Cloud Decoy",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Zephyr: Velo Celeste",
+                  "name": "Cloud Decoy",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Zephyr: Voile Céleste",
+                  "name": "Cloud Decoy",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -4624,7 +4650,7 @@
               "id": "zephyr:C",
               "type": "special",
               "icon": "🌪️",
-              "nameKey": "skillNameZephyrCStage1",
+              "nameKey": "skillNameZephyrCStage2",
               "effectKey": "skillEffectZephyrCStage1",
               "effects": [
                 {
@@ -4639,19 +4665,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Sturmsturz",
+                  "name": "Spiral Ruse",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Zephyr: Tempest Dive",
+                  "name": "Spiral Ruse",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Zephyr: Picado de Tempestad",
+                  "name": "Spiral Ruse",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Zephyr: Plongeon de Tempête",
+                  "name": "Spiral Ruse",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -4668,7 +4694,7 @@
               "id": "zephyr:A:stage-2",
               "type": "attack",
               "icon": "💨",
-              "nameKey": "skillNameZephyrAStage2",
+              "nameKey": "skillNameZephyrAStage3",
               "effectKey": "skillEffectZephyrAStage2",
               "effects": [
                 {
@@ -4683,19 +4709,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Doppelböe II",
+                  "name": "Mirage Cyclone",
                   "effect": "Stufe II verstärkt diesen Skill: Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Zephyr: Twin Gust II",
+                  "name": "Mirage Cyclone",
                   "effect": "Stage II strengthens this skill: Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Zephyr: Ráfaga Gemela II",
+                  "name": "Mirage Cyclone",
                   "effect": "La etapa II refuerza esta habilidad: Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Zephyr: Rafale Jumelle II",
+                  "name": "Mirage Cyclone",
                   "effect": "Le stade II renforce cette compétence : Frappe deux fois en succession rapide."
                 }
               }
@@ -4705,7 +4731,7 @@
               "id": "zephyr:B",
               "type": "defense",
               "icon": "🪽",
-              "nameKey": "skillNameZephyrBStage1",
+              "nameKey": "skillNameZephyrBStage3",
               "effectKey": "skillEffectZephyrBStage1",
               "effects": [
                 {
@@ -4719,19 +4745,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Himmelsschleier",
+                  "name": "Vapor Vanish",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Zephyr: Sky Veil",
+                  "name": "Vapor Vanish",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Zephyr: Velo Celeste",
+                  "name": "Vapor Vanish",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Zephyr: Voile Céleste",
+                  "name": "Vapor Vanish",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -4756,19 +4782,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Zephyr: Sturmsturz III",
+                  "name": "Phantom Hurricane",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Zephyr: Tempest Dive III",
+                  "name": "Phantom Hurricane",
                   "effect": "Stage III empowers this Special: A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Zephyr: Picado de Tempestad III",
+                  "name": "Phantom Hurricane",
                   "effect": "La etapa III potencia este especial: Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Zephyr: Plongeon de Tempête III",
+                  "name": "Phantom Hurricane",
                   "effect": "Le stade III renforce ce spécial : Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -4784,6 +4810,8 @@
       "role": "striker",
       "name": "Skyrend",
       "species": "Griffin",
+      "epithet": "Sky Hunter",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -4805,19 +4833,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Doppelböe",
+                  "name": "Talon Gale",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Skyrend: Twin Gust",
+                  "name": "Talon Gale",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Skyrend: Ráfaga Gemela",
+                  "name": "Talon Gale",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Skyrend: Rafale Jumelle",
+                  "name": "Talon Gale",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -4841,19 +4869,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Himmelsschleier",
+                  "name": "Updraft Guard",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Skyrend: Sky Veil",
+                  "name": "Updraft Guard",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Skyrend: Velo Celeste",
+                  "name": "Updraft Guard",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Skyrend: Voile Céleste",
+                  "name": "Updraft Guard",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -4874,19 +4902,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Sturmsturz",
+                  "name": "Tempest Dive",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Skyrend: Tempest Dive",
+                  "name": "Tempest Dive",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Skyrend: Picado de Tempestad",
+                  "name": "Tempest Dive",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Skyrend: Plongeon de Tempête",
+                  "name": "Tempest Dive",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -4914,19 +4942,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Doppelböe II",
+                  "name": "Razor Draft",
                   "effect": "Stufe II verstärkt diesen Skill: Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Skyrend: Twin Gust II",
+                  "name": "Razor Draft",
                   "effect": "Stage II strengthens this skill: Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Skyrend: Ráfaga Gemela II",
+                  "name": "Razor Draft",
                   "effect": "La etapa II refuerza esta habilidad: Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Skyrend: Rafale Jumelle II",
+                  "name": "Razor Draft",
                   "effect": "Le stade II renforce cette compétence : Frappe deux fois en succession rapide."
                 }
               }
@@ -4936,7 +4964,7 @@
               "id": "skyrend:B",
               "type": "defense",
               "icon": "🪽",
-              "nameKey": "skillNameSkyrendBStage1",
+              "nameKey": "skillNameSkyrendBStage2",
               "effectKey": "skillEffectSkyrendBStage1",
               "effects": [
                 {
@@ -4950,19 +4978,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Himmelsschleier",
+                  "name": "Cloud Armor",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Skyrend: Sky Veil",
+                  "name": "Cloud Armor",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Skyrend: Velo Celeste",
+                  "name": "Cloud Armor",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Skyrend: Voile Céleste",
+                  "name": "Cloud Armor",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -4972,7 +5000,7 @@
               "id": "skyrend:C",
               "type": "special",
               "icon": "🌪️",
-              "nameKey": "skillNameSkyrendCStage1",
+              "nameKey": "skillNameSkyrendCStage2",
               "effectKey": "skillEffectSkyrendCStage1",
               "effects": [
                 {
@@ -4983,19 +5011,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Sturmsturz",
+                  "name": "Cyclone Rend",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Skyrend: Tempest Dive",
+                  "name": "Cyclone Rend",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Skyrend: Picado de Tempestad",
+                  "name": "Cyclone Rend",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Skyrend: Plongeon de Tempête",
+                  "name": "Cyclone Rend",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5012,7 +5040,7 @@
               "id": "skyrend:A:stage-2",
               "type": "attack",
               "icon": "💨",
-              "nameKey": "skillNameSkyrendAStage2",
+              "nameKey": "skillNameSkyrendAStage3",
               "effectKey": "skillEffectSkyrendAStage2",
               "effects": [
                 {
@@ -5023,19 +5051,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Doppelböe II",
+                  "name": "Stormclaw Rush",
                   "effect": "Stufe II verstärkt diesen Skill: Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Skyrend: Twin Gust II",
+                  "name": "Stormclaw Rush",
                   "effect": "Stage II strengthens this skill: Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Skyrend: Ráfaga Gemela II",
+                  "name": "Stormclaw Rush",
                   "effect": "La etapa II refuerza esta habilidad: Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Skyrend: Rafale Jumelle II",
+                  "name": "Stormclaw Rush",
                   "effect": "Le stade II renforce cette compétence : Frappe deux fois en succession rapide."
                 }
               }
@@ -5045,7 +5073,7 @@
               "id": "skyrend:B",
               "type": "defense",
               "icon": "🪽",
-              "nameKey": "skillNameSkyrendBStage1",
+              "nameKey": "skillNameSkyrendBStage3",
               "effectKey": "skillEffectSkyrendBStage1",
               "effects": [
                 {
@@ -5059,19 +5087,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Himmelsschleier",
+                  "name": "Jetstream Aegis",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Skyrend: Sky Veil",
+                  "name": "Jetstream Aegis",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Skyrend: Velo Celeste",
+                  "name": "Jetstream Aegis",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Skyrend: Voile Céleste",
+                  "name": "Jetstream Aegis",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5092,19 +5120,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Skyrend: Sturmsturz III",
+                  "name": "Skybreaker Storm",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Skyrend: Tempest Dive III",
+                  "name": "Skybreaker Storm",
                   "effect": "Stage III empowers this Special: A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Skyrend: Picado de Tempestad III",
+                  "name": "Skybreaker Storm",
                   "effect": "La etapa III potencia este especial: Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Skyrend: Plongeon de Tempête III",
+                  "name": "Skybreaker Storm",
                   "effect": "Le stade III renforce ce spécial : Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5120,6 +5148,8 @@
       "role": "guardian",
       "name": "Cirrus",
       "species": "Owl",
+      "epithet": "Cloud Guard",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -5141,19 +5171,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Doppelböe",
+                  "name": "Cloud Ram",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Cirrus: Twin Gust",
+                  "name": "Cloud Ram",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Cirrus: Ráfaga Gemela",
+                  "name": "Cloud Ram",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Cirrus: Rafale Jumelle",
+                  "name": "Cloud Ram",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -5177,19 +5207,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Himmelsschleier",
+                  "name": "Nimbus Wall",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Cirrus: Sky Veil",
+                  "name": "Nimbus Wall",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Cirrus: Velo Celeste",
+                  "name": "Nimbus Wall",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Cirrus: Voile Céleste",
+                  "name": "Nimbus Wall",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5214,19 +5244,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Sturmsturz",
+                  "name": "Monsoon Guard",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Cirrus: Tempest Dive",
+                  "name": "Monsoon Guard",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Cirrus: Picado de Tempestad",
+                  "name": "Monsoon Guard",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Cirrus: Plongeon de Tempête",
+                  "name": "Monsoon Guard",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5243,7 +5273,7 @@
               "id": "cirrus:A",
               "type": "attack",
               "icon": "💨",
-              "nameKey": "skillNameCirrusAStage1",
+              "nameKey": "skillNameCirrusAStage2",
               "effectKey": "skillEffectCirrusAStage1",
               "effects": [
                 {
@@ -5254,19 +5284,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Doppelböe",
+                  "name": "Squall Strike",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Cirrus: Twin Gust",
+                  "name": "Squall Strike",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Cirrus: Ráfaga Gemela",
+                  "name": "Squall Strike",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Cirrus: Rafale Jumelle",
+                  "name": "Squall Strike",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -5290,19 +5320,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Himmelsschleier II",
+                  "name": "Storm Shelter",
                   "effect": "Stufe II verstärkt diesen Skill: Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Cirrus: Sky Veil II",
+                  "name": "Storm Shelter",
                   "effect": "Stage II strengthens this skill: Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Cirrus: Velo Celeste II",
+                  "name": "Storm Shelter",
                   "effect": "La etapa II refuerza esta habilidad: Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Cirrus: Voile Céleste II",
+                  "name": "Storm Shelter",
                   "effect": "Le stade II renforce cette compétence : Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5312,7 +5342,7 @@
               "id": "cirrus:C",
               "type": "special",
               "icon": "🌪️",
-              "nameKey": "skillNameCirrusCStage1",
+              "nameKey": "skillNameCirrusCStage2",
               "effectKey": "skillEffectCirrusCStage1",
               "effects": [
                 {
@@ -5327,19 +5357,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Sturmsturz",
+                  "name": "Tempest Rampart",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Cirrus: Tempest Dive",
+                  "name": "Tempest Rampart",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Cirrus: Picado de Tempestad",
+                  "name": "Tempest Rampart",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Cirrus: Plongeon de Tempête",
+                  "name": "Tempest Rampart",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5356,7 +5386,7 @@
               "id": "cirrus:A",
               "type": "attack",
               "icon": "💨",
-              "nameKey": "skillNameCirrusAStage1",
+              "nameKey": "skillNameCirrusAStage3",
               "effectKey": "skillEffectCirrusAStage1",
               "effects": [
                 {
@@ -5367,19 +5397,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Doppelböe",
+                  "name": "Thunderhead Crush",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Cirrus: Twin Gust",
+                  "name": "Thunderhead Crush",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Cirrus: Ráfaga Gemela",
+                  "name": "Thunderhead Crush",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Cirrus: Rafale Jumelle",
+                  "name": "Thunderhead Crush",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -5389,7 +5419,7 @@
               "id": "cirrus:B:stage-2",
               "type": "defense",
               "icon": "🪽",
-              "nameKey": "skillNameCirrusBStage2",
+              "nameKey": "skillNameCirrusBStage3",
               "effectKey": "skillEffectCirrusBStage2",
               "effects": [
                 {
@@ -5403,19 +5433,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Himmelsschleier II",
+                  "name": "Sky Bastion",
                   "effect": "Stufe II verstärkt diesen Skill: Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Cirrus: Sky Veil II",
+                  "name": "Sky Bastion",
                   "effect": "Stage II strengthens this skill: Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Cirrus: Velo Celeste II",
+                  "name": "Sky Bastion",
                   "effect": "La etapa II refuerza esta habilidad: Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Cirrus: Voile Céleste II",
+                  "name": "Sky Bastion",
                   "effect": "Le stade II renforce cette compétence : Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5440,19 +5470,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Cirrus: Sturmsturz III",
+                  "name": "Heaven Citadel",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Cirrus: Tempest Dive III",
+                  "name": "Heaven Citadel",
                   "effect": "Stage III empowers this Special: A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Cirrus: Picado de Tempestad III",
+                  "name": "Heaven Citadel",
                   "effect": "La etapa III potencia este especial: Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Cirrus: Plongeon de Tempête III",
+                  "name": "Heaven Citadel",
                   "effect": "Le stade III renforce ce spécial : Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5468,6 +5498,8 @@
       "role": "sustain",
       "name": "Gusttail",
       "species": "Flying Squirrel",
+      "epithet": "Breeze Mender",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -5493,19 +5525,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Doppelböe",
+                  "name": "Breeze Bite",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Gusttail: Twin Gust",
+                  "name": "Breeze Bite",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Gusttail: Ráfaga Gemela",
+                  "name": "Breeze Bite",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Gusttail: Rafale Jumelle",
+                  "name": "Breeze Bite",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -5533,19 +5565,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Himmelsschleier",
+                  "name": "Soft Landing",
                   "effect": "Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Gusttail: Sky Veil",
+                  "name": "Soft Landing",
                   "effect": "Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Gusttail: Velo Celeste",
+                  "name": "Soft Landing",
                   "effect": "Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Gusttail: Voile Céleste",
+                  "name": "Soft Landing",
                   "effect": "Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5570,19 +5602,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Sturmsturz",
+                  "name": "Healing Gale",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Gusttail: Tempest Dive",
+                  "name": "Healing Gale",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Gusttail: Picado de Tempestad",
+                  "name": "Healing Gale",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Gusttail: Plongeon de Tempête",
+                  "name": "Healing Gale",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5599,7 +5631,7 @@
               "id": "gusttail:A",
               "type": "attack",
               "icon": "💨",
-              "nameKey": "skillNameGusttailAStage1",
+              "nameKey": "skillNameGusttailAStage2",
               "effectKey": "skillEffectGusttailAStage1",
               "effects": [
                 {
@@ -5614,19 +5646,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Doppelböe",
+                  "name": "Tailwind Tap",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Gusttail: Twin Gust",
+                  "name": "Tailwind Tap",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Gusttail: Ráfaga Gemela",
+                  "name": "Tailwind Tap",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Gusttail: Rafale Jumelle",
+                  "name": "Tailwind Tap",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -5654,19 +5686,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Himmelsschleier II",
+                  "name": "Cloud Comfort",
                   "effect": "Stufe II verstärkt diesen Skill: Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Gusttail: Sky Veil II",
+                  "name": "Cloud Comfort",
                   "effect": "Stage II strengthens this skill: Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Gusttail: Velo Celeste II",
+                  "name": "Cloud Comfort",
                   "effect": "La etapa II refuerza esta habilidad: Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Gusttail: Voile Céleste II",
+                  "name": "Cloud Comfort",
                   "effect": "Le stade II renforce cette compétence : Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5676,7 +5708,7 @@
               "id": "gusttail:C",
               "type": "special",
               "icon": "🌪️",
-              "nameKey": "skillNameGusttailCStage1",
+              "nameKey": "skillNameGusttailCStage2",
               "effectKey": "skillEffectGusttailCStage1",
               "effects": [
                 {
@@ -5691,19 +5723,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Sturmsturz",
+                  "name": "Renewal Vortex",
                   "effect": "Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Gusttail: Tempest Dive",
+                  "name": "Renewal Vortex",
                   "effect": "A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Gusttail: Picado de Tempestad",
+                  "name": "Renewal Vortex",
                   "effect": "Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Gusttail: Plongeon de Tempête",
+                  "name": "Renewal Vortex",
                   "effect": "Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5720,7 +5752,7 @@
               "id": "gusttail:A",
               "type": "attack",
               "icon": "💨",
-              "nameKey": "skillNameGusttailAStage1",
+              "nameKey": "skillNameGusttailAStage3",
               "effectKey": "skillEffectGusttailAStage1",
               "effects": [
                 {
@@ -5735,19 +5767,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Doppelböe",
+                  "name": "Zephyr Spiral",
                   "effect": "Trifft zweimal schnell hintereinander."
                 },
                 "en": {
-                  "name": "Gusttail: Twin Gust",
+                  "name": "Zephyr Spiral",
                   "effect": "Strikes twice in quick succession."
                 },
                 "es": {
-                  "name": "Gusttail: Ráfaga Gemela",
+                  "name": "Zephyr Spiral",
                   "effect": "Golpea dos veces en rápida sucesión."
                 },
                 "fr": {
-                  "name": "Gusttail: Rafale Jumelle",
+                  "name": "Zephyr Spiral",
                   "effect": "Frappe deux fois en succession rapide."
                 }
               }
@@ -5757,7 +5789,7 @@
               "id": "gusttail:B:stage-2",
               "type": "defense",
               "icon": "🪽",
-              "nameKey": "skillNameGusttailBStage2",
+              "nameKey": "skillNameGusttailBStage3",
               "effectKey": "skillEffectGusttailBStage2",
               "effects": [
                 {
@@ -5775,19 +5807,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Himmelsschleier II",
+                  "name": "Airspring Haven",
                   "effect": "Stufe II verstärkt diesen Skill: Gewährt einen leichten Schild und eine Ausweichchance."
                 },
                 "en": {
-                  "name": "Gusttail: Sky Veil II",
+                  "name": "Airspring Haven",
                   "effect": "Stage II strengthens this skill: Grants a light shield and a chance to evade."
                 },
                 "es": {
-                  "name": "Gusttail: Velo Celeste II",
+                  "name": "Airspring Haven",
                   "effect": "La etapa II refuerza esta habilidad: Concede un escudo ligero y una probabilidad de esquivar."
                 },
                 "fr": {
-                  "name": "Gusttail: Voile Céleste II",
+                  "name": "Airspring Haven",
                   "effect": "Le stade II renforce cette compétence : Accorde un bouclier léger et une chance d’esquiver."
                 }
               }
@@ -5812,19 +5844,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Gusttail: Sturmsturz III",
+                  "name": "Endless Tailwind",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine rasante Sturmattacke mit drei Treffern."
                 },
                 "en": {
-                  "name": "Gusttail: Tempest Dive III",
+                  "name": "Endless Tailwind",
                   "effect": "Stage III empowers this Special: A rapid three-hit tempest attack."
                 },
                 "es": {
-                  "name": "Gusttail: Picado de Tempestad III",
+                  "name": "Endless Tailwind",
                   "effect": "La etapa III potencia este especial: Un ataque de tempestad rápido de tres golpes."
                 },
                 "fr": {
-                  "name": "Gusttail: Plongeon de Tempête III",
+                  "name": "Endless Tailwind",
                   "effect": "Le stade III renforce ce spécial : Une attaque de tempête rapide en trois coups."
                 }
               },
@@ -5838,8 +5870,10 @@
       "templateId": "pulse",
       "element": "Volt",
       "role": "guardian",
-      "name": "Pulse",
+      "name": "Pulsebyte",
       "species": "Protogen",
+      "epithet": "Circuit Guard",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -5864,19 +5898,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Lichtbogenschnitt",
+                  "name": "Byte Bolt",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Pulse: Arc Slash",
+                  "name": "Byte Bolt",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Pulse: Corte de Arco",
+                  "name": "Byte Bolt",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Pulse: Entaille d’Arc",
+                  "name": "Byte Bolt",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -5900,19 +5934,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Statikschild",
+                  "name": "Static Screen",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Pulse: Static Screen",
+                  "name": "Static Screen",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Pulse: Pantalla Estática",
+                  "name": "Static Screen",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Pulse: Écran Statique",
+                  "name": "Static Screen",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -5940,19 +5974,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Donnerbruch",
+                  "name": "Thunder Kernel",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Pulse: Thunderbreak",
+                  "name": "Thunder Kernel",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Pulse: Trueno Quebrador",
+                  "name": "Thunder Kernel",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Pulse: Brise-Tonnerre",
+                  "name": "Thunder Kernel",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -5969,7 +6003,7 @@
               "id": "pulse:A",
               "type": "attack",
               "icon": "⚡",
-              "nameKey": "skillNamePulseAStage1",
+              "nameKey": "skillNamePulseAStage2",
               "effectKey": "skillEffectPulseAStage1",
               "effects": [
                 {
@@ -5983,19 +6017,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Lichtbogenschnitt",
+                  "name": "Circuit Slash",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Pulse: Arc Slash",
+                  "name": "Circuit Slash",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Pulse: Corte de Arco",
+                  "name": "Circuit Slash",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Pulse: Entaille d’Arc",
+                  "name": "Circuit Slash",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6019,19 +6053,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Statikschild II",
+                  "name": "Firewall Shield",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Pulse: Static Screen II",
+                  "name": "Firewall Shield",
                   "effect": "Stage II strengthens this skill: Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Pulse: Pantalla Estática II",
+                  "name": "Firewall Shield",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Pulse: Écran Statique II",
+                  "name": "Firewall Shield",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6041,7 +6075,7 @@
               "id": "pulse:C",
               "type": "special",
               "icon": "🌩️",
-              "nameKey": "skillNamePulseCStage1",
+              "nameKey": "skillNamePulseCStage2",
               "effectKey": "skillEffectPulseCStage1",
               "effects": [
                 {
@@ -6059,19 +6093,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Donnerbruch",
+                  "name": "Overclock Surge",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Pulse: Thunderbreak",
+                  "name": "Overclock Surge",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Pulse: Trueno Quebrador",
+                  "name": "Overclock Surge",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Pulse: Brise-Tonnerre",
+                  "name": "Overclock Surge",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6088,7 +6122,7 @@
               "id": "pulse:A",
               "type": "attack",
               "icon": "⚡",
-              "nameKey": "skillNamePulseAStage1",
+              "nameKey": "skillNamePulseAStage3",
               "effectKey": "skillEffectPulseAStage1",
               "effects": [
                 {
@@ -6102,19 +6136,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Lichtbogenschnitt",
+                  "name": "Plasma Break",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Pulse: Arc Slash",
+                  "name": "Plasma Break",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Pulse: Corte de Arco",
+                  "name": "Plasma Break",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Pulse: Entaille d’Arc",
+                  "name": "Plasma Break",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6124,7 +6158,7 @@
               "id": "pulse:B:stage-2",
               "type": "defense",
               "icon": "🔋",
-              "nameKey": "skillNamePulseBStage2",
+              "nameKey": "skillNamePulseBStage3",
               "effectKey": "skillEffectPulseBStage2",
               "effects": [
                 {
@@ -6138,19 +6172,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Statikschild II",
+                  "name": "Reactor Aegis",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Pulse: Static Screen II",
+                  "name": "Reactor Aegis",
                   "effect": "Stage II strengthens this skill: Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Pulse: Pantalla Estática II",
+                  "name": "Reactor Aegis",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Pulse: Écran Statique II",
+                  "name": "Reactor Aegis",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6178,19 +6212,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Pulse: Donnerbruch III",
+                  "name": "Quantum Storm",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Pulse: Thunderbreak III",
+                  "name": "Quantum Storm",
                   "effect": "Stage III empowers this Special: A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Pulse: Trueno Quebrador III",
+                  "name": "Quantum Storm",
                   "effect": "La etapa III potencia este especial: Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Pulse: Brise-Tonnerre III",
+                  "name": "Quantum Storm",
                   "effect": "Le stade III renforce ce spécial : Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6206,6 +6240,8 @@
       "role": "striker",
       "name": "Neonclaw",
       "species": "Cyber Lynx",
+      "epithet": "Volt Hunter",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -6230,19 +6266,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Lichtbogenschnitt",
+                  "name": "Arc Slash",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Neonclaw: Arc Slash",
+                  "name": "Arc Slash",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Neonclaw: Corte de Arco",
+                  "name": "Arc Slash",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Neonclaw: Entaille d’Arc",
+                  "name": "Arc Slash",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6266,19 +6302,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Statikschild",
+                  "name": "Static Guard",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Neonclaw: Static Screen",
+                  "name": "Static Guard",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Neonclaw: Pantalla Estática",
+                  "name": "Static Guard",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Neonclaw: Écran Statique",
+                  "name": "Static Guard",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6302,19 +6338,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Donnerbruch",
+                  "name": "Thunderbreak",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Neonclaw: Thunderbreak",
+                  "name": "Thunderbreak",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Neonclaw: Trueno Quebrador",
+                  "name": "Thunderbreak",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Neonclaw: Brise-Tonnerre",
+                  "name": "Thunderbreak",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6345,19 +6381,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Lichtbogenschnitt II",
+                  "name": "Neon Ripper",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Neonclaw: Arc Slash II",
+                  "name": "Neon Ripper",
                   "effect": "Stage II strengthens this skill: Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Neonclaw: Corte de Arco II",
+                  "name": "Neon Ripper",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Neonclaw: Entaille d’Arc II",
+                  "name": "Neon Ripper",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6367,7 +6403,7 @@
               "id": "neonclaw:B",
               "type": "defense",
               "icon": "🔋",
-              "nameKey": "skillNameNeonclawBStage1",
+              "nameKey": "skillNameNeonclawBStage2",
               "effectKey": "skillEffectNeonclawBStage1",
               "effects": [
                 {
@@ -6381,19 +6417,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Statikschild",
+                  "name": "Circuit Mirror",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Neonclaw: Static Screen",
+                  "name": "Circuit Mirror",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Neonclaw: Pantalla Estática",
+                  "name": "Circuit Mirror",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Neonclaw: Écran Statique",
+                  "name": "Circuit Mirror",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6403,7 +6439,7 @@
               "id": "neonclaw:C",
               "type": "special",
               "icon": "🌩️",
-              "nameKey": "skillNameNeonclawCStage1",
+              "nameKey": "skillNameNeonclawCStage2",
               "effectKey": "skillEffectNeonclawCStage1",
               "effects": [
                 {
@@ -6417,19 +6453,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Donnerbruch",
+                  "name": "Voltage Rush",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Neonclaw: Thunderbreak",
+                  "name": "Voltage Rush",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Neonclaw: Trueno Quebrador",
+                  "name": "Voltage Rush",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Neonclaw: Brise-Tonnerre",
+                  "name": "Voltage Rush",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6446,7 +6482,7 @@
               "id": "neonclaw:A:stage-2",
               "type": "attack",
               "icon": "⚡",
-              "nameKey": "skillNameNeonclawAStage2",
+              "nameKey": "skillNameNeonclawAStage3",
               "effectKey": "skillEffectNeonclawAStage2",
               "effects": [
                 {
@@ -6460,19 +6496,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Lichtbogenschnitt II",
+                  "name": "Plasma Claw",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Neonclaw: Arc Slash II",
+                  "name": "Plasma Claw",
                   "effect": "Stage II strengthens this skill: Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Neonclaw: Corte de Arco II",
+                  "name": "Plasma Claw",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Neonclaw: Entaille d’Arc II",
+                  "name": "Plasma Claw",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6482,7 +6518,7 @@
               "id": "neonclaw:B",
               "type": "defense",
               "icon": "🔋",
-              "nameKey": "skillNameNeonclawBStage1",
+              "nameKey": "skillNameNeonclawBStage3",
               "effectKey": "skillEffectNeonclawBStage1",
               "effects": [
                 {
@@ -6496,19 +6532,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Statikschild",
+                  "name": "Neon Aegis",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Neonclaw: Static Screen",
+                  "name": "Neon Aegis",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Neonclaw: Pantalla Estática",
+                  "name": "Neon Aegis",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Neonclaw: Écran Statique",
+                  "name": "Neon Aegis",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6532,19 +6568,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Neonclaw: Donnerbruch III",
+                  "name": "Megawatt Rend",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Neonclaw: Thunderbreak III",
+                  "name": "Megawatt Rend",
                   "effect": "Stage III empowers this Special: A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Neonclaw: Trueno Quebrador III",
+                  "name": "Megawatt Rend",
                   "effect": "La etapa III potencia este especial: Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Neonclaw: Brise-Tonnerre III",
+                  "name": "Megawatt Rend",
                   "effect": "Le stade III renforce ce spécial : Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6560,6 +6596,8 @@
       "role": "sustain",
       "name": "Ampjack",
       "species": "Synth Jackal",
+      "epithet": "Spark Mender",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -6588,19 +6626,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Lichtbogenschnitt",
+                  "name": "Amp Bite",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Ampjack: Arc Slash",
+                  "name": "Amp Bite",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Ampjack: Corte de Arco",
+                  "name": "Amp Bite",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Ampjack: Entaille d’Arc",
+                  "name": "Amp Bite",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6628,19 +6666,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Statikschild",
+                  "name": "Battery Ward",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Ampjack: Static Screen",
+                  "name": "Battery Ward",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Ampjack: Pantalla Estática",
+                  "name": "Battery Ward",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Ampjack: Écran Statique",
+                  "name": "Battery Ward",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6668,19 +6706,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Donnerbruch",
+                  "name": "Recharge Roar",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Ampjack: Thunderbreak",
+                  "name": "Recharge Roar",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Ampjack: Trueno Quebrador",
+                  "name": "Recharge Roar",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Ampjack: Brise-Tonnerre",
+                  "name": "Recharge Roar",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6697,7 +6735,7 @@
               "id": "ampjack:A",
               "type": "attack",
               "icon": "⚡",
-              "nameKey": "skillNameAmpjackAStage1",
+              "nameKey": "skillNameAmpjackAStage2",
               "effectKey": "skillEffectAmpjackAStage1",
               "effects": [
                 {
@@ -6715,19 +6753,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Lichtbogenschnitt",
+                  "name": "Spark Pulse",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Ampjack: Arc Slash",
+                  "name": "Spark Pulse",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Ampjack: Corte de Arco",
+                  "name": "Spark Pulse",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Ampjack: Entaille d’Arc",
+                  "name": "Spark Pulse",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6755,19 +6793,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Statikschild II",
+                  "name": "Current Cradle",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Ampjack: Static Screen II",
+                  "name": "Current Cradle",
                   "effect": "Stage II strengthens this skill: Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Ampjack: Pantalla Estática II",
+                  "name": "Current Cradle",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Ampjack: Écran Statique II",
+                  "name": "Current Cradle",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6777,7 +6815,7 @@
               "id": "ampjack:C",
               "type": "special",
               "icon": "🌩️",
-              "nameKey": "skillNameAmpjackCStage1",
+              "nameKey": "skillNameAmpjackCStage2",
               "effectKey": "skillEffectAmpjackCStage1",
               "effects": [
                 {
@@ -6795,19 +6833,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Donnerbruch",
+                  "name": "Dynamo Bloom",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Ampjack: Thunderbreak",
+                  "name": "Dynamo Bloom",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Ampjack: Trueno Quebrador",
+                  "name": "Dynamo Bloom",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Ampjack: Brise-Tonnerre",
+                  "name": "Dynamo Bloom",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6824,7 +6862,7 @@
               "id": "ampjack:A",
               "type": "attack",
               "icon": "⚡",
-              "nameKey": "skillNameAmpjackAStage1",
+              "nameKey": "skillNameAmpjackAStage3",
               "effectKey": "skillEffectAmpjackAStage1",
               "effects": [
                 {
@@ -6842,19 +6880,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Lichtbogenschnitt",
+                  "name": "Dynamo Charge",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Ampjack: Arc Slash",
+                  "name": "Dynamo Charge",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Ampjack: Corte de Arco",
+                  "name": "Dynamo Charge",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Ampjack: Entaille d’Arc",
+                  "name": "Dynamo Charge",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -6864,7 +6902,7 @@
               "id": "ampjack:B:stage-2",
               "type": "defense",
               "icon": "🔋",
-              "nameKey": "skillNameAmpjackBStage2",
+              "nameKey": "skillNameAmpjackBStage3",
               "effectKey": "skillEffectAmpjackBStage2",
               "effects": [
                 {
@@ -6882,19 +6920,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Statikschild II",
+                  "name": "Power Cell Haven",
                   "effect": "Stufe II verstärkt diesen Skill: Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Ampjack: Static Screen II",
+                  "name": "Power Cell Haven",
                   "effect": "Stage II strengthens this skill: Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Ampjack: Pantalla Estática II",
+                  "name": "Power Cell Haven",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Ampjack: Écran Statique II",
+                  "name": "Power Cell Haven",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -6922,19 +6960,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Ampjack: Donnerbruch III",
+                  "name": "Infinite Circuit",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Ampjack: Thunderbreak III",
+                  "name": "Infinite Circuit",
                   "effect": "Stage III empowers this Special: A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Ampjack: Trueno Quebrador III",
+                  "name": "Infinite Circuit",
                   "effect": "La etapa III potencia este especial: Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Ampjack: Brise-Tonnerre III",
+                  "name": "Infinite Circuit",
                   "effect": "Le stade III renforce ce spécial : Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -6950,6 +6988,8 @@
       "role": "trickster",
       "name": "Flashstep",
       "species": "Cheetah",
+      "epithet": "Arc Dancer",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -6974,19 +7014,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Lichtbogenschnitt",
+                  "name": "Volt Feint",
                   "effect": "Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Flashstep: Arc Slash",
+                  "name": "Volt Feint",
                   "effect": "Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Flashstep: Corte de Arco",
+                  "name": "Volt Feint",
                   "effect": "Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Flashstep: Entaille d’Arc",
+                  "name": "Volt Feint",
                   "effect": "Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -7014,19 +7054,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Statikschild",
+                  "name": "Flash Screen",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Flashstep: Static Screen",
+                  "name": "Flash Screen",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Flashstep: Pantalla Estática",
+                  "name": "Flash Screen",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Flashstep: Écran Statique",
+                  "name": "Flash Screen",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -7050,19 +7090,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Donnerbruch",
+                  "name": "Blink Break",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Flashstep: Thunderbreak",
+                  "name": "Blink Break",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Flashstep: Trueno Quebrador",
+                  "name": "Blink Break",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Flashstep: Brise-Tonnerre",
+                  "name": "Blink Break",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -7093,19 +7133,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Lichtbogenschnitt II",
+                  "name": "Arc Skip",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Flashstep: Arc Slash II",
+                  "name": "Arc Skip",
                   "effect": "Stage II strengthens this skill: Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Flashstep: Corte de Arco II",
+                  "name": "Arc Skip",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Flashstep: Entaille d’Arc II",
+                  "name": "Arc Skip",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -7115,7 +7155,7 @@
               "id": "flashstep:B",
               "type": "defense",
               "icon": "🔋",
-              "nameKey": "skillNameFlashstepBStage1",
+              "nameKey": "skillNameFlashstepBStage2",
               "effectKey": "skillEffectFlashstepBStage1",
               "effects": [
                 {
@@ -7133,19 +7173,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Statikschild",
+                  "name": "Static Mirage",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Flashstep: Static Screen",
+                  "name": "Static Mirage",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Flashstep: Pantalla Estática",
+                  "name": "Static Mirage",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Flashstep: Écran Statique",
+                  "name": "Static Mirage",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -7155,7 +7195,7 @@
               "id": "flashstep:C",
               "type": "special",
               "icon": "🌩️",
-              "nameKey": "skillNameFlashstepCStage1",
+              "nameKey": "skillNameFlashstepCStage2",
               "effectKey": "skillEffectFlashstepCStage1",
               "effects": [
                 {
@@ -7169,19 +7209,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Donnerbruch",
+                  "name": "Overvolt Ruse",
                   "effect": "Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Flashstep: Thunderbreak",
+                  "name": "Overvolt Ruse",
                   "effect": "A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Flashstep: Trueno Quebrador",
+                  "name": "Overvolt Ruse",
                   "effect": "Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Flashstep: Brise-Tonnerre",
+                  "name": "Overvolt Ruse",
                   "effect": "Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -7198,7 +7238,7 @@
               "id": "flashstep:A:stage-2",
               "type": "attack",
               "icon": "⚡",
-              "nameKey": "skillNameFlashstepAStage2",
+              "nameKey": "skillNameFlashstepAStage3",
               "effectKey": "skillEffectFlashstepAStage2",
               "effects": [
                 {
@@ -7212,19 +7252,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Lichtbogenschnitt II",
+                  "name": "Photon Dash",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und durchdringt einen Teil des gegnerischen Schilds."
                 },
                 "en": {
-                  "name": "Flashstep: Arc Slash II",
+                  "name": "Photon Dash",
                   "effect": "Stage II strengthens this skill: Deals damage and pierces part of the enemy shield."
                 },
                 "es": {
-                  "name": "Flashstep: Corte de Arco II",
+                  "name": "Photon Dash",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y atraviesa parte del escudo enemigo."
                 },
                 "fr": {
-                  "name": "Flashstep: Entaille d’Arc II",
+                  "name": "Photon Dash",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et traverse une partie du bouclier ennemi."
                 }
               }
@@ -7234,7 +7274,7 @@
               "id": "flashstep:B",
               "type": "defense",
               "icon": "🔋",
-              "nameKey": "skillNameFlashstepBStage1",
+              "nameKey": "skillNameFlashstepBStage3",
               "effectKey": "skillEffectFlashstepBStage1",
               "effects": [
                 {
@@ -7252,19 +7292,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Statikschild",
+                  "name": "Laser Vanish",
                   "effect": "Erzeugt einen Statikschild, der einmal Schaden reflektiert."
                 },
                 "en": {
-                  "name": "Flashstep: Static Screen",
+                  "name": "Laser Vanish",
                   "effect": "Creates a static shield that reflects damage once."
                 },
                 "es": {
-                  "name": "Flashstep: Pantalla Estática",
+                  "name": "Laser Vanish",
                   "effect": "Crea un escudo estático que refleja daño una vez."
                 },
                 "fr": {
-                  "name": "Flashstep: Écran Statique",
+                  "name": "Laser Vanish",
                   "effect": "Crée un bouclier statique qui renvoie une fois des dégâts."
                 }
               }
@@ -7288,19 +7328,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Flashstep: Donnerbruch III",
+                  "name": "Lightspeed Gambit",
                   "effect": "Stufe III verstärkt dieses Spezial: Eine schwere Entladung mit starker Schilddurchdringung."
                 },
                 "en": {
-                  "name": "Flashstep: Thunderbreak III",
+                  "name": "Lightspeed Gambit",
                   "effect": "Stage III empowers this Special: A heavy discharge with strong shield piercing."
                 },
                 "es": {
-                  "name": "Flashstep: Trueno Quebrador III",
+                  "name": "Lightspeed Gambit",
                   "effect": "La etapa III potencia este especial: Una descarga intensa con gran perforación de escudo."
                 },
                 "fr": {
-                  "name": "Flashstep: Brise-Tonnerre III",
+                  "name": "Lightspeed Gambit",
                   "effect": "Le stade III renforce ce spécial : Une forte décharge avec une grande perforation de bouclier."
                 }
               },
@@ -7316,6 +7356,8 @@
       "role": "guardian",
       "name": "Selene",
       "species": "Snow Leopard",
+      "epithet": "Moon Guard",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -7340,19 +7382,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Mondklaue",
+                  "name": "Moon Paw",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Selene: Moon Claw",
+                  "name": "Moon Paw",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Selene: Garra Lunar",
+                  "name": "Moon Paw",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Selene: Griffe Lunaire",
+                  "name": "Moon Paw",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -7376,19 +7418,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Finsternisschleier",
+                  "name": "Eclipse Veil",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Selene: Eclipse Veil",
+                  "name": "Eclipse Veil",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Selene: Velo de Eclipse",
+                  "name": "Eclipse Veil",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Selene: Voile d’Éclipse",
+                  "name": "Eclipse Veil",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -7416,19 +7458,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Seelenfinsternis",
+                  "name": "Lunar Shelter",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Selene: Soul Eclipse",
+                  "name": "Lunar Shelter",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Selene: Eclipse del Alma",
+                  "name": "Lunar Shelter",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Selene: Éclipse de l’Âme",
+                  "name": "Lunar Shelter",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -7445,7 +7487,7 @@
               "id": "selene:A",
               "type": "attack",
               "icon": "🌙",
-              "nameKey": "skillNameSeleneAStage1",
+              "nameKey": "skillNameSeleneAStage2",
               "effectKey": "skillEffectSeleneAStage1",
               "effects": [
                 {
@@ -7459,19 +7501,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Mondklaue",
+                  "name": "Silver Arc",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Selene: Moon Claw",
+                  "name": "Silver Arc",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Selene: Garra Lunar",
+                  "name": "Silver Arc",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Selene: Griffe Lunaire",
+                  "name": "Silver Arc",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -7495,19 +7537,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Finsternisschleier II",
+                  "name": "Moonlight Ward",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Selene: Eclipse Veil II",
+                  "name": "Moonlight Ward",
                   "effect": "Stage II strengthens this skill: Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Selene: Velo de Eclipse II",
+                  "name": "Moonlight Ward",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Selene: Voile d’Éclipse II",
+                  "name": "Moonlight Ward",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -7517,7 +7559,7 @@
               "id": "selene:C",
               "type": "special",
               "icon": "✨",
-              "nameKey": "skillNameSeleneCStage1",
+              "nameKey": "skillNameSeleneCStage2",
               "effectKey": "skillEffectSeleneCStage1",
               "effects": [
                 {
@@ -7535,19 +7577,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Seelenfinsternis",
+                  "name": "Starshield Grace",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Selene: Soul Eclipse",
+                  "name": "Starshield Grace",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Selene: Eclipse del Alma",
+                  "name": "Starshield Grace",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Selene: Éclipse de l’Âme",
+                  "name": "Starshield Grace",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -7564,7 +7606,7 @@
               "id": "selene:A",
               "type": "attack",
               "icon": "🌙",
-              "nameKey": "skillNameSeleneAStage1",
+              "nameKey": "skillNameSeleneAStage3",
               "effectKey": "skillEffectSeleneAStage1",
               "effects": [
                 {
@@ -7578,19 +7620,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Mondklaue",
+                  "name": "Halo Claw",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Selene: Moon Claw",
+                  "name": "Halo Claw",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Selene: Garra Lunar",
+                  "name": "Halo Claw",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Selene: Griffe Lunaire",
+                  "name": "Halo Claw",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -7600,7 +7642,7 @@
               "id": "selene:B:stage-2",
               "type": "defense",
               "icon": "🌘",
-              "nameKey": "skillNameSeleneBStage2",
+              "nameKey": "skillNameSeleneBStage3",
               "effectKey": "skillEffectSeleneBStage2",
               "effects": [
                 {
@@ -7614,19 +7656,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Finsternisschleier II",
+                  "name": "Celestial Bastion",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Selene: Eclipse Veil II",
+                  "name": "Celestial Bastion",
                   "effect": "Stage II strengthens this skill: Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Selene: Velo de Eclipse II",
+                  "name": "Celestial Bastion",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Selene: Voile d’Éclipse II",
+                  "name": "Celestial Bastion",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -7654,19 +7696,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Selene: Seelenfinsternis III",
+                  "name": "Full Moon Citadel",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Selene: Soul Eclipse III",
+                  "name": "Full Moon Citadel",
                   "effect": "Stage III empowers this Special: Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Selene: Eclipse del Alma III",
+                  "name": "Full Moon Citadel",
                   "effect": "La etapa III potencia este especial: Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Selene: Éclipse de l’Âme III",
+                  "name": "Full Moon Citadel",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -7682,6 +7724,8 @@
       "role": "striker",
       "name": "Umbra",
       "species": "Black Cat",
+      "epithet": "Night Hunter",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -7706,19 +7750,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Mondklaue",
+                  "name": "Shadow Claw",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Umbra: Moon Claw",
+                  "name": "Shadow Claw",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Umbra: Garra Lunar",
+                  "name": "Shadow Claw",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Umbra: Griffe Lunaire",
+                  "name": "Shadow Claw",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -7742,19 +7786,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Finsternisschleier",
+                  "name": "Dark Veil",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Umbra: Eclipse Veil",
+                  "name": "Dark Veil",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Umbra: Velo de Eclipse",
+                  "name": "Dark Veil",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Umbra: Voile d’Éclipse",
+                  "name": "Dark Veil",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -7778,19 +7822,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Seelenfinsternis",
+                  "name": "Soul Eclipse",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Umbra: Soul Eclipse",
+                  "name": "Soul Eclipse",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Umbra: Eclipse del Alma",
+                  "name": "Soul Eclipse",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Umbra: Éclipse de l’Âme",
+                  "name": "Soul Eclipse",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -7821,19 +7865,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Mondklaue II",
+                  "name": "Night Rend",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Umbra: Moon Claw II",
+                  "name": "Night Rend",
                   "effect": "Stage II strengthens this skill: Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Umbra: Garra Lunar II",
+                  "name": "Night Rend",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Umbra: Griffe Lunaire II",
+                  "name": "Night Rend",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -7843,7 +7887,7 @@
               "id": "umbra:B",
               "type": "defense",
               "icon": "🌘",
-              "nameKey": "skillNameUmbraBStage1",
+              "nameKey": "skillNameUmbraBStage2",
               "effectKey": "skillEffectUmbraBStage1",
               "effects": [
                 {
@@ -7857,19 +7901,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Finsternisschleier",
+                  "name": "Eclipse Guard",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Umbra: Eclipse Veil",
+                  "name": "Eclipse Guard",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Umbra: Velo de Eclipse",
+                  "name": "Eclipse Guard",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Umbra: Voile d’Éclipse",
+                  "name": "Eclipse Guard",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -7879,7 +7923,7 @@
               "id": "umbra:C",
               "type": "special",
               "icon": "✨",
-              "nameKey": "skillNameUmbraCStage1",
+              "nameKey": "skillNameUmbraCStage2",
               "effectKey": "skillEffectUmbraCStage1",
               "effects": [
                 {
@@ -7893,19 +7937,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Seelenfinsternis",
+                  "name": "Moonless Fang",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Umbra: Soul Eclipse",
+                  "name": "Moonless Fang",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Umbra: Eclipse del Alma",
+                  "name": "Moonless Fang",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Umbra: Éclipse de l’Âme",
+                  "name": "Moonless Fang",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -7922,7 +7966,7 @@
               "id": "umbra:A:stage-2",
               "type": "attack",
               "icon": "🌙",
-              "nameKey": "skillNameUmbraAStage2",
+              "nameKey": "skillNameUmbraAStage3",
               "effectKey": "skillEffectUmbraAStage2",
               "effects": [
                 {
@@ -7936,19 +7980,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Mondklaue II",
+                  "name": "Void Talon",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Umbra: Moon Claw II",
+                  "name": "Void Talon",
                   "effect": "Stage II strengthens this skill: Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Umbra: Garra Lunar II",
+                  "name": "Void Talon",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Umbra: Griffe Lunaire II",
+                  "name": "Void Talon",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -7958,7 +8002,7 @@
               "id": "umbra:B",
               "type": "defense",
               "icon": "🌘",
-              "nameKey": "skillNameUmbraBStage1",
+              "nameKey": "skillNameUmbraBStage3",
               "effectKey": "skillEffectUmbraBStage1",
               "effects": [
                 {
@@ -7972,19 +8016,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Finsternisschleier",
+                  "name": "Abyss Ward",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Umbra: Eclipse Veil",
+                  "name": "Abyss Ward",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Umbra: Velo de Eclipse",
+                  "name": "Abyss Ward",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Umbra: Voile d’Éclipse",
+                  "name": "Abyss Ward",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8008,19 +8052,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Umbra: Seelenfinsternis III",
+                  "name": "Midnight Devour",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Umbra: Soul Eclipse III",
+                  "name": "Midnight Devour",
                   "effect": "Stage III empowers this Special: Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Umbra: Eclipse del Alma III",
+                  "name": "Midnight Devour",
                   "effect": "La etapa III potencia este especial: Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Umbra: Éclipse de l’Âme III",
+                  "name": "Midnight Devour",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -8036,6 +8080,8 @@
       "role": "sustain",
       "name": "Lumen",
       "species": "Moth",
+      "epithet": "Star Mender",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -8060,19 +8106,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Mondklaue",
+                  "name": "Star Touch",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Lumen: Moon Claw",
+                  "name": "Star Touch",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Lumen: Garra Lunar",
+                  "name": "Star Touch",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Lumen: Griffe Lunaire",
+                  "name": "Star Touch",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -8100,19 +8146,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Finsternisschleier",
+                  "name": "Glow Veil",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Lumen: Eclipse Veil",
+                  "name": "Glow Veil",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Lumen: Velo de Eclipse",
+                  "name": "Glow Veil",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Lumen: Voile d’Éclipse",
+                  "name": "Glow Veil",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8140,19 +8186,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Seelenfinsternis",
+                  "name": "Soul Lantern",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Lumen: Soul Eclipse",
+                  "name": "Soul Lantern",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Lumen: Eclipse del Alma",
+                  "name": "Soul Lantern",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Lumen: Éclipse de l’Âme",
+                  "name": "Soul Lantern",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -8169,7 +8215,7 @@
               "id": "lumen:A",
               "type": "attack",
               "icon": "🌙",
-              "nameKey": "skillNameLumenAStage1",
+              "nameKey": "skillNameLumenAStage2",
               "effectKey": "skillEffectLumenAStage1",
               "effects": [
                 {
@@ -8183,19 +8229,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Mondklaue",
+                  "name": "Moonbeam Mend",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Lumen: Moon Claw",
+                  "name": "Moonbeam Mend",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Lumen: Garra Lunar",
+                  "name": "Moonbeam Mend",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Lumen: Griffe Lunaire",
+                  "name": "Moonbeam Mend",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -8223,19 +8269,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Finsternisschleier II",
+                  "name": "Starlight Cocoon",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Lumen: Eclipse Veil II",
+                  "name": "Starlight Cocoon",
                   "effect": "Stage II strengthens this skill: Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Lumen: Velo de Eclipse II",
+                  "name": "Starlight Cocoon",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Lumen: Voile d’Éclipse II",
+                  "name": "Starlight Cocoon",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8245,7 +8291,7 @@
               "id": "lumen:C",
               "type": "special",
               "icon": "✨",
-              "nameKey": "skillNameLumenCStage1",
+              "nameKey": "skillNameLumenCStage2",
               "effectKey": "skillEffectLumenCStage1",
               "effects": [
                 {
@@ -8263,19 +8309,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Seelenfinsternis",
+                  "name": "Nova Renewal",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Lumen: Soul Eclipse",
+                  "name": "Nova Renewal",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Lumen: Eclipse del Alma",
+                  "name": "Nova Renewal",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Lumen: Éclipse de l’Âme",
+                  "name": "Nova Renewal",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -8292,7 +8338,7 @@
               "id": "lumen:A",
               "type": "attack",
               "icon": "🌙",
-              "nameKey": "skillNameLumenAStage1",
+              "nameKey": "skillNameLumenAStage3",
               "effectKey": "skillEffectLumenAStage1",
               "effects": [
                 {
@@ -8306,19 +8352,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Mondklaue",
+                  "name": "Radiant Pulse",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Lumen: Moon Claw",
+                  "name": "Radiant Pulse",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Lumen: Garra Lunar",
+                  "name": "Radiant Pulse",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Lumen: Griffe Lunaire",
+                  "name": "Radiant Pulse",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -8328,7 +8374,7 @@
               "id": "lumen:B:stage-2",
               "type": "defense",
               "icon": "🌘",
-              "nameKey": "skillNameLumenBStage2",
+              "nameKey": "skillNameLumenBStage3",
               "effectKey": "skillEffectLumenBStage2",
               "effects": [
                 {
@@ -8346,19 +8392,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Finsternisschleier II",
+                  "name": "Aurora Haven",
                   "effect": "Stufe II verstärkt diesen Skill: Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Lumen: Eclipse Veil II",
+                  "name": "Aurora Haven",
                   "effect": "Stage II strengthens this skill: Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Lumen: Velo de Eclipse II",
+                  "name": "Aurora Haven",
                   "effect": "La etapa II refuerza esta habilidad: Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Lumen: Voile d’Éclipse II",
+                  "name": "Aurora Haven",
                   "effect": "Le stade II renforce cette compétence : Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8386,19 +8432,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Lumen: Seelenfinsternis III",
+                  "name": "Astral Rebirth",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Lumen: Soul Eclipse III",
+                  "name": "Astral Rebirth",
                   "effect": "Stage III empowers this Special: Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Lumen: Eclipse del Alma III",
+                  "name": "Astral Rebirth",
                   "effect": "La etapa III potencia este especial: Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Lumen: Éclipse de l’Âme III",
+                  "name": "Astral Rebirth",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -8414,6 +8460,8 @@
       "role": "trickster",
       "name": "Tsuki",
       "species": "Kitsune",
+      "epithet": "Eclipse Dancer",
+      "season": "season-1",
       "stages": [
         {
           "stage": 1,
@@ -8442,19 +8490,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Mondklaue",
+                  "name": "Moon Feint",
                   "effect": "Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Tsuki: Moon Claw",
+                  "name": "Moon Feint",
                   "effect": "Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Tsuki: Garra Lunar",
+                  "name": "Moon Feint",
                   "effect": "Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Tsuki: Griffe Lunaire",
+                  "name": "Moon Feint",
                   "effect": "Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -8482,19 +8530,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Finsternisschleier",
+                  "name": "Eclipse Masque",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Tsuki: Eclipse Veil",
+                  "name": "Eclipse Masque",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Tsuki: Velo de Eclipse",
+                  "name": "Eclipse Masque",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Tsuki: Voile d’Éclipse",
+                  "name": "Eclipse Masque",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8518,19 +8566,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Seelenfinsternis",
+                  "name": "Kitsune Eclipse",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Tsuki: Soul Eclipse",
+                  "name": "Kitsune Eclipse",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Tsuki: Eclipse del Alma",
+                  "name": "Kitsune Eclipse",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Tsuki: Éclipse de l’Âme",
+                  "name": "Kitsune Eclipse",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -8565,19 +8613,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Mondklaue II",
+                  "name": "Crescent Ruse",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Tsuki: Moon Claw II",
+                  "name": "Crescent Ruse",
                   "effect": "Stage II strengthens this skill: Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Tsuki: Garra Lunar II",
+                  "name": "Crescent Ruse",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Tsuki: Griffe Lunaire II",
+                  "name": "Crescent Ruse",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -8587,7 +8635,7 @@
               "id": "tsuki:B",
               "type": "defense",
               "icon": "🌘",
-              "nameKey": "skillNameTsukiBStage1",
+              "nameKey": "skillNameTsukiBStage2",
               "effectKey": "skillEffectTsukiBStage1",
               "effects": [
                 {
@@ -8605,19 +8653,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Finsternisschleier",
+                  "name": "Shadow Decoy",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Tsuki: Eclipse Veil",
+                  "name": "Shadow Decoy",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Tsuki: Velo de Eclipse",
+                  "name": "Shadow Decoy",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Tsuki: Voile d’Éclipse",
+                  "name": "Shadow Decoy",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8627,7 +8675,7 @@
               "id": "tsuki:C",
               "type": "special",
               "icon": "✨",
-              "nameKey": "skillNameTsukiCStage1",
+              "nameKey": "skillNameTsukiCStage2",
               "effectKey": "skillEffectTsukiCStage1",
               "effects": [
                 {
@@ -8641,19 +8689,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Seelenfinsternis",
+                  "name": "Spirit Moon",
                   "effect": "Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Tsuki: Soul Eclipse",
+                  "name": "Spirit Moon",
                   "effect": "Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Tsuki: Eclipse del Alma",
+                  "name": "Spirit Moon",
                   "effect": "Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Tsuki: Éclipse de l’Âme",
+                  "name": "Spirit Moon",
                   "effect": "Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },
@@ -8670,7 +8718,7 @@
               "id": "tsuki:A:stage-2",
               "type": "attack",
               "icon": "🌙",
-              "nameKey": "skillNameTsukiAStage2",
+              "nameKey": "skillNameTsukiAStage3",
               "effectKey": "skillEffectTsukiAStage2",
               "effects": [
                 {
@@ -8688,19 +8736,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Mondklaue II",
+                  "name": "Foxstar Flicker",
                   "effect": "Stufe II verstärkt diesen Skill: Verursacht Schaden und stellt etwas Gesundheit wieder her."
                 },
                 "en": {
-                  "name": "Tsuki: Moon Claw II",
+                  "name": "Foxstar Flicker",
                   "effect": "Stage II strengthens this skill: Deals damage and restores some health."
                 },
                 "es": {
-                  "name": "Tsuki: Garra Lunar II",
+                  "name": "Foxstar Flicker",
                   "effect": "La etapa II refuerza esta habilidad: Inflige daño y recupera algo de salud."
                 },
                 "fr": {
-                  "name": "Tsuki: Griffe Lunaire II",
+                  "name": "Foxstar Flicker",
                   "effect": "Le stade II renforce cette compétence : Inflige des dégâts et restaure un peu de santé."
                 }
               }
@@ -8710,7 +8758,7 @@
               "id": "tsuki:B",
               "type": "defense",
               "icon": "🌘",
-              "nameKey": "skillNameTsukiBStage1",
+              "nameKey": "skillNameTsukiBStage3",
               "effectKey": "skillEffectTsukiBStage1",
               "effects": [
                 {
@@ -8728,19 +8776,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Finsternisschleier",
+                  "name": "Nightfall Vanish",
                   "effect": "Errichtet einen Finsternisschild und schwächt den nächsten Gegnertreffer."
                 },
                 "en": {
-                  "name": "Tsuki: Eclipse Veil",
+                  "name": "Nightfall Vanish",
                   "effect": "Raises an eclipse shield and weakens the next enemy hit."
                 },
                 "es": {
-                  "name": "Tsuki: Velo de Eclipse",
+                  "name": "Nightfall Vanish",
                   "effect": "Crea un escudo de eclipse y debilita el siguiente golpe enemigo."
                 },
                 "fr": {
-                  "name": "Tsuki: Voile d’Éclipse",
+                  "name": "Nightfall Vanish",
                   "effect": "Crée un bouclier d’éclipse et affaiblit le prochain coup ennemi."
                 }
               }
@@ -8764,19 +8812,19 @@
               ],
               "translations": {
                 "de": {
-                  "name": "Tsuki: Seelenfinsternis III",
+                  "name": "Phantom Supernova",
                   "effect": "Stufe III verstärkt dieses Spezial: Verursacht Mondschaden und entzieht einen Teil davon als Gesundheit."
                 },
                 "en": {
-                  "name": "Tsuki: Soul Eclipse III",
+                  "name": "Phantom Supernova",
                   "effect": "Stage III empowers this Special: Deals lunar damage and steals part of it as health."
                 },
                 "es": {
-                  "name": "Tsuki: Eclipse del Alma III",
+                  "name": "Phantom Supernova",
                   "effect": "La etapa III potencia este especial: Inflige daño lunar y roba parte como salud."
                 },
                 "fr": {
-                  "name": "Tsuki: Éclipse de l’Âme III",
+                  "name": "Phantom Supernova",
                   "effect": "Le stade III renforce ce spécial : Inflige des dégâts lunaires et en vole une partie sous forme de santé."
                 }
               },

@@ -95,14 +95,25 @@ describe('Stream Monsters public guide', () => {
   });
 
   test.each([
-    ['de', 'Monsterdex: 24 Streamlings · 72 Entwicklungsstufen'],
-    ['en', 'Monsterdex: 24 Streamlings · 72 evolution stages'],
-    ['es', 'Monsterdex: 24 Streamlings · 72 etapas de evolución'],
-    ['fr', 'Monsterdex : 24 Streamlings · 72 stades d’évolution']
-  ])('renders the player-facing Streamlings name in %s', (locale, expectedTitle) => {
+    ['de', 'Monsterdex: 24 Stream Monsters · 72 Entwicklungsstufen'],
+    ['en', 'Monsterdex: 24 Stream Monsters · 72 evolution stages'],
+    ['es', 'Monsterdex: 24 Stream Monsters · 72 etapas de evolución'],
+    ['fr', 'Monsterdex : 24 Stream Monsters · 72 stades d’évolution']
+  ])('renders the player-facing Stream Monsters name in %s', (locale, expectedTitle) => {
     const document = renderGuide(locale);
 
     expect(document.querySelector('#dex-title').textContent).toBe(expectedTitle);
+  });
+
+  test('renders the Season 1 species and role epithets', () => {
+    const document = renderGuide('en');
+    const ashfang = document.querySelector('[data-template-id="ashfang"]');
+    const tsuki = document.querySelector('[data-template-id="tsuki"]');
+
+    expect(ashfang.querySelector('.sm-monster-head').textContent)
+      .toMatch(/Wolf.*Blaze Hunter/);
+    expect(tsuki.querySelector('.sm-monster-head').textContent)
+      .toMatch(/Kitsune.*Eclipse Dancer/);
   });
 
   test('does not expose internal Furry terminology in the public Monsterdex', () => {

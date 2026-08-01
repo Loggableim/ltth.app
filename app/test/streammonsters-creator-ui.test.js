@@ -40,7 +40,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('missionPopulation${');
   });
 
-  test('wires persisted duration, pack, layout, Random mapping and scene demo controls', () => {
+  test('wires duration, layout, Random mapping and scene demo controls', () => {
     const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
 
     for (const id of [
@@ -49,7 +49,6 @@ describe('Stream Monsters creator UI presentation controls', () => {
       'portraitBattleMode',
       'eggShelfVisibleCount',
       'portraitArenaVariant',
-      'visualPack',
       'landscapeAnchor',
       'landscapeScale',
       'portraitAnchor',
@@ -71,7 +70,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     }
     expect(html).toContain('value="arcade-rally"');
     expect(html).toContain('value="takeover-74"');
-    expect(html).toContain('value="furry"');
+    expect(html).not.toContain('id="visualPack"');
     expect(html).not.toContain('value="art_lab"');
     expect(html).not.toContain('value="kenney"');
     for (const scene of ['spawn', 'hatch', 'attack', 'defense', 'special']) {

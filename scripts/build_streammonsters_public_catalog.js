@@ -117,8 +117,13 @@ function buildPublicCatalog({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
     templateId: template.templateId,
     element: template.element,
     role: template.role,
-    name: template.name,
+    name: runtimeCatalog.projectDefaultMonsterName(
+      template.templateId,
+      template.name
+    ),
     species: template.species,
+    epithet: template.epithet,
+    season: template.season,
     stages: [1, 2, 3].map(stage => ({
       stage,
       assetPath: publicAssetPath(template, stage),

@@ -480,8 +480,8 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         egg:{ element:'Ember' },
         monster:{ name:'Ashfang', element:'Ember' }
       },
-      german:/Ashfang ist da/,
-      english:/Ashfang is here/
+      german:/Hatchling Ashfang ist da/,
+      english:/Hatchling Ashfang is here/
     }
   ])('presents $event in German and English without inheriting a stale locale', async ({
     event,
@@ -538,7 +538,7 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         monster:{ name:'Ashfang', element:'Ember' }
       });
       expect(first.visible).toBe(true);
-      expect(first.title).toMatch(/Ashfang ist da/);
+      expect(first.title).toMatch(/Hatchling Ashfang ist da/);
       expect(first.subtitle).toMatch(/automatisch geschlüpft/i);
     } finally {
       harness.close();

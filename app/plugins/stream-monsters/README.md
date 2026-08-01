@@ -17,7 +17,7 @@ asset is missing or damaged.
    may use one element or `Random`; only enabled mappings affect the game.
 3. Select incubation, egg expiry, season, commands, overlay languages,
    portrait layout, renderer quality and audio.
-4. Verify all 24 templates and 72 bundled evolution forms.
+4. Verify all 24 Stream Monsters and 72 bundled evolution forms.
 5. Add `/stream-monsters/overlay` to OBS and preview 1080×1920 before going live.
 6. Run the deterministic egg, hatch, battle, K.O. and renderer-fallback demos.
 
@@ -48,7 +48,7 @@ readiness, manual `hatch`, Auto-Hatch and expiry each have distinct copy.
 
 ## Collection, evolution and progression
 
-- Ember, Tide, Grove, Gale, Volt and Lunar each contain four templates.
+- Ember, Tide, Grove, Gale, Volt and Lunar each contain four Stream Monsters.
 - Every template has Evolution I, II and III, for 72 verified bundled forms.
 - Evolution II requires mastery 25 and 3 spent essence; Evolution III requires
   mastery 50 and 8 spent essence in total.

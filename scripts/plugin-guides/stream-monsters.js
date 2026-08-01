@@ -247,25 +247,25 @@ module.exports = Object.freeze({
     readOnlyStep('action-chain', '#asset-library', {
       de: {
         title: '72 gebündelte Formen und Evolution kontrollieren',
-        body: 'Prüfe 24 Vorlagen mit je drei verifizierten Furry-Stufen. Evolution II benötigt Meisterschaft 25 und 3 Essenz; Evolution III benötigt Meisterschaft 50 und insgesamt 8 Essenz. Beide Stufen aktivieren feste Elementwerte und rollenspezifische Skill-Upgrades.',
+        body: 'Prüfe 24 Stream Monsters mit je drei verifizierten Entwicklungsstufen. Evolution II benötigt Meisterschaft 25 und 3 Essenz; Evolution III benötigt Meisterschaft 50 und insgesamt 8 Essenz. Beide Stufen aktivieren feste Elementwerte und rollenspezifische Skill-Upgrades.',
         expected: 'Die Asset-Bibliothek bestätigt 72 gebündelte Formen und den Kenney-Notfall-Fallback.',
         alt: 'Stream Monsters 1.12 Asset-Bibliothek mit 72 Furry-Formen'
       },
       en: {
         title: 'Verify 72 bundled forms and evolution',
-        body: 'Review 24 templates with three verified Furry stages each. Evolution II requires mastery 25 and 3 essence spent; Evolution III requires mastery 50 and 8 total essence spent. Both stages activate fixed elemental stats and role-specific skill upgrades.',
+        body: 'Review 24 Stream Monsters with three verified evolution stages each. Evolution II requires mastery 25 and 3 essence spent; Evolution III requires mastery 50 and 8 total essence spent. Both stages activate fixed elemental stats and role-specific skill upgrades.',
         expected: 'The asset library confirms 72 bundled forms and the emergency Kenney fallback.',
         alt: 'Stream Monsters 1.12 asset library with 72 Furry forms'
       },
       es: {
         title: 'Comprueba las 72 formas incluidas y la evolución',
-        body: 'Revisa 24 plantillas con tres etapas Furry verificadas cada una. Evolución II requiere maestría 25 y 3 de esencia gastada; Evolución III requiere maestría 50 y 8 de esencia total gastada. Ambas etapas activan atributos elementales fijos y mejoras de habilidades según el rol.',
+        body: 'Revisa 24 Stream Monsters con tres etapas de evolución verificadas cada uno. Evolución II requiere maestría 25 y 3 de esencia gastada; Evolución III requiere maestría 50 y 8 de esencia total gastada. Ambas etapas activan atributos elementales fijos y mejoras de habilidades según el rol.',
         expected: 'La biblioteca de recursos confirma 72 formas incluidas y el fallback de emergencia de Kenney.',
         alt: 'Biblioteca de Stream Monsters 1.12 con 72 formas Furry'
       },
       fr: {
         title: 'Vérifiez les 72 formes intégrées et l’évolution',
-        body: 'Examinez 24 modèles avec trois stades Furry vérifiés chacun. L’évolution II exige la maîtrise 25 et 3 essences dépensées ; l’évolution III exige la maîtrise 50 et 8 essences dépensées au total. Ces stades activent des statistiques élémentaires fixes et des améliorations de compétence liées au rôle.',
+        body: 'Examinez 24 Stream Monsters avec trois stades d’évolution vérifiés chacun. L’évolution II exige la maîtrise 25 et 3 essences dépensées ; l’évolution III exige la maîtrise 50 et 8 essences dépensées au total. Ces stades activent des statistiques élémentaires fixes et des améliorations de compétence liées au rôle.',
         expected: 'La bibliothèque confirme 72 formes intégrées et le fallback d’urgence Kenney.',
         alt: 'Bibliothèque Stream Monsters 1.12 avec 72 formes Furry'
       }

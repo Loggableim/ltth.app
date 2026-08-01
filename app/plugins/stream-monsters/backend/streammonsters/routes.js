@@ -7,6 +7,7 @@ const {
   TEMPLATE_CATALOG,
   getTemplate,
   getEvolutionAssetPath,
+  projectDefaultMonsterName,
   resolveStageSkill
 } = require('./catalog');
 const { V8_RULES_VERSION } = require('./battle-rules-v5');
@@ -54,6 +55,17 @@ const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
   chatSafeZone: Object.freeze({ x: 0, y: 74, width: 100, height: 26 }),
   contentInsetPercent: Object.freeze({ top: 0, right: 0, bottom: 26, left: 0 })
 });
+
+function projectMonsterDisplayName(monster) {
+  if (!monster || typeof monster !== 'object') return monster;
+  return {
+    ...monster,
+    name: projectDefaultMonsterName(
+      monster.templateId ?? monster.template_id,
+      monster.name
+    )
+  };
+}
 
 function fixedOverlayProfiles() {
   return {
@@ -313,6 +325,7 @@ class StreamMonstersRoutes {
       const stageCatalog = this.getBundledFurryStageCatalog();
       const templates = TEMPLATE_CATALOG.map(template => ({
         ...template,
+        name: projectDefaultMonsterName(template.templateId, template.name),
         assetPath: stageCatalog.byTemplate.get(template.templateId)?.[0]?.assetPath ||
           template.assetPath,
         stages: stageCatalog.byTemplate.get(template.templateId) || [],
@@ -466,7 +479,7 @@ class StreamMonstersRoutes {
       const monster = {
         monster_id: 'demo-monster',
         template_id: selectedTemplate.templateId,
-        name: selectedTemplate.name,
+        name: projectDefaultMonsterName(selectedTemplate.templateId, selectedTemplate.name),
         element: gift.element,
         personality: 'Mischievous',
         rarity: 'Charged',
@@ -479,7 +492,7 @@ class StreamMonstersRoutes {
       const opponent = {
         monster_id: 'demo-opponent',
         template_id: opponentTemplate.templateId,
-        name: opponentTemplate.name,
+        name: projectDefaultMonsterName(opponentTemplate.templateId, opponentTemplate.name),
         element: opponentTemplate.element,
         personality: 'Brave',
         level: 5,
@@ -806,7 +819,7 @@ class StreamMonstersRoutes {
           emit('streammonsters:collection_shown', {
             cards: TEMPLATE_CATALOG.slice(0, 7).map((template, index) => ({
               slot: index + 1,
-              name: template.name,
+              name: projectDefaultMonsterName(template.templateId, template.name),
               element: template.element,
               templateId: template.templateId,
               imageUrl: template.assetPath,
@@ -2022,11 +2035,16 @@ class StreamMonstersRoutes {
 
   viewerState(userId) {
     const resolvedUserId = this.store.resolveKnownViewerId?.(userId) || userId;
+    const monsters = this.store.getViewerMonsters(resolvedUserId)
+      .map(projectMonsterDisplayName);
+    const selectedMonster = projectMonsterDisplayName(
+      this.store.getSelectedMonster(resolvedUserId)
+    );
     return {
       progress: this.store.getViewerProgress(resolvedUserId),
       eggs: this.store.getViewerEggs(resolvedUserId),
-      monsters: this.store.getViewerMonsters(resolvedUserId),
-      selectedMonster: this.store.getSelectedMonster(resolvedUserId),
+      monsters,
+      selectedMonster,
       achievements: this.store.getViewerAchievements(resolvedUserId).map(achievement => ({
         ...achievement,
         titleKey: this.progression?.achievementTitleKey?.(achievement.achievement_key) || 'achievementUnknown'

@@ -6,6 +6,7 @@ const {
   getTemplatesForElement,
   getEvolutionAssetPath,
   hashNumber,
+  projectDefaultMonsterName,
   resolveStageSkill
 } = require('./catalog');
 const { effectiveCombatPower } = require('./evolution-rules');
@@ -776,6 +777,7 @@ class CollectionService {
     return {
       templates: TEMPLATE_CATALOG.map(template => ({
         ...template,
+        name: projectDefaultMonsterName(template.templateId, template.name),
         owned: owned.has(template.templateId),
         silhouette: !owned.has(template.templateId),
         mastery: this.getMastery(userId, template.templateId)

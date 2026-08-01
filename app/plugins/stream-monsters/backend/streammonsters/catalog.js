@@ -48,6 +48,78 @@ const TEMPLATE_ROLES = Object.freeze({
   ampjack: 'sustain',
   lumen: 'sustain'
 });
+const SEASON_ONE_EPITHETS = Object.freeze({
+  ashfang: 'Blaze Hunter',
+  cinder: 'Smoke Dancer',
+  embergrin: 'Cinder Guard',
+  pyrra: 'Phoenix Mender',
+  ripple: 'Current Dancer',
+  brine: 'Harbor Guard',
+  reefbite: 'Reef Hunter',
+  axi: 'Tide Mender',
+  mosswhisker: 'Briar Dancer',
+  cloverhop: 'Bloom Mender',
+  oakheart: 'Grove Guard',
+  fernmask: 'Thorn Hunter',
+  zephyr: 'Wind Dancer',
+  skyrend: 'Sky Hunter',
+  cirrus: 'Cloud Guard',
+  gusttail: 'Breeze Mender',
+  pulse: 'Circuit Guard',
+  neonclaw: 'Volt Hunter',
+  ampjack: 'Spark Mender',
+  flashstep: 'Arc Dancer',
+  selene: 'Moon Guard',
+  umbra: 'Night Hunter',
+  lumen: 'Star Mender',
+  tsuki: 'Eclipse Dancer'
+});
+const DEFAULT_MONSTER_DISPLAY_NAMES = Object.freeze({
+  cinder: 'Cinderfox',
+  axi: 'Axolume',
+  pulse: 'Pulsebyte'
+});
+
+function freezeSkillNameCatalog(entries) {
+  return Object.freeze(Object.fromEntries(
+    Object.entries(entries).map(([templateId, choices]) => [
+      templateId,
+      Object.freeze(Object.fromEntries(
+        Object.entries(choices).map(([choice, names]) => [
+          choice,
+          Object.freeze([...names])
+        ])
+      ))
+    ])
+  ));
+}
+
+const SEASON_ONE_SKILL_NAMES = freezeSkillNameCatalog({
+  ashfang: { A: ['Flamefang', 'Inferno Fang', 'Solar Maul'], B: ['Ash Guard', 'Ember Aegis', 'Blaze Rampart'], C: ['Wildfire Rush', 'Furnace Roar', 'Sunfire Break'] },
+  cinder: { A: ['Ember Pounce', 'Soot Sprint', 'Wildspark Lunge'], B: ['Smoke Feint', 'Cinder Mirage', 'Ashen Vanish'], C: ['Foxfire Ruse', 'Ember Masque', 'Foxfire Inferno'] },
+  embergrin: { A: ['Coal Crunch', 'Furnace Bite', 'Magma Maw'], B: ['Scorchhide', 'Cinder Carapace', 'Inferno Bulwark'], C: ['Laughing Furnace', 'Blazeguard Roar', 'Pyre Fortress'] },
+  pyrra: { A: ['Ember Petal', 'Kindled Wing', 'Solar Plume'], B: ['Warm Nest', 'Cinder Cocoon', 'Dawn Sanctuary'], C: ['Phoenix Bloom', 'Radiant Rebirth', 'Eternal Sunrise'] },
+  ripple: { A: ['Current Flick', 'Riptide Jab', 'Torrent Snap'], B: ['Mist Slip', 'Foam Mirage', 'Vapor Veil'], C: ['Undertow Twist', 'Whirlpool Ruse', 'Maelstrom Masque'] },
+  brine: { A: ['Salt Slam', 'Brine Breaker', 'Tidal Hammer'], B: ['Harbor Shell', 'Reef Rampart', 'Ocean Bastion'], C: ['Breakwater Roar', 'Citadel Surge', 'Leviathan Wall'] },
+  reefbite: { A: ['Razor Tide', 'Reef Ripper', 'Abyss Fang'], B: ['Foam Guard', 'Coral Screen', 'Deepsea Ward'], C: ['Sharkwave Charge', 'Riptide Ravage', 'Kraken Break'] },
+  axi: { A: ['Lumen Ripple', 'Glow Current', 'Aurora Stream'], B: ['Aqua Mend', 'Lagoon Halo', 'Crystal Spring'], C: ['Prism Tide', 'Luma Wave', 'Ocean Renewal'] },
+  mosswhisker: { A: ['Briar Sneak', 'Thorn Scurry', 'Bramble Blitz'], B: ['Moss Mantle', 'Leaf Decoy', 'Grove Mirage'], C: ['Burrow Bloom', 'Root Ruse', 'Emerald Masque'] },
+  cloverhop: { A: ['Clover Kick', 'Petal Bound', 'Verdant Vault'], B: ['Meadow Mend', 'Bloom Shelter', 'Spring Haven'], C: ['Lucky Sprout', 'Garden Grace', 'Evergrove Blessing'] },
+  oakheart: { A: ['Antler Briar', 'Root Ram', 'Elderwood Charge'], B: ['Bark Bastion', 'Oak Fortress', 'Ancient Rampart'], C: ['Forest Oath', 'Grove Citadel', 'Worldtree Stand'] },
+  fernmask: { A: ['Thorn Swipe', 'Vine Ripper', 'Canopy Rend'], B: ['Fern Guard', 'Leaf Armor', 'Jungle Aegis'], C: ['Masked Ambush', 'Briar Onslaught', 'Wildwood Hunt'] },
+  zephyr: { A: ['Twin Gust', 'Slipstream Cut', 'Mirage Cyclone'], B: ['Sky Veil', 'Cloud Decoy', 'Vapor Vanish'], C: ['Tempest Trick', 'Spiral Ruse', 'Phantom Hurricane'] },
+  skyrend: { A: ['Talon Gale', 'Razor Draft', 'Stormclaw Rush'], B: ['Updraft Guard', 'Cloud Armor', 'Jetstream Aegis'], C: ['Tempest Dive', 'Cyclone Rend', 'Skybreaker Storm'] },
+  cirrus: { A: ['Cloud Ram', 'Squall Strike', 'Thunderhead Crush'], B: ['Nimbus Wall', 'Storm Shelter', 'Sky Bastion'], C: ['Monsoon Guard', 'Tempest Rampart', 'Heaven Citadel'] },
+  gusttail: { A: ['Breeze Bite', 'Tailwind Tap', 'Zephyr Spiral'], B: ['Soft Landing', 'Cloud Comfort', 'Airspring Haven'], C: ['Healing Gale', 'Renewal Vortex', 'Endless Tailwind'] },
+  pulse: { A: ['Byte Bolt', 'Circuit Slash', 'Plasma Break'], B: ['Static Screen', 'Firewall Shield', 'Reactor Aegis'], C: ['Thunder Kernel', 'Overclock Surge', 'Quantum Storm'] },
+  neonclaw: { A: ['Arc Slash', 'Neon Ripper', 'Plasma Claw'], B: ['Static Guard', 'Circuit Mirror', 'Neon Aegis'], C: ['Thunderbreak', 'Voltage Rush', 'Megawatt Rend'] },
+  ampjack: { A: ['Amp Bite', 'Spark Pulse', 'Dynamo Charge'], B: ['Battery Ward', 'Current Cradle', 'Power Cell Haven'], C: ['Recharge Roar', 'Dynamo Bloom', 'Infinite Circuit'] },
+  flashstep: { A: ['Volt Feint', 'Arc Skip', 'Photon Dash'], B: ['Flash Screen', 'Static Mirage', 'Laser Vanish'], C: ['Blink Break', 'Overvolt Ruse', 'Lightspeed Gambit'] },
+  selene: { A: ['Moon Paw', 'Silver Arc', 'Halo Claw'], B: ['Eclipse Veil', 'Moonlight Ward', 'Celestial Bastion'], C: ['Lunar Shelter', 'Starshield Grace', 'Full Moon Citadel'] },
+  umbra: { A: ['Shadow Claw', 'Night Rend', 'Void Talon'], B: ['Dark Veil', 'Eclipse Guard', 'Abyss Ward'], C: ['Soul Eclipse', 'Moonless Fang', 'Midnight Devour'] },
+  lumen: { A: ['Star Touch', 'Moonbeam Mend', 'Radiant Pulse'], B: ['Glow Veil', 'Starlight Cocoon', 'Aurora Haven'], C: ['Soul Lantern', 'Nova Renewal', 'Astral Rebirth'] },
+  tsuki: { A: ['Moon Feint', 'Crescent Ruse', 'Foxstar Flicker'], B: ['Eclipse Masque', 'Shadow Decoy', 'Nightfall Vanish'], C: ['Kitsune Eclipse', 'Spirit Moon', 'Phantom Supernova'] }
+});
 const ROLE_EFFECT_BUDGET_EQUIVALENTS = Object.freeze({
   burnPowerPerPoint: 0.25,
   evadeChancePerPoint: 25,
@@ -240,8 +312,8 @@ const SKILL_PRESENTATION = Object.freeze({
 
 function template(templateId, element, name, species, skillPrefix) {
   const presentation = SKILL_PRESENTATION[element];
-  const skill = (type, vfxType) => Object.freeze({
-    name: `${name}: ${presentation[type].suffix}`,
+  const skill = (choice, type, vfxType) => Object.freeze({
+    name: SEASON_ONE_SKILL_NAMES[templateId][choice][0],
     icon: presentation[type].icon,
     shortText: presentation[type].shortText,
     shortTextKey: `skillCopy${element}${type[0].toUpperCase()}${type.slice(1)}`,
@@ -253,11 +325,13 @@ function template(templateId, element, name, species, skillPrefix) {
     role: TEMPLATE_ROLES[templateId],
     name,
     species,
+    epithet: SEASON_ONE_EPITHETS[templateId],
+    season: 'season-1',
     assetPath: `/plugins/stream-monsters/assets/streammonsters/furry/${templateId}.webp`,
     skills: Object.freeze({
-      attack: skill('attack', 'attack'),
-      defense: skill('defense', 'defense'),
-      special: skill('special', 'special')
+      attack: skill('A', 'attack', 'attack'),
+      defense: skill('B', 'defense', 'defense'),
+      special: skill('C', 'special', 'special')
     })
   });
 }
@@ -291,6 +365,15 @@ const TEMPLATE_CATALOG = Object.freeze([
 
 function getTemplate(templateId) {
   return TEMPLATE_CATALOG.find(entry => entry.templateId === templateId) || null;
+}
+
+function projectDefaultMonsterName(templateId, name) {
+  const normalizedTemplateId = String(templateId || '').trim().toLowerCase();
+  const projectedName = DEFAULT_MONSTER_DISPLAY_NAMES[normalizedTemplateId];
+  const canonicalName = getTemplate(normalizedTemplateId)?.name;
+  return projectedName && name === canonicalName
+    ? projectedName
+    : name;
 }
 
 function getTemplatesForElement(element) {
@@ -645,7 +728,7 @@ function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 8) {
     'skillName',
     templateId,
     normalizedChoice,
-    revision
+    normalizedStage
   );
   const effectKey = stageSkillKey(
     'skillEffect',
@@ -659,7 +742,7 @@ function resolveStageSkill(templateId, choice, stage = 1, rulesVersion = 8) {
   return Object.freeze({
     ...base,
     id: revision > 1 ? `${base.id}:stage-${revision}` : base.id,
-    name: revision > 1 ? `${base.name} · ${revision === 2 ? 'II' : 'III'}` : base.name,
+    name: SEASON_ONE_SKILL_NAMES[templateId][normalizedChoice][normalizedStage - 1],
     shortTextKey: effectKey,
     choice: normalizedChoice,
     nameKey,
@@ -684,8 +767,12 @@ module.exports = {
   V6_ELEMENT_DAMAGE_TUNING,
   V8_NEUTRAL_ROLE_DAMAGE_TUNING,
   V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING,
+  SEASON_ONE_EPITHETS,
+  SEASON_ONE_SKILL_NAMES,
+  DEFAULT_MONSTER_DISPLAY_NAMES,
   TEMPLATE_CATALOG,
   getTemplate,
+  projectDefaultMonsterName,
   getTemplatesForElement,
   getEvolutionAssetPath,
   deterministicTemplateId,
