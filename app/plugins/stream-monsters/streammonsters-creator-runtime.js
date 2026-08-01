@@ -96,7 +96,7 @@
     600_000,
     1_800_000
   ]);
-  const GAMEPLAY_PACES = Object.freeze(['arcade-rally']);
+  const GAMEPLAY_PACES = Object.freeze(['arcade', 'standard', 'accessible']);
   const PORTRAIT_BATTLE_MODES = Object.freeze(['takeover-74']);
   const PORTRAIT_ARENA_VARIANTS = Object.freeze(['split-arena', 'classic']);
   const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
@@ -198,7 +198,9 @@
       creatorName: String(values.creatorName || '').trim(),
       gameplayPace: GAMEPLAY_PACES.includes(values.gameplayPace)
         ? values.gameplayPace
-        : 'arcade-rally',
+        : values.gameplayPace === 'arcade-rally'
+          ? 'arcade'
+          : 'arcade',
       portraitBattleMode: PORTRAIT_BATTLE_MODES.includes(values.portraitBattleMode)
         ? values.portraitBattleMode
         : 'takeover-74',

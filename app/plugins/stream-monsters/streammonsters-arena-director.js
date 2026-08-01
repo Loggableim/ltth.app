@@ -241,7 +241,8 @@
     payload,
     scene,
     beats,
-    reducedMotion = false
+    reducedMotion = false,
+    durationFloorMs = 0
   }) {
     const eventId = timelineIdentity(type, payload);
     const correlationId = safeIdentity(
@@ -266,9 +267,12 @@
         durationMs: Math.max(0, numeric(beat.durationMs)),
         motion: reducedMotion ? 'reduced' : 'full'
       }));
-    const durationMs = decorated.reduce(
-      (maximum, beat) => Math.max(maximum, beat.atMs + beat.durationMs),
-      0
+    const durationMs = Math.max(
+      Math.max(0, numeric(durationFloorMs)),
+      decorated.reduce(
+        (maximum, beat) => Math.max(maximum, beat.atMs + beat.durationMs),
+        0
+      )
     );
     return Object.freeze({
       eventId,
@@ -775,6 +779,7 @@
     );
     let scene = 'card';
     let beats = [];
+    let durationFloorMs = 0;
     if (type === 'elemental_hour') {
       const presentation = buildElementalHourPresentation(payload);
       scene = 'elemental_hour';
@@ -1093,19 +1098,17 @@
         : payload;
       const isSpecial = String(action.choice || '').toUpperCase() === 'C' ||
         String(action.skill?.type || '').toLowerCase() === 'special';
-      const actionDuration = Math.min(
-        2_800,
-        RULES_V8_PACING.ACTION_MS + (isSpecial ? 600 : 0)
-      );
+      durationFloorMs = action.terminal
+        ? RULES_V8_PACING.TERMINAL_ACTION_MS
+        : isSpecial
+          ? RULES_V8_PACING.SPECIAL_ACTION_MS
+          : RULES_V8_PACING.ACTION_MS;
       beats = numeric(action.rulesVersion ?? payload.rulesVersion) >= 7
         ? compressArcadeActionBeats(
             buildArcadeActionBeats(action),
-            numeric(action.rulesVersion ?? payload.rulesVersion) >= 8 &&
-              !action.terminal
-              ? actionDuration
-              : numeric(action.rulesVersion ?? payload.rulesVersion) >= 8
-                ? RULES_V8_PACING.TERMINAL_ACTION_MS
-                : 2_800
+            numeric(action.rulesVersion ?? payload.rulesVersion) >= 8
+              ? durationFloorMs
+              : 2_800
           )
         : buildArcadeActionBeats(action);
     } else if (type === 'battle_arena_collapse') {
@@ -1263,7 +1266,8 @@
       payload,
       scene,
       beats,
-      reducedMotion: Boolean(options.reducedMotion)
+      reducedMotion: Boolean(options.reducedMotion),
+      durationFloorMs
     });
   }
 

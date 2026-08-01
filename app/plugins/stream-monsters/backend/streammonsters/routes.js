@@ -21,6 +21,9 @@ const {
   applyEvolutionGrant
 } = require('./evolution-rules');
 const { readWebpMetadata } = require('./asset-registry');
+const {
+  normalizeGameplayPace
+} = require('../../streammonsters-gameplay-pace');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -1536,7 +1539,7 @@ class StreamMonstersRoutes {
     }
     if (
       Object.prototype.hasOwnProperty.call(input, 'gameplayPace') &&
-      input.gameplayPace !== 'arcade-rally'
+      !['arcade', 'standard', 'accessible', 'arcade-rally'].includes(input.gameplayPace)
     ) {
       throw new Error('STREAM_MONSTERS_GAMEPLAY_PACE_INVALID');
     }
@@ -1880,8 +1883,8 @@ class StreamMonstersRoutes {
     if (Object.prototype.hasOwnProperty.call(input, 'overlayLanguage')) {
       safe.overlayLanguage = this.normalizeOverlayLanguage(input.overlayLanguage);
     }
-    if (input.gameplayPace === 'arcade-rally') {
-      safe.gameplayPace = 'arcade-rally';
+    if (Object.prototype.hasOwnProperty.call(input, 'gameplayPace')) {
+      safe.gameplayPace = normalizeGameplayPace(input.gameplayPace);
     }
     if (input.portraitBattleMode === true || input.portraitBattleMode === 'takeover-74') {
       safe.portraitBattleMode = 'takeover-74';
@@ -2071,7 +2074,7 @@ class StreamMonstersRoutes {
   }
 
   normalizeGameplayPace(value) {
-    return value === 'arcade-rally' ? value : 'arcade-rally';
+    return normalizeGameplayPace(value);
   }
 
   normalizePortraitBattleMode(value) {

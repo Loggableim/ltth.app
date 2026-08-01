@@ -373,7 +373,9 @@
             <option value="1800000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Minutes">30 minutes</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.gameplayPace">Gameplay pace</span><select id="gameplayPace">
-            <option value="arcade-rally" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceArcadeRally">Arcade Rally</option>
+            <option value="arcade" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceArcade">Arcade</option>
+            <option value="standard" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceStandard">Standard</option>
+            <option value="accessible" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceAccessible">Accessible</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleMode">Portrait battle mode</span><select id="portraitBattleMode">
             <option value="takeover-74" data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleModeTakeover74">74% arena takeover</option>
@@ -1682,7 +1684,7 @@
         })
       }
     );
-    byId('gameplayPace').value = state.config?.gameplayPace || 'arcade-rally';
+    byId('gameplayPace').value = state.config?.gameplayPace || 'arcade';
     byId('portraitBattleMode').value =
       state.config?.portraitBattleMode || 'takeover-74';
     byId('portraitArenaVariant').value =

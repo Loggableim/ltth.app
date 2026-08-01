@@ -388,11 +388,32 @@ class ChatCommands {
           : 'Choose a valid monster slot.'
       };
     }
-    const selected = this.store.selectMonster(userId, monsters[index].monster_id);
+    const candidate = monsters[index];
     const rosterLock = this.battleMatchService?.lockRoster?.({
       userId,
-      monsterId: selected.monster_id
+      monsterId: candidate.monster_id,
+      source: 'viewer',
+      selectGlobally: true,
+      requestedChoice: index + 1
     }) || null;
+    if (
+      rosterLock &&
+      rosterLock.accepted === false &&
+      rosterLock.reason !== 'no_roster_window'
+    ) {
+      return {
+        success: false,
+        status: 'roster_rejected',
+        reason: rosterLock.reason || 'roster_rejected',
+        slot: rosterLock.slot || null,
+        requestedChoice: rosterLock.requestedChoice || index + 1,
+        message: 'This monster is not eligible for the current match.',
+        rosterLock
+      };
+    }
+    const selected = rosterLock?.accepted
+      ? (rosterLock.selected || candidate)
+      : this.store.selectMonster(userId, candidate.monster_id);
     return {
       success: true,
       status: rosterLock?.accepted ? 'roster_locked' : 'selected',

@@ -1576,6 +1576,12 @@
       const lockedSlots = [1, 2].filter(candidate => (
         fighterNode(candidate)?.classList.contains('choice-locked')
       ));
+      if (lockedSlots.length === 2) {
+        stopCountdown();
+        activeDeadlineMs = 0;
+        setText('arena-countdown', '');
+        if (arena) arena.dataset.countdown = '0';
+      }
       const renderSealedFeedback = () => {
         if (lockedSlots.length === 2) {
           setLabelText('arena-skill-prompt', 'choicesSealed');

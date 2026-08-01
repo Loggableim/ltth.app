@@ -29,6 +29,10 @@ const {
   sanitizeCombatReport
 } = require('./battle-report');
 const RULES_V8_PACING = require('../../streammonsters-rules-v8-pacing');
+const {
+  normalizeGameplayPace,
+  resolvePaceWindows
+} = require('../../streammonsters-gameplay-pace');
 const ArenaDirector = require('../../streammonsters-arena-director');
 
 const ROSTER_WINDOW_MS = 10_000;
@@ -130,7 +134,7 @@ class BattleMatchService {
     rulesVersion = 5,
     localeCount = 1,
     secondsPerLocale = 6,
-    gameplayPace = 'arcade-rally',
+    gameplayPace = 'arcade',
     portraitBattleMode = 'takeover-74',
     portraitArenaVariant = 'classic',
     sweepIntervalMs = RULES_V8_PACING.SERVICE_SWEEP_MS,
@@ -161,9 +165,7 @@ class BattleMatchService {
       4,
       Math.min(6, Number(secondsPerLocale) || 6)
     );
-    this.gameplayPace = gameplayPace === 'arcade-rally'
-      ? gameplayPace
-      : 'arcade-rally';
+    this.gameplayPace = normalizeGameplayPace(gameplayPace);
     this.portraitBattleMode = portraitBattleMode === 'takeover-74'
       ? portraitBattleMode
       : 'takeover-74';
@@ -216,9 +218,7 @@ class BattleMatchService {
     portraitBattleMode,
     portraitArenaVariant
   } = {}) {
-    this.gameplayPace = gameplayPace === 'arcade-rally'
-      ? gameplayPace
-      : 'arcade-rally';
+    this.gameplayPace = normalizeGameplayPace(gameplayPace);
     this.portraitBattleMode = portraitBattleMode === 'takeover-74'
       ? portraitBattleMode
       : 'takeover-74';
@@ -504,18 +504,24 @@ class BattleMatchService {
   }
 
   rosterWindowMs(match = null) {
-    if (this.isRulesV8(match)) return RULES_V8_PACING.ROSTER_MS;
+    if (this.isRulesV8(match)) {
+      return resolvePaceWindows(this.gameplayPace, this.localeCount).rosterMs;
+    }
     return this.isRulesV6(match) ? ROSTER_WINDOW_MS : RULES_V5_ROSTER_WINDOW_MS;
   }
 
   actionWindowMs(match = null) {
-    if (this.isRulesV8(match)) return RULES_V8_PACING.SKILL_CHOICE_MS;
+    if (this.isRulesV8(match)) {
+      return resolvePaceWindows(this.gameplayPace, this.localeCount).skillMs;
+    }
     if (this.isRulesV7(match)) return RULES_V7_ACTION_WINDOW_MS;
     return this.isRulesV6(match) ? ACTION_WINDOW_MS : RULES_V5_ACTION_WINDOW_MS;
   }
 
   statWindowMs(match = null) {
-    if (this.isRulesV8(match)) return RULES_V8_PACING.STAT_CHOICE_MS;
+    if (this.isRulesV8(match)) {
+      return resolvePaceWindows(this.gameplayPace, this.localeCount).statMs;
+    }
     return this.isRulesV6(match) ? STAT_WINDOW_MS : RULES_V5_STAT_WINDOW_MS;
   }
 
@@ -672,9 +678,11 @@ class BattleMatchService {
     this.store.removeBattleQueueEntry(opponent.user_id);
     const match = this.getMatch(matchId);
     const rivalry = this.projectRivalry(match);
+    const fighters = this.projectRosterCandidates(match);
     this.appendEvent(matchId, 'streammonsters:battle_match_found', {
       matchId,
       deadlineMs: match.rosterDeadlineMs,
+      fighters,
       ...(rivalry ? { rivalry } : {})
     });
     this.autoLockSoleEligibleRosters(matchId);
@@ -688,6 +696,96 @@ class BattleMatchService {
         monster?.user_id === participant.viewerId &&
         this.rosterEligibility(match, participant, monster).accepted
       ));
+  }
+
+  rosterEligibilityReasonKey(reason) {
+    return {
+      monster_out_of_match_range: 'arenaRosterIneligibleLevel',
+      monster_out_of_power_range: 'arenaRosterIneligiblePower',
+      monster_not_owned: 'arenaRosterIneligibleOwnership'
+    }[reason] || 'arenaRosterIneligible';
+  }
+
+  projectRosterCandidates(match) {
+    return (match?.participants || [])
+      .map(participant => ({
+        slot: participant.slot,
+        candidates: this.store.getViewerMonsters(participant.viewerId)
+          .map((monster, index) => {
+            const template = getTemplate(monster.template_id) || {};
+            const eligibility = this.rosterEligibility(match, participant, monster);
+            return {
+              collectionSlot: index + 1,
+              name: String(monster.name || template.name || 'Stream Monster').slice(0, 80),
+              species: String(template.species || 'Monster').slice(0, 80),
+              speciesKey: `species${String(template.species || 'Monster')
+                .replace(/[^a-zA-Z0-9]+(.)/g, (_match, next) => String(next || '').toUpperCase())
+                .replace(/^./, first => first.toUpperCase())}`,
+              role: String(template.role || 'adaptive').slice(0, 40),
+              roleEpithetKey: `roleEpithet${String(template.templateId || monster.template_id || 'Monster')
+                .replace(/[^a-zA-Z0-9]+(.)/g, (_match, next) => String(next || '').toUpperCase())
+                .replace(/^./, first => first.toUpperCase())}`,
+              element: String(monster.element || template.element || '').slice(0, 20),
+              level: Math.max(1, Math.round(Number(monster.level) || 1)),
+              combatPower: Math.max(0, Math.round(effectiveCombatPower(monster))),
+              eligibility: eligibility.accepted
+                ? { eligible: true, reason: null }
+                : {
+                    eligible: false,
+                    reason: String(eligibility.reason || 'ineligible'),
+                    reasonKey: this.rosterEligibilityReasonKey(eligibility.reason)
+                  }
+            };
+          })
+      }))
+      .filter(fighter => [1, 2].includes(Number(fighter.slot)))
+      .sort((left, right) => left.slot - right.slot);
+  }
+
+  sanitizeRosterCandidates(value) {
+    const roles = new Set(['striker', 'guardian', 'trickster', 'sustain', 'adaptive']);
+    const reasons = new Set([
+      'monster_out_of_match_range',
+      'monster_out_of_power_range',
+      'monster_not_owned',
+      'ineligible'
+    ]);
+    return (Array.isArray(value) ? value : [])
+      .map(fighter => ({
+        slot: [1, 2].includes(Number(fighter?.slot)) ? Number(fighter.slot) : 0,
+        candidates: (Array.isArray(fighter?.candidates) ? fighter.candidates : [])
+          .slice(0, 200)
+          .map(candidate => {
+            const eligible = candidate?.eligibility?.eligible === true;
+            const reason = eligible
+              ? null
+              : reasons.has(candidate?.eligibility?.reason)
+                ? candidate.eligibility.reason
+                : 'ineligible';
+            return {
+              collectionSlot: Math.max(1, Math.round(Number(candidate?.collectionSlot) || 1)),
+              name: String(candidate?.name || 'Stream Monster').slice(0, 80),
+              species: String(candidate?.species || 'Monster').slice(0, 80),
+              speciesKey: String(candidate?.speciesKey || 'speciesMonster')
+                .replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 80),
+              role: roles.has(candidate?.role) ? candidate.role : 'adaptive',
+              roleEpithetKey: String(candidate?.roleEpithetKey || 'roleEpithetMonster')
+                .replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 80),
+              element: String(candidate?.element || '').slice(0, 20),
+              level: Math.max(1, Math.round(Number(candidate?.level) || 1)),
+              combatPower: Math.max(0, Math.round(Number(candidate?.combatPower) || 0)),
+              eligibility: eligible
+                ? { eligible: true, reason: null }
+                : {
+                    eligible: false,
+                    reason,
+                    reasonKey: this.rosterEligibilityReasonKey(reason)
+                  }
+            };
+          })
+      }))
+      .filter(fighter => fighter.slot > 0)
+      .sort((left, right) => left.slot - right.slot);
   }
 
   autoLockSoleEligibleRosters(matchId) {
@@ -833,14 +931,28 @@ class BattleMatchService {
     return allocation ? `${allocation.prompt_id}:stat` : null;
   }
 
-  lockRoster({ userId, monsterId = null, source = 'viewer' }) {
+  lockRoster({
+    userId,
+    monsterId = null,
+    source = 'viewer',
+    selectGlobally = false,
+    requestedChoice = null
+  }) {
     return this.store.runInImmediateTransaction(() => {
       const match = this.getActiveMatchForViewer(userId);
       if (!match || match.state !== 'roster' || match.rosterDeadlineMs <= this.now()) {
         return { accepted: false, reason: 'no_roster_window' };
       }
       const participant = match.participants.find(entry => entry.viewerId === userId);
-      if (participant.lockedMonsterId) return { accepted: false, reason: 'already_locked' };
+      const rosterContext = {
+        slot: participant?.slot || null,
+        requestedChoice: Number.isInteger(Number(requestedChoice))
+          ? Number(requestedChoice)
+          : null
+      };
+      if (participant.lockedMonsterId) {
+        return { accepted: false, reason: 'already_locked', ...rosterContext };
+      }
       const selected = monsterId
         ? this.store.getMonster(monsterId)
         : this.store.getSelectedMonster(userId);
@@ -848,10 +960,10 @@ class BattleMatchService {
         ? selected
         : this.store.getMonster(participant.queuedMonsterId);
       if (!monster || monster.user_id !== userId) {
-        return { accepted: false, reason: 'monster_not_owned' };
+        return { accepted: false, reason: 'monster_not_owned', ...rosterContext };
       }
       const eligibility = this.rosterEligibility(match, participant, monster);
-      if (!eligibility.accepted) return eligibility;
+      if (!eligibility.accepted) return { ...eligibility, ...rosterContext };
       const snapshot = this.snapshotMonster(monster, match.rulesVersion);
       const lockedPower = effectiveCombatPower(monster);
       const result = this.db.prepare(`
@@ -865,12 +977,19 @@ class BattleMatchService {
         match.matchId,
         participant.participantId
       );
-      if (!result.changes) return { accepted: false, reason: 'already_locked' };
+      if (!result.changes) {
+        return { accepted: false, reason: 'already_locked', ...rosterContext };
+      }
+      const globallySelected = selectGlobally
+        ? this.store.selectMonster(userId, monster.monster_id)
+        : null;
       const selectionSource = source === 'sole_eligible'
         ? 'sole_eligible'
         : source === 'timeout'
           ? 'timeout'
           : 'viewer';
+      const autoChoice = selectionSource === 'sole_eligible'
+        ? 'sole_eligible' : null;
       const lockedMatch = this.getMatch(match.matchId);
       const fighter = this.projectPublicFighters(lockedMatch)
         .find(entry => entry.slot === participant.slot);
@@ -888,12 +1007,14 @@ class BattleMatchService {
           monsterId: monster.monster_id,
           slot: participant.slot,
           selectionSource,
+          ...(autoChoice ? { autoChoice } : {}),
           waiting: Boolean(remaining)
         },
         {
           matchId: match.matchId,
           slot: participant.slot,
           selectionSource,
+          ...(autoChoice ? { autoChoice } : {}),
           waiting: Boolean(remaining),
           titleKey: selectionSource === 'sole_eligible'
             ? 'arenaRosterAutoTitle'
@@ -912,6 +1033,8 @@ class BattleMatchService {
           accepted: true,
           source,
           selectionSource,
+          ...rosterContext,
+          ...(globallySelected ? { selected: globallySelected } : {}),
           waiting: true,
           match: this.getMatch(match.matchId)
         };
@@ -921,6 +1044,8 @@ class BattleMatchService {
         accepted: true,
         source,
         selectionSource,
+        ...rosterContext,
+        ...(globallySelected ? { selected: globallySelected } : {}),
         waiting: false,
         match: started
       };
@@ -2636,6 +2761,7 @@ class BattleMatchService {
       return {
         matchId: match.matchId,
         deadlineMs: Number(payload.deadlineMs) || match.rosterDeadlineMs,
+        fighters: this.sanitizeRosterCandidates(payload.fighters),
         ...(rivalry ? { rivalry } : {})
       };
     }
@@ -2645,10 +2771,18 @@ class BattleMatchService {
         : payload.selectionSource === 'timeout'
           ? 'timeout'
           : 'viewer';
+      const autoChoice = [
+        'sole_eligible',
+        'selected_valid_at_timeout',
+        'queued_fallback_at_timeout'
+      ].includes(payload.autoChoice)
+        ? payload.autoChoice
+        : null;
       return {
         matchId: match.matchId,
         slot: [1, 2].includes(Number(payload.slot)) ? Number(payload.slot) : 0,
         selectionSource,
+        ...(autoChoice ? { autoChoice } : {}),
         waiting: Boolean(payload.waiting),
         titleKey: selectionSource === 'sole_eligible'
           ? 'arenaRosterAutoTitle'
@@ -3734,6 +3868,9 @@ class BattleMatchService {
           : queued?.user_id === participant.viewerId
             ? queued
             : null;
+        const autoChoice = selectedEligible
+          ? 'selected_valid_at_timeout'
+          : 'queued_fallback_at_timeout';
         if (!monster) {
           this.cancelRosterMatch(match, 'roster_monster_missing');
           return true;
@@ -3748,6 +3885,40 @@ class BattleMatchService {
           JSON.stringify(snapshot),
           matchId,
           participant.participantId
+        );
+        const lockedMatch = this.getMatch(matchId);
+        const fighter = this.projectPublicFighters(lockedMatch)
+          .find(entry => entry.slot === participant.slot);
+        const remaining = this.db.prepare(`
+          SELECT COUNT(*) AS count FROM streammonsters_match_participants
+          WHERE match_id = ? AND locked_monster_id IS NULL
+        `).get(matchId).count;
+        this.appendEvent(
+          matchId,
+          'streammonsters:battle_roster_locked',
+          {
+            matchId,
+            participantId: participant.participantId,
+            viewerId: participant.viewerId,
+            monsterId: monster.monster_id,
+            slot: participant.slot,
+            selectionSource: 'timeout',
+            autoChoice,
+            waiting: Boolean(remaining)
+          },
+          {
+            matchId,
+            slot: participant.slot,
+            selectionSource: 'timeout',
+            autoChoice,
+            waiting: Boolean(remaining),
+            titleKey: 'arenaRosterAutoTitle',
+            bodyKey: 'arenaRosterAutoBody',
+            params: {
+              name: fighter?.name || 'Monster'
+            },
+            fighter
+          }
         );
       }
       this.startActionWindow(matchId, match.phaseVersion);
