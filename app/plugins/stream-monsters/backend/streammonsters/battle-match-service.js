@@ -1517,6 +1517,38 @@ class BattleMatchService {
     };
   }
 
+  actionRepeatPresentation(matchId, participantId, action = {}) {
+    const identity = candidate => {
+      const choice = String(candidate?.choice || '').toUpperCase();
+      if (!['A', 'B'].includes(choice)) return null;
+      const skill = String(
+        candidate?.skill?.id || candidate?.skill?.name || choice
+      ).trim();
+      return skill ? `${choice}:${skill}` : null;
+    };
+    const currentIdentity = identity(action);
+    if (!currentIdentity) {
+      return { repeatCount: 1, compactRepeat: false };
+    }
+    const rows = this.db.prepare(`
+      SELECT action_json
+      FROM streammonsters_match_actions
+      WHERE match_id = ? AND actor_participant_id = ?
+      ORDER BY sequence DESC
+      LIMIT 32
+    `).all(matchId, participantId);
+    let repeatCount = 1;
+    for (const row of rows) {
+      const prior = parseJson(row.action_json, {});
+      if (identity(prior) !== currentIdentity) break;
+      repeatCount += 1;
+    }
+    return {
+      repeatCount,
+      compactRepeat: repeatCount >= 3
+    };
+  }
+
   projectPublicAction(action, match, eventSequence = null) {
     const actor = match.participants.find(participant => (
       participant.lockedMonsterId === action.actorId
@@ -1627,6 +1659,14 @@ class BattleMatchService {
       actorState: projectState(action.actorState || action.after?.actor),
       targetState: projectState(action.targetState || action.after?.target),
       terminal: Boolean(action.terminal),
+      presentation: {
+        repeatCount: Math.max(
+          1,
+          Math.min(100, numeric(action.presentation?.repeatCount) || 1)
+        ),
+        compactRepeat: Boolean(action.presentation?.compactRepeat) &&
+          String(action.choice || '').toUpperCase() !== 'C'
+      },
       ...(action.skipped ? { skipped: String(action.skipped) } : {})
     };
     if (isRulesV6) {
@@ -1818,10 +1858,16 @@ class BattleMatchService {
       const participant = match.participants.find(entry => entry.lockedMonsterId === action.actorId);
       const decision = decisions.find(entry => entry.participant_id === participant.participantId);
       const sequence = existingCount + index + 1;
+      const presentation = this.actionRepeatPresentation(
+        matchId,
+        participant.participantId,
+        action
+      );
       const persistedAction = {
         ...action,
         sequence,
-        decisionSequence: decision?.event_sequence || 0
+        decisionSequence: decision?.event_sequence || 0,
+        presentation
       };
       const event = this.appendEvent(
         matchId,

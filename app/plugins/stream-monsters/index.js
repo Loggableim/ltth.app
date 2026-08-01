@@ -24,6 +24,9 @@ const StreamMonstersPublicEventProjector = require(
   './backend/streammonsters/public-event-projector'
 );
 const {
+  resolvePrimaryCta
+} = require('./backend/streammonsters/primary-cta');
+const {
   normalizeGameplayPace
 } = require('./streammonsters-gameplay-pace');
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
@@ -1704,11 +1707,58 @@ class StreamMonstersPlugin {
     return null;
   }
 
+  streamMonstersPrimaryCta(eventType, payload = {}, recordedViewerIds = []) {
+    const choices = (Array.isArray(payload.choices) ? payload.choices : [])
+      .map(choice => String(choice?.choice || choice?.key || choice || '').toUpperCase())
+      .filter(choice => ['A', 'B', 'C'].includes(choice));
+    const battleInput = eventType === 'streammonsters:battle_choice_opened'
+      ? {
+          kind: 'battle_input',
+          command: [...new Set(choices.length ? choices : ['A', 'B'])].join(' / ')
+        }
+      : eventType === 'streammonsters:monster_stat_prompt'
+        ? { kind: 'battle_input', command: '1 / 2 / 3 / 4' }
+        : null;
+    const criticalCommands = {
+      'streammonsters:egg_ready': '!hatch',
+      'streammonsters:free_egg_offered': '!adopt',
+      'streammonsters:free_egg_public': '!adopt',
+      'streammonsters:unhatched_egg_steal_public': '!steal'
+    };
+    const criticalCommand = criticalCommands[eventType];
+    const criticalEgg = criticalCommand
+      ? { kind: 'critical_egg', command: criticalCommand }
+      : null;
+    const overlayHint = eventType === 'streammonsters:tutorial_hint' && payload.command
+      ? {
+          kind: 'overlay_hint',
+          command: `!${String(payload.command).replace(/^!+/, '').trim()}`
+        }
+      : null;
+    const directViewerId = String(payload.userId || payload.user_id || '').trim();
+    const battleViewerId = eventType.startsWith('streammonsters:battle_')
+      ? this.streamMonstersBattleViewerIds(payload)[0]
+      : null;
+    const viewerId = directViewerId || recordedViewerIds[0] || battleViewerId || null;
+    const journey = viewerId
+      ? this.streamMonstersOnboarding?.getJourney?.(viewerId) || null
+      : null;
+    return resolvePrimaryCta({
+      battleInput,
+      journey,
+      criticalEgg,
+      overlayHint
+    });
+  }
+
   emitStreamMonsters(eventType, inputPayload = {}) {
     const payload = inputPayload && typeof inputPayload === 'object'
       ? inputPayload
       : {};
-    this.recordStreamMonstersOnboardingEvent(eventType, payload);
+    const recordedViewerIds = this.recordStreamMonstersOnboardingEvent(
+      eventType,
+      payload
+    );
     const projector = this.streamMonstersPublicEventProjector ||
       new StreamMonstersPublicEventProjector({
         store: this.streamMonstersStore || null
@@ -1716,8 +1766,14 @@ class StreamMonstersPlugin {
     const identifiers = projector.identifiers(eventType, payload);
     const correlationId = String(identifiers.correlationId || randomUUID());
     const eventId = String(identifiers.eventId || randomUUID());
+    const primaryCta = this.streamMonstersPrimaryCta(
+      eventType,
+      payload,
+      recordedViewerIds
+    );
     const emitted = {
       ...projector.project(eventType, payload),
+      ...(primaryCta ? { primaryCta } : {}),
       eventId,
       correlationId
     };

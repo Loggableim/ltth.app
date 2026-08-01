@@ -460,6 +460,16 @@
       opacity:1; visibility:visible; transform:translate(-50%,0) scale(1);
       transition:opacity .2s,transform .24s;
     }
+    #arena-action-card.compact-repeat {
+      grid-template-areas:"player key skill" "compact compact compact";
+      min-height:88px;
+    }
+    #arena-action-card.compact-repeat #arena-action-copy,
+    #arena-action-card.compact-repeat #arena-action-metrics { display:none; }
+    #arena-action-card.compact-repeat #arena-action-compact-metric {
+      display:block;
+      font-size:clamp(17px,2.2vw,28px);
+    }
     #arena-action-player {
       grid-area:player; max-width:min(31vw,250px); overflow:hidden; color:#8feeff;
       font-size:clamp(15px,2vw,25px); font-weight:1000; text-overflow:ellipsis; white-space:nowrap;

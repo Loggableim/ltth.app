@@ -91,6 +91,14 @@
       .slice(0, maximum);
   }
 
+  function isCompactRepeat(action = {}) {
+    const presentation = action?.presentation;
+    return String(action?.choice || '').toUpperCase() !== 'C' &&
+      presentation?.compactRepeat === true &&
+      Number.isInteger(Number(presentation.repeatCount)) &&
+      Number(presentation.repeatCount) >= 3;
+  }
+
   function normalizeCombatReport(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     const seenSlots = new Set();
@@ -776,7 +784,8 @@
     function clearActionCard() {
       activeActionAriaLabel = '';
       const actionCard = node('arena-action-card');
-      actionCard?.classList.remove('visible');
+      actionCard?.classList.remove('visible', 'compact-repeat');
+      actionCard?.removeAttribute('data-repeat-count');
       actionCard?.removeAttribute('aria-label');
       clearTransientImpact();
     }
@@ -802,6 +811,13 @@
       }
       const actionCard = node('arena-action-card');
       if (actionCard) {
+        const compactRepeat = isCompactRepeat(action);
+        actionCard.classList.toggle('compact-repeat', compactRepeat);
+        if (compactRepeat) {
+          actionCard.dataset.repeatCount = String(action.presentation.repeatCount);
+        } else {
+          actionCard.removeAttribute('data-repeat-count');
+        }
         activeActionAriaLabel = [
           String(action.choice || '').toUpperCase(),
           skillName,
@@ -2484,6 +2500,7 @@
 
   return {
     createArenaView,
-    unwrapAction
+    unwrapAction,
+    isCompactRepeat
   };
 }));
