@@ -15,6 +15,14 @@
     * { box-sizing:border-box; }
     body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
     #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; isolation:isolate; }
+    [data-sm-layer] { position:fixed!important; left:var(--sm-x)!important; top:var(--sm-y)!important; width:var(--sm-width)!important; height:var(--sm-height)!important; max-width:none!important; max-height:none!important; }
+    [data-sm-layer][data-presentation-excluded="true"] { display:none!important; }
+    #hint,#arena-skill-prompt,.arena-skill-card { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-weight:900; }
+    #arena-countdown-ring { display:grid; place-items:center; min-width:52px; min-height:52px; border:5px solid #73e6ff; border-radius:50%; background:conic-gradient(#73e6ff var(--countdown-progress,100%),#26324f 0); }
+    #arena-countdown { position:relative; z-index:1; padding:4px; border-radius:999px; background:#07101f; }
+    [data-sm-announcer] { position:fixed; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    html[data-presentation-view]:not([data-presentation-view="full"]) body { background:transparent!important; }
+    .fighter-owner { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     #portrait-arena,
     #portrait-exception-lane {
       position:fixed; inset:0; overflow:visible; pointer-events:none;
@@ -1956,7 +1964,9 @@
   </style>
 </head>
 <body>
-<main id="streammonsters-overlay" aria-live="polite">
+<main id="streammonsters-overlay">
+  <div id="phase-announcer" data-sm-announcer role="status" aria-live="polite" aria-atomic="true"></div>
+  <div id="critical-status-announcer" data-sm-announcer role="alert" aria-live="assertive" aria-atomic="true"></div>
   <section id="portrait-arena" data-arena-variant="classic">
   <canvas id="effects-canvas" aria-hidden="true"></canvas>
   <section id="arcade-choreography" aria-hidden="true">
@@ -1970,9 +1980,9 @@
       <i class="arcade-crack arcade-crack-3"></i>
     </div>
   </section>
-  <img id="brand" src="/plugins/stream-monsters/assets/branding/stream-monsters-logo.png" alt="">
-  <div id="hype" style="--hype:0%"><span id="hype-value">0%</span></div>
-  <div id="toast"></div>
+  <img id="brand" data-sm-layer="branding" src="/plugins/stream-monsters/assets/branding/stream-monsters-logo.png" alt="">
+  <div id="hype" data-sm-layer="hype" style="--hype:0%"><span id="hype-value">0%</span></div>
+  <div id="toast" data-sm-layer="notifications"></div>
   <div id="reveal-stage" data-layout="landscape" data-anchor="bottom-center" data-scale="100">
   <section id="card" role="status" aria-atomic="true">
     <div id="art-wrap"><img id="art" alt=""></div>
@@ -2044,23 +2054,23 @@
     </div>
   </section>
   </div>
-  <div id="egg-next-landscape" data-egg-next-landscape role="status" aria-live="polite" hidden></div>
-  <section id="battle"
+  <div id="egg-next-landscape" data-sm-layer="primary-cta" data-egg-next-landscape role="status" hidden></div>
+  <section id="battle" data-sm-layer="arena"
     aria-label="Stream Monsters Arena"
     data-i18n-aria-label="plugins.streamalchemy.ui.monsters.battleArenaAria"
-    aria-live="polite">
+    >
     <canvas id="battle-effects-canvas" aria-hidden="true"></canvas>
     <div id="arena-element-light" aria-hidden="true"></div>
     <div id="arena-topline">
       <span id="arena-round"
         data-i18n="plugins.streamalchemy.ui.monsters.arenaRosterChoice">Monsterwahl</span>
-      <span id="arena-countdown"></span>
+      <span id="arena-countdown-ring" aria-hidden="true"><span id="arena-countdown" aria-hidden="true"></span></span>
     </div>
     <div id="arena-skill-prompt">A · Angriff&nbsp;&nbsp; B · Verteidigung&nbsp;&nbsp; C · Special</div>
     <div id="arena-lead"></div>
-    <div id="arena-rivalry-stamp" aria-live="polite"></div>
-    <div id="arena-streak-stamp" aria-live="polite"></div>
-    <div id="arena-action-card" aria-live="polite">
+    <div id="arena-rivalry-stamp"></div>
+    <div id="arena-streak-stamp"></div>
+    <div id="arena-action-card">
       <span id="arena-action-player"></span>
       <span id="arena-action-key"></span>
       <strong id="arena-action-skill"></strong>
@@ -2156,7 +2166,7 @@
         </div>
       </div>
     </article>
-    <section id="arena-choice-surface" aria-live="polite">
+    <section id="arena-choice-surface">
       <div class="arena-choice-player" data-choice-player="1">
         <strong id="arena-choice-owner-1" class="arena-choice-owner" data-choice-owner="1">Viewer · Monster A</strong>
         <div class="arena-skill-deck"
@@ -2208,7 +2218,7 @@
     <div id="arena-impact" aria-hidden="true"></div>
     <div id="arena-combo" aria-hidden="true"></div>
     <div id="arena-feed">Die Arena wird vorbereitet …</div>
-    <div id="arena-result" aria-live="polite">
+    <div id="arena-result">
       <span id="arena-result-ko"></span>
       <strong id="arena-result-winner"></strong>
       <span id="arena-result-monster"></span>
@@ -2219,17 +2229,17 @@
       <div id="arena-result-next"></div>
     </div>
   </section>
-  <section id="arena-stat-card" aria-live="polite">
+  <section id="arena-stat-card">
     <span id="arena-stat-kicker">NEXT</span>
     <strong id="arena-stat-title"></strong>
     <span id="arena-stat-meta"></span>
     <div id="arena-stat-choices"></div>
   </section>
   <div id="arena-chat-safe-zone" aria-hidden="true"></div>
-  <section id="chat-detail" data-placement="upper" role="status" aria-atomic="true"></section>
-  <div id="chat-card"></div>
+  <section id="chat-detail" data-sm-layer="collection" data-placement="upper" role="status" aria-atomic="true"></section>
+  <div id="chat-card" data-sm-layer="journey"></div>
   </section>
-  <section id="hatch-reveal" aria-live="polite" aria-atomic="true" hidden>
+  <section id="hatch-reveal" data-sm-layer="reveal" aria-atomic="true" hidden>
     <header data-hatch-masthead>
       <div data-hatch-kicker></div>
       <h1 data-hatch-name></h1>
@@ -2239,8 +2249,8 @@
     </header>
     <div data-hatch-hero><img data-hatch-art alt=""></div>
   </section>
-  <section id="portrait-exception-lane">
-    <div id="egg-lifecycle-notice" role="status" aria-live="polite" hidden>
+  <section id="portrait-exception-lane" data-sm-layer="egg-rail">
+    <div id="egg-lifecycle-notice" role="status" hidden>
       <strong data-egg-notice-title></strong>
       <span data-egg-notice-action></span>
     </div>
@@ -2261,6 +2271,7 @@
 <script src="/plugins/stream-monsters/streammonsters-rules-v8-pacing.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-portrait-arena.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-effects-renderer.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-presentation.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-overlay-runtime.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-egg-stage-view.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-arena-director.js"></script>
@@ -2496,6 +2507,34 @@
     stage: node('reveal-stage'),
     battle: node('battle'),
     config: layoutConfig
+  });
+  const presentationApi = window.StreamMonstersPresentation;
+  const overlayQuery = presentationApi.parseOverlayQuery(window.location.search);
+  let activePresentation = presentationApi.createDefaultPresentation();
+  let activePresentationView = null;
+  const applyLayerPresentation = config => {
+    const configured = config?.presentation;
+    activePresentation = configured?.version === presentationApi.VERSION
+      ? presentationApi.normalizePresentation(configured)
+      : presentationApi.migratePresentation(config || {});
+    activePresentationView = presentationApi.applyPresentation({
+      document,
+      presentation:activePresentation,
+      profile:overlayQuery.profile,
+      view:overlayQuery.view,
+      width:window.innerWidth,
+      height:window.innerHeight
+    });
+    return activePresentationView;
+  };
+  applyLayerPresentation({});
+  const phaseAnnouncer = node('phase-announcer');
+  const phaseObserver = new MutationObserver(() => {
+    phaseAnnouncer.textContent = node('battle')?.dataset?.phase || '';
+  });
+  phaseObserver.observe(node('battle'), {
+    attributes:true,
+    attributeFilter:['data-phase']
   });
   const eggStageView = window.StreamMonstersEggStageView?.createEggStageView?.({
     document,
@@ -3417,7 +3456,15 @@
       portraitScale: layouts?.portrait?.scale || data?.config?.portraitScale || 100,
       overlayProfiles: data?.config?.overlayProfiles || {}
     });
-    audioEngine.configure(data?.config?.audioChannels || {});
+    const layerPresentation = applyLayerPresentation(data?.config || {});
+    const audioChannels = data?.config?.audioChannels || {};
+    audioEngine.configure(layerPresentation.audio ? audioChannels : {
+      ...audioChannels,
+      master:{
+        ...(audioChannels.master || {}),
+        enabled:false
+      }
+    });
     layoutController.apply();
     eggStageView.applySnapshot(data?.eggStage || []);
     updateEggNextHint();
@@ -3523,6 +3570,10 @@
       return;
     }
     if (!window.StreamMonstersOverlayRuntime.isCritical(type)) {
+    if (window.StreamMonstersOverlayRuntime.isCritical(type)) {
+      node('critical-status-announcer').textContent =
+        value(data?.title || data?.name || type, '').replaceAll('_', ' ');
+    }
       applyPresentationLocale(
         window.StreamMonstersOverlayRuntime.localeForStableEvent(
           data?.eventId || data?.correlationId,
@@ -4205,6 +4256,7 @@
     }
     clearReconnectEggSnapshot();
     activeReconnectCycle = 0;
+    phaseObserver.disconnect();
     arenaView.destroy?.();
     eggStageView.destroy?.();
     battleEffectsRenderer.destroy?.();
@@ -4298,7 +4350,15 @@
     'streammonsters:tutorial_hint':'tutorial_hint'
   };
   Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
-  socket.on('streammonsters:config_updated', data => applyEggShelfVisibleCount(data?.config));
+  socket.on('streammonsters:config_updated', data => {
+    applyEggShelfVisibleCount(data?.config);
+    const layerPresentation = applyLayerPresentation(data?.config || {});
+    const audioChannels = data?.config?.audioChannels || {};
+    audioEngine.configure(layerPresentation.audio ? audioChannels : {
+      ...audioChannels,
+      master:{ ...(audioChannels.master || {}), enabled:false }
+    });
+  });
   socket.on('connect', async () => {
     const reconnectCycle = beginReconnectEggSnapshot(
       reconnectController.generation() + 1

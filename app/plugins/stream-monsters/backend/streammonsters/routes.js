@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
+const Presentation = require('../../streammonsters-presentation');
 const {
   FURRY_ASSET_VERSION,
   TEMPLATE_CATALOG,
@@ -133,7 +134,18 @@ class StreamMonstersRoutes {
       res.sendFile(path.join(this.pluginDir, 'streammonsters-ui.html'));
     };
     const sendOverlay = (req, res) => {
-      res.sendFile(path.join(this.pluginDir, 'streammonsters-overlay.html'));
+      try {
+        Presentation.parseOverlayQuery(req?.query || req?.originalUrl || '');
+      } catch (error) {
+        if (error.code === 'STREAM_MONSTERS_OVERLAY_VIEW_INVALID') {
+          return res.status(400).json({ error: 'invalid_overlay_view' });
+        }
+        if (error.code === 'STREAM_MONSTERS_OVERLAY_PROFILE_INVALID') {
+          return res.status(400).json({ error: 'invalid_overlay_profile' });
+        }
+        return res.status(400).json({ error: 'invalid_overlay_query' });
+      }
+      return res.sendFile(path.join(this.pluginDir, 'streammonsters-overlay.html'));
     };
     this.api.registerRoute('GET', '/streammonsters/ui', sendCreator);
     this.api.registerRoute('GET', '/streammonsters/overlay', sendOverlay);
@@ -182,6 +194,27 @@ class StreamMonstersRoutes {
         return res.status(502).json({ error: 'avatar_unavailable' });
       }
     });
+    const sendOverlaySources = this.protectAdmin((req, res) => {
+      const config = this.configProvider.getConfig().streamMonsters || {};
+      const presentation = config.presentation?.version === Presentation.VERSION
+        ? Presentation.normalizePresentation(config.presentation)
+        : Presentation.migratePresentation(config);
+      return res.json({
+        success: true,
+        version: Presentation.VERSION,
+        audioOwner: presentation.audioOwner,
+        profiles: [...Presentation.PROFILE_IDS],
+        sources: Presentation.buildOverlaySources(presentation, {
+          basePath: '/stream-monsters/overlay'
+        })
+      });
+    });
+    this.api.registerRoute(
+      'GET', '/api/stream-monsters/overlay-sources', sendOverlaySources
+    );
+    this.api.registerRoute(
+      'GET', '/api/streammonsters/overlay-sources', sendOverlaySources
+    );
     this.api.registerRoute('POST', '/api/streammonsters/overlay/heartbeat', (req, res) => {
       const heartbeat = this.recordOverlayHeartbeat(req.body);
       return res.json({ success: true, acceptedAtMs: heartbeat.lastSeenAtMs });
@@ -1911,6 +1944,17 @@ class StreamMonstersRoutes {
     if (Object.prototype.hasOwnProperty.call(input, 'overlayProfiles')) {
       safe.overlayProfiles = fixedOverlayProfiles();
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'presentation')) {
+      const presentation = Presentation.normalizePresentation(input.presentation);
+      const validation = Presentation.validatePresentation(presentation);
+      if (!validation.valid) {
+        const error = new Error('STREAM_MONSTERS_PRESENTATION_INVALID');
+        error.code = error.message;
+        error.details = validation.errors;
+        throw error;
+      }
+      safe.presentation = presentation;
+    }
     const allowedHatchDurations = new Set([30_000, 60_000, 90_000, 2, 5, 10, 30].map(value => (
       value < 1_000 ? value * 60_000 : value
     )));
@@ -2139,6 +2183,9 @@ class StreamMonstersRoutes {
         landscape: { anchor: 'bottom-center', scale: 100 }
       },
       overlayProfiles: fixedOverlayProfiles(),
+      presentation: config.presentation?.version === Presentation.VERSION
+        ? Presentation.normalizePresentation(config.presentation)
+        : Presentation.migratePresentation(config),
       rendererQuality: ['auto', 'high', 'medium', 'low'].includes(config.rendererQuality)
         ? config.rendererQuality
         : 'auto',

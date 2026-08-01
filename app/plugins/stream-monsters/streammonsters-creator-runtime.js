@@ -1,8 +1,11 @@
 (function attachStreamMonstersCreatorRuntime(root, factory) {
-  const api = factory();
+  const presentation = typeof module === 'object' && module.exports
+    ? require('./streammonsters-presentation')
+    : root.StreamMonstersPresentation;
+  const api = factory(presentation);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersCreatorRuntime = api;
-}(typeof globalThis === 'object' ? globalThis : this, () => {
+}(typeof globalThis === 'object' ? globalThis : this, Presentation => {
   'use strict';
 
   const CREATOR_SECTIONS = Object.freeze([
@@ -582,6 +585,10 @@
     };
   }
 
+  function presentationPreview(presentation, profileId, view = 'full') {
+    return Presentation.presentationView(presentation, profileId, view);
+  }
+
   function buildEggShelfDiagnostics(eggStage = []) {
     const eggs = Array.isArray(eggStage) ? eggStage : [];
     const publicFree = eggs.filter(egg => (
@@ -811,6 +818,7 @@
     normalizeOverlayLanguage,
     previewComposition,
     previewGeometry,
+    presentationPreview,
     resolveCommandReference,
     summarizeRepairResult,
     summarizeAssetLibrary

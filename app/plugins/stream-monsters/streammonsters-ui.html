@@ -255,6 +255,21 @@
     .repair-card button:disabled { cursor:not-allowed; }
     .fairness-list { margin:10px 0 0; padding-left:20px; color:var(--muted); }
     .fairness-list li + li { margin-top:6px; }
+    .presentation-toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:9px; margin:14px 0; }
+    .presentation-toolbar label { flex:1 1 180px; margin:0; }
+    .presentation-canvas { position:relative; overflow:hidden; width:min(100%,640px); margin:auto; aspect-ratio:9/16; border:2px solid #687caf; border-radius:16px; background:#07101f; }
+    .presentation-canvas[data-orientation="landscape"] { width:100%; aspect-ratio:16/9; }
+    .presentation-layer,.presentation-safe-zone { position:absolute; left:calc(var(--x) * 1%); top:calc(var(--y) * 1%); width:calc(var(--w) * 1%); height:calc(var(--h) * 1%); box-sizing:border-box; }
+    .presentation-layer { z-index:2; display:grid; place-items:center; overflow:hidden; border:2px solid #73e6ff; border-radius:7px; color:#fff; background:#173b5cbb; cursor:move; font:800 11px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .presentation-layer[data-mode="dedicated"] { border-color:#bca9ff; background:#412b70bb; }
+    .presentation-layer[data-mode="off"] { opacity:.32; }
+    .presentation-safe-zone { z-index:3; display:grid; place-items:center; border:2px dashed #ffb45e; color:#ffe0b8; background:#633b248c; cursor:move; font:800 10px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .presentation-resize { position:absolute; right:0; bottom:0; width:18px; height:18px; border:0; background:#fff; cursor:nwse-resize; }
+    .presentation-mode { position:absolute; left:3px; bottom:3px; width:auto; min-height:22px; padding:1px; font-size:9px; }
+    .presentation-error { min-height:24px; margin-top:8px; color:#ffb9c6; font-weight:800; }
+    .presentation-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .presentation-actions button { flex:1 1 120px; }
+    .presentation-layer:focus-visible,.presentation-safe-zone:focus-visible { outline:4px solid #fff; outline-offset:2px; }
     @media (max-width:960px) {
       .hero,.gift-layout { grid-template-columns:1fr; }
       .card,.card.wide { grid-column:1/-1; }
@@ -602,6 +617,28 @@
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.landscapeScale">Landscape scale</span><input id="landscapeScale" type="number" min="70" max="130" value="100"></label>
         </div>
+        <div id="presentationEditor" aria-labelledby="presentationEditorHeading">
+          <h4 id="presentationEditorHeading">OBS layer layout</h4>
+          <div class="presentation-toolbar">
+            <label>Profile<select id="presentationProfile"><option value="portrait-720">Portrait 720p</option><option value="portrait-1080" selected>Portrait 1080p</option><option value="landscape-720">Landscape 720p</option><option value="landscape-1080">Landscape 1080p</option></select></label>
+            <label>Audio owner<select id="presentationAudioOwner"><option value="full">Composite</option><option value="arena">Arena</option><option value="egg-rail">Egg rail</option><option value="primary-cta">Primary CTA</option><option value="journey">Journey</option><option value="reveal">Reveal</option><option value="collection">Collection</option><option value="notifications">Notifications</option><option value="hype">Hype</option><option value="branding">Branding</option></select></label>
+            <div class="presentation-actions"><button id="presentationUndo" type="button">Undo</button><button id="presentationReset" type="button">Reset</button><button id="presentationCopy" type="button">Copy 720p / 1080p</button></div>
+          </div>
+          <div id="presentationCanvas" class="presentation-canvas" data-orientation="portrait">
+            <div class="presentation-layer" data-presentation-layer="arena" tabindex="0">Arena<select class="presentation-mode" data-layer-mode="arena"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="egg-rail" tabindex="0">Egg rail<select class="presentation-mode" data-layer-mode="egg-rail"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="primary-cta" tabindex="0">Primary CTA<select class="presentation-mode" data-layer-mode="primary-cta"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="journey" tabindex="0">Journey<select class="presentation-mode" data-layer-mode="journey"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="reveal" tabindex="0">Reveal<select class="presentation-mode" data-layer-mode="reveal"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="collection" tabindex="0">Collection<select class="presentation-mode" data-layer-mode="collection"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="notifications" tabindex="0">Notifications<select class="presentation-mode" data-layer-mode="notifications"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="hype" tabindex="0">Hype<select class="presentation-mode" data-layer-mode="hype"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="branding" tabindex="0">Branding<select class="presentation-mode" data-layer-mode="branding"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-safe-zone" data-presentation-safe-zone="likebar" tabindex="0">Likebar<span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-safe-zone" data-presentation-safe-zone="tiktokChat" tabindex="0">TikTok chat<span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+          </div>
+          <div id="presentationError" class="presentation-error" role="alert"></div>
+        </div>
         <aside id="obsTakeoverSourceOrder" class="obs-composition-guide" aria-labelledby="obsSourceOrderHeading">
           <h4 id="obsSourceOrderHeading" data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderTitle">OBS source order for battle takeover</h4>
           <p data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderIntro">Put these sources in this order from top to bottom:</p>
@@ -793,6 +830,8 @@
 
 <script src="/js/i18n-client.js"></script>
 <script src="/js/tiktok-studio-url.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-presentation.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-layout-editor.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-overlay-runtime.js"></script>
 <script src="/plugins/stream-monsters/streammonsters-creator-runtime.js"></script>
 <script>
@@ -814,6 +853,7 @@
   };
   const runtimeText = window.StreamMonstersOverlayRuntime;
   const creatorRuntime = window.StreamMonstersCreatorRuntime;
+  const presentationContract = window.StreamMonstersPresentation;
   const elementName = element => text(runtimeText.elementKey(element), 'Unknown');
   const variantName = variant => text(runtimeText.variantKey(variant), 'Unknown');
   const personalityName = personality => text(runtimeText.personalityKey(personality), 'Unknown');
@@ -855,6 +895,14 @@
   let currentLiveStatus = {};
   let currentCreatorState = {};
   let currentStateConfig = {};
+  const presentationEditorController = window.StreamMonstersLayoutEditor.mount({
+    document,
+    window,
+    initial:presentationContract.createDefaultPresentation(),
+    onValidity:validation => {
+      byId('saveSetup').disabled = !validation.valid;
+    }
+  });
   let liveRefreshInFlight = false;
   const repairPreviews = { eggs:null, matches:null };
   const repairSuffixes = Object.freeze({ eggs:'Eggs', matches:'Matches' });
@@ -1590,6 +1638,13 @@
         }
       }
     });
+    const presentationValidation = presentationEditorController.validation();
+    if (!presentationValidation.valid) {
+      const failure = new Error('STREAM_MONSTERS_PRESENTATION_INVALID');
+      failure.code = failure.message;
+      throw failure;
+    }
+    payload.presentation = presentationEditorController.snapshot();
     await request('/api/streammonsters/config', {
       method:'POST',
       headers:jsonHeaders,
@@ -1674,6 +1729,7 @@
       ...(state.config || {}),
       giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
     };
+    presentationEditorController.load(state.config?.presentation || state.config || {});
     const storedHatchDurationMs = Number(state.config?.hatchDurationMs ?? 90000);
     creatorRuntime.hydrateHatchPresetControl(
       byId('hatchPreset'),

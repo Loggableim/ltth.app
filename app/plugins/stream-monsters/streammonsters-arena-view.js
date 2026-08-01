@@ -5,10 +5,13 @@
   const portraitArena = typeof module === 'object' && module.exports
     ? require('./streammonsters-portrait-arena')
     : root.StreamMonstersPortraitArena;
-  const api = factory(director, portraitArena);
+  const presentation = typeof module === 'object' && module.exports
+    ? require('./streammonsters-presentation')
+    : root.StreamMonstersPresentation;
+  const api = factory(director, portraitArena, presentation);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersArenaView = api;
-}(typeof globalThis === 'object' ? globalThis : this, (ArenaDirector, PortraitArena) => {
+}(typeof globalThis === 'object' ? globalThis : this, (ArenaDirector, PortraitArena, Presentation) => {
   'use strict';
 
   const SILENT_OUTPUT = Object.freeze({
@@ -1182,6 +1185,10 @@
       );
       setText(`arena-name-${slot}`, publicMonsterName);
       setText(`arena-owner-${slot}`, publicViewerName);
+      const presentedViewer = Presentation.presentHandle(publicViewerName, { maxLength: 22 });
+      setText(`arena-owner-${slot}`, presentedViewer.text);
+      node(`arena-owner-${slot}`)?.setAttribute('aria-label', presentedViewer.ariaLabel);
+      node(`arena-choice-owner-${slot}`)?.setAttribute('aria-label', publicViewerName);
       setText(
         `arena-choice-owner-${slot}`,
         `${publicViewerName} · ${publicMonsterName}`

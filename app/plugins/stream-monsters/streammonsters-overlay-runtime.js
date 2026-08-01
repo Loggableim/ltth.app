@@ -2,10 +2,13 @@
   const pacing = typeof module === 'object' && module.exports
     ? require('./streammonsters-rules-v8-pacing')
     : root.StreamMonstersRulesV8Pacing;
-  const api = factory(pacing);
+  const presentation = typeof module === 'object' && module.exports
+    ? require('./streammonsters-presentation')
+    : root.StreamMonstersPresentation;
+  const api = factory(pacing, presentation);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.StreamMonstersOverlayRuntime = api;
-}(typeof globalThis === 'object' ? globalThis : this, RULES_V8_PACING => {
+}(typeof globalThis === 'object' ? globalThis : this, (RULES_V8_PACING, Presentation) => {
   'use strict';
 
   const CRITICAL_TYPES = new Set([
@@ -1688,6 +1691,7 @@
     notificationShelfLayout,
     overlayHeartbeatPayload,
     pendingCriticalLocales,
+    presentationView: Presentation.presentationView,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
     replayableRecentEvents,
     rectanglesOverlap,
