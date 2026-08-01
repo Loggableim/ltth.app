@@ -1,4 +1,4 @@
-const ArenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
+const ArenaDirector = require('../plugins/stream-monsters/streammonsters-arena-director');
 
 describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
   test('reserves the lower 26 percent in portrait and keeps fighters inside the gameplay field', () => {
@@ -26,11 +26,11 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
     expect(fighters.map(fighter => fighter.slot)).toEqual([1, 2]);
     expect(fighters[0]).toEqual(expect.objectContaining({
       side: 'left',
-      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp'
+      imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp'
     }));
     expect(fighters[1]).toEqual(expect.objectContaining({
       side: 'right',
-      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/tide/ripple-stage3.webp'
+      imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/evolution/tide/ripple-stage3.webp'
     }));
   });
 

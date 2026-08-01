@@ -1,39 +1,39 @@
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const BattleService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const {
   PASSIVE_CHARGE_PER_SECOND,
   MAX_PASSIVE_CHARGE_PER_ROUND,
   projectPassiveCharge
-} = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
+} = require('../plugins/stream-monsters/backend/streammonsters/battle-charge');
 const {
   ARENA_COLLAPSE_WARNING_ROUND,
   ARENA_COLLAPSE_ROUND,
   arenaCollapseStatus,
   applyArenaCollapse
-} = require('../plugins/streamalchemy/backend/streammonsters/battle-rules-v8');
+} = require('../plugins/stream-monsters/backend/streammonsters/battle-rules-v8');
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const OverlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const ChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 const {
   resolveInteractiveRound
-} = require('../plugins/streamalchemy/backend/streammonsters/battle-rules-v5');
+} = require('../plugins/stream-monsters/backend/streammonsters/battle-rules-v5');
 
 function createStore() {
   const sqlite = new Database(':memory:');
@@ -1278,10 +1278,10 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
   test('publishes round-eight Collapse defense copy in every overlay locale', () => {
     const translations = [
-      require('../plugins/streamalchemy/locales/de.json'),
-      require('../plugins/streamalchemy/locales/en.json'),
-      require('../plugins/streamalchemy/locales/es.json'),
-      require('../plugins/streamalchemy/locales/fr.json')
+      require('../plugins/stream-monsters/locales/de.json'),
+      require('../plugins/stream-monsters/locales/en.json'),
+      require('../plugins/stream-monsters/locales/es.json'),
+      require('../plugins/stream-monsters/locales/fr.json')
     ].map(locale => (
       locale.plugins.streamalchemy.ui.monsters.arenaCollapseDefenseLocked
     ));

@@ -1,4 +1,4 @@
-const BattleSimulator = require('../plugins/streamalchemy/backend/streammonsters/battle-simulator');
+const BattleSimulator = require('../plugins/stream-monsters/backend/streammonsters/battle-simulator');
 
 function expectNeutralRate(row, field, sampleField) {
   const samples = Math.max(1, Number(row[sampleField]) || 0);

@@ -1,9 +1,9 @@
 const BattleSimulator = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-simulator'
+  '../plugins/stream-monsters/backend/streammonsters/battle-simulator'
 );
 const {
   getTemplate
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 
 describe('Stream Monsters neutral rules-v5 balance simulator', () => {
   test('rejects illegal early specials while accepting guaranteed round-three C', () => {
