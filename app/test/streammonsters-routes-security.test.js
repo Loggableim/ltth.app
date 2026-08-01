@@ -113,7 +113,7 @@ describe('Stream Monsters Rules v5 route security', () => {
     expect(res.payload.config.rulesVersion).toBe(8);
     expect(res.payload.battle).toEqual({
       rulesVersion: 8,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'classic',
       matches: []

@@ -3,10 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const Presentation = require('../plugins/streamalchemy/streammonsters-presentation');
-const CreatorRuntime = require('../plugins/streamalchemy/streammonsters-creator-runtime');
-const OverlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
+const CreatorRuntime = require('../plugins/stream-monsters/streammonsters-creator-runtime');
+const OverlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
 const PROFILE_IDS = [
   'portrait-720',
@@ -63,7 +63,7 @@ function routeSubject(config = {}) {
       emit: jest.fn(),
       log: jest.fn()
     },
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     store: {
       getRecentPublicEvents: () => [],
       getEggStateCounts: () => ({ incubating: 0, queued: 0, ready: 0 }),
@@ -321,7 +321,7 @@ describe('Stream Monsters 1.12 presentation routes and markup', () => {
   });
 
   test('ships keyboard editor controls, layer hooks, one pair of announcers and a silent countdown', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     const uiHtml = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
     const overlayHtml = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
     const editorJs = fs.readFileSync(
@@ -351,7 +351,7 @@ describe('Stream Monsters 1.12 presentation routes and markup', () => {
   });
 
   test('isolates every active visual surface into its configured OBS layer', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     const overlay = new JSDOM(fs.readFileSync(
       path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8'
     )).window.document;
