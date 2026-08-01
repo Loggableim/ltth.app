@@ -7593,6 +7593,19 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain('for (const bomb of state.bombs || [])');
   });
 
+  it('renders bomb readiness, armed mines, flight fuse, and explosion feedback in both renderers', () => {
+    const overlay = readOverlay();
+
+    expect((overlay.match(/abilities\.bomb/g) || [])).toHaveLength(2);
+    expect((overlay.match(/bomb\.phase === 'armed'/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect((overlay.match(/drawBombFuse/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect(overlay).toContain('function drawBombExplosionEffect(effect, progress)');
+    expect(overlay).toContain("effect.type === 'bomb-explosion'");
+    expect(overlay).toContain("socket.on('arena:bomb-exploded'");
+    expect(overlay).toContain("type: 'bomb-explosion'");
+    expect(overlay).toContain('bombLayer');
+  });
+
   it('lists individual direct abilities in the lower rotator and exposes the optional upper legend toggle', () => {
     const overlay = readOverlay();
     const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');

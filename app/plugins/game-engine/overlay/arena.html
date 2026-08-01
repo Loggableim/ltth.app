@@ -2403,6 +2403,14 @@
           node.abilityRings.arc(0, 0, point.radius + offset, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
           node.abilityRings.stroke({ color: cssHexToNumber(color, 0xffffff), alpha, width: Math.max(2, point.radius * 0.12) });
         });
+        const bombAbility = abilities.bomb;
+        if (bombAbility?.ready) {
+          const pulse = 1 + Math.sin(now / 120) * 0.12;
+          node.abilityRings.circle(0, 0, (point.radius + 25) * pulse);
+          node.abilityRings.stroke({ color: 0xef4444, alpha: 0.3 + Math.sin(now / 120) * 0.08, width: Math.max(2, point.radius * 0.1) });
+          node.abilityRings.circle(0, 0, (point.radius + 22) * pulse);
+          node.abilityRings.stroke({ color: 0xf97316, alpha: 0.68 + Math.sin(now / 120) * 0.18, width: Math.max(3, point.radius * 0.14) });
+        }
       }
 
       function drawPixiAbilityLegend() {
@@ -2419,6 +2427,56 @@
         shield.x = 148; shield.y = 27;
         bomb.x = 270; bomb.y = 27;
         abilityLegend.addChild(boost, shield, bomb);
+      }
+
+      function drawBombFuse(graphic, bomb, radius) {
+        const velocityX = Number(bomb.vx) || 0;
+        const velocityY = Number(bomb.vy) || 0;
+        const speed = Math.hypot(velocityX, velocityY);
+        const directionX = speed > 0.01 ? velocityX / speed : 1;
+        const directionY = speed > 0.01 ? velocityY / speed : 0;
+        graphic.moveTo(-directionX * radius * 0.65, -directionY * radius * 0.65);
+        graphic.lineTo(-directionX * radius * 1.65, -directionY * radius * 1.65);
+        graphic.stroke({ color: 0xef4444, alpha: 0.96, width: Math.max(2, radius * 0.28) });
+        graphic.circle(-directionX * radius * 1.75, -directionY * radius * 1.75, Math.max(1.5, radius * 0.18));
+        graphic.fill({ color: 0xf97316, alpha: 0.92 });
+      }
+
+      function drawPixiBombGraphic(bomb, point, now) {
+        const graphic = new PIXI.Graphics();
+        const baseRadius = Math.max(7, point.radius || 8);
+        if (bomb.phase === 'armed') {
+          const radius = baseRadius * (1 + Math.sin(now / 320 + point.x * 0.015) * 0.08);
+          for (let i = 0; i < 8; i++) {
+            const angle = Math.PI / 8 + i * Math.PI / 4;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            if (i === 0) graphic.moveTo(x, y);
+            else graphic.lineTo(x, y);
+          }
+          graphic.closePath();
+          graphic.fill({ color: 0xf97316, alpha: 0.94 });
+          graphic.stroke({ color: 0xef4444, alpha: 0.98, width: Math.max(2, baseRadius * 0.22) });
+          graphic.circle(0, 0, baseRadius * 0.34);
+          graphic.fill({ color: 0x7f1d1d, alpha: 0.96 });
+        } else {
+          graphic.circle(0, 0, baseRadius);
+          graphic.fill({ color: 0xfbbf24, alpha: 0.94 });
+          graphic.stroke({ color: 0xfff7ed, alpha: 0.9, width: 1.5 });
+          drawBombFuse(graphic, bomb, baseRadius);
+        }
+        graphic.x = point.x;
+        graphic.y = point.y;
+        return graphic;
+      }
+
+      function drawPixiBombExplosionEffect(graphic, point, progress) {
+        const eased = easeOutCubic(progress);
+        const radius = Math.max(12, point.radius);
+        graphic.circle(point.x, point.y, radius * (0.18 + eased * 0.48));
+        graphic.fill({ color: 0xf97316, alpha: Math.max(0, 0.3 - progress * 0.3) });
+        graphic.circle(point.x, point.y, radius * (0.32 + eased * 0.68));
+        graphic.stroke({ color: 0xef4444, alpha: (1 - progress) * 0.92, width: Math.max(3, radius * 0.07) });
       }
 
       return {
@@ -2477,11 +2535,7 @@
 
           for (const bomb of state.bombs || []) {
             const point = project(bomb);
-            const graphic = circleGraphic(Math.max(7, point.radius || 8), 0xfbbf24, 0.88, 0xffffff, 1.5);
-            graphic.x = point.x;
-            graphic.y = point.y;
-            graphic.rotation = now / 180;
-            bombLayer.addChild(graphic);
+            bombLayer.addChild(drawPixiBombGraphic(bomb, point, now));
           }
 
           const keep = new Set();
@@ -2520,7 +2574,9 @@
           const radius = Math.max(8, point.radius * (1 + progress * (effect.type === 'chainsaw-hit' ? 2.8 : 3)));
           const graphic = new PIXI.Graphics();
 
-          if (effect.type === 'chainsaw-hit') {
+          if (effect.type === 'bomb-explosion') {
+            drawPixiBombExplosionEffect(graphic, point, progress);
+          } else if (effect.type === 'chainsaw-hit') {
             const spin = now / 58;
             for (let j = 0; j < 3; j++) {
               const angle = spin + j * Math.PI / 3;
@@ -3336,33 +3392,82 @@
         ctx.arc(point.x, point.y, point.radius + offset, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
         ctx.stroke();
       });
+      const bombAbility = abilities.bomb;
+      if (bombAbility?.ready) {
+        const pulse = 1 + Math.sin(now / 120) * 0.12;
+        ctx.globalAlpha = 0.68 + Math.sin(now / 120) * 0.18;
+        ctx.strokeStyle = '#F97316';
+        ctx.lineWidth = Math.max(3, point.radius * 0.14);
+        ctx.shadowColor = '#EF4444';
+        ctx.shadowBlur = renderStats.quality > 0.72 ? 12 : 0;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, (point.radius + 22) * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.restore();
+    }
+
+    function drawBombFuse(bomb, radius) {
+      const velocityX = Number(bomb.vx) || 0;
+      const velocityY = Number(bomb.vy) || 0;
+      const speed = Math.hypot(velocityX, velocityY);
+      const directionX = speed > 0.01 ? velocityX / speed : 1;
+      const directionY = speed > 0.01 ? velocityY / speed : 0;
+      ctx.strokeStyle = '#EF4444';
+      ctx.lineWidth = Math.max(2, radius * 0.28);
+      ctx.beginPath();
+      ctx.moveTo(-directionX * radius * 0.65, -directionY * radius * 0.65);
+      ctx.lineTo(-directionX * radius * 1.65, -directionY * radius * 1.65);
+      ctx.stroke();
+      ctx.fillStyle = '#F97316';
+      ctx.beginPath();
+      ctx.arc(-directionX * radius * 1.75, -directionY * radius * 1.75, Math.max(1.5, radius * 0.18), 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function drawBombs(now) {
       const bombs = state.bombs || [];
       if (!bombs.length) return;
 
-      ctx.save();
       for (const bomb of bombs) {
         const point = project(bomb);
-        const pulse = 1 + Math.sin(now / 110 + point.x * 0.02) * 0.1;
+        const baseRadius = Math.max(7, point.radius || 8);
         ctx.save();
         ctx.translate(point.x, point.y);
-        ctx.rotate(now / 180);
-        ctx.globalAlpha = 0.9;
-        ctx.fillStyle = '#fbbf24';
-        ctx.strokeStyle = '#fff7ed';
-        ctx.lineWidth = 1.5;
-        ctx.shadowColor = '#f59e0b';
-        ctx.shadowBlur = renderStats.quality > 0.72 ? 10 : 0;
-        ctx.beginPath();
-        ctx.arc(0, 0, Math.max(7, point.radius || 8) * pulse, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        if (bomb.phase === 'armed') {
+          const radius = baseRadius * (1 + Math.sin(now / 320 + point.x * 0.015) * 0.08);
+          ctx.fillStyle = '#F97316';
+          ctx.strokeStyle = '#EF4444';
+          ctx.lineWidth = Math.max(2, baseRadius * 0.22);
+          ctx.beginPath();
+          for (let i = 0; i < 8; i++) {
+            const angle = Math.PI / 8 + i * Math.PI / 4;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#7F1D1D';
+          ctx.beginPath();
+          ctx.arc(0, 0, baseRadius * 0.34, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#FBBF24';
+          ctx.strokeStyle = '#FFF7ED';
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = '#F59E0B';
+          ctx.shadowBlur = renderStats.quality > 0.72 ? 10 : 0;
+          ctx.beginPath();
+          ctx.arc(0, 0, baseRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          drawBombFuse(bomb, baseRadius);
+        }
         ctx.restore();
       }
-      ctx.restore();
     }
 
     function drawAbilityLegend() {
@@ -3463,6 +3568,28 @@
       ctx.restore();
     }
 
+    function drawBombExplosionEffect(effect, progress) {
+      const point = project(effect);
+      const eased = easeOutCubic(progress);
+      const radius = Math.max(12, point.radius);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = '#F97316';
+      ctx.globalAlpha = Math.max(0, 0.3 - progress * 0.3);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, radius * (0.18 + eased * 0.48), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#EF4444';
+      ctx.shadowColor = '#F97316';
+      ctx.shadowBlur = renderStats.quality > 0.72 ? 14 : 0;
+      ctx.globalAlpha = (1 - progress) * 0.92;
+      ctx.lineWidth = Math.max(3, radius * 0.07);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, radius * (0.32 + eased * 0.68), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function drawEffects(now) {
       for (let i = effects.length - 1; i >= 0; i--) {
         const effect = effects[i];
@@ -3472,6 +3599,10 @@
           continue;
         }
 
+        if (effect.type === 'bomb-explosion') {
+          drawBombExplosionEffect(effect, progress);
+          continue;
+        }
         if (effect.type === 'eat') {
           drawEatingEffect(effect, progress, now);
           continue;
@@ -3668,6 +3799,17 @@
         color: weaponColor('chainsaw'),
         startedAt: Date.now(),
         duration: data.mode === 'bounce' ? 620 : 760
+      });
+    });
+    socket.on('arena:bomb-exploded', data => {
+      if (!data) return;
+      pushEffect({
+        type: 'bomb-explosion',
+        x: Number(data.x) || 0,
+        y: Number(data.y) || 0,
+        radius: Math.min(240, Math.max(12, Number(data.radius) || 40)),
+        startedAt: Date.now(),
+        duration: 620
       });
     });
     socket.on('arena:mine-triggered', data => {
