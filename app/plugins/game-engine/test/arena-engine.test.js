@@ -295,11 +295,14 @@ describe('ArenaGame', () => {
     expect(decision.vector.x).toBeGreaterThan(0);
   });
 
-  it('slows heavy arena players and raises the bar for borderline absorbs', () => {
+  it('slows 220-mass arena players under the 666 cap and raises the bar for borderline absorbs', () => {
     const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
     const config = arena.getConfig();
 
-    expect(arena._movementMassMultiplier({ mass: 220 }, config)).toBeLessThan(0.4);
+    const heavyMultiplier = arena._movementMassMultiplier({ mass: 220 }, config);
+    expect(config.maxMass).toBe(666);
+    expect(heavyMultiplier).toBeCloseTo(0.512851, 5);
+    expect(heavyMultiplier).toBeLessThan(1);
 
     const predator = movementPlayer(arena, config, 'borderline_predator', 54, {
       x: 320,
@@ -2391,7 +2394,7 @@ describe('ArenaGame', () => {
     expect(config.deathFoodDropValue).toBeGreaterThan(1.15);
   });
 
-  it('upgrades old strict food defaults to denser slower-growth arena food', () => {
+  it('migrates old strict food defaults to calmer low-density arena food', () => {
     const { arena } = createArena({
       maxFood: 90,
       maxFoodRender: 52,
@@ -2399,9 +2402,9 @@ describe('ArenaGame', () => {
     });
     const config = arena.getConfig();
 
-    expect(config.maxFood).toBeGreaterThan(90);
-    expect(config.maxFoodRender).toBeGreaterThan(52);
-    expect(config.foodValue).toBeLessThan(2.25);
+    expect(config.maxFood).toBe(72);
+    expect(config.maxFoodRender).toBe(66);
+    expect(config.foodValue).toBe(1.35);
   });
 
   it('uses slow default food spawn and despawn timing to calm the arena screen', () => {
@@ -2560,16 +2563,15 @@ describe('ArenaGame', () => {
     expect(arena.food.has('recent_burst')).toBe(true);
   });
 
-  it('upgrades sparse live food caps while keeping render load bounded', () => {
+  it('migrates sparse live food caps to calmer render-bounded defaults', () => {
     const { arena } = createArena({
       maxFood: 50,
       maxFoodRender: 25
     });
     const config = arena.getConfig();
 
-    expect(config.maxFood).toBeGreaterThanOrEqual(120);
-    expect(config.maxFoodRender).toBeGreaterThanOrEqual(70);
-    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
+    expect(config.maxFood).toBe(72);
+    expect(config.maxFoodRender).toBe(66);
   });
 
   it('upgrades expensive legacy gift tier defaults to cheaper stream-friendly tiers', () => {
@@ -5237,15 +5239,14 @@ describe('ArenaGame', () => {
     expect(vector.y).toBeCloseTo(0, 5);
   });
 
-  it('uses denser food with damped pellet value and a meaningful kill economy', () => {
+  it('uses a calmer food cap with damped pellet value and a meaningful kill economy', () => {
     const { arena } = createArena();
     const config = arena.getConfig();
 
     expect(config.maxMass).toBeGreaterThanOrEqual(240);
     expect(config.maxLives).toBeGreaterThanOrEqual(20000);
-    expect(config.maxFood).toBeGreaterThanOrEqual(120);
-    expect(config.maxFoodRender).toBeGreaterThanOrEqual(70);
-    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
+    expect(config.maxFood).toBe(72);
+    expect(config.maxFoodRender).toBe(66);
     expect(config.foodValue).toBeLessThan(2.25);
     expect(config.likeFoodValue).toBeGreaterThanOrEqual(1);
     expect(config.playerAbsorbMassRatio).toBeGreaterThanOrEqual(0.8);
@@ -7107,7 +7108,7 @@ describe('GameEnginePlugin arena integration', () => {
     }));
   });
 
-  it('upgrades saved sparse and twitchy Arena config for admin responses', () => {
+  it('migrates saved sparse and twitchy Arena config to calmer admin defaults', () => {
     const { plugin } = createPlugin();
 
     const config = plugin._getConfigWithDefaults('arena', {
@@ -7122,9 +7123,8 @@ describe('GameEnginePlugin arena integration', () => {
       }
     });
 
-    expect(config.maxFood).toBeGreaterThanOrEqual(120);
-    expect(config.maxFoodRender).toBeGreaterThanOrEqual(70);
-    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
+    expect(config.maxFood).toBe(72);
+    expect(config.maxFoodRender).toBe(66);
     expect(config.foodSpawnIntervalMs).toBeGreaterThanOrEqual(1200);
     expect(config.foodSpawnBatchSize).toBeLessThanOrEqual(3);
     expect(config.foodDespawnMs).toBeGreaterThanOrEqual(90000);
