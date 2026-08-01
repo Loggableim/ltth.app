@@ -225,6 +225,7 @@ const DEFAULT_CONFIG = {
   boostColor: '#EF4444',
   shieldColor: '#3B82F6',
   bombCooldownMs: 15000,
+  bombArmDurationMs: 18000,
   bombSpeed: 650,
   bombRange: 420,
   bombBlastRadius: 92,
@@ -2390,6 +2391,7 @@ class ArenaGame {
         boostColor: config.boostColor,
         shieldColor: config.shieldColor,
         bombCooldownMs: config.bombCooldownMs,
+        bombArmDurationMs: config.bombArmDurationMs,
         bombSpeed: config.bombSpeed,
         bombRange: config.bombRange,
         bombBlastRadius: config.bombBlastRadius,
@@ -3049,9 +3051,13 @@ class ArenaGame {
     const bomb = {
       id: `bomb_${++this.bombIdCounter}`, owner: player.username, x: player.x, y: player.y,
       vx: direction.x, vy: direction.y, radius: 12, travelled: 0, spawnedAt: now,
-      range: config.bombRange, speed: config.bombSpeed, blastRadius: config.bombBlastRadius
+      range: config.bombRange, speed: config.bombSpeed, blastRadius: config.bombBlastRadius,
+      phase: 'flying', armedAt: null, expiresAt: null
     };
     player.bombCooldownUntil = now + config.bombCooldownMs;
+    for (const [id, activeBomb] of this.bombs.entries()) {
+      if (activeBomb.owner === player.username) this.bombs.delete(id);
+    }
     this.bombs.set(bomb.id, bomb);
     this.io.emit('arena:bomb-thrown', { ...bomb, direction: direction.name, timestamp: now });
     this.emitState('bomb-thrown', { force: true });
@@ -3060,6 +3066,10 @@ class ArenaGame {
 
   _updateBombs(config, seconds) {
     for (const [id, bomb] of Array.from(this.bombs.entries())) {
+      if (bomb.phase === 'armed') {
+        if (this.now() >= bomb.expiresAt) this.bombs.delete(id);
+        continue;
+      }
       const distance = bomb.speed * seconds;
       bomb.x += bomb.vx * distance;
       bomb.y += bomb.vy * distance;
@@ -3078,7 +3088,11 @@ class ArenaGame {
         this.io.emit('arena:bomb-exploded', { bombId: id, owner: bomb.owner, target: target.username, x: target.x, y: target.y, timestamp: this.now() });
         this.bombs.delete(id);
       } else if (bomb.travelled >= bomb.range || bomb.x < 0 || bomb.y < 0 || bomb.x > config.arenaWidth || bomb.y > config.arenaHeight) {
-        this.bombs.delete(id);
+        bomb.phase = 'armed';
+        bomb.vx = 0;
+        bomb.vy = 0;
+        bomb.armedAt = this.now();
+        bomb.expiresAt = bomb.armedAt + config.bombArmDurationMs;
       }
     }
   }
@@ -7433,7 +7447,7 @@ class ArenaGame {
   _serializeAbilities(player, config = this.getConfig()) {
     const now = this.now();
     const charge = Math.max(1, Number(config.abilityChargeMs) || 60000);
-    return Object.fromEntries(['boost', 'shield'].map(ability => {
+    const abilities = Object.fromEntries(['boost', 'shield'].map(ability => {
       const state = this._abilityState(player, ability, config);
       return [ability, {
         active: now < state.activeUntil,
@@ -7443,6 +7457,13 @@ class ArenaGame {
         chargeProgress: Math.round(this._clamp(1 - Math.max(0, state.availableAt - now) / charge, 0, 1) * 100) / 100
       }];
     }));
+    const bombCooldownUntil = Number(player.bombCooldownUntil) || 0;
+    abilities.bomb = {
+      ready: now >= bombCooldownUntil,
+      availableAt: bombCooldownUntil,
+      cooldownProgress: Math.round(this._clamp(1 - Math.max(0, bombCooldownUntil - now) / config.bombCooldownMs, 0, 1) * 100) / 100
+    };
+    return abilities;
   }
 
   _isShieldActive(player, now = this.now()) {
@@ -7662,6 +7683,7 @@ class ArenaGame {
     config.boostColor = validColor(config.boostColor) ? config.boostColor.toUpperCase() : '#EF4444';
     config.shieldColor = validColor(config.shieldColor) ? config.shieldColor.toUpperCase() : '#3B82F6';
     config.bombCooldownMs = this._clamp(Number(config.bombCooldownMs) || 15000, 1000, 120000);
+    config.bombArmDurationMs = this._clamp(Number(config.bombArmDurationMs) || 18000, 1000, 60000);
     config.bombSpeed = this._clamp(Number(config.bombSpeed) || 650, 120, 1800);
     config.bombRange = this._clamp(Number(config.bombRange) || 420, 80, 1200);
     config.bombBlastRadius = this._clamp(Number(config.bombBlastRadius) || 92, 30, 260);

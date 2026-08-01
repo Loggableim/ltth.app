@@ -262,6 +262,22 @@ describe('ArenaGame', () => {
     expect(arena.food.size).toBeGreaterThan(0);
   });
 
+  it('arms a missed bomb and serializes its separate cooldown state', () => {
+    let now = 60000;
+    const { arena } = createArena({ bombRange: 80, bombArmDurationMs: 18000 }, { now: () => now, random: () => 0 });
+    const config = arena.getConfig();
+    const thrower = movementPlayer(arena, config, 'thrower', 40, { x: 120, y: 300, lives: 500, lastActivityAt: now });
+    arena.players.set(thrower.username, thrower);
+
+    expect(arena.handleAbilityCommand({ uniqueId: thrower.username, nickname: thrower.nickname }, 'bomb')).toMatchObject({ success: true });
+    now += 200;
+    arena.tick(200);
+
+    const state = arena.getState();
+    expect(state.players[0].abilities.bomb.ready).toBe(false);
+    expect(state.bombs).toEqual([expect.objectContaining({ owner: thrower.username, phase: 'armed', expiresAt: now + 18000 })]);
+  });
+
   it('makes the direct shield block direct damage, pushes and slow effects', () => {
     let now = 60000;
     const { arena } = createArena({}, { now: () => now });
