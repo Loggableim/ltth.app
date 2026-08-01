@@ -281,6 +281,18 @@ describe('ArenaGame', () => {
     expect(giant.mass).toBeGreaterThan(config.minMass);
   });
 
+  it('does not detonate an armed bomb for a player inside the blast radius without physical contact', () => {
+    const { arena } = createArena({ bombBlastRadius: 92 }, { now: () => 70000 });
+    const config = arena.getConfig();
+    const nearby = movementPlayer(arena, config, 'nearby', 12, { x: 180, y: 300, lives: arena._massToLives(12, config) });
+    arena.players.set(nearby.username, nearby);
+    arena.bombs.set('bomb_contact_only', { id: 'bomb_contact_only', owner: 'owner', phase: 'armed', x: 100, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
+
+    arena._updateBombs(config, 0);
+
+    expect(arena.bombs.has('bomb_contact_only')).toBe(true);
+    expect(nearby.mass).toBeCloseTo(12, 1);
+  });
   it('applies all three radial bomb bands without a kill or food rain', () => {
     const { arena, io } = createArena({ maxFood: 100 }, { now: () => 70000 });
     const config = arena.getConfig();
@@ -292,6 +304,7 @@ describe('ArenaGame', () => {
     arena.players.set(outer.username, outer);
     arena.bombs.set('bomb_2', { id: 'bomb_2', owner: 'owner', phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
 
+    const spawnFoodBurst = jest.spyOn(arena, '_spawnFoodBurst');
     arena._updateBombs(config, 0);
 
     expect(core.mass).toBeCloseTo(22, 0);
@@ -299,6 +312,8 @@ describe('ArenaGame', () => {
     expect(outer.mass).toBeCloseTo(70, 0);
     expect((core.kills || 0) + (middle.kills || 0) + (outer.kills || 0)).toBe(0);
     expect(arena.food.size).toBeLessThanOrEqual(40);
+    expect(spawnFoodBurst).toHaveBeenCalledTimes(1);
+    expect(spawnFoodBurst).toHaveBeenCalledWith(expect.objectContaining({ id: 'bomb_2' }), 16, config, expect.objectContaining({ source: 'bomb', spread: 92, ignoreCap: true }));
     expect(io.emit).toHaveBeenCalledWith('arena:bomb-exploded', expect.objectContaining({
       bombId: 'bomb_2',
       owner: 'owner',
@@ -311,26 +326,27 @@ describe('ArenaGame', () => {
     }));
 
   });
-  it('keeps an armed bomb inert for its owner and shielded players', () => {
+  it('keeps the owner and shielded player unchanged during an actual bomb explosion', () => {
     const now = 70000;
     const { arena } = createArena({}, { now: () => now });
     const config = arena.getConfig();
     const owner = movementPlayer(arena, config, 'owner', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) });
     const shielded = movementPlayer(arena, config, 'shielded', 100, {
-      x: 310,
-      y: 300,
-      lives: arena._massToLives(100, config),
+      x: 310, y: 300, lives: arena._massToLives(100, config),
       abilities: { shield: { availableAt: now + config.abilityChargeMs, activeUntil: now + config.shieldDurationMs } }
     });
+    const trigger = movementPlayer(arena, config, 'trigger', 100, { x: 340, y: 300, lives: arena._massToLives(100, config) });
     arena.players.set(owner.username, owner);
     arena.players.set(shielded.username, shielded);
+    arena.players.set(trigger.username, trigger);
     arena.bombs.set('bomb_3', { id: 'bomb_3', owner: owner.username, phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
 
     arena._updateBombs(config, 0);
 
-    expect(arena.bombs.has('bomb_3')).toBe(true);
+    expect(arena.bombs.has('bomb_3')).toBe(false);
     expect(owner.mass).toBeCloseTo(100, 1);
     expect(shielded.mass).toBeCloseTo(100, 1);
+    expect(trigger.mass).toBeCloseTo(45, 0);
   });
   it('arms a missed bomb and serializes its separate cooldown state', () => {
     let now = 60000;
