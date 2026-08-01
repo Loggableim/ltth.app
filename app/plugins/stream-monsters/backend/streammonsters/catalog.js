@@ -445,7 +445,7 @@ function buildV5SkillCatalog() {
     Object.freeze({
       A: Object.freeze({
         id: `${entry.templateId}:A`,
-        name: entry.skills.attack.name,
+        name: `${entry.name}: ${SKILL_PRESENTATION[entry.element].attack.suffix}`,
         icon: entry.skills.attack.icon,
         shortText: entry.skills.attack.shortText,
         shortTextKey: entry.skills.attack.shortTextKey,
@@ -456,7 +456,7 @@ function buildV5SkillCatalog() {
       }),
       B: Object.freeze({
         id: `${entry.templateId}:B`,
-        name: entry.skills.defense.name,
+        name: `${entry.name}: ${SKILL_PRESENTATION[entry.element].defense.suffix}`,
         icon: entry.skills.defense.icon,
         shortText: entry.skills.defense.shortText,
         shortTextKey: entry.skills.defense.shortTextKey,
@@ -467,7 +467,7 @@ function buildV5SkillCatalog() {
       }),
       C: Object.freeze({
         id: `${entry.templateId}:C`,
-        name: entry.skills.special.name,
+        name: `${entry.name}: ${SKILL_PRESENTATION[entry.element].special.suffix}`,
         icon: entry.skills.special.icon,
         shortText: entry.skills.special.shortText,
         shortTextKey: entry.skills.special.shortTextKey,
