@@ -182,9 +182,12 @@ class QueueManager {
     this.persistQueue();
   }
 
-  removeSong(index) {
-    if (index < 0 || index >= this.queue.length) {
+  removeSong(index, expectedSongId = null) {
+    if (!Number.isInteger(index) || index < 0 || index >= this.queue.length) {
       return { success: false, error: 'Invalid queue position' };
+    }
+    if (expectedSongId && this.queue[index].id !== expectedSongId) {
+      return { success: false, errorCode: 'QUEUE_ITEM_CHANGED', error: 'Queue item changed' };
     }
     const [removed] = this.queue.splice(index, 1);
     this.persistQueue();

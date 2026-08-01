@@ -91,6 +91,29 @@ describe('Music Bot runtime i18n', () => {
     });
   });
 
+  test.each([
+    ['de', 'Die Queue hat sich ge\u00e4ndert. Ansicht wurde aktualisiert.', 'Die Queue konnte nicht aktualisiert werden. Bitte lade die Ansicht neu.'],
+    ['en', 'The queue changed. The view was refreshed.', 'Could not refresh the queue. Please reload the view.'],
+    ['es', 'La cola ha cambiado. La vista se ha actualizado.', 'No se pudo actualizar la cola. Vuelve a cargar la vista.'],
+    ['fr', 'La file a chang\u00e9. La vue a \u00e9t\u00e9 actualis\u00e9e.', 'Impossible d\u2019actualiser la file. Rechargez la vue.']
+  ])('uses accurate stale-queue feedback in %s', (locale, queueChanged, queueRefreshFailed) => {
+    const queue = readPluginLocale(locale).music_bot.ui.queue;
+
+    expect(queue.queueChanged).toBe(queueChanged);
+    expect(queue.queueRefreshFailed).toBe(queueRefreshFailed);
+  });
+
+  test.each([
+    ['de', 'Track wurde entfernt, aber die Queue konnte nicht aktualisiert werden. Bitte lade die Ansicht neu.'],
+    ['en', 'Track was removed, but the queue could not be refreshed. Please reload the view.'],
+    ['es', 'La pista se elimin\u00f3, pero no se pudo actualizar la cola. Vuelve a cargar la vista.'],
+    ['fr', 'Le titre a \u00e9t\u00e9 supprim\u00e9, mais la file n\u2019a pas pu \u00eatre actualis\u00e9e. Rechargez la vue.']
+  ])('uses factual completed-delete refresh feedback in %s', (locale, trackRemovedRefreshFailed) => {
+    const queue = readPluginLocale(locale).music_bot.ui.queue;
+
+    expect(queue.trackRemovedRefreshFailed).toBe(trackRemovedRefreshFailed);
+  });
+
   test.each(locales)('preserves the shared generated-plugin locale contract for %s', (locale) => {
     const base = readPluginLocale(locale).music_bot;
     expect(base.plugin.description).toEqual(expect.any(String));

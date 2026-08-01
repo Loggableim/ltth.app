@@ -87,6 +87,34 @@ describe('Music Bot catalog admin i18n contract', () => {
     expect(dom.window.document.getElementById('playlist-radio-save').textContent).toBe(messages.playlists.saveRadioSources);
   });
 
+  test('names title, artist, and genre search in static and localized accessible controls', () => {
+    const expected = {
+      de: 'Titel, Künstler oder Genre suchen',
+      en: 'Search titles, artists, or genres',
+      es: 'Buscar títulos, artistas o géneros',
+      fr: 'Rechercher des titres, artistes ou genres'
+    };
+    const html = fs.readFileSync(path.join(root, 'ui.html'), 'utf8');
+    const fallback = new JSDOM(html).window.document.getElementById('catalog-search-input');
+
+    expect(fallback.placeholder).toBe(expected.de);
+    expect(fallback.getAttribute('aria-label')).toBe(expected.de);
+
+    for (const locale of locales) {
+      const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
+      const messages = pluginMessages(translations).music_bot.ui;
+      const dom = new JSDOM(html);
+      const input = dom.window.document.getElementById('catalog-search-input');
+      input.placeholder = messages.catalog.search;
+      input.setAttribute('aria-label', messages.catalog.search);
+
+      expect(messages.catalog.search).toBe(expected[locale]);
+      expect(messages.catalog.catalogSearch).toBe(expected[locale]);
+      expect(input.placeholder).toBe(expected[locale]);
+      expect(input.getAttribute('aria-label')).toBe(expected[locale]);
+    }
+  });
+
   test('uses named, complete UI keys for every static admin label', () => {
     const html = fs.readFileSync(path.join(root, 'ui.html'), 'utf8');
     const dom = new JSDOM(html);

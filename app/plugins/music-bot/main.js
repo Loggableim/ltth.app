@@ -2846,15 +2846,20 @@ class MusicBotPlugin extends EventEmitter {
 
     this.api.registerRoute('delete', '/api/plugins/music-bot/queue/:index', async (req, res) => {
       const index = Number(req.params.index);
-      if (!Number.isFinite(index) || index < 0) {
+      if (!Number.isInteger(index) || index < 0) {
         res.status(400).json({ success: false, error: 'Invalid index' });
         return;
       }
-      const result = this.queueManager.removeSong(index);
+      const expectedSongId = typeof req.body?.songId === 'string' ? req.body.songId.trim() : '';
+      if (!expectedSongId) {
+        res.status(400).json({ success: false, error: 'songId is required' });
+        return;
+      }
+      const result = this.queueManager.removeSong(index, expectedSongId);
       if (result.success) {
         this._emitQueue();
       }
-      res.status(result.success ? 200 : 400).json(result);
+      res.status(result.success ? 200 : (result.errorCode === 'QUEUE_ITEM_CHANGED' ? 409 : 400)).json(result);
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/queue/reorder', async (req, res) => {

@@ -721,14 +721,34 @@ class MusicCatalog {
   searchSongs(query, limit = 25) {
     const normalized = `%${normalizeText(query)}%`;
     return this.db.prepare(
-      `SELECT songs.id, songs.title, GROUP_CONCAT(genres.slug, ',') AS genres
+      `SELECT songs.id, songs.title,
+       (SELECT GROUP_CONCAT(name, ' & ') FROM (
+         SELECT artists.name
+         FROM plugin_music_bot_song_artists song_artists
+         JOIN plugin_music_bot_artists artists ON artists.id = song_artists.artist_id
+         WHERE song_artists.song_id = songs.id
+         ORDER BY artists.normalized_name ASC
+       )) AS artist,
+       GROUP_CONCAT(genres.slug, ',') AS genres
        FROM plugin_music_bot_songs songs
        LEFT JOIN plugin_music_bot_song_genres links ON links.song_id = songs.id
        LEFT JOIN plugin_music_bot_genres genres ON genres.id = links.genre_id
        WHERE songs.normalized_title LIKE ?
+          OR EXISTS (
+            SELECT 1
+            FROM plugin_music_bot_song_artists artist_links
+            JOIN plugin_music_bot_artists artists ON artists.id = artist_links.artist_id
+            WHERE artist_links.song_id = songs.id AND artists.normalized_name LIKE ?
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM plugin_music_bot_song_genres genre_links
+            JOIN plugin_music_bot_genres search_genres ON search_genres.id = genre_links.genre_id
+            WHERE genre_links.song_id = songs.id AND search_genres.slug LIKE ?
+          )
        GROUP BY songs.id
        ORDER BY songs.created_at DESC LIMIT ?`
-    ).all(normalized, Math.max(1, Math.min(100, Number(limit) || 25))).map((song) => ({
+    ).all(normalized, normalized, normalized, Math.max(1, Math.min(100, Number(limit) || 25))).map((song) => ({
       ...song,
       genres: String(song.genres || '').split(',').filter(Boolean).sort()
     }));

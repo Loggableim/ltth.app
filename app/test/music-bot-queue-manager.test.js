@@ -61,6 +61,70 @@ describe('music-bot queue manager', () => {
     expect(manager.getQueue().map((entry) => entry.title)).toEqual(['B', 'A']);
   });
 
+  it('rejects a stale expected song ID without mutating the queue', () => {
+    const api = createMockApi();
+    const manager = new QueueManager({
+      queue: {
+        maxLength: 10,
+        maxPerUser: 3,
+        maxSongDurationSeconds: 600,
+        duplicateDetection: 'off',
+        allowDuplicates: true,
+        cooldownPerUserSeconds: 0
+      }
+    }, api);
+    manager.queue = [{ id: 'current-song', title: 'Current song' }];
+    const persistQueue = jest.spyOn(manager, 'persistQueue');
+
+    const result = manager.removeSong(0, 'rendered-song');
+
+    expect(result).toMatchObject({ success: false, errorCode: 'QUEUE_ITEM_CHANGED' });
+    expect(manager.getQueue()).toEqual([{ id: 'current-song', title: 'Current song' }]);
+    expect(persistQueue).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-integer position before mutating the queue', () => {
+    const api = createMockApi();
+    const manager = new QueueManager({
+      queue: {
+        maxLength: 10,
+        maxPerUser: 3,
+        maxSongDurationSeconds: 600,
+        duplicateDetection: 'off',
+        allowDuplicates: true,
+        cooldownPerUserSeconds: 0
+      }
+    }, api);
+    manager.queue = [{ id: 'current-song', title: 'Current song' }];
+    const persistQueue = jest.spyOn(manager, 'persistQueue');
+
+    const result = manager.removeSong(0.5, 'current-song');
+
+    expect(result).toEqual({ success: false, error: 'Invalid queue position' });
+    expect(manager.getQueue()).toEqual([{ id: 'current-song', title: 'Current song' }]);
+    expect(persistQueue).not.toHaveBeenCalled();
+  });
+
+  it('keeps index-only removal compatible', () => {
+    const api = createMockApi();
+    const manager = new QueueManager({
+      queue: {
+        maxLength: 10,
+        maxPerUser: 3,
+        maxSongDurationSeconds: 600,
+        duplicateDetection: 'off',
+        allowDuplicates: true,
+        cooldownPerUserSeconds: 0
+      }
+    }, api);
+    manager.queue = [{ id: 'current-song', title: 'Current song' }];
+
+    const result = manager.removeSong(0);
+
+    expect(result).toMatchObject({ success: true, song: { id: 'current-song' } });
+    expect(manager.getQueue()).toEqual([]);
+  });
+
   it('uses the raw database transaction exposed by the plugin database wrapper', () => {
     const stmt = {
       run: jest.fn(),

@@ -1171,6 +1171,32 @@ input[type="range"] {
 .streamer-playlist-suggestion span { display: block; }
 
 
+.catalog-search-result {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.catalog-search-result-info {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.catalog-search-result-info .queue-title,
+.catalog-search-result-info .queue-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-search-result > .btn {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
+}
+
 .catalog-genre-editor {
   flex: 1 1 170px;
   min-width: 140px;
@@ -1290,7 +1316,6 @@ input[type="range"] {
   min-width: 0;
   display: grid;
   gap: 3px;
-  cursor: pointer;
 }
 
 .queue-title,
@@ -1953,6 +1978,23 @@ body {
   .safety-strip .safety-actions,
   .player-controls {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalog-search-result-info,
+  .catalog-search-result .catalog-genre-editor {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .catalog-search-result-info .queue-title,
+  .catalog-search-result-info .queue-meta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .catalog-search-result > .btn {
+    flex: 1 1 140px;
+    min-width: 0;
   }
 
   .musicbot-toast-container {

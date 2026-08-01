@@ -834,6 +834,70 @@ describe('music-bot Auto-DJ routes', () => {
     }));
   });
 
+  test('rejects a stale Queue Delete identity without emitting a queue update', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = {
+      removeSong: jest.fn(() => ({
+        success: false,
+        errorCode: 'QUEUE_ITEM_CHANGED',
+        error: 'Queue item changed'
+      }))
+    };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['DELETE:/api/plugins/music-bot/queue/:index'];
+    const res = createResponseMock();
+    await handler({ params: { index: '0' }, body: { songId: 'rendered-song' } }, res);
+
+    expect(plugin.queueManager.removeSong).toHaveBeenCalledWith(0, 'rendered-song');
+    expect(plugin._emitQueue).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      errorCode: 'QUEUE_ITEM_CHANGED'
+    }));
+  });
+
+  test('rejects a non-integer Queue Delete index before touching the queue', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = {
+      removeSong: jest.fn(() => ({ success: true }))
+    };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['DELETE:/api/plugins/music-bot/queue/:index'];
+    const res = createResponseMock();
+    await handler({ params: { index: '0.5' }, body: { songId: 'current-song' } }, res);
+
+    expect(plugin.queueManager.removeSong).not.toHaveBeenCalled();
+    expect(plugin._emitQueue).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid index' });
+  });
+
+  test('requires a song ID for Queue Delete before touching the queue', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = {
+      removeSong: jest.fn(() => ({ success: true }))
+    };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['DELETE:/api/plugins/music-bot/queue/:index'];
+    const res = createResponseMock();
+    await handler({ params: { index: '0' }, body: {} }, res);
+
+    expect(plugin.queueManager.removeSong).not.toHaveBeenCalled();
+    expect(plugin._emitQueue).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'songId is required' });
+  });
+
   test('reorders songs by ID when rendered queue indices are stale', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);

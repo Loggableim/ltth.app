@@ -808,6 +808,115 @@ describe('Music Bot core features', () => {
     expect(historyQuery).toContain('COALESCE(skipped, 0) = 0');
   });
 
+  test('uses a deterministic 100-track history pool and injected random selection when history shuffle is enabled', async () => {
+    const candidates = Array.from({ length: 25 }, (_value, index) => ({
+      youtubeId: `history-${index + 1}`,
+      title: `History ${index + 1}`,
+      artist: `Artist ${index + 1}`,
+      url: `https://www.youtube.com/watch?v=history-${index + 1}`,
+      plays: 2,
+      lastPlayedAt: 10_000 - index
+    }));
+    const db = createAutoDjDb({ historyCandidates: candidates });
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2,
+      historyShuffled: true
+    }, {}, db, { log: jest.fn() }, { random: () => 0.82 });
+
+    const result = await autoDJ.getNextSong();
+    const historyQuery = db.prepare.mock.calls
+      .map(([sql]) => sql)
+      .find((sql) => sql.includes('COUNT(*) as plays'));
+
+    expect(result.song.youtubeId).toBe('history-21');
+    expect(historyQuery).toContain('MAX(finishedAt) AS lastPlayedAt');
+    expect(historyQuery).toContain('ORDER BY lastPlayedAt DESC, youtubeId ASC');
+    expect(historyQuery).toContain('LIMIT 100');
+    expect(historyQuery).not.toContain('ORDER BY RANDOM()');
+  });
+
+  test('uses full SQL tie order before deterministic shuffled history selection', async () => {
+    const common = {
+      youtubeId: 'same-history-id',
+      title: 'Same history title',
+      artist: 'Same history artist',
+      plays: 2,
+      lastPlayedAt: 10_000
+    };
+    const candidates = [{
+      ...common,
+      url: 'https://example.test/history-a',
+      duration: 240,
+      source: 'youtube',
+      thumbnail: 'thumb-a',
+      channelId: 'channel-a',
+      channelName: 'Channel A'
+    }, {
+      ...common,
+      url: 'https://example.test/history-b',
+      duration: 210,
+      source: 'local',
+      thumbnail: 'thumb-b',
+      channelId: 'channel-b',
+      channelName: 'Channel B'
+    }, {
+      ...common,
+      url: 'https://example.test/history-c',
+      duration: 180,
+      source: 'youtube',
+      thumbnail: 'thumb-c',
+      channelId: 'channel-c',
+      channelName: 'Channel C'
+    }];
+    const db = createAutoDjDb({ historyCandidates: candidates });
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2,
+      historyShuffled: true
+    }, {}, db, { log: jest.fn() }, { random: () => 0.67 });
+
+    const result = await autoDJ.getNextSong();
+    const historyQuery = db.prepare.mock.calls
+      .map(([sql]) => sql)
+      .find((sql) => sql.includes('COUNT(*) as plays'));
+
+    expect(historyQuery).toContain(
+      'ORDER BY lastPlayedAt DESC, youtubeId ASC, title ASC, artist ASC, url ASC, duration ASC, source ASC, thumbnail ASC, channelId ASC, channelName ASC'
+    );
+    expect(result.song.url).toBe('https://example.test/history-c');
+  });
+
+  test('keeps non-shuffled history selection newest-first regardless of injected random', async () => {
+    const candidates = [{
+      youtubeId: 'newest-history',
+      title: 'Newest history',
+      artist: 'Newest Artist',
+      url: 'https://www.youtube.com/watch?v=newest-history',
+      plays: 2,
+      lastPlayedAt: 2_000
+    }, {
+      youtubeId: 'older-history',
+      title: 'Older history',
+      artist: 'Older Artist',
+      url: 'https://www.youtube.com/watch?v=older-history',
+      plays: 2,
+      lastPlayedAt: 1_000
+    }];
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, {}, createAutoDjDb({ historyCandidates: candidates }), { log: jest.fn() }, { random: () => 0.99 });
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.youtubeId).toBe('newest-history');
+  });
+
   test('skips failed-stream exclusions when selecting in history mode', async () => {
     const broken = {
       youtubeId: 'broken-history',
