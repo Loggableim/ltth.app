@@ -273,6 +273,14 @@ describe('ArenaGame', () => {
     expect(arena.food.size).toBeGreaterThan(0);
   });
 
+  it('clears active bombs when reset rebuilds the arena state', () => {
+    const { arena } = createArena();
+    arena.bombs.set('bomb-in-flight', { id: 'bomb-in-flight', owner: 'viewer' });
+
+    expect(arena.reset()).toEqual({ success: true });
+    expect(arena.getState().bombs).toEqual([]);
+  });
+
   it('lets a small player pass an armed bomb but makes a giant trigger it from their larger radius', () => {
     const { arena } = createArena({ bombBlastRadius: 92 }, { now: () => 70000 });
     const config = arena.getConfig();

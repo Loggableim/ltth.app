@@ -10,6 +10,7 @@
 
 const GameEngineDatabase = require('../backend/database');
 const PlinkoGame = require('../games/plinko');
+const ViewerXPDatabase = require('../../milestone-leaderboard/vendor/viewer-leaderboard/backend/database');
 
 // Mock dependencies
 const mockLogger = {
@@ -36,6 +37,7 @@ describe('Plinko Multi-Board Support', () => {
 
   beforeEach(() => {
     // Create fresh database and plinko game for each test
+    mockAPI.pluginLoader.loadedPlugins.clear();
     db = new GameEngineDatabase(mockAPI, mockLogger);
     db.initialize();
     plinkoGame = new PlinkoGame(mockAPI, db, mockLogger);
@@ -193,6 +195,17 @@ describe('Plinko Multi-Board Support', () => {
   });
 
   test('spawned balls preserve boardId and use that board config on landing', async () => {
+    const viewerDb = new ViewerXPDatabase({
+      ...mockAPI,
+      getDatabase: () => ({ db: db.db }),
+      log: jest.fn()
+    });
+    viewerDb.initialize();
+    mockAPI.pluginLoader.loadedPlugins.set('viewer-leaderboard', { instance: { db: viewerDb } });
+    db.db.prepare(`
+      INSERT INTO viewer_profiles (username, xp, level, total_xp_earned, coins, total_coins_earned)
+      VALUES ('board_user', 0, 1, 0, 0, 0)
+    `).run();
     const boardId = plinkoGame.createBoard(
       'Landing Board',
       [

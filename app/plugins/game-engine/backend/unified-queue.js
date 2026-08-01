@@ -503,16 +503,22 @@ class UnifiedQueueManager {
 
     this.logger.info(`🎮 [UNIFIED QUEUE] Processing ${item.type} for ${item.data.username} (${this.queue.length} remaining)`);
 
-    // Set safety timeout based on game type
-    const timeoutDuration = this.getTimeoutForGame(item);
-    this.processingTimeout = setTimeout(() => {
-      this.logger.warn(`⚠️ [UNIFIED QUEUE] Processing timeout for ${item.type} after ${timeoutDuration}ms, forcing completion`);
-      this.forceCompleteProcessing(item);
-    }, timeoutDuration);
-    if (typeof this.processingTimeout.unref === 'function') {
-      this.processingTimeout.unref();
+    // The Wheel owns its lifecycle timeout. Every other game gets a queue guard.
+    if (item.type === 'wheel') {
+      this.processingTimeout = null;
+    } else {
+      const timeoutDuration = this.getTimeoutForGame(item);
+      this.processingTimeout = setTimeout(() => {
+        this.logger.warn(`[UNIFIED QUEUE] Processing timeout for ${item.type} after ${timeoutDuration}ms, forcing completion`);
+        const completion = this.forceCompleteProcessing(item);
+        if (completion && typeof completion.catch === 'function') {
+          completion.catch(error => this.logger.error(`[UNIFIED QUEUE] Timeout finalization failed: ${error.message}`));
+        }
+      }, timeoutDuration);
+      if (typeof this.processingTimeout.unref === 'function') {
+        this.processingTimeout.unref();
+      }
     }
-
     try {
       let result;
       if (item.type === 'plinko') {
@@ -747,43 +753,38 @@ class UnifiedQueueManager {
    * Performs game-specific cleanup before completing
    * @param {Object} item - Queue item that timed out
    */
-  forceCompleteProcessing(item) {
-    this.logger.warn(`⚠️ [UNIFIED QUEUE] Force completing ${item?.type || 'unknown'} (timeout)`);
-    
+  async forceCompleteProcessing(item) {
+    this.logger.warn(`[UNIFIED QUEUE] Force completing ${item?.type || 'unknown'} (timeout)`);
+
+    if (item?.type === 'wheel') {
+      if (this.wheelGame?.forceCompleteSpin && item.data?.spinId) {
+        this.logger.warn(`[UNIFIED QUEUE] Delegating timed-out wheel spin to Wheel finalizer (spinId: ${item.data.spinId})`);
+        try {
+          await this.wheelGame.forceCompleteSpin(item.data.spinId);
+        } catch (error) {
+          this.logger.error(`[UNIFIED QUEUE] Wheel timeout finalization failed: ${error.message}`);
+        }
+        return;
+      }
+
+      this.logger.warn('[UNIFIED QUEUE] Wheel timeout had no finalizable spin; releasing queue without mutating Wheel state');
+      this.completeProcessing();
+      return;
+    }
+
     // Game-specific cleanup
-    if (item?.type === 'wheel' && this.wheelGame) {
-      // Reset wheel state if it's stuck spinning
-      if (this.wheelGame.isSpinning) {
-        this.logger.warn(`⚠️ [UNIFIED QUEUE] Resetting stuck wheel state (spinId: ${item.data?.spinId})`);
-        this.wheelGame.isSpinning = false;
-        this.wheelGame.currentSpin = null;
-      }
-      
-      // Remove from active spins
-      if (item.data?.spinId) {
-        this.wheelGame.activeSpins.delete(item.data.spinId);
-      }
-      
-      // Emit timeout event to overlay
-      this.io.emit('wheel:spin-timeout', {
-        spinId: item.data?.spinId,
-        username: item.data?.username,
-        nickname: item.data?.nickname,
-        wheelId: item.data?.wheelId,
-        wheelName: item.data?.wheelName,
-        reason: 'overlay_no_response',
-        timestamp: Date.now()
-      });
-      
-      this.logger.info(`⚠️ [UNIFIED QUEUE] Wheel spin timeout handled (spinId: ${item.data?.spinId})`);
-    } else if (item?.type === 'plinko' && this.plinkoGame) {
+    if (item?.type === 'plinko' && this.plinkoGame) {
       // Plinko cleanup if needed
       this.logger.debug(`[UNIFIED QUEUE] Plinko timeout cleanup (batchId: ${item.data?.batchId})`);
     } else if (item?.type === 'slot' && this.slotGame) {
-      // Force-complete the pending slot spin so rewards still fire
-      if (item.data?.spinId) {
-        this.logger.warn(`⚠️ [UNIFIED QUEUE] Forcing slot spin completion (spinId: ${item.data.spinId})`);
-        this.slotGame.forceCompleteSpin(item.data.spinId);
+      // Wait for the durable reward drain before the next queued game can start.
+      if (item.data?.spinId && typeof this.slotGame.forceCompleteSpin === 'function') {
+        this.logger.warn(`[UNIFIED QUEUE] Forcing slot spin completion (spinId: ${item.data.spinId})`);
+        try {
+          await this.slotGame.forceCompleteSpin(item.data.spinId);
+        } catch (error) {
+          this.logger.error(`[UNIFIED QUEUE] Slot timeout finalization failed: ${error.message}`);
+        }
       }
       this.io.emit('slot:spin-timeout', {
         spinId: item.data?.spinId,
@@ -794,11 +795,10 @@ class UnifiedQueueManager {
         timestamp: Date.now()
       });
     }
-    
-    // Complete processing and move to next item
+
+    // Complete processing and move to next item.
     this.completeProcessing();
   }
-
   /**
    * Mark current processing as complete and process next item
    * Should be called by games when they finish their operation

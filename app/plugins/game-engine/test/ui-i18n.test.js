@@ -86,6 +86,58 @@ describe('Game Engine UI i18n', () => {
     }
   });
 
+  test('localizes Chess streamer autoplay controls with independent locale leaves', () => {
+    const expectedByLocale = {
+      de: {
+        autoplay_title: 'Streamer-Autoplay',
+        autoplay_description: 'Steuert nur Streamer-Z\u00fcge in neuen Zuschauerpartien. Beim Ausschalten werden ausstehende Autoplay-Z\u00fcge sofort abgebrochen.',
+        autoplay_enabled: 'Streamer-Autoplay aktivieren',
+        autoplay_elo_offset: 'ELO-Offset zum Zuschauer (-400 bis +400):',
+        autoplay_move_delay: 'Zugverz\u00f6gerung (ms):'
+      },
+      en: {
+        autoplay_title: 'Streamer autoplay',
+        autoplay_description: 'Controls only streamer moves in new viewer matches. Disabling it immediately cancels pending autoplay moves.',
+        autoplay_enabled: 'Enable streamer autoplay',
+        autoplay_elo_offset: 'ELO offset from viewer (-400 to +400):',
+        autoplay_move_delay: 'Move delay (ms):'
+      },
+      es: {
+        autoplay_title: 'Autoplay del streamer',
+        autoplay_description: 'Controla solo los movimientos del streamer en nuevas partidas contra espectadores. Al desactivarlo, los movimientos de autoplay pendientes se cancelan de inmediato.',
+        autoplay_enabled: 'Activar autoplay del streamer',
+        autoplay_elo_offset: 'Desplazamiento ELO respecto al espectador (-400 a +400):',
+        autoplay_move_delay: 'Retraso de jugada (ms):'
+      },
+      fr: {
+        autoplay_title: 'Autoplay du streamer',
+        autoplay_description: 'Contr\u00f4le uniquement les coups du streamer dans les nouvelles parties contre les spectateurs. La d\u00e9sactivation annule imm\u00e9diatement les coups automatiques en attente.',
+        autoplay_enabled: "Activer l'autoplay du streamer",
+        autoplay_elo_offset: 'D\u00e9calage ELO par rapport au spectateur (-400 \u00e0 +400) :',
+        autoplay_move_delay: 'D\u00e9lai de coup (ms) :'
+      }
+    };
+    const source = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'ui.html'), 'utf8');
+    const prefix = 'plugins.game-engine.ui.chess.';
+
+    for (const [locale, expected] of Object.entries(expectedByLocale)) {
+      const values = flattenTranslations(JSON.parse(fs.readFileSync(
+        path.join(repoRoot, 'app', 'plugins', pluginId, 'locales', `${locale}.json`),
+        'utf8'
+      )));
+      const actual = Object.fromEntries(Object.keys(expected).map(key => [
+        key,
+        values[`${prefix}${key}`]
+      ]));
+
+      expect(actual).toEqual(expected);
+    }
+
+    for (const key of Object.keys(expectedByLocale.de)) {
+      expect(source).toContain(`data-i18n="${prefix}${key}"`);
+    }
+  });
+
   test('localizes Connect4 matchmaking and accessible board descriptions in every supported locale', () => {
     const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
     const requiredKeys = [

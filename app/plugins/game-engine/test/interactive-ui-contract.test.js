@@ -212,6 +212,19 @@ describe('interactive games admin UI contract', () => {
     expect(ui).not.toContain('data-i18n="game_engine.connect4_running"');
   });
 
+
+  test('persists Chess streamer autoplay settings with safe defaults', () => {
+    expect(ui).toContain('id="chess-autoplay-enabled"');
+    expect(ui).toContain('id="chess-autoplay-elo-offset" value="0" min="-400" max="400"');
+    expect(ui).toContain('id="chess-autoplay-move-delay" value="750" min="250" max="5000"');
+    expect(ui).toContain("autoplay: {");
+    expect(ui).toContain("enabled: document.getElementById('chess-autoplay-enabled').checked");
+    expect(ui).toContain("eloOffset: parseInt(document.getElementById('chess-autoplay-elo-offset').value)");
+    expect(ui).toContain("moveDelayMs: parseInt(document.getElementById('chess-autoplay-move-delay').value)");
+    expect(ui).toContain("document.getElementById('chess-autoplay-enabled').checked = autoplay.enabled");
+    expect(ui).toContain("document.getElementById('chess-autoplay-elo-offset').value = autoplay.eloOffset");
+    expect(ui).toContain("document.getElementById('chess-autoplay-move-delay').value = autoplay.moveDelayMs");
+  });
   test('keeps every inline admin script syntactically valid', () => {
     const scripts = [...ui.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
     expect(scripts.length).toBeGreaterThan(0);

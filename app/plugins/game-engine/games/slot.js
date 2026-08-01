@@ -55,6 +55,11 @@ class SlotGame {
     // Pending rewards awaiting overlay spin-completed confirmation:
     // spinId -> { rewardActions, spinData, outcome }
     this.pendingRewards = new Map();
+    // Coalesce duplicate ACK/timeout/recovery drains for the same operation.
+    this.rewardDrainPromises = new Map();
+    this.queueReleasedSpins = new Set();
+    this.recoveryPromise = null;
+
 
     // Cooldown tracking: username -> lastSpinTimestamp (ms)
     this.userCooldowns = new Map();
@@ -79,10 +84,26 @@ class SlotGame {
 
   init() {
     this.logger.info('🎰 Slot Machine game initialized');
+    if (this._supportsDurableOperations()) {
+      this.recoveryPromise = this.recoverPendingOperations().catch(error => {
+        this.logger.error(`[SLOT] Durable reward recovery failed: ${error.message}`);
+        return [];
+      });
+    }
+    return this.recoveryPromise;
   }
 
   setUnifiedQueue(unifiedQueue) {
     this.unifiedQueue = unifiedQueue;
+  }
+
+  _nextSpinId() {
+    let spinId = Math.max(Date.now(), this.spinIdCounter + 1);
+    while (this._supportsDurableOperations() && this.db.getSlotOperation(spinId)) {
+      spinId += 1;
+    }
+    this.spinIdCounter = spinId;
+    return spinId;
   }
 
   startCleanupTimer() {
@@ -100,6 +121,8 @@ class SlotGame {
     }
     this.activeSpins.clear();
     this.pendingRewards.clear();
+    this.rewardDrainPromises.clear();
+    this.queueReleasedSpins.clear();
     this.userCooldowns.clear();
     this.globalCooldowns.clear();
     this.openshockBatches.clear();
@@ -271,7 +294,7 @@ class SlotGame {
     }
 
     // ── Build spin data ───────────────────────────────────────
-    const spinId = ++this.spinIdCounter;
+    const spinId = this._nextSpinId();
     const spinData = {
       spinId,
       username: safeUsername,
@@ -282,6 +305,7 @@ class SlotGame {
       triggerValue,
       oddsProfileKey,
       settings,   // pass settings so queue can compute timeout
+      queueManaged: false,
       timestamp: Date.now()
     };
 
@@ -289,6 +313,7 @@ class SlotGame {
 
     // ── Route through unified queue ───────────────────────────
     if (this.unifiedQueue) {
+      spinData.queueManaged = true;
       const queueResult = this.unifiedQueue.queueSlot(spinData);
       if (!queueResult.queued) {
         return { success: false, error: queueResult.error || 'Queue full' };
@@ -363,7 +388,7 @@ class SlotGame {
     }
 
     // ── Assign spin ID and track ─────────────────────────────
-    const spinId = ++this.spinIdCounter;
+    const spinId = this._nextSpinId();
     const spinData = {
       spinId,
       username: safeUsername,
@@ -372,6 +397,7 @@ class SlotGame {
       machineId: resolvedMachineId,
       triggerType,
       triggerValue,
+      queueManaged: false,
       timestamp: Date.now(),
       status: 'spinning'
     };
@@ -395,6 +421,17 @@ class SlotGame {
         outcomeCategory: outcome.category,
         rewardActions
       });
+      if (this._supportsDurableOperations()) {
+        this.db.createSlotOperation({
+          spinId,
+          machineId: resolvedMachineId,
+          username: safeUsername,
+          spinData,
+          outcome,
+          rewardActions,
+          config
+        });
+      }
     } catch (error) {
       this.logger.error(`[SLOT] Error resolving outcome for spin #${spinId}: ${error.message}`);
       this.activeSpins.delete(spinId);
@@ -484,6 +521,10 @@ class SlotGame {
     const { spinId, username, nickname, profilePictureUrl, machineId, triggerType, triggerValue, oddsProfileKey } = spinData;
 
     this.logger.info(`🎰 [SLOT] Spin start #${spinId} for ${nickname} (trigger: ${triggerType})`);
+    if (this._supportsDurableOperations()) {
+      return this._startDurableSpinFromQueue(spinData);
+    }
+
 
     // ── Load fresh config ─────────────────────────────────────
     const config = this.db.getSlotConfig(machineId);
@@ -594,6 +635,23 @@ class SlotGame {
    * @param {number} spinId
    */
   async handleSpinCompleted(spinId) {
+    if (this._supportsDurableOperations()) {
+      const result = await this._drainSlotOperation(spinId);
+      if (!result.found) {
+        this.logger.debug(`[SLOT] handleSpinCompleted called for unknown spinId ${spinId}`);
+        return result;
+      }
+
+      this.pendingRewards.delete(spinId);
+      const activeSpin = this.activeSpins.get(spinId);
+      if (activeSpin) activeSpin.status = 'completed';
+      this._scheduleActiveSpinCleanup(spinId);
+      if (result.drained && activeSpin?.queueManaged === true) {
+        this._releaseQueueAfterDurableDrain(spinId);
+      }
+      return result;
+    }
+
     const pending = this.pendingRewards.get(spinId);
     if (!pending) {
       // Already handled (e.g. by forceCompleteSpin) or unknown spinId
@@ -635,6 +693,13 @@ class SlotGame {
    * @param {number} spinId
    */
   async forceCompleteSpin(spinId) {
+    if (this._supportsDurableOperations()) {
+      const result = await this._drainSlotOperation(spinId);
+      this.pendingRewards.delete(spinId);
+      this.activeSpins.delete(spinId);
+      return result;
+    }
+
     const pending = this.pendingRewards.get(spinId);
     if (!pending) {
       return; // Already completed
@@ -656,6 +721,250 @@ class SlotGame {
     // Note: unifiedQueue.completeProcessing() is called by forceCompleteProcessing
     // in the queue manager, so we do NOT call it again here.
   }
+  async _startDurableSpinFromQueue(spinData) {
+    const {
+      spinId,
+      username,
+      nickname,
+      profilePictureUrl,
+      machineId,
+      triggerType,
+      triggerValue,
+      oddsProfileKey
+    } = spinData;
+    const queueManaged = spinData.queueManaged !== false;
+    let operation = this.db.getSlotOperation(spinId);
+    const liveConfig = this.db.getSlotConfig(machineId);
+    const storedConfig = operation?.config;
+    const config = storedConfig && Object.keys(storedConfig).length > 0
+      ? storedConfig
+      : liveConfig;
+
+    if (!operation && !config) {
+      this.logger.error(`[SLOT] No config for machine ${machineId} (spin #${spinId})`);
+      return { success: false, error: 'No slot machine configured' };
+    }
+    if (!operation && !config.enabled) {
+      this.logger.warn(`[SLOT] Machine ${machineId} is disabled (spin #${spinId})`);
+      return { success: false, error: 'Slot machine is disabled' };
+    }
+    if (!config) {
+      this.logger.error(`[SLOT] Missing stored config for durable spin #${spinId}`);
+      return { success: false, error: 'Missing slot configuration snapshot' };
+    }
+
+    let trackData;
+    let outcome;
+    let rewardActions;
+    if (operation) {
+      if (operation.state !== 'pending') {
+        return {
+          success: true,
+          spinId,
+          category: operation.outcome.category,
+          isWin: Boolean(operation.outcome.isWin),
+          alreadyCompleted: true
+        };
+      }
+      trackData = {
+        ...operation.spinData,
+        spinId,
+        queueManaged: operation.spinData.queueManaged === true,
+        status: 'spinning'
+      };
+      outcome = operation.outcome;
+      rewardActions = operation.rewardActions;
+    } else {
+      trackData = {
+        spinId,
+        username,
+        nickname,
+        profilePictureUrl: profilePictureUrl || '',
+        machineId,
+        triggerType,
+        triggerValue,
+        timestamp: Date.now(),
+        queueManaged,
+        status: 'spinning'
+      };
+
+      try {
+        outcome = this._resolveOutcome(config, oddsProfileKey || 'chat');
+        rewardActions = this._buildRewardActions(outcome, config);
+        this.db.recordSlotSpin({
+          machineId,
+          username,
+          nickname,
+          triggerType,
+          triggerValue,
+          reel1: outcome.reels[0] ? outcome.reels[0].id : 'unknown',
+          reel2: outcome.reels[1] ? outcome.reels[1].id : 'unknown',
+          reel3: outcome.reels[2] ? outcome.reels[2].id : 'unknown',
+          outcomeCategory: outcome.category,
+          rewardActions
+        });
+        operation = this.db.createSlotOperation({
+          spinId,
+          machineId,
+          username,
+          spinData: trackData,
+          outcome,
+          rewardActions,
+          config
+        });
+      } catch (error) {
+        this.logger.error(`[SLOT] Outcome resolution error for spin #${spinId}: ${error.message}`);
+        this.io.emit('slot:spin-error', { spinId, machineId });
+        return { success: false, error: error.message };
+      }
+    }
+
+    this.activeSpins.set(spinId, trackData);
+    this.pendingRewards.set(spinId, {
+      rewardActions,
+      spinData: trackData,
+      outcome,
+      config
+    });
+
+    const settings = config.settings || {};
+    const overlayConfig = settings.overlayMode || {};
+    let overlayMode = overlayConfig.defaultMode || 'large';
+    if (triggerType === 'chat' && overlayConfig.chatMode) overlayMode = overlayConfig.chatMode;
+    if (triggerType === 'gift' && overlayConfig.giftMode) overlayMode = overlayConfig.giftMode;
+    if (outcome.category === 'jackpot' && overlayConfig.jackpotMode) overlayMode = overlayConfig.jackpotMode;
+
+    this.io.emit('slot:spin-started', {
+      spinId,
+      username: trackData.username,
+      nickname: trackData.nickname,
+      profilePictureUrl: trackData.profilePictureUrl || '',
+      machineId: trackData.machineId,
+      machineName: config.name,
+      symbols: config.symbols,
+      settings,
+      overlayMode,
+      designSettings: settings.designSettings || {}
+    });
+
+    this.io.emit('slot:spin-result', {
+      spinId,
+      username: trackData.username,
+      nickname: trackData.nickname,
+      profilePictureUrl: trackData.profilePictureUrl || '',
+      machineId: trackData.machineId,
+      machineName: config.name,
+      reels: outcome.reels,
+      category: outcome.category,
+      isWin: outcome.isWin,
+      isJackpot: outcome.category === 'jackpot',
+      isNearMiss: outcome.category === 'near_miss',
+      rewardActions,
+      settings
+    });
+
+    return { success: true, spinId, category: outcome.category, isWin: outcome.isWin };
+  }
+
+  async recoverPendingOperations() {
+    if (!this._supportsDurableOperations()) return [];
+
+    const recovered = [];
+    for (const operation of this.db.getPendingSlotOperations()) {
+      const spinData = {
+        ...operation.spinData,
+        spinId: operation.spinId,
+        status: 'recovering'
+      };
+      this.activeSpins.set(operation.spinId, spinData);
+      const result = await this._drainSlotOperation(operation.spinId);
+      this.activeSpins.delete(operation.spinId);
+      recovered.push({ spinId: operation.spinId, ...result });
+    }
+    return recovered;
+  }
+
+  async _drainSlotOperation(spinId) {
+    const key = String(spinId);
+    const activeDrain = this.rewardDrainPromises.get(key);
+    if (activeDrain) return activeDrain;
+
+    const drain = (async () => {
+      const operation = this.db.getSlotOperation(key);
+      if (!operation) return { found: false, drained: false };
+      if (operation.state !== 'pending') {
+        return { found: true, drained: false, state: operation.state };
+      }
+
+      const deliveries = this.db.getPendingSlotRewardDeliveries(key);
+      for (const delivery of deliveries) {
+        try {
+          await this._executeReward(
+            delivery.reward,
+            operation.spinData,
+            operation.outcome,
+            operation.config,
+            { idempotencyKey: `slot:${key}:reward:${delivery.deliveryIndex}` }
+          );
+          this.db.markSlotRewardDeliveryDelivered(key, delivery.deliveryIndex);
+        } catch (error) {
+          this.db.markSlotRewardDeliveryFailed(key, delivery.deliveryIndex, error.message);
+          this.logger.error(
+            `[SLOT] Durable reward delivery failed for spin #${key}, action ${delivery.action}: ${error.message}`
+          );
+        }
+      }
+
+      this.db.completeSlotOperation(key);
+      const completed = this.db.getSlotOperation(key);
+      return {
+        found: true,
+        drained: true,
+        state: completed?.state || 'completed'
+      };
+    })();
+
+    this.rewardDrainPromises.set(key, drain);
+    try {
+      return await drain;
+    } finally {
+      this.rewardDrainPromises.delete(key);
+    }
+  }
+
+  _supportsDurableOperations() {
+    if (typeof this.db?.db?.transaction !== 'function') return false;
+    return [
+      'createSlotOperation',
+      'getSlotOperation',
+      'getPendingSlotOperations',
+      'getPendingSlotRewardDeliveries',
+      'markSlotRewardDeliveryDelivered',
+      'markSlotRewardDeliveryFailed',
+      'completeSlotOperation'
+    ].every(method => typeof this.db?.[method] === 'function');
+  }
+
+  _scheduleActiveSpinCleanup(spinId) {
+    const cleanupTimer = setTimeout(() => this.activeSpins.delete(spinId), MAX_SPIN_AGE_MS);
+    if (typeof cleanupTimer.unref === 'function') {
+      cleanupTimer.unref();
+    }
+  }
+
+  _releaseQueueAfterDurableDrain(spinId) {
+    const key = String(spinId);
+    if (!this.unifiedQueue || this.queueReleasedSpins.has(key)) return;
+    this.queueReleasedSpins.add(key);
+    try {
+      this.logger.debug(`[SLOT] Releasing unified queue after durable spin #${spinId}`);
+      this.unifiedQueue.completeProcessing();
+    } catch (error) {
+      this.queueReleasedSpins.delete(key);
+      throw error;
+    }
+  }
+
 
   // ────────────────────────────────────────────────────────
   // Cooldown helpers
@@ -973,6 +1282,11 @@ class SlotGame {
    * Execute all reward actions for a spin.
    */
   async _dispatchRewards(rewardActions, spinData, outcome, config) {
+    if (this._supportsDurableOperations() && this.db.getSlotOperation(spinData.spinId)) {
+      await this._drainSlotOperation(spinData.spinId);
+      return;
+    }
+
     for (const reward of rewardActions) {
       try {
         await this._executeReward(reward, spinData, outcome, config);
@@ -996,6 +1310,7 @@ class SlotGame {
    */
   async _executeReward(reward, spinData, outcome, config) {
     const { action, params } = reward;
+    const deliveryContext = arguments[4] || {};
 
     switch (action) {
       case 'audio':
@@ -1027,6 +1342,26 @@ class SlotGame {
       case 'xp': {
         const xpAmount = params.xp || 0;
         if (xpAmount <= 0) break;
+        if (deliveryContext.idempotencyKey) {
+          const viewerDatabase = this.api.pluginLoader?.loadedPlugins?.get('viewer-leaderboard')?.instance?.db;
+          if (typeof viewerDatabase?.addXPOnce !== 'function') {
+            throw new Error('Viewer XP idempotency support is unavailable');
+          }
+
+          const result = await viewerDatabase.addXPOnce(
+            spinData.username,
+            xpAmount,
+            'slot_win',
+            { category: outcome.category, machineId: spinData.machineId },
+            deliveryContext.idempotencyKey
+          );
+          if (!result?.applied && !result?.duplicate && !result?.optedOut) {
+            throw new Error('Viewer XP durable grant was not applied');
+          }
+          this.logger.info(`[SLOT] Awarded ${xpAmount} XP to ${spinData.nickname} (slot ${outcome.category})`);
+          break;
+        }
+
         try {
           const vlPlugin = this.api.pluginLoader?.loadedPlugins?.get('viewer-leaderboard');
           if (vlPlugin?.instance?.db) {

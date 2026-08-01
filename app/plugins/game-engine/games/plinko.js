@@ -5,6 +5,7 @@
  * Balls drop through pegs and land in slots with different multipliers.
  */
 
+const crypto = require('crypto');
 // Constants
 const CLEANUP_INTERVAL_MS = 30000; // 30 seconds
 const MAX_BALL_AGE_MS = 120000; // 2 minutes
@@ -53,6 +54,7 @@ class PlinkoGame {
 
     // Cached config to avoid repeated DB reads
     this.cachedConfig = null;
+    this.inFlightRecoveryPromise = null;
   }
 
   /**
@@ -82,6 +84,13 @@ class PlinkoGame {
    */
   init() {
     this.logger.info('🎰 Plinko game initialized');
+    if (this._supportsDurableInFlight()) {
+      this.inFlightRecoveryPromise = this.recoverInFlightBalls().catch(error => {
+        this.logger.error(`[PLINKO] In-flight recovery failed: ${error.message}`);
+        return [];
+      });
+    }
+    return this.inFlightRecoveryPromise;
   }
 
   /**
@@ -380,10 +389,26 @@ class PlinkoGame {
    * Deduct XP from user
    */
   async deductXP(username, amount) {
+    const idempotencyKey = arguments[2] || null;
     try {
       const viewerLeaderboard = this.api.pluginLoader?.loadedPlugins?.get('viewer-leaderboard');
       if (!viewerLeaderboard || !viewerLeaderboard.instance) {
         throw new Error('XP system not available');
+      }
+
+      if (idempotencyKey) {
+        const viewerDatabase = viewerLeaderboard.instance.db;
+        if (typeof viewerDatabase?.addXPOnce !== 'function') {
+          throw new Error('XP idempotency support is unavailable');
+        }
+        const result = await viewerDatabase.addXPOnce(
+          username,
+          -amount,
+          'plinko_bet',
+          { bet: amount, source: 'game-engine-plinko' },
+          idempotencyKey
+        );
+        return Boolean(result?.applied || result?.duplicate || result?.optedOut);
       }
 
       // Deduct XP by adding negative amount
@@ -403,10 +428,33 @@ class PlinkoGame {
    * Award XP to user (winnings)
    */
   async awardXP(username, amount, multiplier) {
+    const idempotencyKey = arguments[3] || null;
+    const actionType = arguments[4] || 'plinko_win';
+    const extraDetails = arguments[5] || null;
     try {
       const viewerLeaderboard = this.api.pluginLoader?.loadedPlugins?.get('viewer-leaderboard');
       if (!viewerLeaderboard || !viewerLeaderboard.instance) {
         throw new Error('XP system not available');
+      }
+
+      if (idempotencyKey) {
+        const viewerDatabase = viewerLeaderboard.instance.db;
+        if (typeof viewerDatabase?.addXPOnce !== 'function') {
+          throw new Error('XP idempotency support is unavailable');
+        }
+        const result = await viewerDatabase.addXPOnce(
+          username,
+          amount,
+          actionType,
+          {
+            winnings: amount,
+            multiplier,
+            source: 'game-engine-plinko',
+            ...(extraDetails || {})
+          },
+          idempotencyKey
+        );
+        return Boolean(result?.applied || result?.duplicate || result?.optedOut);
       }
 
       viewerLeaderboard.instance.db.addXP(username, amount, 'plinko_win', {
@@ -427,7 +475,19 @@ class PlinkoGame {
    * @returns {Object} { success: boolean, ballId?: string, error?: string }
    */
   async spawnBall(username, nickname, profilePictureUrl, betAmount, ballType = 'standard', options = {}) {
+    if (this._supportsDurableInFlight()) {
+      return this._spawnDurableBall(
+        username,
+        nickname,
+        profilePictureUrl,
+        betAmount,
+        ballType,
+        options
+      );
+    }
+
     const { skipValidation = false, skipDeduction = false, testMode = false, batchId = null, preferredColor = null, boardId = null } = options;
+    const isQueueManaged = options.queueManaged === true || options.forceStart === true;
     const config = boardId !== null ? this.getConfig(boardId) : this.getConfig();
     const isTest = testMode || config.physicsSettings.testModeEnabled;
 
@@ -463,7 +523,8 @@ class PlinkoGame {
       batchId,
       boardId,
       serverSlotIndex,
-      isTest // Store test mode flag for proper handling in handleBallLanded
+      isTest, // Store test mode flag for proper handling in handleBallLanded
+      queueManaged: isQueueManaged
     });
 
     let globalMultiplier = 1.0;
@@ -504,6 +565,7 @@ class PlinkoGame {
     const boardId = options.boardId ?? null;
     const config = boardId !== null ? this.getConfig(boardId) : this.getConfig();
     const isTest = options.testMode || config.physicsSettings.testModeEnabled;
+    const queueManaged = options.forceStart === true;
     const limitedCount = Math.max(1, Math.min(count, config.physicsSettings.maxSimultaneousBalls || 5));
     const totalBet = betAmount * limitedCount;
 
@@ -541,32 +603,50 @@ class PlinkoGame {
       }
     }
 
-    // Validate once for total bet
+    const usesDurableInFlight = this._supportsDurableInFlight();
+
+    // Validate once for the full batch. Durable balls debit individually so a
+    // crash cannot leave an aggregate debit without a recoverable outcome.
     if (!isTest) {
       const validation = await this.validateBet(username, totalBet);
       if (!validation.valid) {
         return { success: false, error: validation.error };
       }
-      const deducted = await this.deductXP(username, totalBet);
-      if (!deducted) {
-        return { success: false, error: 'Failed to deduct XP' };
+      if (!usesDurableInFlight) {
+        const deducted = await this.deductXP(username, totalBet);
+        if (!deducted) {
+          return { success: false, error: 'Failed to deduct XP' };
+        }
       }
     }
 
     const batchId = options.batchId || (limitedCount > 1 ? `batch_${Date.now()}_${this.ballIdCounter++}` : null);
+    const tracksStartedDurableBalls = usesDurableInFlight;
     if (batchId && limitedCount > 1) {
       this.batchTrackers.set(batchId, {
-        remaining: limitedCount,
-        totalBet,
+        remaining: tracksStartedDurableBalls ? 0 : limitedCount,
+        totalBet: tracksStartedDurableBalls ? 0 : totalBet,
         totalWinnings: 0,
-        net: -totalBet,
+        net: tracksStartedDurableBalls ? 0 : -totalBet,
         slots: [],
-        boardId
+        boardId,
+        queueManaged
       });
     }
 
     const ballIds = [];
+    const failures = [];
     for (let i = 0; i < limitedCount; i++) {
+      const tracker = batchId && tracksStartedDurableBalls
+        ? this.batchTrackers.get(batchId)
+        : null;
+      if (tracker) {
+        tracker.remaining += 1;
+        tracker.totalBet += betAmount;
+        tracker.net -= betAmount;
+        this.batchTrackers.set(batchId, tracker);
+      }
+
       const result = await this.spawnBall(
         username,
         nickname,
@@ -575,20 +655,93 @@ class PlinkoGame {
         'standard',
         {
           skipValidation: true,
-          skipDeduction: true,
+          skipDeduction: usesDurableInFlight ? false : true,
           testMode: isTest,
           batchId,
           preferredColor: options.preferredColor,
-          boardId
+          boardId,
+          queueManaged
         }
       );
       if (result.success && result.ballId) {
         ballIds.push(result.ballId);
+        continue;
+      }
+
+      failures.push({ index: i, error: result.error || 'Failed to start Plinko ball' });
+      if (tracker) {
+        tracker.remaining = Math.max(0, tracker.remaining - 1);
+        tracker.totalBet -= betAmount;
+        tracker.net += betAmount;
+        this.batchTrackers.set(batchId, tracker);
       }
     }
 
-    return { success: true, batchId, ballIds, totalBet, count: limitedCount, queued: false };
+    const completedTracker = batchId && tracksStartedDurableBalls
+      ? this.batchTrackers.get(batchId)
+      : null;
+    if (completedTracker?.remaining <= 0 && ballIds.length > 0) {
+      this.batchTrackers.delete(batchId);
+      this._emitCompletedBatch(batchId, username, boardId, completedTracker);
+    }
+
+    const actualTotalBet = ballIds.length * betAmount;
+    if (ballIds.length === 0) {
+      if (batchId) this.batchTrackers.delete(batchId);
+      return {
+        success: false,
+        error: failures[0]?.error || 'Failed to start Plinko ball',
+        batchId,
+        ballIds,
+        totalBet: 0,
+        count: 0,
+        requestedTotalBet: totalBet,
+        requestedCount: limitedCount,
+        failures,
+        queued: false
+      };
+    }
+
+    return {
+      success: true,
+      partial: failures.length > 0,
+      batchId,
+      ballIds,
+      totalBet: actualTotalBet,
+      count: ballIds.length,
+      requestedTotalBet: totalBet,
+      requestedCount: limitedCount,
+      failures,
+      queued: false
+    };
+
   }
+  _emitCompletedBatch(batchId, username, boardId, tracker) {
+    this.io.emit('plinko:batch-complete', {
+      batchId,
+      username,
+      totalBet: tracker.totalBet,
+      totalWinnings: tracker.totalWinnings,
+      net: tracker.net,
+      slots: tracker.slots,
+      boardId
+    });
+    if (tracker.queueManaged === true && this.unifiedQueue) {
+      this.unifiedQueue.completeProcessing();
+    }
+  }
+
+  _scheduleQueueRelease() {
+    if (!this.unifiedQueue) return;
+    const queue = this.unifiedQueue;
+    const completeTimer = setTimeout(() => {
+      queue.completeProcessing();
+    }, 1000);
+    if (typeof completeTimer.unref === 'function') {
+      completeTimer.unref();
+    }
+  }
+
 
   /**
    * Spawn a test ball (bypasses XP validation, unified queue, and gift triggers)
@@ -598,6 +751,10 @@ class PlinkoGame {
    * @returns {Promise<Object>} Result with ballId
    */
   async spawnTestBall(playerName, betAmount, boardId = null) {
+    if (this._supportsDurableInFlight()) {
+      return this._spawnDurableTestBall(playerName, betAmount, boardId);
+    }
+
     // Create mock user profile
     const username = `test_${playerName}_${Date.now()}`;
     const nickname = playerName;
@@ -658,6 +815,10 @@ class PlinkoGame {
    */
   async handleBallLanded(ballId, reportedSlotIndex) {
     const ballData = this.activeBalls.get(ballId);
+    if (this._supportsDurableInFlight()) {
+      return this._handleDurableBallLanded(ballId, reportedSlotIndex);
+    }
+
     
     this._debugLog(`Ball landing reported: ${ballId} in slot ${reportedSlotIndex}`);
     
@@ -787,33 +948,17 @@ class PlinkoGame {
       tracker.slots.push({ slotIndex, multiplier, winnings: profit, net: netProfit });
       if (tracker.remaining <= 0) {
         this.batchTrackers.delete(ballData.batchId);
-        this.io.emit('plinko:batch-complete', {
-          batchId: ballData.batchId,
-          username: ballData.username,
-          totalBet: tracker.totalBet,
-          totalWinnings: tracker.totalWinnings,
-          net: tracker.net,
-          slots: tracker.slots,
-          boardId: tracker.boardId
-        });
-        
-        // Notify unified queue that batch is complete
-        if (this.unifiedQueue) {
-          this.unifiedQueue.completeProcessing();
-        }
+        this._emitCompletedBatch(
+          ballData.batchId,
+          ballData.username,
+          tracker.boardId,
+          tracker
+        );
       } else {
         this.batchTrackers.set(ballData.batchId, tracker);
       }
-    } else if (!ballData.batchId) {
-      // Single ball drop completed - notify unified queue
-      if (this.unifiedQueue) {
-        const completeTimer = setTimeout(() => {
-          this.unifiedQueue.completeProcessing();
-        }, 1000);
-        if (typeof completeTimer.unref === 'function') {
-          completeTimer.unref();
-        }
-      }
+    } else if (ballData.queueManaged === true) {
+      this._scheduleQueueRelease();
     }
 
     // Emit result event
@@ -1088,6 +1233,634 @@ class PlinkoGame {
   getLeaderboard(limit = 10) {
     return this.db.getPlinkoLeaderboard(limit);
   }
+  _supportsDurableInFlight() {
+    if (typeof this.db?.db?.transaction !== 'function') return false;
+    return [
+      'createPlinkoInFlight',
+      'getPlinkoInFlight',
+      'getRecoverablePlinkoInFlight',
+      'markPlinkoInFlightSettled',
+      'markPlinkoInFlightRefunded',
+      'discardPlinkoInFlight',
+      'discardPendingPlinkoDebit',
+      'markPlinkoInFlightDebitConfirmed',
+      'claimPlinkoInFlightPayout',
+      'claimPlinkoInFlightRefund'
+    ].every(method => typeof this.db?.[method] === 'function');
+  }
+
+  async _spawnDurableBall(username, nickname, profilePictureUrl, betAmount, ballType, options) {
+    const {
+      skipValidation = false,
+      skipDeduction = false,
+      testMode = false,
+      batchId = null,
+      preferredColor = null,
+      boardId = null,
+      queueManaged = false
+    } = options;
+    const config = boardId !== null ? this.getConfig(boardId) : this.getConfig();
+    const isTest = testMode || config.physicsSettings.testModeEnabled;
+    const isQueueManaged = queueManaged === true || options.forceStart === true;
+
+    if (!skipValidation && !isTest) {
+      const validation = await this.validateBet(username, betAmount);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
+    }
+
+    const ballId = `ball_${crypto.randomUUID()}`;
+    let serverSlotIndex;
+    try {
+      serverSlotIndex = this._selectServerSlotIndex(config);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+
+    const serverMultiplier = Number(config.slots[serverSlotIndex]?.multiplier);
+    const requiresDurableDebit = !skipDeduction && !isTest;
+    const ballData = {
+      username,
+      nickname,
+      profilePictureUrl,
+      bet: betAmount,
+      ballType,
+      timestamp: Date.now(),
+      batchId,
+      boardId,
+      serverSlotIndex,
+      serverMultiplier: Number.isFinite(serverMultiplier) ? serverMultiplier : null,
+      isTest,
+      queueManaged: isQueueManaged,
+      state: requiresDurableDebit ? 'debit_pending' : 'in_flight'
+    };
+
+    try {
+      this.db.createPlinkoInFlight({ ballId, ...ballData });
+    } catch (error) {
+      this.logger.error(`[PLINKO] Failed to persist in-flight ball ${ballId}: ${error.message}`);
+      return { success: false, error: 'Failed to persist Plinko outcome' };
+    }
+
+    if (requiresDurableDebit) {
+      const deducted = await this.deductXP(username, betAmount, `plinko:${ballId}:bet`);
+      if (!deducted) {
+        this.db.discardPendingPlinkoDebit(ballId, { reason: 'bet_debit_failed' });
+        return { success: false, error: 'Failed to deduct XP' };
+      }
+
+      const confirmed = this.db.markPlinkoInFlightDebitConfirmed(ballId);
+      if (!confirmed) {
+        const persisted = this.db.getPlinkoInFlight(ballId);
+        if (persisted?.state !== 'in_flight') {
+          return { success: false, error: 'Failed to confirm Plinko bet' };
+        }
+      }
+    }
+
+    this.activeBalls.set(ballId, ballData);
+
+    const globalMultiplier = config.giftMappings?.[ballType]?.multiplier || 1.0;
+    const color = this.getBallColor(username, preferredColor);
+    this.io.emit('plinko:spawn-ball', {
+      ballId,
+      username,
+      nickname,
+      profilePictureUrl,
+      bet: betAmount,
+      ballType,
+      globalMultiplier,
+      timestamp: ballData.timestamp,
+      color,
+      batchId,
+      boardId,
+      boardName: config.name,
+      targetSlotIndex: serverSlotIndex,
+      testMode: isTest
+    });
+
+    this.logger.info(
+      `[PLINKO] Durable ball spawned: ${username} bet ${betAmount} XP (ballId: ${ballId}${batchId ? `, batch ${batchId}` : ''})`
+    );
+    return { success: true, ballId };
+  }
+
+  async _spawnDurableTestBall(playerName, betAmount, boardId) {
+    const username = `test_${playerName}_${Date.now()}`;
+    const nickname = playerName;
+    const profilePictureUrl = '';
+    const config = boardId ? this.getConfig(boardId) : this.getConfig();
+    if (!config) {
+      return { success: false, error: 'Board not found' };
+    }
+
+    let serverSlotIndex;
+    try {
+      serverSlotIndex = this._selectServerSlotIndex(config);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+
+    const ballId = `test-ball_${crypto.randomUUID()}`;
+    const serverMultiplier = Number(config.slots[serverSlotIndex]?.multiplier);
+    const ballData = {
+      username,
+      nickname,
+      profilePictureUrl,
+      bet: betAmount,
+      ballType: 'standard',
+      timestamp: Date.now(),
+      batchId: null,
+      boardId,
+      serverSlotIndex,
+      serverMultiplier: Number.isFinite(serverMultiplier) ? serverMultiplier : null,
+      isTest: true
+    };
+
+    try {
+      this.db.createPlinkoInFlight({ ballId, ...ballData });
+    } catch (error) {
+      this.logger.error(`[PLINKO] Failed to persist test ball ${ballId}: ${error.message}`);
+      return { success: false, error: 'Failed to persist Plinko outcome' };
+    }
+
+    this.activeBalls.set(ballId, ballData);
+    const color = this.getBallColor(username, null);
+    this.io.emit('plinko:spawn-ball', {
+      ballId,
+      username,
+      nickname,
+      profilePictureUrl,
+      bet: betAmount,
+      ballType: 'standard',
+      globalMultiplier: 1.0,
+      timestamp: ballData.timestamp,
+      color,
+      boardId,
+      boardName: config.name,
+      targetSlotIndex: serverSlotIndex,
+      isTest: true
+    });
+
+    return { success: true, ballId, testMode: true };
+  }
+
+  async recoverInFlightBalls() {
+    if (!this._supportsDurableInFlight()) return [];
+
+    const recovered = [];
+    for (let ball of this.db.getRecoverablePlinkoInFlight()) {
+      if (ball.state === 'payout_claimed') {
+        const payout = await this._resumeDurablePayout(ball);
+        recovered.push({ ballId: ball.ballId, payoutResumed: payout.settled });
+        continue;
+      }
+
+      if (ball.state === 'refund_claimed') {
+        const refunded = await this._refundDurableBall(ball);
+        recovered.push({ ballId: ball.ballId, refundResumed: refunded });
+        continue;
+      }
+
+      if (ball.state === 'debit_pending') {
+        const debitedBall = await this._recoverDurableDebit(ball);
+        if (!debitedBall) {
+          recovered.push({ ballId: ball.ballId, debitPending: true });
+          continue;
+        }
+        ball = debitedBall;
+      }
+
+      if (Date.now() - ball.timestamp > MAX_BALL_AGE_MS) {
+        if (ball.isTest) {
+          const discarded = this.db.discardPlinkoInFlight(ball.ballId, {
+            reason: 'expired_test_ball'
+          });
+          recovered.push({ ballId: ball.ballId, discarded });
+        } else {
+          const refunded = await this._refundDurableBall(ball);
+          recovered.push({ ballId: ball.ballId, refunded });
+        }
+        continue;
+      }
+
+      this._hydrateDurableBall(ball);
+      recovered.push({ ballId: ball.ballId, recovered: true });
+    }
+    return recovered;
+  }
+
+  _hydrateDurableBall(ball) {
+    const ballData = {
+      username: ball.username,
+      nickname: ball.nickname,
+      profilePictureUrl: ball.profilePictureUrl || '',
+      bet: ball.bet,
+      ballType: ball.ballType || 'standard',
+      timestamp: ball.timestamp,
+      batchId: ball.batchId || null,
+      boardId: ball.boardId,
+      serverSlotIndex: ball.serverSlotIndex,
+      serverMultiplier: ball.serverMultiplier,
+      isTest: ball.isTest,
+      queueManaged: ball.queueManaged === true
+    };
+    this.activeBalls.set(ball.ballId, ballData);
+    return ballData;
+  }
+
+  async _recoverDurableDebit(ball) {
+    if (ball.isTest) {
+      this.db.discardPlinkoInFlight(ball.ballId, { reason: 'test_ball_without_debit' });
+      return null;
+    }
+
+    const deducted = await this.deductXP(
+      ball.username,
+      ball.bet,
+      `plinko:${ball.ballId}:bet`
+    );
+    if (!deducted) {
+      this.logger.warn(`[PLINKO] Could not resume pending bet for ${ball.ballId}`);
+      return null;
+    }
+
+    const confirmed = this.db.markPlinkoInFlightDebitConfirmed(ball.ballId);
+    const current = this.db.getPlinkoInFlight(ball.ballId);
+    if (!confirmed && current?.state !== 'in_flight') {
+      this.logger.warn(`[PLINKO] Could not confirm pending bet for ${ball.ballId}`);
+      return null;
+    }
+    return current;
+  }
+
+  _getDurableSettlement(ball) {
+    const stored = ball.settlement || {};
+    const slotIndex = Number.isInteger(stored.slotIndex)
+      ? stored.slotIndex
+      : ball.serverSlotIndex;
+    const rawMultiplier = stored.multiplier ?? ball.serverMultiplier;
+    if (!Number.isInteger(slotIndex) || rawMultiplier === null || rawMultiplier === undefined) {
+      return null;
+    }
+
+    const multiplier = Number(rawMultiplier);
+    if (!Number.isFinite(multiplier)) return null;
+
+    const rawWinnings = stored.winnings;
+    const winnings = rawWinnings === null || rawWinnings === undefined
+      ? Math.floor(ball.bet * multiplier)
+      : Number(rawWinnings);
+    if (!Number.isFinite(winnings)) return null;
+
+    const rawNetProfit = stored.netProfit;
+    const netProfit = rawNetProfit === null || rawNetProfit === undefined
+      ? winnings - ball.bet
+      : Number(rawNetProfit);
+    if (!Number.isFinite(netProfit)) return null;
+
+    return { slotIndex, multiplier, winnings, netProfit };
+  }
+
+  async _resumeDurablePayout(ball) {
+    const settlement = this._getDurableSettlement(ball);
+    if (!settlement) {
+      this.logger.error(`[PLINKO] Missing payout snapshot for ${ball.ballId}`);
+      return { settled: false };
+    }
+
+    if (ball.isTest) {
+      const discarded = this.db.discardPlinkoInFlight(ball.ballId, {
+        ...settlement,
+        reason: 'test_ball_landed'
+      });
+      return { ...settlement, settled: discarded, newlySettled: discarded };
+    }
+
+    if (settlement.winnings > 0) {
+      const awarded = await this.awardXP(
+        ball.username,
+        settlement.winnings,
+        settlement.multiplier,
+        `plinko:${ball.ballId}:payout`
+      );
+      if (!awarded) {
+        return { ...settlement, settled: false };
+      }
+    }
+
+    if (typeof this.db.recordPlinkoTransaction === 'function') {
+      this.db.recordPlinkoTransaction(
+        ball.username,
+        ball.bet,
+        settlement.multiplier,
+        settlement.netProfit,
+        settlement.slotIndex,
+        ball.ballId
+      );
+    }
+    const marked = this.db.markPlinkoInFlightSettled(ball.ballId, settlement);
+    const state = marked ? 'settled' : this.db.getPlinkoInFlight(ball.ballId)?.state;
+    return {
+      ...settlement,
+      settled: state === 'settled',
+      newlySettled: marked
+    };
+  }
+
+  async _handleDurableBallLanded(ballId, reportedSlotIndex) {
+    let ballData = this.activeBalls.get(ballId);
+    if (!ballData) {
+      const persisted = this.db.getPlinkoInFlight(ballId);
+      if (!persisted) {
+        this.logger.warn(`Ball ${ballId} not found in active balls`);
+        return { success: false, error: 'Ball not found' };
+      }
+      if (persisted.state === 'payout_claimed') {
+        const payout = await this._resumeDurablePayout(persisted);
+        return {
+          success: payout.settled,
+          username: persisted.username,
+          bet: persisted.bet,
+          multiplier: payout.multiplier,
+          winnings: payout.winnings,
+          netProfit: payout.netProfit,
+          boardId: persisted.boardId
+        };
+      }
+      if (persisted.state !== 'in_flight') {
+        this.logger.warn(`Ball ${ballId} is no longer eligible to land (${persisted.state})`);
+        return { success: false, error: 'Ball is no longer in flight' };
+      }
+      ballData = this._hydrateDurableBall(persisted);
+    }
+
+    const isTestBall = Boolean(ballData.isTest);
+    if (!isTestBall) {
+      const flightTime = Date.now() - ballData.timestamp;
+      if (flightTime < MIN_FLIGHT_TIME_MS) {
+        this.logger.warn(`Ball landed too quickly: ${flightTime}ms (minimum: ${MIN_FLIGHT_TIME_MS}ms) - possible glitch or manipulation`);
+        this.activeBalls.delete(ballId);
+        return { success: false, error: 'Invalid drop time' };
+      }
+    }
+
+    let config = null;
+    try {
+      config = ballData.boardId !== null && ballData.boardId !== undefined
+        ? this.getConfig(ballData.boardId)
+        : this.getConfig();
+    } catch (error) {
+      this.logger.warn(`[PLINKO] Display config unavailable for durable ball ${ballId}: ${error.message}`);
+    }
+
+    let slotIndex = ballData.serverSlotIndex;
+    if (!Number.isInteger(slotIndex)) {
+      if (!config?.slots?.length) {
+        this.activeBalls.delete(ballId);
+        return { success: false, error: 'Missing durable slot snapshot' };
+      }
+      slotIndex = this._selectServerSlotIndex(config);
+      ballData.serverSlotIndex = slotIndex;
+    }
+    if (Number.isInteger(reportedSlotIndex) && reportedSlotIndex !== slotIndex) {
+      this.logger.warn(`Plinko visual desync for ${ballId}: overlay reported ${reportedSlotIndex}, server selected ${slotIndex}`);
+    }
+    if (slotIndex < 0) {
+      this.activeBalls.delete(ballId);
+      return { success: false, error: 'Invalid slot' };
+    }
+
+    this.activeBalls.delete(ballId);
+    const fallbackMultiplier = config?.slots?.[slotIndex]?.multiplier;
+    const settlement = this._getDurableSettlement({
+      ...ballData,
+      serverSlotIndex: slotIndex,
+      serverMultiplier: ballData.serverMultiplier ?? fallbackMultiplier
+    });
+    if (!settlement) {
+      return { success: false, error: 'Missing durable payout snapshot' };
+    }
+    const { multiplier, winnings: profit, netProfit } = settlement;
+    const slot = config?.slots?.[slotIndex] || null;
+
+    let newlySettled = false;
+    if (isTestBall) {
+      if (typeof this.db.recordPlinkoTestTransaction === 'function') {
+        this.db.recordPlinkoTestTransaction(
+          ballData.username,
+          ballData.bet,
+          multiplier,
+          netProfit,
+          slotIndex
+        );
+      }
+      newlySettled = this.db.discardPlinkoInFlight(ballId, {
+        ...settlement,
+        reason: 'test_ball_landed'
+      });
+    } else {
+      let operation = this.db.getPlinkoInFlight(ballId);
+      let payout;
+      if (operation?.state === 'refund_claimed') {
+        return { success: false, error: 'Ball is being refunded' };
+      }
+      if (operation?.state === 'payout_claimed') {
+        payout = await this._resumeDurablePayout(operation);
+      } else {
+        const claimed = this.db.claimPlinkoInFlightPayout(ballId, settlement);
+        if (claimed) {
+          payout = await this._resumeDurablePayout(this.db.getPlinkoInFlight(ballId));
+        } else {
+          operation = this.db.getPlinkoInFlight(ballId);
+          if (operation?.state === 'payout_claimed') {
+            payout = await this._resumeDurablePayout(operation);
+          } else if (operation?.state === 'settled') {
+            payout = { settled: true, newlySettled: false };
+          } else {
+            return { success: false, error: 'Failed to claim Plinko payout' };
+          }
+        }
+      }
+      if (!payout?.settled) {
+        return { success: false, error: 'Failed to award XP' };
+      }
+      newlySettled = Boolean(payout.newlySettled);
+    }
+
+    if (!newlySettled) {
+      return {
+        success: true,
+        username: ballData.username,
+        bet: ballData.bet,
+        multiplier,
+        winnings: profit,
+        netProfit,
+        boardId: ballData.boardId
+      };
+    }
+
+    if (slot?.openshockReward?.enabled) {
+      this.io.emit('plinko:openshock-review-required', {
+        ballId,
+        username: ballData.username,
+        nickname: ballData.nickname,
+        slotIndex,
+        boardId: ballData.boardId
+      });
+      this.logger.warn(`Plinko OpenShock reward suppressed for ${ballId}; streamer review is required`);
+    }
+
+    if (config?.slots?.length && (!this.slotHitCounts.length || this.slotHitCounts.length !== config.slots.length)) {
+      this.slotHitCounts = new Array(config.slots.length || 0).fill(0);
+    }
+    if (config?.slots?.length && this.slotHitCounts[slotIndex] !== undefined) {
+      this.slotHitCounts[slotIndex] += 1;
+      this.io.emit('plinko:heatmap', { counts: this.slotHitCounts });
+    }
+
+    if (ballData.batchId && this.batchTrackers.has(ballData.batchId)) {
+      const tracker = this.batchTrackers.get(ballData.batchId);
+      tracker.remaining -= 1;
+      tracker.totalWinnings += profit;
+      tracker.net += netProfit;
+      tracker.slots.push({ slotIndex, multiplier, winnings: profit, net: netProfit });
+      if (tracker.remaining <= 0) {
+        this.batchTrackers.delete(ballData.batchId);
+        this._emitCompletedBatch(
+          ballData.batchId,
+          ballData.username,
+          tracker.boardId,
+          tracker
+        );
+      } else {
+        this.batchTrackers.set(ballData.batchId, tracker);
+      }
+    } else if (ballData.queueManaged === true) {
+      this._scheduleQueueRelease();
+    }
+
+    this.io.emit('plinko:ball-result', {
+      ballId,
+      username: ballData.username,
+      nickname: ballData.nickname,
+      bet: ballData.bet,
+      slotIndex,
+      multiplier,
+      winnings: profit,
+      netProfit,
+      boardId: ballData.boardId
+    });
+
+    return {
+      success: true,
+      username: ballData.username,
+      bet: ballData.bet,
+      multiplier,
+      winnings: profit,
+      netProfit,
+      boardId: ballData.boardId
+    };
+  }
+
+  async _cleanupDurableOldBalls(maxAgeMs) {
+    const results = [];
+
+    for (let ball of this.db.getRecoverablePlinkoInFlight()) {
+      if (ball.state === 'payout_claimed') {
+        const payout = await this._resumeDurablePayout(ball);
+        results.push({ ballId: ball.ballId, payoutResumed: payout.settled });
+        continue;
+      }
+
+      if (ball.state === 'refund_claimed') {
+        const refunded = await this._refundDurableBall(ball);
+        results.push({ ballId: ball.ballId, refundResumed: refunded });
+        continue;
+      }
+
+      if (ball.state === 'debit_pending') {
+        const debitedBall = await this._recoverDurableDebit(ball);
+        if (!debitedBall) {
+          results.push({ ballId: ball.ballId, debitPending: true });
+          continue;
+        }
+        ball = debitedBall;
+      }
+
+      if (Date.now() - ball.timestamp <= maxAgeMs) continue;
+
+      this.activeBalls.delete(ball.ballId);
+      if (ball.isTest) {
+        const discarded = this.db.discardPlinkoInFlight(ball.ballId, {
+          reason: 'expired_test_ball'
+        });
+        results.push({ ballId: ball.ballId, discarded });
+        continue;
+      }
+
+      const refunded = await this._refundDurableBall(ball);
+      results.push({ ballId: ball.ballId, refunded });
+    }
+
+    if (results.length > 0) {
+      this.logger.info(`[PLINKO] Cleaned up ${results.length} durable stuck ball(s)`);
+    }
+    return results;
+  }
+
+  async _refundDurableBall(ball) {
+    if (ball.isTest) {
+      return this.db.discardPlinkoInFlight(ball.ballId, { reason: 'expired_test_ball' });
+    }
+
+    let refundBall = ball;
+    const refundSettlement = {
+      bet: ball.bet,
+      reason: 'expired_in_flight_ball'
+    };
+    if (ball.state === 'in_flight') {
+      const claimed = this.db.claimPlinkoInFlightRefund(ball.ballId, refundSettlement);
+      if (claimed) {
+        refundBall = this.db.getPlinkoInFlight(ball.ballId);
+      } else {
+        const current = this.db.getPlinkoInFlight(ball.ballId);
+        if (current?.state !== 'refund_claimed') return false;
+        refundBall = current;
+      }
+    } else if (ball.state !== 'refund_claimed') {
+      return false;
+    }
+
+    const refunded = await this.awardXP(
+      refundBall.username,
+      refundBall.bet,
+      1,
+      `plinko:${refundBall.ballId}:refund`,
+      'plinko_refund',
+      {
+        ballId: refundBall.ballId,
+        bet: refundBall.bet,
+        reason: 'expired_in_flight_ball'
+      }
+    );
+    if (!refunded) return false;
+
+    const marked = this.db.markPlinkoInFlightRefunded(refundBall.ballId, refundSettlement);
+    const state = marked ? 'refunded' : this.db.getPlinkoInFlight(refundBall.ballId)?.state;
+    if (marked) {
+      this.io.emit('plinko:notification', {
+        message: `Stuck ball refunded for ${refundBall.nickname || refundBall.username}`,
+        username: refundBall.username,
+        nickname: refundBall.nickname,
+        amount: refundBall.bet,
+        type: 'refund'
+      });
+    }
+    return state === 'refunded';
+  }
+
 
   /**
    * Clean up old balls (if they get stuck)
@@ -1095,6 +1868,10 @@ class PlinkoGame {
   cleanupOldBalls(maxAgeMs = MAX_BALL_AGE_MS) {
     const now = Date.now();
     const oldBalls = [];
+    if (this._supportsDurableInFlight()) {
+      return this._cleanupDurableOldBalls(maxAgeMs);
+    }
+
     
     for (const [ballId, ballData] of this.activeBalls.entries()) {
       if (now - ballData.timestamp > maxAgeMs) {

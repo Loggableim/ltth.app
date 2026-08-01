@@ -243,6 +243,65 @@ describe('Queue Size Limits and Gift Deduplication', () => {
       expect(gameEnginePlugin.recentGiftEvents.has(dedupKey)).toBe(true);
     });
 
+    test('should allow distinct TikTok event IDs for otherwise identical gifts', () => {
+      const giftData = {
+        uniqueId: 'user1',
+        giftName: 'Rose',
+        giftId: '5655',
+        nickname: 'User 1',
+        repeatEnd: true
+      };
+
+      gameEnginePlugin.handleGiftTrigger({ ...giftData, eventId: 'tiktok-gift-event-1' });
+      gameEnginePlugin.handleGiftTrigger({ ...giftData, eventId: 'tiktok-gift-event-2' });
+
+      expect(gameEnginePlugin.wheelGame.triggerSpin).toHaveBeenCalledTimes(2);
+    });
+
+    test('should deduplicate a retransmitted TikTok event ID even if gift fields differ', () => {
+      gameEnginePlugin.handleGiftTrigger({
+        uniqueId: 'user1',
+        giftName: 'Rose',
+        giftId: '5655',
+        nickname: 'User 1',
+        repeatEnd: true,
+        eventId: 'tiktok-gift-event-retry'
+      });
+      gameEnginePlugin.handleGiftTrigger({
+        uniqueId: 'other-user',
+        giftName: 'Diamond',
+        giftId: '8888',
+        nickname: 'Other User',
+        repeatEnd: true,
+        eventId: 'tiktok-gift-event-retry'
+      });
+
+      expect(gameEnginePlugin.wheelGame.triggerSpin).toHaveBeenCalledTimes(1);
+    });
+
+    test('falls back to gift fields when generic id could identify a gift type', () => {
+      const firstGift = {
+        uniqueId: 'user1',
+        giftName: 'Rose',
+        giftId: '5655',
+        nickname: 'User 1',
+        repeatEnd: true,
+        id: 'gift-type-5655'
+      };
+      const secondGift = {
+        ...firstGift,
+        uniqueId: 'user2',
+        nickname: 'User 2'
+      };
+
+      gameEnginePlugin.handleGiftTrigger(firstGift);
+      gameEnginePlugin.handleGiftTrigger(secondGift);
+
+      expect(gameEnginePlugin.wheelGame.triggerSpin).toHaveBeenCalledTimes(2);
+      expect(gameEnginePlugin.recentGiftEvents.has('user1_Rose_5655')).toBe(true);
+      expect(gameEnginePlugin.recentGiftEvents.has('user2_Rose_5655')).toBe(true);
+    });
+
     test('should block duplicate gift events within dedup window', () => {
       const giftData = {
         uniqueId: 'user1',

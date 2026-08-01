@@ -214,7 +214,7 @@ describe('Wheel Queue / Spin-Hanger Fix', () => {
   // ── handleSpinComplete() critical path fixes ──────────────────────────────
 
   describe('handleSpinComplete() – queue unblocked on error paths', () => {
-    test('calls completeProcessing when config invalid at completion time', async () => {
+    test('uses the spin snapshot when config becomes unavailable, then releases the queue', async () => {
       const mockDB = createMockDB();
       const mockLogger = createMockLogger();
       const mockIO = createMockIO();
@@ -239,13 +239,15 @@ describe('Wheel Queue / Spin-Hanger Fix', () => {
 
       const result = await wheel.handleSpinComplete('hsc-bad-cfg', 0);
 
-      expect(result.success).toBe(false);
-      // Queue MUST be released
-      expect(queue.isProcessing).toBe(false);
-      // State MUST be reset
+      expect(result.success).toBe(true);
+      expect(mockDB.recordWheelWin).toHaveBeenCalledTimes(1);
+      expect(mockDB.getWheelConfig).toHaveBeenCalledTimes(1);
       expect(wheel.isSpinning).toBe(false);
       expect(wheel.currentSpin).toBeNull();
       expect(wheel.activeSpins.has('hsc-bad-cfg')).toBe(false);
+      expect(queue.isProcessing).toBe(true);
+      jest.advanceTimersByTime(2000);
+      expect(queue.isProcessing).toBe(false);
     });
 
     test('calls completeProcessing when segment index is invalid at completion time', async () => {
@@ -285,7 +287,7 @@ describe('Wheel Queue / Spin-Hanger Fix', () => {
 
   describe('cleanupOldSpins() – releases unified queue on stuck spin cleanup', () => {
     test('calls unifiedQueue.completeProcessing instead of processNextSpin', async () => {
-      const { queue, wheel } = buildSystem();
+      const { queue, wheel, mockDB } = buildSystem();
 
       const spinData = {
         spinId: 'cos-1', username: 'u', nickname: 'U',
@@ -303,6 +305,7 @@ describe('Wheel Queue / Spin-Hanger Fix', () => {
       wheel.cleanupOldSpins();
 
       expect(completeSpy).toHaveBeenCalled();
+      expect(mockDB.recordWheelWin).toHaveBeenCalledTimes(1);
       expect(wheel.isSpinning).toBe(false);
       expect(wheel.currentSpin).toBeNull();
     });

@@ -1059,6 +1059,11 @@
           "start_elo": "Start-ELO:",
           "k_factor": "K-Faktor:",
           "examples": "Beispiele:",
+          "autoplay_title": "Streamer-Autoplay",
+          "autoplay_description": "Steuert nur Streamer-Z\u00fcge in neuen Zuschauerpartien. Beim Ausschalten werden ausstehende Autoplay-Z\u00fcge sofort abgebrochen.",
+          "autoplay_enabled": "Streamer-Autoplay aktivieren",
+          "autoplay_elo_offset": "ELO-Offset zum Zuschauer (-400 bis +400):",
+          "autoplay_move_delay": "Zugverz\u00f6gerung (ms):",
           "elo_empty": "Noch keine ELO-Daten verfügbar.",
           "elo_load_error": "Fehler beim Laden der ELO-Rangliste."
         },

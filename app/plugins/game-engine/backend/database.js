@@ -221,6 +221,54 @@ class GameEngineDatabase {
       )
     `);
 
+    // Persist server-selected outcomes while a Plinko ball is in flight.
+    // Queue entries themselves are not durable, but their ownership marker is:
+    // a recovered ball must never release an unrelated queue item.
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS game_plinko_inflight (
+        ball_id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        nickname TEXT,
+        profile_picture_url TEXT,
+        bet INTEGER NOT NULL,
+        ball_type TEXT,
+        timestamp_ms INTEGER NOT NULL,
+        batch_id TEXT,
+        board_id INTEGER,
+        server_slot_index INTEGER NOT NULL,
+        slot_multiplier REAL,
+        is_test INTEGER NOT NULL DEFAULT 0,
+        queue_managed INTEGER NOT NULL DEFAULT 0,
+        state TEXT NOT NULL DEFAULT 'in_flight',
+        settlement_json TEXT,
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL
+      )
+    `);
+    const plinkoInFlightColumns = this.db.prepare(
+      'PRAGMA table_info(game_plinko_inflight)'
+    ).all();
+    if (!plinkoInFlightColumns.some(column => column.name === 'queue_managed')) {
+      this.db.exec('ALTER TABLE game_plinko_inflight ADD COLUMN queue_managed INTEGER NOT NULL DEFAULT 0');
+    }
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_game_plinko_inflight_state
+      ON game_plinko_inflight(state, timestamp_ms)
+    `);
+
+    // A landing retry after a process restart must not duplicate the history
+    // record. Existing installations gain this nullable column in place.
+    const plinkoTransactionColumns = this.db.prepare(
+      'PRAGMA table_info(game_plinko_transactions)'
+    ).all();
+    if (!plinkoTransactionColumns.some(column => column.name === 'ball_id')) {
+      this.db.exec('ALTER TABLE game_plinko_transactions ADD COLUMN ball_id TEXT');
+    }
+    this.db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_game_plinko_transactions_ball_id
+      ON game_plinko_transactions(ball_id)
+      WHERE ball_id IS NOT NULL
+    `);
     // Plinko test transactions table (for offline testing)
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS game_plinko_test_transactions (
@@ -551,6 +599,7 @@ class GameEngineDatabase {
         host_time_remaining_ms INTEGER,
         time_control TEXT,
         last_move_identity TEXT,
+        autoplay_json TEXT,
         last_activity_at INTEGER NOT NULL,
         status TEXT NOT NULL DEFAULT 'active',
         terminal_reason TEXT,
@@ -580,6 +629,16 @@ class GameEngineDatabase {
         move_identity TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         PRIMARY KEY (session_id, move_identity)
+      );
+
+      CREATE TABLE IF NOT EXISTS game_interactive_autoplay_elo_results (
+        session_id INTEGER PRIMARY KEY,
+        viewer_id TEXT NOT NULL,
+        target_elo INTEGER NOT NULL,
+        old_elo INTEGER NOT NULL,
+        new_elo INTEGER NOT NULL,
+        change INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS game_interactive_meta (
@@ -666,7 +725,8 @@ class GameEngineDatabase {
     const interactiveSessionMigrations = [
       ['participant_ids_json', 'TEXT'],
       ['participants_json', 'TEXT'],
-      ['turn_player_id', 'TEXT']
+      ['turn_player_id', 'TEXT'],
+      ['autoplay_json', 'TEXT']
     ];
     for (const [column, type] of interactiveSessionMigrations) {
       if (interactiveSessionColumns.some(existing => existing.name === column)) continue;
@@ -759,6 +819,7 @@ class GameEngineDatabase {
       timeControl: row.time_control,
       lastMoveIdentity: row.last_move_identity,
       lastActivityAt: row.last_activity_at,
+      autoplay: this._parseInteractiveJson(row.autoplay_json, null),
       status: row.status,
       terminalReason: row.terminal_reason,
       createdAt: row.created_at,
@@ -832,8 +893,8 @@ class GameEngineDatabase {
         state_json, session_revision, display_revision, turn_role,
         participant_ids_json, participants_json, turn_player_id,
         viewer_deadline_ms, viewer_time_remaining_ms, host_time_remaining_ms, time_control,
-        last_move_identity, last_activity_at, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+        last_move_identity, autoplay_json, last_activity_at, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
     `).run(
       data.sessionId,
       data.gameType,
@@ -852,6 +913,7 @@ class GameEngineDatabase {
       data.hostTimeRemainingMs ?? null,
       data.timeControl ?? null,
       data.lastMoveIdentity ?? null,
+      data.autoplay ? JSON.stringify(data.autoplay) : null,
       now,
       now,
       now
@@ -877,6 +939,7 @@ class GameEngineDatabase {
       hostTimeRemainingMs: 'host_time_remaining_ms',
       timeControl: 'time_control',
       lastMoveIdentity: 'last_move_identity',
+      autoplay: 'autoplay_json',
       lastActivityAt: 'last_activity_at',
       status: 'status',
       terminalReason: 'terminal_reason'
@@ -887,7 +950,7 @@ class GameEngineDatabase {
       const column = columns[key];
       if (!column) continue;
       fields.push(`${column} = ?`);
-      values.push(['state', 'participantIds', 'participants'].includes(key) ? JSON.stringify(value) : value);
+      values.push(['state', 'participantIds', 'participants', 'autoplay'].includes(key) ? JSON.stringify(value) : value);
     }
     if (fields.length === 0) return this.getInteractiveState(sessionId);
     fields.push('updated_at = ?');
@@ -919,6 +982,30 @@ class GameEngineDatabase {
         return {
           sessionId: row.session_id,
           gameType: row.game_type,
+          recoveryError: error.message
+        };
+      }
+    });
+  }
+
+  getPendingAutoplayChessELOStates() {
+    return this.db.prepare(`
+      SELECT interactive.*
+      FROM game_interactive_sessions interactive
+      LEFT JOIN game_interactive_autoplay_elo_results results
+        ON results.session_id = interactive.session_id
+      WHERE interactive.game_type = 'chess'
+        AND interactive.status = 'completed'
+        AND interactive.autoplay_json IS NOT NULL
+        AND results.session_id IS NULL
+      ORDER BY interactive.created_at ASC, interactive.session_id ASC
+    `).all().map(row => {
+      try {
+        return this._mapInteractiveStateRow(row);
+      } catch (error) {
+        return {
+          sessionId: row.session_id,
+          gameType: 'chess',
           recoveryError: error.message
         };
       }
@@ -1792,18 +1879,25 @@ class GameEngineDatabase {
     const stats = this.db.prepare(`
       SELECT elo_rating, peak_elo FROM game_player_stats WHERE username = ? AND game_type = ?
     `).get(username, gameType);
+    const change = Math.round(Number(eloChange) || 0);
 
     if (!stats) {
-      // Create stats with default ELO
+      const oldELO = 1000;
+      const newELO = Math.max(0, oldELO + change);
       this.db.prepare(`
         INSERT INTO game_player_stats 
         (username, game_type, elo_rating, peak_elo)
-        VALUES (?, ?, 1000, 1000)
-      `).run(username, gameType);
-      return { oldELO: 1000, newELO: 1000 + eloChange, change: eloChange };
+        VALUES (?, ?, ?, ?)
+      `).run(username, gameType, newELO, Math.max(oldELO, newELO));
+      return {
+        oldELO,
+        newELO,
+        change,
+        isPeakELO: newELO > oldELO
+      };
     }
 
-    const newELO = Math.max(0, stats.elo_rating + eloChange); // ELO can't go below 0
+    const newELO = Math.max(0, stats.elo_rating + change); // ELO can't go below 0
     const newPeakELO = Math.max(stats.peak_elo, newELO);
 
     this.db.prepare(`
@@ -1816,30 +1910,85 @@ class GameEngineDatabase {
     return {
       oldELO: stats.elo_rating,
       newELO: newELO,
-      change: eloChange,
+      change,
       isPeakELO: newELO === newPeakELO && newELO > stats.peak_elo
     };
   }
 
   /**
-   * Get or create player ELO
+   * Get or create player ELO. The initial rating applies only to a previously
+   * unseen player, so an autoplay session can snapshot its configured entry ELO.
    */
-  getPlayerELO(username, gameType) {
-    let stats = this.db.prepare(`
+  getPlayerELO(username, gameType, initialRating = 1000) {
+    const configuredInitialRating = Math.min(3000, Math.max(100, Math.round(Number(initialRating) || 1000)));
+    const stats = this.db.prepare(`
       SELECT elo_rating FROM game_player_stats WHERE username = ? AND game_type = ?
     `).get(username, gameType);
 
     if (!stats) {
-      // Create with default ELO
       this.db.prepare(`
         INSERT INTO game_player_stats 
         (username, game_type, elo_rating, peak_elo)
-        VALUES (?, ?, 1000, 1000)
-      `).run(username, gameType);
-      return 1000;
+        VALUES (?, ?, ?, ?)
+      `).run(username, gameType, configuredInitialRating, configuredInitialRating);
+      return configuredInitialRating;
     }
 
     return stats.elo_rating;
+  }
+
+  applyAutoplayChessELOOnce({ sessionId, viewerId, targetElo, score, kFactor = 32, initialRating = 1000 } = {}) {
+    const stableSessionId = Number(sessionId);
+    const stableViewerId = String(viewerId || '').trim();
+    const normalizedScore = Number(score);
+    if (!Number.isInteger(stableSessionId) || stableSessionId <= 0) {
+      throw new Error('A positive autoplay session ID is required');
+    }
+    if (!stableViewerId) throw new Error('An autoplay viewer ID is required');
+    if (![0, 0.5, 1].includes(normalizedScore)) throw new Error('An autoplay result score is required');
+
+    const normalizedTargetElo = Math.min(3000, Math.max(400, Math.round(Number(targetElo) || 400)));
+    const normalizedKFactor = Math.min(128, Math.max(1, Math.round(Number(kFactor) || 32)));
+    return this.transaction(() => {
+      const existing = this.db.prepare(`
+        SELECT viewer_id, target_elo, old_elo, new_elo, change
+        FROM game_interactive_autoplay_elo_results
+        WHERE session_id = ?
+      `).get(stableSessionId);
+      if (existing) {
+        return {
+          alreadyApplied: true,
+          viewerId: existing.viewer_id,
+          targetElo: existing.target_elo,
+          oldELO: existing.old_elo,
+          newELO: existing.new_elo,
+          change: existing.change
+        };
+      }
+
+      const oldELO = this.getPlayerELO(stableViewerId, 'chess', initialRating);
+      const change = this.calculateELOChange(oldELO, normalizedTargetElo, normalizedScore, normalizedKFactor);
+      const result = this.updatePlayerELO(stableViewerId, 'chess', change);
+      this.db.prepare(`
+        INSERT INTO game_interactive_autoplay_elo_results (
+          session_id, viewer_id, target_elo, old_elo, new_elo, change, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        stableSessionId,
+        stableViewerId,
+        normalizedTargetElo,
+        result.oldELO,
+        result.newELO,
+        result.change,
+        Date.now()
+      );
+      return {
+        ...result,
+        alreadyApplied: false,
+        viewerId: stableViewerId,
+        targetElo: normalizedTargetElo
+      };
+    });
   }
 
   /**
@@ -2290,13 +2439,186 @@ class GameEngineDatabase {
   }
 
   /**
+   * Persist the authoritative outcome selected for a Plinko ball after it has
+   * actually started. Queue entries stay RAM-only, but their ownership marker
+   * is durable so recovery cannot release an unrelated queue item.
+   */
+  createPlinkoInFlight(ball) {
+    const ballId = String(ball.ballId);
+    const now = Date.now();
+    const initialState = ['debit_pending', 'in_flight'].includes(ball.state)
+      ? ball.state
+      : 'in_flight';
+    this.db.prepare(`
+      INSERT INTO game_plinko_inflight (
+        ball_id, username, nickname, profile_picture_url, bet, ball_type,
+        timestamp_ms, batch_id, board_id, server_slot_index, slot_multiplier,
+        is_test, queue_managed, state, created_at_ms, updated_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      ballId,
+      ball.username,
+      ball.nickname || ball.username,
+      ball.profilePictureUrl || '',
+      ball.bet,
+      ball.ballType || 'standard',
+      ball.timestamp,
+      ball.batchId || null,
+      ball.boardId ?? null,
+      ball.serverSlotIndex,
+      Number.isFinite(ball.serverMultiplier) ? ball.serverMultiplier : null,
+      ball.isTest ? 1 : 0,
+      ball.queueManaged ? 1 : 0,
+      initialState,
+      now,
+      now
+    );
+    return this.getPlinkoInFlight(ballId);
+  }
+
+  getPlinkoInFlight(ballId) {
+    const row = this.db.prepare(`
+      SELECT * FROM game_plinko_inflight WHERE ball_id = ?
+    `).get(String(ballId));
+    return this._parsePlinkoInFlight(row);
+  }
+
+  getRecoverablePlinkoInFlight() {
+    return this.db.prepare(`
+      SELECT * FROM game_plinko_inflight
+      WHERE state IN ('debit_pending', 'in_flight', 'payout_claimed', 'refund_claimed')
+      ORDER BY timestamp_ms ASC
+    `).all().map(row => this._parsePlinkoInFlight(row));
+  }
+
+  markPlinkoInFlightSettled(ballId, settlement = null) {
+    return this._markPlinkoInFlightTerminal(
+      ballId,
+      'settled',
+      settlement,
+      ['in_flight', 'payout_claimed']
+    );
+  }
+
+  markPlinkoInFlightRefunded(ballId, settlement = null) {
+    return this._markPlinkoInFlightTerminal(ballId, 'refunded', settlement, ['refund_claimed']);
+  }
+
+  discardPlinkoInFlight(ballId, settlement = null) {
+    return this._markPlinkoInFlightTerminal(
+      ballId,
+      'discarded',
+      settlement,
+      ['debit_pending', 'in_flight', 'payout_claimed', 'refund_claimed']
+    );
+  }
+
+  discardPendingPlinkoDebit(ballId, settlement = null) {
+    return this._markPlinkoInFlightTerminal(
+      ballId,
+      'discarded',
+      settlement,
+      ['debit_pending']
+    );
+  }
+
+  markPlinkoInFlightDebitConfirmed(ballId) {
+    const result = this.db.prepare(`
+      UPDATE game_plinko_inflight
+      SET state = 'in_flight', updated_at_ms = ?
+      WHERE ball_id = ? AND state = 'debit_pending'
+    `).run(
+      Date.now(),
+      String(ballId)
+    );
+    return result.changes > 0;
+  }
+
+  claimPlinkoInFlightPayout(ballId, settlement) {
+    return this._claimPlinkoInFlightDelivery(ballId, 'payout_claimed', settlement);
+  }
+
+  claimPlinkoInFlightRefund(ballId, settlement) {
+    return this._claimPlinkoInFlightDelivery(ballId, 'refund_claimed', settlement);
+  }
+
+  _claimPlinkoInFlightDelivery(ballId, state, settlement) {
+    const result = this.db.prepare(`
+      UPDATE game_plinko_inflight
+      SET state = ?, settlement_json = ?, updated_at_ms = ?
+      WHERE ball_id = ? AND state = 'in_flight'
+    `).run(
+      state,
+      settlement ? JSON.stringify(settlement) : null,
+      Date.now(),
+      String(ballId)
+    );
+    return result.changes > 0;
+  }
+
+  _markPlinkoInFlightTerminal(ballId, state, settlement, expectedStates) {
+    const placeholders = expectedStates.map(() => '?').join(', ');
+    const result = this.db.prepare(`
+      UPDATE game_plinko_inflight
+      SET state = ?, settlement_json = ?, updated_at_ms = ?
+      WHERE ball_id = ? AND state IN (${placeholders})
+    `).run(
+      state,
+      settlement ? JSON.stringify(settlement) : null,
+      Date.now(),
+      String(ballId),
+      ...expectedStates
+    );
+    return result.changes > 0;
+  }
+
+  _parsePlinkoInFlight(row) {
+    if (!row) return null;
+    let settlement = null;
+    if (row.settlement_json) {
+      try {
+        settlement = JSON.parse(row.settlement_json);
+      } catch {
+        settlement = null;
+      }
+    }
+    return {
+      ballId: row.ball_id,
+      username: row.username,
+      nickname: row.nickname,
+      profilePictureUrl: row.profile_picture_url,
+      bet: row.bet,
+      ballType: row.ball_type,
+      timestamp: row.timestamp_ms,
+      batchId: row.batch_id,
+      boardId: row.board_id,
+      serverSlotIndex: row.server_slot_index,
+      serverMultiplier: row.slot_multiplier,
+      isTest: row.is_test === 1,
+      queueManaged: row.queue_managed === 1,
+      state: row.state,
+      settlement
+    };
+  }
+
+  /**
    * Record Plinko transaction
    */
-  recordPlinkoTransaction(user, bet, multiplier, profit, slotIndex) {
-    this.db.prepare(`
+  recordPlinkoTransaction(user, bet, multiplier, profit, slotIndex, ballId = null) {
+    if (ballId) {
+      const result = this.db.prepare(`
+        INSERT OR IGNORE INTO game_plinko_transactions
+          (user, bet, multiplier, profit, slot_index, ball_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(user, bet, multiplier, profit, slotIndex, String(ballId));
+      return result.changes > 0;
+    }
+
+    const result = this.db.prepare(`
       INSERT INTO game_plinko_transactions (user, bet, multiplier, profit, slot_index)
       VALUES (?, ?, ?, ?, ?)
     `).run(user, bet, multiplier, profit, slotIndex);
+    return result.changes > 0;
   }
 
   /**
@@ -3083,6 +3405,42 @@ class GameEngineDatabase {
       )
     `);
 
+    // Durable slot operations outlive overlay ACKs and process restarts. These
+    // rows record outcomes only after a spin has actually begun; queued items
+    // remain deliberately RAM-only in UnifiedQueueManager.
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS game_slot_operations (
+        spin_id TEXT PRIMARY KEY,
+        machine_id INTEGER NOT NULL,
+        username TEXT NOT NULL,
+        state TEXT NOT NULL DEFAULT 'pending',
+        spin_data_json TEXT NOT NULL,
+        outcome_json TEXT NOT NULL,
+        reward_actions_json TEXT NOT NULL,
+        config_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        completed_at_ms INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS game_slot_reward_deliveries (
+        spin_id TEXT NOT NULL,
+        delivery_index INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        state TEXT NOT NULL DEFAULT 'pending',
+        last_error TEXT,
+        created_at_ms INTEGER NOT NULL,
+        delivered_at_ms INTEGER,
+        PRIMARY KEY (spin_id, delivery_index),
+        FOREIGN KEY (spin_id) REFERENCES game_slot_operations(spin_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_game_slot_operations_state
+        ON game_slot_operations(state, created_at_ms);
+      CREATE INDEX IF NOT EXISTS idx_game_slot_reward_deliveries_pending
+        ON game_slot_reward_deliveries(spin_id, state, delivery_index);
+    `);
     // Seed a default slot machine if none exists
     const count = this.db.prepare('SELECT COUNT(*) as c FROM game_slot_config').get();
     if ((count?.c || 0) === 0) {
@@ -3386,6 +3744,163 @@ class GameEngineDatabase {
 
     return result.lastInsertRowid;
   }
+  /**
+   * Create a durable reward operation once the server has resolved a spin.
+   * Repeated starts with the same spin ID return the original outcome instead
+   * of rolling again.
+   */
+  createSlotOperation(operation) {
+    const spinId = String(operation.spinId);
+    const now = Date.now();
+    const create = this.db.transaction(() => {
+      const existing = this.db.prepare(`
+        SELECT * FROM game_slot_operations WHERE spin_id = ?
+      `).get(spinId);
+      if (existing) return existing;
+
+      this.db.prepare(`
+        INSERT INTO game_slot_operations (
+          spin_id, machine_id, username, state, spin_data_json, outcome_json,
+          reward_actions_json, config_json, created_at_ms, updated_at_ms
+        ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+      `).run(
+        spinId,
+        operation.machineId,
+        operation.username,
+        JSON.stringify(operation.spinData),
+        JSON.stringify(operation.outcome),
+        JSON.stringify(operation.rewardActions || []),
+        JSON.stringify(operation.config || {}),
+        now,
+        now
+      );
+
+      const insertDelivery = this.db.prepare(`
+        INSERT INTO game_slot_reward_deliveries (
+          spin_id, delivery_index, action, payload_json, state, created_at_ms
+        ) VALUES (?, ?, ?, ?, 'pending', ?)
+      `);
+      for (const [index, reward] of (operation.rewardActions || []).entries()) {
+        insertDelivery.run(
+          spinId,
+          index,
+          reward.action || 'unknown',
+          JSON.stringify(reward),
+          now
+        );
+      }
+
+      return this.db.prepare(`
+        SELECT * FROM game_slot_operations WHERE spin_id = ?
+      `).get(spinId);
+    });
+
+    return this._parseSlotOperation(create());
+  }
+
+  getSlotOperation(spinId) {
+    const row = this.db.prepare(`
+      SELECT * FROM game_slot_operations WHERE spin_id = ?
+    `).get(String(spinId));
+    return this._parseSlotOperation(row);
+  }
+
+  getPendingSlotOperations() {
+    return this.db.prepare(`
+      SELECT * FROM game_slot_operations
+      WHERE state = 'pending'
+      ORDER BY created_at_ms ASC
+    `).all().map(row => this._parseSlotOperation(row));
+  }
+
+  getPendingSlotRewardDeliveries(spinId) {
+    return this.db.prepare(`
+      SELECT * FROM game_slot_reward_deliveries
+      WHERE spin_id = ? AND state = 'pending'
+      ORDER BY delivery_index ASC
+    `).all(String(spinId)).map(row => this._parseSlotRewardDelivery(row));
+  }
+
+  markSlotRewardDeliveryDelivered(spinId, deliveryIndex) {
+    const result = this.db.prepare(`
+      UPDATE game_slot_reward_deliveries
+      SET state = 'delivered', last_error = NULL, delivered_at_ms = ?
+      WHERE spin_id = ? AND delivery_index = ? AND state = 'pending'
+    `).run(Date.now(), String(spinId), deliveryIndex);
+    return result.changes > 0;
+  }
+
+  markSlotRewardDeliveryFailed(spinId, deliveryIndex, error) {
+    const result = this.db.prepare(`
+      UPDATE game_slot_reward_deliveries
+      SET state = 'failed', last_error = ?, delivered_at_ms = ?
+      WHERE spin_id = ? AND delivery_index = ? AND state = 'pending'
+    `).run(String(error || 'Unknown reward delivery error').slice(0, 1000), Date.now(), String(spinId), deliveryIndex);
+    return result.changes > 0;
+  }
+
+  completeSlotOperation(spinId) {
+    const now = Date.now();
+    const result = this.db.prepare(`
+      UPDATE game_slot_operations
+      SET state = CASE
+            WHEN EXISTS (
+              SELECT 1 FROM game_slot_reward_deliveries
+              WHERE spin_id = game_slot_operations.spin_id AND state = 'failed'
+            ) THEN 'completed_with_errors'
+            ELSE 'completed'
+          END,
+          updated_at_ms = ?,
+          completed_at_ms = ?
+      WHERE spin_id = ?
+        AND state = 'pending'
+        AND NOT EXISTS (
+          SELECT 1 FROM game_slot_reward_deliveries
+          WHERE spin_id = game_slot_operations.spin_id AND state = 'pending'
+        )
+    `).run(now, now, String(spinId));
+    return result.changes > 0;
+  }
+
+  _parseSlotOperation(row) {
+    if (!row) return null;
+    return {
+      spinId: row.spin_id,
+      machineId: row.machine_id,
+      username: row.username,
+      state: row.state,
+      spinData: this._parseSlotJson(row.spin_data_json, {}),
+      outcome: this._parseSlotJson(row.outcome_json, {}),
+      rewardActions: this._parseSlotJson(row.reward_actions_json, []),
+      config: this._parseSlotJson(row.config_json, {}),
+      createdAt: row.created_at_ms,
+      updatedAt: row.updated_at_ms,
+      completedAt: row.completed_at_ms
+    };
+  }
+
+  _parseSlotRewardDelivery(row) {
+    return {
+      spinId: row.spin_id,
+      deliveryIndex: row.delivery_index,
+      action: row.action,
+      reward: this._parseSlotJson(row.payload_json, {}),
+      state: row.state,
+      lastError: row.last_error,
+      createdAt: row.created_at_ms,
+      deliveredAt: row.delivered_at_ms
+    };
+  }
+
+  _parseSlotJson(value, fallback) {
+    if (!value) return fallback;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+
 
   /**
    * Get slot statistics for a machine

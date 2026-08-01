@@ -217,6 +217,11 @@ class GameEnginePlugin {
         eloEnabled: true,
         eloStartRating: 1000,
         eloKFactor: 32,
+        autoplay: {
+          enabled: false,
+          eloOffset: 0,
+          moveDelayMs: 750
+        },
         defaultTimeControl: '5+0', // Format: "minutes+increment" (e.g., "3+0", "3+2", "5+0", "10+5")
         timeControls: ['3+0', '3+2', '5+0', '5+3', '10+0', '10+5'], // Available time controls
         timerWarningTime: 30, // Warning when timer below X seconds
@@ -499,12 +504,17 @@ class GameEnginePlugin {
 
   _finishInteractiveGame(payload) {
     this._applyViewerTimeoutLockout(payload);
+    const endOptions = {
+      interactive: true,
+      skipAccounting: payload.skipAccounting === true
+    };
+    if (payload.autoplay) endOptions.autoplay = payload.autoplay;
     this.endGame(
       payload.sessionId,
       payload.winner,
       payload.reason,
       payload.gameResult,
-      { interactive: true, skipAccounting: payload.skipAccounting === true }
+      endOptions
     );
     this._drainPendingConnect4Fallbacks();
   }
@@ -524,8 +534,45 @@ class GameEnginePlugin {
       getSettings: () => this._getInteractiveSettings()
     });
     const recovery = this.interactiveController.init();
+    const autoplayEloRecovered = this._recoverPendingAutoplayChessELO();
     this._recoverConnect4MatchmakingChallenges();
-    return recovery;
+    return { ...recovery, autoplayEloRecovered };
+  }
+  _recoverPendingAutoplayChessELO() {
+    const pending = this.db?.getPendingAutoplayChessELOStates?.() || [];
+    let recovered = 0;
+    for (const row of pending) {
+      if (row.recoveryError) {
+        this.logger.error(`[INTERACTIVE] Failed to read terminal autoplay session ${row.sessionId}: ${row.recoveryError}`);
+        continue;
+      }
+      const autoplay = row.autoplay;
+      const reason = row.terminalReason || row.state?.winReason;
+      if (!Number.isFinite(Number(autoplay?.targetElo)) ||
+        !reason || ['cancelled', 'recovery_failed'].includes(reason)) continue;
+      try {
+        const session = this.db.getSession(row.sessionId);
+        if (session?.game_type !== 'chess') continue;
+        const config = this._getConfigWithDefaults('chess', this.db.getGameConfig('chess') || {});
+        const rated = autoplay?.rated === true ||
+          (autoplay?.rated == null && autoplay?.enabled === true && config.eloEnabled);
+        if (!rated) continue;
+        const result = this.calculateAndApplyAutoplayChessELO(
+          session,
+          row.state?.winner ?? null,
+          reason,
+          config,
+          { ...autoplay, enabled: true, rated: true }
+        );
+        if (result?.viewer && !result.viewer.alreadyApplied) {
+          recovered += 1;
+          this.logger.info(`[INTERACTIVE] Recovered autoplay chess ELO for session ${row.sessionId}`);
+        }
+      } catch (error) {
+        this.logger.error(`[INTERACTIVE] Failed to recover autoplay chess ELO for session ${row.sessionId}: ${error.message}`);
+      }
+    }
+    return recovered;
   }
 
   _recoverConnect4MatchmakingChallenges() {
@@ -1132,6 +1179,18 @@ class GameEnginePlugin {
     normalized.streamerRole = ['white', 'black', 'random'].includes(normalized.streamerRole)
       ? normalized.streamerRole
       : defaults.streamerRole;
+    const autoplay = normalized.autoplay && typeof normalized.autoplay === 'object' &&
+      !Array.isArray(normalized.autoplay)
+      ? normalized.autoplay
+      : {};
+    const boundedInteger = (value, fallback, minimum, maximum) => Number.isInteger(value) &&
+      value >= minimum && value <= maximum ? value : fallback;
+    normalized.eloStartRating = boundedInteger(normalized.eloStartRating, defaults.eloStartRating, 100, 3000);
+    normalized.autoplay = {
+      enabled: autoplay.enabled === true,
+      eloOffset: boundedInteger(autoplay.eloOffset, defaults.autoplay.eloOffset, -400, 400),
+      moveDelayMs: boundedInteger(autoplay.moveDelayMs, defaults.autoplay.moveDelayMs, 250, 5000)
+    };
     return normalized;
   }
 
@@ -1145,6 +1204,21 @@ class GameEnginePlugin {
       config.timeControls.some(timeControl => !this._isValidChessTimeControl(timeControl))
     )) return false;
     if (has('streamerRole') && !['white', 'black', 'random'].includes(config.streamerRole)) return false;
+    if (has('eloStartRating') && (!Number.isInteger(config.eloStartRating) ||
+      config.eloStartRating < 100 || config.eloStartRating > 3000)) return false;
+    if (has('autoplay')) {
+      const autoplay = config.autoplay;
+      if (!autoplay || typeof autoplay !== 'object' || Array.isArray(autoplay)) return false;
+      const allowed = new Set(['enabled', 'eloOffset', 'moveDelayMs']);
+      if (Object.keys(autoplay).some(key => !allowed.has(key))) return false;
+      if (Object.prototype.hasOwnProperty.call(autoplay, 'enabled') && typeof autoplay.enabled !== 'boolean') return false;
+      if (Object.prototype.hasOwnProperty.call(autoplay, 'eloOffset') && (
+        !Number.isInteger(autoplay.eloOffset) || autoplay.eloOffset < -400 || autoplay.eloOffset > 400
+      )) return false;
+      if (Object.prototype.hasOwnProperty.call(autoplay, 'moveDelayMs') && (
+        !Number.isInteger(autoplay.moveDelayMs) || autoplay.moveDelayMs < 250 || autoplay.moveDelayMs > 5000
+      )) return false;
+    }
     return true;
   }
 
@@ -2385,6 +2459,9 @@ class GameEnginePlugin {
           this.interactiveController?.refreshConnect4TimerConfiguration?.(config);
         }
         
+        if (gameType === 'chess') {
+          this.interactiveController?.refreshChessAutoplayConfiguration?.(config);
+        }
         // Emit config update to overlays
         this.io.emit('game-engine:config-updated', { gameType, config });
         
@@ -4995,9 +5072,28 @@ class GameEnginePlugin {
     return String(giftId).trim();
   }
 
-  _isDuplicateGiftEvent(data) {
+  _getTikTokGiftEventId(data = {}) {
+    const eventId = [
+      data.eventId,
+      data.event_id,
+      data.msgId,
+      data.msg_id,
+      data.messageId,
+      data.message_id,
+      data.logId,
+      data.log_id
+    ].find(value => value !== undefined && value !== null && String(value).trim() !== '');
+
+    return eventId === undefined ? null : String(eventId).trim();
+  }
+
+
+  _isDuplicateGiftEvent(data = {}) {
     const { uniqueId, giftName, giftId } = data;
-    const dedupKey = `${uniqueId || ''}_${giftName || ''}_${giftId || 'noId'}`;
+    const eventId = this._getTikTokGiftEventId(data);
+    const dedupKey = eventId
+      ? `tiktok-event:${eventId}`
+      : `${uniqueId || ''}_${giftName || ''}_${giftId || 'noId'}`;
     const now = Date.now();
     const lastEventTime = this.recentGiftEvents.get(dedupKey);
 
@@ -6520,7 +6616,10 @@ class GameEnginePlugin {
 
     // Get configuration with error handling
     try {
-      config = this.db.getGameConfig(session.game_type) || this.defaultConfigs[session.game_type];
+      config = this._getConfigWithDefaults(
+        session.game_type,
+        this.db.getGameConfig(session.game_type) || {}
+      );
     } catch (error) {
       this.logger.error(`Failed to get config for ${session.game_type}: ${error.message}`);
       config = this.defaultConfigs[session.game_type] || {};
@@ -6577,11 +6676,27 @@ class GameEnginePlugin {
       this.logger.error(`Failed to end session ${sessionId} in database: ${error.message}`);
     }
 
-    // Calculate and apply ELO changes if enabled
-    if (!options.skipAccounting && config.eloEnabled && session.player1_username !== 'streamer' && session.player2_username !== 'streamer') {
-      eloChanges = this.calculateAndApplyELO(session, winner, reason, config);
+    // A new autoplay match snapshots whether it is rated and the K factor.
+    // Legacy intents without that snapshot retain the previous live-config gate.
+    const autoplayRated = options.autoplay?.rated === true ||
+      (options.autoplay?.rated == null && options.autoplay?.enabled === true && config.eloEnabled);
+    if (!options.skipAccounting) {
+      if (session.game_type === 'chess' && autoplayRated) {
+        eloChanges = this.calculateAndApplyAutoplayChessELO(session, winner, reason, config, options.autoplay);
+      } else if (config.eloEnabled && session.player1_username !== 'streamer' && session.player2_username !== 'streamer') {
+        eloChanges = this.calculateAndApplyELO(session, winner, reason, config);
+      }
     }
+    const publicEloChanges = autoplayRated && eloChanges?.viewer
+      ? {
+        viewer: {
+          oldELO: eloChanges.viewer.oldELO,
 
+          newELO: eloChanges.viewer.newELO,
+          change: eloChanges.viewer.change
+        }
+      }
+      : eloChanges;
     // Award XP and get streak info
     const streakData = options.skipAccounting ? null : this.awardGameXP(session, winner, reason, xpRewards);
     
@@ -6617,7 +6732,7 @@ class GameEnginePlugin {
         newWinStreak: winnerStreakInfo.current_win_streak,
         bestWinStreak: winnerStreakInfo.best_win_streak
       } : null,
-      eloChanges: eloChanges
+      eloChanges: publicEloChanges
     });
 
     // Remove from active sessions
@@ -6693,6 +6808,48 @@ class GameEnginePlugin {
       player1: player1ELOResult,
       player2: player2ELOResult
     };
+  }
+
+  calculateAndApplyAutoplayChessELO(session, winner, reason, config, autoplay) {
+    if (session?.game_type !== 'chess' || !autoplay?.enabled) return null;
+    const viewerId = [session.player1_username, session.player2_username]
+      .find(playerId => playerId && playerId !== 'streamer');
+    if (!viewerId || reason === 'cancelled') return null;
+
+    const outcome = this._getSessionPlayerOutcomes(session, winner, reason);
+    let viewerScore = null;
+    if (outcome.isDraw) {
+      viewerScore = 0.5;
+    } else if (viewerId === session.player1_username && outcome.player1IsWinner) {
+      viewerScore = 1;
+    } else if (viewerId === session.player2_username && outcome.player2IsWinner) {
+      viewerScore = 1;
+    } else if (outcome.player1IsWinner || outcome.player2IsWinner) {
+      viewerScore = 0;
+    }
+    if (viewerScore == null) return null;
+    const kFactor = Number.isFinite(Number(autoplay.kFactor))
+      ? Math.min(128, Math.max(1, Math.round(Number(autoplay.kFactor))))
+      : (config.eloKFactor || 32);
+
+    try {
+      const result = this.db.applyAutoplayChessELOOnce({
+        sessionId: session.id,
+        viewerId,
+        targetElo: autoplay.targetElo,
+        score: viewerScore,
+        kFactor,
+        initialRating: autoplay.initialRating || config.eloStartRating || 1000
+      });
+      this.logger.info(
+        `Autoplay chess ELO - ${viewerId}: ${result.oldELO} -> ${result.newELO} ` +
+        `(${result.change > 0 ? '+' : ''}${result.change})${result.alreadyApplied ? ' [deduplicated]' : ''}`
+      );
+      return { viewer: result };
+    } catch (error) {
+      this.logger.error(`Failed to apply autoplay chess ELO for session ${session.id}: ${error.message}`);
+      return null;
+    }
   }
 
   /**

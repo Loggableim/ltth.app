@@ -121,8 +121,10 @@ function createHarness(options = {}) {
         animationSpeed: 300,
         leaderboardEnabled: true,
         leaderboardTypes: ['daily', 'elo'],
-        leaderboardDisplayTime: 3
+        leaderboardDisplayTime: 3,
+        ...options.chessConfig
       },
+    autoplayService: options.autoplayService,
     getSettings: () => settings,
     now: () => Date.now()
   });
@@ -2309,4 +2311,449 @@ describe('InteractiveController', () => {
     harness.controller.destroy();
     harness.sqlite.close();
   });
+
+  test('snapshots opponent ELO and applies one visible streamer autoplay move', async () => {
+    const autoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e2e4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        eloStartRating: 1250,
+        eloEnabled: true,
+        eloKFactor: 24,
+        autoplay: { enabled: true, eloOffset: 150, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'elo-viewer', viewerDisplayName: 'ELO Viewer'
+    });
+    const session = harness.controller.registry.get(started.sessionId);
+
+    expect(session.autoplay).toMatchObject({
+      enabled: true,
+      rated: true,
+      kFactor: 24,
+      viewerElo: 1250,
+      targetElo: 1400,
+      originRevision: 1
+    });
+    expect(harness.database.getInteractiveState(started.sessionId).autoplay).toMatchObject({
+      targetElo: 1400,
+      rated: true,
+      kFactor: 24,
+      originRevision: 1
+    });
+    expect(harness.controller.getState().activeSessions[0]).not.toHaveProperty('autoplay');
+
+    await jest.advanceTimersByTimeAsync(749);
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+
+    expect(autoplayService.selectMove).toHaveBeenCalledWith(expect.objectContaining({
+      targetElo: 1400,
+      seed: expect.any(String),
+      legalMoves: expect.any(Array)
+    }));
+    expect(session.adapter.getState()).toMatchObject({ currentPlayer: 'black' });
+    expect(session.lastMoveIdentity).toBe(`autoplay:${started.sessionId}:1`);
+
+    harness.controller.destroy();
+    expect(autoplayService.destroy).toHaveBeenCalledTimes(1);
+    harness.sqlite.close();
+  });
+
+  test('cancels a pending autoplay intent when the streamer moves manually', async () => {
+    const autoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'd2d4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'manual-viewer', viewerDisplayName: 'Manual Viewer'
+    });
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.applyHostMove({
+      sessionId: started.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { uci: 'e2e4' },
+      moveIdentity: 'manual:opening'
+    })).toMatchObject({ success: true });
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+    expect(harness.database.getInteractiveState(started.sessionId).autoplay).toMatchObject({
+      status: 'cancelled',
+      dueAtMs: null
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+  test('waits for a visible viewer move before autoplaying the streamer black reply', async () => {
+    const autoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e7e5', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      chessHostStarts: false,
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'black-host-viewer', viewerDisplayName: 'Black Host Viewer'
+    });
+    const session = harness.controller.registry.get(started.sessionId);
+
+    expect(session.turnRole).toBe('viewer');
+    await jest.advanceTimersByTimeAsync(2000);
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'black-host-viewer',
+      gameType: 'chess',
+      move: { uci: 'e2e4' },
+      moveIdentity: 'viewer-black-host-opening'
+    })).toMatchObject({ success: true });
+    expect(harness.controller.getState().display).toMatchObject({ phase: 'animating' });
+
+    await jest.advanceTimersByTimeAsync(299);
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: started.sessionId,
+      phase: 'playing'
+    });
+    await jest.advanceTimersByTimeAsync(749);
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+
+    expect(autoplayService.selectMove).toHaveBeenCalledWith(expect.objectContaining({
+      legalMoves: expect.arrayContaining([
+        expect.objectContaining({ from: 'e7', to: 'e5' })
+      ])
+    }));
+    expect(session.adapter.getState()).toMatchObject({
+      moveCount: 2,
+      currentPlayer: 'white'
+    });
+    expect(session.lastMoveIdentity).toBe(`autoplay:${started.sessionId}:2`);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('does not schedule autoplay while a chess session is behind the visible FIFO head', async () => {
+    const autoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e2e4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const first = harness.controller.startMatch({
+      gameType: 'connect4', viewerId: 'fifo-first', viewerDisplayName: 'FIFO First'
+    });
+    const chess = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'fifo-chess', viewerDisplayName: 'FIFO Chess'
+    });
+
+    await jest.advanceTimersByTimeAsync(2000);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: first.sessionId,
+      phase: 'playing'
+    });
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+
+    const firstDisplay = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: first.sessionId,
+      gameType: 'connect4',
+      sessionRevision: firstDisplay.sessionRevision,
+      displayRevision: firstDisplay.displayRevision,
+      move: { column: 'A' },
+      moveIdentity: 'fifo-first-host-move'
+    })).toMatchObject({ success: true });
+    await jest.advanceTimersByTimeAsync(500);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: chess.sessionId,
+      phase: 'playing'
+    });
+    await jest.advanceTimersByTimeAsync(749);
+    expect(autoplayService.selectMove).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+
+    expect(autoplayService.selectMove).toHaveBeenCalledTimes(1);
+    expect(harness.controller.registry.get(chess.sessionId).lastMoveIdentity)
+      .toBe(`autoplay:${chess.sessionId}:1`);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rejects a forged public autoplay identity before it can move the streamer side', () => {
+    const autoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e2e4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'forged-auto-viewer', viewerDisplayName: 'Forged Auto Viewer'
+    });
+    const display = harness.controller.getState().display;
+    const session = harness.controller.registry.get(started.sessionId);
+
+    expect(harness.controller.applyHostMove({
+      sessionId: started.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { uci: 'e2e4' },
+      moveIdentity: `autoplay:${started.sessionId}:1`
+    })).toEqual({ success: false, error: 'autoplay_identity_reserved' });
+    expect(session.adapter.getState()).toMatchObject({ moveCount: 0, currentPlayer: 'white' });
+    expect(session.lastMoveIdentity).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('cancelling an executing autoplay aborts its selection and cannot apply a late result', async () => {
+    let resolveSelection;
+    let receivedSignal;
+    const autoplayService = {
+      selectMove: jest.fn(({ signal }) => new Promise(resolve => {
+        receivedSignal = signal;
+        resolveSelection = resolve;
+      })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'cancel-auto-viewer', viewerDisplayName: 'Cancel Auto Viewer'
+    });
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(autoplayService.selectMove).toHaveBeenCalledTimes(1);
+    expect(receivedSignal.aborted).toBe(false);
+    const display = harness.controller.getState().display;
+    expect(harness.controller.cancel({
+      sessionId: started.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision
+    })).toMatchObject({ success: true });
+    expect(receivedSignal.aborted).toBe(true);
+
+    resolveSelection({ move: 'e2e4', source: 'fallback' });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(harness.database.getInteractiveState(started.sessionId)).toMatchObject({
+      status: 'completed',
+      state: { moveCount: 0 }
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('destroying the controller aborts an executing autoplay and ignores its late result', async () => {
+    let resolveSelection;
+    let receivedSignal;
+    const autoplayService = {
+      selectMove: jest.fn(({ signal }) => new Promise(resolve => {
+        receivedSignal = signal;
+        resolveSelection = resolve;
+      })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'destroy-auto-viewer', viewerDisplayName: 'Destroy Auto Viewer'
+    });
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(autoplayService.selectMove).toHaveBeenCalledTimes(1);
+    harness.controller.destroy();
+    expect(receivedSignal.aborted).toBe(true);
+    expect(autoplayService.destroy).toHaveBeenCalledTimes(1);
+
+    resolveSelection({ move: 'e2e4', source: 'fallback' });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(harness.database.getInteractiveState(started.sessionId)).toMatchObject({
+      status: 'active',
+      state: { moveCount: 0 }
+    });
+
+    harness.sqlite.close();
+  });
+
+  test('recovers a persisted armed autoplay intent and honors its remaining delay', async () => {
+    const firstAutoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e2e4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const firstHarness = createHarness({
+      autoplayService: firstAutoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    firstHarness.controller.init();
+    const started = firstHarness.controller.startMatch({
+      gameType: 'chess', viewerId: 'recover-auto-viewer', viewerDisplayName: 'Recover Auto Viewer'
+    });
+    expect(firstHarness.database.getInteractiveState(started.sessionId).autoplay).toMatchObject({
+      status: 'armed',
+      dueAtMs: Date.now() + 750,
+      originRevision: 1
+    });
+
+    await jest.advanceTimersByTimeAsync(300);
+    firstHarness.controller.destroy();
+
+    const recoveredAutoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e2e4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const recoveredHarness = createHarness({
+      dbContext: firstHarness.dbContext,
+      nextSessionId: 100,
+      autoplayService: recoveredAutoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    expect(recoveredHarness.controller.init()).toMatchObject({ recovered: 1 });
+    expect(recoveredHarness.controller.registry.get(started.sessionId).autoplay).toMatchObject({
+      status: 'armed',
+      dueAtMs: 1000750,
+      originRevision: 1
+    });
+
+    await jest.advanceTimersByTimeAsync(449);
+    expect(recoveredAutoplayService.selectMove).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(recoveredAutoplayService.selectMove).toHaveBeenCalledTimes(1);
+    expect(recoveredHarness.controller.registry.get(started.sessionId).lastMoveIdentity)
+      .toBe(`autoplay:${started.sessionId}:1`);
+
+    recoveredHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('drops an autoplay result that races a display revision change', async () => {
+    let resolveSelection;
+    const autoplayService = {
+      selectMove: jest.fn(() => new Promise(resolve => {
+        resolveSelection = resolve;
+      })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'revision-race-viewer', viewerDisplayName: 'Revision Race Viewer'
+    });
+    const session = harness.controller.registry.get(started.sessionId);
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(autoplayService.selectMove).toHaveBeenCalledTimes(1);
+    const beforeRevision = harness.controller.getState().display.displayRevision;
+    harness.controller.router.suspend('test-revision-race');
+    expect(harness.controller.getState().display.displayRevision).toBeGreaterThan(beforeRevision);
+
+    resolveSelection({ move: 'e2e4', source: 'fallback' });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(session.adapter.getState()).toMatchObject({ moveCount: 0, currentPlayer: 'white' });
+    expect(session.lastMoveIdentity).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+  test('rearms autoplay after a transient host move persistence failure', async () => {
+    const autoplayService = {
+      selectMove: jest.fn(() => Promise.resolve({ move: 'e2e4', source: 'fallback' })),
+      destroy: jest.fn()
+    };
+    const harness = createHarness({
+      autoplayService,
+      chessConfig: {
+        autoplay: { enabled: true, eloOffset: 0, moveDelayMs: 750 }
+      }
+    });
+    harness.controller.init();
+    const started = harness.controller.startMatch({
+      gameType: 'chess', viewerId: 'retry-auto-viewer', viewerDisplayName: 'Retry Auto Viewer'
+    });
+    const session = harness.controller.registry.get(started.sessionId);
+    const originalUpdate = harness.database.updateInteractiveState.bind(harness.database);
+    let rejectedMovePersist = false;
+    jest.spyOn(harness.database, 'updateInteractiveState').mockImplementation((sessionId, state) => {
+      if (!rejectedMovePersist && state?.state?.moveCount === 1) {
+        rejectedMovePersist = true;
+        throw new Error('transient persistence failure');
+      }
+      return originalUpdate(sessionId, state);
+    });
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(rejectedMovePersist).toBe(true);
+    expect(autoplayService.selectMove).toHaveBeenCalledTimes(1);
+    expect(session.adapter.getState()).toMatchObject({ moveCount: 0, currentPlayer: 'white' });
+    expect(session.autoplay).toMatchObject({ status: 'armed', dueAtMs: Date.now() + 750, originRevision: 1 });
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(autoplayService.selectMove).toHaveBeenCalledTimes(2);
+    expect(session.adapter.getState()).toMatchObject({ moveCount: 1, currentPlayer: 'black' });
+    expect(session.lastMoveIdentity).toBe(`autoplay:${started.sessionId}:1`);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
 });

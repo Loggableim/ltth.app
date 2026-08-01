@@ -282,6 +282,9 @@ class ChessGame {
     
     if (gameResult.gameOver) {
       this.status = 'completed';
+      this.winner = gameResult.winner;
+      this.winReason = gameResult.reason;
+      this.currentPlayer = this.chess.turn() === 'w' ? 'white' : 'black';
       this.stopTimer();
       
       return {
@@ -319,7 +322,7 @@ class ChessGame {
     if (this.chess.isCheckmate()) {
       return {
         gameOver: true,
-        winner: this.currentPlayer === 'white' ? 'black' : 'white',
+        winner: this.chess.turn() === 'w' ? 'black' : 'white',
         reason: 'checkmate'
       };
     }
@@ -431,22 +434,14 @@ class ChessGame {
       white: { p: 0, n: 0, b: 0, r: 0, q: 0 },
       black: { p: 0, n: 0, b: 0, r: 0, q: 0 }
     };
-    
-    for (const move of this.moveHistory) {
-      // Parse the move from history
-      const tempChess = new Chess();
-      const moves = this.moveHistory.slice(0, this.moveHistory.indexOf(move));
-      for (const m of moves) {
-        tempChess.move(m.san);
-      }
-      const moveObj = tempChess.move(move.san);
-      
-      if (moveObj && moveObj.captured) {
-        const capturingSide = moveObj.color === 'w' ? 'white' : 'black';
-        captured[capturingSide][moveObj.captured]++;
+
+    for (const move of this.chess.history({ verbose: true })) {
+      if (move.captured) {
+        const capturingSide = move.color === 'w' ? 'white' : 'black';
+        captured[capturingSide][move.captured]++;
       }
     }
-    
+
     return captured;
   }
 
@@ -485,9 +480,24 @@ class ChessGame {
    * Restore game state from saved data
    */
   restoreState(state) {
-    this.chess.load(state.fen);
+    const savedPgn = typeof state.pgn === 'string' ? state.pgn.trim() : '';
+    if (savedPgn) {
+      const restoredChess = new Chess();
+      restoredChess.loadPgn(savedPgn);
+      if (restoredChess.fen() !== state.fen) {
+        throw new Error('Invalid chess state: PGN does not match FEN');
+      }
+      this.chess = restoredChess;
+    } else {
+      this.chess.load(state.fen);
+    }
+    const sideToMove = this.chess.turn() === 'w' ? 'white' : 'black';
+    if (state.currentPlayer !== sideToMove) {
+      throw new Error('Invalid chess state: current player does not match FEN');
+    }
     this.currentPlayer = state.currentPlayer;
     this.timers = { ...state.timers };
+    this.timeControl = state.timeControl ? { ...state.timeControl } : this.timeControl;
     this.moveCount = state.moveCount;
     this.winner = state.winner;
     this.winReason = state.winReason;

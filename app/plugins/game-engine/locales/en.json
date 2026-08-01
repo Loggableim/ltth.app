@@ -1059,6 +1059,11 @@
           "start_elo": "Starting ELO:",
           "k_factor": "K factor:",
           "examples": "Examples",
+          "autoplay_title": "Streamer autoplay",
+          "autoplay_description": "Controls only streamer moves in new viewer matches. Disabling it immediately cancels pending autoplay moves.",
+          "autoplay_enabled": "Enable streamer autoplay",
+          "autoplay_elo_offset": "ELO offset from viewer (-400 to +400):",
+          "autoplay_move_delay": "Move delay (ms):",
           "elo_empty": "No ELO data available yet.",
           "elo_load_error": "Failed to load ELO leaderboard."
         },

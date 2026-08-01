@@ -2516,6 +2516,7 @@ class ArenaGame {
     this.food.clear();
     this.weaponPickups.clear();
     this.mines.clear();
+    this.bombs.clear();
     const config = this.getConfig();
     this.spawnFood(Math.min(config.maxFood, 20));
     this.lastFoodSpawnAt = this.now();

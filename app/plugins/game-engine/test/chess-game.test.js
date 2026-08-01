@@ -69,6 +69,89 @@ describe('ChessGame safety invariants', () => {
     expect(game.status).toBe('completed');
   });
 
+  test('persists the mover as the checkmate winner and keeps the terminal state aligned with FEN', () => {
+    const game = createGame();
+
+    expect(game.makeMove('f3', 'viewer-1')).toMatchObject({ success: true, gameOver: false });
+    expect(game.makeMove('e5', 'streamer')).toMatchObject({ success: true, gameOver: false });
+    expect(game.makeMove('g4', 'viewer-1')).toMatchObject({ success: true, gameOver: false });
+
+    expect(game.makeMove('Qh4#', 'streamer')).toMatchObject({
+      success: true,
+      gameOver: true,
+      winner: 'black',
+      winReason: 'checkmate'
+    });
+    expect(game.getState()).toMatchObject({
+      status: 'completed',
+      winner: 'black',
+      winReason: 'checkmate',
+      currentPlayer: 'white'
+    });
+  });
+
+  test('restores move history needed to detect a threefold repetition after recovery', () => {
+    const game = createGame('1+2');
+    const firstCycle = [
+      ['Nf3', 'viewer-1'],
+      ['Nf6', 'streamer'],
+      ['Ng1', 'viewer-1'],
+      ['Ng8', 'streamer']
+    ];
+    for (const [move, player] of firstCycle) {
+      expect(game.makeMove(move, player)).toMatchObject({ success: true, gameOver: false });
+    }
+
+    const restored = createGame('5+0');
+    const savedState = game.getState();
+    restored.restoreState(savedState);
+    expect(restored.timeControl).toEqual(savedState.timeControl);
+    expect(restored.getPGN()).toBe(savedState.pgn);
+
+    let result;
+    for (const [move, player] of firstCycle) {
+      result = restored.makeMove(move, player);
+    }
+
+    expect(result).toMatchObject({
+      success: true,
+      gameOver: true,
+      winner: null,
+      winReason: 'repetition'
+    });
+    expect(restored.getState()).toMatchObject({
+      status: 'completed',
+      winner: null,
+      winReason: 'repetition',
+      currentPlayer: 'white'
+    });
+  });
+
+  test('rejects a recovered PGN whose final position differs from the saved FEN', () => {
+    const game = createGame();
+    expect(game.makeMove('e4', 'viewer-1')).toMatchObject({ success: true });
+    const corrupted = game.getState();
+
+    const differentPosition = createGame();
+    expect(differentPosition.makeMove('d4', 'viewer-1')).toMatchObject({ success: true });
+    corrupted.fen = differentPosition.getFEN();
+
+    expect(() => createGame().restoreState(corrupted)).toThrow(
+      'Invalid chess state: PGN does not match FEN'
+    );
+
+  });
+
+  test('rejects a recovered side-to-move that conflicts with the FEN', () => {
+    const game = createGame();
+    expect(game.makeMove('e4', 'viewer-1')).toMatchObject({ success: true });
+
+    const corrupted = { ...game.getState(), currentPlayer: 'white' };
+    expect(() => createGame().restoreState(corrupted)).toThrow(
+      'Invalid chess state: current player does not match FEN'
+    );
+  });
+
   test('does not allow an unknown player to force a draw', () => {
     const game = createGame();
 

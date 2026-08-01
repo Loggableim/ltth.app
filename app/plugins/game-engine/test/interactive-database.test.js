@@ -211,6 +211,58 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getActiveInteractiveStates()).toHaveLength(1);
   });
 
+  test('round-trips a chess autoplay intent and applies its viewer ELO exactly once', () => {
+    const autoplay = {
+      version: 1,
+      enabled: true,
+      rated: true,
+      viewerElo: 1250,
+      initialRating: 1250,
+      targetElo: 1400,
+      engineVersion: 'stockfish-18.0.8-lite-single',
+      selectorVersion: 'seeded-multipv-v1',
+      seed: 'private-seed',
+      originRevision: 1,
+      dueAtMs: 456789,
+      status: 'armed'
+    };
+    database.createInteractiveState(session({
+      gameType: 'chess',
+      autoplay,
+      state: { turn: 'white', whitePlayer: { username: 'viewer-41' }, blackPlayer: { username: 'streamer' } }
+    }));
+
+    expect(database.getInteractiveState(41).autoplay).toEqual(autoplay);
+    expect(sqlite.prepare(`PRAGMA table_info(game_interactive_sessions)`).all()
+      .map(column => column.name)).toContain('autoplay_json');
+
+    const first = database.applyAutoplayChessELOOnce({
+      sessionId: 41,
+      viewerId: 'viewer-41',
+      targetElo: 1400,
+      score: 1,
+      initialRating: 1250
+    });
+    const retry = database.applyAutoplayChessELOOnce({
+      sessionId: 41,
+      viewerId: 'viewer-41',
+      targetElo: 1400,
+      score: 1,
+      initialRating: 1250
+    });
+
+    expect(first).toMatchObject({ alreadyApplied: false, oldELO: 1250, targetElo: 1400 });
+    expect(retry).toEqual(expect.objectContaining({
+      alreadyApplied: true,
+      oldELO: first.oldELO,
+      newELO: first.newELO,
+      change: first.change
+    }));
+    expect(database.getPlayerELO('viewer-41', 'chess')).toBe(first.newELO);
+    expect(sqlite.prepare(`SELECT * FROM game_player_stats WHERE username = ? AND game_type = 'chess'`)
+      .get('streamer')).toBeUndefined();
+  });
+
   test('adds viewer remaining time to an existing interactive session table', () => {
     sqlite.close();
     sqlite = new Database(':memory:');
@@ -241,6 +293,8 @@ describe('GameEngineDatabase interactive persistence', () => {
 
     expect(sqlite.prepare(`PRAGMA table_info(game_interactive_sessions)`).all()
       .map(column => column.name)).toContain('viewer_time_remaining_ms');
+    expect(sqlite.prepare(`PRAGMA table_info(game_interactive_sessions)`).all()
+      .map(column => column.name)).toContain('autoplay_json');
   });
 
   test('does not suppress a real viewer remaining-time migration failure', () => {

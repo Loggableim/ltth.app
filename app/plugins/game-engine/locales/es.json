@@ -1059,6 +1059,11 @@
           "start_elo": "ELO inicial:",
           "k_factor": "Factor K:",
           "examples": "Ejemplos",
+          "autoplay_title": "Autoplay del streamer",
+          "autoplay_description": "Controla solo los movimientos del streamer en nuevas partidas contra espectadores. Al desactivarlo, los movimientos de autoplay pendientes se cancelan de inmediato.",
+          "autoplay_enabled": "Activar autoplay del streamer",
+          "autoplay_elo_offset": "Desplazamiento ELO respecto al espectador (-400 a +400):",
+          "autoplay_move_delay": "Retraso de jugada (ms):",
           "elo_empty": "Aún no hay datos ELO disponibles.",
           "elo_load_error": "Error al cargar la clasificación ELO."
         },

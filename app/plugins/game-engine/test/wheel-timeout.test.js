@@ -211,8 +211,8 @@ describe('Wheel Timeout Mechanism', () => {
     });
   });
 
-  describe('Queue Timeout Integration', () => {
-    test('Should force complete processing on queue timeout', () => {
+  describe('Wheel timeout ownership', () => {
+    test('lets the wheel safety finalizer record and release a queued spin without a competing queue timeout', async () => {
       const item = {
         type: 'wheel',
         data: {
@@ -231,22 +231,26 @@ describe('Wheel Timeout Mechanism', () => {
 
       // Start processing
       queueManager.queue.push(item);
-      queueManager.processNext();
+      await queueManager.processNext();
 
-      // Verify processing started
+      // The Wheel owns its lifecycle timeout, so the generic queue timer must not race it.
       expect(queueManager.isProcessing).toBe(true);
+      expect(queueManager.processingTimeout).toBeNull();
+      expect(wheelGame.spinSafetyTimeout).not.toBeNull();
 
-      // Fast-forward to trigger timeout
+      // The Wheel timeout must pay out the server-selected prize and release the queue.
       jest.advanceTimersByTime(20001);
 
-      // Verify processing was force completed
+      expect(mockDB.recordWheelWin).toHaveBeenCalledTimes(1);
       expect(queueManager.isProcessing).toBe(false);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Force completing')
-      );
+      expect(mockIO.emit).toHaveBeenCalledWith('wheel:spin-timeout', expect.objectContaining({
+        spinId: 'queue-spin-1',
+        username: 'testuser',
+        prize: expect.any(String)
+      }));
     });
 
-    test('Should emit timeout event when forcing completion', () => {
+    test('uses the wheel finalizer payload when a queued spin times out', async () => {
       const item = {
         type: 'wheel',
         data: {
@@ -265,20 +269,84 @@ describe('Wheel Timeout Mechanism', () => {
       };
 
       queueManager.queue.push(item);
-      queueManager.processNext();
+      await queueManager.processNext();
 
-      // Fast-forward to trigger timeout
+      expect(queueManager.processingTimeout).toBeNull();
+      // Fast-forward to trigger the Wheel safety timeout.
       jest.advanceTimersByTime(20001);
 
-      // Verify timeout event was emitted
+      expect(mockDB.recordWheelWin).toHaveBeenCalledTimes(1);
       expect(mockIO.emit).toHaveBeenCalledWith('wheel:spin-timeout', expect.objectContaining({
         spinId: 'queue-spin-2',
         username: 'testuser',
-        reason: 'overlay_no_response'
+        prize: expect.any(String)
       }));
     });
 
-    test('Should process next item after timeout', () => {
+    test('finalizes the same timed-out spin only once', async () => {
+      const spinData = {
+        username: 'testuser',
+        nickname: 'Test User',
+        wheelId: 1,
+        spinId: 'queue-spin-idempotent'
+      };
+
+      await wheelGame.startSpin(spinData);
+      const activeSpin = wheelGame.activeSpins.get(spinData.spinId);
+      const config = mockDB.getWheelConfig(spinData.wheelId);
+
+      await wheelGame.forceCompleteSpin(spinData.spinId, activeSpin, config);
+      await wheelGame.forceCompleteSpin(spinData.spinId, activeSpin, config);
+
+      expect(mockDB.recordWheelWin).toHaveBeenCalledTimes(1);
+      expect(mockIO.emit.mock.calls.filter(([event]) => event === 'wheel:spin-timeout')).toHaveLength(1);
+    });
+
+    test('uses the spin-start segment snapshot when a wheel times out after config changes', async () => {
+      const startingConfig = {
+        id: 1,
+        name: 'Snapshot Wheel',
+        segments: [{ text: 'Original prize', color: '#FF0000', weight: 1, isNiete: false, isShock: false }],
+        settings: {
+          spinDuration: 5000,
+          winnerDisplayDuration: 5,
+          infoScreenEnabled: false,
+          infoScreenDuration: 0
+        }
+      };
+      mockDB.getWheelConfig.mockReturnValue(startingConfig);
+      const spinData = {
+        username: 'testuser',
+        nickname: 'Test User',
+        wheelId: 1,
+        spinId: 'queue-spin-snapshot'
+      };
+
+      await wheelGame.startSpin(spinData);
+      mockDB.getWheelConfig.mockReturnValue({
+        ...startingConfig,
+        name: 'Edited Wheel',
+        segments: [{ ...startingConfig.segments[0], text: 'Edited prize' }]
+      });
+
+      await wheelGame.forceCompleteSpin(spinData.spinId);
+
+      expect(mockDB.recordWheelWin).toHaveBeenCalledWith(
+        'testuser',
+        'Test User',
+        'Original prize',
+        0,
+        undefined,
+        1
+      );
+      expect(mockIO.emit).toHaveBeenCalledWith('wheel:spin-timeout', expect.objectContaining({
+        spinId: spinData.spinId,
+        prize: 'Original prize',
+        wheelName: 'Snapshot Wheel'
+      }));
+    });
+
+    test('processes the next item after the wheel safety finalizer releases the queue', async () => {
       const item1 = {
         type: 'wheel',
         data: {
@@ -307,7 +375,7 @@ describe('Wheel Timeout Mechanism', () => {
 
       queueManager.queue.push(item1);
       queueManager.queue.push(item2);
-      queueManager.processNext();
+      await queueManager.processNext();
 
       expect(queueManager.queue.length).toBe(1);
       expect(queueManager.isProcessing).toBe(true);
@@ -342,7 +410,7 @@ describe('Wheel Timeout Mechanism', () => {
       expect(wheelGame.isSpinning).toBe(false);
     });
 
-    test('Should clear queue timeout on destroy', () => {
+    test('does not create a generic queue timeout for a wheel spin', async () => {
       const item = {
         type: 'wheel',
         data: {
@@ -357,14 +425,60 @@ describe('Wheel Timeout Mechanism', () => {
       };
 
       queueManager.queue.push(item);
-      queueManager.processNext();
+      await queueManager.processNext();
 
-      expect(queueManager.processingTimeout).not.toBeNull();
+      expect(queueManager.processingTimeout).toBeNull();
 
       queueManager.destroy();
 
       expect(queueManager.processingTimeout).toBeNull();
       expect(queueManager.isProcessing).toBe(false);
+    });
+
+    test('cancels delayed shock and queue-release callbacks on destroy', async () => {
+      const openShockClient = { sendShock: jest.fn().mockResolvedValue({ success: true }) };
+      mockAPI.pluginLoader.loadedPlugins.set('openshock', {
+        instance: {
+          devices: [{ id: 'device-1', name: 'Test device' }],
+          openShockClient
+        }
+      });
+      mockDB.getWheelConfig.mockReturnValue({
+        id: 1,
+        name: 'Test Wheel',
+        segments: [{
+          text: 'Shock prize',
+          color: '#FF0000',
+          weight: 1,
+          isNiete: false,
+          isShock: true,
+          shockIntensity: 25,
+          shockDuration: 500,
+          shockDevices: ['device-1']
+        }],
+        settings: {
+          spinDuration: 5000,
+          winnerDisplayDuration: 1,
+          infoScreenEnabled: false
+        }
+      });
+      const spinData = {
+        username: 'testuser',
+        nickname: 'Test User',
+        wheelId: 1,
+        spinId: 'destroy-spin-pending-callbacks'
+      };
+
+      await wheelGame.startSpin(spinData);
+      await wheelGame.handleSpinComplete(spinData.spinId, 0);
+      const queueComplete = jest.spyOn(queueManager, 'completeProcessing');
+
+      wheelGame.destroy();
+      jest.advanceTimersByTime(3000);
+      await Promise.resolve();
+
+      expect(openShockClient.sendShock).not.toHaveBeenCalled();
+      expect(queueComplete).not.toHaveBeenCalled();
     });
   });
 });

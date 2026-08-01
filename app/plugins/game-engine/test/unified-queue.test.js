@@ -384,6 +384,38 @@ describe('Unified Queue Manager', () => {
     });
   });
 
+  describe('Forced completion', () => {
+    test('waits for asynchronous Slot reward completion before releasing the queue', async () => {
+      let resolveRewardDrain;
+      mockSlotGame.forceCompleteSpin = jest.fn(() => new Promise(resolve => {
+        resolveRewardDrain = resolve;
+      }));
+      queueManager.isProcessing = true;
+      queueManager.currentItem = {
+        type: 'slot',
+        data: {
+          spinId: 'slot-timeout-await',
+          username: 'testuser',
+          nickname: 'Test User',
+          machineId: 1
+        }
+      };
+
+      const completion = queueManager.forceCompleteProcessing(queueManager.currentItem);
+
+      expect(mockSlotGame.forceCompleteSpin).toHaveBeenCalledWith('slot-timeout-await');
+      expect(queueManager.isProcessing).toBe(true);
+
+      resolveRewardDrain({ success: true });
+      await completion;
+
+      expect(queueManager.isProcessing).toBe(false);
+      expect(mockIO.emit).toHaveBeenCalledWith('slot:spin-timeout', expect.objectContaining({
+        spinId: 'slot-timeout-await'
+      }));
+    });
+  });
+
   describe('Error Handling', () => {
     test('Should handle missing Plinko game', async () => {
       queueManager.plinkoGame = null;

@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+const ChessAutoplayService = require('./chess-autoplay-service');
 const InteractiveSessionRegistry = require('./interactive-session-registry');
 const InteractiveTurnQueue = require('./interactive-turn-queue');
 const InteractiveTurnTimers = require('./interactive-turn-timers');
@@ -26,7 +28,10 @@ class InteractiveController {
     resolveHostName,
     getConfig,
     getSettings,
-    now = () => Date.now()
+    now = () => Date.now(),
+    autoplayService = null,
+    setTimeoutFn = setTimeout,
+    clearTimeoutFn = clearTimeout
   }) {
     this.database = database;
     this.io = io;
@@ -40,6 +45,11 @@ class InteractiveController {
     this.getConfig = getConfig;
     this.getSettings = getSettings;
     this.now = now;
+    this.autoplayService = autoplayService || new ChessAutoplayService();
+    this.setTimeoutFn = setTimeoutFn;
+    this.clearTimeoutFn = clearTimeoutFn;
+    this.autoplayTimers = new Map();
+    this.autoplayExecutions = new Map();
 
     const settings = this._settings();
     this.registry = new InteractiveSessionRegistry({
@@ -59,7 +69,10 @@ class InteractiveController {
       queue: this.queue,
       timers: this.timers,
       database,
-      onChange: () => this.emitState(),
+      onChange: () => {
+        this.emitState();
+        this._reconcileAutoplay();
+      },
       now
     });
   }
@@ -68,6 +81,259 @@ class InteractiveController {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return fallback;
     return Math.min(max, Math.max(min, Math.round(parsed)));
+  }
+
+  _autoplaySettings(config = {}) {
+    const autoplay = config.autoplay;
+    if (!autoplay || typeof autoplay !== 'object' || autoplay.enabled !== true) return null;
+    return {
+      eloOffset: this._bounded(autoplay.eloOffset, 0, -400, 400),
+      moveDelayMs: this._bounded(autoplay.moveDelayMs, 750, 250, 5000),
+      eloStartRating: this._bounded(config.eloStartRating, 1000, 100, 3000)
+    };
+  }
+
+  _createAutoplayIntent(session) {
+    if (session.gameType !== 'chess') return null;
+    const settings = this._autoplaySettings(session.config);
+    if (!settings) return null;
+    const viewerElo = this.database.getPlayerELO(
+      session.viewerId,
+      'chess',
+      settings.eloStartRating
+    );
+    const targetElo = this._bounded(viewerElo + settings.eloOffset, 400, 400, 3000);
+    return {
+      version: 1,
+      enabled: true,
+      // ELO accounting and K must remain tied to this match even if the
+      // operator changes the live Chess configuration before it ends.
+      rated: session.config?.eloEnabled !== false,
+      kFactor: this._bounded(session.config?.eloKFactor, 32, 1, 128),
+      viewerElo,
+      initialRating: settings.eloStartRating,
+      targetElo,
+      engineVersion: 'stockfish-18.0.8-lite-single',
+      selectorVersion: ChessAutoplayService.SELECTOR_VERSION,
+      seed: crypto.randomUUID?.() || crypto.randomBytes(16).toString('hex'),
+      originRevision: session.sessionRevision,
+      dueAtMs: null,
+      status: 'pending'
+    };
+  }
+
+  _warmAutoplayWorker() {
+    Promise.resolve(this.autoplayService?.warm?.({ timeoutMs: 10000 })).catch(error => {
+      this.logger?.warn?.(`[INTERACTIVE] Chess autoplay worker warmup failed: ${error.message}`);
+    });
+  }
+
+  _prepareAutoplayIntent(session) {
+    const intent = session?.autoplay;
+    if (!intent?.enabled || session.gameType !== 'chess' || session.turnRole !== 'host') return null;
+    intent.originRevision = session.sessionRevision;
+    intent.dueAtMs = null;
+    intent.status = 'pending';
+    return intent;
+  }
+
+  _isAutoplayEligible(session, intent = session?.autoplay) {
+    if (
+      !session ||
+      session.status !== 'active' ||
+      session.gameType !== 'chess' ||
+      !intent?.enabled ||
+      !['pending', 'armed', 'executing'].includes(intent.status) ||
+      intent.originRevision !== session.sessionRevision ||
+      session.turnRole !== 'host'
+    ) return false;
+    const host = session.participants?.find(participant => participant.role === 'host');
+    if (!host || session.turnPlayerId !== host.id) return false;
+    const display = this.router.snapshot();
+    const head = this.queue.head();
+    return display.displaySessionId === session.sessionId &&
+      display.phase === 'playing' &&
+      !display.suspendedReason &&
+      display.sessionRevision === session.sessionRevision &&
+      head?.sessionId === session.sessionId &&
+      this.timers.getHostRemaining(session) > 0;
+  }
+
+  _clearAutoplayRuntime(sessionId, { abort = false } = {}) {
+    const normalizedId = Number(sessionId);
+    const timer = this.autoplayTimers.get(normalizedId);
+    if (timer) this.clearTimeoutFn(timer.timeout);
+    this.autoplayTimers.delete(normalizedId);
+    const execution = this.autoplayExecutions.get(normalizedId);
+    if (execution && abort) execution.abortController.abort();
+    if (abort || !execution) this.autoplayExecutions.delete(normalizedId);
+  }
+
+  _persistAutoplayIntent(session) {
+    this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+  }
+
+  _setAutoplayIntentStatus(session, status, { disable = false, persist = true } = {}) {
+    if (!session?.autoplay) return;
+    this._clearAutoplayRuntime(session.sessionId, { abort: true });
+    session.autoplay.status = status;
+    session.autoplay.dueAtMs = null;
+    if (disable) session.autoplay.enabled = false;
+    if (!persist) return;
+    this._persistAutoplayIntent(session);
+  }
+
+  _armAutoplay(session) {
+    const intent = session?.autoplay;
+    if (!this._isAutoplayEligible(session, intent)) return false;
+    const running = this.autoplayTimers.get(session.sessionId);
+    if (running?.originRevision === intent.originRevision) return true;
+    this._clearAutoplayRuntime(session.sessionId, { abort: true });
+
+    const previousStatus = intent.status;
+    const previousDueAtMs = intent.dueAtMs;
+    const persistedDueAtMs = Number(intent.dueAtMs);
+    const dueAtMs = intent.dueAtMs != null && Number.isFinite(persistedDueAtMs)
+      ? Math.max(this.now(), persistedDueAtMs)
+      : this.now() + this._bounded(session.config?.autoplay?.moveDelayMs, 750, 250, 5000);
+    intent.status = 'armed';
+    intent.dueAtMs = dueAtMs;
+    try {
+      this._persistAutoplayIntent(session);
+    } catch (error) {
+      intent.status = previousStatus;
+      intent.dueAtMs = previousDueAtMs;
+      this.logger?.error?.(`[INTERACTIVE] Failed to arm chess autoplay for ${session.sessionId}: ${error.message}`);
+      return false;
+    }
+
+    const originRevision = intent.originRevision;
+    const timeout = this.setTimeoutFn(() => {
+      this.autoplayTimers.delete(session.sessionId);
+      this._executeAutoplay(session.sessionId, originRevision);
+    }, Math.max(0, dueAtMs - this.now()));
+    timeout.unref?.();
+    this.autoplayTimers.set(session.sessionId, { timeout, originRevision, dueAtMs });
+    return true;
+  }
+
+  _reconcileAutoplay() {
+    const display = this.router?.snapshot?.();
+    const displayed = display?.displaySessionId == null
+      ? null
+      : this.registry.get(display.displaySessionId);
+    for (const sessionId of Array.from(this.autoplayTimers.keys())) {
+      const session = this.registry.get(sessionId);
+      if (!session || session !== displayed || !this._isAutoplayEligible(session)) {
+        this._clearAutoplayRuntime(sessionId, { abort: true });
+        if (session?.autoplay?.enabled && session.autoplay.status === 'armed') {
+          session.autoplay.status = 'pending';
+          session.autoplay.dueAtMs = null;
+          try {
+            this._persistAutoplayIntent(session);
+          } catch (error) {
+            this.logger?.error?.(`[INTERACTIVE] Failed to disarm chess autoplay for ${session.sessionId}: ${error.message}`);
+          }
+        }
+      }
+    }
+    if (!displayed?.autoplay?.enabled || !this._isAutoplayEligible(displayed)) return false;
+    if (displayed.autoplay.originRevision !== displayed.sessionRevision) {
+      this._prepareAutoplayIntent(displayed);
+      try {
+        this._persistAutoplayIntent(displayed);
+      } catch (error) {
+        this.logger?.error?.(`[INTERACTIVE] Failed to prepare chess autoplay for ${displayed.sessionId}: ${error.message}`);
+        return false;
+      }
+    }
+    return this._armAutoplay(displayed);
+  }
+
+  _autoplayFallbackMove(legalMoves, intent) {
+    const moves = Array.isArray(legalMoves) ? legalMoves : [];
+    const normalized = moves
+      .map(move => typeof move === 'string'
+        ? move
+        : `${move?.from || ''}${move?.to || ''}${move?.promotion || ''}`)
+      .filter(move => /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move))
+      .sort();
+    if (!normalized.length) return null;
+    let hash = 2166136261;
+    for (const char of `${intent.seed}:${intent.originRevision}`) {
+      hash ^= char.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return normalized[(hash >>> 0) % normalized.length];
+  }
+
+  async _executeAutoplay(sessionId, originRevision) {
+    const session = this.registry.get(sessionId);
+    const intent = session?.autoplay;
+    if (!this._isAutoplayEligible(session, intent) || intent.originRevision !== originRevision) return;
+
+    const legalMoves = session.adapter.game.getLegalMoves?.() || [];
+    const fallback = this._autoplayFallbackMove(legalMoves, intent);
+    if (!fallback) {
+      this._setAutoplayIntentStatus(session, 'failed');
+      return;
+    }
+
+    const identity = `autoplay:${session.sessionId}:${originRevision}`;
+    const abortController = new AbortController();
+    const token = crypto.randomUUID?.() || crypto.randomBytes(16).toString('hex');
+    this.autoplayExecutions.set(session.sessionId, { identity, token, abortController });
+    intent.status = 'executing';
+    let move = fallback;
+    try {
+      const selection = await this.autoplayService.selectMove({
+        fen: session.adapter.getState().fen,
+        legalMoves,
+        seed: `${intent.seed}:${originRevision}`,
+        targetElo: intent.targetElo,
+        signal: abortController.signal
+      });
+      if (typeof selection?.move === 'string') move = selection.move;
+    } catch (error) {
+      if (abortController.signal.aborted) return;
+      this.logger?.warn?.(`[INTERACTIVE] Chess autoplay engine fallback for ${session.sessionId}: ${error.message}`);
+    }
+
+    const execution = this.autoplayExecutions.get(session.sessionId);
+    if (execution?.identity !== identity || abortController.signal.aborted) return;
+    if (!this._isAutoplayEligible(session, intent) || intent.originRevision !== originRevision) {
+      this.autoplayExecutions.delete(session.sessionId);
+      return;
+    }
+    const legal = new Set((legalMoves || []).map(candidate => typeof candidate === 'string'
+      ? candidate.toLowerCase()
+      : `${candidate?.from || ''}${candidate?.to || ''}${candidate?.promotion || ''}`.toLowerCase()));
+    if (!legal.has(String(move).toLowerCase())) move = fallback;
+    const result = this.applyHostMove({
+      sessionId: session.sessionId,
+      gameType: 'chess',
+      sessionRevision: session.sessionRevision,
+      displayRevision: this.router.displayRevision,
+      move: { uci: move },
+      moveIdentity: identity,
+      autoplayToken: token
+    });
+    this.autoplayExecutions.delete(session.sessionId);
+    if (!result.success && session.autoplay?.status === 'executing') {
+      this._setAutoplayIntentStatus(session, 'pending');
+      this._reconcileAutoplay();
+    }
+  }
+
+  refreshChessAutoplayConfiguration(config = {}) {
+    if (this._autoplaySettings(config)) return { cancelled: 0 };
+    let cancelled = 0;
+    for (const session of this.registry.list()) {
+      if (session.gameType !== 'chess' || !session.autoplay?.enabled) continue;
+      this._setAutoplayIntentStatus(session, 'cancelled', { disable: true });
+      cancelled += 1;
+    }
+    return { cancelled };
   }
 
   _publishSafely(label, sessionId, callback) {
@@ -176,6 +442,7 @@ class InteractiveController {
         : null,
       timeControl: session.timeControl,
       lastMoveIdentity: session.lastMoveIdentity,
+      autoplay: session.autoplay ? { ...session.autoplay } : null,
       lastActivityAt: session.lastActivityAt
     };
   }
@@ -713,6 +980,10 @@ class InteractiveController {
           timeControl: row.timeControl || restored.timeControl,
           status: 'active'
         });
+        if (session.autoplay?.enabled && !this._autoplaySettings(session.config)) {
+          this._setAutoplayIntentStatus(session, 'cancelled', { disable: true });
+        }
+        if (session.autoplay?.enabled) this._warmAutoplayWorker();
         if (session.turnRole === 'viewer') {
           if (!this._viewerTimeoutEnabled(session.gameType)) {
             this.timers.clearViewer(session.sessionId);
@@ -750,6 +1021,7 @@ class InteractiveController {
       if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
     }
     this.router.sync();
+    this._reconcileAutoplay();
     this.emitState();
     return { recovered, reconciled, recoveredChallenge, queueLength: this.queue.list().length };
   }
@@ -841,9 +1113,13 @@ class InteractiveController {
       }
 
       this.database.transaction(() => {
+        if (gameType === 'chess') {
+          session.autoplay = this._createAutoplayIntent(session);
+        }
         this.database.createInteractiveState(this._sessionRecord(session));
         this.queue.enqueue(session);
       });
+      if (session.autoplay?.enabled) this._warmAutoplayWorker();
       this.emitLegacyEvent?.('started', { session, state, config });
       this._logTransition('session_started', session);
       this.router.sync();
@@ -891,6 +1167,7 @@ class InteractiveController {
       deadline: session.viewerDeadlineMs,
       remaining: session.viewerTimeRemainingMs,
       lastMoveIdentity: session.lastMoveIdentity,
+      autoplay: session.autoplay ? { ...session.autoplay } : null,
       lastActivityAt: session.lastActivityAt
     };
     const result = session.adapter.applyParticipantMove(move, viewerId);
@@ -906,6 +1183,9 @@ class InteractiveController {
     session.lastActivityAt = this.now();
 
     const complete = result.gameOver || session.adapter.isComplete();
+    if (!complete && session.gameType === 'chess' && session.turnRole === 'host') {
+      this._prepareAutoplayIntent(session);
+    }
     if (
       !complete &&
       session.turnRole === 'viewer' &&
@@ -939,6 +1219,7 @@ class InteractiveController {
       session.viewerDeadlineMs = previous.deadline;
       session.viewerTimeRemainingMs = previous.remaining;
       session.lastMoveIdentity = previous.lastMoveIdentity;
+      session.autoplay = previous.autoplay;
       session.lastActivityAt = previous.lastActivityAt;
       this.queue.restore(this.database.getInteractiveQueue());
       this.timers.restore(session);
@@ -983,6 +1264,13 @@ class InteractiveController {
     if (!session) return { success: false, error: 'session_not_found' };
     if (session.gameType !== envelope.gameType) return { success: false, error: 'wrong_game_type' };
     const moveIdentity = envelope?.moveIdentity || null;
+    const autoplayMove = typeof moveIdentity === 'string' && moveIdentity.startsWith('autoplay:');
+    if (autoplayMove) {
+      const execution = this.autoplayExecutions.get(sessionId);
+      if (!execution || execution.identity !== moveIdentity || execution.token !== envelope?.autoplayToken) {
+        return { success: false, error: 'autoplay_identity_reserved' };
+      }
+    }
     if (moveIdentity && this.database.hasInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
       return { success: true, duplicate: true, sessionId: session.sessionId };
     }
@@ -1022,6 +1310,7 @@ class InteractiveController {
       remaining: session.viewerTimeRemainingMs,
       hostTimeRemainingMs: session.hostTimeRemainingMs,
       lastMoveIdentity: session.lastMoveIdentity,
+      autoplay: session.autoplay ? { ...session.autoplay } : null,
       lastActivityAt: session.lastActivityAt
     };
     const result = session.adapter.applyHostMove(envelope.move);
@@ -1033,6 +1322,14 @@ class InteractiveController {
       session.hostTimeRemainingMs = this._hostTimeFromState('chess', session.adapter.getState());
     }
 
+    if (session.autoplay?.enabled) {
+      if (autoplayMove) {
+        session.autoplay.status = 'executed';
+        session.autoplay.dueAtMs = null;
+      } else {
+        this._setAutoplayIntentStatus(session, 'cancelled', { persist: false });
+      }
+    }
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.turnPlayerId = session.adapter.getCurrentTurnPlayerId();
@@ -1078,6 +1375,7 @@ class InteractiveController {
       session.turnRole = previous.turnRole;
       session.turnPlayerId = previous.turnPlayerId;
       session.lastMoveIdentity = previous.lastMoveIdentity;
+      session.autoplay = previous.autoplay;
       session.lastActivityAt = previous.lastActivityAt;
       session.viewerDeadlineMs = previous.deadline;
       session.viewerTimeRemainingMs = previous.remaining;
@@ -1225,6 +1523,20 @@ class InteractiveController {
     skipAccounting = false,
     skipLeaderboard = false
   } = {}) {
+    const autoplayRated = session.autoplay?.rated === true ||
+      (session.autoplay?.rated == null && session.autoplay?.enabled === true);
+    const autoplayAccounting = autoplayRated
+      ? {
+        enabled: true,
+        rated: true,
+        viewerId: session.viewerId,
+        viewerElo: session.autoplay.viewerElo,
+        targetElo: session.autoplay.targetElo,
+        initialRating: session.autoplay.initialRating,
+        kFactor: session.autoplay.kFactor
+      }
+      : null;
+    if (session.autoplay) this._setAutoplayIntentStatus(session, 'completed', { persist: false });
     const winnerPlayer = outcome.winner == null
       ? null
       : this._participant(session, session.gameType === 'connect4'
@@ -1255,6 +1567,13 @@ class InteractiveController {
       leaderboard: skipLeaderboard ? null : this._leaderboardPresentation(session),
       skipAccounting
     };
+    if (autoplayAccounting) {
+      Object.defineProperty(resultPayload, 'autoplay', {
+        value: autoplayAccounting,
+        enumerable: false,
+        configurable: false
+      });
+    }
     this.timers.clear(session.sessionId);
     this.database.transaction(() => {
       if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
@@ -1395,6 +1714,16 @@ class InteractiveController {
   }
 
   destroy() {
+    const autoplaySessionIds = new Set([
+      ...this.autoplayTimers.keys(),
+      ...this.autoplayExecutions.keys()
+    ]);
+    for (const sessionId of autoplaySessionIds) {
+      this._clearAutoplayRuntime(sessionId, { abort: true });
+    }
+    Promise.resolve(this.autoplayService?.destroy?.()).catch(error => {
+      this.logger?.warn?.(`[INTERACTIVE] Chess autoplay worker cleanup failed: ${error.message}`);
+    });
     this.timers.destroy();
     this.router.destroy();
   }

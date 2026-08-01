@@ -1059,6 +1059,11 @@
           "start_elo": "ELO initial :",
           "k_factor": "Facteur K :",
           "examples": "Exemples",
+          "autoplay_title": "Autoplay du streamer",
+          "autoplay_description": "Contr\u00f4le uniquement les coups du streamer dans les nouvelles parties contre les spectateurs. La d\u00e9sactivation annule imm\u00e9diatement les coups automatiques en attente.",
+          "autoplay_enabled": "Activer l'autoplay du streamer",
+          "autoplay_elo_offset": "D\u00e9calage ELO par rapport au spectateur (-400 \u00e0 +400) :",
+          "autoplay_move_delay": "D\u00e9lai de coup (ms) :",
           "elo_empty": "Aucune donnée ELO disponible pour le moment.",
           "elo_load_error": "Échec du chargement du classement ELO."
         },

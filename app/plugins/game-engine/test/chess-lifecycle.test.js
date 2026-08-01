@@ -200,4 +200,44 @@ describe('Chess lifecycle', () => {
     expect(updatePlayerELO).toHaveBeenCalledWith('alice', 'chess', -16);
     expect(updatePlayerELO).toHaveBeenCalledWith('bob', 'chess', 16);
   });
+
+  test('rates an autoplay chess session only for its viewer against the stored bot target', () => {
+    const { plugin } = createPlugin();
+    const applyAutoplayChessELOOnce = jest.fn(() => ({
+      alreadyApplied: false,
+      oldELO: 1250,
+      newELO: 1262,
+      change: 12,
+      targetElo: 1400
+    }));
+    plugin.db = { applyAutoplayChessELOOnce };
+    const session = {
+      id: 18,
+      game_type: 'chess',
+      player1_username: 'viewer-18',
+      player2_username: 'streamer'
+    };
+    plugin.activeSessions.set(session.id, {
+      player1: { username: 'viewer-18', side: 'white' },
+      player2: { username: 'streamer', side: 'black' }
+    });
+
+    const result = plugin.calculateAndApplyAutoplayChessELO(
+      session,
+      'white',
+      'checkmate',
+      { eloKFactor: 24, eloStartRating: 1000 },
+      { enabled: true, targetElo: 1400, initialRating: 1250 }
+    );
+
+    expect(result).toEqual({ viewer: expect.objectContaining({ newELO: 1262 }) });
+    expect(applyAutoplayChessELOOnce).toHaveBeenCalledWith({
+      sessionId: 18,
+      viewerId: 'viewer-18',
+      targetElo: 1400,
+      score: 1,
+      kFactor: 24,
+      initialRating: 1250
+    });
+  });
 });

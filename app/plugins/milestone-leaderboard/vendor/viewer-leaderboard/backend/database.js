@@ -72,6 +72,18 @@ class ViewerXPDatabase {
       )
     `);
 
+    // Durable idempotency keys for game payouts and other operations that
+    // must survive retries/restarts without awarding XP twice.
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS viewer_xp_idempotency (
+        idempotency_key TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        action_type TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    `);
+
     // NEW: Comprehensive XP event log with full transparency (wann/wo/wieviel)
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS viewer_xp_events (
@@ -180,6 +192,8 @@ class ViewerXPDatabase {
         ON xp_transactions(username, timestamp DESC);
       CREATE INDEX IF NOT EXISTS idx_xp_transactions_action_type
         ON xp_transactions(action_type);
+      CREATE INDEX IF NOT EXISTS idx_viewer_xp_idempotency_username
+        ON viewer_xp_idempotency(username, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_daily_activity_date 
         ON daily_activity(activity_date DESC);
       CREATE INDEX IF NOT EXISTS idx_viewer_xp 
@@ -808,6 +822,115 @@ class ViewerXPDatabase {
       this.batchTimer = setTimeout(() => this.processBatch(), this.batchTimeout);
     }
   }
+
+  /**
+   * Add XP exactly once for a durable operation.
+   *
+   * Unlike addXP(), this method intentionally bypasses the batch queue so the
+   * idempotency key, profile mutation, and audit rows commit atomically.
+   *
+   * @param {string} username
+   * @param {number} amount
+   * @param {string} actionType
+   * @param {Object|null} details
+   * @param {string} idempotencyKey
+   * @returns {{ applied: boolean, duplicate?: boolean, optedOut?: boolean, levelUps?: Array }}
+   */
+  addXPOnce(username, amount, actionType, details = null, idempotencyKey) {
+    const key = String(idempotencyKey || '').trim();
+    if (!key) {
+      throw new TypeError('addXPOnce requires a non-empty idempotency key');
+    }
+
+    if (this.isUserOptedOut(username)) {
+      this.api.log(`User ${username} has opted out, skipping XP award`, 'debug');
+      return { applied: false, optedOut: true };
+    }
+
+    const parsedCoinRatio = parseFloat(this.getSetting('coin_xp_ratio', '1.0'));
+    const coinRatio = Number.isFinite(parsedCoinRatio) ? parsedCoinRatio : 1;
+    const applyOnce = this.db.transaction(() => {
+      const keyInsert = this.db.prepare(`
+        INSERT OR IGNORE INTO viewer_xp_idempotency
+          (idempotency_key, username, amount, action_type, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(key, username, amount, actionType, Date.now());
+
+      if (keyInsert.changes === 0) {
+        return { applied: false, duplicate: true };
+      }
+
+      // Keep the profile creation, XP balance, coins, and both audit logs in
+      // this same transaction as the idempotency key insertion.
+      this.getOrCreateViewer(username);
+
+      const coinsToAward = amount > 0 ? Math.floor(amount * coinRatio) : 0;
+      this.db.prepare(`
+        UPDATE viewer_profiles
+        SET xp = xp + ?,
+            total_xp_earned = total_xp_earned + ?,
+            coins = coins + ?,
+            total_coins_earned = total_coins_earned + ?,
+            last_seen = CURRENT_TIMESTAMP
+        WHERE username = ?
+      `).run(
+        amount,
+        Math.max(0, amount),
+        coinsToAward,
+        coinsToAward,
+        username
+      );
+
+      if (coinsToAward > 0) {
+        const balanceAfter = this.db.prepare(
+          'SELECT coins FROM viewer_profiles WHERE username = ?'
+        ).get(username)?.coins || 0;
+        this.db.prepare(`
+          INSERT INTO coin_transactions (username, amount, balance_after, source, meta, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          username,
+          coinsToAward,
+          balanceAfter,
+          'xp_gain',
+          JSON.stringify({ actionType, xp: amount, idempotencyKey: key }),
+          Date.now()
+        );
+      }
+
+      this.db.prepare(`
+        INSERT INTO xp_transactions (username, amount, action_type, details)
+        VALUES (?, ?, ?, ?)
+      `).run(username, amount, actionType, details ? JSON.stringify(details) : null);
+
+      const eventMeta = details || {};
+      this.db.prepare(`
+        INSERT INTO viewer_xp_events (user_id, username, event_type, amount, xp_awarded, meta, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        eventMeta.userId || 'unknown',
+        username,
+        actionType,
+        eventMeta.originalAmount || amount,
+        amount,
+        JSON.stringify(eventMeta),
+        Date.now()
+      );
+
+      return { applied: true };
+    });
+
+    const result = applyOnce();
+    if (!result.applied) {
+      return result;
+    }
+
+    return {
+      ...result,
+      levelUps: this.checkLevelUps([username])
+    };
+  }
+
 
   /**
    * Process batched XP additions (enhanced with event logging)
