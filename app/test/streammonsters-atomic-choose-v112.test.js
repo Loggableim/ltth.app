@@ -1,7 +1,7 @@
 'use strict';
 
 const ChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 
 function createHarness(rosterLock) {

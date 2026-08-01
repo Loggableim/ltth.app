@@ -5,10 +5,10 @@ const {
   normalizeGameplayPace,
   resolvePaceWindows,
   PRESENTATION_TIMING
-} = require('../plugins/streamalchemy/streammonsters-gameplay-pace');
+} = require('../plugins/stream-monsters/streammonsters-gameplay-pace');
 const {
   resolvePrimaryCta
-} = require('../plugins/streamalchemy/backend/streammonsters/primary-cta');
+} = require('../plugins/stream-monsters/backend/streammonsters/primary-cta');
 
 describe('Stream Monsters 1.12 gameplay pace contract', () => {
   test.each([

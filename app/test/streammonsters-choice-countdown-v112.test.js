@@ -1,7 +1,7 @@
 'use strict';
 
 const { JSDOM } = require('jsdom');
-const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
+const ArenaView = require('../plugins/stream-monsters/streammonsters-arena-view');
 
 describe('Stream Monsters 1.12 sealed-choice countdown', () => {
   test('stops the timer and ring immediately when the second fighter locks', () => {

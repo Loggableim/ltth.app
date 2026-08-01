@@ -1,9 +1,9 @@
 'use strict';
 
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
-const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
+const ArenaView = require('../plugins/stream-monsters/streammonsters-arena-view');
 
 function action(choice = 'A', skillId = 'ashfang-a') {
   return { choice, skill: { id: skillId, name: 'Flamefang' } };

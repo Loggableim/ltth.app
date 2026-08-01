@@ -1,6 +1,6 @@
 'use strict';
 
-const StreamMonstersPlugin = require('../plugins/streamalchemy');
+const StreamMonstersPlugin = require('../plugins/stream-monsters');
 
 function harness() {
   const journeys = new Map();

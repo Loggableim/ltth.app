@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 
 function addMatch(sqlite, id, durationMs, completion = 'battle') {
@@ -56,7 +56,7 @@ describe('Stream Monsters 1.12 battle duration telemetry', () => {
     const source = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'backend',
       'streammonsters',
       'routes.js'

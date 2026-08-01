@@ -1,6 +1,6 @@
 'use strict';
 
-const ArenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
+const ArenaDirector = require('../plugins/stream-monsters/streammonsters-arena-director');
 
 function actionTimeline(choice, { terminal = false } = {}) {
   return ArenaDirector.buildArcadeTimeline('battle_skill_used', {
