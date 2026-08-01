@@ -39,41 +39,41 @@ function listFiles(root, relative = '') {
     .sort();
 }
 
-describe('Stream Monsters current 1.11 release', () => {
-  test('aligns the plugin, store and LTTH 1.4.1 release surfaces', () => {
+describe('Stream Monsters current 1.12 release', () => {
+  test('aligns the plugin, store and LTTH 1.4.2 release surfaces', () => {
     const manifest = readJson('app/plugins/stream-monsters/plugin.json');
     const store = readJson('plugin-store.json');
-    const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
+    const storeEntry = store.plugins.find(plugin => plugin.id === 'stream-monsters');
 
     expect(manifest).toEqual(expect.objectContaining({
-      id: 'streamalchemy',
+      id: 'stream-monsters',
       name: 'Stream Monsters',
-      version: '1.11.1',
+      version: '1.12.0',
       devStatus: 'stable'
     }));
     expect(storeEntry).toEqual(expect.objectContaining({
-      version: '1.11.1',
+      version: '1.12.0',
       channel: 'stable',
-      minLtthVersion: '1.4.1',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
+      minLtthVersion: '1.4.2',
+      packageUrl: 'https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       screenshots: [
         '/screenshots/features/stream-monsters-creator-1.11.png',
         '/screenshots/features/stream-monsters-arena-portrait-1.11.png'
       ]
     }));
-    expect(readJson('package.json').version).toBe('1.4.1');
-    expect(readJson('app/package.json').version).toBe('1.4.1');
+    expect(readJson('package.json').version).toBe('1.4.2');
+    expect(readJson('app/package.json').version).toBe('1.4.2');
     expect(readJson('app/package-lock.json')).toEqual(expect.objectContaining({
-      version: '1.4.1',
+      version: '1.4.2',
       packages: expect.objectContaining({
-        '': expect.objectContaining({ version: '1.4.1' })
+        '': expect.objectContaining({ version: '1.4.2' })
       })
     }));
     expect(readJson('version.json')).toEqual(expect.objectContaining({
-      version: '1.4.1',
-      downloadVersion: '1.4.1',
-      downloadUrl: 'https://github.com/Loggableim/ltth.app/releases/tag/v1.4.1'
+      version: '1.4.2',
+      downloadVersion: '1.4.2',
+      downloadUrl: 'https://github.com/Loggableim/ltth.app/releases/tag/v1.4.2'
     }));
   });
 
@@ -91,12 +91,12 @@ describe('Stream Monsters current 1.11 release', () => {
 
   test('publishes a source-identical bundled-only package with all 72 forms and curated audio', async () => {
     const store = readJson('plugin-store.json');
-    const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
+    const storeEntry = store.plugins.find(plugin => plugin.id === 'stream-monsters');
     const packagePath = path.join(
       repoRoot,
       'plugin-store',
       'packages',
-      'streamalchemy-1.11.1.zip'
+      'stream-monsters-1.12.0.zip'
     );
     const manifest = readJson('app/plugins/stream-monsters/assets/streammonsters/furry/manifest.json');
     const audio = readJson('app/plugins/stream-monsters/assets/audio/manifest.json');

@@ -836,7 +836,7 @@ describe('Stream Monsters effects renderer', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);

@@ -37,7 +37,7 @@ describe('Stream Monsters furry template assets', () => {
 
     TEMPLATE_CATALOG.forEach(template => {
       expect(template.assetPath).toBe(
-        `/plugins/streamalchemy/assets/streammonsters/furry/${template.templateId}.webp`
+        `/plugins/stream-monsters/assets/streammonsters/furry/${template.templateId}.webp`
       );
       [1, 2, 3].forEach(stage => {
         const asset = assetsByKey.get(`${template.templateId}:${stage}`);
@@ -47,7 +47,7 @@ describe('Stream Monsters furry template assets', () => {
           element: template.element,
           species: template.species,
           stage,
-          assetPath: publicUrl.replace('/plugins/streamalchemy/', ''),
+          assetPath: publicUrl.replace('/plugins/stream-monsters/', ''),
           mediaType: 'image/webp',
           dimensions: [1024, 1024],
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
@@ -81,13 +81,13 @@ describe('Stream Monsters furry template assets', () => {
       'utf8'
     );
     expect(creatorUi).toContain(
-      '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp'
+      '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp'
     );
     expect(creatorUi).toContain(
-      '/plugins/streamalchemy/assets/streammonsters/furry/ripple.webp'
+      '/plugins/stream-monsters/assets/streammonsters/furry/ripple.webp'
     );
     expect(creatorUi).not.toMatch(
-      /\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[^"' ]+\.png/
+      /\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/[^"' ]+\.png/
     );
   });
 });

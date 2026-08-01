@@ -18,7 +18,7 @@ const CATALOG_PATH = path.join(
   REPO_ROOT,
   'app',
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'backend',
   'streammonsters',
   'catalog.js'
@@ -27,7 +27,7 @@ const BATTLE_RULES_PATH = path.join(
   REPO_ROOT,
   'app',
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'backend',
   'streammonsters',
   'battle-rules-v8.js'
@@ -46,7 +46,7 @@ function readMonsterLocales() {
       REPO_ROOT,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'locales',
       `${locale}.json`
     );
@@ -214,7 +214,7 @@ describe('Stream Monsters public catalog generator', () => {
       REPO_ROOT,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'assets',
       'streammonsters',
       'furry',

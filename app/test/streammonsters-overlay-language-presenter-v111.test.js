@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const OverlayRuntime = require(
   '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
@@ -119,6 +120,10 @@ async function createPresenterHarness({
         };
       });
       window.StreamMonstersOverlayRuntime = OverlayRuntime;
+      window.StreamMonstersPresentation = Presentation;
+      window.StreamMonstersPortraitArena = {
+        normalizeVariant:(value, fallback) => value || fallback
+      };
       window.StreamMonstersArenaDirector = ArenaDirector;
       window.StreamMonstersEffectsRenderer = {
         createEffectsRenderer:() => ({
@@ -261,6 +266,8 @@ async function createPresenterHarness({
     arenaLocales,
     arenaEvents,
     eggEvents,
+    announcer:() => dom.window.document
+      .getElementById('critical-status-announcer').textContent,
     card,
     toast:() => ({
       visible:dom.window.document.getElementById('toast').classList.contains('visible'),
@@ -448,6 +455,28 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
       .toBeLessThanOrEqual(10_000);
   });
 
+  test('announces one critical egg phase through the dedicated status region', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en']
+    });
+    try {
+      await harness.emit('streammonsters:egg_ready', {
+        eventId:'ready-announcer',
+        playerName:'@alpha',
+        egg:{ element:'Ember' },
+        eggStage:{
+          visualId:'ready-announcer',
+          element:'Ember',
+          state:'ready'
+        }
+      });
+      expect(harness.announcer()).toBe('egg ready');
+    } finally {
+      harness.close();
+    }
+  });
+
   test.each([
     {
       event:'streammonsters:egg_ready',
@@ -455,7 +484,8 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         eventId:'ready-locales',
         criticalFinal:true,
         playerName:'@alpha',
-        egg:{ element:'Ember' }
+        egg:{ element:'Ember' },
+        eggStage:{ visualId:'ready-locales', element:'Ember', state:'ready' }
       },
       german:/kann schlüpfen/,
       english:/ready to hatch/

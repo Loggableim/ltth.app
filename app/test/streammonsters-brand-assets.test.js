@@ -8,7 +8,7 @@ const creatorScreenshot = '/screenshots/features/stream-monsters-creator-1.11.pn
 const arenaScreenshot = '/screenshots/features/stream-monsters-arena-portrait-1.11.png';
 function guideScreenshot(locale, stepId) {
   const prefix = locale === 'en' ? '/screenshots/docs' : `/screenshots/${locale}/docs`;
-  return `${prefix}/plugins/streamalchemy/${stepId}.png`;
+  return `${prefix}/plugins/stream-monsters/${stepId}.png`;
 }
 const historicalScreenshots = {
   'stream-monsters-creator-1.5.png': 'bd02ef5412b2b79b7f6bd1f01507838d91850d0cfaca831c75c3011d437c4c36',
@@ -22,20 +22,20 @@ function readJson(...parts) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, ...parts), 'utf8'));
 }
 
-describe('Stream Monsters 1.11 public branding', () => {
+describe('Stream Monsters 1.12 public branding', () => {
   it('publishes the stable plugin ID with the 1.11 package and both broadcast screenshots', () => {
     const featurePage = fs.readFileSync(path.join(repoRoot, 'features', 'plugin-stream-alchemy.html'), 'utf8');
     const tutorialPage = fs.readFileSync(path.join(repoRoot, 'streammonsters', 'index.html'), 'utf8');
     const pluginPage = fs.readFileSync(path.join(repoRoot, 'plugins.html'), 'utf8');
     const storeRegistry = readJson('plugin-store.json');
     const pluginManifest = readJson('app', 'plugins', 'stream-monsters', 'plugin.json');
-    const streamMonsters = storeRegistry.plugins.find((plugin) => plugin.id === 'streamalchemy');
+    const streamMonsters = storeRegistry.plugins.find((plugin) => plugin.id === 'stream-monsters');
 
     expect(streamMonsters).toMatchObject({
-      id: 'streamalchemy',
-      version: '1.11.1',
+      id: 'stream-monsters',
+      version: '1.12.0',
       channel: 'stable',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
+      packageUrl: 'https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip',
       screenshots: [creatorScreenshot, arenaScreenshot]
     });
     expect(streamMonsters.sha256).toMatch(/^[a-f0-9]{64}$/);
@@ -66,24 +66,24 @@ describe('Stream Monsters 1.11 public branding', () => {
     expect(featurePage).toContain('Creator Live Center 1.11');
     expect(featurePage).toContain('Portrait A/B/C Arena 1.11');
     expect(tutorialPage).toContain(`https://ltth.app${arenaScreenshot}`);
-    expect(pluginPage).toContain("'streamalchemy': '/assets/plugin-logos/stream-monsters-icon.png'");
+    expect(pluginPage).toContain("'stream-monsters': '/assets/plugin-logos/stream-monsters-icon.png'");
   });
 
   it('documents gift eggs plus optional recurring free eggs, 72 bundled forms, portrait A/B/C battles, and the emergency fallback', () => {
-    const docsPage = fs.readFileSync(path.join(repoRoot, 'docs', 'plugins', 'streamalchemy.html'), 'utf8');
+    const docsPage = fs.readFileSync(path.join(repoRoot, 'docs', 'plugins', 'stream-monsters.html'), 'utf8');
     const docsIndex = readJson('docs', 'plugins', 'index.json');
-    const streamMonstersDocs = docsIndex.find((plugin) => plugin.id === 'streamalchemy');
+    const streamMonstersDocs = docsIndex.find((plugin) => plugin.id === 'stream-monsters');
     const furryManifest = readJson(
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'assets',
       'streammonsters',
       'furry',
       'manifest.json'
     );
 
-    expect(docsPage).toContain('Stream Monsters 1.11');
+    expect(docsPage).toContain('Stream Monsters 1.12');
     expect(docsPage).toMatch(/Gift-Eier|Geschenk-Eier/);
     expect(docsPage).toMatch(/optionale(?: wiederkehrende)? Gratis-Eier/);
     expect(docsPage).not.toMatch(/Gifts-only-Eier|Gift-only Eier|nur (?:durch )?Gifts/i);
@@ -121,7 +121,7 @@ describe('Stream Monsters 1.11 public branding', () => {
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const guideLocale = readJson('locales', 'guides', `${locale}.json`);
       for (const stepId of steps) {
-        expect(guideLocale[`docs.plugin.streamalchemy.steps.${stepId}.src`])
+        expect(guideLocale[`docs.plugin.stream-monsters.steps.${stepId}.src`])
           .toBe(guideScreenshot(locale, stepId));
       }
     }
@@ -287,8 +287,8 @@ describe('Stream Monsters 1.11 public branding', () => {
     const pluginManifest = readJson('app', 'plugins', 'stream-monsters', 'plugin.json');
     const pluginDir = path.join(repoRoot, 'app', 'plugins', 'stream-monsters');
 
-    expect(pluginManifest.icon).toBe('/plugins/streamalchemy/assets/branding/stream-monsters-icon.png');
-    expect(pluginManifest.logo).toBe('/plugins/streamalchemy/assets/branding/stream-monsters-logo.png');
+    expect(pluginManifest.icon).toBe('/plugins/stream-monsters/assets/branding/stream-monsters-icon.png');
+    expect(pluginManifest.logo).toBe('/plugins/stream-monsters/assets/branding/stream-monsters-logo.png');
     expect(fs.existsSync(path.join(repoRoot, 'app', pluginManifest.icon))).toBe(true);
     expect(fs.existsSync(path.join(repoRoot, 'app', pluginManifest.logo))).toBe(true);
     expect(fs.existsSync(path.join(repoRoot, 'assets', 'plugin-logos', 'stream-monsters-icon.png'))).toBe(true);

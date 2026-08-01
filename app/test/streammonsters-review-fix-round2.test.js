@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const Database = require('better-sqlite3');
 const GCCE = require('../plugins/gcce');
 const StreamAlchemyPlugin = require('../plugins/stream-monsters');
@@ -175,7 +176,7 @@ async function createLiveOverlay(snapshot) {
       path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ),
@@ -213,7 +214,7 @@ async function createLiveOverlay(snapshot) {
       });
       window.fetch = jest.fn(async input => {
         const localeMatch = String(input || '').match(
-          /\/plugins\/streamalchemy\/locales\/(de|en|es|fr)\.json(?:\?|$)/
+          /\/plugins\/(?:stream-monsters|streamalchemy)\/locales\/(de|en|es|fr)\.json(?:\?|$)/
         );
         if (localeMatch) {
           return {
@@ -228,6 +229,10 @@ async function createLiveOverlay(snapshot) {
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersPresentation = Presentation;
+      window.StreamMonstersPortraitArena = {
+        normalizeVariant: (value, fallback) => value || fallback
+      };
       window.StreamMonstersEggStageView = {
         ...eggStageView,
         createEggStageView: options => eggStageView.createEggStageView({
@@ -318,7 +323,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
 
     expect(plugin.getStreamMonstersCommandReference('rank')).toBe('/monsterrank');
     expect(gcce.registry.getCommand('rank').pluginId).toBe('milestone-leaderboard');
-    expect(gcce.registry.getCommand('monsterrank').pluginId).toBe('streamalchemy');
+    expect(gcce.registry.getCommand('monsterrank').pluginId).toBe('stream-monsters');
 
     await gcce.destroy();
   });

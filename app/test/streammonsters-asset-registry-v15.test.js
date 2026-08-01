@@ -78,7 +78,7 @@ function writeLegacyPngSource(tempDirs, filename, marker = 0) {
 
 function createMonster(store, {
   monsterId = 'monster-ashfang',
-  imageUrl = '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+  imageUrl = '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
   visualSource = 'furry',
   visualKey = 'furry:ashfang'
 } = {}) {
@@ -136,7 +136,7 @@ describe('Stream Monsters runtime asset registry', () => {
     const registry = new AssetRegistry({ pluginDir });
 
     expect(registry.getValidatedUrl('ashfang', 1)).toBe(
-      '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+      '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png'
     );
     expect(registry.getAsset('ashfang', 1)).toEqual(expect.objectContaining({
       assetVersion: 'furry-1.5.0'
@@ -251,7 +251,7 @@ describe('Stream Monsters runtime asset registry', () => {
       element: 'Ember'
     })).toEqual(expect.objectContaining({
       imageUrl: expect.stringMatching(
-        /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/
+        /^\/api\/stream-monsters\/art\/kenney-[a-f0-9]{16}\.svg$/
       ),
       visualSource: 'kenney',
       visualKey: expect.stringMatching(/^kenney:[a-f0-9]{16}$/),
@@ -302,6 +302,11 @@ describe('Stream Monsters runtime asset registry', () => {
       spentEssence: 3,
       statsBefore: original.stats,
       statsAfter: stageTwoStats,
+      unlockedSkill: expect.objectContaining({
+        id: 'ashfang:A:stage-2',
+        name: 'Inferno Fang',
+        evolutionStage: 2
+      }),
       statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
       monster: expect.objectContaining({
         monster_id: original.monster_id,
@@ -311,7 +316,7 @@ describe('Stream Monsters runtime asset registry', () => {
         stats: stageTwoStats,
         evolution_stage: 2,
         image_url: expect.stringMatching(
-          /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/
+          /^\/api\/stream-monsters\/art\/kenney-[a-f0-9]{16}\.svg$/
         ),
         visual_source: 'kenney',
         visual_key: expect.stringMatching(/^kenney:[a-f0-9]{16}$/),
@@ -377,7 +382,7 @@ describe('Stream Monsters runtime asset registry', () => {
     expect(guardedStore.getMonster('monster-ashfang')).toEqual(
       expect.objectContaining({
         image_url:
-          '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+          '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
         visual_source: 'furry',
         visual_key: 'furry:ashfang',
         asset_version: 'furry-1.5.0'
@@ -450,7 +455,9 @@ describe('Stream Monsters runtime asset registry', () => {
     })[0];
 
     expect(roster.image_url).toBe(fallbackUrl);
-    expect(publicFighter.imageUrl).toBe(fallbackUrl);
+    expect(publicFighter.imageUrl).toBe(
+      '/api/stream-monsters/art/kenney-0123456789abcdef.svg'
+    );
     service.destroy();
     sqlite.close();
   });
@@ -472,7 +479,7 @@ describe('Stream Monsters runtime asset registry', () => {
     store.initialize();
     const monster = createMonster(store, {
       monsterId: 'monster-corrupt',
-      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+      imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
       visualSource: 'furry',
       visualKey: 'furry:ashfang'
     });
@@ -524,7 +531,7 @@ describe('Stream Monsters runtime asset registry', () => {
       expect(guardedStore.getMonster('monster-39')).toEqual(
         expect.objectContaining({
           image_url:
-            '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+            '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
           visual_source: 'furry',
           asset_version: 'furry-1.5.0'
         })

@@ -3581,11 +3581,10 @@
       }
       return;
     }
-    if (!window.StreamMonstersOverlayRuntime.isCritical(type)) {
     if (window.StreamMonstersOverlayRuntime.isCritical(type)) {
       node('critical-status-announcer').textContent =
         value(data?.title || data?.name || type, '').replaceAll('_', ' ');
-    }
+    } else {
       applyPresentationLocale(
         window.StreamMonstersOverlayRuntime.localeForStableEvent(
           data?.eventId || data?.correlationId,
@@ -4175,7 +4174,7 @@
   battleReplaySynchronizer = window.StreamMonstersOverlayRuntime.createBattleReplaySynchronizer({
     loadPage:async ({ matchId, cursor, limit }) => {
       const response = await fetch(
-        `/api/streammonsters/battles/${encodeURIComponent(matchId)}/replay?` +
+        `/api/stream-monsters/battles/${encodeURIComponent(matchId)}/replay?` +
         `cursor=${encodeURIComponent(cursor)}&limit=${encodeURIComponent(limit)}`,
         { credentials:'same-origin' }
       );
@@ -4260,7 +4259,7 @@
         renderer:battleEffectsRenderer.status?.() || effectsRenderer.status?.() || {},
         audio:audioEngine.status?.() || {}
       });
-      await fetch('/api/streammonsters/overlay/heartbeat', {
+      await fetch('/api/stream-monsters/overlay/heartbeat', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         credentials:'same-origin',
@@ -4304,7 +4303,7 @@
   const reconnectController = window.StreamMonstersOverlayRuntime.createReconnectController({
     queue: eventQueue,
     loadSnapshot: async (signal, requestGeneration) => {
-      const response = await fetch('/api/streammonsters/state', { signal });
+      const response = await fetch('/api/stream-monsters/state', { signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
       if (payload && typeof payload === 'object') {

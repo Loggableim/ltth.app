@@ -135,12 +135,12 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     const replacement = jest.fn().mockReturnValue({ handled: true });
 
     expect(gcce.registerRawResponseHandlerForPlugin('streamalchemy', first)).toEqual({
-      pluginId: 'streamalchemy',
+      pluginId: 'stream-monsters',
       registered: true,
       replaced: false
     });
     expect(gcce.registerRawResponseHandlerForPlugin('streamalchemy', replacement)).toEqual({
-      pluginId: 'streamalchemy',
+      pluginId: 'stream-monsters',
       registered: true,
       replaced: true
     });
@@ -175,7 +175,7 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
       uniqueId: 'viewer-a'
     })).resolves.toEqual(expect.objectContaining({
       handled: true,
-      pluginId: 'streamalchemy'
+      pluginId: 'stream-monsters'
     }));
     await expect(gcce.handleChatMessage({
       text: 'hello stream',

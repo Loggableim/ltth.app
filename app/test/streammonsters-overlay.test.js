@@ -66,7 +66,7 @@ describe('Stream Monsters OBS overlay', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
 
@@ -86,7 +86,7 @@ describe('Stream Monsters OBS overlay', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
 
@@ -98,7 +98,7 @@ describe('Stream Monsters OBS overlay', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
 
@@ -110,7 +110,7 @@ describe('Stream Monsters OBS overlay', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
 

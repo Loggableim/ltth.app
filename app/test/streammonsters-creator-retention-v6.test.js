@@ -57,6 +57,7 @@ function localRequest(body = undefined, query = {}) {
 
 function createRouteHarness({
   now = () => 100_000,
+  idFactory = () => 'demo-id',
   gcceStateProvider,
   hintStateProvider,
   battleMatchService = {
@@ -136,6 +137,7 @@ function createRouteHarness({
       pendingKind: 'hatch'
     })),
     now,
+    idFactory,
     configProvider: {
       getConfig: () => ({ streamMonsters: config }),
       updateConfig: update => {
@@ -232,7 +234,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       res
     );
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error });
+    expect(res.payload).toEqual({ success: false, code: error, correlationId: expect.any(String) });
   });
 
   test('returns aggregate retention/live diagnostics only to the creator route', async () => {
@@ -263,6 +265,11 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
       creator
     );
     expect(creator.payload.diagnostics).toEqual({
+      actions: [
+        { code: 'copy_overlay_url', target: '#overlayUrl' },
+        { code: 'apply_safe_layout', target: '#presentationReset' },
+        { code: 'open_repair_dialog', target: '#repairEggsPreview' }
+      ],
       freeEggs: {
         enabled: true,
         cooldownSeconds: 86_400,
@@ -332,7 +339,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     expect(publicState.payload.config.rulesVersion).toBe(8);
     expect(publicState.payload.battle).toEqual({
       rulesVersion: 8,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'classic',
       matches: []
@@ -340,7 +347,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     expect(creatorState.payload.config.rulesVersion).toBe(8);
     expect(creatorState.payload.battle).toEqual({
       rulesVersion: 8,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'classic',
       matches: []
@@ -348,7 +355,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     expect(battleState.payload).toEqual({
       success: true,
       rulesVersion: 8,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'classic',
       matches: []

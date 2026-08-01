@@ -55,7 +55,8 @@ describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
     expect(changelog).toContain('Stream Monsters 1.10.0');
     expect(changelog).toContain('Living Egg Shelf');
     expect(changelog).toContain('Jackpot');
-    expect(currentRelease.notes).toContain('archive through 1.11.0 remain preserved');
+    expect(currentRelease.notes).toContain('streamalchemy-1.11.1.zip');
+    expect(currentRelease.notes).toMatch(/byte-identical/i);
   });
 
   test('binds every tree-backed release to its recorded source commit', () => {
@@ -63,7 +64,7 @@ describe('Stream Monsters 1.10 Jackpot Arena release contract', () => {
     for (const release of Object.values(releaseMap.releases)) {
       if (!release.sourceTree) continue;
       expect(release.sourceTree).toBe(
-        git('rev-parse', `${release.sourceCommit}:${releaseMap.sourcePath}`)
+        git('rev-parse', `${release.sourceCommit}:${release.sourcePath}`)
       );
     }
   });

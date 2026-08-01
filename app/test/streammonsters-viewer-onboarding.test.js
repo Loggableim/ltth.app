@@ -18,7 +18,7 @@ const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const pluginDir = require('path').join(
   process.cwd(),
   'plugins',
-  'streamalchemy'
+  'stream-monsters'
 );
 
 function createStore() {

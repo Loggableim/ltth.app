@@ -13,7 +13,7 @@ const ChatView = require(
 const overlayPath = path.join(
   process.cwd(),
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'streammonsters-overlay.html'
 );
 
@@ -830,7 +830,7 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       const pluginCatalog = JSON.parse(fs.readFileSync(path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ), 'utf8')).plugins.streamalchemy.ui.monsters;

@@ -16,8 +16,8 @@ function sha256(relativePath) {
     .digest('hex');
 }
 
-describe('Stream Monsters 1.11 source-release contract', () => {
-  test('preserves the verified 1.11.0 source while promoting 1.11.1 Stable without changing LTTH 1.4.1', () => {
+describe('Stream Monsters 1.12 source-release contract', () => {
+  test('publishes the canonical 1.12 source on LTTH 1.4.2', () => {
     const manifest = readJson('app/plugins/stream-monsters/plugin.json');
     const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
     const appPackage = readJson('app/package.json');
@@ -26,41 +26,78 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
 
     expect(manifest).toEqual(expect.objectContaining({
-      id: 'streamalchemy',
+      id: 'stream-monsters',
       name: 'Stream Monsters',
-      version: '1.11.1',
+      version: '1.12.0',
+      minLtthVersion: '1.4.2',
       devStatus: 'stable'
     }));
-    expect(releaseMap).not.toHaveProperty('stagedRelease');
-    expect(releaseMap.releases['1.11.0']).toEqual({
+    expect(releaseMap).toEqual(expect.objectContaining({
+      schemaVersion: 2,
+      pluginId: 'stream-monsters',
+      aliases: ['streamalchemy']
+    }));
+    expect(appPackage.version).toBe('1.4.2');
+    expect(rootPackage.version).toBe('1.4.2');
+    expect(version).toEqual(expect.objectContaining({
+      version: '1.4.2',
+      downloadVersion: '1.4.2'
+    }));
+    expect(currentRelease.version).toBe('1.4.2');
+  });
+
+  test('publishes one canonical 1.12 Store tile with the historical 1.11.1 rollback', () => {
+    const store = readJson('plugin-store.json');
+    const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
+    const release = releaseMap.releases['1.12.0'];
+    const tiles = store.plugins.filter(plugin =>
+      plugin.id === 'stream-monsters' || plugin.id === 'streamalchemy'
+    );
+
+    expect(tiles).toHaveLength(1);
+    expect(tiles[0]).toEqual(expect.objectContaining({
+      id: 'stream-monsters',
+      version: '1.12.0',
+      minLtthVersion: '1.4.2',
+      channel: 'stable',
+      packageUrl: 'https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip',
+      sha256: release.sha256
+    }));
+    expect(tiles[0].rollbackVersions).toContainEqual({
+      version: '1.11.1',
+      manifestId: 'streamalchemy',
+      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
+      sha256: '46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60'
+    });
+    expect(release).toEqual(expect.objectContaining({
+      manifestId: 'stream-monsters',
+      sourcePath: 'app/plugins/stream-monsters',
+      manifestVersion: '1.12.0',
+      package: 'plugin-store/packages/stream-monsters-1.12.0.zip'
+    }));
+    expect(fs.existsSync(path.join(packageDir, 'stream-monsters-1.12.0.zip'))).toBe(true);
+    expect(sha256(release.package)).toBe(release.sha256);
+  });
+
+  test('keeps the verified 1.11 source, package and rollback hash immutable', () => {
+    const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
+
+    expect(releaseMap.releases['1.11.0']).toEqual(expect.objectContaining({
       sourceCommit: 'e242b808276366c2f804fdeb353d5cab9caeae98',
       sourceTree: '1478e82f9c1d0441a594a9537935e324da451692',
       manifestVersion: '1.11.0',
       package: 'plugin-store/packages/streamalchemy-1.11.0.zip',
       sha256: '837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4'
-    });
-    expect(appPackage.version).toBe('1.4.1');
-    expect(rootPackage.version).toBe('1.4.1');
-    expect(version.version).toBe('1.4.1');
-    expect(version.downloadVersion).toBe('1.4.1');
-    expect(currentRelease.version).toBe('1.4.1');
-  });
-
-  test('publishes the verified 1.11.1 package and hash in the Stable store', () => {
-    const store = readJson('plugin-store.json');
-    const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
-    const release = releaseMap.releases['1.11.1'];
-    const entry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
-
-    expect(entry).toEqual(expect.objectContaining({
-      version: '1.11.1',
-      channel: 'stable',
-      packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
-      sha256: release.sha256
     }));
-    expect(fs.existsSync(path.join(packageDir, 'streamalchemy-1.11.1.zip'))).toBe(true);
+    expect(releaseMap.releases['1.11.1']).toEqual(expect.objectContaining({
+      manifestId: 'streamalchemy',
+      sourcePath: 'app/plugins/streamalchemy',
+      manifestVersion: '1.11.1',
+      package: 'plugin-store/packages/streamalchemy-1.11.1.zip',
+      sha256: '46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60'
+    }));
     expect(sha256('plugin-store/packages/streamalchemy-1.11.1.zip'))
-      .toBe(entry.sha256);
+      .toBe('46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60');
   });
 
   test.each([
@@ -75,24 +112,22 @@ describe('Stream Monsters 1.11 source-release contract', () => {
   });
 
   test.each(['de', 'en', 'es', 'fr'])(
-    'exposes 1.11 Rules v8 K.O. presentation in the %s plugin locale',
+    'exposes the current 1.12 Stream Monsters UI in %s',
     (locale) => {
       const copy = readJson(
         `app/plugins/stream-monsters/locales/${locale}.json`
       ).plugins.streamalchemy.ui.monsters;
 
-      expect(copy.version).toContain('1.11');
-      expect(copy.title).toContain('Portrait Arcade Rally');
+      expect(copy.version).toMatch(/1\.12/);
+      expect(copy.title).toContain('Stream Monsters');
       expect(copy.overlayTitle).toContain('Portrait Arcade Rally');
       expect(copy.rulesDynamic).toContain('Rules v8');
       expect(copy.overlayBattleKicker).toMatch(/K\.?\s*-?\s*O\.?/i);
-      expect(copy.overlayBattleKicker).not.toMatch(
-        /three rounds|drei Runden|tres rondas|trois manches/i
-      );
+      expect(Object.values(copy).join(' ')).not.toMatch(/template(?:s)?/i);
     }
   );
 
-  test('keeps the creator UI fallback label aligned with 1.11', () => {
+  test('keeps the creator and overlay fallback labels aligned with 1.12', () => {
     const creatorUi = fs.readFileSync(
       path.join(repoRoot, 'app/plugins/stream-monsters/streammonsters-ui.html'),
       'utf8'
@@ -102,23 +137,21 @@ describe('Stream Monsters 1.11 source-release contract', () => {
       'utf8'
     );
 
-    expect(creatorUi).toContain('Portrait Arcade Rally · Version 1.11');
-    expect(creatorUi).not.toContain('Version 1.10');
+    expect(creatorUi).toMatch(/Portrait Arcade Rally.*Version 1.12/);
+    expect(creatorUi).not.toContain('Version 1.11');
     expect(creatorUi).not.toContain('League World Hybrid');
-    expect(overlay).toContain('Stream Monsters · Portrait Arcade Rally Overlay');
+    expect(overlay).toMatch(/Stream Monsters.*Portrait Arcade Rally Overlay/);
     expect(overlay).not.toContain('League World Hybrid');
   });
 
-  test('marks release notes as verified without claiming an LTTH version bump', () => {
+  test('documents 1.12 and the byte-identical 1.11.1 rollback artifact', () => {
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
-    const release = readJson(
-      'app/scripts/streammonsters-release-map.json'
-    ).releases['1.11.1'];
 
-    expect(currentRelease.notes).toContain('Stream Monsters 1.11.1');
+    expect(currentRelease.version).toBe('1.4.2');
+    expect(currentRelease.notes).toContain('Stream Monsters 1.12.0');
     expect(currentRelease.notes).toContain('streamalchemy-1.11.1.zip');
-    expect(currentRelease.notes).toContain(release.sha256);
+    expect(currentRelease.notes).toContain('46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60');
+    expect(currentRelease.notes).toMatch(/byte-identical/i);
     expect(currentRelease.notes).not.toMatch(/source candidate|package pending|Quellkandidat|Paket ausstehend/i);
-    expect(currentRelease.version).toBe('1.4.1');
   });
 });

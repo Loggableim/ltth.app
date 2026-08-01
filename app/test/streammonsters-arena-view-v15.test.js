@@ -137,7 +137,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         locked: true,
         name: 'Ashfang',
         viewerName: '@pupcid',
-        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
         hp: 40,
         maxHp: 40
       }
@@ -527,8 +527,8 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       matchId: 'players-visible',
       state: 'roster',
       fighters: [
-        { slot: 1, name: 'Ashfang', viewerName: '@pupcid', imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png', hp: 10, maxHp: 10 },
-        { slot: 2, name: 'Selene', viewerName: '@mark_teufel01', imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/selene.png', hp: 10, maxHp: 10 }
+        { slot: 1, name: 'Ashfang', viewerName: '@pupcid', imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png', hp: 10, maxHp: 10 },
+        { slot: 2, name: 'Selene', viewerName: '@mark_teufel01', imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/selene.png', hp: 10, maxHp: 10 }
       ]
     });
     expect(document.getElementById('arena-owner-1').textContent).toBe('@pupcid');
@@ -544,7 +544,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         slot: 1,
         name: '938475938475',
         viewerName: '123456789012345678',
-        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
         hp: 10,
         maxHp: 10
       }, {
@@ -2160,12 +2160,12 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('[data-slot="1"] [data-skill="C"]').classList)
       .toContain('charging');
     expect(document.querySelector('[data-slot="1"] [data-skill="C"] .skill-charge').textContent)
-      .toContain('95%');
+      .toContain('95 / 100');
 
     clock.advance(1_000);
     view.renderCountdown();
     expect(document.querySelector('[data-slot="1"] [data-skill="C"] .skill-charge').textContent)
-      .toContain('100%');
+      .toContain('100 / 100');
     expect(document.querySelector('[data-slot="1"] [data-skill="C"]').classList)
       .toContain('ready');
   });
@@ -2205,7 +2205,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       view.renderCountdown();
       const specialCard = document.querySelector('[data-slot="1"] [data-skill="C"]');
       expect(specialCard.querySelector('.skill-charge').textContent)
-        .toMatch(/^90%.*10 charge missing$/);
+        .toMatch(/^90 \/ 100 · 10 charge missing$/);
       expect(specialCard.classList).toContain('charging');
       expect(specialCard.classList).not.toContain('ready');
     }
@@ -2243,38 +2243,38 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     openAt(74.5);
     expect(specialCard.classList).not.toContain('anticipation-75');
     expect(specialCard.querySelector('.skill-charge').textContent)
-      .toMatch(/^74%.*26 charge missing$/);
+      .toMatch(/^74 \/ 100 · 26 charge missing$/);
 
     openAt(75);
     expect(specialCard.classList).toContain('anticipation-75');
     expect(specialCard.querySelector('.skill-charge').textContent)
-      .toMatch(/^75%.*25 charge missing$/);
+      .toMatch(/^75 \/ 100 · 25 charge missing$/);
 
     openAt(89.5);
     expect(specialCard.classList).toContain('anticipation-75');
     expect(specialCard.classList).not.toContain('anticipation-90');
     expect(specialCard.querySelector('.skill-charge').textContent)
-      .toMatch(/^89%.*11 charge missing$/);
+      .toMatch(/^89 \/ 100 · 11 charge missing$/);
 
     openAt(90);
     expect(specialCard.classList).not.toContain('anticipation-75');
     expect(specialCard.classList).toContain('anticipation-90');
     expect(specialCard.querySelector('.skill-charge').textContent)
-      .toMatch(/^90%.*10 charge missing$/);
+      .toMatch(/^90 \/ 100 · 10 charge missing$/);
 
     openAt(99.5);
     expect(specialCard.classList).toContain('anticipation-90');
     expect(specialCard.classList).not.toContain('anticipation-100');
     expect(specialCard.classList).not.toContain('ready');
     expect(specialCard.querySelector('.skill-charge').textContent)
-      .toMatch(/^99%.*1 charge missing$/);
+      .toMatch(/^99 \/ 100 · 1 charge missing$/);
 
     openAt(100);
     expect(specialCard.classList).not.toContain('anticipation-90');
     expect(specialCard.classList).toContain('anticipation-100');
     expect(specialCard.classList).toContain('ready');
     expect(specialCard.querySelector('.skill-charge').textContent)
-      .toMatch(/^100%.*READY$/);
+      .toMatch(/^100 \/ 100 · READY$/);
   });
 
   test('shows a sealed lock without selecting a skill until both choices are revealed', () => {
@@ -2602,7 +2602,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2632,7 +2632,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2661,7 +2661,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2714,7 +2714,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2773,7 +2773,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2819,7 +2819,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2918,7 +2918,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -2991,7 +2991,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -3150,7 +3150,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       const catalog = JSON.parse(fs.readFileSync(path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ), 'utf8')).plugins.streamalchemy.ui.monsters;
@@ -3178,7 +3178,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const catalog = JSON.parse(fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'locales',
       `${locale}.json`
     ), 'utf8')).plugins.streamalchemy.ui.monsters;
@@ -3194,7 +3194,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const catalog = JSON.parse(fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'locales',
       `${locale}.json`
     ), 'utf8')).plugins.streamalchemy.ui.monsters;
@@ -3206,7 +3206,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);
@@ -3254,7 +3254,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       /@media \(orientation: portrait\)[\s\S]*#arena-result\s*\{[^}]*max-height:[^}]*overflow:hidden/s
     );
     expect(html).toMatch(
-      /if \(type === 'egg_hatched'\)[\s\S]*?presentation:'hatch',[\s\S]*?duration:12_000/
+      /if \(type === 'egg_hatched'\) return presentArcadeScene\([\s\S]*?showHatchReveal\(data\)/
     );
     expect(html).toMatch(/@media \(orientation: landscape\)\s*\{[^}]*height:65%/s);
     expect(html).toMatch(/@media \(orientation: landscape\)[\s\S]*#arena-feed\s*\{[^}]*top:18%/);
@@ -3267,11 +3267,11 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(html).toContain('#arena-fighter-1.advancing .arena-sprite-wrap');
     expect(html).toContain('#arena-fighter-2.advancing .arena-sprite-wrap');
     expect(scripts).toEqual(expect.arrayContaining([
-      '/plugins/streamalchemy/streammonsters-arena-director.js',
-      '/plugins/streamalchemy/streammonsters-audio-engine.js',
-      '/plugins/streamalchemy/streammonsters-arena-view.js'
+      '/plugins/stream-monsters/streammonsters-arena-director.js',
+      '/plugins/stream-monsters/streammonsters-audio-engine.js',
+      '/plugins/stream-monsters/streammonsters-arena-view.js'
     ]));
-    expect(html).toContain('/plugins/streamalchemy/assets/audio/manifest.json');
+    expect(html).toContain('/plugins/stream-monsters/assets/audio/manifest.json');
     expect(html).not.toContain('streammonsters-cues.js');
     expect(html).not.toContain('localStorage');
     for (const event of [
@@ -3315,7 +3315,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       const translations = JSON.parse(fs.readFileSync(path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ), 'utf8')).plugins.streamalchemy.ui.monsters;

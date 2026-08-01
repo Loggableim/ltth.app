@@ -121,7 +121,7 @@ describe('Stream Monsters current rules migration', () => {
       hatchDurationMs: 1_800_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
-    expect(setConfig).toHaveBeenCalledWith('streamalchemy_config', plugin.config);
+    expect(setConfig).toHaveBeenCalledWith('config', plugin.config);
   });
 
   test('archives retired image-generation settings without exposing or changing them', () => {

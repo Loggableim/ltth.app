@@ -37,7 +37,7 @@ function createCollection(progression = null, assetRegistry = null) {
     personality: 'Brave',
     rarity: 'Standard',
     stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
-    imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+    imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
     visualSource: 'furry',
     visualKey: 'furry:ashfang',
     createdAtMs: 2
@@ -108,7 +108,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       }),
       monster: expect.objectContaining({
         evolution_stage: 2,
-        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp',
+        image_url: '/plugins/stream-monsters/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp',
         visual_source: 'furry',
         visual_key: 'furry:ashfang:stage-2',
         stats: { vitality: 7, might: 10, guard: 6, agility: 8 }
@@ -140,7 +140,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       }),
       monster: expect.objectContaining({
         evolution_stage: 3,
-        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp',
+        image_url: '/plugins/stream-monsters/assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp',
         visual_key: 'furry:ashfang:stage-3',
         stats: { vitality: 7, might: 12, guard: 6, agility: 9 }
       })
@@ -279,7 +279,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     expect(store.getMonster('monster-a')).toEqual(expect.objectContaining({
       template_id: 'ashfang',
       evolution_stage: 1,
-      image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
+      image_url: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp',
       visual_source: 'furry',
       visual_key: 'furry:ashfang'
     }));
@@ -365,7 +365,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       personality: 'Bold',
       rarity: 'Standard',
       stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
-      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
+      imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp',
       visualSource: 'furry',
       visualKey: 'furry:ashfang',
       createdAtMs: 3

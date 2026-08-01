@@ -6,7 +6,7 @@ const path = require('path');
 const { FURRY_ASSET_VERSION, getTemplate } = require('./catalog');
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const KENNEY_URL = /^\/api\/streammonsters\/art\/kenney-([a-f0-9]{16})\.svg$/;
+const KENNEY_URL = /^\/api\/(?:stream-monsters|streammonsters)\/art\/kenney-([a-f0-9]{16})\.svg$/;
 
 function readWebpMetadata(bytes) {
   if (bytes.length < 30 || bytes.subarray(0, 4).toString('ascii') !== 'RIFF' ||

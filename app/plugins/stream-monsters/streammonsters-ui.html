@@ -299,7 +299,7 @@
   <header class="hero">
     <div>
       <img class="hero-logo" src="/plugins/stream-monsters/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
-      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Portrait Arcade Rally · Version 1.11</div>
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Portrait Arcade Rally · Version 1.12</div>
       <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
       <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Portrait-first PvP, permanente Sammlung und 72 fertig gebündelte Furry-Formen. Geschenke kaufen Tempo und Show, niemals Kampfstärke.</p>
     </div>
@@ -350,7 +350,7 @@
       <article class="card">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.obsSource">OBS Browser Source</h3>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.responsiveCopy">Portrait and landscape use independent broadcast layouts.</p>
-        <code id="overlayUrl">/streammonsters/overlay</code>
+        <code id="overlayUrl">/stream-monsters/overlay</code>
         <button type="button"
                 data-creator-diagnostic-action="copy_overlay_url"
                 data-copy-tiktok-studio-url
@@ -1067,7 +1067,7 @@
     let payload;
     try {
       payload = await request(
-        `/api/streammonsters/gift-catalog?q=${encodeURIComponent(catalogQuery)}` +
+        `/api/stream-monsters/gift-catalog?q=${encodeURIComponent(catalogQuery)}` +
         `&offset=${catalogOffset}&limit=${CATALOG_PAGE_SIZE}`,
         { signal:catalogAbortController.signal }
       );
@@ -1087,7 +1087,7 @@
     return payload;
   };
   const loadMappings = async () => {
-    const payload = await request('/api/streammonsters/gift-mappings');
+    const payload = await request('/api/stream-monsters/gift-mappings');
     const root = byId('mappingList');
     root.replaceChildren();
     (payload.mappings || []).forEach(mapping => {
@@ -1098,7 +1098,7 @@
         imageUrl:mapping.image_url
       };
       root.append(giftRow(gift, text('remove', 'Entfernen'), async () => {
-        await request(`/api/streammonsters/gift-mappings/${mapping.gift_id}`, { method:'DELETE' });
+        await request(`/api/stream-monsters/gift-mappings/${mapping.gift_id}`, { method:'DELETE' });
         currentStateConfig.giftMappingCustomized = true;
         await loadMappings();
       }));
@@ -1114,7 +1114,7 @@
       throw failure;
     }
     const effect = byId('giftEffect').value;
-    await request(`/api/streammonsters/gift-mappings/${selectedGift.giftId}`, {
+    await request(`/api/stream-monsters/gift-mappings/${selectedGift.giftId}`, {
       method:'PUT',
       headers:jsonHeaders,
       body:JSON.stringify({ enabled:true, effect, element:byId('giftElement').value })
@@ -1506,7 +1506,7 @@
   const loadAssetIntegrity = async () => {
     try {
       const catalog = await request(
-        '/api/streammonsters/monster-catalog?offset=0&limit=24'
+        '/api/stream-monsters/monster-catalog?offset=0&limit=24'
       );
       const verifiedAssets = (catalog.templates || []).flatMap(template => (
         (template.stages || []).map(stage => ({
@@ -1515,10 +1515,7 @@
           name:template.name,
           element:stage.element || template.element,
           species:stage.species || template.species,
-          assetPath:String(stage.assetPath || '').replace(
-            /^\/plugins\/streamalchemy\//,
-            ''
-          )
+          assetPath:creatorRuntime.normalizePackagedAssetPath(stage.assetPath)
         }))
       ));
       renderAssetStages(creatorRuntime.buildAssetStageEntries({
@@ -1549,8 +1546,8 @@
   const loadMonsterCatalog = async (userId = '', options = {}) => {
     const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
     const route = userId
-      ? '/api/streammonsters/creator-catalog'
-      : '/api/streammonsters/monster-catalog';
+      ? '/api/stream-monsters/creator-catalog'
+      : '/api/stream-monsters/monster-catalog';
     const payload = await request(`${route}${query}`);
     renderDex(payload);
     return payload;
@@ -1564,7 +1561,7 @@
     const options = { signal:viewerAbortController.signal };
     let payload;
     try {
-      payload = await request(`/api/streammonsters/creator-state?userId=${encodeURIComponent(userId)}`, options);
+      payload = await request(`/api/stream-monsters/creator-state?userId=${encodeURIComponent(userId)}`, options);
       if (requestSequence !== viewerRequestSequence) return null;
       renderViewer(payload.viewer || {});
       await loadMonsterCatalog(userId, options);
@@ -1608,8 +1605,8 @@
   };
   const loadLeaderboards = async () => {
     const [collector, arena] = await Promise.all([
-      request('/api/streammonsters/leaderboard?type=collector&limit=25'),
-      request('/api/streammonsters/leaderboard?type=arena&limit=25')
+      request('/api/stream-monsters/leaderboard?type=collector&limit=25'),
+      request('/api/stream-monsters/leaderboard?type=arena&limit=25')
     ]);
     renderLeaderboard(collector.entries || [], {
       targetId:'collectorLeaderboard',
@@ -1674,7 +1671,7 @@
       throw failure;
     }
     payload.presentation = presentationEditorController.snapshot();
-    await request('/api/streammonsters/config', {
+    await request('/api/stream-monsters/config', {
       method:'POST',
       headers:jsonHeaders,
       body:JSON.stringify(payload)
@@ -1958,7 +1955,7 @@
     try {
       const [status, state] = await Promise.all([
         request('/api/status'),
-        request('/api/streammonsters/creator-state')
+        request('/api/stream-monsters/creator-state')
       ]);
       renderLiveCenter(status, state);
     } catch (_) {
@@ -2014,13 +2011,13 @@
     try {
       const [status,state,mappings,assetSummary] = await Promise.all([
         request('/api/status'),
-        request('/api/streammonsters/creator-state'),
+        request('/api/stream-monsters/creator-state'),
         loadMappings(),
         loadAssetIntegrity()
       ]);
       byId('creatorName').value = state.config?.creatorName || status.username || '';
       organizeAliasGroups();
-      byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
+      byId('overlayUrl').textContent = `${location.origin}/stream-monsters/overlay`;
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
       applyPresentationState(state);
       applyDynamicRules(state);
@@ -2056,7 +2053,7 @@
   }
   byId('runDemo').addEventListener('click', async () => {
     try {
-      await request('/api/streammonsters/demo', { method:'POST' });
+      await request('/api/stream-monsters/demo', { method:'POST' });
       notice(text('demoSent', 'Vollständiger Spawn-, Hatch-, Kenney-, Liga- und Duell-Demoablauf gesendet.'), 'success');
     } catch (error) {
       notice(apiErrorText(error), 'error');
@@ -2072,7 +2069,7 @@
       scale:byId(`${layout}Scale`).value
     });
     try {
-      await request('/api/streammonsters/demo', {
+      await request('/api/stream-monsters/demo', {
         method:'POST',
         headers:jsonHeaders,
         body:JSON.stringify(payload)

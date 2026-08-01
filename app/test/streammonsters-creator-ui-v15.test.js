@@ -32,7 +32,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     expect(document.querySelector('nav a[href="#languages"]')).not.toBeNull();
     expect(document.getElementById('gameplay').textContent).not.toContain('Rules v7');
     expect(document.getElementById('gameplay').textContent).toContain('Rules v8');
-    expect(document.getElementById('gameplayPace').value).toBe('arcade-rally');
+    expect(document.getElementById('gameplayPace').value).toBe('arcade');
     expect(document.getElementById('portraitBattleMode').value).toBe('takeover-74');
     expect(document.querySelector('#hatchPreset option[value="90000"]')).not.toBeNull();
   });
@@ -64,6 +64,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     const expectedCommands = [
       'eggs',
       'adopt',
+      'steal',
       'hatch',
       'inventory',
       'monsters',
@@ -241,7 +242,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
   });
 
   test('uses the server-verified bundled catalog as the asset integrity source', () => {
-    expect(html).toContain('/api/streammonsters/monster-catalog?offset=0&limit=24');
+    expect(html).toContain('/api/stream-monsters/monster-catalog?offset=0&limit=24');
     expect(html).not.toContain(
       "fetch('/plugins/streamalchemy/assets/streammonsters/furry/manifest.json'"
     );

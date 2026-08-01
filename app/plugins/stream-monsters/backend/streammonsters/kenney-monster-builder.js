@@ -48,7 +48,7 @@ class KenneyMonsterBuilder {
       visualSource: 'kenney',
       visualKey: `kenney:${signature}`,
       absolutePath,
-      publicUrl: `/api/streammonsters/art/${filename}`,
+      publicUrl: `/api/stream-monsters/art/${filename}`,
       selection
     };
   }

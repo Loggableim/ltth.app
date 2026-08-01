@@ -7,13 +7,13 @@ const { JSDOM } = require('jsdom');
 const helperPath = path.join(
   process.cwd(),
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'streammonsters-portrait-arena.js'
 );
 const overlayPath = path.join(
   process.cwd(),
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'streammonsters-overlay.html'
 );
 const acceptanceFixturePath = path.join(
@@ -462,7 +462,10 @@ describe('Stream Monsters bounded portrait arena', () => {
     const exceptionLane = document.getElementById('portrait-exception-lane');
 
     expect(Array.from(overlay.children).map(child => child.id)).toEqual([
+      'phase-announcer',
+      'critical-status-announcer',
       'portrait-arena',
+      'hatch-reveal',
       'portrait-exception-lane'
     ]);
     expect(arena?.dataset.arenaVariant).toBe('classic');
@@ -514,7 +517,7 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-arena-top')).toBe('11.8%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-arena-right')).toBe('2%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-arena-bottom')).toBe('42.2%');
-    expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-top')).toBe('74%');
+    expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-top')).toBe('58%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-right')).toBe('3%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-bottom')).toBe('2%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-left')).toBe('3%');
@@ -563,14 +566,14 @@ describe('Stream Monsters bounded portrait arena', () => {
       .map(script => script.getAttribute('src'));
 
     const helperIndex = sources.indexOf(
-      '/plugins/streamalchemy/streammonsters-portrait-arena.js'
+      '/plugins/stream-monsters/streammonsters-portrait-arena.js'
     );
     expect(helperIndex).toBeGreaterThan(-1);
     expect(helperIndex).toBeLessThan(sources.indexOf(
-      '/plugins/streamalchemy/streammonsters-effects-renderer.js'
+      '/plugins/stream-monsters/streammonsters-effects-renderer.js'
     ));
     expect(helperIndex).toBeLessThan(sources.indexOf(
-      '/plugins/streamalchemy/streammonsters-arena-view.js'
+      '/plugins/stream-monsters/streammonsters-arena-view.js'
     ));
     dom.window.close();
   });

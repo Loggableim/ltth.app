@@ -75,7 +75,7 @@ describe('Stream Monsters bundled monster catalog', () => {
       stages: [
         expect.objectContaining({
           stage: 1,
-          assetPath: expect.stringMatching(/^\/plugins\/streamalchemy\/assets\//),
+          assetPath: expect.stringMatching(/^\/plugins\/stream-monsters\/assets\//),
           dimensions: [1024, 1024],
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
         }),

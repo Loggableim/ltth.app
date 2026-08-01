@@ -68,7 +68,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     for (const duration of ['30000', '60000', '90000', '120000', '300000', '600000', '1800000']) {
       expect(html).toContain(`value="${duration}"`);
     }
-    expect(html).toContain('value="arcade-rally"');
+    expect(html).toContain('value="arcade"');
     expect(html).toContain('value="takeover-74"');
     expect(html).not.toContain('id="visualPack"');
     expect(html).not.toContain('value="art_lab"');
@@ -84,7 +84,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('legacyCustomHatchDuration');
     expect(html).toContain('safeZoneCollisions');
     expect(html).toContain('buildDexSlots');
-    expect(html).toContain('/api/streammonsters/creator-catalog');
+    expect(html).toContain('/api/stream-monsters/creator-catalog');
     expect(html).toContain("portraitArenaVariant:byId('portraitArenaVariant').value");
     expect(html).toContain("eggShelfVisibleCount:byId('eggShelfVisibleCount').value");
     expect(html).toContain(

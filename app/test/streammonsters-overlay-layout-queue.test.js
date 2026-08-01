@@ -488,7 +488,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     const overlayHtml = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(overlayHtml);
@@ -626,7 +626,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(queue.snapshot().map(entry => entry.type)).toEqual(sequence.map(([type]) => type));
   });
 
-  test('retains every complete critical group beyond the soft queue limit', () => {
+  test('compacts critical overflow into exactly one resync sentinel', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 4, maxCriticalOverflow: 3 });
     const enqueueBattle = battleId => {
       queue.enqueue('battle_started', { battleId }, 1);
@@ -638,26 +638,12 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     enqueueBattle('battle-oldest');
     enqueueBattle('battle-newest');
 
-    expect(queue.size()).toBe(10);
-    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-oldest').map(entry => entry.type))
-      .toEqual([
-        'battle_started',
-        'battle_round',
-        'battle_round',
-        'battle_round',
-        'battle_completed'
-      ]);
-    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-newest').map(entry => entry.type))
-      .toEqual([
-        'battle_started',
-        'battle_round',
-        'battle_round',
-        'battle_round',
-        'battle_completed'
-      ]);
+    expect(queue.snapshot()).toEqual([
+      expect.objectContaining({ type: 'state_resync_required', priority: 4, data: { reason: 'critical_overflow' } })
+    ]);
   });
 
-  test('accepts a late unique event without sacrificing an earlier critical group', () => {
+  test('rejects late critical events after compacting an overflow', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 4, maxCriticalOverflow: 3 });
     const oldBattleId = 'battle-complete-retained';
     queue.enqueue('battle_started', { battleId: oldBattleId }, 1);
@@ -670,37 +656,30 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     queue.enqueue('battle_started', { battleId: newBattleId }, 6);
     queue.enqueue('battle_round', { battleId: newBattleId, round: { number: 1 } }, 7);
     queue.enqueue('battle_round', { battleId: newBattleId, round: { number: 2 } }, 8);
-    expect(queue.snapshot().filter(entry => entry.groupKey === `battle:${oldBattleId}`))
-      .toHaveLength(5);
+    expect(queue.snapshot()).toEqual([expect.objectContaining({ type: 'state_resync_required' })]);
 
     expect(queue.enqueue('battle_skill_used', {
       battleId: oldBattleId,
       round: 4,
       actorId: 'monster-late',
       skill: { vfxKey: 'late:unique' }
-    }, 9)).toBe(true);
-    expect(queue.snapshot().filter(entry => entry.groupKey === `battle:${oldBattleId}`))
-      .toHaveLength(6);
+    }, 9)).toBe(false);
+    expect(queue.snapshot()).toHaveLength(1);
   });
 
-  test('deduplicates a retransmitted terminal event without discarding its critical group', () => {
+  test('deduplicates retransmissions after a critical overflow resync sentinel', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 2, maxCriticalOverflow: 0 });
     const battleId = 'battle-retained-incomplete';
     queue.enqueue('battle_started', { battleId }, 1);
     queue.enqueue('battle_round', { battleId, round: { number: 1 } }, 2);
     queue.enqueue('battle_round', { battleId, round: { number: 2 } }, 3);
-    expect(queue.enqueue('battle_completed', { battleId }, 4)).toBe(true);
+    expect(queue.enqueue('battle_completed', { battleId }, 4)).toBe(false);
     expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(false);
 
-    expect(queue.snapshot().map(entry => entry.type)).toEqual([
-      'battle_started',
-      'battle_round',
-      'battle_round',
-      'battle_completed'
-    ]);
+    expect(queue.snapshot()).toEqual([expect.objectContaining({ type: 'state_resync_required', data: { reason: 'critical_overflow' } })]);
   });
 
-  test('deduplicates queued critical events after the fingerprint history rolls over', () => {
+  test('keeps one sentinel while fingerprint history records compacted critical events', () => {
     const queue = runtime.createPriorityQueue({
       maxSize: 1,
       maxCriticalOverflow: 0,
@@ -713,9 +692,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     }
 
     expect(queue.enqueue('battle_started', { battleId: 'battle-discarded-0' }, 1000)).toBe(false);
-    expect(queue.snapshot()).toHaveLength(200);
-    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-discarded-0'))
-      .toHaveLength(2);
+    expect(queue.snapshot()).toEqual([expect.objectContaining({ type: 'state_resync_required' })]);
   });
 
   test('allows reconnect snapshot initialization to replace prior critical overflow', () => {
@@ -728,8 +705,8 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     queue.enqueue('battle_started', { battleId }, 1);
     queue.enqueue('battle_round', { battleId, round: { number: 1 } }, 2);
     queue.enqueue('battle_round', { battleId, round: { number: 2 } }, 3);
-    expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(true);
-    expect(queue.snapshot()).toHaveLength(4);
+    expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(false);
+    expect(queue.snapshot()).toEqual([expect.objectContaining({ type: 'state_resync_required' })]);
 
     queue.beginSnapshot();
     expect(queue.enqueue('battle_started', { battleId }, 20)).toBe(true);
@@ -933,6 +910,8 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       }
     }, {
       layout: 'portrait',
+      profile: 'streammonsters-full-v1',
+      view: 'full',
       renderer: {
         backend: 'webgpu',
         quality: 'high',
@@ -960,6 +939,8 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       }
     }, {
       layout: 'landscape',
+      profile: 'streammonsters-full-v1',
+      view: 'full',
       renderer: {
         backend: 'canvas2d',
         quality: 'medium',

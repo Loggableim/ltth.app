@@ -167,7 +167,7 @@ class ChatCommands {
       rawData.avatar
     ].map(value => {
       const candidate = String(value || '').trim();
-      if (/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(candidate)) {
+      if (/^\/api\/(?:stream-monsters|streammonsters)\/avatar\/[a-z0-9_-]{16,1024}$/i.test(candidate)) {
         return candidate;
       }
       return avatarProxyReference(candidate);
@@ -270,7 +270,7 @@ class ChatCommands {
       context.avatar, rawData.avatar
     ].map(value => {
       const candidate = String(value || '').trim();
-      if (/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(candidate)) {
+      if (/^\/api\/(?:stream-monsters|streammonsters)\/avatar\/[a-z0-9_-]{16,1024}$/i.test(candidate)) {
         return candidate;
       }
       return avatarProxyReference(candidate);

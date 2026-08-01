@@ -2205,14 +2205,14 @@ describe('Stream Monsters durable BattleMatchService', () => {
           element: 'Ember',
           templateId: 'ashfang',
           evolutionStage: 1,
-          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
+          imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp',
           maxHp: expect.any(Number)
         }),
         expect.objectContaining({
           element: 'Tide',
           templateId: 'ripple',
           evolutionStage: 1,
-          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ripple.webp',
+          imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ripple.webp',
           maxHp: expect.any(Number)
         })
       ]),
@@ -2425,7 +2425,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
         expect.objectContaining({
           slot: 1,
           templateId: expect.any(String),
-          imageUrl: expect.stringMatching(/^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\//),
+          imageUrl: expect.stringMatching(/^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\//),
           hp: expect.any(Number),
           maxHp: expect.any(Number)
         }),

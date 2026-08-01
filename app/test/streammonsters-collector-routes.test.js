@@ -154,7 +154,7 @@ describe('Stream Monsters 1.2 public API', () => {
         visualPack: 'furry',
         audioChannels: { battle: { enabled: true, volume: 0.55 } }
       }
-    });
+    }, { expectedRevision: undefined });
   });
 
   test('creates, lists and deletes only curated gift mappings', () => {
@@ -327,7 +327,7 @@ describe('Stream Monsters 1.2 public API', () => {
 
     expect(configProvider.updateConfig).toHaveBeenCalledWith({
       streamMonsters: { creatorName: 'Creator', giftMappingCustomized: true }
-    });
+    }, { expectedRevision: undefined });
   });
 
   test('keeps the public Dex redacted, exposes creator ownership, and tombstones pool preparation', async () => {

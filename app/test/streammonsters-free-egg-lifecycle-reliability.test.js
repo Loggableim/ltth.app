@@ -540,7 +540,7 @@ describe('Stream Monsters free egg lifecycle reliability', () => {
       egg: expect.objectContaining({
         display_name: 'Claimant Name',
         avatar_ref: expect.stringMatching(
-          /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i
+          /^\/api\/stream-monsters\/avatar\/[a-z0-9_-]{16,1024}$/i
         )
       })
     }));

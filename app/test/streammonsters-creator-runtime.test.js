@@ -22,6 +22,7 @@ const {
   eggReadinessCounts,
   leaderboardDisplayName,
   liveStatusTranslationKey,
+  normalizePackagedAssetPath,
   normalizeDemoRequest,
   previewComposition,
   previewGeometry,
@@ -94,7 +95,7 @@ describe('Stream Monsters creator controls', () => {
       600_000,
       1_800_000
     ]);
-    expect(GAMEPLAY_PACES).toEqual(['arcade-rally']);
+    expect(GAMEPLAY_PACES).toEqual(['arcade', 'standard', 'accessible']);
     expect(PORTRAIT_BATTLE_MODES).toEqual(['takeover-74']);
     expect(PORTRAIT_ARENA_VARIANTS).toEqual(['split-arena', 'classic']);
     expect(EGG_EXPIRY_PRESETS).toEqual([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
@@ -105,7 +106,7 @@ describe('Stream Monsters creator controls', () => {
       values: {
         creatorName: 'Creator',
         hatchDurationMs: '300000',
-        gameplayPace: 'arcade-rally',
+        gameplayPace: 'arcade',
         portraitBattleMode: 'takeover-74',
         eggExpiryMs: '86400000',
         seasonDurationDays: '60',
@@ -122,7 +123,7 @@ describe('Stream Monsters creator controls', () => {
     })).toEqual({
       creatorName: 'Creator',
       hatchDurationMs: 300_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       eggExpiryMs: 86_400_000,
       seasonDurationDays: 60,
@@ -338,16 +339,16 @@ describe('Stream Monsters creator controls', () => {
   test('requires a successful preview and explicit confirmation before a repair execute request', () => {
     expect(REPAIR_ACTIONS).toEqual({
       eggs: {
-        route: '/api/streammonsters/repair/eggs',
+        route: '/api/stream-monsters/repair/eggs',
         confirmation: 'reconcile_eggs'
       },
       matches: {
-        route: '/api/streammonsters/repair/matches',
+        route: '/api/stream-monsters/repair/matches',
         confirmation: 'cancel_stale_matches'
       }
     });
     expect(buildRepairRequest('eggs')).toEqual({
-      url: '/api/streammonsters/repair/eggs',
+      url: '/api/stream-monsters/repair/eggs',
       body: { dryRun: true }
     });
     expect(() => buildRepairRequest('eggs', {
@@ -365,7 +366,7 @@ describe('Stream Monsters creator controls', () => {
       previewed: true,
       confirmed: true
     })).toEqual({
-      url: '/api/streammonsters/repair/matches',
+      url: '/api/stream-monsters/repair/matches',
       body: {
         dryRun: false,
         confirm: 'cancel_stale_matches'
@@ -678,7 +679,7 @@ describe('Stream Monsters creator controls', () => {
       element: 'Ember',
       species: 'Wolf',
       stage: 1,
-      assetUrl: '/plugins/streamalchemy/assets/streammonsters/furry/monster-0.webp',
+      assetUrl: '/plugins/stream-monsters/assets/streammonsters/furry/monster-0.webp',
       healthy: true
     });
     expect(entries.at(-1)).toEqual(expect.objectContaining({
@@ -686,6 +687,15 @@ describe('Stream Monsters creator controls', () => {
       stage: 3,
       healthy: true
     }));
+  });
+
+  test('normalizes canonical and legacy packaged asset URLs for the stage gallery', () => {
+    expect(normalizePackagedAssetPath(
+      '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp'
+    )).toBe('assets/streammonsters/furry/ashfang.webp');
+    expect(normalizePackagedAssetPath(
+      '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp'
+    )).toBe('assets/streammonsters/furry/ashfang.webp');
   });
 
   test('rejects legacy PNG rows from schema-3 creator cards', () => {

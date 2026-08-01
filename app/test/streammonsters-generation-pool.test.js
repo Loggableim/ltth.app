@@ -8,7 +8,7 @@ describe('Stream Monsters generation-pool retirement', () => {
     expect(fs.existsSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'backend',
       'streammonsters',
       'generation-pool.js'

@@ -84,8 +84,8 @@ npm run lint
 ## Status
 
 - Current LTTH release: `1.4.2`
-- The current published Stream Monsters release is **1.11.1** (Stable, plugin ID `streamalchemy`).
-- Stream Monsters 1.11.1 promotes Portrait Arcade Rally to stable after release-gate verification of its 90-second fresh incubation default, bilingual overlay guidance, K.O.-only Rules v8 battles, Arena Collapse, element-specific WebGPU effects, deterministic reconnect recovery, and compatible player data.
+- The current published Stream Monsters release is **1.12.0** (Stable, plugin ID `stream-monsters`).
+- Stream Monsters 1.12.0 adds the Season-1 roster of 24 monsters, canonical creator and OBS URLs, configurable portrait/landscape sources, and an Arcade pace of 6/8 seconds for skills, 10/12 seconds for stat choice, 1.6-second standard actions, 2.4-second Specials and 2.8-second K.O. reveals. Arena Collapse is announced in round 3 and begins in round 4. Existing 1.11.1 packages, player data and historical replays remain compatible.
 - Current WebGPU Fireworks plugin release: `3.1.1`
 - Fireworks 3.1.1 keeps star, ring, standard, and special rockets inside one shared visible envelope so each burst opens at the exact rendered rocket endpoint without top-edge clipping.
 - Current changelog: [CHANGELOG.md](CHANGELOG.md)

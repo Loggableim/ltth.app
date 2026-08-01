@@ -85,17 +85,20 @@ function readGitFiles(sourceCommit, relativeFiles) {
 }
 
 describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
-  test('publishes the verified 1.11.1 Stable package without changing LTTH 1.4.1', () => {
-    const manifest = readJson('app/plugins/stream-monsters/plugin.json');
+  test('keeps the verified 1.11.1 Stable package available as the canonical rollback', () => {
+    const manifest = JSON.parse(git(
+      'show', `${expectedSourceCommit}:app/plugins/streamalchemy/plugin.json`));
     const releaseMap = loadReleaseMap();
     const release = releaseMap.releases['1.11.1'];
     const store = readJson('plugin-store.json');
-    const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
+    const storeEntry = store.plugins.find(plugin => plugin.id === 'stream-monsters');
 
     expect(releaseMap).not.toHaveProperty('stagedRelease');
     expect(release).toEqual({
       sourceCommit: expectedSourceCommit,
       sourceTree: expectedSourceTree,
+      manifestId: 'streamalchemy',
+      sourcePath: 'app/plugins/streamalchemy',
       manifestVersion: '1.11.1',
       package: 'plugin-store/packages/streamalchemy-1.11.1.zip',
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
@@ -106,26 +109,18 @@ describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
       version: '1.11.1',
       devStatus: 'stable'
     }));
-    expect(storeEntry).toEqual(expect.objectContaining({
+    expect(storeEntry.rollbackVersions).toContainEqual({
       version: '1.11.1',
-      channel: 'stable',
-      minLtthVersion: '1.4.1',
+      manifestId: 'streamalchemy',
       packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
       sha256: release.sha256
-    }));
-    expect(readJson('package.json').version).toBe('1.4.1');
-    expect(readJson('app/package.json').version).toBe('1.4.1');
+    });
+    expect(readJson('package.json').version).toBe('1.4.2');
+    expect(readJson('app/package.json').version).toBe('1.4.2');
     const version = readJson('version.json');
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
-    expect(version.version).toBe('1.4.1');
-    expect(version.downloadNote).toContain('Stream Monsters 1.11.1');
-    expect(version.downloadNote).not.toMatch(/pending|ausstehend|source candidate/i);
-    expect(currentRelease.version).toBe('1.4.1');
-    expect(currentRelease.notes).toContain('streamalchemy-1.11.1.zip');
-    expect(currentRelease.notes).toContain(release.sha256);
-    expect(currentRelease.notes).not.toMatch(/pending|ausstehend|source candidate/i);
-    expect(fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8'))
-      .toMatch(/current published Stream Monsters release is \*\*1\.11\.1/i);
+    expect(version.version).toBe('1.4.2');
+    expect(currentRelease.version).toBe('1.4.2');
   });
 
   test('ships a path-safe, source-identical package with current assets, locales and licenses', async () => {

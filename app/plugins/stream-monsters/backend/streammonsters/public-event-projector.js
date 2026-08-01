@@ -129,11 +129,14 @@ function finiteNumber(value, fallback = null) {
 function safeImageUrl(value) {
   const url = boundedText(value, 512);
   if (!url) return null;
+  const canonicalUrl = url
+    .replace(/^\/plugins\/streamalchemy\/assets\//, '/plugins/stream-monsters/assets/')
+    .replace(/^\/api\/streammonsters\//, '/api/stream-monsters/');
   return (
-    url.startsWith('/plugins/stream-monsters/assets/') ||
-    /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i.test(url) ||
-    /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(url)
-  ) ? url : null;
+    canonicalUrl.startsWith('/plugins/stream-monsters/assets/') ||
+    /^\/api\/stream-monsters\/art\/kenney-[a-f0-9]{16}\.svg$/i.test(canonicalUrl) ||
+    /^\/api\/stream-monsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(canonicalUrl)
+  ) ? canonicalUrl : null;
 }
 
 function projectStats(stats = {}) {

@@ -57,7 +57,7 @@ describe('Stream Monsters 1.9 Rules-v7 release contract', () => {
     for (const release of Object.values(releaseMap.releases)) {
       if (!release.sourceTree) continue;
       expect(release.sourceTree).toBe(
-        git('rev-parse', `${release.sourceCommit}:${releaseMap.sourcePath}`)
+        git('rev-parse', `${release.sourceCommit}:${release.sourcePath}`)
       );
     }
   });

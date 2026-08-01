@@ -70,7 +70,7 @@ describe('Stream Monsters public guide', () => {
     expect(page).not.toContain('/assets/streammonsters/furry/neonclaw.png');
     expect(pagesBuilder).toContain('"streammonsters"');
     expect(pagesBuilder).not.toContain('app/plugins/streamalchemy/assets/streammonsters/furry');
-    expect(sitemap).toContain('https://ltth.app/streammonsters/');
+    expect(sitemap).toContain('https://ltth.app/stream-monsters/');
   });
 
   test('documents the implemented default aliases and fair battle controls', () => {

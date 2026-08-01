@@ -270,6 +270,26 @@ describe('Stream Monsters 1.12 shared presentation contract', () => {
 });
 
 describe('Stream Monsters 1.12 presentation routes and markup', () => {
+  test('registers canonical public routes and permanent compatibility aliases', () => {
+    const { find } = routeSubject();
+    for (const routePath of [
+      '/stream-monsters/ui',
+      '/stream-monsters/overlay',
+      '/streammonsters/ui',
+      '/streammonsters/overlay',
+      '/streamalchemy/ui',
+      '/streamalchemy/overlay',
+      '/plugins/stream-monsters/ui.html',
+      '/plugins/stream-monsters/overlay.html',
+      '/plugins/streamalchemy/ui.html',
+      '/plugins/streamalchemy/overlay.html',
+      '/api/stream-monsters/state',
+      '/api/streammonsters/state'
+    ]) {
+      expect(find('GET', routePath)).toEqual(expect.any(Function));
+    }
+  });
+
   test('returns 400 for invalid overlay query values before sending HTML', () => {
     const { find } = routeSubject();
     const handler = find('GET', '/streammonsters/overlay');

@@ -16,7 +16,7 @@ describe('Stream Monsters Kenney fallback', () => {
       assetDir: path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'assets',
         'kenney-monster-builder'
       ),
@@ -30,7 +30,7 @@ describe('Stream Monsters Kenney fallback', () => {
     expect(first.visualSource).toBe('kenney');
     expect(first.visualKey).toMatch(/^kenney:/);
     expect(first.publicUrl).toMatch(
-      /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/
+      /^\/api\/stream-monsters\/art\/kenney-[a-f0-9]{16}\.svg$/
     );
     expect(fs.readFileSync(first.absolutePath, 'utf8')).toContain('<svg');
     expect(first.absolutePath).toContain(path.join('streammonsters', 'monster-art'));
@@ -42,7 +42,7 @@ describe('Stream Monsters Kenney fallback', () => {
       assetDir: path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'assets',
         'kenney-monster-builder'
       ),

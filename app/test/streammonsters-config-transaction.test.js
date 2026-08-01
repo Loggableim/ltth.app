@@ -158,9 +158,12 @@ describe('Stream Monsters transactional configuration revisions', () => {
     }, stale);
     expect(stale.statusCode).toBe(409);
     expect(stale.body).toEqual(expect.objectContaining({
+      success: false,
       code: 'STREAM_MONSTERS_CONFIG_REVISION_CONFLICT',
+      correlationId: expect.any(String),
       currentRevision: 3
     }));
+    expect(stale.body).not.toHaveProperty('error');
     expect(emit).not.toHaveBeenCalled();
 
     const accepted = response();

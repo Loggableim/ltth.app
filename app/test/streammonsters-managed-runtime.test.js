@@ -23,7 +23,7 @@ describe('Stream Monsters managed-runtime retirement', () => {
     expect(fs.existsSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'backend',
       'streammonsters',
       'managed-runtime-installer.js'

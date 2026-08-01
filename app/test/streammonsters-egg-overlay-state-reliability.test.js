@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const runtime = require(
   '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
@@ -48,7 +49,7 @@ async function createOverlayHarness(snapshot, {
   const html = fs.readFileSync(path.join(
     process.cwd(),
     'plugins',
-    'streamalchemy',
+    'stream-monsters',
     'streammonsters-overlay.html'
   ), 'utf8');
   const socketHandlers = new Map();
@@ -108,6 +109,7 @@ async function createOverlayHarness(snapshot, {
         };
       });
       window.StreamMonstersOverlayRuntime = runtime;
+      window.StreamMonstersPresentation = Presentation;
       window.StreamMonstersArenaDirector = ArenaDirector;
       window.StreamMonstersEggStageView = lifecycleCommands
         ? {
@@ -279,7 +281,7 @@ describe('Stream Monsters egg overlay state reliability', () => {
       const overlaySource = fs.readFileSync(path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'streammonsters-overlay.html'
       ), 'utf8');
       const compactJoinLine = overlaySource.split(/\r?\n/).find(line => (

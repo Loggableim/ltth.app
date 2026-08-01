@@ -1106,6 +1106,10 @@ class StreamMonstersPlugin {
   async destroy() {
     this.streamMonstersDeadlineScheduler?.stop();
     this.streamMonstersDeadlineScheduler = null;
+    if (this.streamMonstersReadyTimer) {
+      clearInterval(this.streamMonstersReadyTimer);
+      this.streamMonstersReadyTimer = null;
+    }
     if (this.streamMonstersTutorialHintFlushTimer) {
       clearTimeout(this.streamMonstersTutorialHintFlushTimer);
       this.streamMonstersTutorialHintFlushTimer = null;
@@ -1558,7 +1562,7 @@ class StreamMonstersPlugin {
 
   streamMonstersViewerAvatarRef(data = {}) {
     const value = data.avatarRef || data.profilePictureUrl || '';
-    if (/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(value)) {
+    if (/^\/api\/(?:stream-monsters|streammonsters)\/avatar\/[a-z0-9_-]{16,1024}$/i.test(value)) {
       return value;
     }
     return avatarProxyReference(value);

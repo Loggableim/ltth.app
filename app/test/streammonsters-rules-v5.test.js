@@ -2,6 +2,8 @@ const Database = require('better-sqlite3');
 const { EventEmitter } = require('events');
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
+const LayoutEditor = require('../plugins/stream-monsters/streammonsters-layout-editor');
 const os = require('os');
 const path = require('path');
 const StreamAlchemyPlugin = require('../plugins/stream-monsters');
@@ -621,7 +623,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       requests.push({ url, options });
       const payload = url === '/api/status'
         ? { username: 'creator' }
-        : url === '/api/streammonsters/creator-state'
+        : url === '/api/stream-monsters/creator-state'
           ? {
             success: true,
             config,
@@ -630,11 +632,11 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
             hype: { points: 0 },
             season: null
           }
-          : url.startsWith('/api/streammonsters/gift-catalog')
+          : url.startsWith('/api/stream-monsters/gift-catalog')
             ? { success: true, gifts: [], total: 0, offset: 0, limit: 40 }
-            : url === '/api/streammonsters/gift-mappings'
+            : url === '/api/stream-monsters/gift-mappings'
               ? { success: true, mappings: [] }
-              : url.startsWith('/api/streammonsters/monster-catalog')
+              : url.startsWith('/api/stream-monsters/monster-catalog')
                 ? {
                   success: true,
                   templates: [],
@@ -642,11 +644,11 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
                   formsTotal: 72,
                   assetIntegrity: { expected: 72, available: 72, healthy: true }
                 }
-              : url.startsWith('/api/streammonsters/creator-catalog')
+              : url.startsWith('/api/stream-monsters/creator-catalog')
                 ? { success: true, templates: [], dex: { owned: 0, total: 24 } }
-                : url.startsWith('/api/streammonsters/leaderboard')
+                : url.startsWith('/api/stream-monsters/leaderboard')
                   ? { success: true, entries: [] }
-                  : url === '/api/streammonsters/config' && options.method === 'POST'
+                  : url === '/api/stream-monsters/config' && options.method === 'POST'
                     ? { success: true, config: JSON.parse(options.body) }
                     : { error: 'unexpected_request' };
       return { ok: !payload.error, json: async () => payload };
@@ -657,6 +659,8 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       beforeParse(window) {
         window.fetch = fetchMock;
         window.StreamMonstersOverlayRuntime = overlayRuntime;
+        window.StreamMonstersPresentation = Presentation;
+        window.StreamMonstersLayoutEditor = LayoutEditor;
         window.StreamMonstersCreatorRuntime = creatorRuntime;
         window.i18n = {
           init: async () => {},
@@ -691,11 +695,11 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     expect(dom.window.document.getElementById('runtimeWizard')).toBeNull();
     expect(requests.map(entry => entry.url)).not.toEqual(expect.arrayContaining([
       '/api/streamalchemy/providers/status',
-      '/api/streammonsters/pool',
-      '/api/streammonsters/local-runtime/status'
+      '/api/stream-monsters/pool',
+      '/api/stream-monsters/local-runtime/status'
     ]));
     expect(requests.map(entry => entry.url)).toContain(
-      '/api/streammonsters/creator-catalog?userId=creator'
+      '/api/stream-monsters/creator-catalog?userId=creator'
     );
 
     dom.window.document.getElementById('seasonDuration').value = '60';
@@ -704,7 +708,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     dom.window.document.getElementById('saveSetup').click();
     await new Promise(resolve => setTimeout(resolve, 20));
     const save = requests.find(entry => (
-      entry.url === '/api/streammonsters/config' && entry.options.method === 'POST'
+      entry.url === '/api/stream-monsters/config' && entry.options.method === 'POST'
     ));
     expect(JSON.parse(save.options.body)).toEqual(expect.objectContaining({
       visualPack: 'furry',

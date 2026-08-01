@@ -43,7 +43,7 @@ function avatarProxyReference(value) {
   const url = parseAllowedAvatarUrl(value);
   if (!url) return null;
   const token = Buffer.from(url.href, 'utf8').toString('base64url');
-  const reference = `/api/streammonsters/avatar/${token}`;
+  const reference = `/api/stream-monsters/avatar/${token}`;
   return reference.length <= 512 ? reference : null;
 }
 

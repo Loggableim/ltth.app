@@ -336,9 +336,9 @@ describe('Stream Monsters fighter visibility and arcade pacing regressions', () 
     ]
   ])('canonical fighter fallback resolves to a packaged WebP asset', (fighter, suffix) => {
     const assetUrl = ArenaDirector.canonicalImageUrl(fighter);
-    const relativePath = assetUrl.replace('/plugins/streamalchemy/', '');
+    const relativePath = assetUrl.replace('/plugins/stream-monsters/', '');
 
-    expect(assetUrl).toBe(`/plugins/streamalchemy/assets/streammonsters/${suffix}`);
+    expect(assetUrl).toBe(`/plugins/stream-monsters/assets/streammonsters/${suffix}`);
     expect(fs.existsSync(path.join(pluginDir, relativePath))).toBe(true);
   });
 });

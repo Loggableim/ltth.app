@@ -249,12 +249,12 @@ describe('Stream Monsters targeted demo API', () => {
           expect.objectContaining({
             slot: 1,
             name: 'Ashfang',
-            imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp'
+            imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp'
           }),
           expect.objectContaining({
             slot: 2,
             imageUrl: expect.stringMatching(
-              /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/.+\.webp$/
+              /^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/.+\.webp$/
             )
           })
         ]);
@@ -441,7 +441,12 @@ describe('Stream Monsters targeted demo API', () => {
     const res = response();
     demo(localRequest(body), res);
     expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ success: false, error });
+    expect(res.body).toEqual({
+      success: false,
+      code: error,
+      correlationId: expect.any(String)
+    });
+    expect(res.body).not.toHaveProperty('error');
     expect(emitted).toEqual([]);
   });
 });

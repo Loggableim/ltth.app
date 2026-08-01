@@ -8,8 +8,10 @@
   const ELEMENTS = new Set(['ember', 'tide', 'grove', 'gale', 'volt', 'lunar']);
   const SAFE_ASSET_URL =
     /^\/plugins\/(?:stream-monsters|streamalchemy)\/assets\/[a-z0-9/_\-.]+$/i;
-  const SAFE_KENNEY_URL = /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i;
-  const SAFE_AVATAR_URL = /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i;
+  const SAFE_KENNEY_URL =
+    /^\/api\/(?:stream-monsters|streammonsters)\/art\/kenney-[a-f0-9]{16}\.svg$/i;
+  const SAFE_AVATAR_URL =
+    /^\/api\/(?:stream-monsters|streammonsters)\/avatar\/[a-z0-9_-]{16,1024}$/i;
 
   function boundedText(input, fallback = '', maximum = 96) {
     const value = String(input ?? '')
@@ -53,12 +55,15 @@
 
   function safeImageUrl(input) {
     const url = boundedText(input, '', 512);
-    const safeAsset = SAFE_ASSET_URL.test(url) &&
-      !url.includes('\\') &&
-      !url.includes('%') &&
-      !url.split('/').some(segment => segment === '.' || segment === '..');
-    return safeAsset || SAFE_KENNEY_URL.test(url) || SAFE_AVATAR_URL.test(url)
-      ? url
+    const canonicalUrl = url
+      .replace(/^\/plugins\/streamalchemy\//, '/plugins/stream-monsters/')
+      .replace(/^\/api\/streammonsters\//, '/api/stream-monsters/');
+    const safeAsset = SAFE_ASSET_URL.test(canonicalUrl) &&
+      !canonicalUrl.includes('\\') &&
+      !canonicalUrl.includes('%') &&
+      !canonicalUrl.split('/').some(segment => segment === '.' || segment === '..');
+    return safeAsset || SAFE_KENNEY_URL.test(canonicalUrl) || SAFE_AVATAR_URL.test(canonicalUrl)
+      ? canonicalUrl
       : '';
   }
 

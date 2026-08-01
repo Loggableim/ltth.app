@@ -99,7 +99,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     const legacy = '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp';
 
     expect(chatRuntime.safeImageUrl(canonical)).toBe(canonical);
-    expect(chatRuntime.safeImageUrl(legacy)).toBe(legacy);
+    expect(chatRuntime.safeImageUrl(legacy)).toBe(canonical);
     expect(chatRuntime.safeImageUrl(
       '/plugins/stream-monsters/assets/../private.txt'
     )).toBe('');
@@ -130,7 +130,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(showCardSource).toMatch(
       /card\.classList\.remove\('visible'\)[\s\S]*?card\.removeAttribute\('data-presentation'\)/
     );
-    expect(html).toContain('/api/streammonsters/overlay/heartbeat');
+    expect(html).toContain('/api/stream-monsters/overlay/heartbeat');
     expect(html).toContain('overlayHeartbeatPayload');
     expect(html).toMatch(/window\.setInterval\(sendOverlayHeartbeat,\s*5_000\)/);
     expect(html).toContain("window.addEventListener('pagehide', stopOverlayLifecycle");

@@ -134,6 +134,31 @@ class StreamMonstersRoutes {
     this.overlayHeartbeat = null;
     this.overlayHeartbeatRequests = new Map();
     this.overlayReconnectResumeConsumed = false;
+    this.registeredRoutes = new Set();
+  }
+
+  registerRoute(method, routePath, handler) {
+    const paths = [routePath];
+    if (routePath.startsWith('/api/streammonsters/')) {
+      paths.push(routePath.replace('/api/streammonsters/', '/api/stream-monsters/'));
+    } else if (routePath.startsWith('/api/stream-monsters/')) {
+      paths.push(routePath.replace('/api/stream-monsters/', '/api/streammonsters/'));
+    }
+    let primaryResult;
+    for (const candidatePath of paths) {
+      const key = `${method}:${candidatePath}`;
+      if (this.registeredRoutes.has(key)) continue;
+      const result = this.api.registerRoute(method, candidatePath, handler);
+      if (result === false) {
+        const error = new Error('STREAM_MONSTERS_ROUTE_REGISTRATION_FAILED');
+        error.code = error.message;
+        error.route = candidatePath;
+        throw error;
+      }
+      this.registeredRoutes.add(key);
+      if (candidatePath === routePath) primaryResult = result;
+    }
+    return primaryResult;
   }
 
   register() {
@@ -154,19 +179,24 @@ class StreamMonstersRoutes {
       }
       return res.sendFile(path.join(this.pluginDir, 'streammonsters-overlay.html'));
     };
-    this.api.registerRoute('GET', '/streammonsters/ui', sendCreator);
-    this.api.registerRoute('GET', '/streammonsters/overlay', sendOverlay);
-    this.api.registerRoute('GET', '/streamalchemy/ui', sendCreator);
-    this.api.registerRoute('GET', '/streamalchemy/overlay', sendOverlay);
-    this.api.registerRoute('GET', '/plugins/stream-monsters/ui.html', sendCreator);
-    this.api.registerRoute('GET', '/plugins/stream-monsters/ui-old.html', sendCreator);
-    this.api.registerRoute('GET', '/plugins/stream-monsters/overlay.html', sendOverlay);
+    this.registerRoute('GET', '/stream-monsters/ui', sendCreator);
+    this.registerRoute('GET', '/stream-monsters/overlay', sendOverlay);
+    this.registerRoute('GET', '/streammonsters/ui', sendCreator);
+    this.registerRoute('GET', '/streammonsters/overlay', sendOverlay);
+    this.registerRoute('GET', '/streamalchemy/ui', sendCreator);
+    this.registerRoute('GET', '/streamalchemy/overlay', sendOverlay);
+    this.registerRoute('GET', '/plugins/stream-monsters/ui.html', sendCreator);
+    this.registerRoute('GET', '/plugins/stream-monsters/ui-old.html', sendCreator);
+    this.registerRoute('GET', '/plugins/stream-monsters/overlay.html', sendOverlay);
+    this.registerRoute('GET', '/plugins/streamalchemy/ui.html', sendCreator);
+    this.registerRoute('GET', '/plugins/streamalchemy/ui-old.html', sendCreator);
+    this.registerRoute('GET', '/plugins/streamalchemy/overlay.html', sendOverlay);
     ART_LAB_ROUTES.forEach(([method, routePath]) => {
-      this.api.registerRoute(method, routePath, (req, res) => (
+      this.registerRoute(method, routePath, (req, res) => (
         res.status(410).json({ error: 'art_lab_removed' })
       ));
     });
-    this.api.registerRoute('GET', '/api/streammonsters/art/:filename', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/art/:filename', (req, res) => {
       const filename = String(req.params?.filename || '');
       if (!/^kenney-[a-f0-9]{16}\.svg$/.test(filename)) {
         return res.status(410).json({ error: 'art_lab_removed' });
@@ -188,7 +218,7 @@ class StreamMonstersRoutes {
       }
       return res.sendFile(absolutePath);
     });
-    this.api.registerRoute('GET', '/api/streammonsters/avatar/:token', async (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/avatar/:token', async (req, res) => {
       const url = avatarUrlFromToken(req.params?.token);
       if (!url) {
         return this.sendPublicError(res, 400, 'STREAM_MONSTERS_AVATAR_URL_REJECTED');
@@ -221,13 +251,13 @@ class StreamMonstersRoutes {
         })
       });
     });
-    this.api.registerRoute(
+    this.registerRoute(
       'GET', '/api/stream-monsters/overlay-sources', sendOverlaySources
     );
-    this.api.registerRoute(
+    this.registerRoute(
       'GET', '/api/streammonsters/overlay-sources', sendOverlaySources
     );
-    this.api.registerRoute('POST', '/api/streammonsters/overlay/heartbeat', (req, res) => {
+    this.registerRoute('POST', '/api/streammonsters/overlay/heartbeat', (req, res) => {
       if (this.isCrossSiteMutation(req)) {
         return this.sendPublicError(res, 403, 'STREAM_MONSTERS_CROSS_SITE_MUTATION_DENIED');
       }
@@ -251,7 +281,7 @@ class StreamMonstersRoutes {
         return this.sendPublicError(res, 400, 'STREAM_MONSTERS_HEARTBEAT_INVALID');
       }
     });
-    this.api.registerRoute('GET', '/api/streammonsters/state', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/state', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
       const season = this.progression?.getCurrentSeason?.() || null;
       const recentEvents = this.store.getRecentPublicEvents?.(
@@ -291,7 +321,7 @@ class StreamMonstersRoutes {
         eventCursor: recentEvents.at(-1)?.sequence || 0
       });
     });
-    this.api.registerRoute(
+    this.registerRoute(
       'GET',
       '/api/stream-monsters/balance-report',
       this.protectAdmin((req, res) => res.json({
@@ -299,7 +329,7 @@ class StreamMonstersRoutes {
         report: this.balanceReportProvider()
       }))
     );
-    this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
         rulesVersion: this.currentRulesVersion(config),
@@ -312,7 +342,7 @@ class StreamMonstersRoutes {
       };
       res.json({ success: true, ...snapshot });
     });
-    this.api.registerRoute(
+    this.registerRoute(
       'GET',
       '/api/streammonsters/battles/:battleId/replay',
       (req, res) => {
@@ -331,7 +361,7 @@ class StreamMonstersRoutes {
         return res.json({ success: true, ...replay });
       }
     );
-    this.api.registerRoute('GET', '/api/streammonsters/creator-state', this.protectAdmin((req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/creator-state', this.protectAdmin((req, res) => {
       const userId = String(req.query?.userId || '').trim();
       const config = this.configProvider.getConfig().streamMonsters;
       const overlayDiagnostics = this.getOverlayDiagnostics();
@@ -377,7 +407,7 @@ class StreamMonstersRoutes {
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     }));
-    this.api.registerRoute('GET', '/api/streammonsters/creator-catalog', this.protectAdmin((req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/creator-catalog', this.protectAdmin((req, res) => {
       const requestedUserId = String(req.query?.userId || '').trim();
       if (!requestedUserId) {
         return res.status(400).json({ error: 'viewer_id_required' });
@@ -392,7 +422,7 @@ class StreamMonstersRoutes {
       };
       return res.json({ success: true, ...catalog, userId });
     }));
-    this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
       const hasPaging = req.query?.offset !== undefined || req.query?.limit !== undefined;
       const offset = hasPaging
         ? Math.max(0, Number.parseInt(req.query?.offset, 10) || 0)
@@ -427,7 +457,7 @@ class StreamMonstersRoutes {
         ...(hasPaging ? { offset, limit } : {})
       });
     });
-    this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
+    this.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
       const current = this.configProvider.getConfig().streamMonsters || {};
       const expectedRevision = req.body?.expectedRevision;
       let update = null;
@@ -435,7 +465,12 @@ class StreamMonstersRoutes {
         this.validateRetentionConfigUpdate({ ...current, ...(req.body || {}) });
         update = this.sanitizeConfigUpdate(req.body);
       } catch (error) {
-        return res.status(400).json({ success: false, error: error.message });
+        return this.sendRouteFailure(
+          res,
+          400,
+          'STREAM_MONSTERS_CONFIG_INVALID',
+          error
+        );
       }
       if (current.giftMappingCustomized) update.giftMappingCustomized = true;
       let next;
@@ -446,19 +481,23 @@ class StreamMonstersRoutes {
         );
       } catch (error) {
         if (error.code === 'STREAM_MONSTERS_CONFIG_REVISION_CONFLICT') {
-          return res.status(409).json({
-            success: false,
-            code: error.code,
-            error: error.message,
+          return this.sendRouteFailure(
+            res,
+            409,
+            error.code,
+            error,
+            {
             expectedRevision: error.expectedRevision,
             currentRevision: error.currentRevision
-          });
+            }
+          );
         }
-        return res.status(500).json({
-          success: false,
-          code: error.code || 'STREAM_MONSTERS_CONFIG_UPDATE_FAILED',
-          error: error.message
-        });
+        return this.sendRouteFailure(
+          res,
+          500,
+          'STREAM_MONSTERS_CONFIG_UPDATE_FAILED',
+          error
+        );
       }
       this.api.emit?.('streammonsters:config_updated', {
         config: this.publicConfig(next.streamMonsters),
@@ -470,7 +509,7 @@ class StreamMonstersRoutes {
         revision: next.revision
       });
     }));
-    this.api.registerRoute(
+    this.registerRoute(
       'POST',
       '/api/streammonsters/repair/eggs',
       this.protectAdmin((req, res) => {
@@ -498,7 +537,7 @@ class StreamMonstersRoutes {
         return res.json(result);
       })
     );
-    this.api.registerRoute(
+    this.registerRoute(
       'POST',
       '/api/streammonsters/repair/matches',
       this.protectAdmin((req, res) => {
@@ -520,12 +559,17 @@ class StreamMonstersRoutes {
         return res.json(result);
       })
     );
-    this.api.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {
+    this.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {
       let preview = null;
       try {
         preview = this.validateDemoRequest(req.body);
       } catch (error) {
-        return res.status(400).json({ success: false, error: error.message });
+        return this.sendRouteFailure(
+          res,
+          400,
+          'STREAM_MONSTERS_DEMO_INVALID',
+          error
+        );
       }
       const config = this.configProvider.getConfig().streamMonsters;
       const demoRunId = String(this.idFactory());
@@ -1165,7 +1209,7 @@ class StreamMonstersRoutes {
       });
       res.json({ success: true, demo: true });
     }));
-    this.api.registerRoute('GET', '/api/streammonsters/gift-catalog', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/gift-catalog', (req, res) => {
       const normalized = this.normalizedGiftCatalog(req.query?.locale);
       const query = String(req.query?.q || '').trim().toLocaleLowerCase();
       const filtered = query
@@ -1187,10 +1231,10 @@ class StreamMonstersRoutes {
         limit
       });
     });
-    this.api.registerRoute('GET', '/api/streammonsters/gift-mappings', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/gift-mappings', (req, res) => {
       res.json({ success: true, mappings: this.store.getGiftMappings() });
     });
-    this.api.registerRoute('PUT', '/api/streammonsters/gift-mappings/:giftId', this.protectAdmin((req, res) => {
+    this.registerRoute('PUT', '/api/streammonsters/gift-mappings/:giftId', this.protectAdmin((req, res) => {
       try {
         const giftId = Number.parseInt(req.params?.giftId, 10);
         const input = req.body || {};
@@ -1215,19 +1259,24 @@ class StreamMonstersRoutes {
         this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
         res.json({ success: true, mapping });
       } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
+        return this.sendRouteFailure(
+          res,
+          400,
+          'STREAM_MONSTERS_GIFT_MAPPING_INVALID',
+          error
+        );
       }
     }));
-    this.api.registerRoute('DELETE', '/api/streammonsters/gift-mappings/:giftId', this.protectAdmin((req, res) => {
+    this.registerRoute('DELETE', '/api/streammonsters/gift-mappings/:giftId', this.protectAdmin((req, res) => {
       const giftId = Number.parseInt(req.params?.giftId, 10);
       const removed = giftId ? this.store.deleteGiftMapping(giftId) : false;
       if (giftId) this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
       res.json({ success: true, removed });
     }));
-    this.api.registerRoute('GET', '/api/streammonsters/season', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/season', (req, res) => {
       res.json({ success: true, season: this.progression?.getCurrentSeason?.() || null });
     });
-    this.api.registerRoute('GET', '/api/streammonsters/leaderboard', (req, res) => {
+    this.registerRoute('GET', '/api/streammonsters/leaderboard', (req, res) => {
       const limit = Math.max(1, Math.min(100, Number.parseInt(req.query?.limit, 10) || 50));
       const type = req.query?.type === 'arena' ? 'arena' : 'collector';
       const entries = type === 'arena'
@@ -1248,6 +1297,29 @@ class StreamMonstersRoutes {
       }
       return this.adminAuth(req, res, () => handler(req, res, next));
     };
+  }
+
+  routeErrorCode(error, fallbackCode) {
+    const candidate = String(error?.code || error?.message || '');
+    return /^STREAM_MONSTERS_[A-Z0-9_]+$/.test(candidate)
+      ? candidate
+      : fallbackCode;
+  }
+
+  sendRouteFailure(res, status, fallbackCode, error, extra = {}) {
+    const correlationId = crypto.randomUUID();
+    const code = this.routeErrorCode(error, fallbackCode);
+    const cause = error?.stack || error?.message || String(error || code);
+    this.api.log?.(
+      `[STREAM MONSTERS] ${code} [${correlationId}] ${cause}`,
+      'error'
+    );
+    return res.status(status).json({
+      success: false,
+      code,
+      correlationId,
+      ...extra
+    });
   }
 
   sendPublicError(res, status, code) {

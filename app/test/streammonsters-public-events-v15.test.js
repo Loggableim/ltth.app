@@ -203,7 +203,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
           name: 'Ashfang',
           templateId: 'ashfang',
           level: 4,
-          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+          imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png'
         })
       })
     }));
@@ -268,7 +268,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
         evolutionStage: 2,
         prestigeLevel: 0,
         unspentStatPoints: 3,
-        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
         stats: { vitality: 7, might: 8, guard: 6, agility: 7 }
       },
       eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
@@ -575,7 +575,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
 
     expect(remote.monster.imageUrl).toBeNull();
     expect(kenney.monster.imageUrl)
-      .toBe('/api/streammonsters/art/kenney-0123456789abcdef.svg');
+      .toBe('/api/stream-monsters/art/kenney-0123456789abcdef.svg');
   });
 
   test('publishes the Rules-v5 battle socket aliases with one shared dedupe identity', () => {

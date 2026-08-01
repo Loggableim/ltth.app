@@ -1,4 +1,4 @@
-# Stream Monsters 1.12 – Portrait Arcade Rally
+# Stream Monsters 1.12.0 – Season 1 Portrait Arcade
 
 Stream Monsters uses the canonical `stream-monsters` plugin ID. The historical
 `streamalchemy` ID remains an invisible compatibility alias for lifecycle,
@@ -17,8 +17,8 @@ asset is missing or damaged.
    may use one element or `Random`; only enabled mappings affect the game.
 3. Select incubation, egg expiry, season, commands, overlay languages,
    portrait layout, renderer quality and audio.
-4. Verify all 24 Stream Monsters and 72 bundled evolution forms.
-5. Add `/stream-monsters/overlay` to OBS and preview 1080×1920 before going live.
+4. Verify all 24 Season-1 Stream Monsters and 72 bundled evolution forms.
+5. Add `/stream-monsters/overlay` to OBS, choose a portrait or landscape profile, and preview before going live.
 6. Run the deterministic egg, hatch, battle, K.O. and renderer-fallback demos.
 
 New configurations use a 90-second incubation default. Available presets are
@@ -49,7 +49,7 @@ readiness, manual `hatch`, Auto-Hatch and expiry each have distinct copy.
 ## Collection, evolution and progression
 
 - Ember, Tide, Grove, Gale, Volt and Lunar each contain four Stream Monsters.
-- Every template has Evolution I, II and III, for 72 verified bundled forms.
+- Every Stream Monster has Evolution I, II and III, for 72 verified bundled forms.
 - Evolution II requires mastery 25 and 3 spent essence; Evolution III requires
   mastery 50 and 8 spent essence in total.
 - Evolution stages add fixed, simulator-checked stats and role-specific skill
@@ -62,15 +62,16 @@ readiness, manual `hatch`, Auto-Hatch and expiry each have distinct copy.
 - Collector Score and Arena Rating are separate. Collection, evolution, levels
   and allocated stats remain permanent across seasons.
 
-## Rules v8 K.O. Arena
+## K.O. Arena
 
 `!battle` joins the fair queue. Matchmaking starts near the viewer's Arena
 Rating and within ±2 monster levels, expands after 30 seconds and avoids recent
 rematches when an alternative exists.
 
 - Monster selection lasts 8 seconds.
-- A/B/C selection lasts 6 seconds with one active overlay language and 10
-  seconds with the default German/English pair.
+- The default Arcade pace gives A/B/C selection 6 seconds with one active
+  overlay language and 8 seconds with the default German/English pair; stat
+  selection lasts 10 or 12 seconds.
 - Choices stay sealed until both fighters lock or a deterministic timeout
   resolves the missing answer. The action begins immediately when both are in.
 - `A` attacks, `B` defends and both build Special charge. `C` requires 100
@@ -82,8 +83,9 @@ rematches when an alternative exists.
   and resolve sequentially.
 - Battles continue until a monster causes K.O. or a player forfeits. There is
   no live three-round tie-break.
-- Arena Collapse starts at round 5: new shields are halved and neutral arena
-  damage after each round increases by `round - 4`. It cannot reduce a monster
+- Arena Collapse is announced in round 3 and starts in round 4: new shields
+  are halved and neutral arena damage after each round increases by `round - 3`.
+  It cannot reduce a monster
   below 1 HP, so the K.O. remains a monster action.
 - Replays persist sealed choices, effects, rolls, HP, shield, charge, collapse,
   K.O., XP and rating. Rules-v5, Rules-v6, Rules-v7 and old three-round
@@ -95,8 +97,9 @@ season rewards. Every legitimate completion still grants monster XP.
 ## Languages and commands
 
 German and English are active by default. Creators may choose one or two
-overlay languages from German, English, Spanish and French and set 4–6 seconds
-per language. Critical cards show both languages in sequence; noncritical
+overlay languages from German, English, Spanish and French. The Arcade preset
+uses 6 seconds in one language and 8 seconds bilingually; Standard and
+accessible presets are slower. Critical cards show both languages in sequence; noncritical
 cards choose one deterministically. The global LTTH language is not changed.
 
 Aliases and the GCCE prefix are creator-configurable and conflict-checked.
@@ -114,11 +117,11 @@ matching decision window.
   render behind the shelf.
 - During battle, both full monsters, sanitized player names, HP, shield,
   Special, readable A/B/C effects and the current lead remain visible.
-- The shared director renders telegraph, movement, projectile or shield,
-  sequential impacts, numbers, HUD update, recoil and recovery in about
-  2–3 seconds.
+- Standard actions render in 1.6 seconds, Specials in 2.4 seconds and K.O./
+  terminal reveals in 2.8 seconds. After the third identical standard skill,
+  the presentation becomes compact.
 - K.O. and winner boards use backend result data and stay visible for at least
-  8 seconds.
+  2.8 seconds.
 - Element-specific WebGPU effects use distinct Ember flame, Tide flow, Grove
   growth, Gale wind, Volt electricity and Lunar eclipse signatures.
 - Canvas2D/CSS follows the same timing for OBS without WebGPU, device loss,
@@ -130,23 +133,23 @@ matching decision window.
 
 Public, sanitized routes:
 
-- `GET /api/streammonsters/state`
-- `GET /api/streammonsters/battle-state`
-- `GET /api/streammonsters/battles/:battleId/replay?cursor=&limit=`
-- `GET /api/streammonsters/monster-catalog?offset=&limit=`
-- `GET /api/streammonsters/gift-catalog?q=&locale=&offset=&limit=`
-- `GET /api/streammonsters/gift-mappings`
-- `GET /api/streammonsters/season`
-- `GET /api/streammonsters/leaderboard?type=collector|arena&limit=`
+- `GET /api/stream-monsters/state`
+- `GET /api/stream-monsters/battle-state`
+- `GET /api/stream-monsters/battles/:battleId/replay?cursor=&limit=`
+- `GET /api/stream-monsters/monster-catalog?offset=&limit=`
+- `GET /api/stream-monsters/gift-catalog?q=&locale=&offset=&limit=`
+- `GET /api/stream-monsters/gift-mappings`
+- `GET /api/stream-monsters/season`
+- `GET /api/stream-monsters/leaderboard?type=collector|arena&limit=`
 
 Creator-protected routes:
 
-- `GET /api/streammonsters/creator-state`
-- `GET /api/streammonsters/creator-catalog?userId=`
-- `POST /api/streammonsters/config`
-- `POST /api/streammonsters/demo`
-- `PUT /api/streammonsters/gift-mappings/:giftId`
-- `DELETE /api/streammonsters/gift-mappings/:giftId`
+- `GET /api/stream-monsters/creator-state`
+- `GET /api/stream-monsters/creator-catalog?userId=`
+- `POST /api/stream-monsters/config`
+- `POST /api/stream-monsters/demo`
+- `PUT /api/stream-monsters/gift-mappings/:giftId`
+- `DELETE /api/stream-monsters/gift-mappings/:giftId`
 
 Retired Art Lab endpoints return HTTP 410 with
 `{ "error": "art_lab_removed" }` and never start preserved runtimes or models.

@@ -176,7 +176,7 @@ describe('Stream Monsters review fix round 1', () => {
       pluginId: 'milestone-leaderboard'
     }));
     expect(gcce.registry.getCommand('monsterrank')).toEqual(expect.objectContaining({
-      pluginId: 'streamalchemy',
+      pluginId: 'stream-monsters',
       commandName: 'rank'
     }));
     expect(plugin.getStreamMonstersGCCEState()).toEqual(expect.objectContaining({

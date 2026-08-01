@@ -219,7 +219,7 @@ The workspace currently contains 37 plugin manifests in `app/plugins/`:
 - schnorrbecher
 - soundboard
 - spotlight
-- streamalchemy (Stream Monsters 1.11.1, Stable)
+- stream-monsters (Stream Monsters 1.12.0, Stable)
 - stt-ticker
 - talking-heads
 - thermal-printer
@@ -263,9 +263,9 @@ Latest measured state on the TikTok Studio Quick Tunnel branch:
 
 The default full collection currently contains 624 suites and 6734 tests. Three unrelated baseline suites remain red and were excluded from the green 621-suite run:
 
-- `plugin-store-registry.test.js`: the WebGPU Weather package compares LF archive bytes with a CRLF Windows checkout, and the StreamAlchemy 1.1.2 package is older than its current source tree.
-- `streamalchemy-ui-i18n.test.js`: the published StreamAlchemy package still contains legacy untranslated UI.
-- `plugin-static-form-controls-i18n.test.js`: it reports the same stale StreamAlchemy package surface.
+- `plugin-store-registry.test.js`: the WebGPU Weather package compares LF archive bytes with a CRLF Windows checkout; historical plugin archives retain their original source trees and checksums.
+- `streamalchemy-ui-i18n.test.js`: an archived legacy package retains its original untranslated UI.
+- `plugin-static-form-controls-i18n.test.js`: it reports the same archived legacy package surface.
 
 Coverage was not re-measured for this feature branch.
 

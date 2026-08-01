@@ -86,7 +86,7 @@ describe('Stream Monsters 1.10 Jackpot battle contract', () => {
           element: 'Ember',
           templateId: 'ashfang',
           evolutionStage: 1,
-          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+          imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
           skills: [{
             choice: 'C',
             icon: 'S',

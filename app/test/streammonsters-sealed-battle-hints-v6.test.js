@@ -381,7 +381,7 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
         element: 'Ember',
         templateId: 'ashfang',
         evolutionStage: 1,
-        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
         level: 1,
         hp: 62,
         maxHp: 62,

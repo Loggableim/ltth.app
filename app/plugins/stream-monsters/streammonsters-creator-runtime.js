@@ -116,11 +116,11 @@
   const MASTERY_THRESHOLDS = Object.freeze([10, 25, 50]);
   const REPAIR_ACTIONS = Object.freeze({
     eggs: Object.freeze({
-      route: '/api/streammonsters/repair/eggs',
+      route: '/api/stream-monsters/repair/eggs',
       confirmation: 'reconcile_eggs'
     }),
     matches: Object.freeze({
-      route: '/api/streammonsters/repair/matches',
+      route: '/api/stream-monsters/repair/matches',
       confirmation: 'cancel_stale_matches'
     })
   });
@@ -615,6 +615,12 @@
     };
   }
 
+  function normalizePackagedAssetPath(value) {
+    return String(value || '')
+      .replace(/\\/g, '/')
+      .replace(/^\/plugins\/(?:stream-monsters|streamalchemy)\//, '');
+  }
+
   function buildAssetStageEntries({ assets = [] } = {}) {
     const seen = new Set();
     return assets.flatMap(asset => {
@@ -820,6 +826,7 @@
     hydrateHatchPresetControl,
     leaderboardDisplayName,
     liveStatusTranslationKey,
+    normalizePackagedAssetPath,
     normalizeDemoRequest,
     normalizeOverlayLanguage,
     previewComposition,

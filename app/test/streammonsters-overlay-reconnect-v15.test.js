@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -20,7 +21,7 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const socketHandlers = new Map();
@@ -143,6 +144,7 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
           };
         });
         window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersPresentation = Presentation;
         window.StreamMonstersPortraitArena = {
           normalizeVariant(value, fallback = 'classic') {
             return ['split-arena', 'classic'].includes(value) ? value : fallback;

@@ -390,7 +390,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(store.getMonster('legacy-monster')).toEqual(expect.objectContaining({
       template_id: expect.stringMatching(/^(ripple|brine|reefbite|axi)$/), name: 'Legacy Name',
       image_url: expect.stringMatching(
-        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.webp$/
+        /^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.webp$/
       ),
       visual_source: 'furry',
       visual_key: expect.stringMatching(/^furry:(ripple|brine|reefbite|axi)$/),
@@ -758,7 +758,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(kenneyBuilder.build).not.toHaveBeenCalled();
     expect(persisted).toEqual(expect.objectContaining({
       image_url: expect.stringMatching(
-        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[a-z0-9-]+\.webp$/
+        /^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/[a-z0-9-]+\.webp$/
       ),
       visual_source: 'furry',
       asset_version: FURRY_ASSET_VERSION

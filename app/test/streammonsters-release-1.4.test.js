@@ -118,23 +118,24 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     expect(drained.findIndex(event => event.data.marker === 'durable')).toBeLessThan(6);
   });
 
-  test('uses controlled overflow to retain critical work during a continuous battle stream', () => {
-    const queue = overlayRuntime.createPriorityQueue({ maxSize: 12, staleAfterMs: 60_000 });
+  test('bounds continuous critical work with one reconnect resync sentinel', () => {
+    const queue = overlayRuntime.createPriorityQueue({
+      maxSize: 12,
+      maxCriticalOverflow: 4,
+      staleAfterMs: 60_000
+    });
     queue.enqueue('quest_completed', { marker: 'durable' }, 1);
-    const rendered = [];
 
     for (let battleIndex = 0; battleIndex < 20; battleIndex += 1) {
       for (const type of ['battle_started', 'battle_round', 'battle_round', 'battle_round', 'battle_completed']) {
         queue.enqueue(type, { battleId: `battle-${battleIndex}` }, 2 + battleIndex);
       }
-      const next = queue.shift(100);
-      if (next) rendered.push(next);
     }
 
-    for (let next = queue.shift(100); next; next = queue.shift(100)) rendered.push(next);
-    expect(rendered.some(event => event.data.marker === 'durable')).toBe(false);
-    expect(rendered.filter(event => event.priority === 3)).toHaveLength(100);
-    expect(queue.size()).toBe(0);
+    expect(queue.snapshot()).toEqual([
+      expect.objectContaining({ type: 'state_resync_required', data: { reason: 'critical_overflow' } })
+    ]);
+    expect(queue.enqueue('battle_started', { battleId: 'too-late' }, 100)).toBe(false);
   });
 
   test('uses the explicit milestone before reset Hype points for the 100 percent card', () => {
@@ -197,8 +198,8 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     }
 
     expect(source).not.toContain('id="runtimeWizard"');
-    expect(source).not.toContain('/api/streammonsters/local-runtime/');
-    expect(source).not.toContain('/api/streammonsters/pool');
+    expect(source).not.toContain('/api/stream-monsters/local-runtime/');
+    expect(source).not.toContain('/api/stream-monsters/pool');
     expect(source).not.toContain('/api/streamalchemy/providers/status');
     expect(source).toContain('state.gcce?.commandPrefix');
     expect(source).toContain('state.config?.hatchDurationMs');
@@ -209,9 +210,9 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
   test('renders all release cards responsively and restores a state snapshot before socket events', () => {
     const source = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
 
-    expect(source).toContain('/plugins/streamalchemy/streammonsters-overlay-runtime.js');
+    expect(source).toContain('/plugins/stream-monsters/streammonsters-overlay-runtime.js');
     expect(source).toContain("socket.on('connect'");
-    expect(source).toContain('/api/streammonsters/state');
+    expect(source).toContain('/api/stream-monsters/state');
     expect(source).toContain('createReconnectController');
     expect(source).toContain('isSnapshotReady()');
     expect(source).toContain('if (!snapshotReady) break');
@@ -227,7 +228,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     ]) {
       expect(source).toContain(type);
     }
-    expect(source).toContain('/plugins/streamalchemy/assets/audio/manifest.json');
+    expect(source).toContain('/plugins/stream-monsters/assets/audio/manifest.json');
     expect(source).toContain('audioEngine.configure');
     expect(source).not.toContain('localStorage');
   });
@@ -266,15 +267,15 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
       expect(crypto.createHash('sha256').update(canonicalLicense).digest('hex'))
         .toBe(source.licenseSha256);
     }
-    expect(overlay).toContain('/plugins/streamalchemy/assets/audio/manifest.json');
+    expect(overlay).toContain('/plugins/stream-monsters/assets/audio/manifest.json');
     expect(overlay).toContain('StreamMonstersAudioEngine.createAudioEngine');
     expect(overlay).not.toContain('createOscillator');
     expect(overlayRuntime.normalizeVolume('70')).toBeCloseTo(0.7);
     expect(overlayRuntime.normalizeVolume('0.55')).toBeCloseTo(0.55);
   });
 
-  test('includes every release asset in the root-relative 1.5 store ZIP', async () => {
-    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.5.0.zip');
+  test('includes every release asset in the root-relative 1.12 store ZIP', async () => {
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'stream-monsters-1.12.0.zip');
     const names = new Set(await listZipEntries(packagePath));
     const furryManifest = JSON.parse(fs.readFileSync(
       path.join(pluginDir, 'assets', 'streammonsters', 'furry', 'manifest.json'),
@@ -547,18 +548,20 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     expect(overlaySource).not.toContain('data?.quest?.title');
   });
 
-  test('keeps the stable ID and publishes the complete 1.11 product description', () => {
+  test('publishes the canonical stable ID and complete 1.12 product description', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
-    const storeEntry = registry.plugins.find(plugin => plugin.id === 'streamalchemy');
+    const storeEntry = registry.plugins.find(plugin => plugin.id === 'stream-monsters');
 
-    expect(manifest.id).toBe('streamalchemy');
-    expect(manifest.version).toBe('1.11.1');
+    expect(manifest.id).toBe('stream-monsters');
+    expect(manifest.version).toBe('1.12.0');
+    expect(manifest.minLtthVersion).toBe('1.4.2');
     expect(manifest.devStatus).toBe('stable');
-    expect(storeEntry.version).toBe('1.11.1');
+    expect(storeEntry.version).toBe('1.12.0');
     expect(storeEntry.channel).toBe('stable');
     expect(storeEntry.badges).toEqual(['subscriber-only']);
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip');
+    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip');
+    expect(registry.plugins.filter(plugin => ['stream-monsters', 'streamalchemy'].includes(plugin.id))).toHaveLength(1);
 
     const expectedTerms = {
       en: [/90-second/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /portrait/i],
@@ -579,7 +582,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const localeSource = fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8');
       const translations = JSON.parse(localeSource).plugins.streamalchemy;
-      expect(translations.ui.monsters.version).toMatch(/1\.11/);
+      expect(translations.ui.monsters.version).toMatch(/1\.12/);
       expect(translations.ui.monsters.rulesDynamic).toMatch(/skill|Skill|habilidad|compétence/);
       expect(translations.ui.monsters.skillAttack).toEqual(expect.any(String));
       expect(localeSource).not.toMatch(/Stream[\s-]+Alchemy/i);
@@ -593,8 +596,8 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
       expect(fs.readFileSync(path.join(pluginDir, visibleFile), 'utf8')).not.toMatch(/Stream[\s-]+Alchemy/i);
     }
     const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
-    expect(uiSource).toContain('Portrait Arcade Rally · Version 1.11');
-    expect(uiSource).not.toMatch(/Version 1\.[34]/);
+    expect(uiSource).toContain('Portrait Arcade Rally · Version 1.12');
+    expect(uiSource).not.toMatch(/Version 1\.(?:[1-9]|10|11)(?:\D|$)/);
   });
 
   test('documents configurable hatch presets with the 90-second current default', () => {

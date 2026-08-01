@@ -52,7 +52,7 @@ function safeAssetReference(value) {
     }
     return reference;
   }
-  return /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(reference)
+  return /^\/api\/(?:stream-monsters|streammonsters)\/avatar\/[a-z0-9_-]{16,1024}$/i.test(reference)
     ? reference
     : null;
 }
