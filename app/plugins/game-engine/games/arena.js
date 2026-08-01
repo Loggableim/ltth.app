@@ -206,7 +206,7 @@ const DEFAULT_CONFIG = {
   spawnThreatClearanceRatio: 1,
   baseMass: 18,
   minMass: 8,
-  maxMass: 666,
+  maxMass: 999,
   baseLives: 100,
   spawnDelayMs: 15000,
   spawnBaseLives: 45,
@@ -217,7 +217,7 @@ const DEFAULT_CONFIG = {
   spawnProtectionMs: 4500,
   respawnCooldownMs: 60000,
   minLives: 20,
-  maxLives: 88000,
+  maxLives: 320000,
   directAbilitiesEnabled: true,
   abilityChargeMs: 60000,
   boostDurationMs: 6000,
@@ -261,8 +261,8 @@ const DEFAULT_CONFIG = {
   maxFoodBurstPerEvent: 24,
   giftExtraLifeValue: 1,
   playerAbsorbOverlapRatio: 0.65,
-    playerAbsorbMassRatio: 0.82,
-    playerAbsorbLifeStealRatio: 0.84,
+  playerAbsorbMassRatio: 1,
+  playerAbsorbLifeStealRatio: 1,
   tickRateMs: DEFAULT_TICK_RATE_MS,
   stateEmitIntervalMs: 66,
   feverIntervalMs: 180000,
@@ -7697,6 +7697,19 @@ class ArenaGame {
       config.inactivityShrinkPerSecond = DEFAULT_CONFIG.inactivityShrinkPerSecond;
     }
     const legacyMassCaps = [90, 140, 170, 260, 520];
+    const shippedAbsorbGrowthProfile = Number(stored?.maxMass) === 666 &&
+      Number(stored?.playerAbsorbMassRatio) === 0.82 &&
+      Number(stored?.playerAbsorbLifeStealRatio) === 0.84;
+    if (shippedAbsorbGrowthProfile) {
+      config.maxMass = DEFAULT_CONFIG.maxMass;
+      config.playerAbsorbMassRatio = DEFAULT_CONFIG.playerAbsorbMassRatio;
+      config.playerAbsorbLifeStealRatio = DEFAULT_CONFIG.playerAbsorbLifeStealRatio;
+    }
+    const shippedFullGrowthProfile = shippedAbsorbGrowthProfile &&
+      Number(stored?.maxLives) === 88000;
+    if (shippedFullGrowthProfile) {
+      config.maxLives = DEFAULT_CONFIG.maxLives;
+    }
     const noisyAmbientProfile = Number(stored?.foodSpawnBatchSize) > 3;
     if (legacyMassCaps.includes(Number(stored?.maxMass))) {
       config.maxMass = DEFAULT_CONFIG.maxMass;

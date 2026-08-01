@@ -76,18 +76,69 @@ describe('ArenaGame', () => {
     const config = arena.getConfig();
 
     expect(config).toEqual(expect.objectContaining({
-      maxMass: 666,
+      maxMass: 999,
       maxFood: 72,
       maxFoodRender: 66,
       foodSpawnIntervalMs: 2400,
       foodSpawnBatchSize: 1,
       foodDespawnMs: 150000
     }));
-    expect(config.maxLives).toBe(88000);
+    expect(config.maxLives).toBe(320000);
     expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
     expect(config.targetFps).toBeLessThanOrEqual(45);
     expect(config.maxRenderPlayers).toBeLessThanOrEqual(48);
     expect(config.maxFoodRender).toBeLessThanOrEqual(72);
+  });
+
+  it('migrates the shipped 666 absorb profile at runtime without changing ambient food', () => {
+    const config = createArena({
+      maxMass: 666,
+      playerAbsorbMassRatio: 0.82,
+      playerAbsorbLifeStealRatio: 0.84,
+      maxLives: 88000
+    }).arena.getConfig();
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 999,
+      playerAbsorbMassRatio: 1,
+      playerAbsorbLifeStealRatio: 1,
+      maxLives: 320000,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1,
+      foodDespawnMs: 150000
+    }));
+  });
+
+  it('keeps a custom runtime absorb profile unchanged', () => {
+    const config = createArena({
+      maxMass: 777,
+      playerAbsorbMassRatio: 0.73,
+      playerAbsorbLifeStealRatio: 0.91
+    }).arena.getConfig();
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 777,
+      playerAbsorbMassRatio: 0.73,
+      playerAbsorbLifeStealRatio: 0.91
+    }));
+  });
+
+  it('keeps a partial former runtime profile unchanged', () => {
+    const config = createArena({
+      maxMass: 666,
+      playerAbsorbMassRatio: 0.73,
+      playerAbsorbLifeStealRatio: 0.91,
+      maxLives: 88000
+    }).arena.getConfig();
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 666,
+      playerAbsorbMassRatio: 0.73,
+      playerAbsorbLifeStealRatio: 0.91,
+      maxLives: 88000
+    }));
   });
 
 
@@ -102,7 +153,7 @@ describe('ArenaGame', () => {
     for (const legacyMaxMass of [90, 140, 170, 260, 520]) {
       const noisy = createArena({ ...noisyProfile, maxMass: legacyMaxMass }).arena.getConfig();
       expect(noisy).toEqual(expect.objectContaining({
-        maxMass: 666,
+        maxMass: 999,
         maxFood: 72,
         maxFoodRender: 66,
         foodSpawnIntervalMs: 2400,
@@ -132,7 +183,7 @@ describe('ArenaGame', () => {
     }).arena.getConfig();
 
     expect(config).toEqual(expect.objectContaining({
-      maxMass: 666,
+      maxMass: 999,
       maxFood: 72,
       maxFoodRender: 66,
       foodSpawnIntervalMs: 2400,
@@ -314,13 +365,13 @@ describe('ArenaGame', () => {
     expect(decision.vector.x).toBeGreaterThan(0);
   });
 
-  it('slows 220-mass arena players under the 666 cap and raises the bar for borderline absorbs', () => {
+  it('slows 220-mass arena players under the 999 cap and raises the bar for borderline absorbs', () => {
     const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
     const config = arena.getConfig();
 
     const heavyMultiplier = arena._movementMassMultiplier({ mass: 220 }, config);
-    expect(config.maxMass).toBe(666);
-    expect(heavyMultiplier).toBeCloseTo(0.512851, 5);
+    expect(config.maxMass).toBe(999);
+    expect(heavyMultiplier).toBeCloseTo(0.680188, 5);
     expect(heavyMultiplier).toBeLessThan(1);
 
     const predator = movementPlayer(arena, config, 'borderline_predator', 54, {
@@ -4683,7 +4734,7 @@ describe('ArenaGame', () => {
 
     expect(small.x - 300).toBeGreaterThan(big.x - 300);
     expect(small.x - 300).toBeGreaterThan(115);
-    expect(big.x - 300).toBeLessThan(100);
+    expect(big.x - 300).toBeLessThan(110);
   });
 
   it('keeps small fleeing players faster than large unarmed hunters across common mass gaps', () => {
@@ -5339,7 +5390,7 @@ describe('ArenaGame', () => {
     expect(Array.from(arena.food.values()).every(food => food.source === 'death-drop')).toBe(true);
   });
 
-  it('scales large growth beyond 400 mass under the 666 cap', () => {
+  it('scales large growth beyond 400 mass under a custom cap', () => {
     function resolveAbsorb(maxMass) {
       const { arena } = createArena({
         maxMass,
@@ -5367,19 +5418,51 @@ describe('ArenaGame', () => {
       return { arena, predator, prey };
     }
 
-    const standardCap = resolveAbsorb(666);
-    const largerCap = resolveAbsorb(900);
+    const customCap = resolveAbsorb(650);
 
-    expect(standardCap.arena.players.has(standardCap.prey.username)).toBe(false);
-    expect(largerCap.arena.players.has(largerCap.prey.username)).toBe(false);
-    expect(largerCap.predator.mass).toBeGreaterThan(standardCap.predator.mass);
-    expect(standardCap.predator.mass).toBeGreaterThan(400);
+    expect(customCap.arena.players.has(customCap.prey.username)).toBe(false);
+    expect(customCap.predator.mass).toBeGreaterThan(400);
+  });
+
+  it('gives direct absorbs more mass past 666 and stops them at 999', () => {
+    const upgradedConfig = createArena().arena.getConfig();
+    expect(upgradedConfig).toEqual(expect.objectContaining({
+      maxMass: 999,
+      playerAbsorbMassRatio: 1,
+      playerAbsorbLifeStealRatio: 1,
+      maxLives: 320000
+    }));
+
+    function resolveAbsorb(overrides, predatorMass) {
+      const { arena, io } = createArena({ maxFood: 0, maxWeaponPickups: 0 });
+      const config = { ...arena.getConfig(), ...overrides };
+      const predator = movementPlayer(arena, config, 'growth_predator', predatorMass, {
+        x: 300, y: 300, lives: arena._massToLives(predatorMass, config), spawnedAt: -12000, spawnProtectedUntil: 0
+      });
+      const prey = movementPlayer(arena, config, 'growth_prey', 180, {
+        x: 322, y: 300, lives: arena._massToLives(180, config), spawnedAt: -12000, spawnProtectedUntil: 0
+      });
+      arena.players.set(predator.username, predator);
+      arena.players.set(prey.username, prey);
+      arena._resolvePlayerCollisions(config);
+      return io.emit.mock.calls.find(([eventName]) => eventName === 'arena:player-absorbed')[1];
+    }
+
+    const formerProfile = resolveAbsorb({ playerAbsorbMassRatio: 0.82, playerAbsorbLifeStealRatio: 0.84 }, 520);
+    const upgradedProfile = resolveAbsorb({}, 520);
+
+    expect(upgradedProfile.massGain).toBeGreaterThan(formerProfile.massGain);
+    const crossing = resolveAbsorb({}, 650);
+    expect(crossing.predatorMass).toBeGreaterThan(666);
+    const capped = resolveAbsorb({}, 980);
+    expect(capped.predatorMass).toBe(999);
   });
 
   it('damps direct rewards for dominant unarmed predators and spills more food', () => {
     const { arena, io } = createArena({
       maxFood: 0,
-      maxWeaponPickups: 0
+      maxWeaponPickups: 0,
+      maxLives: 400000
     });
     const config = arena.getConfig();
     arena.handleActivity({ uniqueId: 'dominant_reward_predator', nickname: 'Predator' }, 'chat');
@@ -5390,8 +5473,8 @@ describe('ArenaGame', () => {
     Object.assign(predator, {
       x: 720,
       y: 420,
-      mass: 600,
-      lives: arena._massToLives(600, config),
+      mass: 800,
+      lives: arena._massToLives(800, config),
       vx: 1,
       vy: 0,
       weapon: null,
@@ -5429,7 +5512,8 @@ describe('ArenaGame', () => {
   it('starts damping unarmed absorb rewards before a predator reaches max mass', () => {
     const { arena, io } = createArena({
       maxFood: 0,
-      maxWeaponPickups: 0
+      maxWeaponPickups: 0,
+      maxLives: 400000
     });
     const config = arena.getConfig();
     arena.handleActivity({ uniqueId: 'midgame_reward_predator', nickname: 'Predator' }, 'chat');
@@ -5440,8 +5524,8 @@ describe('ArenaGame', () => {
     Object.assign(predator, {
       x: 720,
       y: 420,
-      mass: 400,
-      lives: arena._massToLives(400, config),
+      mass: 600,
+      lives: arena._massToLives(600, config),
       vx: 1,
       vy: 0,
       weapon: null,
@@ -7056,6 +7140,63 @@ describe('GameEnginePlugin arena integration', () => {
     expect(config.deathFoodDropValue).toBeGreaterThan(1.15);
   });
 
+  it('migrates the shipped 666 absorb profile in admin defaults without changing ambient food', () => {
+    const { plugin } = createPlugin();
+
+    const config = plugin._getConfigWithDefaults('arena', {
+      maxMass: 666,
+      playerAbsorbMassRatio: 0.82,
+      playerAbsorbLifeStealRatio: 0.84,
+      maxLives: 88000
+    });
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 999,
+      playerAbsorbMassRatio: 1,
+      playerAbsorbLifeStealRatio: 1,
+      maxLives: 320000,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1,
+      foodDespawnMs: 150000
+    }));
+  });
+
+  it('keeps a custom admin absorb profile unchanged', () => {
+    const { plugin } = createPlugin();
+
+    const config = plugin._getConfigWithDefaults('arena', {
+      maxMass: 777,
+      playerAbsorbMassRatio: 0.73,
+      playerAbsorbLifeStealRatio: 0.91
+    });
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 777,
+      playerAbsorbMassRatio: 0.73,
+      playerAbsorbLifeStealRatio: 0.91
+    }));
+  });
+
+  it('keeps a partial former admin profile unchanged', () => {
+    const { plugin } = createPlugin();
+
+    const config = plugin._getConfigWithDefaults('arena', {
+      maxMass: 777,
+      playerAbsorbMassRatio: 0.82,
+      playerAbsorbLifeStealRatio: 0.91,
+      maxLives: 88000
+    });
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 777,
+      playerAbsorbMassRatio: 0.82,
+      playerAbsorbLifeStealRatio: 0.91,
+      maxLives: 88000
+    }));
+  });
+
   it('fills risky AI and chainsaw pickup defaults into saved admin config responses', () => {
     const { plugin } = createPlugin();
 
@@ -7169,7 +7310,7 @@ describe('GameEnginePlugin arena integration', () => {
     for (const legacyMaxMass of [90, 140, 170, 260, 520]) {
       const noisy = plugin._getConfigWithDefaults('arena', { ...noisyProfile, maxMass: legacyMaxMass });
       expect(noisy).toEqual(expect.objectContaining({
-        maxMass: 666,
+        maxMass: 999,
         maxFood: 72,
         maxFoodRender: 66,
         foodSpawnIntervalMs: 2400,
@@ -7200,7 +7341,7 @@ describe('GameEnginePlugin arena integration', () => {
     });
 
     expect(config).toEqual(expect.objectContaining({
-      maxMass: 666,
+      maxMass: 999,
       maxFood: 72,
       maxFoodRender: 66,
       foodSpawnIntervalMs: 2400,

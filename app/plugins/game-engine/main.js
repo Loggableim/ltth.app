@@ -1250,6 +1250,19 @@ class GameEnginePlugin {
       config.inactivityShrinkPerSecond = this.defaultConfigs.arena.inactivityShrinkPerSecond;
     }
     const legacyMassCaps = [90, 140, 170, 260, 520];
+    const shippedAbsorbGrowthProfile = Number(stored?.maxMass) === 666 &&
+      Number(stored?.playerAbsorbMassRatio) === 0.82 &&
+      Number(stored?.playerAbsorbLifeStealRatio) === 0.84;
+    if (shippedAbsorbGrowthProfile) {
+      config.maxMass = this.defaultConfigs.arena.maxMass;
+      config.playerAbsorbMassRatio = this.defaultConfigs.arena.playerAbsorbMassRatio;
+      config.playerAbsorbLifeStealRatio = this.defaultConfigs.arena.playerAbsorbLifeStealRatio;
+    }
+    const shippedFullGrowthProfile = shippedAbsorbGrowthProfile &&
+      Number(stored?.maxLives) === 88000;
+    if (shippedFullGrowthProfile) {
+      config.maxLives = this.defaultConfigs.arena.maxLives;
+    }
     const noisyAmbientProfile = Number(stored?.foodSpawnBatchSize) > 3;
     if (legacyMassCaps.includes(Number(stored?.maxMass))) {
       config.maxMass = this.defaultConfigs.arena.maxMass;
@@ -1257,10 +1270,10 @@ class GameEnginePlugin {
     if ([2500, 6000, 9000].includes(Number(stored?.maxLives))) {
       config.maxLives = this.defaultConfigs.arena.maxLives;
     }
-    if ([0.7, 0.42, 0.82, 0.9].includes(Number(stored?.playerAbsorbMassRatio))) {
+    if ([0.7, 0.42, 0.9].includes(Number(stored?.playerAbsorbMassRatio))) {
       config.playerAbsorbMassRatio = this.defaultConfigs.arena.playerAbsorbMassRatio;
     }
-    if ([0.7, 0.55, 0.84, 0.9].includes(Number(stored?.playerAbsorbLifeStealRatio))) {
+    if ([0.7, 0.55, 0.9].includes(Number(stored?.playerAbsorbLifeStealRatio))) {
       config.playerAbsorbLifeStealRatio = this.defaultConfigs.arena.playerAbsorbLifeStealRatio;
     }
     if ([12, 8, 16].includes(Number(stored?.deathFoodDropCount))) {
