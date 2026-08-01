@@ -8,7 +8,7 @@ function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
   const routes = [];
   const emitted = [];
   const pluginEvents = new EventEmitter();
-  const settings = new Map([['streamalchemy_config', {
+  const settings = new Map([['config', {
     enabled: true,
     streamMonsters: { enabled: streamMonstersEnabled, hatchDurationMs: 1, maxUnhatchedEggs: 3 }
   }]]);
@@ -121,7 +121,7 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersBattleMatchService.getPublicSnapshot())
       .toEqual(expect.objectContaining({
         rulesVersion: 8,
-        gameplayPace: 'arcade-rally',
+        gameplayPace: 'arcade',
         portraitBattleMode: 'takeover-74',
         matches: []
       }));
@@ -267,8 +267,8 @@ describe('Stream Monsters plugin integration', () => {
     const plugin = new StreamAlchemyPlugin(api);
 
     await plugin.init();
-    expect(gcce.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
-    expect(gcce.registerCommandsForPlugin).toHaveBeenCalledWith('streamalchemy', expect.arrayContaining([
+    expect(gcce.unregisterCommandsForPlugin).toHaveBeenCalledWith('stream-monsters');
+    expect(gcce.registerCommandsForPlugin).toHaveBeenCalledWith('stream-monsters', expect.arrayContaining([
       expect.objectContaining({ name: 'eier', permission: 'all' }),
       expect.objectContaining({ name: 'eierliste', permission: 'all' }),
       expect.objectContaining({ name: 'meineeier', permission: 'all' }),
@@ -284,10 +284,12 @@ describe('Stream Monsters plugin integration', () => {
     plugin.streamMonstersEngine.recentGifts.set('viewer-a', { giftId: 1, timestamp: 1 });
     plugin.streamMonstersChatCommands.queue.push({ userId: 'viewer-a', queuedAt: 1 });
 
-    expect(plugin.streamMonstersReadyTimer).toBeDefined();
+    expect(plugin.streamMonstersDeadlineScheduler).toEqual(expect.objectContaining({
+      started: true
+    }));
     await plugin.destroy();
 
-    expect(plugin.streamMonstersReadyTimer).toBeNull();
+    expect(plugin.streamMonstersDeadlineScheduler).toBeNull();
     expect(plugin.streamMonstersEngine.recentGifts.size).toBe(0);
     expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
   });
@@ -606,8 +608,8 @@ describe('Stream Monsters plugin integration', () => {
     const secondGCCE = createGCCE('/');
     api.pluginLoader.loadedPlugins.set('gcce', { instance: secondGCCE });
     pluginEvents.emit('plugin:reloaded', 'gcce');
-    expect(firstGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
-    expect(firstGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
+    expect(firstGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('stream-monsters');
+    expect(firstGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('stream-monsters');
     expect(secondGCCE.registerCommandsForPlugin).toHaveBeenCalledTimes(1);
     expect(secondGCCE.registerRawResponseHandlerForPlugin).toHaveBeenCalledTimes(1);
 
@@ -634,8 +636,8 @@ describe('Stream Monsters plugin integration', () => {
 
     await plugin.destroy();
     expect(pluginEvents.eventNames()).toEqual([]);
-    expect(secondGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
-    expect(secondGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
+    expect(secondGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('stream-monsters');
+    expect(secondGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('stream-monsters');
   });
 
   test('keeps legacy GCCE as sole command ingress while accepting only authorized raw battle replies directly', async () => {
@@ -1075,7 +1077,7 @@ describe('Stream Monsters plugin integration', () => {
         success: false,
         errorCode: 'EXECUTION_FAILED',
         commandName: 'eier',
-        pluginId: 'streamalchemy',
+        pluginId: 'stream-monsters',
         userId: 'viewer-a'
       })
     ]);

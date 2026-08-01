@@ -6,7 +6,8 @@
   'use strict';
 
   const ELEMENTS = new Set(['ember', 'tide', 'grove', 'gale', 'volt', 'lunar']);
-  const SAFE_ASSET_URL = /^\/plugins\/streamalchemy\/assets\/[a-z0-9/_\-.]+$/i;
+  const SAFE_ASSET_URL =
+    /^\/plugins\/(?:stream-monsters|streamalchemy)\/assets\/[a-z0-9/_\-.]+$/i;
   const SAFE_KENNEY_URL = /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i;
   const SAFE_AVATAR_URL = /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i;
 
@@ -52,9 +53,11 @@
 
   function safeImageUrl(input) {
     const url = boundedText(input, '', 512);
-    return SAFE_ASSET_URL.test(url) ||
-      SAFE_KENNEY_URL.test(url) ||
-      SAFE_AVATAR_URL.test(url)
+    const safeAsset = SAFE_ASSET_URL.test(url) &&
+      !url.includes('\\') &&
+      !url.includes('%') &&
+      !url.split('/').some(segment => segment === '.' || segment === '..');
+    return safeAsset || SAFE_KENNEY_URL.test(url) || SAFE_AVATAR_URL.test(url)
       ? url
       : '';
   }

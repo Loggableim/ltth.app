@@ -48,7 +48,7 @@ function createSubject({
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow,
     config
-  });
+  }).start();
   activeServices.add(service);
   return {
     store,

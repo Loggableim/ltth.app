@@ -94,6 +94,17 @@ function monster(index, overrides = {}) {
 }
 
 describe('Stream Monsters 1.5 OBS chat presentation', () => {
+  test('accepts canonical and legacy packaged assets but rejects traversal', () => {
+    const canonical = '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp';
+    const legacy = '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp';
+
+    expect(chatRuntime.safeImageUrl(canonical)).toBe(canonical);
+    expect(chatRuntime.safeImageUrl(legacy)).toBe(legacy);
+    expect(chatRuntime.safeImageUrl(
+      '/plugins/stream-monsters/assets/../private.txt'
+    )).toBe('');
+  });
+
   test('wires the safe upper chat view and recent-event replay into the OBS overlay', () => {
     const html = fs.readFileSync(
       path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'),
@@ -313,7 +324,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(snapshot.detailText).toEqual(expect.stringContaining('Guard'));
     expect(snapshot.detailText).toEqual(expect.stringContaining('Agility'));
     expect(snapshot.detailHtml).toContain(
-      '/plugins/streamalchemy/assets/streammonsters/furry/evolution/volt/pulse-stage2.webp'
+      '/plugins/stream-monsters/assets/streammonsters/furry/evolution/volt/pulse-stage2.webp'
     );
     for (const secret of [
       'private-user-id',

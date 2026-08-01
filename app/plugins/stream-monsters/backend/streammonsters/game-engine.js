@@ -53,7 +53,7 @@ class StreamMonstersEngine {
   }
 
   emitAfterCommit(event, payload) {
-    this.emit(event, payload);
+    this.store.afterCommit(() => this.emit(event, payload));
   }
 
   projectEggStage(egg) {

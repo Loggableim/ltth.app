@@ -98,10 +98,6 @@ class StreamMonstersDatabase {
       );
       CREATE INDEX IF NOT EXISTS streammonsters_eggs_user_state
         ON streammonsters_eggs(user_id, state, created_at_ms);
-      CREATE INDEX IF NOT EXISTS streammonsters_eggs_state_ready_deadline
-        ON streammonsters_eggs(state, ready_at_ms, egg_id);
-      CREATE INDEX IF NOT EXISTS streammonsters_eggs_state_expiry_deadline
-        ON streammonsters_eggs(state, expires_at_ms, egg_id);
 
       CREATE TABLE IF NOT EXISTS streammonsters_monsters (
         monster_id TEXT PRIMARY KEY,
@@ -789,6 +785,10 @@ class StreamMonstersDatabase {
       WHERE evolution_essence_spent = 0 AND evolution_stage >= 2
     `).run();
     this.db.exec(`
+      CREATE INDEX IF NOT EXISTS streammonsters_eggs_state_ready_deadline
+        ON streammonsters_eggs(state, ready_at_ms, egg_id);
+      CREATE INDEX IF NOT EXISTS streammonsters_eggs_state_expiry_deadline
+        ON streammonsters_eggs(state, expires_at_ms, egg_id);
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user_template
         ON streammonsters_monsters(user_id, template_id, created_at_ms);
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_owned_template_stage

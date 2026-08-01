@@ -56,7 +56,7 @@ function createSubject({
     engine,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow
-  });
+  }).start();
   activeFreeEggServices.add(freeEggs);
   return {
     sqlite,
@@ -367,10 +367,14 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
   });
 
   test('accepts exact packaged assets but rejects traversal-shaped avatar references', () => {
-    expect(safeAssetReference(
-      '/plugins/streamalchemy/assets/eggs/ember-standard.png'
-    )).toBe('/plugins/streamalchemy/assets/eggs/ember-standard.png');
     [
+      '/plugins/stream-monsters/assets/eggs/ember-standard.png',
+      '/plugins/streamalchemy/assets/eggs/ember-standard.png'
+    ].forEach(reference => {
+      expect(safeAssetReference(reference)).toBe(reference);
+    });
+    [
+      '/plugins/stream-monsters/assets/../private.txt',
       '/plugins/streamalchemy/assets/../private.txt',
       '/plugins/streamalchemy/assets/%2e%2e/private.txt',
       '/plugins/streamalchemy/assets/eggs/../../private.txt',

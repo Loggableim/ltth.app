@@ -47,7 +47,7 @@ function createSubject({ now = 1_000, config = {} } = {}) {
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow,
     config
-  }));
+  })).start();
   return {
     store,
     engine,
@@ -480,7 +480,7 @@ describe('Stream Monsters recurring free egg drops', () => {
       engine: subject.engine,
       emit: (event, payload) => subject.emitted.push({ event, payload }),
       now: () => 1_001
-    }));
+    })).start();
 
     expect(reloaded.adopt({
       userId: 'viewer-a', streamKey: 'creator:stream-1', eventId: 'adopt-a', nowMs: 1_001
@@ -530,7 +530,7 @@ describe('Stream Monsters recurring free egg drops', () => {
         engine: subject.engine,
         emit: (event, payload) => subject.emitted.push({ event, payload }),
         now: subject.now
-      }));
+      })).start();
 
       expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
         .toBe('public');

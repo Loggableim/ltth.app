@@ -1850,7 +1850,13 @@ class StreamMonstersPlugin {
       );
       this.streamMonstersDeadlineScheduler?.deadlineChanged?.();
     };
-    if (shouldEmit) this.streamMonstersStore?.afterCommit?.(deliver) || deliver();
+    if (shouldEmit) {
+      if (typeof this.streamMonstersStore?.afterCommit === 'function') {
+        this.streamMonstersStore.afterCommit(deliver);
+      } else {
+        deliver();
+      }
+    }
     this.logStructured('socket_emit', diagnostic, 'debug');
     const domainEvents = {
       'streammonsters:egg_hatched': 'hatch_completed',

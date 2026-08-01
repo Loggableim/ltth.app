@@ -745,7 +745,8 @@
 
     function safeImageUrl(value) {
       const url = boundedText(value, 512);
-      return /^\/plugins\/streamalchemy\/assets\/[a-z0-9./_-]+$/i.test(url) &&
+      return /^\/plugins\/(?:stream-monsters|streamalchemy)\/assets\/[a-z0-9./_-]+$/i
+        .test(url) &&
         !url.split('/').includes('..')
         ? url
         : '';
