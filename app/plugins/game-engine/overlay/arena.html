@@ -1389,7 +1389,8 @@
         hudPlacement === 'above-field' ||
         hudPlacement === 'below-field' ||
         infoPlacement === 'above-field' ||
-        infoPlacement === 'below-field';
+        infoPlacement === 'below-field' ||
+        infoPlacement === 'stream-left-panel';
     }
 
     function arenaOutsideHudHeightBase() {
@@ -1407,7 +1408,9 @@
     }
 
     function resolveArenaOutsideBands(rect, infoPlacement, hudPlacement, infoHeight, hudHeight, gap, viewportHeight) {
-      const infoOutside = infoPlacement === 'above-field' || infoPlacement === 'below-field';
+      const infoOutside = ['above-field', 'below-field', 'stream-left-panel'].includes(infoPlacement);
+      const infoPlacementIsBelow = infoPlacement === 'below-field' || infoPlacement === 'stream-left-panel';
+      const hudPlacementIsBelow = hudPlacement === 'below-field';
       const hudOutside = hudPlacement === 'above-field' || hudPlacement === 'below-field';
       const defaultBelow = rect.y + rect.height + gap;
       const infoTop = infoOutside
@@ -1425,7 +1428,7 @@
         )
         : clampArenaBandTop(defaultBelow, hudHeight, viewportHeight);
 
-      if (infoOutside && hudOutside && infoPlacement === hudPlacement) {
+      if (infoOutside && hudOutside && infoPlacementIsBelow === hudPlacementIsBelow) {
         const stackHeight = infoHeight + gap + hudHeight;
         const preferredStackTop = infoPlacement === 'above-field'
           ? rect.y - stackHeight - gap
@@ -1465,11 +1468,12 @@
       const hudBand = hudPlacement === 'above-field' || hudPlacement === 'below-field'
         ? Math.round(clampNumber(arenaOutsideHudHeightBase() * layoutScale, 122, 320, 150))
         : 0;
-      const infoBand = infoPlacement === 'above-field' || infoPlacement === 'below-field'
+      const infoPlacementUsesBottomBand = infoPlacement === 'below-field' || infoPlacement === 'stream-left-panel';
+      const infoBand = infoPlacement === 'above-field' || infoPlacementUsesBottomBand
         ? Math.round(clampNumber(88 * layoutScale, 72, 190, 88))
         : 0;
       const bottomInfoBand = (hudPlacement === 'below-field' ? hudBand : 0) +
-        (infoPlacement === 'below-field' ? infoBand : 0);
+        (infoPlacementUsesBottomBand ? infoBand : 0);
       const topInfoBand = infoPlacement === 'above-field'
         ? infoBand
         : 0;
@@ -1477,7 +1481,7 @@
       const gap = 12;
       const topGapCount = (topInfoBand > 0 ? 1 : 0) + (topHudBand > 0 ? 1 : 0);
       const bottomGapCount = (bottomInfoBand > 0 ? 1 : 0) +
-        (hudPlacement === 'below-field' && infoPlacement === 'below-field' ? 1 : 0);
+        (hudPlacement === 'below-field' && infoPlacementUsesBottomBand ? 1 : 0);
       const availableWidth = Math.max(240, viewportWidth - margin * 2);
       const availableHeight = Math.max(
         180,
@@ -1839,15 +1843,16 @@
       const shieldDurationSeconds = Math.max(1, Math.round((Number(config?.shieldDurationMs) || 8000) / 1000));
       const definitions = [
         { iconText: 'RUN', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!boost - Tempo: ${boostDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!boost - Speed: ${boostDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
-        { iconText: 'SHD', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!schild (auch !shield) - Schutz: ${shieldDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!shield - Shield: ${shieldDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
+        { iconText: 'SHD', alwaysGermanAlias: true, label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!schild (auch !shield) - Schutz: ${shieldDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!shield - Shield: ${shieldDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
         { iconText: 'BMB', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!bomb - Wurf', en: '!bomb - Throw' } }
       ];
       return definitions.map((definition, index) => {
         const language = languages[index % languages.length] || 'de';
+        const textLanguage = definition.alwaysGermanAlias ? 'de' : language;
         return {
           kind: 'ability',
           label: definition.label[language],
-          text: definition.text[language],
+          text: definition.text[textLanguage],
           iconText: definition.iconText
         };
       });

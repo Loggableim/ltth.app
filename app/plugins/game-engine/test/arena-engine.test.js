@@ -8049,3 +8049,21 @@ describe('Arena left info and German shield alias contracts', () => {
     expect(mainSource).toContain("const ability = arenaAbilityMatch[1].toLowerCase() === 'schild' ? 'shield' : arenaAbilityMatch[1].toLowerCase();");
   });
 });
+describe('Arena left info review regressions', () => {
+  it('keeps the German shield alias copy in the default de-en ability rotation', () => {
+    const overlay = fs.readFileSync(path.join(__dirname, '..', 'overlay', 'arena.html'), 'utf8');
+
+    expect(overlay).toContain('alwaysGermanAlias: true');
+    expect(overlay).toContain("const textLanguage = definition.alwaysGermanAlias ? 'de' : language;");
+    expect(overlay).toContain('text: definition.text[textLanguage]');
+  });
+
+  it('reserves a landscape outside band for stream-left-panel before using its fallback CSS', () => {
+    const overlay = fs.readFileSync(path.join(__dirname, '..', 'overlay', 'arena.html'), 'utf8');
+
+    expect(overlay).toContain("infoPlacement === 'stream-left-panel'");
+    expect(overlay).toContain("infoPlacement === 'below-field' || infoPlacement === 'stream-left-panel'");
+    expect(overlay).toContain("const infoOutside = ['above-field', 'below-field', 'stream-left-panel'].includes(infoPlacement);");
+    expect(overlay).toContain('body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator');
+  });
+});
