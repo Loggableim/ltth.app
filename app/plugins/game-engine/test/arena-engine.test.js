@@ -239,7 +239,7 @@ describe('ArenaGame', () => {
     expect(player.abilities.shield.ready).toBe(false);
   });
 
-  it('throws a bomb in one random cardinal direction and bursts a large target into food', () => {
+  it('throws a bomb in one random cardinal direction and leaves a large target alive after the shockwave', () => {
     let now = 60000;
     const { arena } = createArena({ maxFood: 0 }, { now: () => now, random: () => 0 });
     const config = arena.getConfig();
@@ -258,10 +258,80 @@ describe('ArenaGame', () => {
     now += 350;
     arena.tick(350);
 
-    expect(arena.players.get(giant.username).mass).toBeLessThanOrEqual(config.minMass + 1);
+    expect(arena.players.get(giant.username).mass).toBeCloseTo(99, 0);
+    expect(arena.players.get(giant.username).mass).toBeGreaterThan(config.minMass);
+    expect((arena.players.get(giant.username).kills || 0)).toBe(0);
     expect(arena.food.size).toBeGreaterThan(0);
   });
 
+  it('lets a small player pass an armed bomb but makes a giant trigger it from their larger radius', () => {
+    const { arena } = createArena({ bombBlastRadius: 92 }, { now: () => 70000 });
+    const config = arena.getConfig();
+    const small = movementPlayer(arena, config, 'small', 12, { x: 230, y: 300, lives: arena._massToLives(12, config) });
+    const giant = movementPlayer(arena, config, 'giant', 180, { x: 150, y: 300, lives: arena._massToLives(180, config) });
+    arena.players.set(small.username, small);
+    arena.players.set(giant.username, giant);
+    arena.bombs.set('bomb_1', { id: 'bomb_1', owner: 'owner', phase: 'armed', x: 100, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
+
+    arena._updateBombs(config, 0);
+
+    expect(arena.bombs.has('bomb_1')).toBe(false);
+    expect(small.mass).toBeCloseTo(12, 1);
+    expect(giant.mass).toBeLessThan(180);
+    expect(giant.mass).toBeGreaterThan(config.minMass);
+  });
+
+  it('applies all three radial bomb bands without a kill or food rain', () => {
+    const { arena, io } = createArena({ maxFood: 100 }, { now: () => 70000 });
+    const config = arena.getConfig();
+    const core = movementPlayer(arena, config, 'core', 100, { x: 310, y: 300, lives: arena._massToLives(100, config) });
+    const middle = movementPlayer(arena, config, 'middle', 100, { x: 346, y: 300, lives: arena._massToLives(100, config) });
+    const outer = movementPlayer(arena, config, 'outer', 100, { x: 382, y: 300, lives: arena._massToLives(100, config) });
+    arena.players.set(core.username, core);
+    arena.players.set(middle.username, middle);
+    arena.players.set(outer.username, outer);
+    arena.bombs.set('bomb_2', { id: 'bomb_2', owner: 'owner', phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
+
+    arena._updateBombs(config, 0);
+
+    expect(core.mass).toBeCloseTo(22, 0);
+    expect(middle.mass).toBeCloseTo(45, 0);
+    expect(outer.mass).toBeCloseTo(70, 0);
+    expect((core.kills || 0) + (middle.kills || 0) + (outer.kills || 0)).toBe(0);
+    expect(arena.food.size).toBeLessThanOrEqual(40);
+    expect(io.emit).toHaveBeenCalledWith('arena:bomb-exploded', expect.objectContaining({
+      bombId: 'bomb_2',
+      owner: 'owner',
+      x: 300,
+      y: 300,
+      radius: 92,
+      phase: 'armed',
+      victims: expect.arrayContaining(['core', 'middle', 'outer']),
+      timestamp: 70000
+    }));
+
+  });
+  it('keeps an armed bomb inert for its owner and shielded players', () => {
+    const now = 70000;
+    const { arena } = createArena({}, { now: () => now });
+    const config = arena.getConfig();
+    const owner = movementPlayer(arena, config, 'owner', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) });
+    const shielded = movementPlayer(arena, config, 'shielded', 100, {
+      x: 310,
+      y: 300,
+      lives: arena._massToLives(100, config),
+      abilities: { shield: { availableAt: now + config.abilityChargeMs, activeUntil: now + config.shieldDurationMs } }
+    });
+    arena.players.set(owner.username, owner);
+    arena.players.set(shielded.username, shielded);
+    arena.bombs.set('bomb_3', { id: 'bomb_3', owner: owner.username, phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
+
+    arena._updateBombs(config, 0);
+
+    expect(arena.bombs.has('bomb_3')).toBe(true);
+    expect(owner.mass).toBeCloseTo(100, 1);
+    expect(shielded.mass).toBeCloseTo(100, 1);
+  });
   it('arms a missed bomb and serializes its separate cooldown state', () => {
     let now = 60000;
     const { arena } = createArena({ bombRange: 80, bombArmDurationMs: 18000 }, { now: () => now, random: () => 0 });

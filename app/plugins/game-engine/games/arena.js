@@ -3065,9 +3065,16 @@ class ArenaGame {
   }
 
   _updateBombs(config, seconds) {
-    for (const [id, bomb] of Array.from(this.bombs.entries())) {
+    for (const [, bomb] of Array.from(this.bombs.entries())) {
+      const trigger = Array.from(this.players.values()).find(player =>
+        player.username !== bomb.owner && !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
+      );
+      if (trigger) {
+        this._detonateBomb(bomb, config);
+        continue;
+      }
       if (bomb.phase === 'armed') {
-        if (this.now() >= bomb.expiresAt) this.bombs.delete(id);
+        if (this.now() >= bomb.expiresAt) this.bombs.delete(bomb.id);
         continue;
       }
       const distance = bomb.speed * seconds;
@@ -3075,18 +3082,10 @@ class ArenaGame {
       bomb.y += bomb.vy * distance;
       bomb.travelled += distance;
       const target = Array.from(this.players.values()).find(player =>
-        player.username !== bomb.owner && !this._isShieldActive(player) &&
-        this._distance(player, bomb) <= player.radius + bomb.blastRadius
+        player.username !== bomb.owner && !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
       );
       if (target) {
-        const beforeMass = target.mass;
-        target.lives = config.minLives + 1;
-        this._syncRadius(target, config);
-        this._spawnFoodBurst(target, Math.max(18, Math.min(72, Math.floor(beforeMass / 3))), config, {
-          source: 'bomb', value: Math.max(config.foodValue * 2, beforeMass / 160), spread: bomb.blastRadius, ignoreCap: true
-        });
-        this.io.emit('arena:bomb-exploded', { bombId: id, owner: bomb.owner, target: target.username, x: target.x, y: target.y, timestamp: this.now() });
-        this.bombs.delete(id);
+        this._detonateBomb(bomb, config);
       } else if (bomb.travelled >= bomb.range || bomb.x < 0 || bomb.y < 0 || bomb.x > config.arenaWidth || bomb.y > config.arenaHeight) {
         bomb.phase = 'armed';
         bomb.vx = 0;
@@ -3097,6 +3096,43 @@ class ArenaGame {
     }
   }
 
+  _bombTouchesPlayer(bomb, player) {
+    return this._distance(bomb, player) <= Math.max(1, Number(bomb.radius) || 12) + Math.max(1, Number(player.radius) || 0);
+  }
+
+  _bombRetentionForDistance(distance, blastRadius) {
+    const ratio = distance / Math.max(1, blastRadius);
+    if (ratio <= 0.35) return 0.22;
+    if (ratio <= 0.70) return 0.45;
+    return 0.70;
+  }
+
+  _detonateBomb(bomb, config) {
+    const radius = Math.max(1, Number(bomb.blastRadius) || Number(config.bombBlastRadius) || 1);
+    let totalMassLost = 0;
+    const victims = [];
+    for (const player of this.players.values()) {
+      if (player.username === bomb.owner || this._isShieldActive(player)) continue;
+      const distance = this._distance(bomb, player);
+      if (distance > radius) continue;
+      const beforeMass = Number(player.mass) || 0;
+      const targetMass = Math.max(Number(config.minMass) + 0.5, beforeMass * this._bombRetentionForDistance(distance, radius));
+      const massLost = Math.max(0, beforeMass - targetMass);
+      player.lives = this._massToLives(targetMass, config);
+      this._syncRadius(player, config);
+      totalMassLost += massLost;
+      victims.push(player.username);
+    }
+    const foodCount = Math.min(40, Math.floor(totalMassLost / 10));
+    if (foodCount > 0) {
+      this._spawnFoodBurst(bomb, foodCount, config, { source: 'bomb', spread: radius, ignoreCap: true });
+    }
+    this.io.emit('arena:bomb-exploded', {
+      bombId: bomb.id, owner: bomb.owner, x: bomb.x, y: bomb.y, radius,
+      phase: bomb.phase, victims, timestamp: this.now()
+    });
+    this.bombs.delete(bomb.id);
+  }
   _resolveFoodCollisions(config) {
     for (const player of this.players.values()) {
       for (const [foodId, food] of Array.from(this.food.entries())) {
