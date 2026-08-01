@@ -3066,6 +3066,10 @@ class ArenaGame {
 
   _updateBombs(config, seconds) {
     for (const [, bomb] of Array.from(this.bombs.entries())) {
+      if (bomb.phase === 'armed' && this.now() >= bomb.expiresAt) {
+        this.bombs.delete(bomb.id);
+        continue;
+      }
       const trigger = Array.from(this.players.values()).find(player =>
         player.username !== bomb.owner && !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
       );
@@ -3073,20 +3077,21 @@ class ArenaGame {
         this._detonateBomb(bomb, config);
         continue;
       }
-      if (bomb.phase === 'armed') {
-        if (this.now() >= bomb.expiresAt) this.bombs.delete(bomb.id);
-        continue;
-      }
-      const distance = bomb.speed * seconds;
+      if (bomb.phase === 'armed') continue;
+      const requestedDistance = Math.max(0, bomb.speed * seconds);
+      const remainingRange = Math.max(0, bomb.range - bomb.travelled);
+      const toFieldEdge = this._bombDistanceToFieldEdge(bomb, config);
+      const distance = Math.min(requestedDistance, remainingRange, toFieldEdge);
+      const start = { x: bomb.x, y: bomb.y };
       bomb.x += bomb.vx * distance;
       bomb.y += bomb.vy * distance;
       bomb.travelled += distance;
       const target = Array.from(this.players.values()).find(player =>
-        player.username !== bomb.owner && !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
+        player.username !== bomb.owner && !this._isShieldActive(player) && this._bombTouchesSegment(start, bomb, player)
       );
       if (target) {
         this._detonateBomb(bomb, config);
-      } else if (bomb.travelled >= bomb.range || bomb.x < 0 || bomb.y < 0 || bomb.x > config.arenaWidth || bomb.y > config.arenaHeight) {
+      } else if (distance < requestedDistance || bomb.travelled >= bomb.range) {
         bomb.phase = 'armed';
         bomb.vx = 0;
         bomb.vy = 0;
@@ -3100,6 +3105,21 @@ class ArenaGame {
     return this._distance(bomb, player) <= Math.max(1, Number(bomb.radius) || 12) + Math.max(1, Number(player.radius) || 0);
   }
 
+  _bombTouchesSegment(start, end, player) {
+    const dx = end.x - start.x; const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const t = lengthSquared ? this._clamp(((player.x - start.x) * dx + (player.y - start.y) * dy) / lengthSquared, 0, 1) : 0;
+    return this._distance({ x: start.x + dx * t, y: start.y + dy * t }, player) <= Math.max(1, Number(end.radius) || 12) + Math.max(1, Number(player.radius) || 0);
+  }
+
+  _bombDistanceToFieldEdge(bomb, config) {
+    const distances = [];
+    if (bomb.vx > 0) distances.push((config.arenaWidth - bomb.x) / bomb.vx);
+    if (bomb.vx < 0) distances.push((0 - bomb.x) / bomb.vx);
+    if (bomb.vy > 0) distances.push((config.arenaHeight - bomb.y) / bomb.vy);
+    if (bomb.vy < 0) distances.push((0 - bomb.y) / bomb.vy);
+    return Math.max(0, Math.min(...distances.filter(Number.isFinite)));
+  }
   _bombRetentionForDistance(distance, blastRadius) {
     const ratio = distance / Math.max(1, blastRadius);
     if (ratio <= 0.35) return 0.22;
@@ -3116,7 +3136,7 @@ class ArenaGame {
       const distance = this._distance(bomb, player);
       if (distance > radius) continue;
       const beforeMass = Number(player.mass) || 0;
-      const targetMass = Math.max(Number(config.minMass) + 0.5, beforeMass * this._bombRetentionForDistance(distance, radius));
+      const targetMass = Math.min(beforeMass, Math.max(Number(config.minMass) + 0.5, beforeMass * this._bombRetentionForDistance(distance, radius)));
       const massLost = Math.max(0, beforeMass - targetMass);
       player.lives = this._massToLives(targetMass, config);
       this._syncRadius(player, config);

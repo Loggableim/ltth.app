@@ -348,6 +348,36 @@ describe('ArenaGame', () => {
     expect(shielded.mass).toBeCloseTo(100, 1);
     expect(trigger.mass).toBeCloseTo(45, 0);
   });
+  it('removes an expired armed bomb before any physical trigger can detonate it', () => {
+    const { arena } = createArena({}, { now: () => 70000 }); const config = arena.getConfig();
+    const victim = movementPlayer(arena, config, 'victim', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) }); arena.players.set(victim.username, victim);
+    arena.bombs.set('expired', { id: 'expired', owner: 'owner', phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 70000 });
+    arena._updateBombs(config, 0);
+    expect(arena.bombs.has('expired')).toBe(false); expect(victim.mass).toBeCloseTo(100, 1);
+  });
+
+  it('arms a missed flying bomb at its exact range boundary', () => {
+    const { arena } = createArena({ bombRange: 80 }, { now: () => 70000 }); const config = arena.getConfig();
+    arena.bombs.set('range', { id: 'range', owner: 'owner', phase: 'flying', x: 100, y: 300, vx: 1, vy: 0, radius: 12, speed: 650, range: 80, travelled: 0, blastRadius: 92 });
+    arena._updateBombs(config, 0.2);
+    expect(arena.bombs.get('range')).toMatchObject({ phase: 'armed', x: 180, y: 300, travelled: 80 });
+  });
+
+  it('detects a small player crossed between delayed flying-bomb tick endpoints', () => {
+    const { arena } = createArena({}, { now: () => 70000 }); const config = arena.getConfig();
+    const victim = movementPlayer(arena, config, 'tunnel', 8, { x: 140, y: 300, lives: arena._massToLives(8, config) }); arena.players.set(victim.username, victim);
+    arena.bombs.set('tunnel', { id: 'tunnel', owner: 'owner', phase: 'flying', x: 100, y: 300, vx: 1, vy: 0, radius: 12, speed: 650, range: 420, travelled: 0, blastRadius: 92 });
+    arena._updateBombs(config, 0.12);
+    expect(arena.bombs.has('tunnel')).toBe(false);
+  });
+
+  it('never increases a near-minimum victim mass during bomb retention', () => {
+    const { arena } = createArena({}, { now: () => 70000 }); const config = arena.getConfig();
+    const victim = movementPlayer(arena, config, 'near_min', 8.2, { x: 300, y: 300, lives: arena._massToLives(8.2, config) }); arena.players.set(victim.username, victim);
+    arena.bombs.set('near_min', { id: 'near_min', owner: 'owner', phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 88000 });
+    arena._updateBombs(config, 0);
+    expect(victim.mass).toBeLessThanOrEqual(8.2);
+  });
   it('arms a missed bomb and serializes its separate cooldown state', () => {
     let now = 60000;
     const { arena } = createArena({ bombRange: 80, bombArmDurationMs: 18000 }, { now: () => now, random: () => 0 });
