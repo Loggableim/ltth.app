@@ -252,4 +252,3 @@ Expected: both commands exit 0.
 - [ ] **Step 3: Review all spec invariants**
 
 Confirm random direction, one owner bomb, 18-second armed phase, physical trigger versus AoE radius, three retention bands, shield/owner immunity, no direct elimination/kill, at most 40 shared food, and Canvas/Pixi feedback parity before reviewer handoff.
-

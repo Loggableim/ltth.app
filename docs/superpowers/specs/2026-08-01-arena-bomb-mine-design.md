@@ -1,6 +1,6 @@
 # Arena Bomb Mine Design
 
-**Date:** 2026-08-01  
+**Date:** 2026-08-01
 **Status:** approved for implementation
 
 ## Goal
