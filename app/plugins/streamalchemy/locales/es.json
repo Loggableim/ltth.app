@@ -599,6 +599,7 @@
           "rendererMedium": "Media",
           "rendererLow": "Baja",
           "notificationDuration": "Duración de notificaciones (segundos)",
+          "eggShelfVisibleCount": "Huevos visibles en rotación",
           "freeEggDropsEnabled": "Huevos gratis recurrentes",
           "freeEggCooldownSeconds": "Espera del huevo gratis (segundos)",
           "freeEggCooldownHelp": "Tras esta espera, un espectador puede recibir otra oferta personal de huevo gratis.",

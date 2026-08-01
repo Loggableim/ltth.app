@@ -390,13 +390,13 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealEnabled">Allow ready-egg steals</span><input id="unhatchedEggStealEnabled" type="checkbox" checked></label>
-          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealGraceSeconds">Ready time before steal (seconds)</span><input id="unhatchedEggStealGraceSeconds" type="number" min="0" max="86400" step="1" value="600"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealGraceSeconds">Ready time before steal (seconds)</span><input id="unhatchedEggStealGraceSeconds" type="number" min="0" max="900" step="1" value="600"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealActivityWindowSeconds">Owner activity window (seconds)</span><input id="unhatchedEggStealActivityWindowSeconds" type="number" min="30" max="86400" step="1" value="300"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
-        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealHelp">Active owners hatch their ready eggs automatically. An inactive owner's egg becomes available with !steal after its ready time.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealHelp">Active owners hatch their ready eggs automatically. An inactive owner's egg becomes available with !steal after its ready time, and every unhatched egg is stealable after 15 minutes.</p>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
         <div id="presentationModeStatus" class="badge" role="status" aria-live="polite"></div>
         <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
@@ -584,6 +584,10 @@
           <output id="portraitArenaVariantHelp" class="control-help" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantHelp">Choose how the bounded portrait arena arranges both fighters. The Likebar remains external and reserved.</output>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.rendererQuality">Renderer quality</span><select id="rendererQuality"><option value="auto" data-i18n="plugins.streamalchemy.ui.monsters.rendererAuto">Auto</option><option value="high" data-i18n="plugins.streamalchemy.ui.monsters.rendererHigh">High</option><option value="medium" data-i18n="plugins.streamalchemy.ui.monsters.rendererMedium">Medium</option><option value="low" data-i18n="plugins.streamalchemy.ui.monsters.rendererLow">Low</option></select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.notificationDuration">Notification duration (seconds)</span><input id="notificationDuration" type="number" min="8" max="30" value="12"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.eggShelfVisibleCount">Visible eggs in rotation</span><select id="eggShelfVisibleCount">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4" selected>4</option><option value="5">5</option><option value="6">6</option>
+          </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitAnchor">Portrait anchor</span><select id="portraitAnchor">
             <option value="top-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopLeft">Top left</option><option value="top-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopCenter">Top center</option><option value="top-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopRight">Top right</option>
             <option value="middle-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleLeft">Middle left</option><option value="center" data-i18n="plugins.streamalchemy.ui.monsters.anchorCenter">Center</option><option value="middle-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleRight">Middle right</option>
@@ -1565,6 +1569,7 @@
         portraitScale:byId('portraitScale').value,
         rendererQuality:byId('rendererQuality').value,
         notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
+        eggShelfVisibleCount:byId('eggShelfVisibleCount').value,
         freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
         freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
         unhatchedEggStealEnabled:byId('unhatchedEggStealEnabled').checked,
@@ -1700,6 +1705,9 @@
     byId('rendererQuality').value = state.config?.rendererQuality || 'auto';
     byId('notificationDuration').value = String(
       Math.round((state.config?.notificationDurationMs || 12000) / 1000)
+    );
+    byId('eggShelfVisibleCount').value = String(
+      state.config?.eggShelfVisibleCount || 4
     );
     byId('freeEggDropsEnabled').checked =
       state.config?.freeEggDropsEnabled !== false;
@@ -1885,7 +1893,7 @@
       cooldown > 31536000 ||
       !Number.isFinite(stealGrace) ||
       stealGrace < 0 ||
-      stealGrace > 86400 ||
+      stealGrace > 900 ||
       !Number.isFinite(activityWindow) ||
       activityWindow < 30 ||
       activityWindow > 86400 ||

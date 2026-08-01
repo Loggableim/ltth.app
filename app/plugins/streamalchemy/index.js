@@ -50,6 +50,7 @@ const RETIRED_RUNTIME_TRUST_FIELDS = new Set([
 ]);
 const STREAM_MONSTERS_RULES_VERSION = PRODUCT_CONTRACT.rules.version;
 const DEFAULT_HATCH_DURATION_MS = PRODUCT_CONTRACT.defaults.hatchDurationMs;
+const DEFAULT_EGG_SHELF_VISIBLE_COUNT = 4;
 const DEFAULT_GAMEPLAY_PACE = 'arcade-rally';
 const DEFAULT_PORTRAIT_BATTLE_MODE =
   PRODUCT_CONTRACT.defaults.portraitBattleMode;
@@ -432,6 +433,7 @@ class StreamAlchemyPlugin {
         overlayProfiles: this.normalizeOverlayProfiles(),
         rendererQuality: 'auto',
         notificationDurationMs: 12_000,
+        eggShelfVisibleCount: DEFAULT_EGG_SHELF_VISIBLE_COUNT,
         audioChannels: this.normalizeAudioChannels(),
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
@@ -485,6 +487,9 @@ class StreamAlchemyPlugin {
         rendererQuality: this.normalizeRendererQuality(storedStreamMonsters.rendererQuality),
         notificationDurationMs: this.normalizeNotificationDuration(
           storedStreamMonsters.notificationDurationMs
+        ),
+        eggShelfVisibleCount: this.normalizeEggShelfVisibleCount(
+          storedStreamMonsters.eggShelfVisibleCount
         ),
         audioChannels: this.normalizeAudioChannels(storedStreamMonsters.audioChannels),
         maxUnhatchedEggs: 3,
@@ -694,6 +699,13 @@ class StreamAlchemyPlugin {
       : 12_000;
   }
 
+  normalizeEggShelfVisibleCount(value) {
+    const count = Number(value);
+    return Number.isInteger(count) && count >= 1 && count <= 6
+      ? count
+      : DEFAULT_EGG_SHELF_VISIBLE_COUNT;
+  }
+
   normalizeLayouts(input = {}) {
     const anchors = new Set([
       'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right',
@@ -892,6 +904,9 @@ class StreamAlchemyPlugin {
         rendererQuality: this.normalizeRendererQuality(mergedStreamMonsters.rendererQuality),
         notificationDurationMs: this.normalizeNotificationDuration(
           mergedStreamMonsters.notificationDurationMs
+        ),
+        eggShelfVisibleCount: this.normalizeEggShelfVisibleCount(
+          mergedStreamMonsters.eggShelfVisibleCount
         ),
         audioChannels: this.normalizeAudioChannels(mergedStreamMonsters.audioChannels),
         maxUnhatchedEggs: 3,

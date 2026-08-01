@@ -4,11 +4,12 @@ const EggStageProjector = require('./egg-stage-projector');
 const DEFAULT_GRACE_SECONDS = 600;
 const DEFAULT_ACTIVITY_WINDOW_SECONDS = 300;
 const MAXIMUM_SECONDS = 86_400;
+const MAXIMUM_GRACE_SECONDS = 15 * 60;
 
-function normalizeSeconds(value, fallback, minimum = 0) {
+function normalizeSeconds(value, fallback, minimum = 0, maximum = MAXIMUM_SECONDS) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return fallback;
-  return Math.max(minimum, Math.min(MAXIMUM_SECONDS, Math.floor(numeric)));
+  return Math.max(minimum, Math.min(maximum, Math.floor(numeric)));
 }
 
 function normalizeText(value, maximum = 256) {
@@ -51,7 +52,9 @@ class UnhatchedEggStealService {
       enabled: config.unhatchedEggStealEnabled !== false,
       graceSeconds: normalizeSeconds(
         config.unhatchedEggStealGraceSeconds,
-        DEFAULT_GRACE_SECONDS
+        DEFAULT_GRACE_SECONDS,
+        0,
+        MAXIMUM_GRACE_SECONDS
       ),
       activityWindowSeconds: normalizeSeconds(
         config.unhatchedEggStealActivityWindowSeconds,
@@ -82,7 +85,10 @@ class UnhatchedEggStealService {
       this.db.prepare(`
         UPDATE streammonsters_unhatched_egg_steals
         SET eligible_at_ms = COALESCE((
-          SELECT eggs.ready_at_ms
+          SELECT COALESCE(
+            streammonsters_unhatched_egg_steals.claimed_at_ms,
+            eggs.ready_at_ms
+          )
           FROM streammonsters_eggs eggs
           WHERE eggs.egg_id = streammonsters_unhatched_egg_steals.egg_id
         ), observed_at_ms) + ?
@@ -139,7 +145,10 @@ class UnhatchedEggStealService {
     `);
     if (!this.config.enabled || this.config.graceSeconds === 0) return;
     const nowMs = this.currentMs();
-    this.store.runInImmediateTransaction(() => this.scheduleReadyEggs(nowMs));
+    this.store.runInImmediateTransaction(() => {
+      this.requeueClaimedReadyEggs(nowMs);
+      this.scheduleReadyEggs(nowMs);
+    });
   }
 
   scheduleReadyEggs(nowMs) {
@@ -155,6 +164,37 @@ class UnhatchedEggStealService {
         AND eggs.expires_at_ms > ?
       ORDER BY eggs.ready_at_ms, eggs.egg_id
     `).all(nowMs).forEach(egg => this.insertSteal(egg, nowMs));
+  }
+
+  requeueClaimedReadyEggs(nowMs) {
+    const claimedEggs = this.db.prepare(`
+      SELECT steals.steal_id, steals.claimed_at_ms, steals.observed_at_ms,
+        eggs.user_id, eggs.ready_at_ms
+      FROM streammonsters_unhatched_egg_steals steals
+      JOIN streammonsters_eggs eggs ON eggs.egg_id = steals.egg_id
+      WHERE steals.status = 'claimed'
+        AND steals.claimed_by_user_id = eggs.user_id
+        AND eggs.state = 'ready'
+        AND eggs.monster_id IS NULL
+        AND eggs.expired_at_ms IS NULL
+        AND eggs.expires_at_ms > ?
+    `).all(nowMs);
+    const requeue = this.db.prepare(`
+      UPDATE streammonsters_unhatched_egg_steals
+      SET original_owner_id = ?, observed_at_ms = ?, eligible_at_ms = ?,
+          status = 'pending', published_at_ms = NULL,
+          closed_at_ms = NULL, close_reason = NULL
+      WHERE steal_id = ? AND status = 'claimed'
+    `);
+    return claimedEggs.reduce((count, egg) => {
+      const ownershipStartedAtMs = this.stealGraceBaseAtMs(egg);
+      return count + requeue.run(
+        egg.user_id,
+        ownershipStartedAtMs,
+        ownershipStartedAtMs + (this.config.graceSeconds * 1_000),
+        egg.steal_id
+      ).changes;
+    }, 0);
   }
 
   insertSteal(egg, observedAtMs) {
@@ -179,6 +219,28 @@ class UnhatchedEggStealService {
     return this.db.prepare(`
       SELECT * FROM streammonsters_unhatched_egg_steals WHERE egg_id = ?
     `).get(eggId) || null;
+  }
+  stealGraceBaseAtMs(row) {
+    const claimedAtMs = Number(row?.claimed_at_ms);
+    if (row?.claimed_at_ms != null && Number.isFinite(claimedAtMs)) {
+      return this.currentMs(claimedAtMs);
+    }
+    const rowReadyAtMs = Number(row?.egg_ready_at_ms ?? row?.ready_at_ms);
+    return Number.isFinite(rowReadyAtMs)
+      ? this.currentMs(rowReadyAtMs)
+      : Math.max(
+        0,
+        this.currentMs(row?.eligible_at_ms) - (this.config.graceSeconds * 1_000)
+      );
+  }
+
+  hardStealAtMs(row) {
+    return this.stealGraceBaseAtMs(row) + (MAXIMUM_GRACE_SECONDS * 1_000);
+  }
+
+  isOwnerProtected(row, nowMs, isViewerActive = this.isViewerActive) {
+    return nowMs < this.hardStealAtMs(row) &&
+      Boolean(isViewerActive?.(row.original_owner_id));
   }
 
   observeReadyEgg(eggId, { observedAtMs = this.now() } = {}) {
@@ -229,7 +291,7 @@ class UnhatchedEggStealService {
 
   publishEligible(nowMs, isViewerActive = this.isViewerActive) {
     const candidates = this.db.prepare(`
-      SELECT steals.*
+      SELECT steals.*, eggs.ready_at_ms AS egg_ready_at_ms
       FROM streammonsters_unhatched_egg_steals steals
       JOIN streammonsters_eggs eggs ON eggs.egg_id = steals.egg_id
       WHERE steals.status = 'pending'
@@ -247,7 +309,7 @@ class UnhatchedEggStealService {
       WHERE steal_id = ? AND status = 'pending'
     `);
     return candidates.flatMap(candidate => {
-      if (isViewerActive?.(candidate.original_owner_id)) return [];
+      if (this.isOwnerProtected(candidate, nowMs, isViewerActive)) return [];
       return publish.run(nowMs, candidate.steal_id).changes
         ? [this.getSteal(candidate.steal_id)]
         : [];
@@ -346,7 +408,7 @@ class UnhatchedEggStealService {
       SELECT steals.*, eggs.*
       FROM streammonsters_unhatched_egg_steals steals
       JOIN streammonsters_eggs eggs ON eggs.egg_id = steals.egg_id
-      WHERE steals.claim_event_id = ? AND steals.status = 'claimed'
+      WHERE steals.claim_event_id = ?
     `).get(eventId) || null;
   }
 
@@ -420,7 +482,7 @@ class UnhatchedEggStealService {
         LIMIT 1
       `).get(normalizedUserId, claimedAtMs);
       if (!candidate) return { success: false, status: 'no_steal' };
-      if (this.isViewerActive?.(candidate.original_owner_id)) {
+      if (this.isOwnerProtected(candidate, claimedAtMs)) {
         return { success: false, status: 'owner_active' };
       }
       const safeDisplayName = [displayName, this.store.getViewerDisplayName?.(normalizedUserId)]
@@ -449,10 +511,15 @@ class UnhatchedEggStealService {
       }
       const claimed = this.db.prepare(`
         UPDATE streammonsters_unhatched_egg_steals
-        SET status = 'claimed', claimed_by_user_id = ?, claimed_at_ms = ?,
-            claim_event_id = ?, claimed_stream_key = ?
+        SET original_owner_id = ?, observed_at_ms = ?, eligible_at_ms = ?,
+            status = 'pending', published_at_ms = NULL,
+            claimed_by_user_id = ?, claimed_at_ms = ?, claim_event_id = ?,
+            claimed_stream_key = ?, closed_at_ms = NULL, close_reason = NULL
         WHERE steal_id = ? AND status = 'public'
       `).run(
+        normalizedUserId,
+        claimedAtMs,
+        claimedAtMs + (this.config.graceSeconds * 1_000),
         normalizedUserId,
         claimedAtMs,
         normalizedEventId,
@@ -491,7 +558,7 @@ class UnhatchedEggStealService {
 UnhatchedEggStealService.DEFAULT_GRACE_SECONDS = DEFAULT_GRACE_SECONDS;
 UnhatchedEggStealService.DEFAULT_ACTIVITY_WINDOW_SECONDS = DEFAULT_ACTIVITY_WINDOW_SECONDS;
 UnhatchedEggStealService.normalizeGraceSeconds = value => (
-  normalizeSeconds(value, DEFAULT_GRACE_SECONDS)
+  normalizeSeconds(value, DEFAULT_GRACE_SECONDS, 0, MAXIMUM_GRACE_SECONDS)
 );
 UnhatchedEggStealService.normalizeActivityWindowSeconds = value => (
   normalizeSeconds(value, DEFAULT_ACTIVITY_WINDOW_SECONDS, 30)

@@ -198,7 +198,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     await harness.find('POST', '/api/streammonsters/config')(
       localRequest({
         freeEggCooldownSeconds: 31_536_000,
-        unhatchedEggStealGraceSeconds: 86_400,
+        unhatchedEggStealGraceSeconds: 900,
         unhatchedEggStealActivityWindowSeconds: 86_400,
         tutorialHintIntervalSeconds: 300
       }),
@@ -206,7 +206,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     );
     expect(high.payload.config).toEqual(expect.objectContaining({
       freeEggCooldownSeconds: 31_536_000,
-      unhatchedEggStealGraceSeconds: 86_400,
+      unhatchedEggStealGraceSeconds: 900,
       unhatchedEggStealActivityWindowSeconds: 86_400,
       tutorialHintIntervalSeconds: 300
     }));
@@ -218,7 +218,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
     [{ freeEggCooldownSeconds: 31_536_001 }, 'STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID'],
     [{ unhatchedEggStealEnabled: 'yes' }, 'STREAM_MONSTERS_STEAL_ENABLED_INVALID'],
     [{ unhatchedEggStealGraceSeconds: -1 }, 'STREAM_MONSTERS_STEAL_GRACE_INVALID'],
-    [{ unhatchedEggStealGraceSeconds: 86_401 }, 'STREAM_MONSTERS_STEAL_GRACE_INVALID'],
+    [{ unhatchedEggStealGraceSeconds: 901 }, 'STREAM_MONSTERS_STEAL_GRACE_INVALID'],
     [{ unhatchedEggStealActivityWindowSeconds: 29 }, 'STREAM_MONSTERS_STEAL_ACTIVITY_WINDOW_INVALID'],
     [{ unhatchedEggStealActivityWindowSeconds: 86_401 }, 'STREAM_MONSTERS_STEAL_ACTIVITY_WINDOW_INVALID'],
     [{ tutorialHintsEnabled: 1 }, 'STREAM_MONSTERS_TUTORIAL_HINTS_ENABLED_INVALID'],
@@ -653,7 +653,7 @@ describe('Stream Monsters Rules v6 retention creator UI and locales', () => {
     expect(document.getElementById('freeEggCooldownSeconds').min).toBe('60');
     expect(document.getElementById('freeEggCooldownSeconds').max).toBe('31536000');
     expect(document.getElementById('unhatchedEggStealGraceSeconds').min).toBe('0');
-    expect(document.getElementById('unhatchedEggStealGraceSeconds').max).toBe('86400');
+    expect(document.getElementById('unhatchedEggStealGraceSeconds').max).toBe('900');
     expect(document.getElementById('unhatchedEggStealActivityWindowSeconds').min).toBe('30');
     expect(document.getElementById('unhatchedEggStealActivityWindowSeconds').max).toBe('86400');
     expect(document.getElementById('tutorialHintIntervalSeconds').min).toBe('60');

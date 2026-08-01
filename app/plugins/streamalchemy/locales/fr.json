@@ -599,6 +599,7 @@
           "rendererMedium": "Moyenne",
           "rendererLow": "Faible",
           "notificationDuration": "Durée des notifications (secondes)",
+          "eggShelfVisibleCount": "Œufs visibles en rotation",
           "freeEggDropsEnabled": "Œufs gratuits récurrents",
           "freeEggCooldownSeconds": "Délai de l’œuf gratuit (secondes)",
           "freeEggCooldownHelp": "Après ce délai, un spectateur peut recevoir une nouvelle offre personnelle d’œuf gratuit.",

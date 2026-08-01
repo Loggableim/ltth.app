@@ -347,6 +347,9 @@ class StreamMonstersRoutes {
       }
       if (current.giftMappingCustomized) update.giftMappingCustomized = true;
       const next = this.configProvider.updateConfig({ streamMonsters: update });
+      this.api.emit?.('streammonsters:config_updated', {
+        config: this.publicConfig(next.streamMonsters)
+      });
       res.json({
         success: true,
         config: this.publicConfig(next.streamMonsters, { includeCreator: true })
@@ -1315,7 +1318,7 @@ class StreamMonstersRoutes {
 
   normalizeUnhatchedEggStealGraceSeconds(value) {
     const seconds = Number(value);
-    return Number.isFinite(seconds) && seconds >= 0 && seconds <= 86_400
+    return Number.isFinite(seconds) && seconds >= 0 && seconds <= 900
       ? Math.round(seconds)
       : 600;
   }
@@ -1338,6 +1341,11 @@ class StreamMonstersRoutes {
         (Number(right.timing?.landedAtMs) || 0) ||
       String(left.visualId).localeCompare(String(right.visualId))
     ));
+  }
+
+  normalizeEggShelfVisibleCount(value) {
+    const count = Number(value);
+    return Number.isInteger(count) && count >= 1 && count <= 6 ? count : 4;
   }
 
   normalizeAutoHatchActiveWindowSeconds(value) {
@@ -1407,6 +1415,12 @@ class StreamMonstersRoutes {
         throw new Error('STREAM_MONSTERS_FREE_EGG_COOLDOWN_INVALID');
       }
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'eggShelfVisibleCount')) {
+      const count = Number(input.eggShelfVisibleCount);
+      if (!Number.isInteger(count) || count < 1 || count > 6) {
+        throw new Error('STREAM_MONSTERS_EGG_SHELF_VISIBLE_COUNT_INVALID');
+      }
+    }
     if (
       Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealEnabled') &&
       typeof input.unhatchedEggStealEnabled !== 'boolean'
@@ -1415,7 +1429,7 @@ class StreamMonstersRoutes {
     }
     if (Object.prototype.hasOwnProperty.call(input, 'unhatchedEggStealGraceSeconds')) {
       const seconds = Number(input.unhatchedEggStealGraceSeconds);
-      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 86_400) {
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 900) {
         throw new Error('STREAM_MONSTERS_STEAL_GRACE_INVALID');
       }
     }
@@ -1782,6 +1796,11 @@ class StreamMonstersRoutes {
         input.freeEggCooldownSeconds
       );
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'eggShelfVisibleCount')) {
+      safe.eggShelfVisibleCount = this.normalizeEggShelfVisibleCount(
+        input.eggShelfVisibleCount
+      );
+    }
     if (typeof input.unhatchedEggStealEnabled === 'boolean') {
       safe.unhatchedEggStealEnabled = input.unhatchedEggStealEnabled;
     }
@@ -2063,6 +2082,9 @@ class StreamMonstersRoutes {
         ? config.rendererQuality
         : 'auto',
       notificationDurationMs: Number(config.notificationDurationMs) || 12_000,
+      eggShelfVisibleCount: this.normalizeEggShelfVisibleCount(
+        config.eggShelfVisibleCount
+      ),
       audioChannels: config.audioChannels || {}
     };
     if (includeCreator) {

@@ -63,21 +63,21 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     ]);
     expect(first.visible).toHaveLength(6);
     expect(first).toEqual(expect.objectContaining({
-      pageCount: 2,
+      pageCount: 12,
       pageIndex: 0,
       overflow: null
     }));
     expect(rotated).toEqual(expect.objectContaining({
-      pageCount: 2,
+      pageCount: 12,
       pageIndex: 1
     }));
     expect(rotated.visible.map(entry => entry.visualId)).toEqual([
-      'incubating-1',
-      'incubating-2',
-      'incubating-3',
-      'incubating-4',
-      'incubating-5',
-      'incubating-6'
+      'public-b',
+      'steal-a',
+      'ready-a',
+      'ready-b',
+      'incubating-0',
+      'incubating-1'
     ]);
     expect(rotated.visible.map(entry => entry.visualId)).not.toContain('public-a');
     expect(Shelf.buildShelfModel(eggs, { maxVisible: 6, rotationIndex: 0 })).toEqual(first);
@@ -327,7 +327,7 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
     expect(reduced.visible[0].motion.phase).toBe('settled');
   });
 
-  test('keeps free-eggs highlighted when their complete page rotates into view', () => {
+  test('keeps free eggs highlighted while the circular rail advances one card', () => {
     const Shelf = loadShelf();
     const dom = new JSDOM(`
       <section id="egg-shelf"><div data-egg-slots></div><div data-egg-overflow></div></section>
@@ -343,9 +343,17 @@ describe('Stream Monsters 1.10 living egg shelf', () => {
       adoptable: true
     })));
     expect(dom.window.document.querySelector('[data-adopt-callout]')).toBeNull();
+    const initialIds = [...dom.window.document.querySelectorAll('[data-egg-slots] [data-egg-id]')]
+      .map(item => item.dataset.eggId);
     expect(dom.window.document.querySelectorAll('.gold-ring')).toHaveLength(6);
     view.rotatePage();
-    expect(dom.window.document.querySelectorAll('.gold-ring')).toHaveLength(3);
+    const rotatedIds = [...dom.window.document.querySelectorAll('[data-egg-slots] [data-egg-id]')]
+      .map(item => item.dataset.eggId);
+    expect(dom.window.document.querySelectorAll('.gold-ring')).toHaveLength(6);
+    expect(rotatedIds).toEqual([
+      'public-1', 'public-2', 'public-3', 'public-4', 'public-5', 'public-6'
+    ]);
+    expect(rotatedIds).not.toEqual(initialIds);
     view.destroy();
   });
 });

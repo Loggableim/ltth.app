@@ -126,6 +126,7 @@ describe('Stream Monsters creator controls', () => {
       portraitBattleMode: 'takeover-74',
       eggExpiryMs: 86_400_000,
       seasonDurationDays: 60,
+      eggShelfVisibleCount: 4,
       visualPack: 'furry',
       layouts: {
         landscape: { anchor: 'middle-right', scale: 110 },
@@ -163,6 +164,18 @@ describe('Stream Monsters creator controls', () => {
     });
   });
 
+  test('builds a safe visible-egg rotation count for the creator GUI', () => {
+    expect(buildConfigPayload({
+      values: { eggShelfVisibleCount: '5' }
+    })).toEqual(expect.objectContaining({ eggShelfVisibleCount: 5 }));
+    expect(buildConfigPayload({
+      values: { eggShelfVisibleCount: '0' }
+    })).toEqual(expect.objectContaining({ eggShelfVisibleCount: 4 }));
+    expect(buildConfigPayload({
+      values: { eggShelfVisibleCount: '7' }
+    })).toEqual(expect.objectContaining({ eggShelfVisibleCount: 4 }));
+  });
+
   test('builds editable steal timing controls with safe defaults', () => {
     expect(COMMAND_ACTIONS).toContain('steal');
     expect(buildConfigPayload({
@@ -178,7 +191,7 @@ describe('Stream Monsters creator controls', () => {
     }));
     expect(buildConfigPayload({
       values: {
-        unhatchedEggStealGraceSeconds: '86401',
+        unhatchedEggStealGraceSeconds: '901',
         unhatchedEggStealActivityWindowSeconds: '29'
       }
     })).toEqual(expect.objectContaining({

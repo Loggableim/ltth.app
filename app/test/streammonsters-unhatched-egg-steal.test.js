@@ -97,7 +97,7 @@ describe('Stream Monsters unhatched egg steals', () => {
     }
   });
 
-  test('does not publish a ready egg while its owner is active', () => {
+  test('keeps a ready egg private while its owner is active before the hard deadline', () => {
     const subject = createSubject();
     try {
       createReadyEgg(subject.store);
@@ -111,6 +111,33 @@ describe('Stream Monsters unhatched egg steals', () => {
     }
   });
 
+  test('makes an unhatched egg public and claimable no later than 15 minutes after ready', () => {
+    const subject = createSubject({ isViewerActive: () => true });
+    try {
+      createReadyEgg(subject.store);
+      subject.service.observeReadyEgg('ready-egg');
+
+      subject.setNow(900_999);
+      expect(subject.service.sweep({ isViewerActive: () => true }).published).toEqual([]);
+
+      subject.setNow(901_000);
+      expect(subject.service.sweep({ isViewerActive: () => true }).published).toHaveLength(1);
+      expect(subject.service.steal({
+        userId: 'thief-a',
+        eventId: 'claim-at-hard-deadline',
+        nowMs: 901_000
+      })).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
+      expect(subject.store.getEgg('ready-egg').user_id).toBe('thief-a');
+    } finally {
+      subject.sqlite.close();
+    }
+  });
+
+  test('caps the configured steal grace at the 15-minute hard deadline', () => {
+    expect(UnhatchedEggStealService.normalizeGraceSeconds(901)).toBe(900);
+    expect(UnhatchedEggStealService.normalizeGraceSeconds(86_400)).toBe(900);
+
+  });
   test('transfers a public steal egg once and never to its original owner', () => {
     const subject = createSubject();
     try {
@@ -150,6 +177,71 @@ describe('Stream Monsters unhatched egg steals', () => {
     }
   });
 
+  test('starts a fresh owner grace after a ready egg is stolen', () => {
+    const subject = createSubject({
+      isViewerActive: userId => userId === 'thief-a'
+    });
+    try {
+      createReadyEgg(subject.store, { expiresAtMs: 3_000_000 });
+      subject.service.observeReadyEgg('ready-egg');
+      subject.setNow(601_000);
+      subject.service.sweep({ isViewerActive: () => false });
+
+      expect(subject.service.steal({
+        userId: 'thief-a',
+        eventId: 'first-claim',
+        nowMs: 601_000
+      })).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
+      expect(subject.service.getStealForEgg('ready-egg')).toEqual(expect.objectContaining({
+        status: 'pending',
+        original_owner_id: 'thief-a',
+        eligible_at_ms: 1_201_000
+      }));
+
+      subject.setNow(1_500_999);
+      expect(subject.service.sweep().published).toEqual([]);
+
+      subject.setNow(1_501_000);
+      expect(subject.service.sweep().published).toHaveLength(1);
+      expect(subject.service.steal({
+        userId: 'thief-b',
+        eventId: 'second-claim',
+        nowMs: 1_501_000
+      })).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
+    } finally {
+      subject.sqlite.close();
+    }
+  });
+
+  test('requeues a legacy claimed ready egg from its claim timestamp', () => {
+    const subject = createSubject();
+    try {
+      createReadyEgg(subject.store);
+      subject.service.observeReadyEgg('ready-egg');
+      subject.store.db.prepare(`
+        UPDATE streammonsters_eggs
+        SET user_id = ?, display_name = ?
+        WHERE egg_id = ?
+      `).run('thief-a', 'Thief A', 'ready-egg');
+      subject.store.db.prepare(`
+        UPDATE streammonsters_unhatched_egg_steals
+        SET status = 'claimed', claimed_by_user_id = ?, claimed_at_ms = ?
+        WHERE egg_id = ?
+      `).run('thief-a', 601_000, 'ready-egg');
+
+      subject.service.initialize();
+
+      expect(subject.service.getStealForEgg('ready-egg')).toEqual(expect.objectContaining({
+        status: 'pending',
+        original_owner_id: 'thief-a',
+        observed_at_ms: 601_000,
+        eligible_at_ms: 1_201_000
+      }));
+    } finally {
+      subject.sqlite.close();
+
+    }
+  });
   test('allows exactly one claimant when competing events arrive at the same instant', () => {
     const subject = createSubject();
     try {
