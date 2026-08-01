@@ -1730,23 +1730,25 @@ class AutoDJ {
 
   _loadHistoryCandidates() {
     const minPlays = Math.max(Number(this.config.historyMinPlays) || 1, 1);
-    const orderClause = this.config.historyShuffled ? 'ORDER BY RANDOM()' : 'ORDER BY finishedAt DESC';
     return this.db
       .prepare(
         `SELECT youtubeId, title, artist, url, duration, source, thumbnail,
-                channelId, channelName, COUNT(*) as plays
+                channelId, channelName, COUNT(*) as plays, MAX(finishedAt) AS lastPlayedAt
          FROM plugin_music_bot_history
          WHERE youtubeId IS NOT NULL AND COALESCE(skipped, 0) = 0
          GROUP BY youtubeId, title, artist, url, duration, source, thumbnail, channelId, channelName
          HAVING plays >= ?
-         ${orderClause}
-         LIMIT 20`
+         ORDER BY lastPlayedAt DESC, youtubeId ASC, title ASC, artist ASC, url ASC, duration ASC, source ASC, thumbnail ASC, channelId ASC, channelName ASC
+         LIMIT 100`
       )
       .all(minPlays);
   }
 
   _pickFromHistoryCandidates(candidates, blocks) {
-    const candidate = this._getEligibleHistoryCandidates(candidates, blocks)[0] || null;
+    const eligible = this._getEligibleHistoryCandidates(candidates, blocks);
+    const candidate = this.config.historyShuffled
+      ? this._chooseWeighted(eligible, () => 1)
+      : eligible[0] || null;
     return candidate ? this._toTrack(candidate) : null;
   }
 

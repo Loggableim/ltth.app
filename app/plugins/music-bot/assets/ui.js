@@ -5,9 +5,9 @@
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
     shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
-    queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
-    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown radioPreviewDisabled radioCandidateCount radioNoCandidates radioPreviewDisabledHint radioPreviewEmptyHint radioUnknownTitle radioScore radioScoreReason radioFeedbackSaving radioFeedbackFailed radioFeedbackMoreSaved radioFeedbackLessSaved',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther streamerPlaylistFeedbackAria streamerPlaylistUp streamerPlaylistDown streamerPlaylistOnly streamerPlaylistSaving streamerPlaylistSaved streamerPlaylistNeutral streamerPlaylistFailed songRadioStart songRadioStop songRadioUnavailable songRadioStarted songRadioStopped songRadioFailed',
+    queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved trackRemovedRefreshFailed queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry queueChanged queueRefreshFailed trackMoved remove',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown radioPreviewDisabled radioCandidateCount radioNoCandidates radioPreviewDisabledHint radioPreviewEmptyHint radioUnknownTitle radioScore radioScoreReason radioFeedbackSaving radioFeedbackFailed radioFeedbackMoreSaved radioFeedbackLessSaved radioPlanTitle radioPlanCount streamerPlaylistTitle streamerPlaylistDescription streamerPlaylistCount streamerPlaylistEmpty streamerSuggestionAccept streamerSuggestionReject streamerSuggestionSaving streamerSuggestionFailed streamerSuggestionAccepted streamerSuggestionRejected',
     moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
     history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
     playlists: 'playlistSaveFailed playlistConflict importRunning',
@@ -16,34 +16,6 @@
     health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed resolverUnknownState healthLoadFailed',
     overlay: 'copyFailed copySuccess'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
-  Object.assign(RUNTIME_I18N_SECTIONS, Object.fromEntries([
-    ['streamerPlaylistFeedbackAria', 'player'],
-    ['streamerPlaylistUp', 'player'],
-    ['streamerPlaylistDown', 'player'],
-    ['streamerPlaylistOnly', 'player'],
-    ['streamerPlaylistSaving', 'player'],
-    ['streamerPlaylistSaved', 'player'],
-    ['streamerPlaylistNeutral', 'player'],
-    ['streamerPlaylistFailed', 'player'],
-    ['songRadioStart', 'player'],
-    ['songRadioStop', 'player'],
-    ['songRadioUnavailable', 'player'],
-    ['songRadioStarted', 'player'],
-    ['songRadioStopped', 'player'],
-    ['songRadioFailed', 'player'],
-    ['radioPlanTitle', 'autoDj'],
-    ['radioPlanCount', 'autoDj'],
-    ['streamerPlaylistTitle', 'autoDj'],
-    ['streamerPlaylistDescription', 'autoDj'],
-    ['streamerPlaylistCount', 'autoDj'],
-    ['streamerPlaylistEmpty', 'autoDj'],
-    ['streamerSuggestionAccept', 'autoDj'],
-    ['streamerSuggestionReject', 'autoDj'],
-    ['streamerSuggestionSaving', 'autoDj'],
-    ['streamerSuggestionFailed', 'autoDj'],
-    ['streamerSuggestionAccepted', 'autoDj'],
-    ['streamerSuggestionRejected', 'autoDj']
-  ]));
   const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
     player: 'seek seekAria',
     history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral toolbarLabel searchLabel searchPlaceholder periodLabel periodAll period24h period7d period30d outcomeLabel outcomeAll outcomeCompleted outcomeSkipped outcomeEarlySkip outcomeFailed feedbackFilterLabel feedbackAll bannedFilterLabel bannedAll bannedOnly bannedExclude sortLabel sortNewest sortOldest reset previous next pageStatus replayQueue replayPlay copyLink addToPlaylist playlistSelect playlistProtected replaySuccess queueSuccess playSuccess copySuccess playlistSuccess actionFailed',
@@ -400,6 +372,7 @@
   let historyOffset = 0;
   let historyTotal = 0;
   let historyRequestGeneration = 0;
+  let catalogSearchRequestGeneration = 0;
   const historyFilters = {
     q: '',
     outcome: '',
@@ -431,6 +404,8 @@
   let mpvInstallPollTimer = null;
   let mpvInstallPollAttempts = 0;
   let skipInProgress = false;
+  let playbackAdvancing = false;
+  let playbackStateVersion = 0;
   let musicbotSafetyLocked = false;
   let latestRuntime = null;
   let latestResolver = null;
@@ -739,8 +714,11 @@
   });
   skipButton?.addEventListener('click', async () => {
     if (skipInProgress) return;
+    const previousSkipState = stateEl.textContent;
     skipInProgress = true;
     setSkipLoading(true);
+    const temporarySkipStateVersion = playbackStateVersion;
+    const temporarySkipState = stateEl.textContent;
     try {
     const result = await post('/skip');
     if (result?.success && result.next) {
@@ -756,7 +734,12 @@
     }
     } finally {
       skipInProgress = false;
-      setSkipLoading(false);
+      if (!playbackAdvancing) setSkipLoading(false);
+      const skipStateUnchanged = playbackStateVersion === temporarySkipStateVersion
+        && stateEl.textContent === temporarySkipState;
+      if (skipStateUnchanged) {
+        stateEl.textContent = previousSkipState;
+      }
     }
   });
   document.getElementById('clear-btn').addEventListener('click', () => {
@@ -1493,6 +1476,7 @@
     renderNowPlaying(null);
   });
   socket.on('musicbot:playback-advancing', (payload) => {
+    playbackAdvancing = true;
     seekTransitioning = true;
     latestRuntime = { ...(latestRuntime || {}), transportState: payload?.state || 'loading' };
     updateSeekControl();
@@ -1956,9 +1940,8 @@
     latestNowPlayingTrack = track || null;
     activePlaybackId = track?.playbackId || null;
     seekTransitioning = false;
-    if (!skipInProgress) {
-      setSkipLoading(false);
-    }
+    playbackAdvancing = false;
+    setSkipLoading(false);
     if (!track) {
       nowPlayingEl.classList.add('empty');
       nowPlayingEl.innerHTML = `<p>${escapeHtml(tr('nowPlayingEmpty', 'Aktuell läuft nichts.'))}</p>`;
@@ -2127,7 +2110,7 @@
             <button class="btn primary small" data-playback-action data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" aria-label="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>▶</button>
             <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="${escapeHtml(tr('moveUp', 'Nach oben'))}" aria-label="${escapeHtml(tr('moveUp', 'Nach oben'))}" ${idx === 0 ? 'disabled' : ''}>↑</button>
             <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="${escapeHtml(tr('moveDown', 'Nach unten'))}" aria-label="${escapeHtml(tr('moveDown', 'Nach unten'))}" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
-            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="${escapeHtml(tr('remove', 'Entfernen'))}" aria-label="${escapeHtml(tr('remove', 'Entfernen'))}">✕</button>
+            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" data-song-id="${songId}" title="${escapeHtml(tr('remove', 'Entfernen'))}" aria-label="${escapeHtml(tr('remove', 'Entfernen'))}">✕</button>
           </div>
         </div>`;
       })
@@ -2136,18 +2119,20 @@
 
   async function renderQueueFromServer() {
     const queueData = await get('/queue');
-    if (queueData?.queue) {
+    if (queueData?.success && Array.isArray(queueData.queue)) {
       renderQueue(queueData.queue, queueData.queue.length);
+      return true;
     }
+    return false;
   }
 
   queueListEl?.addEventListener('click', async (event) => {
     if (event.target.closest('[data-track-ban-trigger]')) return;
     const btn = event.target.closest('[data-queue-action]');
-    const item = event.target.closest('.queue-item');
-    const action = btn?.dataset.queueAction || (item ? 'play' : null);
-    const idx = Number(btn?.dataset.idx ?? item?.dataset.queueIndex);
-    const songId = btn?.dataset.songId || item?.dataset.songId;
+    if (!btn) return;
+    const action = btn.dataset.queueAction;
+    const idx = Number(btn.dataset.idx);
+    const songId = btn.dataset.songId;
     if (!action || btn?.disabled || !Number.isFinite(idx)) return;
     if (action === 'play') {
       const result = await post(`/queue/${idx}/play`, { songId });
@@ -2182,9 +2167,21 @@
       return;
     }
     if (action === 'remove') {
-      await del(`/queue/${idx}`);
-      await renderQueueFromServer();
-      showToast('info', tr('queueTitle', 'Queue'), tr('trackRemoved', 'Track wurde entfernt.'));
+      const result = await del(`/queue/${idx}`, { songId });
+      const queueRefreshed = await renderQueueFromServer();
+      if (result?.success) {
+        if (queueRefreshed) {
+          showToast('info', tr('queueTitle', 'Queue'), tr('trackRemoved', 'Track wurde entfernt.'));
+        } else {
+          showToast('warn', tr('queueTitle', 'Queue'), tr('trackRemovedRefreshFailed', 'Track wurde entfernt, aber die Queue konnte nicht aktualisiert werden. Bitte lade die Ansicht neu.'));
+        }
+      } else if (!queueRefreshed) {
+        showToast('warn', tr('queueTitle', 'Queue'), tr('queueRefreshFailed', 'Die Queue konnte nicht aktualisiert werden. Bitte lade die Ansicht neu.'));
+      } else if (result?.errorCode === 'QUEUE_ITEM_CHANGED') {
+        showToast('warn', tr('queueTitle', 'Queue'), tr('queueChanged', 'Die Queue hat sich geändert. Ansicht wurde aktualisiert.'));
+      } else {
+        showToast('warn', tr('queueTitle', 'Queue'), result?.error || tr('queueRefreshRetry', 'Queue wurde aktualisiert. Bitte versuche es erneut.'));
+      }
     }
   });
 
@@ -2614,26 +2611,39 @@
   historyPrevious?.addEventListener('click', () => refreshHistory({ offset: Math.max(0, historyOffset - HISTORY_PAGE_SIZE) }));
   historyNext?.addEventListener('click', () => refreshHistory({ offset: historyOffset + HISTORY_PAGE_SIZE }));
 
-  async function searchCatalog(query = catalogSearchInput?.value || '') {
-    if (!catalogSearchResults) return;
+  async function searchCatalog(
+    query = catalogSearchInput?.value || '',
+    requestGeneration = ++catalogSearchRequestGeneration
+  ) {
+    if (!catalogSearchResults || requestGeneration !== catalogSearchRequestGeneration) return;
     if (!query.trim()) {
       catalogSearchResults.classList.add('empty');
       catalogSearchResults.textContent = '';
       return;
     }
     const result = await get(`/catalog/search?q=${encodeURIComponent(query)}`);
+    if (requestGeneration !== catalogSearchRequestGeneration) return;
     const songs = result?.songs || [];
     catalogSearchResults.classList.toggle('empty', songs.length === 0);
     catalogSearchResults.innerHTML = songs.length
       ? songs.map((song) => {
         const genres = Array.isArray(song.genres) ? song.genres.join(', ') : '';
-        return `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><label class="catalog-genre-editor"><span class="sr-only">${escapeHtml(catalogTr('genres', 'Genres'))}</span><input type="text" value="${escapeHtml(genres)}" placeholder="${escapeHtml(catalogTr('genrePlaceholder', 'e.g. rock, pop'))}" data-catalog-genre-input></label><button class="btn ghost small" type="button" data-catalog-save-genres="${escapeHtml(song.id)}">${escapeHtml(catalogTr('saveGenres', 'Save genres'))}</button><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">${escapeHtml(catalogTr('addToPlaylist', 'Add to playlist'))}</button></div>`;
+        const artist = String(song.artist || '').trim();
+        return `<div class="item playlist-item catalog-search-result"><div class="catalog-search-result-info"><span class="queue-title">${escapeHtml(song.title)}</span>${artist ? `<span class="queue-meta">${escapeHtml(artist)}</span>` : ''}</div><label class="catalog-genre-editor"><span class="sr-only">${escapeHtml(catalogTr('genres', 'Genres'))}</span><input type="text" value="${escapeHtml(genres)}" placeholder="${escapeHtml(catalogTr('genrePlaceholder', 'e.g. rock, pop'))}" data-catalog-genre-input></label><button class="btn ghost small" type="button" data-catalog-save-genres="${escapeHtml(song.id)}">${escapeHtml(catalogTr('saveGenres', 'Save genres'))}</button><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">${escapeHtml(catalogTr('addToPlaylist', 'Add to playlist'))}</button></div>`;
       }).join('')
       : `<p>${escapeHtml(catalogTr('catalogEmpty', 'No titles found.'))}</p>`;
   }
 
-  const debouncedCatalogSearch = debounce(() => searchCatalog());
-  catalogSearchInput?.addEventListener('input', debouncedCatalogSearch);
+  const debouncedCatalogSearch = debounce((query, requestGeneration) => searchCatalog(query, requestGeneration));
+  catalogSearchInput?.addEventListener('input', () => {
+    const query = catalogSearchInput.value || '';
+    const requestGeneration = ++catalogSearchRequestGeneration;
+    if (catalogSearchResults) {
+      catalogSearchResults.classList.add('empty');
+      catalogSearchResults.textContent = '';
+    }
+    debouncedCatalogSearch(query, requestGeneration);
+  });
   catalogSearchResults?.addEventListener('click', async (event) => {
     const genreButton = event.target.closest('[data-catalog-save-genres]');
     if (genreButton) {
@@ -2801,6 +2811,7 @@
   });
 
   function updateState(state) {
+    playbackStateVersion += 1;
     stateEl.textContent = runtimeStateLabel(state);
   }
 
@@ -2811,6 +2822,7 @@
       skipButton.textContent = active ? tr('loading', 'Lädt …') : tr('skip', 'Überspringen');
     }
     if (active) {
+      playbackStateVersion += 1;
       stateEl.textContent = message || runtimeStateLabel('loading');
     }
   }

@@ -101,6 +101,7 @@ function createJsonResponse(payload) {
 function bootMusicBotUi(options = {}) {
   const setupIssues = options.setupIssues || [];
   const postHandler = options.postHandler;
+  const fetchHandler = options.fetchHandler;
   const autoDjConfig = options.autoDjConfig || {
     enabled: false,
     mode: 'history',
@@ -137,6 +138,10 @@ function bootMusicBotUi(options = {}) {
     const target = String(url);
     if (target.includes('/plugins/music-bot/locales/')) {
       return createJsonResponse(staticLocalePayload || {});
+    }
+    if (typeof fetchHandler === 'function') {
+      const customResponse = await fetchHandler(target, options);
+      if (customResponse !== undefined) return customResponse;
     }
     if (options.method === 'POST') {
       if (typeof postHandler === 'function') {
@@ -1273,6 +1278,110 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(JSON.parse(replayCall[1].body)).toEqual({ mode: 'queue' });
   });
 
+  test('keeps only the latest catalog search result when responses resolve out of order', async () => {
+    let resolveFirst;
+    let resolveSecond;
+    const firstResponse = new Promise((resolve) => { resolveFirst = resolve; });
+    const secondResponse = new Promise((resolve) => { resolveSecond = resolve; });
+    const { dom, fetchMock } = bootMusicBotUi({
+      fetchHandler: (target) => {
+        if (!target.includes('/catalog/search?')) return undefined;
+        const query = new URL(target, 'http://localhost').searchParams.get('q');
+        if (query === 'first') return firstResponse;
+        if (query === 'second') return secondResponse;
+        return undefined;
+      }
+    });
+    doms.push(dom);
+    const search = dom.window.document.getElementById('catalog-search-input');
+
+    search.value = 'first';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 225));
+    search.value = 'second';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 225));
+
+    const searchQueries = fetchMock.mock.calls
+      .filter(([target]) => String(target).includes('/catalog/search?'))
+      .map(([target]) => new URL(target, 'http://localhost').searchParams.get('q'));
+    expect(searchQueries).toEqual(['first', 'second']);
+
+    resolveSecond(createJsonResponse({
+      success: true,
+      songs: [{ id: 2, title: 'Second result', artist: 'Latest Artist', genres: [] }]
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    resolveFirst(createJsonResponse({
+      success: true,
+      songs: [{ id: 1, title: 'First result', artist: 'Older Artist', genres: [] }]
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const results = dom.window.document.getElementById('catalog-search-results').textContent;
+    expect(results).toContain('Second result');
+    expect(results).toContain('Latest Artist');
+    expect(results).not.toContain('First result');
+  });
+
+  test('invalidates a pending catalog search when the query is cleared', async () => {
+    let resolvePending;
+    const pendingResponse = new Promise((resolve) => { resolvePending = resolve; });
+    const { dom } = bootMusicBotUi({
+      fetchHandler: (target) => {
+        if (!target.includes('/catalog/search?')) return undefined;
+        const query = new URL(target, 'http://localhost').searchParams.get('q');
+        return query === 'pending' ? pendingResponse : undefined;
+      }
+    });
+    doms.push(dom);
+    const search = dom.window.document.getElementById('catalog-search-input');
+
+    search.value = 'pending';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 225));
+    search.value = '';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    resolvePending(createJsonResponse({
+      success: true,
+      songs: [{ id: 3, title: 'Pending result', artist: 'Pending Artist', genres: [] }]
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const results = dom.window.document.getElementById('catalog-search-results');
+    expect(results.textContent).toBe('');
+    expect(results.classList.contains('empty')).toBe(true);
+  });
+
+  test('groups catalog title and artist in a narrow-screen-safe result row', async () => {
+    const { dom } = bootMusicBotUi({
+      catalogPayload: [{
+        id: 4,
+        title: 'A deliberately long catalog title for narrow screens',
+        artist: 'A deliberately long credited artist name',
+        genres: ['electronic']
+      }]
+    });
+    doms.push(dom);
+    const search = dom.window.document.getElementById('catalog-search-input');
+
+    search.value = 'long';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 225));
+
+    const row = dom.window.document.querySelector('.catalog-search-result');
+    const info = row?.querySelector('.catalog-search-result-info');
+    expect(row).not.toBeNull();
+    expect(info?.querySelector('.queue-title').textContent).toBe('A deliberately long catalog title for narrow screens');
+    expect(info?.querySelector('.queue-meta').textContent).toBe('A deliberately long credited artist name');
+
+    const css = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui-style.css'), 'utf8');
+    expect(css).toMatch(/\.catalog-search-result\s*\{[^}]*flex-wrap:\s*wrap/s);
+    expect(css).toMatch(/\.catalog-search-result-info\s*\{[^}]*flex:\s*1\s+1/s);
+    expect(css).toMatch(/@media\s*\(max-width:\s*440px\)[\s\S]*?\.catalog-search-result-info[^}]*flex-basis:\s*100%/);
+    expect(css).toMatch(/@media\s*\(max-width:\s*440px\)[\s\S]*?\.catalog-search-result\s*>\s*\.btn[^}]*flex:\s*1\s+1/s);
+  });
+
   test.each(['en', 'es', 'fr'])('renders dynamic catalog-admin surfaces through production i18n in %s', async (locale) => {
     const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
     const playlist = { id: 'viewer-radio', name: 'Viewer Radio', mode: 'ordered', itemCount: 1, isProtected: true };
@@ -1751,7 +1860,7 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(es.history.loadMore).toBe('Cargar más');
     expect(es.tabs.catalog).toBe('Catálogo');
     expect(es.catalog).toMatchObject({
-      search: 'Buscar pistas',
+      search: 'Buscar títulos, artistas o géneros',
       description: 'Busca y valora canciones anteriores o añádelas a listas.'
     });
     expect(es.playlists).toMatchObject({
@@ -2160,6 +2269,240 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(skipButton.disabled).toBe(false);
     expect(skipButton.textContent).toBe('Überspringen');
     expect(dom.window.document.getElementById('now-playing').textContent).toContain('Auto-DJ Next');
+  });
+
+  test('restores the prior playback state after a rejected skip', async () => {
+    const { dom } = bootMusicBotUi({
+      statusPayload: { playbackState: 'paused' },
+      postHandler: (target) => target.endsWith('/skip')
+        ? createJsonResponse({ success: false, error: 'Skip is unavailable' })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    const skipButton = dom.window.document.getElementById('skip-btn');
+    const state = dom.window.document.getElementById('playback-state');
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    expect(state.textContent).toBe('Pausiert');
+
+    skipButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(skipButton.disabled).toBe(false);
+    expect(skipButton.textContent).toBe('\u00dcberspringen');
+    expect(state.textContent).toBe('Pausiert');
+  });
+
+  test('preserves a socket-reported advancing state when a skip request fails', async () => {
+    let resolveSkip;
+    const { dom, socketHandlers } = bootMusicBotUi({
+      statusPayload: { playbackState: 'paused' },
+      postHandler: (target) => target.endsWith('/skip')
+        ? new Promise((resolve) => { resolveSkip = resolve; })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    const skipButton = dom.window.document.getElementById('skip-btn');
+    const state = dom.window.document.getElementById('playback-state');
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    skipButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    socketHandlers['musicbot:playback-advancing']({ state: 'loading' });
+    resolveSkip(createJsonResponse({ success: false, error: 'Skip is unavailable' }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(skipButton.disabled).toBe(true);
+    expect(state.textContent).toContain('L\u00e4dt den n\u00e4chsten Titel');
+    socketHandlers['musicbot:now-playing']({ id: 'next-track', title: 'Next Track', state: 'playing' });
+    expect(skipButton.disabled).toBe(false);
+  });
+
+  test('lets a terminal now-playing event clear an advancing skip while its request is pending', async () => {
+    let resolveSkip;
+    const { dom, socketHandlers } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/skip')
+        ? new Promise((resolve) => { resolveSkip = resolve; })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    const skipButton = dom.window.document.getElementById('skip-btn');
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    skipButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    socketHandlers['musicbot:playback-advancing']({ state: 'loading' });
+    expect(skipButton.disabled).toBe(true);
+
+    socketHandlers['musicbot:now-playing']({ id: 'next-track', title: 'Next Track', state: 'playing' });
+    expect(skipButton.disabled).toBe(false);
+
+    resolveSkip(createJsonResponse({ success: false, error: 'Skip is unavailable' }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(skipButton.disabled).toBe(false);
+  });
+
+  test('lets a terminal playback-stopped event clear an advancing skip while its request is pending', async () => {
+    let resolveSkip;
+    const { dom, socketHandlers } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/skip')
+        ? new Promise((resolve) => { resolveSkip = resolve; })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    const skipButton = dom.window.document.getElementById('skip-btn');
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    skipButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    socketHandlers['musicbot:playback-advancing']({ state: 'loading' });
+    expect(skipButton.disabled).toBe(true);
+
+    socketHandlers['musicbot:playback-stopped']();
+    expect(skipButton.disabled).toBe(false);
+
+    resolveSkip(createJsonResponse({ success: false, error: 'Skip is unavailable' }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(skipButton.disabled).toBe(false);
+  });
+
+  test('requires an explicit control before starting a queue item', async () => {
+    const { dom, fetchMock, socketHandlers } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/queue/0/play')
+        ? createJsonResponse({ success: true, track: { title: 'Selected queue track', state: 'playing' } })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    socketHandlers['musicbot:queue-update']({
+      queue: [{ id: 'queue-track', title: 'Queue track', requestedBy: 'viewer' }],
+      length: 1
+    });
+    fetchMock.mockClear();
+
+    dom.window.document.querySelector('.queue-item .queue-meta')
+      .dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+
+    const startedByMetadata = fetchMock.mock.calls.some(([target, options = {}]) =>
+      String(target).endsWith('/queue/0/play') && options.method === 'POST'
+    );
+    expect(startedByMetadata).toBe(false);
+
+    dom.window.document.querySelector('[data-queue-action="play"][data-idx="0"]')
+      .dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/plugins/music-bot/queue/0/play',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  test('refreshes a stale queue delete by ID without claiming success', async () => {
+    const renderedSong = { id: 'rendered-song', title: 'Rendered song', requestedBy: 'viewer' };
+    const refreshedQueue = [{ id: 'still-queued', title: 'Still queued', requestedBy: 'viewer' }];
+    const { dom, fetchMock, socketHandlers } = bootMusicBotUi({
+      fetchHandler: (target, options) => {
+        if (target.endsWith('/queue/0') && options.method === 'DELETE') {
+          return createJsonResponse({ success: false, errorCode: 'QUEUE_ITEM_CHANGED' });
+        }
+        if (target.endsWith('/queue') && !options.method) {
+          return createJsonResponse({ success: true, queue: refreshedQueue });
+        }
+        return undefined;
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    socketHandlers['musicbot:queue-update']({ queue: [renderedSong], length: 1 });
+    fetchMock.mockClear();
+
+    dom.window.document.querySelector('[data-queue-action="remove"][data-idx="0"]')
+      .dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const removeRequest = fetchMock.mock.calls.find(([target, options = {}]) =>
+      String(target).endsWith('/queue/0') && options.method === 'DELETE'
+    );
+    expect(removeRequest?.[1]?.body).toBe(JSON.stringify({ songId: 'rendered-song' }));
+    expect(fetchMock).toHaveBeenCalledWith('/api/plugins/music-bot/queue');
+    expect(dom.window.document.getElementById('queue-list').textContent).toContain('Still queued');
+    const toastText = dom.window.document.getElementById('musicbot-toast-container').textContent;
+    expect(toastText).toContain('Die Queue hat sich ge\u00e4ndert. Ansicht wurde aktualisiert.');
+    expect(toastText).not.toContain('Track wurde entfernt.');
+  });
+
+  test('states honestly when a failed queue delete cannot refresh the queue', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi({
+      fetchHandler: (target, options) => {
+        if (target.endsWith('/queue/0') && options.method === 'DELETE') {
+          return createJsonResponse({ success: false, errorCode: 'QUEUE_ITEM_CHANGED' });
+        }
+        if (target.endsWith('/queue') && !options.method) {
+          return createJsonResponse({ success: false });
+        }
+        return undefined;
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    socketHandlers['musicbot:queue-update']({
+      queue: [{ id: 'rendered-song', title: 'Rendered song', requestedBy: 'viewer' }],
+      length: 1
+    });
+
+    dom.window.document.querySelector('[data-queue-action="remove"][data-idx="0"]')
+      .dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const toastText = dom.window.document.getElementById('musicbot-toast-container').textContent;
+    expect(toastText).toContain('Die Queue konnte nicht aktualisiert werden. Bitte lade die Ansicht neu.');
+    expect(toastText).not.toContain('Queue wurde aktualisiert.');
+  });
+
+  test('warns that a successful queue delete could not refresh the queue', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi({
+      fetchHandler: (target, options) => {
+        if (target.endsWith('/queue/0') && options.method === 'DELETE') {
+          return createJsonResponse({ success: true });
+        }
+        if (target.endsWith('/queue') && !options.method) {
+          return createJsonResponse({ success: false });
+        }
+        return undefined;
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    socketHandlers['musicbot:queue-update']({
+      queue: [{ id: 'rendered-song', title: 'Rendered song', requestedBy: 'viewer' }],
+      length: 1
+    });
+
+    dom.window.document.querySelector('[data-queue-action="remove"][data-idx="0"]')
+      .dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const toastText = dom.window.document.getElementById('musicbot-toast-container').textContent;
+    expect(toastText).toContain('Track wurde entfernt, aber die Queue konnte nicht aktualisiert werden. Bitte lade die Ansicht neu.');
+    expect(toastText).not.toContain('Track wurde entfernt.');
+  });
+
+  test('does not style queue metadata as a click target', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui-style.css'), 'utf8');
+    const queueInfoRule = css.match(/\.queue-info\s*\{([^}]*)\}/);
+
+    expect(queueInfoRule).not.toBeNull();
+    expect(queueInfoRule?.[1]).not.toMatch(/cursor:\s*pointer/);
   });
 
   test('updates the visible player state after a successful pause action', async () => {

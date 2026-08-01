@@ -408,16 +408,22 @@ describe('music-bot catalog', () => {
     db.close();
   });
 
-  it('exposes catalog genres in search results so manual corrections are reviewable', () => {
+  it('searches catalog titles, credited artists, and genres with a stable artist display', () => {
     const { db, catalog } = createCatalog();
     catalog.resolveOrUpsert({
       title: 'Searchable Genre', artist: 'Catalog Artist', genres: ['Electronic', 'Dance'],
       provider: 'youtube', providerId: 'searchable-genre'
     });
 
-    expect(catalog.searchSongs('Searchable')).toEqual([
-      expect.objectContaining({ title: 'Searchable Genre', genres: ['dance', 'electronic'] })
-    ]);
+    ['Searchable', 'CATALOG ARTIST', 'electronic'].forEach((query) => {
+      expect(catalog.searchSongs(query)).toEqual([
+        expect.objectContaining({
+          title: 'Searchable Genre',
+          artist: 'Catalog Artist',
+          genres: ['dance', 'electronic']
+        })
+      ]);
+    });
     db.close();
   });
 
