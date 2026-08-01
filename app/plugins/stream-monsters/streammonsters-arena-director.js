@@ -11,7 +11,7 @@
   const QUALITY_MODES = new Set(['auto', 'high', 'medium', 'low']);
   const ELEMENTS = Object.freeze(['Ember', 'Tide', 'Grove', 'Gale', 'Lunar', 'Volt']);
   const EVOLUTION_STATS = Object.freeze(['vitality', 'might', 'guard', 'agility']);
-  const ARENA_COLLAPSE_ROUND = 5;
+  const ARENA_COLLAPSE_ROUND = 4;
   const CRITICAL_EVENT_TYPES = new Set([
     'egg_spawned',
     'hatch_started',

@@ -1,7 +1,16 @@
 const RULES_VERSION = 8;
-const ARENA_COLLAPSE_ROUND = 5;
+const ARENA_COLLAPSE_WARNING_ROUND = 3;
+const ARENA_COLLAPSE_ROUND = 4;
 const ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS = 2;
 const ARENA_COLLAPSE_DEFENSE_LOCK_ROUND = 8;
+const MAX_RULES_V8_ROUNDS = 64;
+
+function arenaCollapseStatus(round) {
+  const normalizedRound = Math.max(1, Math.round(Number(round) || 1));
+  if (normalizedRound >= ARENA_COLLAPSE_ROUND) return 'active';
+  if (normalizedRound === ARENA_COLLAPSE_WARNING_ROUND) return 'warning';
+  return 'inactive';
+}
 
 function isArenaCollapseDefenseLocked(round) {
   return Math.max(1, Math.round(Number(round) || 1)) >=
@@ -32,9 +41,11 @@ function applyArenaCollapse({
 }) {
   const normalizedRound = Math.max(1, Math.round(Number(round) || 1));
   const sourceState = state && typeof state === 'object' ? state : {};
-  if (normalizedRound < ARENA_COLLAPSE_ROUND) {
+  const status = arenaCollapseStatus(normalizedRound);
+  if (status !== 'active') {
     return {
       active: false,
+      status,
       round: normalizedRound,
       damage: 0,
       state: sourceState,
@@ -78,6 +89,7 @@ function applyArenaCollapse({
 
   return {
     active: true,
+    status,
     round: normalizedRound,
     damage,
     state: collapsedState,
@@ -87,9 +99,12 @@ function applyArenaCollapse({
 
 module.exports = {
   RULES_VERSION,
+  ARENA_COLLAPSE_WARNING_ROUND,
   ARENA_COLLAPSE_ROUND,
   ARENA_COLLAPSE_RECOVERY_PHASE_ROUNDS,
   ARENA_COLLAPSE_DEFENSE_LOCK_ROUND,
+  MAX_RULES_V8_ROUNDS,
+  arenaCollapseStatus,
   isArenaCollapseDefenseLocked,
   arenaCollapseRecoveryFactor,
   applyArenaCollapse

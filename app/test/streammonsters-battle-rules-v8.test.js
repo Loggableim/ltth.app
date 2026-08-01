@@ -14,7 +14,9 @@ const {
   projectPassiveCharge
 } = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
 const {
+  ARENA_COLLAPSE_WARNING_ROUND,
   ARENA_COLLAPSE_ROUND,
+  arenaCollapseStatus,
   applyArenaCollapse
 } = require('../plugins/streamalchemy/backend/streammonsters/battle-rules-v8');
 const ArenaDirector = require(
@@ -489,16 +491,16 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     ).durationMs).toBe(ArenaDirector.RULES_V8_PACING.JOINT_REVEAL_MS);
   });
 
-  test('derives the next choice pause from the director action timelines and round-five Collapse', () => {
+  test('derives the next choice pause from the director action timelines and round-four Collapse', () => {
     const { sqlite, service, matchId } = createLockedMatch();
     sqlite.prepare(`
-      UPDATE streammonsters_matches SET round_number = 5 WHERE match_id = ?
+      UPDATE streammonsters_matches SET round_number = 4 WHERE match_id = ?
     `).run(matchId);
     const actions = [
       {
         actorId: 'alpha-v8',
         targetId: 'beta-v8',
-        round: 5,
+        round: 4,
         choice: 'A',
         skill: { type: 'attack', element: 'Ember' },
         hits: [{ index: 1, hpDamage: 4, shieldAbsorbed: 0, evaded: false }],
@@ -510,7 +512,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       {
         actorId: 'beta-v8',
         targetId: 'alpha-v8',
-        round: 5,
+        round: 4,
         choice: 'A',
         skill: { type: 'attack', element: 'Tide' },
         hits: [{ index: 1, hpDamage: 3, shieldAbsorbed: 0, evaded: false }],
@@ -561,7 +563,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       paced.chargePauseUntilMs
     )).toBe(true);
     expect(service.getMatch(matchId)).toEqual(expect.objectContaining({
-      roundNumber: 6,
+      roundNumber: 5,
       actionOpenedAtMs: paced.chargePauseUntilMs,
       actionDeadlineMs: paced.chargePauseUntilMs + 4_000
     }));
@@ -845,7 +847,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       terminalReason: 'knockout',
       knockout: {
         round: 4,
-        remainingHp: 12,
+        remainingHp: 10,
         maxHp: 45
       },
       ratingChanges: expect.arrayContaining([
@@ -856,7 +858,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     expect(JSON.stringify(completed)).not.toContain('1234567890123456789');
     expect(service.getMatch(matchId).result).toEqual(expect.objectContaining({
       terminalReason: 'knockout',
-      knockout: { round: 4, remainingHp: 12, maxHp: 45 }
+      knockout: { round: 4, remainingHp: 10, maxHp: 45 }
     }));
   });
 
@@ -1153,8 +1155,8 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     `).get(matchId)).toEqual({ winner_monster_id: 'double_knockout' });
   });
 
-  test('starts Collapse in round five and never lets neutral collapse cause a KO', () => {
-    const beforeCollapse = applyArenaCollapse({
+  test('warns in round three, starts Collapse in round four and never causes a KO', () => {
+    const warning = applyArenaCollapse({
       fighters: [
         { monsterId: 'alpha', slot: 1 },
         { monsterId: 'beta', slot: 2 }
@@ -1163,11 +1165,16 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         alpha: { hp: 2, shield: 0 },
         beta: { hp: 9, shield: 0 }
       },
-      round: 4
+      round: 3
     });
-    expect(ARENA_COLLAPSE_ROUND).toBe(5);
-    expect(beforeCollapse).toEqual(expect.objectContaining({
+    expect(ARENA_COLLAPSE_WARNING_ROUND).toBe(3);
+    expect(ARENA_COLLAPSE_ROUND).toBe(4);
+    expect(arenaCollapseStatus(2)).toBe('inactive');
+    expect(arenaCollapseStatus(3)).toBe('warning');
+    expect(arenaCollapseStatus(4)).toBe('active');
+    expect(warning).toEqual(expect.objectContaining({
       active: false,
+      status: 'warning',
       damage: 0,
       state: {
         alpha: { hp: 2, shield: 0 },
@@ -1177,7 +1184,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
     const { sqlite, service, matchId } = createLockedMatch();
     sqlite.prepare(`
-      UPDATE streammonsters_matches SET round_number = 5 WHERE match_id = ?
+      UPDATE streammonsters_matches SET round_number = 4 WHERE match_id = ?
     `).run(matchId);
     sqlite.prepare(`
       UPDATE streammonsters_match_participants
@@ -1220,12 +1227,12 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       ]
     }));
 
-    submitRound(service, 5);
+    submitRound(service, 4);
 
     const match = service.getMatch(matchId);
     expect(match).toEqual(expect.objectContaining({
       state: 'action',
-      roundNumber: 6
+      roundNumber: 5
     }));
     expect(Object.fromEntries(match.participants.map(participant => [
       participant.lockedMonsterId,
@@ -1240,7 +1247,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
       WHERE match_id = ? AND event_type = 'streammonsters:battle_arena_collapse'
     `).get(matchId);
     expect(JSON.parse(collapse.public_payload_json)).toEqual(expect.objectContaining({
-      round: 5,
+      round: 4,
       damage: 2,
       fighters: expect.arrayContaining([
         expect.objectContaining({ shieldReduced: 3, hpDamage: 0, hp: 1, shield: 5 }),
@@ -1249,7 +1256,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
     }));
   });
 
-  test('applies symmetric round-five collapse without direct K.O.', () => {
+  test('applies symmetric round-four collapse without direct K.O.', () => {
     const collapse = applyArenaCollapse({
       fighters: [
         { monsterId: 'alpha', slot: 1 },
@@ -1259,7 +1266,7 @@ describe('Stream Monsters Rules v8 combat contract', () => {
         alpha: { hp: 2, shield: 0 },
         beta: { hp: 9, shield: 0 }
       },
-      round: 5
+      round: 4
     });
 
     expect(collapse.damage).toBe(2);
@@ -1624,6 +1631,52 @@ describe('Stream Monsters Rules v8 combat contract', () => {
 
     expect(totalDamage(1, 8)).toBeGreaterThan(totalDamage(5, 8));
     expect(totalDamage(1, 7)).toBe(totalDamage(5, 7));
+  });
+
+  test('keeps evolved Gale damage tuning out of the sustain recovery kit', () => {
+    const totalDamage = (templateId, level) => Array.from(
+      { length: 64 },
+      (_, index) => {
+        const result = resolveInteractiveRound({
+          fighters: [
+            {
+              monster_id: 'evolved-gale-attacker',
+              template_id: templateId,
+              element: 'Gale',
+              evolution_stage: 2,
+              level,
+              stats: { vitality: 7, might: 10, guard: 0, agility: 20 }
+            },
+            {
+              monster_id: 'evolved-gale-target',
+              template_id: 'ripple',
+              element: 'Tide',
+              evolution_stage: 2,
+              level: 1,
+              stats: { vitality: 100, might: 0, guard: 0, agility: 1 }
+            }
+          ],
+          choices: {
+            'evolved-gale-attacker': 'A',
+            'evolved-gale-target': 'B'
+          },
+          seed: `evolved-gale-compensation-${templateId}-${index}`,
+          round: 1,
+          state: {},
+          disableElementAdvantage: true,
+          rulesVersion: 8
+        });
+        return result.actions[0].hits
+          .reduce((sum, hit) => sum + hit.requestedDamage, 0);
+      }
+    ).reduce((sum, damage) => sum + damage, 0);
+
+    expect(totalDamage('skyrend', 1)).toBeGreaterThan(
+      totalDamage('skyrend', 5)
+    );
+    expect(totalDamage('gusttail', 1)).toBe(
+      totalDamage('gusttail', 5)
+    );
   });
 
   test('does not let deterministic timeout choices defend forever during collapse', () => {

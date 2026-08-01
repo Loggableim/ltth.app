@@ -256,7 +256,7 @@ describe('Stream Monsters 1.5 portrait-first Arena Director', () => {
       terminalAction: ArenaDirector.RULES_V8_PACING.TERMINAL_ACTION_MS,
       result: ArenaDirector.RULES_V8_PACING.RESULT_BOARD_MS
     });
-    expect(ArenaDirector.ARENA_COLLAPSE_ROUND).toBe(5);
+    expect(ArenaDirector.ARENA_COLLAPSE_ROUND).toBe(4);
   });
 
   test.each([5, 6, 7])(

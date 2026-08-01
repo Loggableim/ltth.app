@@ -4,6 +4,7 @@ const {
   V6_ELEMENT_ADVANTAGE_PAIRS,
   V6_ELEMENT_ADVANTAGE_DAMAGE,
   V6_SKILL_CATALOG,
+  TEMPLATE_ROLES,
   V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING,
   resolveStageSkill
 } = require('./catalog');
@@ -117,8 +118,13 @@ function damageFor(
         : 3
     )
     : 0;
+  const evolutionStage = Math.max(1, Number(
+    fighter.evolution_stage ?? fighter.evolutionStage
+  ) || 1);
+  const templateRole = TEMPLATE_ROLES[fighter.template_id ?? fighter.templateId];
   const levelOneElementBonus = rulesVersion >= V8_RULES_VERSION &&
-    Math.max(1, Number(fighter.level) || 1) === 1
+    Math.max(1, Number(fighter.level) || 1) === 1 &&
+    (evolutionStage === 1 || templateRole !== 'sustain')
     ? Number(V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING[fighter.element]) || 0
     : 0;
   const rawDamage = effect.power +

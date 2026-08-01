@@ -11,7 +11,7 @@ describe('Stream Monsters Rules-v8 all-pairs neutral balance', () => {
   test('keeps every template and element fair across every neutral cross-role pairing', () => {
     expect(typeof BattleSimulator.runV8AllPairsNeutralMatrix).toBe('function');
 
-    const report = BattleSimulator.runV8AllPairsNeutralMatrix({
+    const options = {
       levels: [1],
       stages: [1],
       statProfiles: ['balanced'],
@@ -25,11 +25,17 @@ describe('Stream Monsters Rules-v8 all-pairs neutral balance', () => {
         'v8-all-pairs-5'
       ],
       maxRounds: 64
-    });
+    };
+    const report = BattleSimulator.runV8AllPairsNeutralMatrix(options);
+    const replay = BattleSimulator.runV8AllPairsNeutralMatrix(options);
 
+    expect(JSON.stringify(replay)).toBe(JSON.stringify(report));
     expect(report).toEqual(expect.objectContaining({
       rulesVersion: 8,
       knockoutOnly: true,
+      arenaCollapseWarningRound: 3,
+      arenaCollapseRound: 4,
+      maxRounds: 64,
       elementAdvantageDisabled: true,
       allUnorderedTemplatePairs: true,
       pairCount: 276,

@@ -15,7 +15,10 @@ const {
   projectPassiveCharge
 } = require('./battle-charge');
 const {
+  ARENA_COLLAPSE_WARNING_ROUND,
   ARENA_COLLAPSE_ROUND,
+  MAX_RULES_V8_ROUNDS,
+  isArenaCollapseDefenseLocked,
   applyArenaCollapse
 } = require('./battle-rules-v8');
 const { selectBattleWinner } = require('./battle-tie-break');
@@ -207,6 +210,14 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function rulesV8RoundLimit(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric === 0) {
+    return MAX_RULES_V8_ROUNDS;
+  }
+  return Math.max(1, Math.min(MAX_RULES_V8_ROUNDS, Math.round(numeric)));
+}
+
 function simulateRulesV8Match({
   leftTemplate,
   rightTemplate,
@@ -249,7 +260,7 @@ function simulateRulesV8Match({
   let terminal = false;
   let terminalReason = 'guard_bound';
   let illegalChoiceFallbackCount = 0;
-  const roundLimit = Math.max(1, Math.round(Number(maxRounds) || 64));
+  const roundLimit = rulesV8RoundLimit(maxRounds);
   const chargeWindowMs = Math.max(0, Math.round(Number(actionWindowMs) || 6_000));
 
   for (let round = 1; round <= roundLimit; round += 1) {
@@ -266,15 +277,19 @@ function simulateRulesV8Match({
         ratePerSecond: PASSIVE_CHARGE_PER_SECOND,
         maxGain: MAX_PASSIVE_CHARGE_PER_ROUND
       });
-      const availableChoices = fighterState.charge >= 100
-        ? ['A', 'B', 'C']
-        : ['A', 'B'];
+      const defenseLocked = isArenaCollapseDefenseLocked(round);
+      const availableChoices = [
+        'A',
+        ...(!defenseLocked ? ['B'] : []),
+        ...(fighterState.charge >= 100 ? ['C'] : [])
+      ];
       availability[fighter.monster_id] = {
         charge: fighterState.charge,
         choices: availableChoices
       };
       const plan = plans[fighter.monster_id];
-      const requested = plan[(round - 1) % plan.length];
+      const planned = plan[(round - 1) % plan.length];
+      const requested = planned === 'B' && defenseLocked ? 'A' : planned;
       requestedChoices[fighter.monster_id] = requested;
       if (requested === 'C' && !availableChoices.includes('C')) {
         choices[fighter.monster_id] = 'A';
@@ -293,6 +308,9 @@ function simulateRulesV8Match({
       disableElementAdvantage,
       rulesVersion: 8
     });
+    illegalChoiceFallbackCount += outcome.actions.filter(action => (
+      Boolean(action.choiceFallback)
+    )).length;
     const collapse = applyArenaCollapse({
       fighters: fighters.map((fighter, index) => ({
         monsterId: fighter.monster_id,
@@ -317,6 +335,7 @@ function simulateRulesV8Match({
       state: clone(state),
       terminal,
       winnerId,
+      collapseStatus: collapse.status,
       collapse: collapse.active
         ? {
             round: collapse.round,
@@ -358,7 +377,7 @@ function runV8BalanceMatrix(options = {}) {
     .map(assertRulesV8Sequence);
   const seeds = options.seeds || DEFAULT_V8_SEEDS;
   const templates = options.templates || TEMPLATE_CATALOG;
-  const maxRounds = Math.max(1, Math.round(Number(options.maxRounds) || 64));
+  const maxRounds = rulesV8RoundLimit(options.maxRounds);
   const templateScores = new Map(templates.map(template => [
     template.templateId,
     emptyScore('templateId', template.templateId)
@@ -459,6 +478,7 @@ function runV8BalanceMatrix(options = {}) {
   return {
     rulesVersion: 8,
     knockoutOnly: true,
+    arenaCollapseWarningRound: ARENA_COLLAPSE_WARNING_ROUND,
     arenaCollapseRound: ARENA_COLLAPSE_ROUND,
     maxRounds,
     mirroredOpponentSampling: true,
@@ -513,7 +533,7 @@ function runV8AllPairsNeutralMatrix(options = {}) {
     .map(assertRulesV8Sequence);
   const seeds = options.seeds || DEFAULT_V8_SEEDS;
   const templates = options.templates || TEMPLATE_CATALOG;
-  const maxRounds = Math.max(1, Math.round(Number(options.maxRounds) || 64));
+  const maxRounds = rulesV8RoundLimit(options.maxRounds);
   const templateScores = new Map(templates.map(template => [
     template.templateId,
     emptyScore('templateId', template.templateId)
@@ -649,6 +669,7 @@ function runV8AllPairsNeutralMatrix(options = {}) {
     rulesVersion: 8,
     knockoutOnly: true,
     elementAdvantageDisabled: true,
+    arenaCollapseWarningRound: ARENA_COLLAPSE_WARNING_ROUND,
     arenaCollapseRound: ARENA_COLLAPSE_ROUND,
     maxRounds,
     allUnorderedTemplatePairs: true,
@@ -1141,6 +1162,7 @@ function runV5BalanceMatrix(options = {}) {
 }
 
 module.exports = {
+  runBalanceMatrix: runV8BalanceMatrix,
   runNeutralBalanceMatrix: runV8BalanceMatrix,
   runV5BalanceMatrix,
   runV6BalanceMatrix,

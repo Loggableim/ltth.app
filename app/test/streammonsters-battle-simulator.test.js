@@ -95,7 +95,9 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
     expect(result.history).toHaveLength(5);
     expect(result.history[2]).toEqual(expect.objectContaining({
       round: 3,
-      terminal: false
+      terminal: false,
+      collapseStatus: 'warning',
+      collapse: null
     }));
     expect(result.history[3].collapse).toEqual(expect.objectContaining({
       round: 4,
@@ -108,6 +110,35 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
     expect(Object.values(result.state)).toEqual(expect.arrayContaining([
       expect.objectContaining({ hp: expect.any(Number), shield: expect.any(Number) })
     ]));
+  });
+
+  test('submits only legal late-collapse choices and counts every resolver fallback', () => {
+    const result = BattleSimulator.simulateRulesV8Match({
+      leftTemplate: getTemplate('ashfang'),
+      rightTemplate: getTemplate('ripple'),
+      level: 1,
+      leftSequence: 'BBB',
+      rightSequence: 'BBB',
+      seed: 'v8-late-legal-plan',
+      maxRounds: 8,
+      disableElementAdvantage: true
+    });
+    const lockedRound = result.history.find(entry => entry.round === 8);
+
+    expect(lockedRound).toEqual(expect.objectContaining({
+      requestedChoices: {
+        'sim-left': 'A',
+        'sim-right': 'A'
+      },
+      choices: {
+        'sim-left': 'A',
+        'sim-right': 'A'
+      }
+    }));
+    expect(lockedRound.actions.every(action => (
+      action.choiceFallback === null
+    ))).toBe(true);
+    expect(result.illegalChoiceFallbackCount).toBe(0);
   });
 
   test('uses passive charge, legal action availability and stage-aware Specials', () => {
@@ -164,6 +195,36 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
     expect(Object.values(first.state).filter(state => state.hp > 0)).toHaveLength(1);
   });
 
+  test('exports a stable read-only report contract and caps simulations at 64 rounds', () => {
+    const options = {
+      levels: [1],
+      stages: [1],
+      statProfiles: ['balanced'],
+      skillSequences: ['AAA'],
+      seeds: ['v8-report-contract'],
+      templates: [getTemplate('ashfang'), getTemplate('neonclaw')],
+      maxRounds: 640
+    };
+    const first = BattleSimulator.runBalanceMatrix(options);
+    const replay = BattleSimulator.runBalanceMatrix(options);
+
+    expect(JSON.stringify(replay)).toBe(JSON.stringify(first));
+    expect(first).toEqual(expect.objectContaining({
+      rulesVersion: 8,
+      arenaCollapseWarningRound: 3,
+      arenaCollapseRound: 4,
+      maxRounds: 64,
+      battleCount: 4,
+      participantSampleCount: 8,
+      guardBoundRate: expect.any(Number),
+      doubleKnockoutRate: expect.any(Number),
+      templateResults: expect.any(Array),
+      elementResults: expect.any(Array)
+    }));
+    expect(first.resolvedBattleCount + first.doubleKnockoutCount +
+      first.guardBoundCount).toBe(first.battleCount);
+  });
+
   test('replays the representative Rules v8 matrix deterministically across all templates and stages', () => {
     const options = {
       levels: [1],
@@ -173,13 +234,15 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
       seeds: ['v8-gate-0', 'v8-gate-1', 'v8-gate-2', 'v8-gate-3', 'v8-gate-4', 'v8-gate-5'],
       maxRounds: 64
     };
-    const first = BattleSimulator.runNeutralBalanceMatrix(options);
-    const replay = BattleSimulator.runNeutralBalanceMatrix(options);
+    const first = BattleSimulator.runBalanceMatrix(options);
+    const replay = BattleSimulator.runBalanceMatrix(options);
 
     expect(replay).toEqual(first);
+    expect(JSON.stringify(replay)).toBe(JSON.stringify(first));
     expect(first).toEqual(expect.objectContaining({
       rulesVersion: 8,
       knockoutOnly: true,
+      arenaCollapseWarningRound: 3,
       arenaCollapseRound: 4,
       maxRounds: 64,
       levels: [1],
@@ -210,13 +273,24 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
     expect(first.illegalChoiceFallbackCount).toBe(0);
     expect(first.guardBoundRate).toBeLessThanOrEqual(0.05);
     expect(first.doubleKnockoutRate).toBeLessThanOrEqual(0.05);
+    const halfSampleQuantum = 0.5 / Math.min(
+      ...first.templateResults.map(result => result.samples)
+    );
+    expect(first.maxTemplateDeviation).toBeLessThanOrEqual(
+      0.05 + halfSampleQuantum
+    );
+    expect(first.maxElementDeviation).toBeLessThanOrEqual(0.05);
     first.templateResults.forEach(result => {
       expect(result.samples).toBeGreaterThan(0);
       expect(result.wins + result.losses + result.draws).toBe(result.samples);
+      expect(result.winRate).toBeGreaterThanOrEqual(0.45 - halfSampleQuantum);
+      expect(result.winRate).toBeLessThanOrEqual(0.55 + halfSampleQuantum);
     });
     first.elementResults.forEach(result => {
       expect(result.samples).toBeGreaterThan(0);
       expect(result.wins + result.losses + result.draws).toBe(result.samples);
+      expect(result.winRate).toBeGreaterThanOrEqual(0.45);
+      expect(result.winRate).toBeLessThanOrEqual(0.55);
     });
   });
 
