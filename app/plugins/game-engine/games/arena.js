@@ -7762,6 +7762,9 @@ class ArenaGame {
     }
     if (noisyAmbientProfile) {
       config.foodSpawnIntervalMs = DEFAULT_CONFIG.foodSpawnIntervalMs;
+      config.maxFood = DEFAULT_CONFIG.maxFood;
+      config.maxFoodRender = DEFAULT_CONFIG.maxFoodRender;
+      config.foodDespawnMs = DEFAULT_CONFIG.foodDespawnMs;
       config.foodSpawnBatchSize = DEFAULT_CONFIG.foodSpawnBatchSize;
     }
     if (!Number.isFinite(Number(config.foodSpawnIntervalMs)) || Number(config.foodSpawnIntervalMs) < 0) {

@@ -1286,6 +1286,9 @@ class GameEnginePlugin {
     }
     if (noisyAmbientProfile) {
       config.foodSpawnIntervalMs = this.defaultConfigs.arena.foodSpawnIntervalMs;
+      config.maxFood = this.defaultConfigs.arena.maxFood;
+      config.maxFoodRender = this.defaultConfigs.arena.maxFoodRender;
+      config.foodDespawnMs = this.defaultConfigs.arena.foodDespawnMs;
       config.foodSpawnBatchSize = this.defaultConfigs.arena.foodSpawnBatchSize;
     }
     if (!Number.isFinite(Number(config.foodSpawnIntervalMs)) || Number(config.foodSpawnIntervalMs) < 0) {

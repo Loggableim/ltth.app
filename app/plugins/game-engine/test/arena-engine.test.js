@@ -122,6 +122,25 @@ describe('ArenaGame', () => {
     }
   });
 
+  it('migrates the full noisy legacy ambient profile at runtime', () => {
+    const config = createArena({
+      maxFood: 66,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 6000,
+      foodSpawnBatchSize: 22,
+      foodDespawnMs: 120000
+    }).arena.getConfig();
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 666,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1,
+      foodDespawnMs: 150000
+    }));
+  });
+
   it('migrates batch 4 with an explicit legacy interval to ambient runtime pacing', () => {
     const legacyBurst = createArena({
       foodSpawnIntervalMs: 6000,
@@ -7168,6 +7187,26 @@ describe('GameEnginePlugin arena integration', () => {
         foodSpawnBatchSize
       }));
     }
+  });
+
+  it('migrates the full noisy legacy ambient profile for admin config responses', () => {
+    const { plugin } = createPlugin();
+    const config = plugin._getConfigWithDefaults('arena', {
+      maxFood: 66,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 6000,
+      foodSpawnBatchSize: 22,
+      foodDespawnMs: 120000
+    });
+
+    expect(config).toEqual(expect.objectContaining({
+      maxMass: 666,
+      maxFood: 72,
+      maxFoodRender: 66,
+      foodSpawnIntervalMs: 2400,
+      foodSpawnBatchSize: 1,
+      foodDespawnMs: 150000
+    }));
   });
 
   it('migrates batch 4 with an explicit legacy interval to ambient admin pacing', () => {
