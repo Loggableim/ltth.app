@@ -352,6 +352,7 @@
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.responsiveCopy">Portrait and landscape use independent broadcast layouts.</p>
         <code id="overlayUrl">/streammonsters/overlay</code>
         <button type="button"
+                data-creator-diagnostic-action="copy_overlay_url"
                 data-copy-tiktok-studio-url
                 data-overlay-url-source="#overlayUrl"
                 data-i18n="common.tiktok_studio.copy_url">
@@ -622,7 +623,7 @@
           <div class="presentation-toolbar">
             <label>Profile<select id="presentationProfile"><option value="portrait-720">Portrait 720p</option><option value="portrait-1080" selected>Portrait 1080p</option><option value="landscape-720">Landscape 720p</option><option value="landscape-1080">Landscape 1080p</option></select></label>
             <label>Audio owner<select id="presentationAudioOwner"><option value="full">Composite</option><option value="arena">Arena</option><option value="egg-rail">Egg rail</option><option value="primary-cta">Primary CTA</option><option value="journey">Journey</option><option value="reveal">Reveal</option><option value="collection">Collection</option><option value="notifications">Notifications</option><option value="hype">Hype</option><option value="branding">Branding</option></select></label>
-            <div class="presentation-actions"><button id="presentationUndo" type="button">Undo</button><button id="presentationReset" type="button">Reset</button><button id="presentationCopy" type="button">Copy 720p / 1080p</button></div>
+            <div class="presentation-actions"><button id="presentationUndo" type="button">Undo</button><button id="presentationReset" type="button" data-creator-diagnostic-action="apply_safe_layout">Reset</button><button id="presentationCopy" type="button">Copy 720p / 1080p</button></div>
           </div>
           <div id="presentationCanvas" class="presentation-canvas" data-orientation="portrait">
             <div class="presentation-layer" data-presentation-layer="arena" tabindex="0">Arena<select class="presentation-mode" data-layer-mode="arena"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
@@ -790,7 +791,7 @@
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.repairEggsTitle">Repair stuck eggs</h3>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsCopy">Preview eggs whose ready or expiry transition is overdue. No egg is changed during preview.</p>
         <div class="repair-actions">
-          <button id="repairEggsPreview" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsPreview">Preview egg repair</button>
+          <button id="repairEggsPreview" class="secondary" type="button" data-creator-diagnostic-action="open_repair_dialog" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsPreview">Preview egg repair</button>
           <button id="repairEggsExecute" class="danger" type="button" disabled data-i18n="plugins.streamalchemy.ui.monsters.repairEggsExecute">Execute egg repair</button>
         </div>
         <label class="check-row repair-confirm">

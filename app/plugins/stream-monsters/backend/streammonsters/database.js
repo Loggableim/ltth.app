@@ -193,6 +193,13 @@ class StreamMonstersDatabase {
         PRIMARY KEY (user_id, step_key)
       );
 
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_journey_cohorts (
+        user_id TEXT PRIMARY KEY,
+        stream_key TEXT NOT NULL,
+        started_at_ms INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_viewer_journey_cohorts_stream
+        ON streammonsters_viewer_journey_cohorts(stream_key, started_at_ms);
       CREATE TABLE IF NOT EXISTS streammonsters_battles (
         battle_id TEXT PRIMARY KEY,
         seed TEXT NOT NULL,

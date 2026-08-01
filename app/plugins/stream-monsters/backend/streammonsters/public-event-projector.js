@@ -405,6 +405,21 @@ function projectBattleFighter(fighter = null) {
     maxHp: Math.max(1, finiteNumber(fighter.maxHp, 1)),
     shield: Math.max(0, finiteNumber(fighter.shield, 0)),
     charge: Math.max(0, Math.min(100, finiteNumber(fighter.charge, 0))),
+    ...(boundedText(fighter.species, 80)
+      ? { species: boundedText(fighter.species, 80) }
+      : {}),
+    ...(boundedText(fighter.role, 32)
+      ? { role: boundedText(fighter.role, 32) }
+      : {}),
+    ...(boundedText(fighter.fighterTitle, 180)
+      ? { fighterTitle: boundedText(fighter.fighterTitle, 180) }
+      : {}),
+    ...(finiteNumber(fighter.combatPower) !== null
+      ? { combatPower: Math.max(0, finiteNumber(fighter.combatPower, 0)) }
+      : {}),
+    ...(fighter.evolutionDeltas && typeof fighter.evolutionDeltas === 'object'
+      ? { evolutionDeltas: projectStats(fighter.evolutionDeltas) }
+      : {}),
     ...(skills.length ? { skills } : {})
   };
 }

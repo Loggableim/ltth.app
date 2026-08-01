@@ -124,6 +124,11 @@
       confirmation: 'cancel_stale_matches'
     })
   });
+  const CREATOR_DIAGNOSTIC_ACTIONS = Object.freeze({
+    copyOverlayUrl: 'copy_overlay_url',
+    applySafeLayout: 'apply_safe_layout',
+    openRepairDialog: 'open_repair_dialog'
+  });
 
   function normalizeOverlayLanguage(input = {}) {
     const supported = ['de', 'en', 'es', 'fr'];
@@ -788,6 +793,7 @@
   return {
     COMMAND_ACTIONS,
     COMMAND_GROUPS,
+    CREATOR_DIAGNOSTIC_ACTIONS,
     CREATOR_SECTIONS,
     DEMO_SCENES,
     GAMEPLAY_PACES,

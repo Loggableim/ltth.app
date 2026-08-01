@@ -25,6 +25,7 @@ const { readWebpMetadata } = require('./asset-registry');
 const {
   normalizeGameplayPace
 } = require('../../streammonsters-gameplay-pace');
+const { getBalanceReport } = require('./battle-balance-report');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -101,6 +102,7 @@ class StreamMonstersRoutes {
     now = () => Date.now(),
     idFactory = () => crypto.randomUUID(),
     hintStateProvider = () => ({}),
+    balanceReportProvider = getBalanceReport,
     gcceStateProvider = () => ({
       commandPrefix: '!',
       registrationState: 'fallback',
@@ -125,6 +127,7 @@ class StreamMonstersRoutes {
     this.now = now;
     this.idFactory = idFactory;
     this.hintStateProvider = hintStateProvider;
+    this.balanceReportProvider = balanceReportProvider;
     this.gcceStateProvider = gcceStateProvider;
     this.adminAuth = createAdminAuth();
     this.assetCatalogCache = null;
@@ -288,6 +291,14 @@ class StreamMonstersRoutes {
         eventCursor: recentEvents.at(-1)?.sequence || 0
       });
     });
+    this.api.registerRoute(
+      'GET',
+      '/api/stream-monsters/balance-report',
+      this.protectAdmin((req, res) => res.json({
+        success: true,
+        report: this.balanceReportProvider()
+      }))
+    );
     this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
       const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
@@ -357,6 +368,9 @@ class StreamMonstersRoutes {
         battle,
         battleTelemetry: this.getBattleTelemetry(),
         diagnostics: this.getCreatorDiagnostics({ config, gcce, battle }),
+        journeyCohort: this.onboarding?.getCohortFunnel?.(
+          this.engine.streamKey || ''
+        ) || null,
         obs: overlayDiagnostics.obs,
         renderer: overlayDiagnostics.renderer,
         audioRuntime: overlayDiagnostics.audio,
@@ -1456,6 +1470,11 @@ class StreamMonstersRoutes {
         nextAllowedAtMs: Number(hintState.nextAllowedAtMs) || null,
         pending: Boolean(hintState.pendingKind)
       },
+      actions: [
+        { code: 'copy_overlay_url', target: '#overlayUrl' },
+        { code: 'apply_safe_layout', target: '#presentationReset' },
+        { code: 'open_repair_dialog', target: '#repairEggsPreview' }
+      ],
       match: {
         phase: String(activeMatch?.phase || activeMatch?.state || 'idle'),
         deadlineMs: deadlineMs > 0 ? deadlineMs : null,

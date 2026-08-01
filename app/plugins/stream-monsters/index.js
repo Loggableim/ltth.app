@@ -1644,7 +1644,8 @@ class StreamMonstersPlugin {
       this.streamMonstersOnboarding?.recordStep?.(
         viewerId,
         step,
-        Date.now()
+        Date.now(),
+        this.streamMonstersEngine?.streamKey
       );
     }
     return result;
@@ -1692,7 +1693,8 @@ class StreamMonstersPlugin {
       this.streamMonstersOnboarding?.recordStep?.(
         payload.userId,
         directStep,
-        Date.now()
+        Date.now(),
+        this.streamMonstersEngine?.streamKey
       );
       return [String(payload.userId)];
     }
@@ -1704,7 +1706,8 @@ class StreamMonstersPlugin {
       this.streamMonstersOnboarding?.recordStep?.(
         viewerId,
         'battle_completed',
-        Date.now()
+        Date.now(),
+        this.streamMonstersEngine?.streamKey
       );
     });
     return viewerIds;

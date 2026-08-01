@@ -22,6 +22,29 @@ class ViewerOnboardingService {
       FROM streammonsters_viewer_onboarding
       WHERE user_id = ?
     `);
+    this.countSteps = this.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_viewer_onboarding
+      WHERE user_id = ?
+    `);
+    this.insertCohort = this.db.prepare(`
+      INSERT OR IGNORE INTO streammonsters_viewer_journey_cohorts (
+        user_id, stream_key, started_at_ms
+      ) VALUES (?, ?, ?)
+    `);
+    this.selectCohortSize = this.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_viewer_journey_cohorts
+      WHERE stream_key = ?
+    `);
+    this.selectCohortStepCounts = this.db.prepare(`
+      SELECT onboarding.step_key, COUNT(*) AS count
+      FROM streammonsters_viewer_journey_cohorts cohort
+      JOIN streammonsters_viewer_onboarding onboarding
+        ON onboarding.user_id = cohort.user_id
+      WHERE cohort.stream_key = ?
+      GROUP BY onboarding.step_key
+    `);
   }
 
   resolveViewerId(viewerId) {
@@ -30,7 +53,7 @@ class ViewerOnboardingService {
     return this.store.resolveKnownViewerId?.(value) || value;
   }
 
-  recordStep(viewerId, step, atMs = Date.now()) {
+  recordStep(viewerId, step, atMs = Date.now(), streamKey = null) {
     const resolvedViewerId = this.resolveViewerId(viewerId);
     const stepKey = String(step || '').trim();
     const completedAtMs = Number(atMs);
@@ -42,11 +65,25 @@ class ViewerOnboardingService {
     ) {
       return false;
     }
-    return this.insertStep.run(
+    const inserted = this.insertStep.run(
       resolvedViewerId,
       stepKey,
       Math.round(completedAtMs)
     ).changes > 0;
+    const normalizedStreamKey = String(streamKey || '').trim();
+    if (
+      inserted &&
+      normalizedStreamKey &&
+      normalizedStreamKey !== 'offline' &&
+      Number(this.countSteps.get(resolvedViewerId)?.count) === 1
+    ) {
+      this.insertCohort.run(
+        resolvedViewerId,
+        normalizedStreamKey.slice(0, 256),
+        Math.round(completedAtMs)
+      );
+    }
+    return inserted;
   }
 
   getJourney(viewerId) {
@@ -67,6 +104,26 @@ class ViewerOnboardingService {
 
   nextStep(viewerId) {
     return this.getJourney(viewerId).nextStep;
+  }
+
+  getCohortFunnel(streamKey) {
+    const normalizedStreamKey = String(streamKey || '').trim();
+    const counts = new Map(
+      normalizedStreamKey
+        ? this.selectCohortStepCounts.all(normalizedStreamKey)
+          .map(row => [row.step_key, Number(row.count) || 0])
+        : []
+    );
+    return {
+      streamKey: normalizedStreamKey || null,
+      cohortSize: normalizedStreamKey
+        ? Number(this.selectCohortSize.get(normalizedStreamKey)?.count) || 0
+        : 0,
+      steps: JOURNEY_STEPS.map(stepKey => ({
+        stepKey,
+        completed: counts.get(stepKey) || 0
+      }))
+    };
   }
 }
 

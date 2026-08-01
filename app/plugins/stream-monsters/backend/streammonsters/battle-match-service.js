@@ -7,7 +7,10 @@ const {
 } = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
 const { elementAdvantage } = require('./battle-rules-v3');
-const { effectiveCombatPower } = require('./evolution-rules');
+const {
+  evolutionStatGrant,
+  effectiveCombatPower
+} = require('./evolution-rules');
 const { selectBattleWinner } = require('./battle-tie-break');
 const {
   PASSIVE_CHARGE_PER_SECOND,
@@ -1301,6 +1304,27 @@ class BattleMatchService {
     return tier ? { count, tier } : null;
   }
 
+  projectBattlePresentation(monster = {}) {
+    const template = getTemplate(monster.template_id ?? monster.templateId);
+    const stage = Math.max(
+      1,
+      Math.min(3, Number(monster.evolution_stage ?? monster.evolutionStage) || 1)
+    );
+    const species = String(template?.species || 'Monster').slice(0, 80);
+    const role = String(template?.role || 'adaptive').slice(0, 32);
+    const name = String(monster.name || template?.name || 'Monster').slice(0, 80);
+    const element = String(monster.element || template?.element || '').slice(0, 24);
+    const evolutionDeltas = element
+      ? evolutionStatGrant(element, stage)
+      : { vitality: 0, might: 0, guard: 0, agility: 0 };
+    return {
+      species,
+      role,
+      fighterTitle: `${name} \u00b7 ${species} \u00b7 ${role}`,
+      combatPower: effectiveCombatPower(monster),
+      evolutionDeltas
+    };
+  }
   projectPublicFighters(match) {
     const chargeWindow = this.chargeWindow(match);
     return match.participants.map(participant => {
@@ -1332,6 +1356,7 @@ class BattleMatchService {
             roster.visual_key
           ),
           level: roster.level,
+          ...this.projectBattlePresentation(roster),
           hp: participant.combatState?.hp ?? maxHp(roster),
           maxHp: participant.combatState?.maxHp ?? maxHp(roster),
           shield: participant.combatState?.shield ?? 0,
