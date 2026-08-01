@@ -7975,7 +7975,7 @@ describe('Arena admin and backend integration contract', () => {
     expect(mainSource).toContain('this.arenaGame.handleChatStrategy');
     expect(mainSource).toContain("['boost', 'shield', 'bomb']");
     expect(mainSource).toContain('handleArenaAbilityCommand');
-    expect(mainSource).toContain('^!(boost|shield|bomb)$');
+    expect(mainSource).toContain('^!(boost|shield|schild|bomb)$');
   });
 
   it('declares and serves PixiJS and Rapier vendor assets locally', () => {
@@ -7999,5 +7999,53 @@ describe('Arena admin and backend integration contract', () => {
     expect(mainSource).toMatch(/const validGames = \[[^\]]*'arena'[^\]]*\]/);
     expect(ui).toContain('id="overlay-mode-arena"');
     expect(ui).toMatch(/const games = \[[^\]]*'arena'[^\]]*\]/);
+  });
+});
+describe('Arena left info and German shield alias contracts', () => {
+  it('round-trips stream-left-panel through Arena config updates and state', () => {
+    const { arena, db } = createArena();
+    db.saveGameConfig.mockImplementation((_game, savedConfig) => {
+      db.getGameConfig.mockReturnValue(savedConfig);
+    });
+
+    const updated = arena.updateConfig({ infoRotatorPlacement: 'stream-left-panel' });
+
+    expect(updated.infoRotatorPlacement).toBe('stream-left-panel');
+    expect(arena.getState('test').config.infoRotatorPlacement).toBe('stream-left-panel');
+  });
+
+  it('normalizes stream-left-panel and unsupported info rotator placements without changing the existing default', () => {
+    expect(createArena({ infoRotatorPlacement: 'stream-left-panel' }).arena.getConfig().infoRotatorPlacement)
+      .toBe('stream-left-panel');
+    expect(createArena({ infoRotatorPlacement: 'not-a-placement' }).arena.getConfig().infoRotatorPlacement)
+      .toBe('in-hud');
+    expect(createArena().arena.getConfig().infoRotatorPlacement).toBe('in-hud');
+  });
+
+  it('renders stream-left-panel ability cards first with the German schild alias and configured timing', () => {
+    const overlay = fs.readFileSync(path.join(__dirname, '..', 'overlay', 'arena.html'), 'utf8');
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
+    const abilitiesAt = overlay.indexOf('...getArenaAbilityHints(config)');
+    const localizedInfoAt = overlay.indexOf('...buildLocalizedInfoMessages(config)');
+
+    expect(overlay).toContain('"stream-left-panel"');
+    expect(overlay).toContain('data-arena-info-placement="stream-left-panel"');
+    expect(overlay).toContain('body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator');
+    expect(overlay).toContain('!schild (auch !shield)');
+    expect(overlay).toContain('shieldDurationMs');
+    expect(overlay).toContain('abilityChargeMs');
+    expect(abilitiesAt).toBeGreaterThanOrEqual(0);
+    expect(localizedInfoAt).toBeGreaterThan(abilitiesAt);
+    expect(ui).toContain('value="stream-left-panel"');
+    expect(ui).toContain('Linkes Infofeld (Stream)');
+  });
+
+  it('maps schild to the canonical shield ability in GCCE and raw chat handling', () => {
+    const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+
+    expect(mainSource).toContain("name: 'schild'");
+    expect(mainSource).toContain("handler: async (_args, context) => await this.handleArenaAbilityCommand('shield', context)");
+    expect(mainSource).toContain('^!(boost|shield|schild|bomb)$');
+    expect(mainSource).toContain("const ability = arenaAbilityMatch[1].toLowerCase() === 'schild' ? 'shield' : arenaAbilityMatch[1].toLowerCase();");
   });
 });

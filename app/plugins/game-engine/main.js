@@ -4715,6 +4715,20 @@ class GameEnginePlugin {
             handler: async (_args, context) => await this.handleArenaAbilityCommand(ability, context)
           }];
         }),
+        ...['schild'].flatMap(command => {
+          const existingOwner = getExistingCommandOwner(command);
+          if (existingOwner) {
+            this.logger.warn(`[GAME ENGINE] Arena command "${command}" is already owned by ${existingOwner}; GCCE registration skipped.`);
+            return [];
+          }
+          return [{
+            name: 'schild',
+            description: 'Use the Live Arena shield ability',
+            syntax: '/schild',
+            permission: 'all', enabled: true, minArgs: 0, maxArgs: 0, category: 'Games',
+            handler: async (_args, context) => await this.handleArenaAbilityCommand('shield', context)
+          }];
+        }),
       ];
 
       // Register slot machine chat commands (stored in game_slot_config, not game_triggers)
@@ -5552,9 +5566,10 @@ class GameEnginePlugin {
     // User role flags – used by slot cooldown adjuster
     const userRoles = { isModerator, isSubscriber, teamMemberLevel };
     const c4ChatCommand = this.getConnect4StartCommandName();
-    const arenaAbilityMatch = message.match(/^!(boost|shield|bomb)$/i);
+    const arenaAbilityMatch = message.match(/^!(boost|shield|schild|bomb)$/i);
     if (arenaAbilityMatch) {
-      this.handleArenaAbilityCommand(arenaAbilityMatch[1].toLowerCase(), {
+      const ability = arenaAbilityMatch[1].toLowerCase() === 'schild' ? 'shield' : arenaAbilityMatch[1].toLowerCase();
+      this.handleArenaAbilityCommand(ability, {
         username: viewerNickname, userId: viewerId, nickname: viewerNickname, rawData: data, profilePictureUrl
       });
       return;

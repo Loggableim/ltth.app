@@ -7652,6 +7652,10 @@ class ArenaGame {
     config.topOverlayShowAbilityLegend = config.topOverlayShowAbilityLegend === true;
     const validColor = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
     config.directAbilitiesEnabled = config.directAbilitiesEnabled !== false;
+    const infoRotatorPlacements = ['in-hud', 'above-field', 'below-field', 'stream-left-panel'];
+    config.infoRotatorPlacement = infoRotatorPlacements.includes(config.infoRotatorPlacement)
+      ? config.infoRotatorPlacement
+      : DEFAULT_CONFIG.infoRotatorPlacement;
     config.abilityChargeMs = this._clamp(Number(config.abilityChargeMs) || 60000, 10000, 300000);
     config.boostDurationMs = this._clamp(Number(config.boostDurationMs) || 6000, 1000, 30000);
     config.shieldDurationMs = this._clamp(Number(config.shieldDurationMs) || 8000, 1000, 30000);

@@ -892,6 +892,31 @@
       overflow: hidden;
     }
 
+    body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator {
+      position: fixed;
+      left: clamp(16px, 3.3vw, 42px);
+      top: var(--arena-stream-left-panel-top, 280px);
+      width: var(--arena-stream-left-panel-width, min(39vw, 470px));
+      min-height: clamp(82px, 8.5vh, 132px);
+      height: auto;
+      margin-top: 0;
+      z-index: 4;
+      padding: clamp(9px, calc(10px * var(--arena-ui-scale)), 15px) clamp(10px, calc(12px * var(--arena-ui-scale)), 18px);
+      grid-template-columns: var(--arena-info-icon-size) minmax(0, 1fr);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    @media (orientation: landscape) {
+      body[data-arena-info-placement="stream-left-panel"] #arena-info-rotator {
+        left: max(10px, var(--arena-playfield-left, 0px));
+        top: var(--arena-info-outside-top, 10px);
+        width: min(calc(100vw - 20px), var(--arena-playfield-width, calc(100vw - 20px)));
+        height: var(--arena-info-outside-height);
+        min-height: var(--arena-info-outside-height);
+        max-height: var(--arena-info-outside-height);
+      }
+    }
+
     @media (max-width: 760px) {
       body[data-arena-overlay-design="widescreen"] #hud,
       body[data-arena-overlay-design="landscape"] #hud {
@@ -1126,7 +1151,7 @@
     const TOP_OVERLAY_ROTATOR_STYLES = ["card", "ticker", "badge", "split"];
     const TOP_OVERLAY_PLACEMENTS = ["auto", "inside-field", "above-field", "below-field"];
     const TOP_OVERLAY_TEXT_SCALES = ["field-auto", "small", "compact", "normal", "large", "very-large", "huge"];
-    const INFO_ROTATOR_PLACEMENTS = ["in-hud", "above-field", "below-field"];
+    const INFO_ROTATOR_PLACEMENTS = ["in-hud", "above-field", "below-field", "stream-left-panel"];
     const FIELD_FRAME_DESIGNS = ["neon-grid", "hazard-zone", "glass-circuit", "retro-arcade", "high-contrast", "minimal"];
     const LARGE_BALL_TRANSPARENCY_MODES = ["off", "flat", "scale"];
     const INFO_ROTATOR_LANGUAGE_MODES = ["de-en", "en-de", "de", "en"];
@@ -1524,8 +1549,18 @@
       root.style.setProperty('--arena-playfield-top', `${rect.y}px`);
       root.style.setProperty('--arena-playfield-width', `${rect.width}px`);
       root.style.setProperty('--arena-playfield-height', `${rect.height}px`);
+      const streamLeftPanel = placement === 'stream-left-panel' &&
+        isStreamBottomArenaLayout() && viewportHeight > window.innerWidth * 1.35;
+      const streamLeftPanelTop = streamLeftPanel
+        ? Math.round(clampNumber(viewportHeight * 0.19, 190, 440, 280))
+        : Math.round(outsideBands.infoTop);
+      const streamLeftPanelWidth = streamLeftPanel
+        ? Math.round(clampNumber(window.innerWidth * 0.39, 250, 470, 360))
+        : Math.round(rect.width);
       root.style.setProperty('--arena-info-outside-height', `${outsideHeight}px`);
       root.style.setProperty('--arena-info-outside-top', `${Math.round(outsideBands.infoTop)}px`);
+      root.style.setProperty('--arena-stream-left-panel-top', `${streamLeftPanelTop}px`);
+      root.style.setProperty('--arena-stream-left-panel-width', `${streamLeftPanelWidth}px`);
       root.style.setProperty('--arena-hud-outside-height', `${hudOutsideHeight}px`);
       root.style.setProperty('--arena-hud-outside-top', `${Math.round(outsideBands.hudTop)}px`);
     }
@@ -1799,9 +1834,12 @@
     function getArenaAbilityHints(config) {
       if (config?.directAbilitiesEnabled === false) return [];
       const languages = infoRotatorLanguageSequence(config);
+      const abilityChargeSeconds = Math.max(1, Math.round((Number(config?.abilityChargeMs) || 60000) / 1000));
+      const boostDurationSeconds = Math.max(1, Math.round((Number(config?.boostDurationMs) || 6000) / 1000));
+      const shieldDurationSeconds = Math.max(1, Math.round((Number(config?.shieldDurationMs) || 8000) / 1000));
       const definitions = [
-        { iconText: 'RUN', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!boost - Tempo', en: '!boost - Speed' } },
-        { iconText: 'SHD', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!shield - Schutz', en: '!shield - Shield' } },
+        { iconText: 'RUN', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!boost - Tempo: ${boostDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!boost - Speed: ${boostDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
+        { iconText: 'SHD', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: `!schild (auch !shield) - Schutz: ${shieldDurationSeconds}s, Aufladen: ${abilityChargeSeconds}s`, en: `!shield - Shield: ${shieldDurationSeconds}s, recharge: ${abilityChargeSeconds}s` } },
         { iconText: 'BMB', label: { de: 'F\u00e4higkeit', en: 'Ability' }, text: { de: '!bomb - Wurf', en: '!bomb - Throw' } }
       ];
       return definitions.map((definition, index) => {
@@ -1863,8 +1901,8 @@
         });
 
       return [
-        ...buildLocalizedInfoMessages(config),
         ...getArenaAbilityHints(config),
+        ...buildLocalizedInfoMessages(config),
         ...getArenaCommandHints(config),
         ...customMessages,
         ...giftMessages
