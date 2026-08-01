@@ -9,6 +9,7 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const DeadlineScheduler = require('./backend/streammonsters/deadline-scheduler');
 const UnhatchedEggStealService = require(
   './backend/streammonsters/unhatched-egg-steal-service'
 );
@@ -263,7 +264,8 @@ class StreamMonstersPlugin {
       gameplayPace: this.config.streamMonsters.gameplayPace,
       portraitBattleMode: this.config.streamMonsters.portraitBattleMode,
       portraitArenaVariant: this.config.streamMonsters.portraitArenaVariant,
-      rulesVersion: STREAM_MONSTERS_RULES_VERSION
+      rulesVersion: STREAM_MONSTERS_RULES_VERSION,
+      autoStart: false
     });
     this.streamMonstersProgression.setMonsterProgressHandler(({
       userId,
@@ -384,14 +386,18 @@ class StreamMonstersPlugin {
       if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
       this.handleStreamMonstersDisconnect(data);
     });
-    this.streamMonstersReadyTimer = setInterval(() => {
-      try {
-        this.runStreamMonstersReadyTimer();
-      } catch (error) {
-        this.api.log(`[STREAM MONSTERS] Ready timer failed: ${error.message}`, 'warn');
-      }
-    }, 1_000);
-    this.streamMonstersReadyTimer.unref?.();
+    this.streamMonstersFreeEggDrops.start();
+    this.streamMonstersBattleMatchService.start();
+    this.streamMonstersDeadlineScheduler = new DeadlineScheduler({
+      getDeadline: nowMs => this.streamMonstersStore?.getNextEggDeadline?.(nowMs),
+      runDue: () => this.runStreamMonstersReadyTimer(),
+      logger: error => this.api.log(
+        `[STREAM MONSTERS] Ready deadline scheduler failed: ${error.message}`,
+        'warn'
+      )
+    });
+    this.streamMonstersDeadlineScheduler.start();
+    this.flushStreamMonstersOutbox();
 
     this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime initialized', 'info');
   }
@@ -1027,10 +1033,8 @@ class StreamMonstersPlugin {
   }
 
   async destroy() {
-    if (this.streamMonstersReadyTimer) {
-      clearInterval(this.streamMonstersReadyTimer);
-      this.streamMonstersReadyTimer = null;
-    }
+    this.streamMonstersDeadlineScheduler?.stop();
+    this.streamMonstersDeadlineScheduler = null;
     if (this.streamMonstersTutorialHintFlushTimer) {
       clearTimeout(this.streamMonstersTutorialHintFlushTimer);
       this.streamMonstersTutorialHintFlushTimer = null;
@@ -1751,6 +1755,17 @@ class StreamMonstersPlugin {
     });
   }
 
+  flushStreamMonstersOutbox(limit = 100) {
+    const pending = this.streamMonstersStore?.pendingOutboxEvents?.(limit) || [];
+    pending.forEach(entry => {
+      this.api.emit(entry.eventType, entry.payload);
+      const alias = BATTLE_SOCKET_ALIASES[entry.eventType];
+      if (alias) this.api.emit(alias, entry.payload);
+      this.streamMonstersStore.acknowledgeOutboxEvent(entry.eventId);
+    });
+    return pending.length;
+  }
+
   emitStreamMonsters(eventType, inputPayload = {}) {
     const payload = inputPayload && typeof inputPayload === 'object'
       ? inputPayload
@@ -1797,7 +1812,15 @@ class StreamMonstersPlugin {
         payload: emitted,
         createdAtMs: Date.now()
       });
-      shouldEmit = Boolean(persisted.inserted);
+      const queued = this.streamMonstersStore.enqueueOutboxEvent?.({
+        eventId,
+        correlationId,
+        streamKey: this.streamMonstersEngine?.streamKey || 'offline',
+        eventType,
+        payload: emitted,
+        createdAtMs: Date.now()
+      });
+      shouldEmit = Boolean(persisted.inserted && queued !== false);
       this.streamMonstersStore.prunePublicEvents?.(
         Date.now() - (6 * 60 * 60 * 1000),
         500
@@ -1805,6 +1828,9 @@ class StreamMonstersPlugin {
     }
     if (shouldEmit) {
       this.api.emit(eventType, emitted);
+      if (projector.isCritical(eventType)) {
+        this.streamMonstersStore?.acknowledgeOutboxEvent?.(eventId);
+      }
       const plannedAlias = BATTLE_SOCKET_ALIASES[eventType];
       if (plannedAlias) this.api.emit(plannedAlias, emitted);
       if (

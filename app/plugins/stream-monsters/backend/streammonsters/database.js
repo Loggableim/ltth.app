@@ -98,6 +98,10 @@ class StreamMonstersDatabase {
       );
       CREATE INDEX IF NOT EXISTS streammonsters_eggs_user_state
         ON streammonsters_eggs(user_id, state, created_at_ms);
+      CREATE INDEX IF NOT EXISTS streammonsters_eggs_state_ready_deadline
+        ON streammonsters_eggs(state, ready_at_ms, egg_id);
+      CREATE INDEX IF NOT EXISTS streammonsters_eggs_state_expiry_deadline
+        ON streammonsters_eggs(state, expires_at_ms, egg_id);
 
       CREATE TABLE IF NOT EXISTS streammonsters_monsters (
         monster_id TEXT PRIMARY KEY,
@@ -559,6 +563,18 @@ class StreamMonstersDatabase {
         FOREIGN KEY (match_id) REFERENCES streammonsters_matches(match_id)
       );
 
+      CREATE TABLE IF NOT EXISTS streammonsters_event_outbox (
+        event_id TEXT PRIMARY KEY,
+        correlation_id TEXT NOT NULL,
+        stream_key TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        delivered_at_ms INTEGER,
+        delivery_attempts INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_event_outbox_pending
+        ON streammonsters_event_outbox(delivered_at_ms, created_at_ms, event_id);
       CREATE TABLE IF NOT EXISTS streammonsters_public_events (
         sequence INTEGER PRIMARY KEY AUTOINCREMENT,
         event_id TEXT NOT NULL UNIQUE,
@@ -1605,6 +1621,24 @@ class StreamMonstersDatabase {
     return state ? this.db.prepare(sql).all(userId, state) : this.db.prepare(sql).all(userId);
   }
 
+  getNextEggDeadline(nowMs = Date.now()) {
+    const now = Number(nowMs) || 0;
+    const row = this.db.prepare(`
+      SELECT MIN(deadline_ms) AS deadline_ms
+      FROM (
+        SELECT ready_at_ms AS deadline_ms
+        FROM streammonsters_eggs
+        WHERE state = 'incubating' AND ready_at_ms IS NOT NULL
+        UNION ALL
+        SELECT expires_at_ms AS deadline_ms
+        FROM streammonsters_eggs
+        WHERE state = 'ready' AND expires_at_ms IS NOT NULL
+      )
+    `).get();
+    return Number.isFinite(Number(row?.deadline_ms))
+      ? Number(row.deadline_ms)
+      : null;
+  }
   getReadyEggs() {
     return this.db.prepare(`
       SELECT * FROM streammonsters_eggs
@@ -1669,6 +1703,7 @@ class StreamMonstersDatabase {
       SELECT * FROM streammonsters_eggs
       WHERE state = 'incubating' AND ready_at_ms <= ?
       ORDER BY ready_at_ms ASC, egg_id ASC
+      LIMIT 250
     `).all(nowMs);
     if (!ready.length) return [];
     const mark = this.db.prepare("UPDATE streammonsters_eggs SET state = 'ready' WHERE egg_id = ?");
@@ -1682,6 +1717,7 @@ class StreamMonstersDatabase {
       SELECT * FROM streammonsters_eggs
       WHERE state = 'ready' AND COALESCE(expires_at_ms, ready_at_ms + ?) <= ?
       ORDER BY expires_at_ms ASC, egg_id ASC
+      LIMIT 250
     `).all(expiryMs, nowMs);
     if (!expired.length) return [];
     const mark = this.db.prepare(`
@@ -2922,6 +2958,54 @@ class StreamMonstersDatabase {
     return this.db.prepare('SELECT * FROM streammonsters_art_pool WHERE art_id = ?').get(artId);
   }
 
+  enqueueOutboxEvent({
+    eventId,
+    correlationId,
+    streamKey,
+    eventType,
+    payload,
+    createdAtMs = Date.now()
+  }) {
+    const insert = this.db.prepare(`
+      INSERT OR IGNORE INTO streammonsters_event_outbox (
+        event_id, correlation_id, stream_key, event_type, payload_json, created_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      eventId,
+      correlationId,
+      streamKey || 'offline',
+      eventType,
+      JSON.stringify(payload || {}),
+      createdAtMs
+    );
+    return insert.changes > 0;
+  }
+
+  pendingOutboxEvents(limit = 100) {
+    return this.db.prepare(`
+      SELECT event_id, correlation_id, stream_key, event_type, payload_json, created_at_ms
+      FROM streammonsters_event_outbox
+      WHERE delivered_at_ms IS NULL
+      ORDER BY created_at_ms ASC, event_id ASC
+      LIMIT ?
+    `).all(Math.max(1, Math.min(250, Number(limit) || 100))).map(row => ({
+      eventId: row.event_id,
+      correlationId: row.correlation_id,
+      streamKey: row.stream_key,
+      eventType: row.event_type,
+      payload: JSON.parse(row.payload_json),
+      createdAtMs: row.created_at_ms
+    }));
+  }
+
+  acknowledgeOutboxEvent(eventId, deliveredAtMs = Date.now()) {
+    return this.db.prepare(`
+      UPDATE streammonsters_event_outbox
+      SET delivered_at_ms = COALESCE(delivered_at_ms, ?),
+          delivery_attempts = delivery_attempts + 1
+      WHERE event_id = ?
+    `).run(deliveredAtMs, eventId).changes === 1;
+  }
   appendPublicEvent({
     eventId,
     correlationId,

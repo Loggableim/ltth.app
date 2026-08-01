@@ -19,7 +19,7 @@ class FreeEggDropService {
     this.config = this.normalizeConfig(config);
     this.releaseTimer = null;
     this.destroyed = false;
-    this.sweepAndRearm();
+    this.started = false;
   }
 
   emitAfterCommit(event, payload) {
@@ -256,12 +256,15 @@ class FreeEggDropService {
   }
 
   sweepAndRearm(nowMs = this.now()) {
-    if (this.destroyed) return [];
-    const released = this.store.runInImmediateTransaction(() => (
-      this.releaseExpiredOffers(null, nowMs)
-    ));
-    this.rearmReleaseTimer();
-    return released;
+    if (this.destroyed || !this.started) return [];
+    try {
+      return this.store.runInImmediateTransaction(() => (
+        this.releaseExpiredOffers(null, nowMs)
+      ));
+    } finally {
+      // A transient SQLite failure must not strand future offer transitions.
+      this.rearmReleaseTimer();
+    }
   }
 
   rearmReleaseTimer() {
@@ -269,7 +272,7 @@ class FreeEggDropService {
       clearTimeout(this.releaseTimer);
       this.releaseTimer = null;
     }
-    if (this.destroyed) return;
+    if (this.destroyed || !this.started) return;
     const deadlineMs = this.store.getNextFreeEggTransitionDeadline(Number(this.now()));
     if (deadlineMs === null) return;
     const delayMs = Math.max(0, deadlineMs - Number(this.now()));
@@ -280,12 +283,31 @@ class FreeEggDropService {
     this.releaseTimer.unref?.();
   }
 
-  destroy() {
-    this.destroyed = true;
+  start() {
+    if (this.started) return this;
+    this.destroyed = false;
+    this.started = true;
+    try {
+      this.sweepAndRearm();
+      return this;
+    } catch (error) {
+      this.stop();
+      throw error;
+    }
+  }
+
+  stop() {
+    this.started = false;
     if (this.releaseTimer) {
       clearTimeout(this.releaseTimer);
       this.releaseTimer = null;
     }
+    return this;
+  }
+
+  destroy() {
+    this.destroyed = true;
+    return this.stop();
   }
 
   setConfig(config = {}) {
