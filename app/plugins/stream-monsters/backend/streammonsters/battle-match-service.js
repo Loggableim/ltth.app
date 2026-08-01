@@ -3543,6 +3543,18 @@ class BattleMatchService {
     };
   }
 
+resumeReconnectPausedMatches(asOfMs = this.now()) {
+    const matchIds = this.db.prepare(`
+      SELECT match_id FROM streammonsters_matches
+      WHERE state IN ('roster', 'action', 'finalizing')
+      ORDER BY created_at_ms, match_id
+    `).all();
+    return matchIds.filter(({ match_id: matchId }) => {
+      const match = this.getMatch(matchId);
+      return match?.chargePauseReason === 'reconnect' && this.resumeChargeClock(matchId, asOfMs);
+    }).length;
+  }
+
   getPublicSnapshot({ restoreReconnect = false } = {}) {
     const matchIds = this.db.prepare(`
       SELECT match_id FROM streammonsters_matches

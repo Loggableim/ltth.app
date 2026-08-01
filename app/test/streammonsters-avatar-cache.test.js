@@ -54,4 +54,22 @@ describe('Stream Monsters avatar cache', () => {
     pending.splice(0).forEach(resolve => resolve(imageResponse(7)));
     await expired;
   });
+  test('rejects unique requests beyond the bounded in-flight queue', async () => {
+    const pending = [];
+    const getAvatar = createCachedAvatarFetcher({
+      fetchImpl: jest.fn(() => new Promise(resolve => pending.push(resolve))),
+      maxConcurrent: 1,
+      maxPending: 1
+    });
+    const base = 'https://p16-sign-va.tiktokcdn.com/';
+    const active = getAvatar(`${base}active.webp`);
+    const queued = getAvatar(`${base}queued.webp`);
+    await expect(getAvatar(`${base}overflow.webp`)).rejects.toMatchObject({
+      code: 'STREAM_MONSTERS_AVATAR_OVERLOADED'
+    });
+    pending.splice(0).forEach(resolve => resolve(imageResponse()));
+    await new Promise(resolve => setImmediate(resolve));
+    pending.splice(0).forEach(resolve => resolve(imageResponse()));
+    await Promise.all([active, queued]);
+  });
 });

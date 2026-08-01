@@ -128,6 +128,7 @@ class StreamMonstersRoutes {
     this.assetCatalogCache = null;
     this.overlayHeartbeat = null;
     this.overlayHeartbeatRequests = new Map();
+    this.overlayReconnectResumeConsumed = false;
   }
 
   register() {
@@ -194,7 +195,10 @@ class StreamMonstersRoutes {
         return res.send(avatar.body);
       } catch (error) {
         this.api.log?.(`[STREAM MONSTERS] Avatar proxy rejected: ${error.message}`, 'warn');
-        return this.sendPublicError(res, 502, 'STREAM_MONSTERS_AVATAR_UNAVAILABLE');
+        const code = error.code === 'STREAM_MONSTERS_AVATAR_OVERLOADED'
+          ? 'STREAM_MONSTERS_AVATAR_OVERLOADED'
+          : 'STREAM_MONSTERS_AVATAR_UNAVAILABLE';
+        return this.sendPublicError(res, code === 'STREAM_MONSTERS_AVATAR_OVERLOADED' ? 503 : 502, code);
       }
     });
     const sendOverlaySources = this.protectAdmin((req, res) => {
@@ -232,6 +236,10 @@ class StreamMonstersRoutes {
       }
       try {
         const heartbeat = this.recordOverlayHeartbeat(req.body);
+        if (!this.overlayReconnectResumeConsumed) {
+          this.overlayReconnectResumeConsumed = true;
+          this.battleMatchService?.resumeReconnectPausedMatches?.(this.now());
+        }
         return res.json({ success: true, acceptedAtMs: heartbeat.lastSeenAtMs });
       } catch (error) {
         this.api.log?.(`[STREAM MONSTERS] Public heartbeat rejected: ${error.code || 'invalid'}`, 'warn');
@@ -265,9 +273,7 @@ class StreamMonstersRoutes {
         visualPack: 'furry',
         season,
         gcce: this.publicGcceState(this.gcceStateProvider()),
-        battle: this.battleMatchService?.getPublicSnapshot?.({
-          restoreReconnect: true
-        }) || {
+        battle: this.battleMatchService?.getPublicSnapshot?.() || {
           rulesVersion: this.currentRulesVersion(config),
           gameplayPace: this.normalizeGameplayPace(config.gameplayPace),
           portraitBattleMode: this.normalizePortraitBattleMode(config.portraitBattleMode),
@@ -1248,26 +1254,31 @@ class StreamMonstersRoutes {
 
   consumeOverlayHeartbeatRequest(req = {}) {
     const nowMs = this.now();
+    const windowMs = 60_000;
+    const maxAddresses = 1_024;
     const address = String(req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown')
       .replace(/^::ffff:/, '').slice(0, 128);
-    const recent = (this.overlayHeartbeatRequests.get(address) || [])
-      .filter(seenAtMs => nowMs - seenAtMs < 60_000);
-    if (recent.length >= 15) {
-      this.overlayHeartbeatRequests.set(address, recent);
+    for (const [key, timestamps] of this.overlayHeartbeatRequests) {
+      const recent = timestamps.filter(seenAtMs => nowMs - seenAtMs < windowMs);
+      if (recent.length) this.overlayHeartbeatRequests.set(key, recent);
+      else this.overlayHeartbeatRequests.delete(key);
+    }
+    const recent = this.overlayHeartbeatRequests.get(address) || [];
+    if (recent.length >= 15 || (!recent.length && this.overlayHeartbeatRequests.size >= maxAddresses)) {
       return false;
     }
     recent.push(nowMs);
     this.overlayHeartbeatRequests.set(address, recent);
     return true;
   }
-
   validateOverlayHeartbeat(input) {
     const isRecord = value => value && typeof value === 'object' && !Array.isArray(value);
     const reject = () => { throw Object.assign(new Error('invalid heartbeat payload'), { code: 'STREAM_MONSTERS_HEARTBEAT_INVALID' }); };
     const assertKeys = (value, allowed) => {
       if (!isRecord(value) || Object.keys(value).some(key => !allowed.has(key))) reject();
     };
-    assertKeys(input, new Set(['layout', 'renderer', 'audio']));
+    assertKeys(input, new Set(['view', 'profile', 'layout', 'renderer', 'audio']));
+    if (input.view !== 'full' || input.profile !== 'streammonsters-full-v1') reject();
     if (!['portrait', 'landscape'].includes(input.layout)) reject();
     if (input.renderer !== undefined) {
       assertKeys(input.renderer, new Set(['backend', 'quality', 'fps', 'deviceLost', 'fallbackReason']));

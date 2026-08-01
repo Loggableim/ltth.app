@@ -140,6 +140,7 @@ function createCachedAvatarFetcher({
   ttlMs = 300_000,
   maxEntries = 512,
   maxConcurrent = 4,
+  maxPending = 128,
   timeoutMs = TIMEOUT_MS,
   maximumBytes = MAX_BYTES
 } = {}) {
@@ -148,6 +149,7 @@ function createCachedAvatarFetcher({
   const queue = [];
   const boundedEntries = Math.max(1, Math.min(512, Number(maxEntries) || 512));
   const boundedConcurrency = Math.max(1, Math.min(4, Number(maxConcurrent) || 4));
+  const boundedPending = Math.max(0, Math.min(512, Number(maxPending) || 128));
   let active = 0;
   const drain = () => {
     while (active < boundedConcurrency && queue.length) {
@@ -165,7 +167,14 @@ function createCachedAvatarFetcher({
       });
     }
   };
+  const overload = () => Object.assign(new Error('STREAM_MONSTERS_AVATAR_OVERLOADED'), {
+    code: 'STREAM_MONSTERS_AVATAR_OVERLOADED'
+  });
   const schedule = operation => new Promise((resolve, reject) => {
+    if (queue.length >= boundedPending) {
+      reject(overload());
+      return;
+    }
     queue.push({ operation, resolve, reject });
     drain();
   });

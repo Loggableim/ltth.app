@@ -611,6 +611,8 @@
       ? audio.muted
       : master.enabled === false;
     return {
+      view: 'full',
+      profile: 'streammonsters-full-v1',
       layout: allowedLayouts.has(layout) ? layout : null,
       renderer: {
         backend,

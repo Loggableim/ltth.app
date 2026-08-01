@@ -210,6 +210,8 @@ describe('Stream Monsters Rules v5 route security', () => {
     const heartbeat = response();
     await find('POST', '/api/streammonsters/overlay/heartbeat')({
       body: {
+        view: 'full',
+        profile: 'streammonsters-full-v1',
         layout: 'portrait',
         renderer: {
           backend: 'webgpu',
