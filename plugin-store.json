@@ -607,7 +607,13 @@
       ]
     },
     {
-      "id": "streamalchemy",
+      "id": "stream-monsters",
+      "aliases": [
+        "streamalchemy"
+      ],
+      "replaces": [
+        "streamalchemy"
+      ],
       "name": {
         "de": "Stream Monsters",
         "en": "Stream Monsters",
@@ -620,13 +626,13 @@
         "es": "Portrait Arcade Rally con 90 segundos por defecto en configuraciones nuevas, guía bilingüe, arena 74/26 segura para TikTok, combates Rules v8 hasta K.O., Arena Collapse, efectos WebGPU elementales, 72 formas Furry y progreso permanente justo. Incluido con una suscripción LTTH activa. No requiere comprar el plugin por separado.",
         "fr": "Portrait Arcade Rally avec 90 secondes par défaut pour les nouvelles configurations, guide bilingue, arène TikTok 74/26, combats Rules v8 jusqu’au K.-O., Arena Collapse, effets WebGPU élémentaires, 72 formes Furry et progression permanente équitable. Inclus avec un abonnement LTTH actif. Aucun achat séparé du plugin."
       },
-      "version": "1.11.1",
+      "version": "1.12.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "stable",
-      "minLtthVersion": "1.4.1",
-      "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
-      "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
+      "minLtthVersion": "1.4.2",
+      "icon": "/plugins/stream-monsters/assets/branding/stream-monsters-icon.png",
+      "logo": "/plugins/stream-monsters/assets/branding/stream-monsters-logo.png",
       "badges": [
         "subscriber-only"
       ],
@@ -639,8 +645,16 @@
           "fr": "Inclus avec un abonnement LTTH actif. Aucun achat séparé du plugin."
         }
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip",
-      "sha256": "46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60",
+      "packageUrl": "https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip",
+      "sha256": "742db0b70694042b7e5cfcb7d4ab3ad0ef442ce0ab2466226086c0ccc0733716",
+      "rollbackVersions": [
+        {
+          "version": "1.11.1",
+          "manifestId": "streamalchemy",
+          "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip",
+          "sha256": "46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60"
+        }
+      ],
       "pricing": {
         "type": "free",
         "amount": 0,

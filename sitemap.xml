@@ -672,14 +672,14 @@
     <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/spotlight.html?lang=fr"/>
   </url>
   <url>
-    <loc>https://ltth.app/docs/plugins/streamalchemy.html</loc>
+    <loc>https://ltth.app/docs/plugins/stream-monsters.html</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=de"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=es"/>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/stream-monsters.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/stream-monsters.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/stream-monsters.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/stream-monsters.html?lang=fr"/>
   </url>
   <url>
     <loc>https://ltth.app/docs/plugins/stt-ticker.html</loc>
@@ -813,13 +813,13 @@
   </url>
 <!-- GENERATED PLUGIN DOCS END -->
   <url>
-    <loc>https://ltth.app/streammonsters/</loc>
+    <loc>https://ltth.app/stream-monsters/</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/streammonsters/?lang=de"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/streammonsters/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/streammonsters/?lang=es"/>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/streammonsters/?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/stream-monsters/?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/stream-monsters/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/stream-monsters/?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/stream-monsters/?lang=fr"/>
   </url>
 </urlset>

@@ -7,10 +7,10 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const nodeExecutable = process.execPath;
 const syncScript = path.join(repoRoot, 'scripts', 'sync-streammonsters-product.js');
 const projectedFiles = [
-  'app/plugins/streamalchemy/product-contract.json',
-  'app/plugins/streamalchemy/plugin.json',
+  'app/plugins/stream-monsters/product-contract.json',
+  'app/plugins/stream-monsters/plugin.json',
   'plugin-store.json',
-  'scripts/plugin-guides/streamalchemy.js',
+  'scripts/plugin-guides/stream-monsters.js',
   'streammonsters/index.html',
   'js/streammonsters-guide.js',
   'app/CHANGELOG.md'
@@ -41,15 +41,15 @@ function createProjectionFixture() {
 
 describe('Stream Monsters product contract', () => {
   test('owns the stable identity, release, access and new-install defaults', () => {
-    const contract = readJson('app/plugins/streamalchemy/product-contract.json');
+    const contract = readJson('app/plugins/stream-monsters/product-contract.json');
 
     expect(contract.contractVersion).toBe(1);
     expect(contract.product).toEqual(expect.objectContaining({
-      id: 'streamalchemy',
+      id: 'stream-monsters',
       name: 'Stream Monsters',
-      currentVersion: '1.11.1',
-      nextVersion: '1.12.0',
-      packageFilename: 'streamalchemy-1.11.1.zip'
+      currentVersion: '1.12.0',
+      nextVersion: '1.13.0',
+      packageFilename: 'stream-monsters-1.12.0.zip'
     }));
     expect(contract.rules).toEqual({
       version: 8,
@@ -80,9 +80,9 @@ describe('Stream Monsters product contract', () => {
 
   test('uses contract defaults for fresh runtime configuration', () => {
     const contractPath = require.resolve(
-      '../plugins/streamalchemy/product-contract.json'
+      '../plugins/stream-monsters/product-contract.json'
     );
-    const pluginPath = require.resolve('../plugins/streamalchemy');
+    const pluginPath = require.resolve('../plugins/stream-monsters');
     const contract = require(contractPath);
     const original = { ...contract.defaults };
     try {
@@ -114,17 +114,17 @@ describe('Stream Monsters product contract', () => {
   });
 
   test.each([
-    ['plugin manifest', 'app/plugins/streamalchemy/plugin.json', (value) => {
+    ['plugin manifest', 'app/plugins/stream-monsters/plugin.json', (value) => {
       const parsed = JSON.parse(value);
       parsed.version = '0.0.0';
       return `${JSON.stringify(parsed, null, 2)}\n`;
     }],
     ['Store entry', 'plugin-store.json', (value) => {
       const parsed = JSON.parse(value);
-      parsed.plugins.find(plugin => plugin.id === 'streamalchemy').access.type = 'public';
+      parsed.plugins.find(plugin => plugin.id === 'stream-monsters').access.type = 'public';
       return `${JSON.stringify(parsed, null, 2)}\n`;
     }],
-    ['guide metadata', 'scripts/plugin-guides/streamalchemy.js', value => (
+    ['guide metadata', 'scripts/plugin-guides/stream-monsters.js', value => (
       value.replace('Arcade Clash', 'Drifted Arena')
     )],
     ['public presentation', 'streammonsters/index.html', value => (
@@ -153,7 +153,7 @@ describe('Stream Monsters product contract', () => {
     try {
       const manifestPath = path.join(
         fixtureRoot,
-        'app/plugins/streamalchemy/plugin.json'
+        'app/plugins/stream-monsters/plugin.json'
       );
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
       manifest.version = '0.0.0';

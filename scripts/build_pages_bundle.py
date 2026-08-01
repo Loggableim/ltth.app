@@ -16,7 +16,7 @@ ROOT_FILES = [
     "app/CURRENT_RELEASE.json",
     "app/CURRENT_VERSION.txt",
     "app/ltth_latest.zip",
-    "app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js",
+    "app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js",
     "manifest.json",
     "plugin-store.json",
     "robots.txt",

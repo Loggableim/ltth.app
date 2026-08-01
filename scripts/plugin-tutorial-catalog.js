@@ -33,7 +33,7 @@ const ROUTES = {
   'quiz-show': ['/dashboard.html?view=plugins', '/quiz-show/ui', '/quiz-show/ui', '/plugins/quiz-show/quiz_show_overlay.html'],
   soundboard: ['/dashboard.html?view=plugins', '/soundboard/ui', '/soundboard/ui', '/soundboard/ui'],
   spotlight: ['/dashboard.html?view=plugins', '/spotlight/ui', '/spotlight/ui', '/plugins/spotlight/overlays/chatter.html'],
-  streamalchemy: ['/dashboard.html?view=plugins', '/streamalchemy/ui', '/streamalchemy/ui', '/plugins/streamalchemy/overlay.html'],
+  'stream-monsters': ['/dashboard.html?view=plugins', '/stream-monsters/ui', '/stream-monsters/ui', '/plugins/stream-monsters/overlay.html'],
   'stt-ticker': ['/dashboard.html?view=plugins', '/stt-ticker/ui', '/stt-ticker/ui', '/plugins/stt-ticker/overlay/ticker.html'],
   'talking-heads': ['/dashboard.html?view=plugins', '/talking-heads/ui', '/talking-heads/ui', '/plugins/talking-heads/overlay.html'],
   'thermal-printer': ['/dashboard.html?view=plugins', '/thermal-printer/ui', '/thermal-printer/ui', '/thermal-printer/ui'],
@@ -49,7 +49,7 @@ const ROUTES = {
 
 const PROFILES = {
   visual: ['clarityhud', 'emoji-rain', 'fireworks', 'flame-overlay', 'goals', 'spotlight', 'stt-ticker', 'toptier', 'weather-control', 'webgpu-weather-control', 'webgpu-emoji-rain', 'webgpu-fireworks', 'talking-heads'],
-  game: ['advanced-timer', 'coinbattle', 'game-engine', 'interactive-story', 'quiz-show', 'streamalchemy'],
+  game: ['advanced-timer', 'coinbattle', 'game-engine', 'interactive-story', 'quiz-show', 'stream-monsters'],
   integration: ['animazingpal', 'chatango', 'minecraft-connect', 'multicam', 'music-bot', 'openshock', 'osc-bridge', 'thermal-printer', 'vdoninja'],
   audio: ['soundboard', 'tts'],
   system: ['api-bridge', 'config-import', 'gcce', 'gift-catalog', 'milestone-leaderboard', 'store-admin']

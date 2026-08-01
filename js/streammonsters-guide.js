@@ -3,11 +3,11 @@
   // BEGIN STREAM MONSTERS PRODUCT PROJECTION
   const PRODUCT_PROJECTION = Object.freeze({
   "contractVersion": 1,
-  "id": "streamalchemy",
+  "id": "stream-monsters",
   "name": "Stream Monsters",
-  "version": "1.11.1",
-  "nextVersion": "1.12.0",
-  "packageFilename": "streamalchemy-1.11.1.zip",
+  "version": "1.12.0",
+  "nextVersion": "1.13.0",
+  "packageFilename": "stream-monsters-1.12.0.zip",
   "rulesVersion": 8,
   "arenaLabel": "Arcade Clash",
   "access": {

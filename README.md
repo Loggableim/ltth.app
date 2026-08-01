@@ -83,7 +83,7 @@ npm run lint
 
 ## Status
 
-- Current LTTH release: `1.4.1`
+- Current LTTH release: `1.4.2`
 - The current published Stream Monsters release is **1.11.1** (Stable, plugin ID `streamalchemy`).
 - Stream Monsters 1.11.1 promotes Portrait Arcade Rally to stable after release-gate verification of its 90-second fresh incubation default, bilingual overlay guidance, K.O.-only Rules v8 battles, Arena Collapse, element-specific WebGPU effects, deterministic reconnect recovery, and compatible player data.
 - Current WebGPU Fireworks plugin release: `3.1.1`

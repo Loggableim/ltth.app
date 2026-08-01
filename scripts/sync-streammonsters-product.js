@@ -83,7 +83,7 @@ function publicProjection(contract) {
 }
 
 function projectManifest(root, contract) {
-  const relativePath = 'app/plugins/streamalchemy/plugin.json';
+  const relativePath = 'app/plugins/stream-monsters/plugin.json';
   const manifest = JSON.parse(readText(root, relativePath));
   const descriptions = Object.fromEntries(contract.locales.map(locale => [
     locale,
@@ -173,7 +173,7 @@ function projectStore(root, contract) {
 }
 
 function projectGuideMetadata(root, contract) {
-  const relativePath = 'scripts/plugin-guides/streamalchemy.js';
+  const relativePath = 'scripts/plugin-guides/stream-monsters.js';
   let content = readText(root, relativePath);
   const projection = publicProjection(contract);
   const body = (
@@ -295,7 +295,7 @@ function buildProjections(root, contract) {
 function synchronize({ root, check }) {
   const contractPath = path.join(
     root,
-    'app/plugins/streamalchemy/product-contract.json'
+    'app/plugins/stream-monsters/product-contract.json'
   );
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
   const drift = [];

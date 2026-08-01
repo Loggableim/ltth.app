@@ -85,6 +85,15 @@
       "manifestVersion": "1.11.1",
       "package": "plugin-store/packages/streamalchemy-1.11.1.zip",
       "sha256": "46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60"
+    },
+    "1.12.0": {
+      "manifestId": "stream-monsters",
+      "sourcePath": "app/plugins/stream-monsters",
+      "sourceCommit": "faaedebb7e87cd47d303245d452b7a01149d5be4",
+      "sourceTree": "1fae7b3c275a1060a575c9317277724f62051996",
+      "manifestVersion": "1.12.0",
+      "package": "plugin-store/packages/stream-monsters-1.12.0.zip",
+      "sha256": "742db0b70694042b7e5cfcb7d4ab3ad0ef442ce0ab2466226086c0ccc0733716"
     }
   }
 }

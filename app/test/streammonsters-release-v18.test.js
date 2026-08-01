@@ -14,7 +14,7 @@ const {
 
 const repoRoot = path.join(__dirname, '..', '..');
 const packageDir = path.join(repoRoot, 'plugin-store', 'packages');
-const guide = require('../../scripts/plugin-guides/streamalchemy');
+const guide = require('../../scripts/plugin-guides/stream-monsters');
 
 const LEGACY_ARCHIVES = Object.freeze({
   '1.0.0': '100e98aa4e8b6df3f435502686e120c2f7949edd275503897e3478a325fe6fe3',

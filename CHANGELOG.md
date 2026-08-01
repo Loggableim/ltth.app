@@ -19,7 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release separation**: LTTH stays at 1.4.1. Stream Monsters 1.11.1 ships as a separately versioned deterministic Stable plugin package; the 1.11.0 store artifact and all earlier packages remain immutable.
 - **Release hardening**: Durable provider-event receipts prevent duplicate GCCE/fallback actions, public events no longer expose internal monster IDs, and Arena Collapse cannot stall forever through repeated defense.
 
+## [1.4.2] - 2026-08-01
+
+### Changed
+
+- **Stream Monsters 1.12.0 canonical identity**: The maintained source, manifest, Store tile, dashboard navigation, logs, lifecycle responses and current documentation now use `stream-monsters`.
+- **Atomic compatibility migration**: Loader inventory canonicalizes every manifest before initialization; state and configuration use equivalent atomic canonical and legacy shadows with stable conflict detection.
+- **Transactional Store recovery**: Upgrades and authenticated rollback restore plugin files, runtime, state, configuration and persistent data after a failed promotion.
+- **Release metadata**: LTTH host projections advance to 1.4.2 and the Stream Monsters package map advances to schema 2 with per-release manifest identity, source path and package path.
+
+### Compatibility
+
+- **Permanent aliases**: `streamalchemy` lifecycle, UI, overlay, static, configuration, data, backup, GCCE and IFTTT inputs resolve to one logical `stream-monsters` plugin without duplicate execution.
+- **Historical rollback**: `streamalchemy-1.11.1.zip` remains byte-identical at SHA-256 `46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60` and is the mapped rollback package.
+
 ## [1.4.1] - 2026-07-26
+
 
 ### Added
 
