@@ -15,7 +15,7 @@ function response() {
   };
 }
 
-function harness() {
+function harness({ idFactory } = {}) {
   const registered = [];
   const emitted = [];
   const store = new StreamMonstersDatabase(new Database(':memory:'));
@@ -35,7 +35,8 @@ function harness() {
     configProvider: {
       getConfig: () => ({ streamMonsters: { hatchDurationMs: 120_000 } }),
       updateConfig: jest.fn()
-    }
+    },
+    idFactory
   });
   routes.register();
   return {
@@ -402,6 +403,31 @@ describe('Stream Monsters targeted demo API', () => {
     expect(secondAction.eventId).toMatch(/^demo-match:.+:attack$/);
     expect(secondRoster.matchId).not.toBe(firstRoster.matchId);
     expect(secondAction.eventId).not.toBe(firstAction.eventId);
+  });
+
+  test('uses the injected ID factory for deterministic battle previews', () => {
+    const { demo, emitted } = harness({ idFactory: () => 'fixed-run-id' });
+    const res = response();
+
+    demo(localRequest({
+      scene: 'skill',
+      templateId: 'ashfang',
+      layout: 'portrait'
+    }), res);
+
+    expect(res.statusCode).toBe(200);
+    const opened = emitted.find(entry => (
+      entry.event === 'streammonsters:battle_choice_opened'
+    ))?.payload;
+    const action = emitted.find(entry => (
+      entry.event === 'streammonsters:battle_skill_used'
+    ))?.payload;
+    expect(opened.matchId).toBe('demo-match:fixed-run-id');
+    expect(action).toEqual(expect.objectContaining({
+      battleId: 'demo-match:fixed-run-id',
+      matchId: 'demo-match:fixed-run-id',
+      eventId: 'demo-match:fixed-run-id:attack'
+    }));
   });
 
   test.each([

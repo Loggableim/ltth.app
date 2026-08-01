@@ -99,6 +99,7 @@ class StreamMonstersRoutes {
     giftCatalogProvider,
     configProvider,
     now = () => Date.now(),
+    idFactory = () => crypto.randomUUID(),
     hintStateProvider = () => ({}),
     gcceStateProvider = () => ({
       commandPrefix: '!',
@@ -122,6 +123,7 @@ class StreamMonstersRoutes {
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.now = now;
+    this.idFactory = idFactory;
     this.hintStateProvider = hintStateProvider;
     this.gcceStateProvider = gcceStateProvider;
     this.adminAuth = createAdminAuth();
@@ -512,7 +514,7 @@ class StreamMonstersRoutes {
         return res.status(400).json({ success: false, error: error.message });
       }
       const config = this.configProvider.getConfig().streamMonsters;
-      const demoRunId = crypto.randomUUID();
+      const demoRunId = String(this.idFactory());
       const demoMatchId = `demo-match:${demoRunId}`;
       const demoBattleId = demoMatchId;
       const roleScene = /^role_(striker|guardian|trickster|sustain)$/.exec(
