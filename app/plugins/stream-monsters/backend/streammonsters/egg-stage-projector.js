@@ -30,7 +30,7 @@ function publicViewerName(value) {
 function safeAssetReference(value) {
   const reference = boundedText(value, 512);
   if (!reference) return null;
-  const assetPrefix = '/plugins/streamalchemy/assets/';
+  const assetPrefix = '/plugins/stream-monsters/assets/';
   if (reference.startsWith(assetPrefix)) {
     const relative = reference.slice(assetPrefix.length);
     const segments = relative.split('/');

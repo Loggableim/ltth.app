@@ -1960,7 +1960,7 @@
       <i class="arcade-crack arcade-crack-3"></i>
     </div>
   </section>
-  <img id="brand" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="">
+  <img id="brand" src="/plugins/stream-monsters/assets/branding/stream-monsters-logo.png" alt="">
   <div id="hype" style="--hype:0%"><span id="hype-value">0%</span></div>
   <div id="toast"></div>
   <div id="reveal-stage" data-layout="landscape" data-anchor="bottom-center" data-scale="100">
@@ -2248,15 +2248,15 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-rules-v8-pacing.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-portrait-arena.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-effects-renderer.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-egg-stage-view.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-arena-director.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-audio-engine.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-arena-view.js"></script>
-<script src="/plugins/streamalchemy/streammonsters-chat-view.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-rules-v8-pacing.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-portrait-arena.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-effects-renderer.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-overlay-runtime.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-egg-stage-view.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-arena-director.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-audio-engine.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-arena-view.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-chat-view.js"></script>
 <script>
 (async () => {
   await window.i18n?.init?.();
@@ -2269,7 +2269,7 @@
       config:{},
       loadLocale:async locale => {
         const response = await fetch(
-          `/plugins/streamalchemy/locales/${encodeURIComponent(locale)}.json`,
+          `/plugins/stream-monsters/locales/${encodeURIComponent(locale)}.json`,
           { cache:'force-cache' }
         );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -2374,7 +2374,7 @@
   };
   let audioEngine = silentAudio;
   try {
-    const manifestResponse = await fetch('/plugins/streamalchemy/assets/audio/manifest.json', {
+    const manifestResponse = await fetch('/plugins/stream-monsters/assets/audio/manifest.json', {
       cache:'force-cache'
     });
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;

@@ -73,7 +73,20 @@ RELEASE_ASSET_ZIP_NAME = "ltth_latest.zip"
 RELEASE_ASSET_MANIFEST_NAME = "ltth_latest.json"
 SEMANTIC_VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 STREAM_MONSTERS_RELEASES = {
-    "1.4.1": "1.11.1",
+    "1.4.1": {
+        "plugin_version": "1.11.1",
+        "manifest_id": "streamalchemy",
+        "source_path": "app/plugins/streamalchemy/plugin.json",
+        "package_id": "streamalchemy",
+        "requires_alias": False,
+    },
+    "1.4.2": {
+        "plugin_version": "1.12.0",
+        "manifest_id": "stream-monsters",
+        "source_path": "app/plugins/stream-monsters/plugin.json",
+        "package_id": "stream-monsters",
+        "requires_alias": True,
+    },
 }
 
 
@@ -159,22 +172,26 @@ def validate_stream_monsters_release(
     repo_root: Path,
     ltth_version: str,
 ) -> None:
-    expected_plugin_version = STREAM_MONSTERS_RELEASES.get(ltth_version)
-    if not expected_plugin_version:
+    release = STREAM_MONSTERS_RELEASES.get(ltth_version)
+    if not release:
         return
+    expected_plugin_version = release["plugin_version"]
+    manifest_id = release["manifest_id"]
+    source_path = release["source_path"]
+    package_id = release["package_id"]
 
-    plugin_manifest = read_json_object(
-        repo_root / "app" / "plugins" / "streamalchemy" / "plugin.json"
-    )
-    if plugin_manifest.get("id") != "streamalchemy":
-        raise ValueError("Stream Monsters plugin manifest must retain id streamalchemy.")
+    plugin_manifest = read_json_object(repo_root / source_path)
+    if plugin_manifest.get("id") != manifest_id:
+        raise ValueError(
+            f"Stream Monsters plugin manifest must use id {manifest_id}."
+        )
     if plugin_manifest.get("name") != "Stream Monsters":
         raise ValueError("Stream Monsters plugin manifest must use the current product name.")
     require_version(
         plugin_manifest,
         "version",
         expected_plugin_version,
-        "app/plugins/streamalchemy/plugin.json",
+        source_path,
     )
 
     store = read_json_object(repo_root / "plugin-store.json")
@@ -183,27 +200,27 @@ def validate_stream_monsters_release(
         raise ValueError("plugin-store.json plugins must be an array.")
     matches = [
         entry for entry in plugins
-        if isinstance(entry, dict) and entry.get("id") == "streamalchemy"
+        if isinstance(entry, dict) and entry.get("id") == manifest_id
     ]
     if len(matches) != 1:
         raise ValueError(
-            "plugin-store.json must contain exactly one streamalchemy entry."
+            f"plugin-store.json must contain exactly one {manifest_id} entry."
         )
     store_entry = matches[0]
     actual_store_version = str(store_entry.get("version") or "").strip()
     if actual_store_version != expected_plugin_version:
         raise ValueError(
-            "plugin-store.json streamalchemy.version must be "
+            f"plugin-store.json {manifest_id}.version must be "
             f"{expected_plugin_version} for LTTH {ltth_version}; "
             f"got {actual_store_version or '<missing>'}."
         )
     expected_package_url = (
         "https://ltth.app/plugin-store/packages/"
-        f"streamalchemy-{expected_plugin_version}.zip"
+        f"{package_id}-{expected_plugin_version}.zip"
     )
     if store_entry.get("packageUrl") != expected_package_url:
         raise ValueError(
-            "plugin-store.json streamalchemy.packageUrl must be "
+            f"plugin-store.json {manifest_id}.packageUrl must be "
             f"{expected_package_url}."
         )
     expected_channel = (
@@ -213,12 +230,12 @@ def validate_stream_monsters_release(
     )
     if store_entry.get("channel") != expected_channel:
         raise ValueError(
-            "plugin-store.json streamalchemy.channel must be "
+            f"plugin-store.json {manifest_id}.channel must be "
             f"{expected_channel}."
         )
     if store_entry.get("minLtthVersion") != ltth_version:
         raise ValueError(
-            "plugin-store.json streamalchemy.minLtthVersion must be "
+            f"plugin-store.json {manifest_id}.minLtthVersion must be "
             f"{ltth_version}."
         )
     localized_name = store_entry.get("name")
@@ -227,15 +244,23 @@ def validate_stream_monsters_release(
         for locale in ("de", "en", "es", "fr")
     ):
         raise ValueError(
-            "plugin-store.json streamalchemy.name must be Stream Monsters "
+            f"plugin-store.json {manifest_id}.name must be Stream Monsters "
             "in de/en/es/fr."
+        )
+    if release["requires_alias"] and (
+        "streamalchemy" not in (store_entry.get("aliases") or [])
+        or "streamalchemy" not in (store_entry.get("replaces") or [])
+    ):
+        raise ValueError(
+            f"plugin-store.json {manifest_id} aliases/replaces must reserve "
+            "streamalchemy."
         )
 
     package_path = (
         repo_root
         / "plugin-store"
         / "packages"
-        / f"streamalchemy-{expected_plugin_version}.zip"
+        / f"{package_id}-{expected_plugin_version}.zip"
     )
     if not package_path.is_file():
         raise FileNotFoundError(
@@ -244,7 +269,7 @@ def validate_stream_monsters_release(
     expected_hash = str(store_entry.get("sha256") or "").strip().lower()
     if not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
         raise ValueError(
-            "plugin-store.json streamalchemy.sha256 must contain 64 "
+            f"plugin-store.json {manifest_id}.sha256 must contain 64 "
             "lowercase hexadecimal characters."
         )
     actual_hash = sha256_file(package_path)

@@ -129,7 +129,7 @@ function safeImageUrl(value) {
   const url = boundedText(value, 512);
   if (!url) return null;
   return (
-    url.startsWith('/plugins/streamalchemy/assets/') ||
+    url.startsWith('/plugins/stream-monsters/assets/') ||
     /^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/i.test(url) ||
     /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i.test(url)
   ) ? url : null;

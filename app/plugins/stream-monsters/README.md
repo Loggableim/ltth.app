@@ -1,24 +1,24 @@
-# Stream Monsters 1.11 – Portrait Arcade Rally
+# Stream Monsters 1.12 – Portrait Arcade Rally
 
-Stream Monsters keeps the stable `streamalchemy` plugin ID so installations,
-routes, collections, eggs, monsters, ratings, configuration and legacy battle
-replays remain compatible. The visible product name is exclusively
-**Stream Monsters**.
+Stream Monsters uses the canonical `stream-monsters` plugin ID. The historical
+`streamalchemy` ID remains an invisible compatibility alias for lifecycle,
+configuration, data, routes and backups, so existing collections, eggs,
+monsters, ratings and replays continue to work.
 
-Version 1.11.1 is a bundled-only stable release. It ships no Art Lab, ComfyUI,
+Version 1.12.0 is a bundled-only stable release. It ships no Art Lab, ComfyUI,
 provider, model installer, generation pool or live image-generation path.
 Canonical Furry assets are packaged locally; Kenney is used only if a bundled
 asset is missing or damaged.
 
 ## Quick creator setup
 
-1. Open `/streammonsters/ui`.
+1. Open `/stream-monsters/ui` (`/streammonsters/ui` remains an alias).
 2. Choose spawn and boost gifts from the complete TikTok catalog. Spawn gifts
    may use one element or `Random`; only enabled mappings affect the game.
 3. Select incubation, egg expiry, season, commands, overlay languages,
    portrait layout, renderer quality and audio.
 4. Verify all 24 templates and 72 bundled evolution forms.
-5. Add `/streammonsters/overlay` to OBS and preview 1080×1920 before going live.
+5. Add `/stream-monsters/overlay` to OBS and preview 1080×1920 before going live.
 6. Run the deterministic egg, hatch, battle, K.O. and renderer-fallback demos.
 
 New configurations use a 90-second incubation default. Available presets are

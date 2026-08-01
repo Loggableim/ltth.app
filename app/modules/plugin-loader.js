@@ -8,6 +8,26 @@ const {
     assertPathInside,
     resolvePluginEntryPath
 } = require('./plugin-paths');
+const {
+    canonicalizeIftttId,
+    canonicalizePluginId,
+    getConfigStorageKeys,
+    getIdentityCandidateIds,
+    getPluginIdentity,
+    resolveInstalledPluginDirectory
+} = require('./plugin-identities');
+const {
+    CONFIG_MIGRATION_CANONICAL_SNAPSHOT_KEY,
+    CONFIG_MIGRATION_LEGACY_SNAPSHOT_KEY,
+    CONFIG_SYNC_MARKER_KEY,
+    STATE_SYNC_METADATA_KEY,
+    PluginIdentityConflictError,
+    cloneIdentityValue,
+    createSyncMarker,
+    hashIdentityValue,
+    mergeIdentityValues,
+    valuesEqual
+} = require('./plugin-identity-sync');
 
 function parseJsonText(text) {
     const value = String(text || '');
@@ -35,13 +55,31 @@ function clearPluginRequireCache(entryPath, pluginPath) {
     }
 }
 
+function getPluginRouteAliases(pluginId, routePath) {
+    const canonicalId = canonicalizePluginId(pluginId);
+    const normalized = routePath.startsWith('/') ? routePath : `/${routePath}`;
+    if (canonicalId !== 'stream-monsters') return [normalized];
+    const aliases = [normalized];
+    const mappings = [
+        ['/api/streammonsters', '/api/stream-monsters'],
+        ['/streammonsters', '/stream-monsters'],
+        ['/plugins/streamalchemy', '/plugins/stream-monsters']
+    ];
+    for (const [legacyPrefix, canonicalPrefix] of mappings) {
+        if (normalized === legacyPrefix || normalized.startsWith(`${legacyPrefix}/`)) {
+            aliases.unshift(`${canonicalPrefix}${normalized.slice(legacyPrefix.length)}`);
+        }
+    }
+    return [...new Set(aliases)];
+}
+
 /**
  * PluginAPI - Bereitgestellte API für Plugins
  * Ermöglicht sicheren Zugriff auf System-Funktionen
  */
 class PluginAPI {
     constructor(pluginId, pluginDir, app, io, db, logger, pluginLoader, configPathManager, iftttEngine = null, tiktok = null) {
-        this.pluginId = pluginId;
+        this.pluginId = canonicalizePluginId(pluginId);
         this.pluginDir = pluginDir;
         this.app = app;
         this.io = io;
@@ -61,6 +99,7 @@ class PluginAPI {
         this.registeredIFTTTTriggers = [];
         this.registeredIFTTTConditions = [];
         this.registeredIFTTTActions = [];
+        this.registrationFailures = [];
 
         // Backup provider registration flag
         this.backupProviderRegistered = false;
@@ -74,7 +113,7 @@ class PluginAPI {
      */
     registerRoute(method, routePath, ...handlers) {
         try {
-            const fullPath = routePath.startsWith('/') ? routePath : `/${routePath}`;
+            const fullPaths = getPluginRouteAliases(this.pluginId, routePath);
             if (handlers.length === 0 || handlers.some(handler => typeof handler !== 'function')) {
                 throw new Error('At least one route handler is required');
             }
@@ -89,7 +128,7 @@ class PluginAPI {
 
                     await handler(req, res, next);
                 } catch (error) {
-                    this.log(`Route error in ${fullPath}: ${error.message}`, 'error');
+                    this.log(`Route error in ${fullPaths[0]}: ${error.message}`, 'error');
                     res.status(500).json({
                         success: false,
                         error: 'Plugin route error',
@@ -108,13 +147,16 @@ class PluginAPI {
                 throw new Error(`Invalid HTTP method: ${method}`);
             }
 
-            router[methodLower](fullPath, ...wrappedHandlers);
-            this.registeredRoutes.push({ method, path: fullPath, router });
-            this.log(`Registered route: ${method} ${fullPath}`);
+            for (const fullPath of fullPaths) {
+                router[methodLower](fullPath, ...wrappedHandlers);
+                this.registeredRoutes.push({ method, path: fullPath, router });
+                this.log(`Registered route: ${method} ${fullPath}`);
+            }
 
             return true;
         } catch (error) {
             this.log(`Failed to register route: ${error.message}`, 'error');
+            this.registrationFailures.push({ type: 'route', error });
             return false;
         }
     }
@@ -150,12 +192,21 @@ class PluginAPI {
             return true;
         } catch (error) {
             this.log(`Failed to register socket event: ${error.message}`, 'error');
+            this.registrationFailures.push({ type: 'socket', error });
             return false;
         }
     }
 
     registerSocketConnection(callback) {
-        return this.pluginLoader.registerPluginConnectionHandler(this.pluginId, callback);
+        try {
+            const registered = this.pluginLoader.registerPluginConnectionHandler(this.pluginId, callback);
+            if (!registered) throw new Error('Socket connection handler registration was rejected');
+            return true;
+        } catch (error) {
+            this.registrationFailures.push({ type: 'socket-connection', error });
+            this.log(`Failed to register socket connection handler: ${error.message}`, 'error');
+            return false;
+        }
     }
 
     /**
@@ -242,7 +293,7 @@ class PluginAPI {
             }
 
             // Prefix mit Plugin-ID wenn nicht bereits vorhanden
-            const triggerId = id.includes(':') ? id : `${this.pluginId}:${id}`;
+            const triggerId = canonicalizeIftttId(id.includes(':') ? id : `${this.pluginId}:${id}`);
 
             // Kategorie automatisch setzen falls nicht angegeben
             if (!config.category) {
@@ -273,7 +324,7 @@ class PluginAPI {
             }
 
             // Prefix mit Plugin-ID wenn nicht bereits vorhanden
-            const conditionId = id.includes(':') ? id : `${this.pluginId}:${id}`;
+            const conditionId = canonicalizeIftttId(id.includes(':') ? id : `${this.pluginId}:${id}`);
 
             // Kategorie automatisch setzen falls nicht angegeben
             if (!config.category) {
@@ -304,7 +355,7 @@ class PluginAPI {
             }
 
             // Prefix mit Plugin-ID wenn nicht bereits vorhanden
-            const actionId = id.includes(':') ? id : `${this.pluginId}:${id}`;
+            const actionId = canonicalizeIftttId(id.includes(':') ? id : `${this.pluginId}:${id}`);
 
             // Kategorie automatisch setzen falls nicht angegeben
             if (!config.category) {
@@ -362,7 +413,8 @@ class PluginAPI {
     }
 
     getPlugin(pluginId) {
-        return this.pluginLoader?.loadedPlugins?.get(pluginId)?.instance || null;
+        const canonicalId = canonicalizePluginId(pluginId);
+        return this.pluginLoader?.loadedPlugins?.get(canonicalId)?.instance || null;
     }
 
     /**
@@ -371,7 +423,12 @@ class PluginAPI {
      */
     getConfig(key = null) {
         try {
-            const configKey = key ? `plugin:${this.pluginId}:${key}` : `plugin:${this.pluginId}:config`;
+            const storageKey = key || 'config';
+            const configKeys = getConfigStorageKeys(this.pluginId, storageKey);
+            if (configKeys.length > 1) {
+                return this.resolveIdentityConfig(configKeys);
+            }
+            const configKey = configKeys[0];
             const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
             const row = stmt.get(configKey);
 
@@ -380,9 +437,111 @@ class PluginAPI {
             }
             return null;
         } catch (error) {
+            this.lastConfigError = error;
             this.log(`Failed to get config: ${error.message}`, 'error');
             return null;
         }
+    }
+
+    readSettingJson(configKey) {
+        const row = this.db.prepare('SELECT value FROM settings WHERE key = ?').get(configKey);
+        return row ? JSON.parse(row.value) : undefined;
+    }
+
+    runConfigTransaction(callback) {
+        const transactionOwner = typeof this.db?.transaction === 'function'
+            ? this.db
+            : this.db?.db;
+        if (transactionOwner && typeof transactionOwner.transaction === 'function') {
+            return transactionOwner.transaction(callback)();
+        }
+        if (typeof this.db?.exec !== 'function') {
+            throw new Error('Database transactions are unavailable');
+        }
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+            const result = callback();
+            this.db.exec('COMMIT');
+            return result;
+        } catch (error) {
+            try { this.db.exec('ROLLBACK'); } catch (_) { /* best effort */ }
+            throw error;
+        }
+    }
+
+    writeIdentityConfig(configKeys, value, snapshots = null) {
+        const valueJson = JSON.stringify(value);
+        const markerJson = JSON.stringify(createSyncMarker(value));
+        const upsert = this.db.prepare(`
+            INSERT INTO settings (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `);
+        const snapshot = this.db.prepare(`
+            INSERT OR IGNORE INTO settings (key, value)
+            VALUES (?, ?)
+        `);
+        this.runConfigTransaction(() => {
+            if (snapshots) {
+                snapshot.run(
+                    CONFIG_MIGRATION_CANONICAL_SNAPSHOT_KEY,
+                    JSON.stringify(snapshots.canonical)
+                );
+                snapshot.run(
+                    CONFIG_MIGRATION_LEGACY_SNAPSHOT_KEY,
+                    JSON.stringify(snapshots.legacy)
+                );
+            }
+            for (const configKey of configKeys) upsert.run(configKey, valueJson);
+            upsert.run(CONFIG_SYNC_MARKER_KEY, markerJson);
+        });
+    }
+
+    resolveIdentityConfig(configKeys) {
+        const [canonicalKey, legacyKey] = configKeys;
+        const canonical = this.readSettingJson(canonicalKey);
+        const legacy = this.readSettingJson(legacyKey);
+        const marker = this.readSettingJson(CONFIG_SYNC_MARKER_KEY);
+        if (canonical === undefined && legacy === undefined) return null;
+
+        let source;
+        let snapshots = null;
+        if (!marker?.hash) {
+            if (legacy !== undefined) {
+                source = legacy;
+                if (canonical !== undefined && !valuesEqual(canonical, legacy)) {
+                    snapshots = {
+                        canonical: cloneIdentityValue(canonical),
+                        legacy: cloneIdentityValue(legacy)
+                    };
+                }
+            } else {
+                source = canonical;
+            }
+        } else if (canonical === undefined) {
+            source = legacy;
+        } else if (legacy === undefined) {
+            source = canonical;
+        } else if (valuesEqual(canonical, legacy)) {
+            source = canonical;
+        } else {
+            const canonicalChanged = hashIdentityValue(canonical) !== marker.hash;
+            const legacyChanged = hashIdentityValue(legacy) !== marker.hash;
+            if (canonicalChanged && legacyChanged) {
+                throw new PluginIdentityConflictError(
+                    'PLUGIN_IDENTITY_CONFIG_CONFLICT',
+                    'Canonical and legacy Stream Monsters config were independently edited',
+                    { canonicalKey, legacyKey }
+                );
+            }
+            source = legacyChanged
+                ? mergeIdentityValues(canonical, legacy)
+                : canonical;
+        }
+
+        this.writeIdentityConfig(configKeys, source, snapshots);
+        this.lastConfigError = null;
+        return cloneIdentityValue(source);
     }
 
     /**
@@ -392,7 +551,32 @@ class PluginAPI {
      */
     setConfig(key, value) {
         try {
-            const configKey = `plugin:${this.pluginId}:${key}`;
+            const storageKey = key || 'config';
+            const configKeys = getConfigStorageKeys(this.pluginId, storageKey);
+            if (configKeys.length > 1) {
+                const marker = this.readSettingJson(CONFIG_SYNC_MARKER_KEY);
+                if (marker?.hash) {
+                    const canonical = this.readSettingJson(configKeys[0]);
+                    const legacy = this.readSettingJson(configKeys[1]);
+                    if (
+                        canonical !== undefined &&
+                        legacy !== undefined &&
+                        !valuesEqual(canonical, legacy) &&
+                        hashIdentityValue(canonical) !== marker.hash &&
+                        hashIdentityValue(legacy) !== marker.hash
+                    ) {
+                        throw new PluginIdentityConflictError(
+                            'PLUGIN_IDENTITY_CONFIG_CONFLICT',
+                            'Refusing to overwrite independently edited Stream Monsters config'
+                        );
+                    }
+                }
+                this.writeIdentityConfig(configKeys, value);
+                this.lastConfigError = null;
+                this.log(`Config saved: ${storageKey}`);
+                return true;
+            }
+            const configKey = configKeys[0];
             const valueJson = JSON.stringify(value);
 
             const stmt = this.db.prepare(`
@@ -402,9 +586,10 @@ class PluginAPI {
             `);
             stmt.run(configKey, valueJson);
 
-            this.log(`Config saved: ${key}`);
+            this.log(`Config saved: ${storageKey}`);
             return true;
         } catch (error) {
+            this.lastConfigError = error;
             this.log(`Failed to set config: ${error.message}`, 'error');
             return false;
         }
@@ -680,6 +865,9 @@ class PluginLoader extends EventEmitter {
 
         // State laden
         this.state = this.loadState();
+        if (this.stateNeedsSync && !this.stateSyncError) {
+            this.saveState();
+        }
 
         // TikTok module reference (set after TikTok module is initialized)
         // This allows dynamic registration of TikTok events when plugins are enabled at runtime
@@ -720,16 +908,17 @@ class PluginLoader extends EventEmitter {
      */
     getPluginRouter(pluginId) {
         if (!pluginId) return this.pluginRouter;
-        let router = this.pluginRouters.get(pluginId);
+        const canonicalId = canonicalizePluginId(pluginId);
+        let router = this.pluginRouters.get(canonicalId);
         if (!router) {
             router = express.Router();
-            this.pluginRouters.set(pluginId, router);
+            this.pluginRouters.set(canonicalId, router);
         }
         return router;
     }
 
     removePluginRouter(pluginId) {
-        return this.pluginRouters.delete(pluginId);
+        return this.pluginRouters.delete(canonicalizePluginId(pluginId));
     }
 
     /**
@@ -848,7 +1037,19 @@ class PluginLoader extends EventEmitter {
         try {
             if (fs.existsSync(this.stateFile)) {
                 const data = fs.readFileSync(this.stateFile, 'utf8');
-                return this.migratePluginStateAliases(JSON.parse(data));
+                const parsed = JSON.parse(data);
+                try {
+                    const migrated = this.migratePluginStateAliases(parsed);
+                    this.stateNeedsSync = !valuesEqual(parsed, migrated);
+                    return migrated;
+                } catch (error) {
+                    if (error?.code === 'PLUGIN_IDENTITY_STATE_CONFLICT') {
+                        this.stateSyncError = error;
+                        this.logger?.error?.(`${error.code}: ${error.message}`);
+                        return parsed;
+                    }
+                    throw error;
+                }
             }
 
             // Legacy fallback: migrate old global state into profile-scoped file
@@ -858,7 +1059,7 @@ class PluginLoader extends EventEmitter {
                     const legacyData = JSON.parse(legacyRaw);
                     const migratedLegacyData = this.migratePluginStateAliases(legacyData);
 
-                    fs.writeFileSync(this.stateFile, JSON.stringify(migratedLegacyData, null, 2));
+                    this.stateNeedsSync = true;
                     this.logger?.info?.('📦 Migrated global plugin state to profile-scoped storage');
                     return migratedLegacyData;
                 } catch (legacyError) {
@@ -875,11 +1076,24 @@ class PluginLoader extends EventEmitter {
      * Speichert den Plugin-State in die Datei
      */
     saveState() {
+        const tempFile = `${this.stateFile}.tmp`;
         try {
+            if (this.stateSyncError) return false;
             this.ensureStateDirectory();
-            fs.writeFileSync(this.stateFile, JSON.stringify(this.state, null, 2));
+            this.state = this.migratePluginStateAliases(this.state);
+            fs.writeFileSync(tempFile, JSON.stringify(this.state, null, 2));
+            fs.renameSync(tempFile, this.stateFile);
+            this.stateNeedsSync = false;
             return true;
         } catch (error) {
+            if (error?.code === 'PLUGIN_IDENTITY_STATE_CONFLICT') {
+                this.stateSyncError = error;
+            }
+            try {
+                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+            } catch (_) {
+                // Best-effort cleanup; the primary state file remains untouched.
+            }
             this.logger.error(`Failed to save plugin state: ${error.message}`);
             return false;
         }
@@ -928,21 +1142,36 @@ class PluginLoader extends EventEmitter {
 
     isPluginEnabledFromDisk(pluginId) {
         try {
-            const manifestPath = path.join(this.pluginsDir, pluginId, 'plugin.json');
-            if (!fs.existsSync(manifestPath)) {
-                return false;
-            }
-
-            const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
+            const installed = this.resolvePluginInstallation(pluginId);
+            if (!installed) return false;
+            const manifest = installed.manifest;
             if (!manifest.id || manifest.disabled === true) {
                 return false;
             }
 
-            return this.getPluginEnabledPreference(manifest);
+            return this.getPluginEnabledPreference({
+                ...manifest,
+                id: canonicalizePluginId(manifest.id)
+            });
         } catch (error) {
             this.logger?.warn?.(`Could not inspect plugin ${pluginId}: ${error.message}`);
             return false;
         }
+    }
+
+    resolvePluginInstallation(pluginId) {
+        const canonicalId = canonicalizePluginId(pluginId);
+        const loaded = this.plugins.get(canonicalId);
+        if (loaded) {
+            return {
+                canonicalId,
+                directoryName: loaded.directoryName,
+                path: loaded.path,
+                runtimeManifestId: loaded.runtimeManifestId,
+                manifest: loaded.runtimeManifest || loaded.manifest
+            };
+        }
+        return resolveInstalledPluginDirectory(this.pluginsDir, canonicalId);
     }
 
     getSupersedingPluginId(pluginId) {
@@ -978,29 +1207,107 @@ class PluginLoader extends EventEmitter {
             };
         }
 
-        return migrated;
-    }
+        const canonicalId = 'stream-monsters';
+        const legacyId = 'streamalchemy';
+        const canonical = migrated[canonicalId];
+        const legacy = migrated[legacyId];
+        const marker = migrated[STATE_SYNC_METADATA_KEY]?.[canonicalId];
+        let source;
 
-    pruneStalePluginState(pluginDirs) {
-        const installedPluginIds = new Set();
-
-        for (const dir of pluginDirs) {
-            const manifestPath = path.join(this.pluginsDir, dir.name, 'plugin.json');
-            if (!fs.existsSync(manifestPath)) {
-                continue;
-            }
-
-            try {
-                const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
-                if (manifest.id) {
-                    installedPluginIds.add(manifest.id);
+        if (canonical === undefined && legacy !== undefined) {
+            source = legacy;
+        } else if (legacy === undefined && canonical !== undefined) {
+            source = canonical;
+        } else if (canonical !== undefined && legacy !== undefined) {
+            if (valuesEqual(canonical, legacy)) {
+                source = canonical;
+            } else if (marker?.hash) {
+                const canonicalChanged = hashIdentityValue(canonical) !== marker.hash;
+                const legacyChanged = hashIdentityValue(legacy) !== marker.hash;
+                if (canonicalChanged && legacyChanged) {
+                    throw new PluginIdentityConflictError(
+                        'PLUGIN_IDENTITY_STATE_CONFLICT',
+                        'Canonical and legacy Stream Monsters state were independently edited',
+                        { canonicalId, legacyId }
+                    );
                 }
-            } catch (error) {
-                this.logger?.warn?.(`Could not inspect plugin state for ${dir.name}: ${error.message}`);
+                source = legacyChanged ? legacy : canonical;
+            } else {
+                throw new PluginIdentityConflictError(
+                    'PLUGIN_IDENTITY_STATE_CONFLICT',
+                    'Canonical and legacy Stream Monsters state disagree without a sync marker',
+                    { canonicalId, legacyId }
+                );
             }
         }
 
-        const staleIds = Object.keys(this.state).filter(pluginId => !installedPluginIds.has(pluginId));
+        if (source !== undefined) {
+            const synchronized = cloneIdentityValue(source);
+            migrated[canonicalId] = cloneIdentityValue(synchronized);
+            migrated[legacyId] = cloneIdentityValue(synchronized);
+            migrated[STATE_SYNC_METADATA_KEY] = {
+                ...(migrated[STATE_SYNC_METADATA_KEY] || {}),
+                [canonicalId]: createSyncMarker(synchronized)
+            };
+        }
+
+        return migrated;
+    }
+
+    buildPluginInventory(pluginDirs) {
+        const candidates = [];
+        for (const dir of pluginDirs) {
+            const pluginPath = path.join(this.pluginsDir, dir.name);
+            const manifestPath = path.join(pluginPath, 'plugin.json');
+            try {
+                const runtimeManifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
+                if (!runtimeManifest.id || !runtimeManifest.name || !runtimeManifest.entry) {
+                    throw new Error('Missing required manifest fields');
+                }
+                const canonicalId = canonicalizePluginId(runtimeManifest.id);
+                const identity = getPluginIdentity(canonicalId);
+                candidates.push({
+                    canonicalId,
+                    directoryName: dir.name,
+                    path: pluginPath,
+                    runtimeManifestId: runtimeManifest.id,
+                    runtimeManifest,
+                    manifest: { ...runtimeManifest, id: canonicalId },
+                    aliases: identity ? [...identity.aliases] : []
+                });
+            } catch (error) {
+                this.logger?.warn?.(`Skipping invalid plugin manifest in ${dir.name}: ${error.message}`);
+            }
+        }
+
+        const winners = new Map();
+        const rank = item => item.directoryName === item.canonicalId ? 0 :
+            Math.max(1, getIdentityCandidateIds(item.canonicalId).indexOf(item.directoryName));
+        for (const candidate of candidates) {
+            const current = winners.get(candidate.canonicalId);
+            if (!current || rank(candidate) < rank(current)) {
+                if (current) this.logger.warn(`Ignoring duplicate plugin ${current.directoryName}; ${candidate.directoryName} owns ${candidate.canonicalId}`);
+                winners.set(candidate.canonicalId, candidate);
+            } else {
+                this.logger.warn(`Ignoring duplicate plugin ${candidate.directoryName}; ${current.directoryName} owns ${candidate.canonicalId}`);
+            }
+        }
+        return Array.from(winners.values());
+    }
+
+    pruneStalePluginState(inventory) {
+        const installedPluginIds = new Set();
+        for (const item of inventory) {
+            for (const candidateId of getIdentityCandidateIds(item.canonicalId)) {
+                installedPluginIds.add(candidateId);
+            }
+        }
+
+        const staleIds = Object.keys(this.state).filter(pluginId => {
+            if (pluginId === STATE_SYNC_METADATA_KEY) return false;
+            if (getPluginIdentity(pluginId)) return false;
+            return !installedPluginIds.has(pluginId);
+        });
         if (staleIds.length === 0) {
             return;
         }
@@ -1040,10 +1347,11 @@ class PluginLoader extends EventEmitter {
 
                 return true;
             });
-            this.pruneStalePluginState(pluginDirs);
+            const inventory = this.buildPluginInventory(pluginDirs);
+            this.pruneStalePluginState(inventory);
             this.enforceMutuallyExclusivePluginState();
 
-            this.logger.info(`Found ${pluginDirs.length} plugin directories`);
+            this.logger.info(`Found ${inventory.length} logical plugins in ${pluginDirs.length} directories`);
 
             let successCount = 0;
             let disabledCount = 0;
@@ -1054,16 +1362,16 @@ class PluginLoader extends EventEmitter {
             const CONCURRENCY_LIMIT = 5;
             const results = [];
             
-            for (let i = 0; i < pluginDirs.length; i += CONCURRENCY_LIMIT) {
-                const batch = pluginDirs.slice(i, i + CONCURRENCY_LIMIT);
-                const batchPromises = batch.map(async (dir) => {
-                    const pluginPath = path.join(this.pluginsDir, dir.name);
+            for (let i = 0; i < inventory.length; i += CONCURRENCY_LIMIT) {
+                const batch = inventory.slice(i, i + CONCURRENCY_LIMIT);
+                const batchPromises = batch.map(async (item) => {
+                    const pluginPath = item.path;
                     try {
-                        const result = await this.loadPlugin(pluginPath);
-                        return { result, pluginPath, dir };
+                        const result = await this.loadPlugin(pluginPath, item);
+                        return { result, pluginPath, dir: { name: item.directoryName }, item };
                     } catch (error) {
-                        this.logger.warn(`Skipping plugin ${dir.name} due to errors: ${error.message}`);
-                        return { result: 'error', pluginPath, dir, error };
+                        this.logger.warn(`Skipping plugin ${item.directoryName} due to errors: ${error.message}`);
+                        return { result: 'error', pluginPath, dir: { name: item.directoryName }, item, error };
                     }
                 });
                 
@@ -1080,7 +1388,7 @@ class PluginLoader extends EventEmitter {
                     continue;
                 }
                 
-                const { result, pluginPath, dir } = settledResult.value;
+                const { result, pluginPath, item } = settledResult.value;
                 
                 if (result === 'error') {
                     failCount++;
@@ -1089,24 +1397,10 @@ class PluginLoader extends EventEmitter {
                 } else if (result === null) {
                     // loadPlugin returns null for disabled plugins or missing manifests
                     // Check if it was disabled (has manifest and is explicitly disabled)
-                    const manifestPath = path.join(pluginPath, 'plugin.json');
-                    if (fs.existsSync(manifestPath)) {
-                        try {
-                            const manifestData = fs.readFileSync(manifestPath, 'utf8');
-                            const manifest = parseJsonText(manifestData);
-                            const pluginState = this.state[manifest.id] || {};
-                            const isEnabled = pluginState.enabled !== undefined ? pluginState.enabled : manifest.enabled !== false;
-                            if (!isEnabled) {
-                                disabledCount++;
-                            } else {
-                                // Has manifest but failed for other reason (missing entry, etc.)
-                                failCount++;
-                            }
-                        } catch {
-                            failCount++;
-                        }
+                    const isEnabled = item ? this.getPluginEnabledPreference(item.manifest) : true;
+                    if (!isEnabled) {
+                        disabledCount++;
                     } else {
-                        // No manifest - consider it a failure
                         failCount++;
                     }
                 }
@@ -1132,28 +1426,31 @@ class PluginLoader extends EventEmitter {
     /**
      * Lädt ein einzelnes Plugin
      */
-    async loadPlugin(pluginPath) {
+    async loadPlugin(pluginPath, inventoryItem = null) {
         let pluginAPI = null;
         let pluginInstance = null;
         let manifest = null;
+        let runtimeManifest = null;
         let committed = false;
         try {
             const manifestPath = path.join(pluginPath, 'plugin.json');
 
-            // Manifest prüfen
             if (!fs.existsSync(manifestPath)) {
                 this.logger.warn(`No plugin.json found in ${pluginPath}`);
                 return null;
             }
 
-            // Manifest laden
-            const manifestData = fs.readFileSync(manifestPath, 'utf8');
-            manifest = parseJsonText(manifestData);
+            runtimeManifest = inventoryItem?.runtimeManifest || parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
+            const canonicalId = canonicalizePluginId(runtimeManifest.id);
+            manifest = { ...runtimeManifest, id: canonicalId };
 
-            // Validierung
             if (!manifest.id || !manifest.name || !manifest.entry) {
                 this.logger.warn(`Invalid plugin.json in ${pluginPath}: Missing required fields`);
                 return null;
+            }
+            if (this.plugins.has(canonicalId)) {
+                this.logger.warn(`Plugin ${canonicalId} is already loaded; skipping duplicate ${pluginPath}`);
+                return this.plugins.get(canonicalId);
             }
 
             // Check for permanently disabled plugins
@@ -1185,7 +1482,7 @@ class PluginLoader extends EventEmitter {
             }
 
             // Entry-Datei prüfen
-            assertPluginId(manifest.id);
+            assertPluginId(canonicalId);
             assertPathInside(this.pluginsDir, pluginPath, 'Plugin directory');
             const entryPath = resolvePluginEntryPath(pluginPath, manifest.entry);
             if (!fs.existsSync(entryPath)) {
@@ -1206,7 +1503,7 @@ class PluginLoader extends EventEmitter {
 
             // PluginAPI erstellen
             pluginAPI = new PluginAPI(
-                manifest.id,
+                canonicalId,
                 pluginPath,
                 this.app,
                 this.io,
@@ -1239,22 +1536,33 @@ class PluginLoader extends EventEmitter {
                     throw new Error(`Plugin initialization failed: ${initError.message}`);
                 }
             }
+            if (pluginAPI.registrationFailures.length > 0) {
+                const firstFailure = pluginAPI.registrationFailures[0];
+                const registrationError = new Error(`Plugin ${canonicalId} ${firstFailure.type} registration failed: ${firstFailure.error.message}`);
+                registrationError.code = 'PLUGIN_REGISTRATION_FAILED';
+                throw registrationError;
+            }
 
             // Plugin speichern
+            const identity = getPluginIdentity(canonicalId);
             const pluginInfo = {
-                id: manifest.id,
+                id: canonicalId,
                 manifest,
+                runtimeManifest,
+                runtimeManifestId: runtimeManifest.id,
+                directoryName: path.basename(pluginPath),
+                aliases: identity ? [...identity.aliases] : [],
                 instance: pluginInstance,
                 api: pluginAPI,
                 path: pluginPath,
                 loadedAt: new Date().toISOString()
             };
 
-            this.plugins.set(manifest.id, pluginInfo);
+            this.plugins.set(canonicalId, pluginInfo);
 
             // State aktualisieren
-            this.state[manifest.id] = {
-                ...(this.state[manifest.id] || {}),
+            this.state[canonicalId] = {
+                ...(this.state[canonicalId] || {}),
                 enabled: true,
                 loadedAt: pluginInfo.loadedAt
             };
@@ -1262,7 +1570,7 @@ class PluginLoader extends EventEmitter {
                 throw new Error('Failed to persist loaded plugin state');
             }
             committed = true;
-            this.attachPluginToConnectedClients(manifest.id);
+            this.attachPluginToConnectedClients(canonicalId);
 
             // Note: TikTok event registration is handled by registerPluginTikTokEvents()
             // which is called after all plugins are loaded or when a plugin is dynamically enabled.
@@ -1281,7 +1589,7 @@ class PluginLoader extends EventEmitter {
                 if (pluginAPI) {
                     try { pluginAPI.unregisterAll(); } catch (cleanupError) { rollbackErrors.push(cleanupError); }
                 }
-                if (manifest) this.plugins.delete(manifest.id);
+                if (manifest) this.plugins.delete(canonicalizePluginId(manifest.id));
                 if (rollbackErrors.length) {
                     this.logger.error(`Plugin load rollback encountered ${rollbackErrors.length} cleanup error(s): ${rollbackErrors.map(item => item.message).join('; ')}`);
                 }
@@ -1296,7 +1604,8 @@ class PluginLoader extends EventEmitter {
      * Entlädt ein Plugin
      */
     async unloadPlugin(pluginId) {
-        const plugin = this.plugins.get(pluginId);
+        const canonicalId = canonicalizePluginId(pluginId);
+        const plugin = this.plugins.get(canonicalId);
         if (!plugin) return false;
 
         const errors = [];
@@ -1320,16 +1629,16 @@ class PluginLoader extends EventEmitter {
             }
             // A destroyed/cleaned plugin must never remain addressable through
             // the loader, even when its own destroy hook reported an error.
-            this.plugins.delete(pluginId);
+            this.plugins.delete(canonicalId);
         }
 
         if (errors.length) {
-            this.logger.error(`Unloaded plugin ${pluginId} with ${errors.length} cleanup error(s): ${errors.map(error => error.message).join('; ')}`);
+            this.logger.error(`Unloaded plugin ${canonicalId} with ${errors.length} cleanup error(s): ${errors.map(error => error.message).join('; ')}`);
             return false;
         }
 
-        this.logger.info(`Unloaded plugin: ${pluginId}`);
-        this.emit('plugin:unloaded', pluginId);
+        this.logger.info(`Unloaded plugin: ${canonicalId}`);
+        this.emit('plugin:unloaded', canonicalId);
         return true;
     }
 
@@ -1338,6 +1647,7 @@ class PluginLoader extends EventEmitter {
      */
     async enablePlugin(pluginId) {
         // Store original state to rollback if needed
+        pluginId = canonicalizePluginId(pluginId);
         const originalState = this.state[pluginId] ? { ...this.state[pluginId] } : null;
         const mutuallyExclusivePluginIds = this.getMutuallyExclusivePluginIds(pluginId);
         const disabledConflicts = [];
@@ -1382,11 +1692,12 @@ class PluginLoader extends EventEmitter {
 
             // Wenn Plugin noch nicht geladen, jetzt laden
             if (!this.plugins.has(pluginId)) {
-                const pluginPath = path.join(this.pluginsDir, pluginId);
-                if (!fs.existsSync(pluginPath)) {
-                    this.logger.error(`Plugin path does not exist: ${pluginPath}`);
-                    throw new Error(`Plugin directory not found: ${pluginPath}`);
+                const installed = this.resolvePluginInstallation(pluginId);
+                if (!installed) {
+                    this.logger.error(`Plugin installation does not exist: ${pluginId}`);
+                    throw new Error(`Plugin directory not found: ${pluginId}`);
                 }
+                const pluginPath = installed.path;
                 
                 // Try to load the plugin with state already set to enabled
                 const loadResult = await this.loadPlugin(pluginPath);
@@ -1469,10 +1780,12 @@ class PluginLoader extends EventEmitter {
      * Lädt ein Plugin neu
      */
     async disablePlugin(pluginId) {
-        const safePluginId = assertPluginId(pluginId);
+        const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
         const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
         const wasLoaded = this.plugins.has(safePluginId);
-        const pluginPath = path.join(this.pluginsDir, safePluginId);
+        const installed = this.resolvePluginInstallation(safePluginId);
+        const pluginPath = installed?.path;
+        if (!pluginPath) return false;
         try {
             if (wasLoaded && !await this.unloadPlugin(safePluginId)) throw new Error(`Failed to unload plugin ${safePluginId}`);
             this.state[safePluginId] = { ...(originalState || {}), enabled: false };
@@ -1538,9 +1851,11 @@ class PluginLoader extends EventEmitter {
      * Löscht ein Plugin
      */
     async reloadPlugin(pluginId) {
-        const safePluginId = assertPluginId(pluginId);
+        const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
         const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
-        const pluginPath = assertPathInside(this.pluginsDir, path.join(this.pluginsDir, safePluginId), 'Plugin reload path');
+        const installed = this.resolvePluginInstallation(safePluginId);
+        if (!installed) return false;
+        const pluginPath = assertPathInside(this.pluginsDir, installed.path, 'Plugin reload path');
         try {
             if (!await this.unloadPlugin(safePluginId)) throw new Error(`Failed to unload plugin ${safePluginId}`);
             const loaded = await this.loadPlugin(pluginPath);
@@ -1563,15 +1878,17 @@ class PluginLoader extends EventEmitter {
 
     async deletePlugin(pluginId) {
         try {
-            const safePluginId = assertPluginId(pluginId);
+            const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
+            const installed = this.resolvePluginInstallation(safePluginId);
+            if (!installed) throw new Error(`Plugin directory not found: ${safePluginId}`);
 
             // Plugin entladen
-            await this.unloadPlugin(pluginId);
+            await this.unloadPlugin(safePluginId);
 
             // Verzeichnis löschen
             const pluginPath = assertPathInside(
                 this.pluginsDir,
-                path.join(this.pluginsDir, safePluginId),
+                installed.path,
                 'Plugin delete path'
             );
             if (fs.existsSync(pluginPath)) {
@@ -1579,7 +1896,9 @@ class PluginLoader extends EventEmitter {
             }
 
             // State löschen
-            delete this.state[safePluginId];
+            for (const identityId of getIdentityCandidateIds(safePluginId)) {
+                this.state[identityId] = { ...(this.state[identityId] || {}), enabled: false, deleted: true };
+            }
             this.saveState();
 
             this.logger.info(`Deleted plugin: ${safePluginId}`);
@@ -1663,31 +1982,34 @@ class PluginLoader extends EventEmitter {
 
         return {
             get(pluginId) {
-                if (loader.plugins.has(pluginId)) {
-                    return loader.plugins.get(pluginId);
+                const canonicalId = canonicalizePluginId(pluginId);
+                if (loader.plugins.has(canonicalId)) {
+                    return loader.plugins.get(canonicalId);
                 }
 
-                const resolvedPluginId = loader.getSupersedingPluginId(pluginId);
+                const resolvedPluginId = loader.getSupersedingPluginId(canonicalId);
                 return resolvedPluginId ? loader.plugins.get(resolvedPluginId) : undefined;
             },
             has(pluginId) {
-                if (loader.plugins.has(pluginId)) {
+                const canonicalId = canonicalizePluginId(pluginId);
+                if (loader.plugins.has(canonicalId)) {
                     return true;
                 }
 
-                const resolvedPluginId = loader.getSupersedingPluginId(pluginId);
+                const resolvedPluginId = loader.getSupersedingPluginId(canonicalId);
                 return resolvedPluginId ? loader.plugins.has(resolvedPluginId) : false;
             },
             set(pluginId, value) {
-                loader.plugins.set(pluginId, value);
+                loader.plugins.set(canonicalizePluginId(pluginId), value);
                 return this;
             },
             delete(pluginId) {
-                if (loader.plugins.delete(pluginId)) {
+                const canonicalId = canonicalizePluginId(pluginId);
+                if (loader.plugins.delete(canonicalId)) {
                     return true;
                 }
 
-                const resolvedPluginId = loader.getSupersedingPluginId(pluginId);
+                const resolvedPluginId = loader.getSupersedingPluginId(canonicalId);
                 return resolvedPluginId ? loader.plugins.delete(resolvedPluginId) : false;
             },
             clear() {
@@ -1720,14 +2042,16 @@ class PluginLoader extends EventEmitter {
      * Gibt Plugin-Info zurück
      */
     getPlugin(pluginId) {
-        return this.plugins.get(pluginId) || this.plugins.get(this.getSupersedingPluginId(pluginId) || '');
+        const canonicalId = canonicalizePluginId(pluginId);
+        return this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
     }
 
     /**
      * Gibt die Plugin-Instanz zurück (für Injektionen)
      */
     getPluginInstance(pluginId) {
-        const plugin = this.plugins.get(pluginId) || this.plugins.get(this.getSupersedingPluginId(pluginId) || '');
+        const canonicalId = canonicalizePluginId(pluginId);
+        const plugin = this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
         return plugin ? plugin.instance : null;
     }
 
@@ -1735,7 +2059,10 @@ class PluginLoader extends EventEmitter {
      * Check if a plugin is enabled
      */
     isPluginEnabled(pluginId) {
-        const state = this.state[pluginId];
+        const canonicalId = canonicalizePluginId(pluginId);
+        const state = this.state[canonicalId] || getIdentityCandidateIds(canonicalId)
+            .map(candidateId => this.state[candidateId])
+            .find(Boolean);
         if (!state) {
             return false;
         }
@@ -1765,19 +2092,20 @@ class PluginLoader extends EventEmitter {
     }
 
     attachSocketEventToConnectedClients(pluginId, event, callback) {
-        const plugin = this.plugins.get(pluginId);
+        const plugin = this.plugins.get(canonicalizePluginId(pluginId));
         if (!plugin || !this.io?.sockets?.sockets) return;
         this.io.sockets.sockets.forEach(socket => this.attachSocketEvent(plugin.api, socket, event, callback));
     }
 
     attachPluginToConnectedClients(pluginId) {
-        const plugin = this.plugins.get(pluginId);
+        const canonicalId = canonicalizePluginId(pluginId);
+        const plugin = this.plugins.get(canonicalId);
         if (!plugin || !this.io?.sockets?.sockets) return;
         this.io.sockets.sockets.forEach(socket => {
             for (const { event, callback } of plugin.api.registeredSocketEvents) {
                 this.attachSocketEvent(plugin.api, socket, event, callback);
             }
-            for (const handler of this.pluginConnectionHandlers?.get(pluginId) || []) {
+            for (const handler of this.pluginConnectionHandlers?.get(canonicalId) || []) {
                 this.invokePluginConnectionHandler(handler, socket);
             }
         });
@@ -1785,6 +2113,7 @@ class PluginLoader extends EventEmitter {
 
     registerPluginConnectionHandler(pluginId, callback) {
         if (typeof callback !== 'function') return false;
+        pluginId = canonicalizePluginId(pluginId);
         if (!this.pluginConnectionHandlers) this.pluginConnectionHandlers = new Map();
         const handlers = this.pluginConnectionHandlers.get(pluginId) || new Set();
         const handler = { callback, bindings: new Map() };
@@ -1817,6 +2146,7 @@ class PluginLoader extends EventEmitter {
             });
             handler.bindings.clear();
         }
+        pluginId = pluginId ? canonicalizePluginId(pluginId) : null;
         return this.pluginConnectionHandlers.delete(pluginId);
     }
 
@@ -1828,9 +2158,10 @@ class PluginLoader extends EventEmitter {
     registerPluginTikTokEvents(tiktok, pluginId = null) {
         // Store tiktok reference so unloadPlugin() can remove listeners later
         this.tiktok = tiktok;
+        const canonicalPluginId = pluginId ? canonicalizePluginId(pluginId) : null;
 
-        const pluginsToRegister = pluginId 
-            ? [[pluginId, this.plugins.get(pluginId)]].filter(([_, p]) => p !== undefined)
+        const pluginsToRegister = canonicalPluginId
+            ? [[canonicalPluginId, this.plugins.get(canonicalPluginId)]].filter(([_, p]) => p !== undefined)
             : Array.from(this.plugins.entries());
 
         let totalEventsRegistered = 0;
@@ -1847,8 +2178,8 @@ class PluginLoader extends EventEmitter {
             }
         }
 
-        if (pluginId) {
-            this.logger.info(`Registered ${totalEventsRegistered} TikTok event handler(s) for plugin ${pluginId}`);
+        if (canonicalPluginId) {
+            this.logger.info(`Registered ${totalEventsRegistered} TikTok event handler(s) for plugin ${canonicalPluginId}`);
         } else {
             this.logger.info(`Registered ${totalEventsRegistered} TikTok event handler(s) across all plugins`);
         }

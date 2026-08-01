@@ -253,7 +253,7 @@ function template(templateId, element, name, species, skillPrefix) {
     role: TEMPLATE_ROLES[templateId],
     name,
     species,
-    assetPath: `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.webp`,
+    assetPath: `/plugins/stream-monsters/assets/streammonsters/furry/${templateId}.webp`,
     skills: Object.freeze({
       attack: skill('attack', 'attack'),
       defense: skill('defense', 'defense'),
@@ -302,7 +302,7 @@ function getEvolutionAssetPath(templateOrId, stage = 1) {
   if (!entry) return null;
   const normalizedStage = Math.max(1, Math.min(3, Number(stage) || 1));
   if (normalizedStage === 1) return entry.assetPath;
-  return `/plugins/streamalchemy/assets/streammonsters/furry/evolution/${entry.element.toLowerCase()}/${entry.templateId}-stage${normalizedStage}.webp`;
+  return `/plugins/stream-monsters/assets/streammonsters/furry/evolution/${entry.element.toLowerCase()}/${entry.templateId}-stage${normalizedStage}.webp`;
 }
 
 function hashNumber(value) {

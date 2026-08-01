@@ -85,9 +85,9 @@
     const stage = Math.max(1, Math.min(3, Math.trunc(safeNumber(monster.evolutionStage, 1))));
     if (!/^[a-z0-9-]+$/.test(templateId) || !ELEMENTS.has(element)) return '';
     if (stage === 1) {
-      return `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.webp`;
+      return `/plugins/stream-monsters/assets/streammonsters/furry/${templateId}.webp`;
     }
-    return `/plugins/streamalchemy/assets/streammonsters/furry/evolution/${element}/${templateId}-stage${stage}.webp`;
+    return `/plugins/stream-monsters/assets/streammonsters/furry/evolution/${element}/${templateId}-stage${stage}.webp`;
   }
 
   function normalizeMonster(input = {}) {

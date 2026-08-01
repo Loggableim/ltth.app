@@ -624,7 +624,7 @@
         element: String(asset?.element || ''),
         species: String(asset?.species || ''),
         stage,
-        assetUrl:`/plugins/streamalchemy/${assetPath}`,
+        assetUrl:`/plugins/stream-monsters/${assetPath}`,
         healthy:Number(asset?.dimensions?.[0]) === 1024 &&
           Number(asset?.dimensions?.[1]) === 1024 &&
           /^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))

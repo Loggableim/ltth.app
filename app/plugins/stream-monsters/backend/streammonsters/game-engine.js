@@ -657,7 +657,7 @@ class StreamMonstersEngine {
   }
 
   createDefaultEggImage(gift, variant = 'standard') {
-    return `/plugins/streamalchemy/assets/eggs/${gift.element.toLowerCase()}-${variant}.png`;
+    return `/plugins/stream-monsters/assets/eggs/${gift.element.toLowerCase()}-${variant}.png`;
   }
 }
 

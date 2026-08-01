@@ -43,6 +43,7 @@
         openshock: '#ef4444',
         'weather-control': '#38bdf8',
         'webgpu-weather-control': '#22d3ee',
+        'stream-monsters': '#ec4899',
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
         'thermal-printer': '#64748b',
@@ -53,6 +54,12 @@
         wiki: '#a855f7',
         settings: '#64748b'
     };
+    const VIEW_ALIASES = Object.freeze({
+        streamalchemy: 'stream-monsters'
+    });
+    const canonicalViewName = viewName => (
+        VIEW_ALIASES[String(viewName || '').trim()] || String(viewName || '').trim()
+    );
 
     // ========== INITIALIZATION ==========
     document.addEventListener('DOMContentLoaded', async () => {
@@ -278,6 +285,7 @@
      * Reload iframe for a specific plugin when it gets enabled
      */
     function reloadPluginIframe(pluginId) {
+        pluginId = canonicalViewName(pluginId);
         // Find the view element for this plugin
         const viewElement = document.getElementById(`view-${pluginId}`) ||
             document.querySelector(`.view-content[data-plugin="${pluginId}"]`);
@@ -533,7 +541,8 @@
         initializeShutdownButton();
 
         // Check for hash-based navigation first (e.g., #soundboard)
-        const hash = window.location.hash.substring(1); // Remove the #
+        const requestedHash = window.location.hash.substring(1); // Remove the #
+        const hash = canonicalViewName(requestedHash);
         if (hash) {
             const viewElement = document.getElementById(`view-${hash}`);
             if (viewElement) {
@@ -543,7 +552,7 @@
         }
         
         // Restore last view or default to dashboard
-        const savedView = localStorage.getItem('active-view');
+        const savedView = canonicalViewName(localStorage.getItem('active-view'));
         if (savedView) {
             // Check if view exists and is visible
             const viewElement = document.getElementById(`view-${savedView}`);
@@ -573,6 +582,7 @@
     }
 
     function switchView(viewName) {
+        viewName = canonicalViewName(viewName);
         // Check if the requested view exists and is not explicitly disabled.
         const requestedView = document.getElementById(`view-${viewName}`);
         if (!isViewVisible(requestedView)) {
@@ -709,7 +719,7 @@
             { icon: 'zap', label: 'Hybridshock', view: 'openshock', plugin: 'openshock' },
             { icon: 'help-circle', label: 'Quiz Show', view: 'quiz-show', plugin: 'quiz-show' },
             { icon: 'trophy', label: 'Viewer XP', view: 'milestone-leaderboard', plugin: 'milestone-leaderboard' },
-            { icon: 'egg', label: 'Stream Monsters', view: 'streamalchemy', plugin: 'streamalchemy' },
+            { icon: 'egg', label: 'Stream Monsters', view: 'stream-monsters', plugin: 'stream-monsters' },
             { icon: 'terminal', label: 'Chat Commands', view: 'gcce', plugin: 'gcce' },
             { icon: 'printer', label: 'Thermal Printer', view: 'thermal-printer', plugin: 'thermal-printer' },
             { icon: 'plug', label: 'Plugins', view: 'plugins' },

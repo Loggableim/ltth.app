@@ -12,6 +12,7 @@
 
 const { exportBackup } = require('./backup/exporter');
 const { parseBackupZip, previewImport, performImport, cleanupTempDir } = require('./backup/importer');
+const { canonicalizePluginId } = require('./plugin-identities');
 
 class BackupManager {
     /**
@@ -44,6 +45,7 @@ class BackupManager {
      * @param {{ exportConfig?: Function, importConfig?: Function }} provider
      */
     registerBackupProvider(pluginId, provider) {
+        pluginId = canonicalizePluginId(pluginId);
         if (!pluginId || typeof pluginId !== 'string') {
             this.logger.warn('[BackupManager] registerBackupProvider called with invalid pluginId');
             return;
@@ -62,6 +64,7 @@ class BackupManager {
      * @param {string} pluginId
      */
     unregisterBackupProvider(pluginId) {
+        pluginId = canonicalizePluginId(pluginId);
         if (this.backupProviders.has(pluginId)) {
             this.backupProviders.delete(pluginId);
             this.logger.info(`[BackupManager] Backup provider unregistered for plugin: ${pluginId}`);
@@ -75,7 +78,7 @@ class BackupManager {
      * @returns {{ exportConfig?: Function, importConfig?: Function }|null}
      */
     getBackupProvider(pluginId) {
-        return this.backupProviders.get(pluginId) || null;
+        return this.backupProviders.get(canonicalizePluginId(pluginId)) || null;
     }
 
     // ── Export ────────────────────────────────────────────────────────────────
@@ -185,7 +188,7 @@ class BackupManager {
      */
     getCapabilities() {
         const loadedPlugins = this.pluginLoader
-            ? Array.from(this.pluginLoader.loadedPlugins.keys())
+            ? [...new Set(Array.from(this.pluginLoader.loadedPlugins.keys()).map(canonicalizePluginId))]
             : [];
 
         const customProviders = Array.from(this.backupProviders.keys());

@@ -226,7 +226,7 @@ class StreamMonstersAssetRegistry {
         templateId: candidate.templateId,
         stage: candidate.stage,
         absolutePath: candidate.absolutePath,
-        publicUrl: `/plugins/streamalchemy/${candidate.relativePath}`,
+        publicUrl: `/plugins/stream-monsters/${candidate.relativePath}`,
         sha256: candidate.expectedHash
       }));
     });

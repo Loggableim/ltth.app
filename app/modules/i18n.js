@@ -10,6 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { canonicalizePluginId, getPluginIdentity } = require('./plugin-identities');
 
 function readJsonFile(filePath) {
   const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
@@ -94,7 +95,7 @@ class I18n {
           if (fs.existsSync(manifestPath)) {
             try {
               const manifest = readJsonFile(manifestPath);
-              if (typeof manifest.id === 'string' && manifest.id.trim()) pluginId = manifest.id.trim();
+              if (typeof manifest.id === 'string' && manifest.id.trim()) pluginId = canonicalizePluginId(manifest.id);
             } catch (error) {
               console.error(`Failed to read manifest for plugin ${plugin}:`, error.message);
             }
@@ -159,6 +160,18 @@ class I18n {
   }
 
   normalizePluginTranslationCatalog(pluginTranslations, pluginId, sourcePath, hasNamespacedPlugin, hasLegacyPluginRoot) {
+    const identity = getPluginIdentity(pluginId);
+    const legacyNamespace = identity?.aliases.find(alias => (
+      this.isObject(pluginTranslations.plugins) &&
+      Object.hasOwn(pluginTranslations.plugins, alias)
+    ));
+    if (!hasNamespacedPlugin && !hasLegacyPluginRoot && legacyNamespace) {
+      const catalog = this.cloneSafeTranslationCatalog(pluginTranslations.plugins[legacyNamespace]);
+      return { plugins: {
+        [pluginId]: catalog,
+        [legacyNamespace]: this.cloneSafeTranslationCatalog(catalog)
+      } };
+    }
     if (hasNamespacedPlugin && !hasLegacyPluginRoot) return this.cloneSafeTranslationCatalog(pluginTranslations);
     if (!hasNamespacedPlugin) return { plugins: { [pluginId]: this.cloneSafeTranslationCatalog(pluginTranslations) } };
 

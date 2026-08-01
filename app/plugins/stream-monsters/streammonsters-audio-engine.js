@@ -49,7 +49,7 @@
   function assetUrl(assetPath) {
     const value = String(assetPath || '');
     if (value.startsWith('/')) return value;
-    if (value.startsWith('assets/')) return `/plugins/streamalchemy/${value}`;
+    if (value.startsWith('assets/')) return `/plugins/stream-monsters/${value}`;
     return value;
   }
 

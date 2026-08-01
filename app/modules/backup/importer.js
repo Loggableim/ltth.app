@@ -19,6 +19,49 @@ const { validateManifest } = require('./manifest');
 const { validateBackupSize, validateEntryPath, validateDestinationPath, sanitisePluginId, MAX_BACKUP_SIZE_BYTES } = require('./validators');
 const { discoverAllPluginSettings, discoverGlobalSettings, restorePluginSettings, restoreGlobalSettings } = require('./plugin-discovery');
 const { detectPluginConflicts, detectSettingsConflicts } = require('./conflict-resolver');
+const {
+    canonicalizePluginId,
+    getIdentityCandidateIds,
+    getPluginIdentity
+} = require('../plugin-identities');
+const { valuesEqual } = require('../plugin-identity-sync');
+
+function normalizeBackupPluginSettings(pluginId, settings = {}) {
+    const canonicalId = canonicalizePluginId(pluginId);
+    const identity = getPluginIdentity(canonicalId);
+    const normalized = {};
+    for (const [rawSubKey, value] of Object.entries(settings || {})) {
+        const subKey = identity && ['config', 'streamalchemy_config'].includes(rawSubKey)
+            ? 'config'
+            : rawSubKey;
+        if (Object.prototype.hasOwnProperty.call(normalized, subKey) && !valuesEqual(normalized[subKey], value)) {
+            const error = new Error(`Backup contains conflicting settings for ${canonicalId}:${subKey}`);
+            error.code = 'PLUGIN_IDENTITY_BACKUP_CONFLICT';
+            throw error;
+        }
+        normalized[subKey] = value;
+    }
+    return normalized;
+}
+
+function mergeBackupSettings(target, pluginId, settings) {
+    const canonicalId = canonicalizePluginId(pluginId);
+    const incoming = normalizeBackupPluginSettings(canonicalId, settings);
+    const current = target[canonicalId] || {};
+    for (const [subKey, value] of Object.entries(incoming)) {
+        if (Object.prototype.hasOwnProperty.call(current, subKey) && !valuesEqual(current[subKey], value)) {
+            const error = new Error(`Backup contains conflicting settings for ${canonicalId}:${subKey}`);
+            error.code = 'PLUGIN_IDENTITY_BACKUP_CONFLICT';
+            throw error;
+        }
+        current[subKey] = value;
+    }
+    target[canonicalId] = current;
+}
+
+function canonicalPluginFilter(pluginFilter) {
+    return pluginFilter ? new Set(pluginFilter.map(canonicalizePluginId)) : null;
+}
 
 /**
  * Parse a backup ZIP from a file path on disk.
@@ -69,6 +112,10 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
         return { manifest, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: manifestValidation.errors };
     }
     warnings.push(...(manifest.warnings || []).map(w => `[original export] ${w}`));
+    manifest.plugins = [...new Map((manifest.plugins || []).map(plugin => {
+        const canonicalId = canonicalizePluginId(plugin.id);
+        return [canonicalId, { ...plugin, id: canonicalId }];
+    })).values()];
 
     // ── Read global settings ──────────────────────────────────────────────────
     let globalSettings = null;
@@ -90,7 +137,8 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
             .filter(e => e.isDirectory());
 
         for (const entry of pluginEntries) {
-            const pluginId = sanitisePluginId(entry.name);
+            const runtimePluginId = sanitisePluginId(entry.name);
+            const pluginId = runtimePluginId && canonicalizePluginId(runtimePluginId);
             if (!pluginId) {
                 warnings.push(`Skipping plugin directory with unsafe name: ${entry.name}`);
                 continue;
@@ -99,9 +147,10 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
             const settingsFile = path.join(pluginsDir, entry.name, 'settings.json');
             if (fs.existsSync(settingsFile)) {
                 try {
-                    pluginSettings[pluginId] = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+                    mergeBackupSettings(pluginSettings, pluginId, JSON.parse(fs.readFileSync(settingsFile, 'utf8')));
                 } catch (err) {
-                    warnings.push(`Failed to parse settings for plugin ${pluginId}: ${err.message}`);
+                    if (err.code === 'PLUGIN_IDENTITY_BACKUP_CONFLICT') errors.push(`${err.code}: ${err.message}`);
+                    else warnings.push(`Failed to parse settings for plugin ${pluginId}: ${err.message}`);
                 }
             }
         }
@@ -116,17 +165,32 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
             .filter(e => e.isDirectory());
 
         for (const entry of pluginEntries) {
-            const pluginId = sanitisePluginId(entry.name);
+            const runtimePluginId = sanitisePluginId(entry.name);
+            const pluginId = runtimePluginId && canonicalizePluginId(runtimePluginId);
             if (!pluginId) continue;
 
             const dataDir = path.join(pluginsDir, entry.name, 'data');
             if (!fs.existsSync(dataDir)) continue;
 
             const files = walkDir(dataDir);
-            dataFiles[pluginId] = files.map(absPath => {
+            const existingFiles = new Map((dataFiles[pluginId] || []).map(file => [
+                file.relPath.replace(/\\/g, '/'), file
+            ]));
+            for (const absPath of files) {
                 const relPath = path.relative(dataDir, absPath);
-                return { tmpPath: absPath, relPath };
-            });
+                const relKey = relPath.replace(/\\/g, '/');
+                const existing = existingFiles.get(relKey);
+                if (existing) {
+                    if (!fs.readFileSync(existing.tmpPath).equals(fs.readFileSync(absPath))) {
+                        errors.push(
+                            `PLUGIN_IDENTITY_BACKUP_CONFLICT: Backup contains conflicting data for ${pluginId}:${relKey}`
+                        );
+                    }
+                    continue;
+                }
+                existingFiles.set(relKey, { tmpPath: absPath, relPath });
+            }
+            dataFiles[pluginId] = [...existingFiles.values()];
         }
     }
 
@@ -191,8 +255,9 @@ function previewImport(parsed, deps, opts = {}) {
         : { new: [], conflicts: [], unchanged: [] };
 
     const allPluginIds = Object.keys(parsed.pluginSettings);
-    const selectedPluginIds = pluginFilter
-        ? allPluginIds.filter(id => pluginFilter.includes(id))
+    const filterIds = canonicalPluginFilter(pluginFilter);
+    const selectedPluginIds = filterIds
+        ? allPluginIds.filter(id => filterIds.has(canonicalizePluginId(id)))
         : allPluginIds;
 
     const pluginConflicts = detectPluginConflicts(
@@ -266,12 +331,20 @@ async function performImport(parsed, deps, opts = {}) {
     } = opts;
 
     const warnings = [...(parsed.warnings || [])];
-    const errors = [];
+    const errors = [...(parsed.errors || [])];
     const report = {
         globalSettings: { imported: [], skipped: [] },
         plugins: {},
         userConfigs: { imported: [], skipped: [], renamed: [] }
     };
+    if (errors.length) {
+        return {
+            success: false,
+            report,
+            warnings,
+            errors
+        };
+    }
 
     // ── Global settings ───────────────────────────────────────────────────────
     if (includeGlobalSettings && parsed.globalSettings) {
@@ -285,15 +358,18 @@ async function performImport(parsed, deps, opts = {}) {
 
     // ── Plugin settings ───────────────────────────────────────────────────────
     const allPluginIds = Object.keys(parsed.pluginSettings || {});
-    const selectedPluginIds = pluginFilter
-        ? allPluginIds.filter(id => pluginFilter.includes(id))
+    const filterIds = canonicalPluginFilter(pluginFilter);
+    const selectedPluginIds = filterIds
+        ? allPluginIds.filter(id => filterIds.has(canonicalizePluginId(id)))
         : allPluginIds;
 
     for (const pluginId of selectedPluginIds) {
         report.plugins[pluginId] = { importedSettings: [], skippedSettings: [], importedFiles: [], skippedFiles: [] };
 
         // Try custom provider
-        const provider = backupProviders[pluginId];
+        const provider = getIdentityCandidateIds(pluginId)
+            .map(candidateId => backupProviders[candidateId])
+            .find(Boolean);
         if (provider && typeof provider.importConfig === 'function' && includePluginSettings) {
             try {
                 const customResult = await provider.importConfig({

@@ -21,6 +21,7 @@ const { createManifest } = require('./manifest');
 const { computeChecksum } = require('./checksum');
 const { discoverAllPluginSettings, discoverGlobalSettings } = require('./plugin-discovery');
 const { collectPluginFiles, collectFiles, DEFAULT_IGNORE_PATTERNS } = require('./file-collector');
+const { canonicalizePluginId, getIdentityCandidateIds } = require('../plugin-identities');
 
 const USER_CONFIG_FILE_SIZE_LIMIT_BYTES = 500 * 1024 * 1024;
 
@@ -112,7 +113,7 @@ async function exportBackup(deps, opts = {}) {
             return fs.readdirSync(pluginsDir, { withFileTypes: true })
                 .filter(entry => entry.isDirectory())
                 .filter(entry => fs.existsSync(path.join(pluginsDir, entry.name, 'data')))
-                .map(entry => entry.name);
+                .map(entry => canonicalizePluginId(entry.name));
         } catch (err) {
             warnings.push(`Failed to discover plugin data directories: ${err.message}`);
             return [];
@@ -153,6 +154,9 @@ async function exportBackup(deps, opts = {}) {
             try {
                 rawPluginSettings = discoverAllPluginSettings(db);
             } catch (err) {
+                if (err.code === 'PLUGIN_IDENTITY_BACKUP_CONFLICT') {
+                    throw err;
+                }
                 warnings.push(`Failed to read plugin settings from database: ${err.message}`);
             }
         }
@@ -160,15 +164,21 @@ async function exportBackup(deps, opts = {}) {
         // Determine the set of plugin IDs to include
         const dbPluginIds = Object.keys(rawPluginSettings);
         const loadedPluginIds = pluginLoader
-            ? Array.from(pluginLoader.loadedPlugins.keys())
+            ? Array.from(pluginLoader.loadedPlugins.keys()).map(canonicalizePluginId)
             : [];
         const dataPluginIds = includePluginData ? discoverPluginDataIds() : [];
-        const allIds = [...new Set([...dbPluginIds, ...loadedPluginIds, ...dataPluginIds])];
-        const selectedIds = pluginFilter ? allIds.filter(id => pluginFilter.includes(id)) : allIds;
+        const allIds = [...new Set([...dbPluginIds, ...loadedPluginIds, ...dataPluginIds]
+            .map(canonicalizePluginId))];
+        const filterIds = pluginFilter
+            ? new Set(pluginFilter.map(canonicalizePluginId))
+            : null;
+        const selectedIds = filterIds ? allIds.filter(id => filterIds.has(id)) : allIds;
 
         for (const pluginId of selectedIds) {
             // Try custom provider first
-            const provider = backupProviders[pluginId];
+            const provider = getIdentityCandidateIds(pluginId)
+                .map(candidateId => backupProviders[candidateId])
+                .find(Boolean);
             let customExport = null;
             if (provider && typeof provider.exportConfig === 'function') {
                 try {

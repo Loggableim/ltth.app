@@ -9,6 +9,7 @@
 const config = require('./config');
 const LRUCache = require('./utils/LRUCache');
 const CommandAliasManager = require('./utils/CommandAliasManager');
+const { canonicalizePluginId } = require('../../modules/plugin-identities');
 
 class CommandRegistry {
     constructor(logger) {
@@ -103,6 +104,7 @@ class CommandRegistry {
      * @returns {boolean} Success status
      */
     unregisterCommand(commandName, pluginId) {
+        pluginId = canonicalizePluginId(pluginId);
         try {
             commandName = this.normalizeName(commandName);
             const command = this.commands.get(commandName);
@@ -140,6 +142,7 @@ class CommandRegistry {
      * @param {string} pluginId - Plugin ID
      */
     unregisterPluginCommands(pluginId) {
+        pluginId = canonicalizePluginId(pluginId);
         const commands = this.pluginCommands.get(pluginId);
         if (!commands) return;
         
@@ -196,7 +199,8 @@ class CommandRegistry {
         
         // Filter by plugin
         if (filters.pluginId) {
-            commands = commands.filter(cmd => cmd.pluginId === filters.pluginId);
+            const canonicalPluginId = canonicalizePluginId(filters.pluginId);
+            commands = commands.filter(cmd => cmd.pluginId === canonicalPluginId);
         }
         
         // Filter by enabled status
@@ -218,6 +222,7 @@ class CommandRegistry {
      * @returns {Array} Array of command definitions
      */
     getPluginCommands(pluginId) {
+        pluginId = canonicalizePluginId(pluginId);
         const commandNames = this.pluginCommands.get(pluginId);
         if (!commandNames) return [];
         
@@ -305,6 +310,7 @@ class CommandRegistry {
         if (!commandDef.pluginId) {
             throw new Error('Command must have a pluginId');
         }
+        commandDef.pluginId = canonicalizePluginId(commandDef.pluginId);
         
         if (!commandDef.name || typeof commandDef.name !== 'string') {
             throw new Error('Command must have a valid name');
@@ -334,7 +340,7 @@ class CommandRegistry {
      * @returns {string} Full command name
      */
     getFullCommandName(pluginId, commandName) {
-        return `${pluginId}:${commandName}`;
+        return `${canonicalizePluginId(pluginId)}:${commandName}`;
     }
 
     /**

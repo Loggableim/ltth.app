@@ -29,6 +29,7 @@ const CommandHelpers = require('./utils/CommandHelpers');
 const HUDManager = require('./utils/HUDManager');
 const { ChatConsumptionRegistry } = require('./chat-consumption-registry');
 const config = require('./config');
+const { canonicalizePluginId } = require('../../modules/plugin-identities');
 
 class GlobalChatCommandEngine {
     constructor(api) {
@@ -2006,6 +2007,7 @@ class GlobalChatCommandEngine {
      * @returns {Object} Registration result
      */
     registerCommandsForPlugin(pluginId, commands) {
+        pluginId = canonicalizePluginId(pluginId);
         const results = {
             pluginId,
             registered: [],
@@ -2058,6 +2060,7 @@ class GlobalChatCommandEngine {
      * @param {string} pluginId - Plugin ID
      */
     unregisterCommandsForPlugin(pluginId) {
+        pluginId = canonicalizePluginId(pluginId);
         const commandNames = this.registry.getPluginCommands(pluginId).map(
             command => command.cooldownKey || command.name
         );
@@ -2068,7 +2071,7 @@ class GlobalChatCommandEngine {
     }
 
     registerRawResponseHandlerForPlugin(pluginId, handler) {
-        const normalizedPluginId = String(pluginId || '').trim();
+        const normalizedPluginId = canonicalizePluginId(pluginId);
         if (!normalizedPluginId || typeof handler !== 'function') {
             throw new Error('GCCE_RAW_RESPONSE_HANDLER_INVALID');
         }
@@ -2078,7 +2081,7 @@ class GlobalChatCommandEngine {
     }
 
     unregisterRawResponseHandlerForPlugin(pluginId) {
-        return this.rawResponseHandlers.delete(String(pluginId || '').trim());
+        return this.rawResponseHandlers.delete(canonicalizePluginId(pluginId));
     }
 
     async dispatchRawResponse(message, context) {

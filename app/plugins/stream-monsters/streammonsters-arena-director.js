@@ -64,17 +64,17 @@
   }
 
   function canonicalImageUrl(fighter) {
-    if (typeof fighter?.imageUrl === 'string' && fighter.imageUrl.startsWith('/plugins/streamalchemy/')) {
+    if (typeof fighter?.imageUrl === 'string' && fighter.imageUrl.startsWith('/plugins/stream-monsters/')) {
       return fighter.imageUrl;
     }
     const templateId = String(fighter?.templateId || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
     const element = String(fighter?.element || '').toLowerCase().replace(/[^a-z]/g, '');
     const stage = Math.max(1, Math.min(3, Number(fighter?.evolutionStage) || 1));
-    if (!templateId) return '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+    if (!templateId) return '/plugins/stream-monsters/assets/branding/stream-monsters-icon.png';
     if (stage === 1) {
-      return `/plugins/streamalchemy/assets/streammonsters/furry/${templateId}.webp`;
+      return `/plugins/stream-monsters/assets/streammonsters/furry/${templateId}.webp`;
     }
-    return `/plugins/streamalchemy/assets/streammonsters/furry/evolution/${element}/${templateId}-stage${stage}.webp`;
+    return `/plugins/stream-monsters/assets/streammonsters/furry/evolution/${element}/${templateId}-stage${stage}.webp`;
   }
 
   function normalizeFighters(fighters = []) {

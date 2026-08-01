@@ -1,4 +1,5 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
 const { getRootLogsDir } = require('../modules/log-paths');
@@ -23,6 +24,11 @@ const {
     resolvePluginChildPath,
     resolvePluginEntryPath
 } = require('../modules/plugin-paths');
+const {
+    assertReservedPluginClaim,
+    canonicalizePluginId,
+    getIdentityCandidateIds
+} = require('../modules/plugin-identities');
 
 function getRequestCookie(req, cookieName) {
     const cookie = String(req.headers?.cookie || '')
@@ -318,6 +324,45 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     });
 
     /**
+     * POST /api/plugin-store/:sourceId/:pluginId/rollback - Roll back to a mapped release.
+     */
+    app.post('/api/plugin-store/:sourceId/:pluginId/rollback', limiter, storeAuth, async (req, res) => {
+        try {
+            if (!hasActiveStoreLicense(req.storeAccount)) {
+                return res.status(402).json({
+                    success: false,
+                    code: 'BETA_LICENSE_REQUIRED',
+                    licenseRequired: true,
+                    error: 'Claim the free LTTH beta license before rolling back store plugins.'
+                });
+            }
+            const requestedPluginId = req.params.pluginId;
+            const plugin = await pluginStore.rollbackPlugin(
+                req.params.sourceId,
+                requestedPluginId,
+                req.body?.version || '1.11.1'
+            );
+            if (io) {
+                io.emit('plugins:changed', {
+                    action: 'rolled-back',
+                    pluginId: plugin.id,
+                    version: plugin.rolledBackTo
+                });
+            }
+            return res.json({
+                success: true,
+                message: `Plugin ${plugin.id} rolled back to ${plugin.rolledBackTo}`,
+                plugin,
+                pluginId: plugin.id,
+                requestedPluginId
+            });
+        } catch (error) {
+            logger.error(`Failed to roll back plugin from store: ${error.message}`);
+            return res.status(400).json({ success: false, error: error.message, code: error.code });
+        }
+    });
+
+    /**
      * GET /api/plugins - Liste aller Plugins
      * Query parameters:
      *   - locale: Language code for descriptions (en, de, es, fr) - default: en
@@ -332,59 +377,43 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
 
             // The filesystem is the source of truth for the Plugin Manager.
             // Loaded in-memory plugins are only used to enrich existing manifests.
-            for (const entry of entries) {
-                if (entry.isDirectory() && !entry.name.startsWith('_')) {
-                    const pluginPath = path.join(pluginsDir, entry.name);
-                    const manifestPath = path.join(pluginPath, 'plugin.json');
-
-                    if (fs.existsSync(manifestPath)) {
-                        try {
-                            const manifestData = fs.readFileSync(manifestPath, 'utf8');
-                            const manifest = parseJsonText(manifestData);
-
-                            // Skip plugins that are marked as disabled in plugin.json
-                            if (manifest.disabled === true) {
-                                continue;
-                            }
-
-                            if (!manifest.id || !manifest.name || !manifest.entry) {
-                                logger.warn(`Skipping plugin ${entry.name} due to incomplete plugin.json`);
-                                continue;
-                            }
-
-                            if (installedPluginIds.has(manifest.id)) {
-                                logger.warn(`Skipping duplicate plugin id "${manifest.id}" in ${entry.name}`);
-                                continue;
-                            }
-
-                            const state = pluginLoader.state[manifest.id] || {};
-                            const loadedPlugin = pluginLoader.plugins.get(manifest.id);
-                            const isLoadedFromThisPath = loadedPlugin && path.resolve(loadedPlugin.path) === path.resolve(pluginPath);
-                            const isEnabled = isLoadedFromThisPath
-                                ? true
-                                : (state.enabled !== undefined ? state.enabled === true : manifest.enabled !== false);
-                            const description = pluginLoader.getLocalizedDescription(manifest, locale);
-
-                            installedPluginIds.add(manifest.id);
-                            allPlugins.push({
-                                id: manifest.id,
-                                name: manifest.name,
-                                description: description,
-                                descriptions: manifest.descriptions, // Include all descriptions
-                                version: manifest.version,
-                                author: manifest.author,
-                                type: manifest.type,
-                                logo: manifest.logo || manifest.icon || null,
-                                devStatus: manifest.devStatus, // Include development status
-                                enabled: isEnabled,
-                                loadedAt: isLoadedFromThisPath ? loadedPlugin.loadedAt : null
-                            });
-                        } catch (error) {
-                            // Skip plugins with invalid or malformed plugin.json
-                            logger.warn(`Skipping plugin ${entry.name} due to malformed plugin.json: ${error.message}`);
-                        }
-                    }
-                }
+            const pluginDirs = entries.filter(entry => (
+                entry.isDirectory() &&
+                !entry.name.startsWith('_') &&
+                fs.existsSync(path.join(pluginsDir, entry.name, 'plugin.json'))
+            ));
+            const inventory = pluginLoader.buildPluginInventory(pluginDirs);
+            for (const item of inventory) {
+                const manifest = item.manifest;
+                if (manifest.disabled === true) continue;
+                const state = pluginLoader.state[item.canonicalId] ||
+                    getIdentityCandidateIds(item.canonicalId)
+                        .map(candidateId => pluginLoader.state[candidateId])
+                        .find(Boolean) || {};
+                const loadedPlugin = pluginLoader.plugins.get(item.canonicalId);
+                const isLoadedFromThisPath = loadedPlugin &&
+                    path.resolve(loadedPlugin.path) === path.resolve(item.path);
+                const isEnabled = isLoadedFromThisPath
+                    ? true
+                    : (state.enabled !== undefined ? state.enabled === true : manifest.enabled !== false);
+                installedPluginIds.add(item.canonicalId);
+                allPlugins.push({
+                    id: item.canonicalId,
+                    name: manifest.name,
+                    description: pluginLoader.getLocalizedDescription(manifest, locale),
+                    descriptions: manifest.descriptions,
+                    version: manifest.version,
+                    author: manifest.author,
+                    type: manifest.type,
+                    logo: manifest.logo || manifest.icon || null,
+                    devStatus: manifest.devStatus,
+                    enabled: isEnabled,
+                    loadedAt: isLoadedFromThisPath ? loadedPlugin.loadedAt : null,
+                    directoryName: item.directoryName,
+                    path: item.path,
+                    runtimeManifestId: item.runtimeManifestId,
+                    aliases: item.aliases
+                });
             }
 
             for (const stalePluginId of pluginLoader.plugins.keys()) {
@@ -428,6 +457,10 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                 success: true,
                 plugin: {
                     id: plugin.manifest.id,
+                    directoryName: plugin.directoryName,
+                    path: plugin.path,
+                    runtimeManifestId: plugin.runtimeManifestId,
+                    aliases: plugin.aliases || [],
                     name: plugin.manifest.name,
                     description: pluginLoader.getLocalizedDescription(plugin.manifest, locale),
                     descriptions: plugin.manifest.descriptions, // Include all descriptions
@@ -466,6 +499,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             }
 
             const zipPath = req.file.path;
+            const zipSha256 = crypto.createHash('sha256')
+                .update(fs.readFileSync(zipPath)).digest('hex');
             logger.info(`Plugin ZIP uploaded: ${zipPath}`);
 
             // Temporäres Verzeichnis für Extraktion
@@ -529,7 +564,14 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             let safePluginId;
             let entryPath;
             try {
-                safePluginId = assertPluginId(manifest.id);
+                const runtimeManifestId = assertPluginId(manifest.id);
+                assertReservedPluginClaim({
+                    manifestId: runtimeManifestId,
+                    version: manifest.version,
+                    sha256: zipSha256,
+                    packagePath: req.file.originalname || path.basename(zipPath)
+                });
+                safePluginId = canonicalizePluginId(runtimeManifestId);
                 entryPath = resolvePluginEntryPath(pluginDir, manifest.entry);
             } catch (error) {
                 fs.rmSync(tempDir, { recursive: true, force: true });
@@ -619,7 +661,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.post('/api/plugins/:id/enable', limiter, async (req, res) => {
         try {
-            const { id } = req.params;
+            const requestedPluginId = req.params.id;
+            const id = canonicalizePluginId(requestedPluginId);
             const disabledPlugins = typeof pluginLoader.getMutuallyExclusivePluginIds === 'function'
                 ? pluginLoader.getMutuallyExclusivePluginIds(id)
                     .filter(pluginId => pluginLoader.isPluginEnabledFromDisk(pluginId))
@@ -638,6 +681,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             res.json({
                 success: true,
                 message: `Plugin ${id} aktiviert`,
+                pluginId: id,
+                requestedPluginId,
                 disabledPlugins
             });
         } catch (error) {
@@ -659,7 +704,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.post('/api/plugins/:id/disable', limiter, async (req, res) => {
         try {
-            const { id } = req.params;
+            const requestedPluginId = req.params.id;
+            const id = canonicalizePluginId(requestedPluginId);
             const success = await pluginLoader.disablePlugin(id);
 
             if (success) {
@@ -670,7 +716,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                 
                 res.json({
                     success: true,
-                    message: `Plugin ${id} deaktiviert`
+                    message: `Plugin ${id} deaktiviert`,
+                    pluginId: id,
+                    requestedPluginId
                 });
             } else {
                 res.status(500).json({
@@ -692,7 +740,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.post('/api/plugins/:id/reload', limiter, async (req, res) => {
         try {
-            const { id } = req.params;
+            const requestedPluginId = req.params.id;
+            const id = canonicalizePluginId(requestedPluginId);
             const success = await pluginLoader.reloadPlugin(id);
 
             if (success) {
@@ -703,7 +752,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                 
                 res.json({
                     success: true,
-                    message: `Plugin ${id} neu geladen`
+                    message: `Plugin ${id} neu geladen`,
+                    pluginId: id,
+                    requestedPluginId
                 });
             } else {
                 res.status(500).json({
@@ -759,7 +810,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.delete('/api/plugins/:id', limiter, async (req, res) => {
         try {
-            const { id } = req.params;
+            const requestedPluginId = req.params.id;
+            const id = canonicalizePluginId(requestedPluginId);
             const success = await pluginLoader.deletePlugin(id);
 
             if (success) {
@@ -770,7 +822,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                 
                 res.json({
                     success: true,
-                    message: `Plugin ${id} gelöscht`
+                    message: `Plugin ${id} gelöscht`,
+                    pluginId: id,
+                    requestedPluginId
                 });
             } else {
                 res.status(500).json({
@@ -792,8 +846,12 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.get('/api/plugins/:id/log', limiter, (req, res) => {
         try {
-            const id = assertPluginId(req.params.id);
-            const logPath = path.join(getRootLogsDir(), `${id}.log`);
+            const requestedPluginId = assertPluginId(req.params.id);
+            const id = canonicalizePluginId(requestedPluginId);
+            const logPath = getIdentityCandidateIds(id)
+                .map(candidateId => path.join(getRootLogsDir(), `${candidateId}.log`))
+                .find(candidatePath => fs.existsSync(candidatePath)) ||
+                path.join(getRootLogsDir(), `${id}.log`);
 
             if (!fs.existsSync(logPath)) {
                 return res.json({

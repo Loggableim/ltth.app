@@ -1,12 +1,12 @@
 {
   "contractVersion": 1,
   "product": {
-    "id": "streamalchemy",
+    "id": "stream-monsters",
     "name": "Stream Monsters",
-    "currentVersion": "1.11.1",
-    "nextVersion": "1.12.0",
-    "packageFilename": "streamalchemy-1.11.1.zip",
-    "nextPackageFilename": "streamalchemy-1.12.0.zip"
+    "currentVersion": "1.12.0",
+    "nextVersion": "1.13.0",
+    "packageFilename": "stream-monsters-1.12.0.zip",
+    "nextPackageFilename": "stream-monsters-1.13.0.zip"
   },
   "rules": {
     "version": 8,

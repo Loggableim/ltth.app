@@ -1,9 +1,13 @@
 {
-  "schemaVersion": 1,
-  "pluginId": "streamalchemy",
-  "sourcePath": "app/plugins/streamalchemy",
+  "schemaVersion": 2,
+  "pluginId": "stream-monsters",
+  "aliases": [
+    "streamalchemy"
+  ],
   "releases": {
     "1.6.0": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "c4c0eca7a0a04617da3db042a0964d904f62a2c7",
       "manifestVersion": "1.6.0",
       "package": "plugin-store/packages/streamalchemy-1.6.0.zip",
@@ -20,6 +24,8 @@
       }
     },
     "1.7.0": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "66b28c67972ada5774935eab447194700c06dc09",
       "manifestVersion": "1.7.0",
       "package": "plugin-store/packages/streamalchemy-1.7.0.zip",
@@ -36,6 +42,8 @@
       }
     },
     "1.8.0": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "b2e267b205622287e9738c4cf9f629c9f5b0d391",
       "sourceTree": "74cf3c07658ccb5186c7aea043cd9c54740863e6",
       "manifestVersion": "1.8.0",
@@ -43,6 +51,8 @@
       "sha256": "c57903d9956a26ae36c404d967558178ee53ab766c78d723d95b013d6198e136"
     },
     "1.9.0": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "5d019be15cf5ec2077a862ff437ff64f02a6fe65",
       "sourceTree": "e4800a33ab6946daf3f7cac28934dfe81b3e2a3a",
       "manifestVersion": "1.9.0",
@@ -50,6 +60,8 @@
       "sha256": "958424d0731f344d37bcd7ec40ebdb6709408f491e0c88dbe28108324ad28d0c"
     },
     "1.10.0": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "8c79edb14306fd460858896f690f8b4114b74854",
       "sourceTree": "e69621ac309756572826a6beaa79d010530e76b2",
       "manifestVersion": "1.10.0",
@@ -57,6 +69,8 @@
       "sha256": "232b82d05e50b58aea9edda3ab994861a8145386d2c010871d6d6deee4fe3626"
     },
     "1.11.0": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "e242b808276366c2f804fdeb353d5cab9caeae98",
       "sourceTree": "1478e82f9c1d0441a594a9537935e324da451692",
       "manifestVersion": "1.11.0",
@@ -64,6 +78,8 @@
       "sha256": "837e98a62e9023ad60e67303aaa3be57254f911faf3717044b5eda84ddb04ae4"
     },
     "1.11.1": {
+      "manifestId": "streamalchemy",
+      "sourcePath": "app/plugins/streamalchemy",
       "sourceCommit": "fd8583a2f04e377c88ebb7f5e5cd419fbcac64d4",
       "sourceTree": "b829b8e8b9b0d12fe0b61efb8f1fba8e2fb4ebdc",
       "manifestVersion": "1.11.1",

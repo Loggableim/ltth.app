@@ -131,11 +131,12 @@ const DEFAULT_COMMAND_ALIASES = Object.freeze({
   monstershelp: Object.freeze({ enabled: Object.freeze(['monstershelp']), disabled: Object.freeze([]) })
 });
 
-class StreamAlchemyPlugin {
+class StreamMonstersPlugin {
   constructor(api) {
     this.api = api;
     this.pluginDir = api.pluginDir || __dirname;
     this.config = null;
+    this.configRevision = 0;
     this.retiredConfigArchive = {};
     this.streamMonstersCurrentSessionId = null;
     this.streamMonstersTerminalDisconnectTokens = new Set();
@@ -146,7 +147,8 @@ class StreamAlchemyPlugin {
   async init() {
     ensureHotReloadPublicEvents();
     this.api.log('[STREAM MONSTERS] Initializing Portrait Arcade Rally runtime', 'info');
-    const storedConfig = this.api.getConfig('streamalchemy_config');
+    const storedConfig = this.api.getConfig('config');
+    this.configRevision = Number.isInteger(Number(storedConfig?.revision)) ? Number(storedConfig.revision) : 0;
     this.config = this.loadConfig(storedConfig);
     this.persistSanitizedConfigIfNeeded(storedConfig);
 
@@ -384,7 +386,7 @@ class StreamAlchemyPlugin {
     this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime initialized', 'info');
   }
 
-  loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
+  loadConfig(storedConfig = this.api.getConfig('config')) {
     const rawStoredStreamMonsters = (
       storedConfig &&
       typeof storedConfig === 'object' &&
@@ -502,7 +504,7 @@ class StreamAlchemyPlugin {
     if (!storedConfig || typeof storedConfig !== 'object' || Array.isArray(storedConfig)) return false;
     const persistedConfig = this.composeStoredConfig(this.config);
     if (isDeepStrictEqual(storedConfig, persistedConfig)) return false;
-    this.api.setConfig('streamalchemy_config', persistedConfig);
+    this.api.setConfig('config', persistedConfig);
     return true;
   }
 
@@ -798,7 +800,22 @@ class StreamAlchemyPlugin {
     return this.pluginDir;
   }
 
-  updateConfig(updates = {}) {
+  updateConfig(updates = {}, options = {}) {
+    const currentRevision = Number.isInteger(Number(this.configRevision))
+      ? Number(this.configRevision)
+      : Number(this.config?.revision || 0);
+    if (
+      options.expectedRevision !== undefined &&
+      Number(options.expectedRevision) !== currentRevision
+    ) {
+      const error = new Error('Stream Monsters configuration revision is stale');
+      error.code = 'STREAM_MONSTERS_CONFIG_REVISION_CONFLICT';
+      error.expectedRevision = Number(options.expectedRevision);
+      error.currentRevision = currentRevision;
+      throw error;
+    }
+    const previousConfig = this.cloneConfigValue(this.config);
+    const nextRevision = currentRevision + 1;
     const safeUpdates = this.sanitizeConfig(updates);
     const currentStreamMonsters = this.sanitizeStreamMonstersConfig(this.config.streamMonsters);
     const streamMonstersUpdates = this.sanitizeStreamMonstersConfig(safeUpdates.streamMonsters);
@@ -848,8 +865,9 @@ class StreamAlchemyPlugin {
       }
     };
 
-    this.config = {
+    const candidateConfig = {
       ...this.config,
+      revision: nextRevision,
       ...safeUpdates,
       streamMonsters: {
         ...mergedStreamMonsters,
@@ -913,55 +931,84 @@ class StreamAlchemyPlugin {
         visualPack: 'furry'
       }
     };
-    this.api.setConfig('streamalchemy_config', this.composeStoredConfig(this.config));
-    if (this.streamMonstersEngine) {
-      this.streamMonstersEngine.config = {
-        ...this.streamMonstersEngine.config,
-        ...this.config.streamMonsters,
-        maxUnhatchedEggs: 3
-      };
-    }
-    if (this.streamMonstersFreeEggDrops) {
-      this.streamMonstersFreeEggDrops.setConfig({
-        freeEggDropsEnabled: this.config.streamMonsters.freeEggDropsEnabled,
-        freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
-      });
-    }
-    this.streamMonstersUnhatchedEggSteals?.setConfig?.({
-      unhatchedEggStealEnabled: this.config.streamMonsters.unhatchedEggStealEnabled,
-      unhatchedEggStealGraceSeconds: this.config.streamMonsters.unhatchedEggStealGraceSeconds,
-      unhatchedEggStealActivityWindowSeconds:
-        this.config.streamMonsters.unhatchedEggStealActivityWindowSeconds
-    });
-    this.streamMonstersViewerActivity?.setActiveWindowMs?.(
-      this.config.streamMonsters.unhatchedEggStealActivityWindowSeconds * 1_000
-    );
-    this.streamMonstersProgression?.setSeasonDurationDays?.(
-      this.config.streamMonsters.seasonDurationDays
-    );
-    this.streamMonstersBattleMatchService?.setSeasonDurationDays?.(
-      this.config.streamMonsters.seasonDurationDays
-    );
-    this.streamMonstersBattleMatchService?.setLanguageTiming?.({
-      localeCount: this.config.streamMonsters.overlayLanguage.locales.length,
-      secondsPerLocale: this.config.streamMonsters.overlayLanguage.secondsPerLocale
-    });
-    this.streamMonstersBattleMatchService?.setPresentationConfig?.({
-      gameplayPace: this.config.streamMonsters.gameplayPace,
-      portraitBattleMode: this.config.streamMonsters.portraitBattleMode,
-      portraitArenaVariant: this.config.streamMonsters.portraitArenaVariant
-    });
-    if (
+    const shouldReintegrate = Boolean(
       this.streamMonstersCommandIngress &&
       (
         Object.prototype.hasOwnProperty.call(safeUpdates, 'enabled') ||
         Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'enabled') ||
         Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'commandAliases')
       )
-    ) {
-      this.integrateStreamMonstersGCCE({ force: true });
+    );
+    let candidatePersisted = false;
+    try {
+      this.api.setConfig('config', this.composeStoredConfig(candidateConfig));
+      candidatePersisted = true;
+      this.applyRuntimeConfig(candidateConfig);
+      this.config = candidateConfig;
+      this.configRevision = nextRevision;
+      if (shouldReintegrate) this.integrateStreamMonstersGCCE({ force: true });
+      return this.config;
+    } catch (error) {
+      this.config = previousConfig;
+      this.configRevision = currentRevision;
+      const rollbackErrors = [];
+      if (candidatePersisted) {
+        try {
+          this.api.setConfig('config', this.composeStoredConfig(previousConfig));
+        } catch (rollbackError) {
+          rollbackErrors.push(rollbackError);
+        }
+      }
+      try {
+        this.applyRuntimeConfig(previousConfig);
+        if (shouldReintegrate) this.integrateStreamMonstersGCCE({ force: true });
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+      if (rollbackErrors.length) error.rollbackErrors = rollbackErrors;
+      throw error;
     }
-    return this.config;
+  }
+
+  applyRuntimeConfig(config) {
+    const streamConfig = config.streamMonsters;
+    if (this.streamMonstersEngine) {
+      this.streamMonstersEngine.config = {
+        ...this.streamMonstersEngine.config,
+        ...streamConfig,
+        maxUnhatchedEggs: 3
+      };
+    }
+    if (this.streamMonstersFreeEggDrops) {
+      this.streamMonstersFreeEggDrops.setConfig({
+        freeEggDropsEnabled: streamConfig.freeEggDropsEnabled,
+        freeEggCooldownSeconds: streamConfig.freeEggCooldownSeconds
+      });
+    }
+    this.streamMonstersUnhatchedEggSteals?.setConfig?.({
+      unhatchedEggStealEnabled: streamConfig.unhatchedEggStealEnabled,
+      unhatchedEggStealGraceSeconds: streamConfig.unhatchedEggStealGraceSeconds,
+      unhatchedEggStealActivityWindowSeconds:
+        streamConfig.unhatchedEggStealActivityWindowSeconds
+    });
+    this.streamMonstersViewerActivity?.setActiveWindowMs?.(
+      streamConfig.unhatchedEggStealActivityWindowSeconds * 1_000
+    );
+    this.streamMonstersProgression?.setSeasonDurationDays?.(
+      streamConfig.seasonDurationDays
+    );
+    this.streamMonstersBattleMatchService?.setSeasonDurationDays?.(
+      streamConfig.seasonDurationDays
+    );
+    this.streamMonstersBattleMatchService?.setLanguageTiming?.({
+      localeCount: streamConfig.overlayLanguage.locales.length,
+      secondsPerLocale: streamConfig.overlayLanguage.secondsPerLocale
+    });
+    this.streamMonstersBattleMatchService?.setPresentationConfig?.({
+      gameplayPace: streamConfig.gameplayPace,
+      portraitBattleMode: streamConfig.portraitBattleMode,
+      portraitArenaVariant: streamConfig.portraitArenaVariant
+    });
   }
 
   async destroy() {
@@ -1098,7 +1145,7 @@ class StreamAlchemyPlugin {
       minArgs,
       maxArgs,
       category: 'Stream Monsters',
-      cooldownKey: `streamalchemy:${command}`,
+      cooldownKey: `stream-monsters:${command}`,
       cooldown: { user: command === 'battle' ? 2000 : 1000, global: command === 'battle' ? 0 : 250 },
       handler: async (args, context = {}) => {
         const userId = this.resolveStreamMonstersViewerId({
@@ -1230,12 +1277,12 @@ class StreamAlchemyPlugin {
     }
 
     try {
-      gcce.unregisterCommandsForPlugin('streamalchemy');
-      gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
+      gcce.unregisterCommandsForPlugin('stream-monsters');
+      gcce.unregisterRawResponseHandlerForPlugin?.('stream-monsters');
       const shadowedDefinitions = typeof gcce.getCommandOwner === 'function'
         ? definitions.filter(definition => {
           const owner = gcce.getCommandOwner(definition.name);
-          return owner && owner !== 'streamalchemy';
+          return owner && owner !== 'stream-monsters';
         })
         : [];
       const shadowedAliases = new Set(
@@ -1245,7 +1292,7 @@ class StreamAlchemyPlugin {
         definition => !shadowedAliases.has(definition.name)
       );
       const result = gcce.registerCommandsForPlugin(
-        'streamalchemy',
+        'stream-monsters',
         registrationDefinitions
       );
       const registered = Array.isArray(result?.registered) ? result.registered : [];
@@ -1261,8 +1308,8 @@ class StreamAlchemyPlugin {
         ...unresolvedShadowedAliases
       ])];
       if (!registered.length) {
-        gcce.unregisterCommandsForPlugin('streamalchemy');
-        gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
+        gcce.unregisterCommandsForPlugin('stream-monsters');
+        gcce.unregisterRawResponseHandlerForPlugin?.('stream-monsters');
         this.streamMonstersGCCE = gcce;
         this.streamMonstersGCCERegistrationState = 'blocked';
         this.streamMonstersGCCERegistrationError = 'registration_failed';
@@ -1285,7 +1332,7 @@ class StreamAlchemyPlugin {
       );
       if (rawResponseApiAvailable) {
         gcce.registerRawResponseHandlerForPlugin(
-          'streamalchemy',
+          'stream-monsters',
           (message, context) => this.handleStreamMonstersRawResponse(message, context)
         );
       }
@@ -1303,8 +1350,8 @@ class StreamAlchemyPlugin {
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] GCCE registration failed: ${error.message}`, 'warn');
       try {
-        gcce.unregisterCommandsForPlugin('streamalchemy');
-        gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
+        gcce.unregisterCommandsForPlugin('stream-monsters');
+        gcce.unregisterRawResponseHandlerForPlugin?.('stream-monsters');
       } catch (cleanupError) {
         this.api.log(`[STREAM MONSTERS] GCCE registration rollback failed: ${cleanupError.message}`, 'debug');
       }
@@ -1321,8 +1368,8 @@ class StreamAlchemyPlugin {
   deactivateStreamMonstersGCCE() {
     if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
       try {
-        this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
-        this.streamMonstersGCCE.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
+        this.streamMonstersGCCE.unregisterCommandsForPlugin('stream-monsters');
+        this.streamMonstersGCCE.unregisterRawResponseHandlerForPlugin?.('stream-monsters');
       } catch (error) {
         this.api.log(`[STREAM MONSTERS] GCCE cleanup failed: ${error.message}`, 'debug');
       }
@@ -1370,7 +1417,7 @@ class StreamAlchemyPlugin {
   }
 
   handleStreamMonstersGCCECommandResult(payload = {}) {
-    if (payload.pluginId !== 'streamalchemy') return;
+    if (!['stream-monsters', 'streamalchemy'].includes(payload.pluginId)) return;
     const statuses = {
       VALIDATION_ERROR: 'invalid_arguments',
       PERMISSION_DENIED: 'permission_denied',
@@ -2035,5 +2082,5 @@ class StreamAlchemyPlugin {
   }
 }
 
-module.exports = StreamAlchemyPlugin;
+module.exports = StreamMonstersPlugin;
 module.exports.ensureHotReloadPublicEvents = ensureHotReloadPublicEvents;

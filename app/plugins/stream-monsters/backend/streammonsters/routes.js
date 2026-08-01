@@ -124,9 +124,9 @@ class StreamMonstersRoutes {
     this.api.registerRoute('GET', '/streammonsters/overlay', sendOverlay);
     this.api.registerRoute('GET', '/streamalchemy/ui', sendCreator);
     this.api.registerRoute('GET', '/streamalchemy/overlay', sendOverlay);
-    this.api.registerRoute('GET', '/plugins/streamalchemy/ui.html', sendCreator);
-    this.api.registerRoute('GET', '/plugins/streamalchemy/ui-old.html', sendCreator);
-    this.api.registerRoute('GET', '/plugins/streamalchemy/overlay.html', sendOverlay);
+    this.api.registerRoute('GET', '/plugins/stream-monsters/ui.html', sendCreator);
+    this.api.registerRoute('GET', '/plugins/stream-monsters/ui-old.html', sendCreator);
+    this.api.registerRoute('GET', '/plugins/stream-monsters/overlay.html', sendOverlay);
     ART_LAB_ROUTES.forEach(([method, routePath]) => {
       this.api.registerRoute(method, routePath, (req, res) => (
         res.status(410).json({ error: 'art_lab_removed' })
@@ -338,6 +338,7 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
       const current = this.configProvider.getConfig().streamMonsters || {};
+      const expectedRevision = req.body?.expectedRevision;
       let update = null;
       try {
         this.validateRetentionConfigUpdate(req.body);
@@ -346,13 +347,36 @@ class StreamMonstersRoutes {
         return res.status(400).json({ success: false, error: error.message });
       }
       if (current.giftMappingCustomized) update.giftMappingCustomized = true;
-      const next = this.configProvider.updateConfig({ streamMonsters: update });
+      let next;
+      try {
+        next = this.configProvider.updateConfig(
+          { streamMonsters: update },
+          { expectedRevision }
+        );
+      } catch (error) {
+        if (error.code === 'STREAM_MONSTERS_CONFIG_REVISION_CONFLICT') {
+          return res.status(409).json({
+            success: false,
+            code: error.code,
+            error: error.message,
+            expectedRevision: error.expectedRevision,
+            currentRevision: error.currentRevision
+          });
+        }
+        return res.status(500).json({
+          success: false,
+          code: error.code || 'STREAM_MONSTERS_CONFIG_UPDATE_FAILED',
+          error: error.message
+        });
+      }
       this.api.emit?.('streammonsters:config_updated', {
-        config: this.publicConfig(next.streamMonsters)
+        config: this.publicConfig(next.streamMonsters),
+        revision: next.revision
       });
       res.json({
         success: true,
-        config: this.publicConfig(next.streamMonsters, { includeCreator: true })
+        config: this.publicConfig(next.streamMonsters, { includeCreator: true }),
+        revision: next.revision
       });
     }));
     this.api.registerRoute(
@@ -437,7 +461,7 @@ class StreamMonstersRoutes {
         egg_id: 'demo-egg', user_id: 'demo-viewer', gift_id: 0, gift_name: gift.giftName,
         element: gift.element, egg_color: gift.eggColor, state: 'incubating', variant: 'charged',
         hatch_duration_ms: config.hatchDurationMs, boost_ms: 0,
-        image_url: `/plugins/streamalchemy/assets/eggs/${gift.element.toLowerCase()}-charged.png`
+        image_url: `/plugins/stream-monsters/assets/eggs/${gift.element.toLowerCase()}-charged.png`
       };
       const monster = {
         monster_id: 'demo-monster',
@@ -1757,7 +1781,7 @@ class StreamMonstersRoutes {
         stage,
         element: asset.element,
         species: asset.species,
-        assetPath: `/plugins/streamalchemy/${relativePath}`,
+        assetPath: `/plugins/stream-monsters/${relativePath}`,
         mediaType: isWebpManifest ? 'image/webp' : 'image/png',
         dimensions,
         sha256: String(asset.sha256).toLocaleLowerCase(),

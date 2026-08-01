@@ -7,6 +7,26 @@
  * This module groups those rows into per-plugin objects and provides helpers
  * for exporting and importing them.
  */
+const {
+    canonicalizePluginId,
+    getConfigStorageKeys,
+    getIdentityCandidateIds,
+    getPluginIdentity
+} = require('../plugin-identities');
+const {
+    CONFIG_MIGRATION_CANONICAL_SNAPSHOT_KEY,
+    CONFIG_MIGRATION_LEGACY_SNAPSHOT_KEY,
+    CONFIG_SYNC_MARKER_KEY,
+    PluginIdentityConflictError,
+    createSyncMarker,
+    valuesEqual
+} = require('../plugin-identity-sync');
+
+const INTERNAL_IDENTITY_KEYS = new Set([
+    CONFIG_SYNC_MARKER_KEY,
+    CONFIG_MIGRATION_CANONICAL_SNAPSHOT_KEY,
+    CONFIG_MIGRATION_LEGACY_SNAPSHOT_KEY
+]);
 
 /**
  * Regex that matches a plugin settings key and captures pluginId and subKey.
@@ -47,19 +67,32 @@ function discoverAllPluginSettings(db) {
 
     const result = {};
     for (const row of rows) {
-        const pluginId = extractPluginId(row.key);
-        const subKey = extractSubKey(row.key);
-        if (!pluginId || !subKey) continue;
-
-        if (!result[pluginId]) {
-            result[pluginId] = {};
+        const runtimePluginId = extractPluginId(row.key);
+        let subKey = extractSubKey(row.key);
+        if (!runtimePluginId || !subKey || INTERNAL_IDENTITY_KEYS.has(row.key)) continue;
+        const pluginId = canonicalizePluginId(runtimePluginId);
+        if (getPluginIdentity(pluginId) && ['config', 'streamalchemy_config'].includes(subKey)) {
+            subKey = 'config';
         }
 
+        let value;
         try {
-            result[pluginId][subKey] = JSON.parse(row.value);
+            value = JSON.parse(row.value);
         } catch {
-            result[pluginId][subKey] = row.value;
+            value = row.value;
         }
+        if (!result[pluginId]) result[pluginId] = {};
+        if (
+            Object.prototype.hasOwnProperty.call(result[pluginId], subKey) &&
+            !valuesEqual(result[pluginId][subKey], value)
+        ) {
+            throw new PluginIdentityConflictError(
+                'PLUGIN_IDENTITY_BACKUP_CONFLICT',
+                `Backup export found conflicting settings for ${pluginId}:${subKey}`,
+                { pluginId, subKey, rawKey: row.key }
+            );
+        }
+        result[pluginId][subKey] = value;
     }
 
     return result;
@@ -73,21 +106,7 @@ function discoverAllPluginSettings(db) {
  * @returns {Object.<string, any>} subKey → parsedValue
  */
 function discoverPluginSettings(db, pluginId) {
-    const prefix = `plugin:${pluginId}:`;
-    const rows = db
-        .prepare("SELECT key, value FROM settings WHERE key LIKE ?")
-        .all(`${prefix}%`);
-
-    const result = {};
-    for (const row of rows) {
-        const subKey = row.key.slice(prefix.length);
-        try {
-            result[subKey] = JSON.parse(row.value);
-        } catch {
-            result[subKey] = row.value;
-        }
-    }
-    return result;
+    return discoverAllPluginSettings(db)[canonicalizePluginId(pluginId)] || {};
 }
 
 /**
@@ -115,7 +134,18 @@ function discoverGlobalSettings(db) {
  * @returns {{ imported: string[], skipped: string[] }}
  */
 function restorePluginSettings(db, pluginId, settings, mode = 'merge') {
-    const prefix = `plugin:${pluginId}:`;
+    pluginId = canonicalizePluginId(pluginId);
+    const identity = getPluginIdentity(pluginId);
+    const normalizedSettings = {};
+    for (const [rawSubKey, value] of Object.entries(settings || {})) {
+        const subKey = identity && ['config', 'streamalchemy_config'].includes(rawSubKey)
+            ? 'config'
+            : rawSubKey;
+        if (normalizedSettings[subKey] !== undefined && !valuesEqual(normalizedSettings[subKey], value)) {
+            throw new PluginIdentityConflictError('PLUGIN_IDENTITY_BACKUP_CONFLICT', `Backup import has conflicting ${pluginId}:${subKey}`);
+        }
+        normalizedSettings[subKey] = value;
+    }
     const imported = [];
     const skipped = [];
 
@@ -133,24 +163,37 @@ function restorePluginSettings(db, pluginId, settings, mode = 'merge') {
     const restore = db.transaction(() => {
         if (mode === 'replace') {
             const deleteStmt = db.prepare("DELETE FROM settings WHERE key LIKE ?");
-            deleteStmt.run(`${prefix}%`);
+            for (const identityId of getIdentityCandidateIds(pluginId)) {
+                deleteStmt.run(`plugin:${identityId}:%`);
+            }
         }
 
-        for (const [subKey, value] of Object.entries(settings)) {
-            const rawKey = `${prefix}${subKey}`;
+        for (const [subKey, value] of Object.entries(normalizedSettings)) {
+            const rawKeys = identity && subKey === 'config'
+                ? getConfigStorageKeys(pluginId, subKey)
+                : [`plugin:${pluginId}:${subKey}`];
             const rawValue = JSON.stringify(value);
 
             try {
                 if (mode === 'replace') {
-                    upsertStmt.run(rawKey, rawValue);
+                    rawKeys.forEach(rawKey => upsertStmt.run(rawKey, rawValue));
                     imported.push(subKey);
                 } else {
-                    const result = insertStmt.run(rawKey, rawValue);
-                    if (result.changes > 0) {
+                    const exists = rawKeys.some(rawKey => db.prepare(
+                        'SELECT 1 AS present FROM settings WHERE key = ?'
+                    ).get(rawKey));
+                    if (!exists) {
+                        rawKeys.forEach(rawKey => insertStmt.run(rawKey, rawValue));
                         imported.push(subKey);
                     } else {
                         skipped.push(subKey);
                     }
+                }
+                if (identity && subKey === 'config' && imported.includes(subKey)) {
+                    upsertStmt.run(
+                        CONFIG_SYNC_MARKER_KEY,
+                        JSON.stringify(createSyncMarker(value))
+                    );
                 }
             } catch (err) {
                 skipped.push(subKey);
