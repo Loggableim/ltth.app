@@ -15,7 +15,7 @@ function renderGuide(locale) {
   });
   dom.window.eval(read('js/streammonsters-catalog.generated.js'));
   dom.window.eval(read(
-    'app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js'
+    'app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js'
   ));
   dom.window.eval(read('js/streammonsters-guide.js'));
   return dom.window.document;

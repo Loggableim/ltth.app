@@ -9,7 +9,7 @@ function readJson(relativePath) {
 
 describe('Stream Monsters 1.11.1 stable source contract', () => {
   test('promotes the active plugin source without changing the stable plugin id', () => {
-    const manifest = readJson('app/plugins/streamalchemy/plugin.json');
+    const manifest = readJson('app/plugins/stream-monsters/plugin.json');
 
     expect(manifest).toEqual(expect.objectContaining({
       id: 'streamalchemy',
@@ -21,7 +21,7 @@ describe('Stream Monsters 1.11.1 stable source contract', () => {
 
   test('documents the stable status in active user-facing surfaces', () => {
     const pluginReadme = fs.readFileSync(
-      path.join(repoRoot, 'app/plugins/streamalchemy/README.md'),
+      path.join(repoRoot, 'app/plugins/stream-monsters/README.md'),
       'utf8'
     );
     const rootReadme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');

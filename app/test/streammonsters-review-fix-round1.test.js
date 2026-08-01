@@ -4,15 +4,15 @@ const path = require('path');
 const { Worker } = require('worker_threads');
 const Database = require('better-sqlite3');
 const GCCE = require('../plugins/gcce');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 const {
   applyEvolutionGrant
-} = require('../plugins/streamalchemy/backend/streammonsters/evolution-rules');
+} = require('../plugins/stream-monsters/backend/streammonsters/evolution-rules');
 
 const temporaryDirectories = [];
 
@@ -152,7 +152,7 @@ describe('Stream Monsters review fix round 1', () => {
     }]);
 
     const plugin = new StreamAlchemyPlugin({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       log: jest.fn()
     });
     plugin.config = {
@@ -444,7 +444,7 @@ describe('Stream Monsters review fix round 1', () => {
     const results = await runWorkers(workerSource, {
       databasePath,
       databaseModule: require.resolve('better-sqlite3'),
-      storeModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/database')
+      storeModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/database')
     });
 
     expect(results).toEqual([{ ok: true }, { ok: true }]);
@@ -552,8 +552,8 @@ describe('Stream Monsters review fix round 1', () => {
     const results = await runWorkers(workerSource, {
       databasePath,
       databaseModule: require.resolve('better-sqlite3'),
-      storeModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/database'),
-      engineModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/game-engine')
+      storeModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/database'),
+      engineModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/game-engine')
     });
 
     expect(results).toEqual([{ ok: true }, { ok: true }]);

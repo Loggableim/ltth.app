@@ -10,7 +10,7 @@ const {
   createEffectsRenderer,
   phaseForProgress,
   sceneChoreography
-} = require('../plugins/streamalchemy/streammonsters-effects-renderer');
+} = require('../plugins/stream-monsters/streammonsters-effects-renderer');
 
 function deferred() {
   let resolve;

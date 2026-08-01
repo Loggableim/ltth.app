@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
 const document = new JSDOM(html).window.document;
 

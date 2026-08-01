@@ -3,24 +3,24 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const StreamMonstersBattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const overlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const creatorRuntime = require(
-  '../plugins/streamalchemy/streammonsters-creator-runtime'
+  '../plugins/stream-monsters/streammonsters-creator-runtime'
 );
 const ArenaView = require(
-  '../plugins/streamalchemy/streammonsters-arena-view'
+  '../plugins/stream-monsters/streammonsters-arena-view'
 );
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 
 describe('Stream Monsters 1.11 overlay language configuration', () => {
   test('defaults to German and English without overwriting valid saved choices', () => {

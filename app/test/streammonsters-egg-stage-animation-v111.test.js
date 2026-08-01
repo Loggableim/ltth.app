@@ -2,7 +2,7 @@
 
 const { JSDOM } = require('jsdom');
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 
 function mountShelf() {

@@ -1,18 +1,18 @@
 const Database = require('better-sqlite3');
 const os = require('os');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersStore = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const FreeEggDropService = require(
-  '../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service'
+  '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
 const ChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 
 const activeServices = new Set();
@@ -79,7 +79,7 @@ function createPluginApi() {
     emitted,
     sqlite,
     api: {
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       log: jest.fn(),
       getDatabase: () => sqlite,
       getConfig: key => settings.get(key) || null,

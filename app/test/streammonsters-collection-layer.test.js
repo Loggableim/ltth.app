@@ -1,16 +1,16 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const AssetRegistry = require('../plugins/stream-monsters/backend/streammonsters/asset-registry');
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION,
   getTemplatesForElement
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
 const ViewerActivityTracker = require(
-  '../plugins/streamalchemy/backend/streammonsters/viewer-activity-tracker'
+  '../plugins/stream-monsters/backend/streammonsters/viewer-activity-tracker'
 );
 
 function createCollection(options = {}) {
@@ -383,7 +383,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     `);
     const store = new StreamMonstersDatabase(sqlite, {
       assetRegistry: new AssetRegistry({
-        pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+        pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
       })
     });
     store.initialize();
@@ -715,7 +715,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
 
   test('persists the healthy registry WebP when hatching despite a stale bundle probe', () => {
     const assetRegistry = new AssetRegistry({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
     });
     const resolveVisual = jest.spyOn(assetRegistry, 'resolveVisual');
     const { store, collection } = createCollection({ assetRegistry });

@@ -4,16 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const OverlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const overlayHtml = fs.readFileSync(
   path.join(pluginDir, 'streammonsters-overlay.html'),
   'utf8'

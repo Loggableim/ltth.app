@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const runtime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
 describe('Stream Monsters OBS overlay', () => {
   test('serializes the complete League World event set for landscape and portrait', () => {
-    const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'), 'utf8');
+    const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'), 'utf8');
 
     expect(html).toContain('streammonsters:egg_spawned');
     expect(html).toContain('streammonsters:egg_boosted');
@@ -35,7 +35,7 @@ describe('Stream Monsters OBS overlay', () => {
   });
 
   test('provides transparent 16:9/9:16 effect and reveal stages with WebGPU fallback contracts', () => {
-    const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'), 'utf8');
+    const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'), 'utf8');
 
     expect(html).toContain('id="effects-canvas"');
     expect(html).toContain('id="reveal-stage"');
@@ -121,7 +121,7 @@ describe('Stream Monsters OBS overlay', () => {
 
   test.each(['de', 'en', 'es', 'fr'])('localizes command hints with effective command references in %s', locale => {
     const translations = JSON.parse(fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'locales', `${locale}.json`),
       'utf8'
     )).plugins.streamalchemy.ui.monsters;
 
@@ -143,7 +143,7 @@ describe('Stream Monsters OBS overlay', () => {
     'localizes the charged-special feed with the monster and element in %s',
     locale => {
       const translations = JSON.parse(fs.readFileSync(
-        path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+        path.join(process.cwd(), 'plugins', 'stream-monsters', 'locales', `${locale}.json`),
         'utf8'
       )).plugins.streamalchemy.ui.monsters;
 
@@ -155,7 +155,7 @@ describe('Stream Monsters OBS overlay', () => {
 
   test('renders the slash GCCE prefix with the actual 30-second hatch duration', () => {
     const translations = JSON.parse(fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', 'en.json'),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'locales', 'en.json'),
       'utf8'
     )).plugins.streamalchemy.ui.monsters;
     const interpolate = (template, params) => template.replace(

@@ -1,8 +1,8 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
-const { getTemplatesForElement } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const BattleService = require('../plugins/stream-monsters/backend/streammonsters/battle-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
+const { getTemplatesForElement } = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 

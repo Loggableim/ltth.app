@@ -4,16 +4,16 @@ const fs = require('fs');
 const { JSDOM } = require('jsdom');
 const os = require('os');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
-const StreamMonstersCollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
+const StreamMonstersCollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
-const creatorRuntime = require('../plugins/streamalchemy/streammonsters-creator-runtime');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
+const creatorRuntime = require('../plugins/stream-monsters/streammonsters-creator-runtime');
 
 const ART_LAB_ROUTES = [
   ['GET', '/api/streamalchemy/config'],
@@ -82,7 +82,7 @@ function createRouteSubject({ dataDir = os.tmpdir() } = {}) {
       registerRoute: (method, routePath, handler) => registered.push({ method, routePath, handler }),
       emit: jest.fn()
     },
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     dataDir,
     store,
     engine: {
@@ -143,7 +143,7 @@ function createApi(storedConfig = {}) {
     events,
     logs,
     api: {
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       getDatabase: () => new Database(':memory:'),
       getConfig: key => settings.get(key),
       setConfig: (key, value) => settings.set(key, value),
@@ -362,7 +362,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
   });
 
   test('ships no executable Art Lab modules and maps legacy UI URLs to the creator UI', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     for (const relativePath of [
       'ui.html',
       'ui-old.html',
@@ -399,7 +399,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
   test.each(['de', 'en', 'es', 'fr'])(
     'localizes every Rules v5 creator control in %s',
     locale => {
-      const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+      const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
       const translations = JSON.parse(fs.readFileSync(
         path.join(pluginDir, 'locales', `${locale}.json`),
         'utf8'
@@ -608,7 +608,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
 
   test('creator UI loads only creator/gameplay APIs and persists the Rules v5 controls', async () => {
     const html = fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-ui.html'),
       'utf8'
     );
     const requests = [];

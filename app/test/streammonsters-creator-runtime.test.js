@@ -28,7 +28,7 @@ const {
   resolveCommandReference,
   summarizeRepairResult,
   summarizeAssetLibrary
-} = require('../plugins/streamalchemy/streammonsters-creator-runtime');
+} = require('../plugins/stream-monsters/streammonsters-creator-runtime');
 
 describe('Stream Monsters creator controls', () => {
   test('defines the seven Portrait Arcade Rally creator areas and complete command/demo catalogs', () => {

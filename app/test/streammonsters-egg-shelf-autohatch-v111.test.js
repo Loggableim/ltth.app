@@ -1,31 +1,31 @@
 'use strict';
 
 const Database = require('better-sqlite3');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const FreeEggDropService = require(
-  '../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service'
+  '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
 const EggStageProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/egg-stage-projector'
+  '../plugins/stream-monsters/backend/streammonsters/egg-stage-projector'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const StreamMonstersBattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
 function loadViewerActivityTracker() {
   try {
     return require(
-      '../plugins/streamalchemy/backend/streammonsters/viewer-activity-tracker'
+      '../plugins/stream-monsters/backend/streammonsters/viewer-activity-tracker'
     );
   } catch {
     return null;

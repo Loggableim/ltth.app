@@ -3,15 +3,15 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
-const CommandIngress = require('../plugins/streamalchemy/backend/streammonsters/command-ingress');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
+const CommandIngress = require('../plugins/stream-monsters/backend/streammonsters/command-ingress');
 const {
   projectChatResult
-} = require('../plugins/streamalchemy/backend/streammonsters/public-event-projector');
-const chatRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+} = require('../plugins/stream-monsters/backend/streammonsters/public-event-projector');
+const chatRuntime = require('../plugins/stream-monsters/streammonsters-chat-view');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 
 describe('Stream Monsters 1.5 League World runtime cleanup', () => {
   test('reports Arena Rating and Collector Score as distinct rank systems', () => {

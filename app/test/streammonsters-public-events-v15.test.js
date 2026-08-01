@@ -1,10 +1,10 @@
 const Database = require('better-sqlite3');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 
 function createRuntime() {

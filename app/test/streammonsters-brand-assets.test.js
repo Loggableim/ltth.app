@@ -28,7 +28,7 @@ describe('Stream Monsters 1.11 public branding', () => {
     const tutorialPage = fs.readFileSync(path.join(repoRoot, 'streammonsters', 'index.html'), 'utf8');
     const pluginPage = fs.readFileSync(path.join(repoRoot, 'plugins.html'), 'utf8');
     const storeRegistry = readJson('plugin-store.json');
-    const pluginManifest = readJson('app', 'plugins', 'streamalchemy', 'plugin.json');
+    const pluginManifest = readJson('app', 'plugins', 'stream-monsters', 'plugin.json');
     const streamMonsters = storeRegistry.plugins.find((plugin) => plugin.id === 'streamalchemy');
 
     expect(streamMonsters).toMatchObject({
@@ -260,7 +260,7 @@ describe('Stream Monsters 1.11 public branding', () => {
   });
 
   it('keeps Furry canonical and names the global SiliconFlow copy only after Fish Speech', () => {
-    const pluginDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
+    const pluginDir = path.join(repoRoot, 'app', 'plugins', 'stream-monsters');
     const pluginUi = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
     const overlay = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
     const dashboard = fs.readFileSync(path.join(repoRoot, 'app', 'public', 'dashboard.html'), 'utf8');
@@ -284,8 +284,8 @@ describe('Stream Monsters 1.11 public branding', () => {
   });
 
   it('retains the Stream Monsters icon and logo in the site and plugin bundle', () => {
-    const pluginManifest = readJson('app', 'plugins', 'streamalchemy', 'plugin.json');
-    const pluginDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
+    const pluginManifest = readJson('app', 'plugins', 'stream-monsters', 'plugin.json');
+    const pluginDir = path.join(repoRoot, 'app', 'plugins', 'stream-monsters');
 
     expect(pluginManifest.icon).toBe('/plugins/streamalchemy/assets/branding/stream-monsters-icon.png');
     expect(pluginManifest.logo).toBe('/plugins/streamalchemy/assets/branding/stream-monsters-logo.png');

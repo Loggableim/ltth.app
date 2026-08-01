@@ -1,8 +1,8 @@
 const Database = require('better-sqlite3');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
 function createStore() {
   const store = new StreamMonstersDatabase(new Database(':memory:'));

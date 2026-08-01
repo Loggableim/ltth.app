@@ -2,18 +2,18 @@
 
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const ViewerOnboardingService = require(
-  '../plugins/streamalchemy/backend/streammonsters/viewer-onboarding-service'
+  '../plugins/stream-monsters/backend/streammonsters/viewer-onboarding-service'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 const pluginDir = require('path').join(
   process.cwd(),

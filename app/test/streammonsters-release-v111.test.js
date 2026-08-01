@@ -86,7 +86,7 @@ function readGitFiles(sourceCommit, relativeFiles) {
 
 describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
   test('publishes the verified 1.11.1 Stable package without changing LTTH 1.4.1', () => {
-    const manifest = readJson('app/plugins/streamalchemy/plugin.json');
+    const manifest = readJson('app/plugins/stream-monsters/plugin.json');
     const releaseMap = loadReleaseMap();
     const release = releaseMap.releases['1.11.1'];
     const store = readJson('plugin-store.json');

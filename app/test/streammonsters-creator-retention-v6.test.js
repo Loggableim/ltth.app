@@ -4,30 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 const { JSDOM } = require('jsdom');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const { getTemplate } = require(
-  '../plugins/streamalchemy/backend/streammonsters/catalog'
+  '../plugins/stream-monsters/backend/streammonsters/catalog'
 );
 const creatorRuntime = require(
-  '../plugins/streamalchemy/streammonsters-creator-runtime'
+  '../plugins/stream-monsters/streammonsters-creator-runtime'
 );
 const overlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const TutorialHintDirector = require(
-  '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+  '../plugins/stream-monsters/backend/streammonsters/tutorial-hint-director'
 );
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 
 function response() {
   return {

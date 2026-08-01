@@ -2,7 +2,7 @@ const childProcess = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { TEMPLATE_CATALOG } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+const { TEMPLATE_CATALOG } = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 
 const EXPECTED_CUES = [
   'ui.navigate',
@@ -82,7 +82,7 @@ function readPcmWavHeader(filename) {
 }
 
 describe('Stream Monsters 1.5 bundled asset library', () => {
-  const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+  const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
   const furryDir = path.join(pluginDir, 'assets', 'streammonsters', 'furry');
   const audioDir = path.join(pluginDir, 'assets', 'audio');
 

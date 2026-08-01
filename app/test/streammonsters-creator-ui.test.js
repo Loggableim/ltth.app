@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 
 describe('Stream Monsters creator UI presentation controls', () => {
   test.each(['de', 'en', 'es', 'fr'])(

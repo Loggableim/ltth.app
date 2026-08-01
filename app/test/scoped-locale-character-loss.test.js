@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SCOPED_LOCALE_FILES = [
-  ...['de', 'en', 'es', 'fr'].map(locale => path.join(__dirname, `../plugins/streamalchemy/locales/${locale}.json`)),
+  ...['de', 'en', 'es', 'fr'].map(locale => path.join(__dirname, `../plugins/stream-monsters/locales/${locale}.json`)),
   ...['de', 'en', 'es', 'fr'].map(locale => path.join(__dirname, `../plugins/osc-bridge/locales/${locale}.json`)),
   ...['de', 'en', 'es', 'fr'].map(locale => path.join(__dirname, `../plugins/game-engine/locales/${locale}.json`)),
   ...['de', 'en', 'es', 'fr'].map(locale => path.join(__dirname, `../plugins/animazingpal/locales/${locale}.json`)),

@@ -1,10 +1,10 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const BattleService = require('../plugins/stream-monsters/backend/streammonsters/battle-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
 
 function createLifecycle() {
   const store = new StreamMonstersDatabase(new Database(':memory:'));

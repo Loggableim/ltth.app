@@ -4,13 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const runtime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 
 const flush = () => new Promise(resolve => setImmediate(resolve));

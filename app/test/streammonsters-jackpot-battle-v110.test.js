@@ -1,14 +1,14 @@
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const {
   projectPassiveCharge
-} = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
+} = require('../plugins/stream-monsters/backend/streammonsters/battle-charge');
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 
 describe('Stream Monsters 1.10 Jackpot battle contract', () => {

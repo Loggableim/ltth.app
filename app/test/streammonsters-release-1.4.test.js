@@ -3,12 +3,12 @@ const path = require('path');
 const crypto = require('crypto');
 const yauzl = require('yauzl');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const repoRoot = path.resolve(process.cwd(), '..');
 const overlayRuntimePath = path.join(pluginDir, 'streammonsters-overlay-runtime.js');
 const overlayRuntime = fs.existsSync(overlayRuntimePath) ? require(overlayRuntimePath) : {};
-const CommandIngress = require('../plugins/streamalchemy/backend/streammonsters/command-ingress');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+const CommandIngress = require('../plugins/stream-monsters/backend/streammonsters/command-ingress');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
 
 const listZipEntries = archivePath => new Promise((resolve, reject) => {
   yauzl.open(archivePath, { lazyEntries: true }, (error, archive) => {

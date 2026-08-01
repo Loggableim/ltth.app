@@ -3,20 +3,20 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 const {
   GAMEPLAY_PACES,
   HATCH_PRESETS,
   PORTRAIT_BATTLE_MODES,
   buildConfigPayload,
   hydrateHatchPresetControl
-} = require('../plugins/streamalchemy/streammonsters-creator-runtime');
+} = require('../plugins/stream-monsters/streammonsters-creator-runtime');
 
 function response() {
   return {
@@ -89,7 +89,7 @@ function createConfigRouteSubject(stored = {}) {
 
 function creatorHatchPresetControl() {
   const html = fs.readFileSync(
-    path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'),
+    path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-ui.html'),
     'utf8'
   );
   const markup = html.match(/<select id="hatchPreset">([\s\S]*?)<\/select>/)?.[1] || '';

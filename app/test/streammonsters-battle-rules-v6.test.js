@@ -12,22 +12,22 @@ const {
   V6_GUARDIAN_TUNING,
   buildV6SkillCatalog,
   resolveStageSkill
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 const Rules = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-rules-v5'
+  '../plugins/stream-monsters/backend/streammonsters/battle-rules-v5'
 );
 const Simulator = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-simulator'
+  '../plugins/stream-monsters/backend/streammonsters/battle-simulator'
 );
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const BattleService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 
 const APPROVED_ADVANTAGES = [

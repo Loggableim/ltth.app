@@ -3,22 +3,22 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { Worker } = require('worker_threads');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const BattleService = require('../plugins/stream-monsters/backend/streammonsters/battle-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
 const ProgressionService = require(
-  '../plugins/streamalchemy/backend/streammonsters/progression-service'
+  '../plugins/stream-monsters/backend/streammonsters/progression-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const {
   PASSIVE_CHARGE_PER_SECOND,
   projectPassiveCharge
-} = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
+} = require('../plugins/stream-monsters/backend/streammonsters/battle-charge');
 const {
   effectiveCombatPower
-} = require('../plugins/streamalchemy/backend/streammonsters/evolution-rules');
+} = require('../plugins/stream-monsters/backend/streammonsters/evolution-rules');
 
 test('adds five charge per completed active-window second and caps at 100', () => {
   expect(PASSIVE_CHARGE_PER_SECOND).toBe(5);
@@ -588,7 +588,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
 
   test('has a dedicated persistent state-machine owner', () => {
     expect(() => require(
-      '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+      '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
     )).not.toThrow();
   });
 
@@ -789,10 +789,10 @@ describe('Stream Monsters durable BattleMatchService', () => {
         filename,
         sqliteModule: require.resolve('better-sqlite3'),
         storeModule: require.resolve(
-          '../plugins/streamalchemy/backend/streammonsters/database'
+          '../plugins/stream-monsters/backend/streammonsters/database'
         ),
         serviceModule: require.resolve(
-          '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+          '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
         )
       };
       const runWorker = choice => new Promise((resolve, reject) => {
@@ -868,13 +868,13 @@ describe('Stream Monsters durable BattleMatchService', () => {
         gate,
         sqliteModule: require.resolve('better-sqlite3'),
         storeModule: require.resolve(
-          '../plugins/streamalchemy/backend/streammonsters/database'
+          '../plugins/stream-monsters/backend/streammonsters/database'
         ),
         serviceModule: require.resolve(
-          '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+          '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
         ),
         battleModule: require.resolve(
-          '../plugins/streamalchemy/backend/streammonsters/battle-service'
+          '../plugins/stream-monsters/backend/streammonsters/battle-service'
         )
       };
       const startWorker = userId => {
@@ -2649,7 +2649,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
           __dirname,
           '..',
           'plugins',
-          'streamalchemy',
+          'stream-monsters',
           'locales',
           `${locale}.json`
         ),

@@ -2,17 +2,17 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const AssetRegistry = require(
-  '../plugins/streamalchemy/backend/streammonsters/asset-registry'
+  '../plugins/stream-monsters/backend/streammonsters/asset-registry'
 );
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION,
   getEvolutionAssetPath
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 
 describe('Stream Monsters furry template assets', () => {
   test('ships one canonical schema-3 WebP for every template and evolution stage', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     const manifestPath = path.join(
       pluginDir,
       'assets',
@@ -75,7 +75,7 @@ describe('Stream Monsters furry template assets', () => {
   });
 
   test('keeps every canonical product preview on WebP', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     const creatorUi = fs.readFileSync(
       path.join(pluginDir, 'streammonsters-ui.html'),
       'utf8'

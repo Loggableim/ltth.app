@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 
 function createSubject() {
@@ -16,7 +16,7 @@ function createSubject() {
       },
       emit: jest.fn()
     },
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     store: {
       getEggStateCounts: () => ({}),
       getStreamHype: () => null,
@@ -122,7 +122,7 @@ describe('Stream Monsters bundled monster catalog', () => {
     const before = JSON.parse(JSON.stringify(persisted));
     const routes = new StreamMonstersRoutes({
       api: {},
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       store: {
         resolveKnownViewerId: userId => userId,
         getViewerProgress: () => null,

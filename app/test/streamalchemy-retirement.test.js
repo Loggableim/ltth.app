@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 const RETIRED_EXECUTABLE_FILES = [
   'config.js',
@@ -42,7 +42,7 @@ const RETIRED_EXECUTABLE_FILES = [
 
 function createApi(sqlite, dataDir) {
   return {
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     getDatabase: () => sqlite,
     getConfig: () => ({}),
     setConfig: jest.fn(),
@@ -59,7 +59,7 @@ function createApi(sqlite, dataDir) {
 
 describe('retired StreamAlchemy execution surface', () => {
   test('does not ship generator, provider, managed-runtime or legacy static executables', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     for (const relativePath of RETIRED_EXECUTABLE_FILES) {
       expect(fs.existsSync(path.join(pluginDir, relativePath))).toBe(false);
     }

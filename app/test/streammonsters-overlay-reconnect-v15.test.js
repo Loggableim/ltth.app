@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 

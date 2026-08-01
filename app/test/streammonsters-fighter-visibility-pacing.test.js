@@ -2,17 +2,17 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const ArenaView = require(
-  '../plugins/streamalchemy/streammonsters-arena-view'
+  '../plugins/stream-monsters/streammonsters-arena-view'
 );
 
 const pluginDir = path.join(
   __dirname,
   '..',
   'plugins',
-  'streamalchemy'
+  'stream-monsters'
 );
 
 function fighterMarkup(slot) {

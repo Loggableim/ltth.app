@@ -1,8 +1,8 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 
 function createProgression() {

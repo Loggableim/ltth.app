@@ -9,7 +9,7 @@ function creatorDocument() {
 
 function creatorHtml() {
   return fs.readFileSync(
-    path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'),
+    path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-ui.html'),
     'utf8'
   );
 }

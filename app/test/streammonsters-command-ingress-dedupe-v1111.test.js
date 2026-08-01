@@ -4,10 +4,10 @@ const path = require('path');
 const { Worker } = require('worker_threads');
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersCommandIngress = require(
-  '../plugins/streamalchemy/backend/streammonsters/command-ingress'
+  '../plugins/stream-monsters/backend/streammonsters/command-ingress'
 );
 
 function createStore(filename = ':memory:') {
@@ -148,7 +148,7 @@ describe('Stream Monsters durable command ingress deduplication', () => {
       filename,
       sqliteModule: require.resolve('better-sqlite3'),
       storeModule: require.resolve(
-        '../plugins/streamalchemy/backend/streammonsters/database'
+        '../plugins/stream-monsters/backend/streammonsters/database'
       ),
       input: {
         eventId: 'command:tiktok:provider-message-2',

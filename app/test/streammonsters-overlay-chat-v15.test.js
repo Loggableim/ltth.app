@@ -3,7 +3,7 @@
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
-const chatRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
+const chatRuntime = require('../plugins/stream-monsters/streammonsters-chat-view');
 
 function fixture({
   durationMs = 12_000,
@@ -96,7 +96,7 @@ function monster(index, overrides = {}) {
 describe('Stream Monsters 1.5 OBS chat presentation', () => {
   test('wires the safe upper chat view and recent-event replay into the OBS overlay', () => {
     const html = fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'),
       'utf8'
     );
     const showChatSource = html.match(/const showChat = async data => \{([\s\S]*?)\n  \};/)?.[1] || '';
@@ -132,7 +132,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
 
   test('provides a resettable four-stat evolution panel and upper Elemental Hour card', () => {
     const html = fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'),
       'utf8'
     );
     const dom = new JSDOM(html);
@@ -174,7 +174,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
 
   test.each(['de', 'en', 'es', 'fr'])('localizes the upper chat views in %s', locale => {
     const translations = JSON.parse(fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'locales', `${locale}.json`),
       'utf8'
     )).plugins.streamalchemy.ui.monsters;
 
@@ -372,7 +372,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
 
   test('hides the art frame entirely for generic cards without an image', () => {
     const html = fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'),
       'utf8'
     );
     expect(html).toMatch(/#card\.no-art #art-wrap\s*\{\s*display:none/);

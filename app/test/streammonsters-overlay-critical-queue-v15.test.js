@@ -1,9 +1,9 @@
 'use strict';
 
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
-const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const runtime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
 function publicEnvelope(projector, type, payload) {
   const eventType = `streammonsters:${type}`;

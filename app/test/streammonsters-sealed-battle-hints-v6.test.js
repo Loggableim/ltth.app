@@ -1,20 +1,20 @@
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const BattleService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const OverlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 function createMatch(now, rulesVersion = 6) {
   const sqlite = new Database(':memory:');
@@ -570,7 +570,7 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
 describe('Stream Monsters overlay-only tutorial hints', () => {
   test('uses the active registered alias and its live prefix for an adopt hint', () => {
     const TutorialHintDirector = require(
-      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+      '../plugins/stream-monsters/backend/streammonsters/tutorial-hint-director'
     );
     const director = new TutorialHintDirector({
       getCommandReference: command => command === 'adopt' ? '$adoptieren' : ''
@@ -587,7 +587,7 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
 
   test('emits one contextual NEXT card with at most two live command references', () => {
     const TutorialHintDirector = require(
-      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+      '../plugins/stream-monsters/backend/streammonsters/tutorial-hint-director'
     );
     const director = new TutorialHintDirector({
       getCommandReference: command => ({
@@ -617,7 +617,7 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
     ['streammonsters:stat_choice_opened', 'stats', '1 / 2 / 3 / 4']
   ])('uses only raw valid responses for %s NEXT actions', (eventType, kind, action) => {
     const TutorialHintDirector = require(
-      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+      '../plugins/stream-monsters/backend/streammonsters/tutorial-hint-director'
     );
     const resolvedCommands = [];
     const director = new TutorialHintDirector({
@@ -642,7 +642,7 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
 
   test('defaults to 90 seconds, validates 60–300 seconds, suppresses critical sequences and coalesces bursts', () => {
     const TutorialHintDirector = require(
-      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+      '../plugins/stream-monsters/backend/streammonsters/tutorial-hint-director'
     );
     const director = new TutorialHintDirector({
       getCommandReference: command => `!${command}`,
@@ -673,7 +673,7 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
       emit: (event, payload) => emitted.push({ event, payload })
     });
     const TutorialHintDirector = require(
-      '../plugins/streamalchemy/backend/streammonsters/tutorial-hint-director'
+      '../plugins/stream-monsters/backend/streammonsters/tutorial-hint-director'
     );
     plugin.config = {
       streamMonsters: {

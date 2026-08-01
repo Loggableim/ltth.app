@@ -4,7 +4,7 @@ const path = require('path');
 const yauzl = require('yauzl');
 
 const repoRoot = path.join(__dirname, '..', '..');
-const pluginDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
+const pluginDir = path.join(repoRoot, 'app', 'plugins', 'stream-monsters');
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'));
@@ -41,7 +41,7 @@ function listFiles(root, relative = '') {
 
 describe('Stream Monsters current 1.11 release', () => {
   test('aligns the plugin, store and LTTH 1.4.1 release surfaces', () => {
-    const manifest = readJson('app/plugins/streamalchemy/plugin.json');
+    const manifest = readJson('app/plugins/stream-monsters/plugin.json');
     const store = readJson('plugin-store.json');
     const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
 
@@ -98,8 +98,8 @@ describe('Stream Monsters current 1.11 release', () => {
       'packages',
       'streamalchemy-1.11.1.zip'
     );
-    const manifest = readJson('app/plugins/streamalchemy/assets/streammonsters/furry/manifest.json');
-    const audio = readJson('app/plugins/streamalchemy/assets/audio/manifest.json');
+    const manifest = readJson('app/plugins/stream-monsters/assets/streammonsters/furry/manifest.json');
+    const audio = readJson('app/plugins/stream-monsters/assets/audio/manifest.json');
     const entries = (await listZipEntries(packagePath)).sort();
 
     expect(sha256(packagePath)).toBe(storeEntry.sha256);

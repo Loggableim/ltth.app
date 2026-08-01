@@ -1,7 +1,7 @@
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
-const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
+const ArenaView = require('../plugins/stream-monsters/streammonsters-arena-view');
 
 function skillDeck(slot) {
   return `

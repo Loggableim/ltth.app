@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 describe('Stream Monsters retired runtime data safety', () => {
   test('does not inspect, rewrite or remove historical runtime data during init/destroy', async () => {
@@ -13,7 +13,7 @@ describe('Stream Monsters retired runtime data safety', () => {
     fs.mkdirSync(runtimeDir, { recursive: true });
     fs.writeFileSync(markerPath, marker);
     const plugin = new StreamAlchemyPlugin({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       getDatabase: () => new Database(':memory:'),
       getConfig: () => ({}),
       setConfig: jest.fn(),

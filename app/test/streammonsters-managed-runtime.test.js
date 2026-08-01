@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 function response() {
   return {
@@ -30,7 +30,7 @@ describe('Stream Monsters managed-runtime retirement', () => {
     ))).toBe(false);
     const routes = [];
     const plugin = new StreamAlchemyPlugin({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       getDatabase: () => new Database(':memory:'),
       getConfig: () => ({}),
       setConfig: jest.fn(),

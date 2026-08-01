@@ -18,7 +18,7 @@ function sha256(relativePath) {
 
 describe('Stream Monsters 1.11 source-release contract', () => {
   test('preserves the verified 1.11.0 source while promoting 1.11.1 Stable without changing LTTH 1.4.1', () => {
-    const manifest = readJson('app/plugins/streamalchemy/plugin.json');
+    const manifest = readJson('app/plugins/stream-monsters/plugin.json');
     const releaseMap = readJson('app/scripts/streammonsters-release-map.json');
     const appPackage = readJson('app/package.json');
     const rootPackage = readJson('package.json');
@@ -78,7 +78,7 @@ describe('Stream Monsters 1.11 source-release contract', () => {
     'exposes 1.11 Rules v8 K.O. presentation in the %s plugin locale',
     (locale) => {
       const copy = readJson(
-        `app/plugins/streamalchemy/locales/${locale}.json`
+        `app/plugins/stream-monsters/locales/${locale}.json`
       ).plugins.streamalchemy.ui.monsters;
 
       expect(copy.version).toContain('1.11');
@@ -94,11 +94,11 @@ describe('Stream Monsters 1.11 source-release contract', () => {
 
   test('keeps the creator UI fallback label aligned with 1.11', () => {
     const creatorUi = fs.readFileSync(
-      path.join(repoRoot, 'app/plugins/streamalchemy/streammonsters-ui.html'),
+      path.join(repoRoot, 'app/plugins/stream-monsters/streammonsters-ui.html'),
       'utf8'
     );
     const overlay = fs.readFileSync(
-      path.join(repoRoot, 'app/plugins/streamalchemy/streammonsters-overlay.html'),
+      path.join(repoRoot, 'app/plugins/stream-monsters/streammonsters-overlay.html'),
       'utf8'
     );
 

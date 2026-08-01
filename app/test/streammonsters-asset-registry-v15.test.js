@@ -6,22 +6,22 @@ const os = require('os');
 const path = require('path');
 const Database = require('better-sqlite3');
 const AssetRegistry = require(
-  '../plugins/streamalchemy/backend/streammonsters/asset-registry'
+  '../plugins/stream-monsters/backend/streammonsters/asset-registry'
 );
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const CollectionService = require(
-  '../plugins/streamalchemy/backend/streammonsters/collection-service'
+  '../plugins/stream-monsters/backend/streammonsters/collection-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const KenneyMonsterBuilder = require(
-  '../plugins/streamalchemy/backend/streammonsters/kenney-monster-builder'
+  '../plugins/stream-monsters/backend/streammonsters/kenney-monster-builder'
 );
 
-const realPluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const realPluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 function sha256(buffer) {

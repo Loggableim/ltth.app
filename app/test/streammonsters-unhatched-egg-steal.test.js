@@ -2,13 +2,13 @@
 
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 
 let UnhatchedEggStealService = null;
 try {
   UnhatchedEggStealService = require(
-    '../plugins/streamalchemy/backend/streammonsters/unhatched-egg-steal-service'
+    '../plugins/stream-monsters/backend/streammonsters/unhatched-egg-steal-service'
   );
 } catch {
   // The first RED run proves the standalone service does not exist yet.

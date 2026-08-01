@@ -82,7 +82,7 @@ function renderPublicGuide(locale = 'de') {
   });
   const executableScripts = [
     'js/streammonsters-catalog.generated.js',
-    'app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js',
+    'app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js',
     'js/streammonsters-guide.js'
   ];
 

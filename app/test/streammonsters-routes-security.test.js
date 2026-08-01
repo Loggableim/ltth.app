@@ -1,6 +1,6 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
 function createSubject({
   now = () => Date.now(),

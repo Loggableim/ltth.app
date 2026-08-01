@@ -3,13 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const ArenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
-const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
-const EggStageView = require('../plugins/streamalchemy/streammonsters-egg-stage-view');
-const AudioEngine = require('../plugins/streamalchemy/streammonsters-audio-engine');
-const OverlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const ArenaDirector = require('../plugins/stream-monsters/streammonsters-arena-director');
+const ArenaView = require('../plugins/stream-monsters/streammonsters-arena-view');
+const EggStageView = require('../plugins/stream-monsters/streammonsters-egg-stage-view');
+const AudioEngine = require('../plugins/stream-monsters/streammonsters-audio-engine');
+const OverlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 
 function mountArena() {

@@ -3,7 +3,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const root = path.resolve(__dirname, '..', '..');
-const pacing = require('../plugins/streamalchemy/streammonsters-rules-v8-pacing');
+const pacing = require('../plugins/stream-monsters/streammonsters-rules-v8-pacing');
 
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -17,7 +17,7 @@ function renderGuide(locale = 'de') {
     url: `https://ltth.app/streammonsters/?lang=${locale}`
   });
   dom.window.eval(read(
-    'app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js'
+    'app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js'
   ));
   dom.window.eval(read('js/streammonsters-guide.js'));
   return dom.window.document;
@@ -34,7 +34,7 @@ describe('Stream Monsters public Rules v8 tutorial', () => {
       expect(arena).toContain('Arcade Clash');
       expect(arena).not.toContain('Jackpot Clash');
       expect(page).toContain(
-        JSON.parse(read('app/plugins/streamalchemy/product-contract.json'))
+        JSON.parse(read('app/plugins/stream-monsters/product-contract.json'))
           .copy.subscription[locale]
       );
     }

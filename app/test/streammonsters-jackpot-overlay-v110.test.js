@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
-const loadShelf = () => require('../plugins/streamalchemy/streammonsters-egg-stage-view');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
+const loadShelf = () => require('../plugins/stream-monsters/streammonsters-egg-stage-view');
 
 function egg(visualId, overrides = {}) {
   return {

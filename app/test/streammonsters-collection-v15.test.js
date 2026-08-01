@@ -1,9 +1,9 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const AssetRegistry = require('../plugins/stream-monsters/backend/streammonsters/asset-registry');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
 
 function createCollection(progression = null, assetRegistry = null) {
   const sqlite = new Database(':memory:');
@@ -212,7 +212,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     let evolutionRules;
     expect(() => {
       evolutionRules = require(
-        '../plugins/streamalchemy/backend/streammonsters/evolution-rules'
+        '../plugins/stream-monsters/backend/streammonsters/evolution-rules'
       );
     }).not.toThrow();
 
@@ -263,7 +263,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
 
   test('upgrades automatic Kenney fallback visuals to their bundled canonical Furry form', () => {
     const assetRegistry = new AssetRegistry({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
     });
     const { sqlite, store } = createCollection(null, assetRegistry);
     sqlite.prepare(`
@@ -334,7 +334,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
 
   test('exposes pagination, large cards, and duplicate fusion through viewer commands', () => {
     const assetRegistry = new AssetRegistry({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
     });
     const { store, collection } = createCollection(null, assetRegistry);
     const commands = new ChatCommands({

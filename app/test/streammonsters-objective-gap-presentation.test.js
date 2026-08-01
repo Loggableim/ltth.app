@@ -3,30 +3,30 @@
 const Database = require('better-sqlite3');
 const { JSDOM } = require('jsdom');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const BattleService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const ArenaView = require(
-  '../plugins/streamalchemy/streammonsters-arena-view'
+  '../plugins/stream-monsters/streammonsters-arena-view'
 );
 const OverlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const localeCatalogs = Object.fromEntries(
   ['de', 'en', 'es', 'fr'].map(locale => [
     locale,
-    require(`../plugins/streamalchemy/locales/${locale}.json`)
+    require(`../plugins/stream-monsters/locales/${locale}.json`)
       .plugins.streamalchemy.ui.monsters
   ])
 );

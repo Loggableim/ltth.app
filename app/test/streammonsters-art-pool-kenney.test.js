@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const KenneyMonsterBuilder = require(
-  '../plugins/streamalchemy/backend/streammonsters/kenney-monster-builder'
+  '../plugins/stream-monsters/backend/streammonsters/kenney-monster-builder'
 );
 
 function createTempDir() {
@@ -68,7 +68,7 @@ describe('Stream Monsters Kenney fallback', () => {
   });
 
   test('ships no Art Pool executor while preserving the database-owned historical schema', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     expect(fs.existsSync(path.join(
       pluginDir,
       'backend',
@@ -77,7 +77,7 @@ describe('Stream Monsters Kenney fallback', () => {
     ))).toBe(false);
     const Database = require('better-sqlite3');
     const StreamMonstersDatabase = require(
-      '../plugins/streamalchemy/backend/streammonsters/database'
+      '../plugins/stream-monsters/backend/streammonsters/database'
     );
     const sqlite = new Database(':memory:');
     const store = new StreamMonstersDatabase(sqlite);

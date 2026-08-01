@@ -1,28 +1,28 @@
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const CollectionService = require(
-  '../plugins/streamalchemy/backend/streammonsters/collection-service'
+  '../plugins/stream-monsters/backend/streammonsters/collection-service'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const ChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const { effectiveCombatPower } = require(
-  '../plugins/streamalchemy/backend/streammonsters/evolution-rules'
+  '../plugins/stream-monsters/backend/streammonsters/evolution-rules'
 );
 const { getTemplate } = require(
-  '../plugins/streamalchemy/backend/streammonsters/catalog'
+  '../plugins/stream-monsters/backend/streammonsters/catalog'
 );
 
 function createStore({ assetRegistry = null } = {}) {

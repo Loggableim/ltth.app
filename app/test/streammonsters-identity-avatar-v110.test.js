@@ -2,16 +2,16 @@
 
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
-const chatView = require('../plugins/streamalchemy/streammonsters-chat-view');
+const chatView = require('../plugins/stream-monsters/streammonsters-chat-view');
 const {
   avatarProxyReference,
   fetchAvatar
-} = require('../plugins/streamalchemy/backend/streammonsters/avatar-proxy');
+} = require('../plugins/stream-monsters/backend/streammonsters/avatar-proxy');
 
 describe('Stream Monsters 1.10 public owner identity and avatar security', () => {
   test('keeps the stored unique id when a later event contains only a numeric platform id', () => {

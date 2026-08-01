@@ -1,8 +1,8 @@
 const path = require('path');
 const GCCE = require('../plugins/gcce');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 
 function createGCCEApi() {

@@ -1,24 +1,24 @@
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const FreeEggDropService = require(
-  '../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service'
+  '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
 const EggStageProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/egg-stage-projector'
+  '../plugins/stream-monsters/backend/streammonsters/egg-stage-projector'
 );
 const { safeAssetReference } = EggStageProjector;
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 const activeFreeEggServices = new Set();
 

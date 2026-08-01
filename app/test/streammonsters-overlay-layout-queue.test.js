@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const runtime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
 
 describe('Stream Monsters overlay layout and critical queue', () => {
   test('applies the immutable 1080 by 1920 portrait profile to CSS without letting it move battle placement', () => {

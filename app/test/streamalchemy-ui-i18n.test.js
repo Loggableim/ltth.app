@@ -4,7 +4,7 @@ const path = require('path');
 const {
   TEMPLATE_CATALOG,
   resolveStageSkill
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 const {
   flattenTranslations
 } = require('../../scripts/lib/plugin-i18n-audit');
@@ -15,7 +15,7 @@ const localeRoot = path.join(
   __dirname,
   '..',
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'locales'
 );
 
