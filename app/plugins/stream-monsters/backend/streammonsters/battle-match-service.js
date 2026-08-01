@@ -3499,6 +3499,50 @@ class BattleMatchService {
     };
   }
 
+  getBattleDurationTelemetry({ limit = 1_000 } = {}) {
+    const boundedLimit = Math.max(1, Math.min(10_000, Number(limit) || 1_000));
+    const durations = this.db.prepare(`
+      SELECT action_opened_at_ms, completed_at_ms, result_json
+      FROM streammonsters_matches
+      WHERE state = 'completed'
+        AND action_opened_at_ms IS NOT NULL
+        AND completed_at_ms IS NOT NULL
+        AND completed_at_ms >= action_opened_at_ms
+      ORDER BY completed_at_ms DESC, match_id DESC
+      LIMIT ?
+    `).all(boundedLimit)
+      .filter(row => parseJson(row.result_json, {}).completion !== 'forfeit')
+      .map(row => Math.max(
+        0,
+        Number(row.completed_at_ms) - Number(row.action_opened_at_ms)
+      ))
+      .sort((left, right) => left - right);
+    const percentile = ratio => {
+      if (!durations.length) return null;
+      const index = Math.max(
+        0,
+        Math.min(durations.length - 1, Math.ceil(ratio * durations.length) - 1)
+      );
+      return durations[index];
+    };
+    const p50Ms = percentile(0.5);
+    const p95Ms = percentile(0.95);
+    const target = {
+      p50MinMs: 30_000,
+      p50MaxMs: 40_000,
+      p95MaxMs: 75_000
+    };
+    return {
+      sampleSize: durations.length,
+      p50Ms,
+      p95Ms,
+      target,
+      p50WithinTarget: p50Ms != null &&
+        p50Ms >= target.p50MinMs && p50Ms <= target.p50MaxMs,
+      p95WithinTarget: p95Ms != null && p95Ms < target.p95MaxMs
+    };
+  }
+
   getPublicSnapshot({ restoreReconnect = false } = {}) {
     const matchIds = this.db.prepare(`
       SELECT match_id FROM streammonsters_matches

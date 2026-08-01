@@ -295,6 +295,7 @@ class StreamMonstersRoutes {
         season: this.progression?.getCurrentSeason?.() || null,
         gcce,
         battle,
+        battleTelemetry: this.getBattleTelemetry(),
         diagnostics: this.getCreatorDiagnostics({ config, gcce, battle }),
         obs: overlayDiagnostics.obs,
         renderer: overlayDiagnostics.renderer,
@@ -1236,6 +1237,21 @@ class StreamMonstersRoutes {
       audio: heartbeat
         ? { ...heartbeat.audio, status }
         : { muted: false, masterVolume: 1, status }
+    };
+  }
+
+  getBattleTelemetry() {
+    return this.battleMatchService?.getBattleDurationTelemetry?.() || {
+      sampleSize: 0,
+      p50Ms: null,
+      p95Ms: null,
+      target: {
+        p50MinMs: 30_000,
+        p50MaxMs: 40_000,
+        p95MaxMs: 75_000
+      },
+      p50WithinTarget: false,
+      p95WithinTarget: false
     };
   }
 
