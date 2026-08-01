@@ -178,6 +178,23 @@ describe('plugin loader canonical identity inventory', () => {
     expect(disabled).toHaveBeenCalledWith('stream-monsters');
     expect(loader.plugins.size).toBe(0);
   });
+  test('resolves alias lifecycle operations from a manifest-owned custom directory', async () => {
+    const pluginDir = writePlugin(root, 'historical-stream-monsters', 'streamalchemy', source('custom'), false);
+    const loader = createLoader(root);
+
+    expect(await loader.enablePlugin('stream-monsters')).toBe(true);
+    expect(loader.getPlugin('streamalchemy')).toEqual(expect.objectContaining({
+      directoryName: 'historical-stream-monsters',
+      path: pluginDir
+    }));
+    expect(await loader.reloadPlugin('streamalchemy')).toBe(true);
+    expect(await loader.disablePlugin('stream-monsters')).toBe(true);
+
+    expect(await loader.enablePlugin('streamalchemy')).toBe(true);
+    expect(await loader.deletePlugin('stream-monsters')).toBe(true);
+    expect(fs.existsSync(pluginDir)).toBe(false);
+  });
+
 
   test('aborts initialization when route registration fails even if the plugin ignores the return value', async () => {
     const pluginDir = writePlugin(root, 'broken-routes', 'broken-routes', `

@@ -3,12 +3,14 @@
 const StreamMonstersPlugin = require('../plugins/stream-monsters');
 const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
-function createPlugin(stored = {}) {
+function createPlugin(stored = {}, { setConfigResult = true } = {}) {
   let persisted = JSON.parse(JSON.stringify(stored));
   const api = {
     getConfig: jest.fn(() => persisted),
     setConfig: jest.fn((_key, value) => {
+      if (setConfigResult === false) return false;
       persisted = JSON.parse(JSON.stringify(value));
+      return true;
     }),
     log: jest.fn()
   };
@@ -65,6 +67,37 @@ describe('Stream Monsters transactional configuration revisions', () => {
     expect(subject.plugin.configRevision).toBe(7);
     expect(subject.api.setConfig).not.toHaveBeenCalled();
   });
+  test('forwards expectedRevision through the production route config provider', () => {
+    const subject = createPlugin({ revision: 7, streamMonsters: { eggShelfVisibleCount: 2 } });
+    const provider = subject.plugin.createStreamMonstersConfigProvider();
+
+    expect(() => provider.updateConfig(
+      { streamMonsters: { eggShelfVisibleCount: 4 } },
+      { expectedRevision: 6 }
+    )).toThrow(expect.objectContaining({
+      code: 'STREAM_MONSTERS_CONFIG_REVISION_CONFLICT'
+    }));
+    expect(subject.plugin.configRevision).toBe(7);
+    expect(subject.persisted()).toEqual(expect.objectContaining({ revision: 7 }));
+  });
+
+  test('does not apply a candidate when the atomic config persistence reports failure', () => {
+    const subject = createPlugin(
+      { revision: 2, streamMonsters: { eggShelfVisibleCount: 2 } },
+      { setConfigResult: false }
+    );
+
+    expect(() => subject.plugin.updateConfig(
+      { streamMonsters: { eggShelfVisibleCount: 4 } },
+      { expectedRevision: 2 }
+    )).toThrow(expect.objectContaining({
+      code: 'STREAM_MONSTERS_CONFIG_PERSIST_FAILED'
+    }));
+    expect(subject.plugin.config.streamMonsters.eggShelfVisibleCount).toBe(2);
+    expect(subject.plugin.configRevision).toBe(2);
+    expect(subject.persisted()).toEqual(expect.objectContaining({ revision: 2 }));
+  });
+
 
   test('rolls persistence, services, config, and revision back when apply fails', () => {
     const subject = createPlugin({ revision: 2, streamMonsters: { freeEggCooldownSeconds: 100 } });

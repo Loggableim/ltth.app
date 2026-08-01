@@ -79,7 +79,21 @@ function canonicalizeIftttId(id) {
 function resolveInstalledPluginDirectory(pluginsDir, id, options = {}) {
   const fileSystem = options.fs || fs;
   const canonicalId = canonicalizePluginId(id);
-  for (const directoryName of getIdentityCandidateIds(canonicalId)) {
+  const preferredDirectoryNames = getIdentityCandidateIds(canonicalId);
+  const directoryNames = [...preferredDirectoryNames];
+  if (typeof fileSystem.readdirSync === 'function') {
+    try {
+      const discovered = fileSystem.readdirSync(pluginsDir, { withFileTypes: true })
+        .filter(entry => typeof entry?.isDirectory === 'function' && entry.isDirectory())
+        .map(entry => entry.name)
+        .filter(directoryName => !preferredDirectoryNames.includes(directoryName))
+        .sort();
+      directoryNames.push(...discovered);
+    } catch {
+      // Keep lifecycle resolution non-fatal when the plugin directory is unavailable.
+    }
+  }
+  for (const directoryName of directoryNames) {
     const pluginPath = path.join(pluginsDir, directoryName);
     const manifestPath = path.join(pluginPath, 'plugin.json');
     if (!fileSystem.existsSync(manifestPath)) continue;

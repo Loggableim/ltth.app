@@ -144,6 +144,13 @@ class StreamMonstersPlugin {
       new StreamMonstersPublicEventProjector();
   }
 
+  createStreamMonstersConfigProvider() {
+    return {
+      getConfig: () => this.config,
+      updateConfig: (updates, options) => this.updateConfig(updates, options)
+    };
+  }
+
   async init() {
     ensureHotReloadPublicEvents();
     this.api.log('[STREAM MONSTERS] Initializing Portrait Arcade Rally runtime', 'info');
@@ -349,10 +356,7 @@ class StreamMonstersPlugin {
         pendingKind:
           this.streamMonstersTutorialHintDirector?.pendingKind || null
       }),
-      configProvider: {
-        getConfig: () => this.config,
-        updateConfig: updates => this.updateConfig(updates)
-      }
+      configProvider: this.createStreamMonstersConfigProvider()
     });
     this.streamMonstersRoutes.register();
     this.setupStreamMonstersGCCELifecycle();
@@ -941,7 +945,12 @@ class StreamMonstersPlugin {
     );
     let candidatePersisted = false;
     try {
-      this.api.setConfig('config', this.composeStoredConfig(candidateConfig));
+      const persisted = this.api.setConfig('config', this.composeStoredConfig(candidateConfig));
+      if (persisted === false) {
+        const error = new Error('Stream Monsters configuration persistence failed');
+        error.code = 'STREAM_MONSTERS_CONFIG_PERSIST_FAILED';
+        throw error;
+      }
       candidatePersisted = true;
       this.applyRuntimeConfig(candidateConfig);
       this.config = candidateConfig;
