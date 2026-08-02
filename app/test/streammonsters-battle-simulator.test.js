@@ -97,13 +97,10 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
       round: 3,
       terminal: false
     }));
-    expect(result.history[3].collapse).toEqual(expect.objectContaining({
-      round: 4,
-      damage: 2
-    }));
+    expect(result.history[3].collapse).toBeNull();
     expect(result.history[4].collapse).toEqual(expect.objectContaining({
       round: 5,
-      damage: 4
+      damage: 2
     }));
     expect(Object.values(result.state)).toEqual(expect.arrayContaining([
       expect.objectContaining({ hp: expect.any(Number), shield: expect.any(Number) })
@@ -180,7 +177,7 @@ describe('Stream Monsters Rules-v8 knockout balance simulator', () => {
     expect(first).toEqual(expect.objectContaining({
       rulesVersion: 8,
       knockoutOnly: true,
-      arenaCollapseRound: 4,
+      arenaCollapseRound: 5,
       maxRounds: 64,
       levels: [1],
       stages: [1, 2, 3],
