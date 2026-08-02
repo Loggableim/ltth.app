@@ -18,7 +18,9 @@ const IGNORED_DIRECTORIES = new Set([
 
 function walkHtml(directory, output = []) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && IGNORED_DIRECTORIES.has(entry.name)) continue;
+    // Ignore repository-local scratch directories (for example .tmp_patch*)
+    // that are intentionally gitignored and may contain copied HTML fixtures.
+    if (entry.isDirectory() && (IGNORED_DIRECTORIES.has(entry.name) || entry.name.startsWith('.tmp_'))) continue;
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) walkHtml(fullPath, output);
     else if (entry.isFile() && entry.name.endsWith('.html')) output.push(fullPath);
