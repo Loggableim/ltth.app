@@ -62,6 +62,7 @@ describe('StoryDatabase participant persistence', () => {
       userId: 'viewer-1', username: 'Alice', roleId: 'bard', roleName: 'Bard', joinedRound: 0
     });
     storyDatabase.updateSessionStatus(sessionId, 'completed');
+    storyDatabase.resolveParticipantRound(sessionId, 1);
 
     expect(storyDatabase.deleteOldSessions(0)).toBe(1);
     expect(sqlite.prepare('SELECT * FROM story_participants WHERE session_id = ?').get(sessionId)).toBeUndefined();

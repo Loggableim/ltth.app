@@ -60,6 +60,19 @@ describe('ParticipantRegistry', () => {
     expect(registry.join(sessionId, 'viewer-1', 'Alice', 4)).toEqual(resolution.eliminated[0]);
   });
 
+  test('resolves each eligible missed round once when a resolution is retried', () => {
+    registry.join(sessionId, 'viewer-1', 'Alice', 0);
+
+    expect(registry.resolveRound(sessionId, 1).updated).toEqual([
+      expect.objectContaining({ username: 'Alice', missedRounds: 1, status: 'active' })
+    ]);
+    expect(registry.resolveRound(sessionId, 1)).toEqual({ updated: [], eliminated: [] });
+
+    expect(registry.resolveRound(sessionId, 2).eliminated).toEqual([
+      expect.objectContaining({ username: 'Alice', missedRounds: 2, status: 'eliminated' })
+    ]);
+  });
+
   test('does not penalize a participant for the round in which they joined', () => {
     registry.join(sessionId, 'viewer-1', 'Alice', 2);
 

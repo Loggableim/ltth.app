@@ -92,6 +92,18 @@ class StoryDatabase {
       `).run();
       // Story memory table (full memory snapshots)
       this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS story_participant_round_resolutions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          participant_id INTEGER NOT NULL,
+          round INTEGER NOT NULL,
+          resolved_at TEXT NOT NULL,
+          UNIQUE(session_id, participant_id, round),
+          FOREIGN KEY (session_id) REFERENCES story_sessions(id),
+          FOREIGN KEY (participant_id) REFERENCES story_participants(id)
+        )
+      `).run();
+      this.db.prepare(`
         CREATE TABLE IF NOT EXISTS story_memory (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           session_id INTEGER NOT NULL,
@@ -406,6 +418,11 @@ class StoryDatabase {
       WHERE id = ?
     `);
     const updated = [];
+    const claimRoundResolution = this.db.prepare(`
+      INSERT OR IGNORE INTO story_participant_round_resolutions
+        (session_id, participant_id, round, resolved_at)
+      VALUES (?, ?, ?, ?)
+    `);
     const eliminated = [];
     const resolve = this.db.transaction(() => {
       for (const participant of activeParticipants) {
@@ -413,6 +430,12 @@ class StoryDatabase {
           continue;
         }
         const missedRounds = participant.missed_rounds + 1;
+        const wasClaimed = claimRoundResolution.run(
+          sessionId, participant.id, round, new Date().toISOString()
+        ).changes === 1;
+        if (!wasClaimed) {
+          continue;
+        }
         if (missedRounds >= inactivityLimitRounds) {
           eliminateParticipant.run(missedRounds, new Date().toISOString(), participant.id);
           const eliminatedParticipant = { ...participant, missed_rounds: missedRounds, status: 'eliminated' };
@@ -429,6 +452,7 @@ class StoryDatabase {
   }
 
   resetParticipants(sessionId) {
+    this.db.prepare(`DELETE FROM story_participant_round_resolutions WHERE session_id = ?`).run(sessionId);
     return this.db.prepare(`DELETE FROM story_participants WHERE session_id = ?`).run(sessionId).changes;
   }
   /**
@@ -529,6 +553,7 @@ class StoryDatabase {
     this.db.prepare(`DELETE FROM story_votes WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_viewer_stats WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_memory WHERE session_id IN (${placeholders})`).run(...sessionIds);
+    this.db.prepare(`DELETE FROM story_participant_round_resolutions WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_participants WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_sessions WHERE id IN (${placeholders})`).run(...sessionIds);
 
