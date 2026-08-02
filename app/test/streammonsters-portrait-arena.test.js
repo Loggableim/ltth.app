@@ -463,6 +463,7 @@ describe('Stream Monsters bounded portrait arena', () => {
 
     expect(Array.from(overlay.children).map(child => child.id)).toEqual([
       'portrait-arena',
+      'hatch-reveal',
       'portrait-exception-lane'
     ]);
     expect(arena?.dataset.arenaVariant).toBe('classic');
@@ -514,7 +515,7 @@ describe('Stream Monsters bounded portrait arena', () => {
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-arena-top')).toBe('11.8%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-arena-right')).toBe('2%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-arena-bottom')).toBe('42.2%');
-    expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-top')).toBe('74%');
+    expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-top')).toBe('58%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-right')).toBe('3%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-bottom')).toBe('2%');
     expect(bySelector(':root')?.style.getPropertyValue('--portrait-exception-left')).toBe('3%');
