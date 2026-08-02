@@ -384,12 +384,12 @@ class InteractiveStoryPlugin {
     return !!(effectiveConfig && effectiveConfig.autoGenerateImages && !effectiveConfig.textOnlyMode);
   }
 
-  async _maybeGenerateChapterImage(chapter, config) {
+  async _maybeGenerateChapterImage(chapter, config, customPrompt) {
     const chapterWithFallback = { ...chapter, imagePath: null };
     if (!this._shouldGenerateImages(config) || !this.imageService) return chapterWithFallback;
     const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
     const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession?.theme || '') : '';
-    const imagePrompt = `${chapter.title}: ${(chapter.content || '').substring(0, 200)}`;
+    const imagePrompt = customPrompt || `${chapter.title}: ${(chapter.content || '').substring(0, 200)}`;
     try {
       chapterWithFallback.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
     } catch (imageError) {
@@ -398,7 +398,6 @@ class InteractiveStoryPlugin {
     }
     return chapterWithFallback;
   }
-
   /**
    * Initialize the active LLM service based on the current plugin config.
    * Returns a short status object for logging and validation.
@@ -2131,40 +2130,23 @@ class InteractiveStoryPlugin {
     });
 
   this.api.registerSocket('story:regenerate-image', async (socket, data) => {
-      if (!this.currentChapter || !this.imageService) {
-        return;
-      }
+      if (!this.currentChapter) return;
 
-      try {
-        const config = this._loadConfig();
-        if (!this._shouldGenerateImages(config)) {
-          this._debugLog('warn', 'Ignoring image regeneration request because image generation is disabled', {
-            autoGenerateImages: !!config.autoGenerateImages,
-            textOnlyMode: !!config.textOnlyMode
-          });
-          return;
-        }
+      const config = this._loadConfig();
+      const generatedChapter = await this._maybeGenerateChapterImage(
+        this.currentChapter,
+        config,
+        data && data.customPrompt
+      );
+      if (!generatedChapter.imagePath) return;
 
-        const style = this.imageService.getStyleForTheme(this.currentSession.theme);
-        const imagePrompt = (data && data.customPrompt) || `${this.currentChapter.title}: ${this.currentChapter.content.substring(0, 200)}`;
-        
-        const imagePath = await this.imageService.generateImage(
-          imagePrompt,
-          config.defaultImageModel,
-          style
-        );
-
-        this.currentChapter.imagePath = imagePath;
-        this.io.emit('story:image-updated', {
-          imagePath: this._extractFilename(imagePath),
-          chapter: this._prepareChapterForEmit(this.currentChapter, config)
-        });
-      } catch (error) {
-        this.logger.error(`Error regenerating image: ${error.message}`);
-      }
+      this.currentChapter.imagePath = generatedChapter.imagePath;
+      this.io.emit('story:image-updated', {
+        imagePath: this._extractFilename(generatedChapter.imagePath),
+        chapter: this._prepareChapterForEmit(this.currentChapter, config)
+      });
     });
   }
-
   /**
    * Register TikTok event handlers
    */

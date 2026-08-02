@@ -4,6 +4,7 @@ const InteractiveStoryPlugin = require('../main');
 
 function createPlugin(savedConfig = {}) {
   const emit = jest.fn();
+  const registerSocket = jest.fn();
   const api = {
     logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
     getSocketIO: () => ({ emit }),
@@ -12,11 +13,16 @@ function createPlugin(savedConfig = {}) {
     getConfig: jest.fn(() => savedConfig),
     setConfig: jest.fn(),
     registerRoute: jest.fn(),
-    registerSocket: jest.fn(),
+    registerSocket,
     registerTikTokEvent: jest.fn(),
     log: jest.fn()
   };
-  return { plugin: new InteractiveStoryPlugin(api), emit };
+  return { plugin: new InteractiveStoryPlugin(api), emit, registerSocket };
+}
+
+function getRegenerateImageHandler(plugin, registerSocket) {
+  plugin._registerSocketHandlers();
+  return registerSocket.mock.calls.find(([eventName]) => eventName === 'story:regenerate-image')[1];
 }
 
 describe('Interactive Story optional chapter images', () => {
@@ -96,14 +102,75 @@ describe('Interactive Story optional chapter images', () => {
     );
   });
 
-  test('all generated chapter paths delegate to the one guarded helper', () => {
+  test('all generated chapter and regeneration paths delegate to the one guarded helper', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
     const helperCalls = source.match(/await this\._maybeGenerateChapterImage\(/g) || [];
 
-    expect(helperCalls).toHaveLength(6);
+    expect(helperCalls).toHaveLength(7);
     expect(source).toContain('/api/interactive-story/start');
     expect(source).toContain('/api/interactive-story/final-chapter');
     expect(source).toContain('/api/interactive-story/admin-choice');
     expect(source).toContain('/api/interactive-story/manual-advance');
+  });
+  test('regeneration leaves the current chapter untouched when image generation is disabled', async () => {
+    const { plugin, emit, registerSocket } = createPlugin({ autoGenerateImages: false, textOnlyMode: false });
+    plugin.currentSession = { theme: 'fantasy' };
+    plugin.currentChapter = { ...chapter, imagePath: 'C:/story-images/original.png' };
+    plugin.imageService = { generateImage: jest.fn() };
+
+    await getRegenerateImageHandler(plugin, registerSocket)({}, {});
+
+    expect(plugin.currentChapter.imagePath).toBe('C:/story-images/original.png');
+    expect(plugin.imageService.generateImage).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalledWith('story:image-updated', expect.anything());
+  });
+
+  test('regeneration reports a provider failure without replacing the existing image', async () => {
+    const { plugin, emit, registerSocket } = createPlugin({
+      autoGenerateImages: true,
+      imageProvider: 'openai',
+      openaiImageModel: 'gpt-image-1'
+    });
+    plugin.currentSession = { theme: 'fantasy' };
+    plugin.currentChapter = { ...chapter, imagePath: 'C:/story-images/original.png' };
+    plugin.imageService = {
+      getStyleForTheme: jest.fn(() => 'cinematic'),
+      generateImage: jest.fn().mockRejectedValue(new Error('provider unavailable'))
+    };
+
+    await getRegenerateImageHandler(plugin, registerSocket)({}, {});
+
+    expect(plugin.currentChapter.imagePath).toBe('C:/story-images/original.png');
+    expect(emit).toHaveBeenCalledWith('story:image-generation-failed', expect.objectContaining({
+      message: 'Image generation failed, but story continues',
+      error: 'provider unavailable'
+    }));
+    expect(emit).not.toHaveBeenCalledWith('story:image-updated', expect.anything());
+  });
+
+  test('regeneration sends the configured OpenAI image model to the provider', async () => {
+    const { plugin, emit, registerSocket } = createPlugin({
+      autoGenerateImages: true,
+      imageProvider: 'openai',
+      openaiImageModel: 'gpt-image-1',
+      defaultImageModel: 'sdxl'
+    });
+    plugin.currentSession = { theme: 'fantasy' };
+    plugin.currentChapter = { ...chapter };
+    plugin.imageService = {
+      getStyleForTheme: jest.fn(() => 'cinematic'),
+      generateImage: jest.fn().mockResolvedValue('C:/story-images/regenerated.png')
+    };
+
+    await getRegenerateImageHandler(plugin, registerSocket)({}, {});
+
+    expect(plugin.imageService.generateImage).toHaveBeenCalledWith(
+      expect.stringContaining('The hidden gate'),
+      'gpt-image-1',
+      'cinematic'
+    );
+    expect(emit).toHaveBeenCalledWith('story:image-updated', expect.objectContaining({
+      imagePath: 'regenerated.png'
+    }));
   });
 });
