@@ -1967,11 +1967,15 @@ class InteractiveStoryPlugin {
           const statusCode = error.response?.status || 0;
           const responseData = error.response?.data || error.message;
 
+          const failureKeyValidationMetadata = provider === 'ollama' ? {} : {
+            ...keyValidationMetadata,
+            hasWhitespace: apiKey ? apiKey !== apiKey.trim() : false
+          };
+
           this._debugLog('error', `${providerName} API key validation failed`, {
             statusCode,
             error: responseData,
-            keyLength: apiKey ? apiKey.length : 0,
-            keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A'
+            ...failureKeyValidationMetadata
           });
 
           let message = 'API key validation failed';
@@ -2027,8 +2031,7 @@ class InteractiveStoryPlugin {
             troubleshooting,
             details: {
               statusCode,
-              ...keyValidationMetadata,
-              hasWhitespace: apiKey ? apiKey !== apiKey.trim() : false,
+              ...failureKeyValidationMetadata,
               baseURL: serviceOptions.baseURL || null
             }
           });
