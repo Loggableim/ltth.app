@@ -73,4 +73,9 @@ describe('Fish.audio emotion markers by effective model', () => {
 
     expect(axios.post.mock.calls[0][1].text).toBe('The door moved.');
   });
+
+  test('keeps the documented static helper compatible with parenthesized markers', () => {
+    expect(FishSpeechEngine.addEmotionMarker('The door moved.', 'scared'))
+      .toBe('(scared) The door moved.');
+  });
 });

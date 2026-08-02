@@ -198,4 +198,25 @@ describe('TTS team level Fish.audio voice assignment', () => {
     expect(settings.assigned_voice_id).toBeNull();
     expect(settings.assigned_engine).toBeNull();
   });
+
+  test('keeps Fish-only model and emotion options out of TikTok synthesis', async () => {
+    const result = await plugin.speak({
+      text: 'No Fish controls here',
+      userId: 'manual-user',
+      username: 'ManualUser',
+      voiceId: 'de_002',
+      engine: 'tiktok',
+      source: 'manual',
+      model: 's2.1-pro',
+      emotion: 'scared'
+    });
+
+    expect(result).toEqual(expect.objectContaining({ success: true, engine: 'tiktok' }));
+    expect(plugin.engines.tiktok.synthesize).toHaveBeenCalledWith(
+      'No Fish controls here',
+      'de_002',
+      1,
+      {}
+    );
+  });
 });

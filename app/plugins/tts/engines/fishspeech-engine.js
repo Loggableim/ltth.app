@@ -1598,6 +1598,20 @@ class FishSpeechEngine {
     }
 
     /**
+     * Add the legacy parenthesized emotion marker for external callers.
+     * Internal synthesis uses _formatEmotionText so its marker can follow
+     * the effective Fish model.
+     * @param {string} text - Original text
+     * @param {string} emotion - Emotion to add
+     * @returns {string} Text with emotion marker
+     */
+    static addEmotionMarker(text, emotion) {
+        if (!text || !emotion) return text;
+        if (text.trim().startsWith('(')) return text;
+        return `(${emotion}) ${text}`;
+    }
+
+    /**
      * Format a supported emotion as the syntax required by the selected Fish model.
      * @param {string} text - Original text
      * @param {string} emotion - Emotion to add
