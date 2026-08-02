@@ -87,7 +87,8 @@
           "save": "Guardar dise?o",
           "reset": "Restablecer dise?o",
           "edit_mode": "Modo de edici?n de dise?o",
-          "snap_off": "Ajuste: desactivado"
+          "snap_off": "Ajuste: desactivado",
+          "snap_on": "Ajuste: activado"
         },
         "voice": {
           "model": "Modelo de Fish.audio",

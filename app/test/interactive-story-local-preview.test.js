@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const {
+  isLocalOverlayHostname,
   isPublicQuickTunnelHostname,
   postJsonLocalOnly
 } = require('../public/js/public-overlay-render-mode');
@@ -60,6 +61,26 @@ describe('Interactive Story local vote preview', () => {
     expect(isPublicQuickTunnelHostname('trycloudflare.com.example.org')).toBe(false);
   });
 
+  test('does not issue a position write from a custom public hostname', async () => {
+    const fetchImpl = jest.fn();
+
+    await expect(postJsonLocalOnly(
+      '/api/interactive-story/overlay-positions',
+      { positions: {} },
+      {
+        hostname: 'story.example.com',
+        fetchImpl
+      }
+    )).resolves.toEqual({ skipped: true, response: null });
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(isLocalOverlayHostname('localhost')).toBe(true);
+    expect(isLocalOverlayHostname('127.0.0.1')).toBe(true);
+    expect(isLocalOverlayHostname('::1')).toBe(true);
+    expect(isLocalOverlayHostname('[::1]')).toBe(true);
+    expect(isLocalOverlayHostname('story.example.com')).toBe(false);
+  });
+
   test('the shipped overlay uses the local-only write guard', () => {
     const source = fs.readFileSync(
       path.join(
@@ -79,7 +100,7 @@ describe('Interactive Story local vote preview', () => {
       'LTTHPublicOverlayRenderMode.postJsonLocalOnly('
     );
     expect(source).toContain(
-      'LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname('
+      'LTTHPublicOverlayRenderMode.isLocalOverlayHostname('
     );
   });
   test('ships pointer editing only behind the explicit local edit mode', () => {

@@ -2,7 +2,7 @@
 
 ## Scope
 
-Updated only the active Interactive Story documentation:
+Updated the active Interactive Story documentation:
 
 - `app/plugins/interactive-story/README.md`
 - `app/plugins/interactive-story/SCHNELLSTART.md`
@@ -10,7 +10,11 @@ Updated only the active Interactive Story documentation:
 
 The documents now describe the central Ollama Cloud key lookup and key masking, the image-off default and non-blocking image fallback, Fish.audio S1/S2 cue syntax and model/emotion controls, `!join` with the default two eligible missed rounds, session-pinned pen-and-paper settings, and local-only overlay edit mode.
 
-No production or test file required a correction. The CSS build produced `app/public/css/tailwind.output.css`; that generated change was restored to HEAD so the task stays documentation-only.
+Integrated review also required three focused corrections:
+
+- the inline overlay parser error was fixed and protected by compiling every shipped inline script;
+- edit mode and layout writes are now restricted to localhost/loopback, including a custom-public-host regression;
+- `calm` and `dramatic` narration modes now produce distinct Fish.audio cues instead of behaving like `auto`.
 
 ## Verification
 
@@ -18,7 +22,7 @@ Executed from `C:\tmp\interactive-story-2-0\app` using the bundled root Node run
 
 ```text
 runtime/node/node.exe node_modules/jest/bin/jest.js --runTestsByPath <all test/interactive-story-*.test.js> <all plugins/interactive-story/test/*.test.js> test/tts-request-overrides.test.js test/tts-fish-emotion-model.test.js --runInBand
-21 suites passed, 159 tests passed
+21 suites passed, 164 tests passed after the integrated follow-up corrections
 
 runtime/node/npm.cmd run lint
 exit 0
@@ -31,13 +35,19 @@ exit 0
 
 ## Browser and provider boundaries
 
-No browser/runtime interaction was performed in this task, as delegated: root verification still needs to exercise the local safe-mode app, the editable local overlay, and the public render harness. The focused `interactive-story-local-preview.test.js` is green and covers the local-write/public-Quick-Tunnel guard at unit level, but it is not a substitute for that browser evidence.
+Root Chromium verification was completed after the parser correction:
 
-No Ollama Cloud, image, or Fish provider call was made. The documentation intentionally makes no live-provider-success claim.
+- Story Studio loaded the intended defaults and persisted its form workflow against the isolated local runtime;
+- local `?edit=1` created six draggable elements;
+- a real participant drag posted a normalized `participants` position;
+- a mapped TryCloudflare hostname stayed render-only without a layout write.
+
+No external Ollama Cloud, image, or Fish provider call was made. The documentation intentionally makes no live-provider-success claim. Custom public host blocking is covered by the focused local-preview regression.
 
 ## Final review
 
-- Target diff: three active Interactive Story documents only.
-- Staged paths for this task are limited to those three documents and this report.
+- Documentation claims were checked against provider, narration, participant, and overlay implementation.
+- The parser correction is recorded in commit `215220a18` and its inline-script compile regression.
+- Follow-up review corrections are limited to the local overlay guard/editor localization, narration-mode behavior, their tests, and this report.
 - Unrelated generated website/localization changes and earlier untracked task reports were left untouched.
-- No database cleanup was triggered or needed by this documentation-only task.
+- No database cleanup was triggered or needed.

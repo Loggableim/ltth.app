@@ -87,7 +87,8 @@
           "save": "Layout speichern",
           "reset": "Layout zur?cksetzen",
           "edit_mode": "Layout-Bearbeitungsmodus",
-          "snap_off": "Raster: aus"
+          "snap_off": "Raster: aus",
+          "snap_on": "Raster: an"
         },
         "voice": {
           "model": "Fish.audio-Modell",

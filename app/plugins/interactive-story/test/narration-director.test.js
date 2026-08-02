@@ -52,4 +52,36 @@ describe('NarrationDirector', () => {
     expect(result.segments).toEqual([{ text: 'Stay quiet.', emotion: 'neutral', delivery: null }]);
     expect(result.ttsText).toBe('Stay quiet.');
   });
+
+  test('calm mode replaces generated cues with a steady calm delivery', () => {
+    const director = new NarrationDirector({ model: 's2.1-pro', mode: 'calm', logger });
+    const result = director.prepareChapter({
+      content: 'The gate opens.',
+      narrationSegments: [
+        { text: 'The gate opens.', emotion: 'angry', delivery: 'shouting' }
+      ]
+    }, { theme: 'fantasy', language: 'English' });
+
+    expect(result.segments).toEqual([
+      { text: 'The gate opens.', emotion: 'calm', delivery: 'soft tone' }
+    ]);
+    expect(result.ttsText).toBe('[calm] [soft tone] The gate opens.');
+  });
+
+  test('dramatic mode applies determined cues and emphasizes exclamations', () => {
+    const director = new NarrationDirector({ model: 's2.1-pro', mode: 'dramatic', logger });
+    const result = director.prepareChapter({
+      content: 'The gate opens. Run now!',
+      narrationSegments: [
+        { text: 'The gate opens.', emotion: 'calm', delivery: null },
+        { text: 'Run now!', emotion: 'neutral', delivery: null }
+      ]
+    }, { theme: 'fantasy', language: 'English' });
+
+    expect(result.segments).toEqual([
+      { text: 'The gate opens.', emotion: 'determined', delivery: null },
+      { text: 'Run now!', emotion: 'determined', delivery: 'shouting' }
+    ]);
+    expect(result.ttsText).toBe('[determined] The gate opens. [determined] [shouting] Run now!');
+  });
 });

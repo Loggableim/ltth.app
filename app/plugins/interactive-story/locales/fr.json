@@ -87,7 +87,8 @@
           "save": "Enregistrer la mise en page",
           "reset": "Reinitialiser la mise en page",
           "edit_mode": "Mode d'?dition de mise en page",
-          "snap_off": "Alignement : d?sactiv?"
+          "snap_off": "Alignement : d?sactiv?",
+          "snap_on": "Alignement : actif"
         },
         "voice": {
           "model": "Modele Fish.audio",

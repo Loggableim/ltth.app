@@ -18,11 +18,16 @@
       );
     }
 
+    function isLocalOverlayHostname(hostname) {
+      const normalized = String(hostname || '').trim().toLowerCase();
+      return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1' || normalized === '[::1]';
+    }
+
     async function postJsonLocalOnly(url, body, {
       hostname = root?.location?.hostname,
       fetchImpl = root?.fetch?.bind(root)
     } = {}) {
-      if (isPublicQuickTunnelHostname(hostname)) {
+      if (!isLocalOverlayHostname(hostname)) {
         return { skipped: true, response: null };
       }
       if (typeof fetchImpl !== 'function') {
@@ -37,6 +42,7 @@
     }
 
     return {
+      isLocalOverlayHostname,
       isPublicQuickTunnelHostname,
       postJsonLocalOnly
     };

@@ -930,7 +930,7 @@
     const overlayElementIds = ['title', 'content', 'voting', 'generating', 'results', 'participants'];
     let overlayConfig = { version: 2, positions: {} };
     let dragState = { isDragging: false, element: null, pointerId: null, offsetX: 0, offsetY: 0, snapToGrid: false };
-    const publicRenderMode = window.LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname(window.location.hostname);
+    const publicRenderMode = !window.LTTHPublicOverlayRenderMode.isLocalOverlayHostname(window.location.hostname);
     const editMode = !publicRenderMode && new URLSearchParams(window.location.search).get('edit') === '1';
 
     window.addEventListener('message', (event) => {
@@ -982,10 +982,14 @@
       controls.id = 'overlayLayoutEditor';
       controls.setAttribute('role', 'status');
       controls.style.cssText = 'position:fixed;right:20px;top:20px;z-index:1000;background:#111d;color:#fff;padding:10px 12px;border:1px solid #e94560;border-radius:8px;font:600 14px Arial,sans-serif;display:flex;gap:8px;align-items:center;';
-      controls.innerHTML = '<span data-i18n="plugins.interactive-story.story_studio.preview.edit_mode">Layout edit mode</span><button type="button" data-layout-action="save" data-i18n="plugins.interactive-story.story_studio.preview.save">Save layout</button><button type="button" data-layout-action="reset" data-i18n="plugins.interactive-story.story_studio.preview.reset">Reset layout</button><button type="button" data-layout-action="snap" data-i18n="plugins.interactive-story.story_studio.preview.snap_off">Snap: off</button>';
+      controls.innerHTML = `<span data-i18n="plugins.interactive-story.story_studio.preview.edit_mode">${translateOverlay('plugins.interactive-story.story_studio.preview.edit_mode')}</span><button type="button" data-layout-action="save" data-i18n="plugins.interactive-story.story_studio.preview.save">${translateOverlay('plugins.interactive-story.story_studio.preview.save')}</button><button type="button" data-layout-action="reset" data-i18n="plugins.interactive-story.story_studio.preview.reset">${translateOverlay('plugins.interactive-story.story_studio.preview.reset')}</button><button type="button" data-layout-action="snap" data-i18n="plugins.interactive-story.story_studio.preview.snap_off">${translateOverlay('plugins.interactive-story.story_studio.preview.snap_off')}</button>`;
       controls.querySelector('[data-layout-action="save"]').addEventListener('click', saveOverlayPositions);
       controls.querySelector('[data-layout-action="reset"]').addEventListener('click', resetOverlayPositions);
-      controls.querySelector('[data-layout-action="snap"]').addEventListener('click', (event) => { dragState.snapToGrid = !dragState.snapToGrid; event.currentTarget.textContent = `Snap: ${dragState.snapToGrid ? 'on' : 'off'}`; });
+      controls.querySelector('[data-layout-action="snap"]').addEventListener('click', (event) => {
+        dragState.snapToGrid = !dragState.snapToGrid;
+        const snapKey = dragState.snapToGrid ? 'snap_on' : 'snap_off';
+        event.currentTarget.textContent = translateOverlay(`plugins.interactive-story.story_studio.preview.${snapKey}`);
+      });
       document.body.appendChild(controls);
     }
 

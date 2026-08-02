@@ -87,7 +87,8 @@
           "save": "Save layout",
           "reset": "Reset layout",
           "edit_mode": "Layout edit mode",
-          "snap_off": "Snap: off"
+          "snap_off": "Snap: off",
+          "snap_on": "Snap: on"
         },
         "voice": {
           "model": "Fish.audio model",

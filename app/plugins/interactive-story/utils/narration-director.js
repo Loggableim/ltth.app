@@ -26,12 +26,22 @@ class NarrationDirector {
     const displayText = NarrationDirector.stripMarkers(chapter && chapter.content);
     const sentences = String(displayText).match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map(sentence => sentence.trim()).filter(Boolean) || [];
     const metadata = Array.isArray(chapter && chapter.narrationSegments) ? chapter.narrationSegments : [];
-    const segments = sentences.map((text, index) => this._segmentFor(text, metadata[index], theme));
+    const segments = sentences.map((text, index) => this._applyMode(this._segmentFor(text, metadata[index], theme)));
     const ttsText = this.mode === 'off' ? displayText : segments.map(segment => {
       const marker = NarrationDirector.renderMarker(segment.emotion, segment.delivery, this.model);
       return marker ? `${marker} ${segment.text}` : segment.text;
     }).join(' ');
     return { displayText, segments, ttsText };
+  }
+
+  _applyMode(segment) {
+    if (this.mode === 'calm') {
+      return { ...segment, emotion: 'calm', delivery: 'soft tone' };
+    }
+    if (this.mode === 'dramatic') {
+      return { ...segment, emotion: 'determined', delivery: /!/.test(segment.text) ? 'shouting' : null };
+    }
+    return segment;
   }
 
   _segmentFor(text, candidate, theme) {
