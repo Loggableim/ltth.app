@@ -101,3 +101,4 @@ describe('Interactive Story UI - Collapsible Sections', () => {
     expect(uiHtml).toMatch(/Section toggled.*collapsed.*expanded/);
   });
 });
+test('requires the Story Studio wiring contract', () => { const source = fs.readFileSync(path.join(__dirname, '../ui.html'), 'utf8'); expect(source).toContain('storyMode: document.getElementById(\'storyMode\').value'); expect(source).toContain('dndJoinKeyword: document.getElementById(\'dndJoinKeyword\').value.trim()'); expect(source).toContain('fishaudioModel: document.getElementById(\'fishaudioModel\').value'); expect(source).toContain('function renderDndParticipantRoster'); expect(source).toContain("socket.on('story:dnd-participants-updated'"); expect(source).toContain('function sendPreviewLayoutAction'); expect(source).not.toContain('openRouterApiKey: document.getElementById(\'openRouterApiKey\').value.trim()'); });

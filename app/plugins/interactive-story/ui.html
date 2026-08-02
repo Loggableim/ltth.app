@@ -3490,6 +3490,37 @@
 
 
         <form id="configForm">
+          <section class="config-section" id="storyStudio">
+            <div class="config-section-content">
+              <h4 data-i18n="plugins.interactive-story.story_studio.title">Story Studio</h4>
+              <p class="text-muted" data-i18n="plugins.interactive-story.story_studio.central_settings">API keys are managed in central Settings and are never stored in this studio.</p>
+              <div id="storyStudioStartSlot"></div>
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" for="storyMode" data-i18n="plugins.interactive-story.story_studio.mode.label">Story mode</label>
+                  <select class="form-select" id="storyMode">
+                    <option value="classic" data-i18n="plugins.interactive-story.story_studio.mode.classic">Classic chat voting</option>
+                    <option value="dnd" data-i18n="plugins.interactive-story.story_studio.mode.dnd">Pen-and-paper party</option>
+                  </select>
+                </div>
+                <div class="mb-3 dnd-studio-control">
+                  <label class="form-label" for="dndJoinKeyword" data-i18n="plugins.interactive-story.story_studio.dnd.join_keyword">Join keyword</label>
+                  <input class="form-control" id="dndJoinKeyword" value="!join" maxlength="32">
+                </div>
+                <div class="mb-3 dnd-studio-control">
+                  <label class="form-label" for="dndInactivityLimitRounds" data-i18n="plugins.interactive-story.story_studio.dnd.inactivity_limit">Inactive rounds before removal</label>
+                  <input class="form-control" id="dndInactivityLimitRounds" type="number" min="1" max="20" value="2">
+                </div>
+              </div>
+              <div class="mb-3" id="dndParticipantPanel">
+                <strong data-i18n="plugins.interactive-story.story_studio.players.title">Live players</strong>
+                <div id="dndParticipantRoster" class="text-muted"><span data-i18n="plugins.interactive-story.story_studio.players.empty">No players have joined yet.</span></div>
+              </div>
+              <p class="text-muted" data-i18n="plugins.interactive-story.story_studio.image_off">Images are off by default for a faster live story.</p>
+              <p class="text-muted" data-i18n="plugins.interactive-story.story_studio.fish_audio_default">Fish.audio is the recommended default narrator.</p>
+              <div id="storyStudioVoiceSlot"></div>
+            </div>
+          </section>
 
           <!-- API Status Section -->
 
@@ -3887,6 +3918,16 @@
                     </optgroup>
 
                   </select>
+              <div class="form-grid-2" id="fishAudioSettings">
+                <div class="mb-3">
+                  <label class="form-label" for="fishaudioModel" data-i18n="plugins.interactive-story.story_studio.voice.model">Fish.audio model</label>
+                  <select class="form-select" id="fishaudioModel"><option value="s2.1-pro" data-i18n="plugins.interactive-story.story_studio.voice.s21_pro">S2.1 Pro</option><option value="s1" data-i18n="plugins.interactive-story.story_studio.voice.s1">S1</option></select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="narrationEmotionMode" data-i18n="plugins.interactive-story.story_studio.voice.emotion">Narration emotion</label>
+                  <select class="form-select" id="narrationEmotionMode"><option value="auto" data-i18n="plugins.interactive-story.story_studio.voice.auto">Automatic</option><option value="calm" data-i18n="plugins.interactive-story.story_studio.voice.calm">Calm</option><option value="dramatic" data-i18n="plugins.interactive-story.story_studio.voice.dramatic">Dramatic</option></select>
+                </div>
+              </div>
 
                 </div>
 
@@ -4450,7 +4491,10 @@
             </button>
 
             <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="plugins.interactive-story.cards.overlay.open">Open</button>
-            <button class="btn btn-outline-secondary" id="editOverlayLayoutBtn" type="button">Edit layout</button>
+            <button class="btn btn-outline-secondary" id="editOverlayLayoutBtn" type="button" data-i18n="plugins.interactive-story.story_studio.preview.edit">Edit layout</button>
+            <button class="btn btn-outline-secondary" id="previewEditLayoutBtn" type="button" data-i18n="plugins.interactive-story.story_studio.preview.edit">Edit layout</button>
+            <button class="btn btn-outline-secondary" id="previewSaveLayoutBtn" type="button" data-i18n="plugins.interactive-story.story_studio.preview.save">Save layout</button>
+            <button class="btn btn-outline-secondary" id="previewResetLayoutBtn" type="button" data-i18n="plugins.interactive-story.story_studio.preview.reset">Reset layout</button>
 
           </div>
 
@@ -5871,6 +5915,14 @@
 
         loadThemes();
 
+      const startSlot = document.getElementById('storyStudioStartSlot');
+      const startSection = document.getElementById('startStorySection');
+      const voiceSlot = document.getElementById('storyStudioVoiceSlot');
+      const voiceSection = document.getElementById('systemTtsVoiceGroup')?.closest('.config-section');
+      if (startSlot && startSection) startSlot.appendChild(startSection);
+      if (voiceSlot && voiceSection) voiceSlot.appendChild(voiceSection);
+      document.getElementById('storyMode')?.addEventListener('change', updateStoryStudioMode);
+      updateStoryStudioMode();
         loadDebugLogs();
 
       } else {
@@ -5906,6 +5958,10 @@
         // Add event listeners for buttons (must be inside DOMContentLoaded)
 
         // Use optional chaining to prevent errors if elements don't exist
+      document.getElementById('previewEditLayoutBtn')?.addEventListener('click', openPreviewLayoutEditor);
+      document.getElementById('previewSaveLayoutBtn')?.addEventListener('click', () => sendPreviewLayoutAction('save'));
+      document.getElementById('previewResetLayoutBtn')?.addEventListener('click', () => sendPreviewLayoutAction('reset'));
+
 
         document.getElementById('testApiKeyBtn')?.addEventListener('click', testApiKey);
 
@@ -6009,7 +6065,10 @@
 
           openaiModel: document.getElementById('openaiModel').value,
 
-          openRouterApiKey: document.getElementById('openRouterApiKey').value.trim(),
+          storyMode: document.getElementById('storyMode').value,
+          dndJoinKeyword: document.getElementById('dndJoinKeyword').value.trim(),
+          dndInactivityLimitRounds: parseInt(document.getElementById('dndInactivityLimitRounds').value, 10),
+          // Credentials belong to central Settings and are intentionally never posted from this page.
 
           openRouterBaseUrl: document.getElementById('openRouterBaseUrl').value.trim(),
 
@@ -6033,6 +6092,8 @@
           ttsEngine: document.getElementById('ttsEngine').value,
 
           ttsVoiceId: document.getElementById('ttsVoiceId').value,
+          fishaudioModel: document.getElementById('fishaudioModel').value,
+          narrationEmotionMode: document.getElementById('narrationEmotionMode').value,
 
 
 
@@ -6478,8 +6539,41 @@
       window.open(editorUrl.toString(), '_blank', 'width=1920,height=1080,toolbar=no,menubar=no,scrollbars=no');
     }
 
-    function openOverlayInNewTab() {
+    function updateStoryStudioMode() {
+      const isDnd = document.getElementById('storyMode')?.value === 'dnd';
+      document.querySelectorAll('.dnd-studio-control').forEach((control) => {
+        control.style.display = isDnd ? '' : 'none';
+      });
+      const panel = document.getElementById('dndParticipantPanel');
+      if (panel) panel.style.display = isDnd ? '' : 'none';
+    }
 
+    function renderDndParticipantRoster(participants = []) {
+      const roster = document.getElementById('dndParticipantRoster');
+      if (!roster) return;
+      if (!participants.length) {
+        roster.textContent = t('plugins.interactive-story.story_studio.players.empty');
+        return;
+      }
+      roster.innerHTML = participants.map((participant) => `<span class="badge bg-primary me-1">${escapeHtml(participant.username || participant.displayName || participant.userId)}</span>`).join('');
+    }
+
+    function sendPreviewLayoutAction(action) {
+      const previewFrame = document.getElementById('overlayPreview');
+      previewFrame?.contentWindow?.postMessage({ type: 'interactive-story-layout', action }, window.location.origin);
+    }
+
+    function openPreviewLayoutEditor() {
+      const overlayUrl = document.getElementById('overlayUrl')?.value || `${window.location.protocol}//${window.location.host}/interactive-story/overlay`;
+      const previewUrl = new URL(overlayUrl, window.location.href);
+      previewUrl.searchParams.set('edit', '1');
+      const previewFrame = document.getElementById('overlayPreview');
+      if (previewFrame) previewFrame.src = previewUrl.toString();
+      document.getElementById('overlayPreviewContainer').style.display = 'block';
+
+    }
+
+    function openOverlayInNewTab() {
       const url = document.getElementById('overlayUrl').value;
 
 
@@ -7202,6 +7296,11 @@
             ttsProvider: 'system',
 
             ttsEngine: 'fishaudio',
+            storyMode: 'classic',
+            dndJoinKeyword: '!join',
+            dndInactivityLimitRounds: 2,
+            fishaudioModel: 's2.1-pro',
+            narrationEmotionMode: 'auto',
 
             openaiModel: 'gpt-4o',
 
@@ -7315,6 +7414,11 @@
           document.getElementById('defaultImageModel').value = config.defaultImageModel;
 
           document.getElementById('ttsVoiceId').value = config.ttsVoiceId;
+          document.getElementById('storyMode').value = config.storyMode;
+          document.getElementById('dndJoinKeyword').value = config.dndJoinKeyword;
+          document.getElementById('dndInactivityLimitRounds').value = config.dndInactivityLimitRounds;
+          document.getElementById('fishaudioModel').value = config.fishaudioModel;
+          document.getElementById('narrationEmotionMode').value = config.narrationEmotionMode;
 
           document.getElementById('titlePreviewDelay').value = (config.titlePreviewDelay || 5000) / 1000;
 
@@ -7435,6 +7539,11 @@
         document.getElementById('ttsEngine').value = config.ttsEngine || 'fishaudio';
 
         document.getElementById('ttsVoiceId').value = config.ttsVoiceId || 'alloy';
+        document.getElementById('storyMode').value = config.storyMode || 'classic';
+        document.getElementById('dndJoinKeyword').value = config.dndJoinKeyword || '!join';
+        document.getElementById('dndInactivityLimitRounds').value = config.dndInactivityLimitRounds || 2;
+        document.getElementById('fishaudioModel').value = config.fishaudioModel || 's2.1-pro';
+        document.getElementById('narrationEmotionMode').value = config.narrationEmotionMode || 'auto';
 
 
 
@@ -8137,6 +8246,8 @@
         return;
 
       }
+      renderDndParticipantRoster(currentStatus.activeParticipants || []);
+      updateStoryStudioMode();
 
 
 
@@ -8896,6 +9007,12 @@
 
 
 
+    socket.on('story:dnd-participants-updated', (participants) => {
+      renderDndParticipantRoster(participants || []);
+    });
+    socket.on('story:dnd-participant-joined', () => {
+      loadStatus();
+    });
     socket.on('story:voting-ended', (results) => {
 
       loadStatus();

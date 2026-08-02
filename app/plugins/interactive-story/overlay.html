@@ -933,6 +933,13 @@
     const publicRenderMode = window.LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname(window.location.hostname);
     const editMode = !publicRenderMode && new URLSearchParams(window.location.search).get('edit') === '1';
 
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin || event.data?.type !== 'interactive-story-layout') return;
+      if (!editMode || publicRenderMode) return;
+      if (event.data.action === 'save') saveOverlayPositions();
+      if (event.data.action === 'reset') resetOverlayPositions();
+    });
+
     function clampLayoutValue(value) { return Math.max(0, Math.min(1, value)); }
     function normalizeOverlayLayout(payload) {
       const positions = payload && payload.positions && typeof payload.positions === 'object' ? payload.positions : {};
@@ -975,7 +982,7 @@
       controls.id = 'overlayLayoutEditor';
       controls.setAttribute('role', 'status');
       controls.style.cssText = 'position:fixed;right:20px;top:20px;z-index:1000;background:#111d;color:#fff;padding:10px 12px;border:1px solid #e94560;border-radius:8px;font:600 14px Arial,sans-serif;display:flex;gap:8px;align-items:center;';
-      controls.innerHTML = '<span>Layout edit mode</span><button type="button" data-layout-action="save">Save</button><button type="button" data-layout-action="reset">Reset</button><button type="button" data-layout-action="snap">Snap: off</button>';
+      controls.innerHTML = '<span data-i18n="plugins.interactive-story.story_studio.preview.edit_mode">Layout edit mode</span><button type="button" data-layout-action="save" data-i18n="plugins.interactive-story.story_studio.preview.save">Save layout</button><button type="button" data-layout-action="reset" data-i18n="plugins.interactive-story.story_studio.preview.reset">Reset layout</button><button type="button" data-layout-action="snap" data-i18n="plugins.interactive-story.story_studio.preview.snap_off">Snap: off</button>';
       controls.querySelector('[data-layout-action="save"]').addEventListener('click', saveOverlayPositions);
       controls.querySelector('[data-layout-action="reset"]').addEventListener('click', resetOverlayPositions);
       controls.querySelector('[data-layout-action="snap"]').addEventListener('click', (event) => { dragState.snapToGrid = !dragState.snapToGrid; event.currentTarget.textContent = `Snap: ${dragState.snapToGrid ? 'on' : 'off'}`; });

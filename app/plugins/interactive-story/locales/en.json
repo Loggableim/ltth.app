@@ -64,6 +64,41 @@
           }
         }
       },
+      "story_studio": {
+        "title": "Story Studio",
+        "central_settings": "API keys are managed in central Settings and are never stored in this studio.",
+        "image_off": "Images are off by default for a faster live story.",
+        "fish_audio_default": "Fish.audio is the recommended default narrator.",
+        "mode": {
+          "label": "Story mode",
+          "classic": "Classic chat voting",
+          "dnd": "Pen-and-paper party"
+        },
+        "dnd": {
+          "join_keyword": "Join keyword",
+          "inactivity_limit": "Inactive rounds before removal"
+        },
+        "players": {
+          "title": "Live players",
+          "empty": "No players have joined yet."
+        },
+        "preview": {
+          "edit": "Edit layout",
+          "save": "Save layout",
+          "reset": "Reset layout",
+          "edit_mode": "Layout edit mode",
+          "snap_off": "Snap: off"
+        },
+        "voice": {
+          "model": "Fish.audio model",
+          "emotion": "Narration emotion",
+          "auto": "Automatic",
+          "calm": "Calm",
+          "dramatic": "Dramatic",
+          "s21_pro": "S2.1 Pro",
+          "s1": "S1"
+        }
+      },
       "hero": {
         "status": {
           "ready": "Ready for your next stream"

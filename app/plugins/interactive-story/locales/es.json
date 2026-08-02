@@ -64,6 +64,41 @@
           }
         }
       },
+      "story_studio": {
+        "title": "Estudio de historias",
+        "central_settings": "Las claves de API se administran en Ajustes centrales y nunca se guardan en este estudio.",
+        "image_off": "Las im?genes est?n desactivadas por defecto para una historia en directo m?s r?pida.",
+        "fish_audio_default": "Fish.audio es el narrador predeterminado recomendado.",
+        "mode": {
+          "label": "Modo de historia",
+          "classic": "Votaci?n cl?sica del chat",
+          "dnd": "Grupo de juego de rol"
+        },
+        "dnd": {
+          "join_keyword": "Palabra para unirse",
+          "inactivity_limit": "Rondas inactivas antes de eliminar"
+        },
+        "players": {
+          "title": "Jugadores en directo",
+          "empty": "A?n no se han unido jugadores."
+        },
+        "preview": {
+          "edit": "Editar dise?o",
+          "save": "Guardar dise?o",
+          "reset": "Restablecer dise?o",
+          "edit_mode": "Modo de edici?n de dise?o",
+          "snap_off": "Ajuste: desactivado"
+        },
+        "voice": {
+          "model": "Modelo de Fish.audio",
+          "emotion": "Emoci?n de la narraci?n",
+          "auto": "Autom?tico",
+          "calm": "Tranquilo",
+          "dramatic": "Dram?tico",
+          "s21_pro": "S2.1 Pro",
+          "s1": "S1"
+        }
+      },
       "hero": {
         "status": {
           "ready": "Todo listo para tu próxima transmisión"

@@ -64,6 +64,41 @@
           }
         }
       },
+      "story_studio": {
+        "title": "Studio d'histoire",
+        "central_settings": "Les cles API sont gerees dans les reglages centraux et ne sont jamais stockees dans ce studio.",
+        "image_off": "Les images sont desactivees par defaut pour une histoire en direct plus rapide.",
+        "fish_audio_default": "Fish.audio est le narrateur par defaut recommande.",
+        "mode": {
+          "label": "Mode d'histoire",
+          "classic": "Vote classique du chat",
+          "dnd": "Groupe jeu de role"
+        },
+        "dnd": {
+          "join_keyword": "Mot-cle pour rejoindre",
+          "inactivity_limit": "Tours inactifs avant retrait"
+        },
+        "players": {
+          "title": "Joueurs en direct",
+          "empty": "Aucun joueur n'a encore rejoint."
+        },
+        "preview": {
+          "edit": "Modifier la mise en page",
+          "save": "Enregistrer la mise en page",
+          "reset": "Reinitialiser la mise en page",
+          "edit_mode": "Mode d'?dition de mise en page",
+          "snap_off": "Alignement : d?sactiv?"
+        },
+        "voice": {
+          "model": "Modele Fish.audio",
+          "emotion": "Emotion de narration",
+          "auto": "Automatique",
+          "calm": "Calme",
+          "dramatic": "Dramatique",
+          "s21_pro": "S2.1 Pro",
+          "s1": "S1"
+        }
+      },
       "hero": {
         "status": {
           "ready": "Prêt pour votre prochain stream"
