@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const {
   isPublicQuickTunnelHostname,
@@ -19,7 +19,7 @@ describe('Interactive Story local vote preview', () => {
 
     const result = await postJsonLocalOnly(
       '/api/interactive-story/overlay-positions',
-      { positions: { title: { top: 10, left: 20 } } },
+      { version: 2, positions: { title: { x: 0.1, y: 0.2 } } },
       {
         hostname: '127.0.0.1',
         fetchImpl
@@ -36,7 +36,7 @@ describe('Interactive Story local vote preview', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          positions: { title: { top: 10, left: 20 } }
+          version: 2, positions: { title: { x: 0.1, y: 0.2 } }
         })
       }
     );
@@ -80,5 +80,13 @@ describe('Interactive Story local vote preview', () => {
     expect(source).toContain(
       'LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname('
     );
+  });
+  test('ships pointer editing only behind the explicit local edit mode', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'interactive-story', 'overlay.html'), 'utf8');
+    expect(source).toContain("new URLSearchParams(window.location.search).get('edit') === '1'");
+    expect(source).toContain("addEventListener('pointerdown', startDrag)");
+    expect(source).toContain("addEventListener('pointermove', doDrag)");
+    expect(source).toContain("addEventListener('pointerup', stopDrag)");
+    expect(source).toContain('data-element="participants"');
   });
 });

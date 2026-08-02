@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="en">
 
@@ -3356,7 +3356,7 @@
 
         <div class="live-state" id="liveStateCard">
           <div class="live-state__title" id="liveStateTitle" data-i18n="plugins.interactive-story.labels.generation_bereit">Generation bereit</div>
-          <div class="live-state__meta" id="liveStateMeta" data-i18n="plugins.interactive-story.labels.openai_dall_e_system_tts">OpenAI • DALL-E • System TTS</div>
+          <div class="live-state__meta" id="liveStateMeta" data-i18n="plugins.interactive-story.labels.openai_dall_e_system_tts">OpenAI â€¢ DALL-E â€¢ System TTS</div>
         </div>
 
         <div class="status-grid">
@@ -3511,9 +3511,9 @@
 
                 Configure your AI provider API keys in <strong>Settings</strong>:<br>
 
-                • <strong>OpenAI</strong>: Settings &gt; OpenAI API Configuration<br>
+                â€¢ <strong>OpenAI</strong>: Settings &gt; OpenAI API Configuration<br>
 
-                • <strong>SiliconFlow</strong>: Settings &gt; TTS API Keys &gt; Fish Speech 1.5 API Key (SiliconFlow)
+                â€¢ <strong>SiliconFlow</strong>: Settings &gt; TTS API Keys &gt; Fish Speech 1.5 API Key (SiliconFlow)
 
               </div>
 
@@ -3940,13 +3940,13 @@
 
                     <option value="English" data-i18n="plugins.interactive-story.interactive_story.ui.language.english">English</option>
 
-                    <option value="Spanish" data-i18n="plugins.interactive-story.labels.espanol_spanish">Español (Spanish)</option>
+                    <option value="Spanish" data-i18n="plugins.interactive-story.labels.espanol_spanish">EspaÃ±ol (Spanish)</option>
 
-                    <option value="French" data-i18n="plugins.interactive-story.labels.francais_french">Français (French)</option>
+                    <option value="French" data-i18n="plugins.interactive-story.labels.francais_french">FranÃ§ais (French)</option>
 
                     <option value="Italian" data-i18n="plugins.interactive-story.labels.italiano_italian">Italiano (Italian)</option>
 
-                    <option value="Portuguese" data-i18n="plugins.interactive-story.labels.portugues_portuguese">Português (Portuguese)</option>
+                    <option value="Portuguese" data-i18n="plugins.interactive-story.labels.portugues_portuguese">PortuguÃªs (Portuguese)</option>
 
                   </select>
 
@@ -4450,6 +4450,7 @@
             </button>
 
             <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="plugins.interactive-story.cards.overlay.open">Open</button>
+            <button class="btn btn-outline-secondary" id="editOverlayLayoutBtn" type="button">Edit layout</button>
 
           </div>
 
@@ -5227,7 +5228,7 @@
 
           subtitle: 'Cinematische Stories mit Live-Voting, TTS und OBS-Overlays.',
 
-          status: { ready: 'Bereit für deinen nächsten Stream' },
+          status: { ready: 'Bereit fÃ¼r deinen nÃ¤chsten Stream' },
 
           theme_synced: 'Design mit Dashboard synchronisiert',
 
@@ -5421,7 +5422,7 @@
 
             copy: 'Kopieren',
 
-            open: 'Overlay öffnen',
+            open: 'Overlay Ã¶ffnen',
 
             hint: 'F-ge diese URL in OBS als Browser Source hinzu (Empfohlene Gr--e: 1920x1080)',
 
@@ -5471,7 +5472,7 @@
 
             manual_voting_results: 'Aktuelle Voting-Ergebnisse:',
 
-            manual_advance: 'Zur nächsten Runde',
+            manual_advance: 'Zur nÃ¤chsten Runde',
 
             manual_show_results: 'Voting-Ergebnisse anzeigen',
 
@@ -5505,7 +5506,7 @@
 
             locations: 'Orte',
 
-            items: 'Gegenstände'
+            items: 'GegenstÃ¤nde'
 
           },
 
@@ -5523,13 +5524,13 @@
 
           overlay_copied: 'Overlay-URL kopiert!',
 
-          overlay_copy_failed: 'Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C drücken.',
+          overlay_copy_failed: 'Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C drÃ¼cken.',
 
-          overlay_missing: 'Keine URL verfügbar. Bitte lade die Seite neu.',
+          overlay_missing: 'Keine URL verfÃ¼gbar. Bitte lade die Seite neu.',
 
-          overlay_blocked: 'Popup wurde blockiert! Erlaube Popups oder öffne manuell:\n{{url}}',
+          overlay_blocked: 'Popup wurde blockiert! Erlaube Popups oder Ã¶ffne manuell:\n{{url}}',
 
-          overlay_open_error: 'Fehler beim Öffnen des Overlays. Bitte manuell öffnen:\n{{url}}',
+          overlay_open_error: 'Fehler beim Ã–ffnen des Overlays. Bitte manuell Ã¶ffnen:\n{{url}}',
 
           ui_missing: 'Fehler: UI-Elemente nicht gefunden. Bitte Seite neu laden.',
 
@@ -5539,7 +5540,7 @@
 
           config_save_error: 'Fehler beim Speichern der Konfiguration: {{message}}',
 
-          theme_required: 'Bitte zuerst ein Thema auswählen!',
+          theme_required: 'Bitte zuerst ein Thema auswÃ¤hlen!',
 
           story_start_error: 'Fehler beim Starten der Story: {{message}}',
 
@@ -5553,7 +5554,7 @@
 
         prompts: {
 
-          confirm_choice: 'Bist du sicher, dass du Option {{option}} wählen möchtest?',
+          confirm_choice: 'Bist du sicher, dass du Option {{option}} wÃ¤hlen mÃ¶chtest?',
 
           confirm_end_story: 'M-chtest du die aktuelle Story wirklich beenden?'
 
@@ -5911,6 +5912,8 @@
       document.getElementById('copyOverlayUrlBtn')?.addEventListener('click', copyOverlayUrl);
 
       document.getElementById('openOverlayBtn')?.addEventListener('click', openOverlayInNewTab);
+
+      document.getElementById('editOverlayLayoutBtn')?.addEventListener('click', openOverlayLayoutEditor);
 
       document.getElementById('heroOpenOverlayBtn')?.addEventListener('click', openOverlayInNewTab);
 
@@ -6467,6 +6470,14 @@
 
 
 
+    function openOverlayLayoutEditor() {
+      const overlayUrl = document.getElementById('overlayUrl')?.value;
+      if (!overlayUrl) return;
+      const editorUrl = new URL(overlayUrl, window.location.href);
+      editorUrl.searchParams.set('edit', '1');
+      window.open(editorUrl.toString(), '_blank', 'width=1920,height=1080,toolbar=no,menubar=no,scrollbars=no');
+    }
+
     function openOverlayInNewTab() {
 
       const url = document.getElementById('overlayUrl').value;
@@ -6534,8 +6545,10 @@
       const overlayUrl = document.getElementById('overlayUrl')?.value
 
         || `${window.location.protocol}//${window.location.host}/interactive-story/overlay`;
+      const previewUrl = new URL(overlayUrl, window.location.href);
+      previewUrl.searchParams.set('edit', '1');
 
-      previewFrame.src = overlayUrl;
+      previewFrame.src = previewUrl.toString();
 
     }
 
@@ -6559,7 +6572,7 @@
 
         updateOverlayPreviewSizing();
 
-        toggleIcon.textContent = '▾';
+        toggleIcon.textContent = 'â–¾';
 
         toggleText.textContent = t('plugins.interactive-story.runtime.actions.preview_hide');
 
@@ -6567,7 +6580,7 @@
 
         container.style.display = 'none';
 
-        toggleIcon.textContent = '▸';
+        toggleIcon.textContent = 'â–¸';
 
         toggleText.textContent = t('plugins.interactive-story.runtime.actions.preview_show');
 
@@ -8175,7 +8188,7 @@
         providerNames[currentStatus.config?.llmProvider] || 'OpenAI',
         imageProviderNames[currentStatus.config?.imageProvider] || 'DALL-E',
         ttsProviderNames[currentStatus.config?.ttsProvider] || 'System TTS'
-      ].join(' • ');
+      ].join(' â€¢ ');
 
       if (currentStatus.configured) {
 
@@ -8793,7 +8806,7 @@
 
         charList.innerHTML = memory.characters.map(char =>
 
-          `<div class="memory-tag">• ${char.name}</div>`
+          `<div class="memory-tag">â€¢ ${char.name}</div>`
 
         ).join('');
 
@@ -8805,7 +8818,7 @@
 
         locList.innerHTML = memory.locations.map(loc =>
 
-          `<div class="memory-tag">• ${loc.name}</div>`
+          `<div class="memory-tag">â€¢ ${loc.name}</div>`
 
         ).join('');
 
@@ -8817,7 +8830,7 @@
 
         itemList.innerHTML = memory.items.map(item =>
 
-          `<div class="memory-tag">• ${item.name}</div>`
+          `<div class="memory-tag">â€¢ ${item.name}</div>`
 
         ).join('');
 

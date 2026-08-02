@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -24,5 +24,10 @@ describe('Interactive Story overlay preview loading', () => {
     expect(source).toContain("themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });");
     expect(source).toContain("if (document.documentElement.getAttribute('data-theme') !== theme) {");
     expect(source).toContain("document.documentElement.setAttribute('data-theme', theme);");
+  });
+  test('marks the dashboard preview and editor action as explicit layout editing', () => {
+    const source = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'ui.html'), 'utf8');
+    expect(source).toContain("searchParams.set('edit', '1');");
+    expect(source).toContain('id="editOverlayLayoutBtn"');
   });
 });

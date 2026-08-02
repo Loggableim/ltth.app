@@ -1,4 +1,4 @@
-const path = require('path');
+﻿const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 
@@ -14,6 +14,7 @@ const StoryEngine = require('./engines/story-engine');
 const VotingSystem = require('./utils/voting-system');
 const StoryMemory = require('./utils/story-memory');
 const NarrationDirector = require('./utils/narration-director');
+const OverlayLayout = require('./utils/overlay-layout');
 
 // Backend
 const StoryDatabase = require('./backend/database');
@@ -61,7 +62,7 @@ class InteractiveStoryPlugin {
     this.TTS_DISABLED_VOTING_BUFFER_MS = 2000; // 2 second buffer before voting when TTS disabled
     
     // Reading time constants (when TTS is disabled)
-    this.READING_SPEED_WPS = 3.3; // Words per second (â‰ˆ200 words per minute)
+    this.READING_SPEED_WPS = 3.3; // Words per second (Ã¢â€°Ë†200 words per minute)
     this.MIN_READING_TIME_MS = 5000; // Minimum 5 seconds
     
     // Timing defaults (overridable by config)
@@ -126,7 +127,7 @@ class InteractiveStoryPlugin {
   }
 
   async init() {
-    this.api.log('ðŸ“– Initializing Interactive Story Generator Plugin...', 'info');
+    this.api.log('Ã°Å¸â€œâ€“ Initializing Interactive Story Generator Plugin...', 'info');
 
     try {
       // Ensure data directories exist
@@ -165,22 +166,22 @@ class InteractiveStoryPlugin {
         const openaiApiKey = this._getOpenAIApiKey();
         if (openaiApiKey) {
           this.imageService = new OpenAIImageService(openaiApiKey, this.logger, this.imageCacheDir);
-          this._debugLog('info', 'âœ… OpenAI Image service initialized', null);
-          this.api.log('âœ… OpenAI Image service (DALL-E) initialized', 'info');
+          this._debugLog('info', 'Ã¢Å“â€¦ OpenAI Image service initialized', null);
+          this.api.log('Ã¢Å“â€¦ OpenAI Image service (DALL-E) initialized', 'info');
         } else {
-          this._debugLog('error', 'âš ï¸ OpenAI API key not configured for image generation', null);
-          this.api.log('âš ï¸ OpenAI API key not configured for image generation', 'warn');
+          this._debugLog('error', 'Ã¢Å¡Â Ã¯Â¸Â OpenAI API key not configured for image generation', null);
+          this.api.log('Ã¢Å¡Â Ã¯Â¸Â OpenAI API key not configured for image generation', 'warn');
         }
       } else {
         // SiliconFlow provider
         const siliconFlowApiKey = this._getSiliconFlowApiKey();
         if (siliconFlowApiKey) {
           this.imageService = new ImageService(siliconFlowApiKey, this.logger, this.imageCacheDir);
-          this._debugLog('info', 'âœ… SiliconFlow Image service initialized', null);
-          this.api.log('âœ… SiliconFlow Image service initialized', 'info');
+          this._debugLog('info', 'Ã¢Å“â€¦ SiliconFlow Image service initialized', null);
+          this.api.log('Ã¢Å“â€¦ SiliconFlow Image service initialized', 'info');
         } else {
-          this._debugLog('error', 'âš ï¸ SiliconFlow API key not configured for image generation', null);
-          this.api.log('âš ï¸ SiliconFlow API key not configured for image generation', 'warn');
+          this._debugLog('error', 'Ã¢Å¡Â Ã¯Â¸Â SiliconFlow API key not configured for image generation', null);
+          this.api.log('Ã¢Å¡Â Ã¯Â¸Â SiliconFlow API key not configured for image generation', 'warn');
         }
       }
 
@@ -188,17 +189,17 @@ class InteractiveStoryPlugin {
       // The LTTH TTS plugin supports all engines: OpenAI, TikTok, Google, ElevenLabs, Speechify, Fish.audio, SiliconFlow
       // No need for custom TTS service - let the TTS plugin handle everything
       this.api.log('Using LTTH TTS plugin for voice generation (supports all engines)', 'info');
-      this._debugLog('info', 'âœ… Using LTTH TTS plugin for all TTS operations', null);
+      this._debugLog('info', 'Ã¢Å“â€¦ Using LTTH TTS plugin for all TTS operations', null);
 
       // Ensure storyEngine is always initialized (even without LLM service for theme access)
       if (!this.storyEngine) {
-        this._debugLog('warn', 'âš ï¸ StoryEngine not initialized - creating basic instance for theme access', null);
+        this._debugLog('warn', 'Ã¢Å¡Â Ã¯Â¸Â StoryEngine not initialized - creating basic instance for theme access', null);
         // Create a minimal storyEngine without LLM service for theme/configuration access
         this.storyEngine = new StoryEngine(null, this.logger, {
           language: config.storyLanguage || 'German',
           platform: 'tiktok'
         });
-        this.api.log('âš ï¸ StoryEngine initialized in limited mode (themes only - configure API keys for full functionality)', 'warn');
+        this.api.log('Ã¢Å¡Â Ã¯Â¸Â StoryEngine initialized in limited mode (themes only - configure API keys for full functionality)', 'warn');
       }
 
       // Initialize voting system
@@ -227,12 +228,12 @@ class InteractiveStoryPlugin {
         this.api.log(`Restored active session: ${activeSession.id}`, 'info');
       }
 
-      this.api.log('âœ… Interactive Story Plugin initialized successfully', 'info');
-      this.api.log(`   ðŸ“‚ Images: ${this.imageCacheDir}`, 'info');
-      this.api.log(`   ðŸŽµ Audio: ${this.audioCacheDir}`, 'info');
-      this.api.log(`   ðŸ“¦ Exports: ${this.exportDir}`, 'info');
+      this.api.log('Ã¢Å“â€¦ Interactive Story Plugin initialized successfully', 'info');
+      this.api.log(`   Ã°Å¸â€œâ€š Images: ${this.imageCacheDir}`, 'info');
+      this.api.log(`   Ã°Å¸Å½Âµ Audio: ${this.audioCacheDir}`, 'info');
+      this.api.log(`   Ã°Å¸â€œÂ¦ Exports: ${this.exportDir}`, 'info');
     } catch (error) {
-      this.api.log(`âŒ Error initializing Interactive Story Plugin: ${error.message}`, 'error');
+      this.api.log(`Ã¢ÂÅ’ Error initializing Interactive Story Plugin: ${error.message}`, 'error');
       throw error;
     }
   }
@@ -417,9 +418,9 @@ class InteractiveStoryPlugin {
     if (provider === 'openai') {
       const openaiApiKey = this._getOpenAIApiKey();
       if (!openaiApiKey) {
-        this._debugLog('error', 'âš ï¸ OpenAI API key not configured in global settings', null);
-        this.api.log('âš ï¸ OpenAI API key not configured in global settings', 'warn');
-        this.api.log('Please configure API key in Settings â†’ OpenAI API Configuration', 'warn');
+        this._debugLog('error', 'Ã¢Å¡Â Ã¯Â¸Â OpenAI API key not configured in global settings', null);
+        this.api.log('Ã¢Å¡Â Ã¯Â¸Â OpenAI API key not configured in global settings', 'warn');
+        this.api.log('Please configure API key in Settings Ã¢â€ â€™ OpenAI API Configuration', 'warn');
         return { ok: false, provider: 'openai', providerName: 'OpenAI', missingKey: true };
       }
 
@@ -431,21 +432,21 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', 'âœ… OpenAI LLM service initialized', {
+      this._debugLog('info', 'Ã¢Å“â€¦ OpenAI LLM service initialized', {
         apiKeyLength: openaiApiKey.length,
         apiKeyPrefix: openaiApiKey.substring(0, 6) + '...',
         timeout: config.llmTimeout,
         maxRetries: config.llmMaxRetries
       });
-      this.api.log('âœ… OpenAI LLM service initialized', 'info');
+      this.api.log('Ã¢Å“â€¦ OpenAI LLM service initialized', 'info');
       return { ok: true, provider: 'openai', providerName: 'OpenAI', model: config.openaiModel || 'gpt-5.2' };
     }
 
     if (provider === 'openrouter') {
       const openRouterApiKey = (config.openRouterApiKey || '').trim();
       if (!openRouterApiKey) {
-        this._debugLog('error', 'âš ï¸ OpenRouter API key not configured in plugin settings', null);
-        this.api.log('âš ï¸ OpenRouter API key not configured in plugin settings', 'warn');
+        this._debugLog('error', 'Ã¢Å¡Â Ã¯Â¸Â OpenRouter API key not configured in plugin settings', null);
+        this.api.log('Ã¢Å¡Â Ã¯Â¸Â OpenRouter API key not configured in plugin settings', 'warn');
         this.api.log('Please add your OpenRouter API key in the Interactive Story configuration', 'warn');
         return { ok: false, provider: 'openrouter', providerName: 'OpenRouter', missingKey: true };
       }
@@ -458,13 +459,13 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', 'âœ… OpenRouter LLM service initialized', {
+      this._debugLog('info', 'Ã¢Å“â€¦ OpenRouter LLM service initialized', {
         apiKeyLength: openRouterApiKey.length,
         apiKeyPrefix: openRouterApiKey.substring(0, 6) + '...',
         baseURL: config.openRouterBaseUrl || 'https://openrouter.ai/api/v1',
         model: config.openRouterModel || 'openrouter/free'
       });
-      this.api.log('âœ… OpenRouter LLM service initialized', 'info');
+      this.api.log('Ã¢Å“â€¦ OpenRouter LLM service initialized', 'info');
       return { ok: true, provider: 'openrouter', providerName: 'OpenRouter', model: config.openRouterModel || 'openrouter/free' };
     }
 
@@ -476,8 +477,8 @@ class InteractiveStoryPlugin {
       const ollamaModel = config.ollamaModel || 'qwen3.5:cloud';
 
       if (isCloudOllama && !ollamaApiKeyFromSettings) {
-        this._debugLog('error', 'âš ï¸ Ollama API key required for cloud endpoint', null);
-        this.api.log('âš ï¸ Ollama API key required for cloud endpoint', 'warn');
+        this._debugLog('error', 'Ã¢Å¡Â Ã¯Â¸Â Ollama API key required for cloud endpoint', null);
+        this.api.log('Ã¢Å¡Â Ã¯Â¸Â Ollama API key required for cloud endpoint', 'warn');
         this.api.log('Please configure the Ollama API key in central Settings', 'warn');
         return { ok: false, provider: 'ollama', providerName: 'Ollama', missingKey: true };
       }
@@ -491,12 +492,12 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', 'âœ… Ollama LLM service initialized', {
+      this._debugLog('info', 'Ã¢Å“â€¦ Ollama LLM service initialized', {
         baseURL: ollamaBaseUrl,
         model: ollamaModel,
         apiKeyConfigured: !!ollamaApiKeyFromSettings
       });
-      this.api.log('âœ… Ollama LLM service initialized', 'info');
+      this.api.log('Ã¢Å“â€¦ Ollama LLM service initialized', 'info');
       return { ok: true, provider: 'ollama', providerName: 'Ollama', model: ollamaModel };
     }
 
@@ -505,19 +506,19 @@ class InteractiveStoryPlugin {
     if (siliconFlowApiKey) {
       this.llmService = new LLMService(siliconFlowApiKey, this.logger, debugCallback, llmOptions);
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
-      this._debugLog('info', 'âœ… SiliconFlow LLM service initialized', {
+      this._debugLog('info', 'Ã¢Å“â€¦ SiliconFlow LLM service initialized', {
         apiKeyLength: siliconFlowApiKey.length,
         apiKeyPrefix: siliconFlowApiKey.substring(0, 6) + '...',
         timeout: config.llmTimeout,
         maxRetries: config.llmMaxRetries
       });
-      this.api.log('âœ… SiliconFlow LLM service initialized', 'info');
+      this.api.log('Ã¢Å“â€¦ SiliconFlow LLM service initialized', 'info');
       return { ok: true, provider: 'siliconflow', providerName: 'SiliconFlow', model: config.defaultModel || 'deepseek' };
     }
 
-    this._debugLog('error', 'âš ï¸ SiliconFlow API key not configured in global settings', null);
-    this.api.log('âš ï¸ SiliconFlow API key not configured in global settings', 'warn');
-    this.api.log('Please configure API key in Settings â†’ TTS API Keys â†’ Fish Speech 1.5 API Key (SiliconFlow)', 'warn');
+    this._debugLog('error', 'Ã¢Å¡Â Ã¯Â¸Â SiliconFlow API key not configured in global settings', null);
+    this.api.log('Ã¢Å¡Â Ã¯Â¸Â SiliconFlow API key not configured in global settings', 'warn');
+    this.api.log('Please configure API key in Settings Ã¢â€ â€™ TTS API Keys Ã¢â€ â€™ Fish Speech 1.5 API Key (SiliconFlow)', 'warn');
     return { ok: false, provider: 'siliconflow', providerName: 'SiliconFlow', missingKey: true };
   }
 
@@ -691,7 +692,7 @@ class InteractiveStoryPlugin {
       
       if (!ttsEnabled) {
         // TTS DISABLED: Self-reading mode
-        this.logger.info(`ðŸ“– TTS disabled - entering self-reading mode for chapter ${chapter.chapterNumber}`);
+        this.logger.info(`Ã°Å¸â€œâ€“ TTS disabled - entering self-reading mode for chapter ${chapter.chapterNumber}`);
         
         await this._wait(previewDelay);
         
@@ -720,7 +721,7 @@ class InteractiveStoryPlugin {
         const readingTimeMs = Math.max((wordCount / this.READING_SPEED_WPS) * 1000, this.MIN_READING_TIME_MS);
         const readingTimeSeconds = Math.round(readingTimeMs / 1000);
         
-        this.logger.info(`ðŸ“– Self-reading mode: waiting ${readingTimeSeconds}s for reading (${wordCount} words)`);
+        this.logger.info(`Ã°Å¸â€œâ€“ Self-reading mode: waiting ${readingTimeSeconds}s for reading (${wordCount} words)`);
         
         // Wait for estimated reading time before signaling completion
         await this._wait(readingTimeMs);
@@ -730,7 +731,7 @@ class InteractiveStoryPlugin {
           chapterNumber: chapter.chapterNumber
         });
         
-        this.logger.info(`ðŸ“– Self-reading complete for chapter ${chapter.chapterNumber}`);
+        this.logger.info(`Ã°Å¸â€œâ€“ Self-reading complete for chapter ${chapter.chapterNumber}`);
         return;
       }
 
@@ -747,10 +748,10 @@ class InteractiveStoryPlugin {
       const wordCount = this._getWordCount(contentText);
       const estimatedTTSDuration = (wordCount / 2.5) * 1000;
       
-      this.logger.info(`ðŸŽ™ï¸ Starting chapter TTS: ${sentences.length} sentences, ${wordCount} words, ~${Math.round(estimatedTTSDuration/1000)}s estimated`);
+      this.logger.info(`Ã°Å¸Å½â„¢Ã¯Â¸Â Starting chapter TTS: ${sentences.length} sentences, ${wordCount} words, ~${Math.round(estimatedTTSDuration/1000)}s estimated`);
       
       // STEP 1: Show image alone for preview
-      this.logger.info(`ðŸ–¼ï¸ Showing title image for ${previewDelay/1000}s before narration`);
+      this.logger.info(`Ã°Å¸â€“Â¼Ã¯Â¸Â Showing title image for ${previewDelay/1000}s before narration`);
       await this._wait(previewDelay);
       
       // STEP 2: Show title phase with greyscale image
@@ -761,7 +762,7 @@ class InteractiveStoryPlugin {
       
       // STEP 3: Speak the title and wait for completion
       await this._speakThroughSystemTTS(chapter.title);
-      this.logger.info(`ðŸŽ™ï¸ Chapter ${chapter.chapterNumber} title TTS completed`);
+      this.logger.info(`Ã°Å¸Å½â„¢Ã¯Â¸Â Chapter ${chapter.chapterNumber} title TTS completed`);
       
       await this._wait(contentStartBuffer);
       
@@ -783,9 +784,9 @@ class InteractiveStoryPlugin {
         model: config.fishaudioModel,
         emotion: chapter.narrationSegments?.[0]?.emotion
       }).then(() => {
-        this.logger.info(`ðŸŽ™ï¸ Chapter ${chapter.chapterNumber} content TTS completed`);
+        this.logger.info(`Ã°Å¸Å½â„¢Ã¯Â¸Â Chapter ${chapter.chapterNumber} content TTS completed`);
       }).catch(err => {
-        this.logger.error(`ðŸŽ™ï¸ TTS playback error: ${err.message}`);
+        this.logger.error(`Ã°Å¸Å½â„¢Ã¯Â¸Â TTS playback error: ${err.message}`);
       });
       
       // STEP 6: Display sentences progressively, weighted by word count
@@ -819,11 +820,11 @@ class InteractiveStoryPlugin {
         chapterNumber: chapter.chapterNumber
       });
       
-      this.logger.info(`âœ… Chapter ${chapter.chapterNumber} narration complete`);
+      this.logger.info(`Ã¢Å“â€¦ Chapter ${chapter.chapterNumber} narration complete`);
       
     } catch (error) {
       // Don't fail chapter generation if TTS fails
-      this.logger.error(`âŒ Failed to generate TTS for chapter: ${error.message}`);
+      this.logger.error(`Ã¢ÂÅ’ Failed to generate TTS for chapter: ${error.message}`);
       
       // Fallback: Show full chapter immediately if TTS fails
       const chapterForDisplay = this._prepareChapterForEmit(chapter);
@@ -1079,9 +1080,9 @@ class InteractiveStoryPlugin {
       });
       
       // Log detailed error information
-      this.logger.error(`âŒ Chapter generation failed: ${error.message}`);
+      this.logger.error(`Ã¢ÂÅ’ Chapter generation failed: ${error.message}`);
       if (error.response?.status === 504) {
-        this.logger.error('â±ï¸ API Gateway Timeout - Story generation interrupted');
+        this.logger.error('Ã¢ÂÂ±Ã¯Â¸Â API Gateway Timeout - Story generation interrupted');
         this.logger.error('   You can manually end the story using the "End Story" button');
       }
       
@@ -1349,7 +1350,7 @@ class InteractiveStoryPlugin {
 
         if (llmInit.ok && this.storyEngine && config.storyLanguage) {
           this.storyEngine.updateConfig({ language: config.storyLanguage });
-          this._debugLog('info', 'âœ… Story language updated', {
+          this._debugLog('info', 'Ã¢Å“â€¦ Story language updated', {
             language: config.storyLanguage
           });
         }
@@ -1377,27 +1378,32 @@ class InteractiveStoryPlugin {
       }
     });
 
-    // Get overlay positions
+    // Layout v2 stores positions as fractions of the active viewport so OBS sources remain responsive.
+    const overlayViewport = { width: 1920, height: 1080 };
     this.api.registerRoute('get', '/api/interactive-story/overlay-positions', (req, res) => {
       try {
-        const positions = this.api.getConfig('overlay_positions');
-        if (!positions) {
-          res.json({ positions: {} });
-        } else {
-          res.json(positions);
+        const storedLayout = this.api.getConfig('overlay_positions');
+        const layout = OverlayLayout.normalizeLayout(storedLayout, overlayViewport);
+        // Persist a legacy pixel migration once; v2 reads are otherwise side-effect free.
+        if (storedLayout && storedLayout.version !== 2) {
+          this.api.setConfig('overlay_positions', layout);
         }
+        res.json(layout);
       } catch (error) {
         this.logger.error(`Error loading overlay positions: ${error.message}`);
         res.status(500).json({ error: error.message });
       }
     });
 
-    // Save overlay positions
     this.api.registerRoute('post', '/api/interactive-story/overlay-positions', (req, res) => {
       try {
-        const positions = req.body;
-        this.api.setConfig('overlay_positions', positions);
-        res.json({ success: true });
+        if (!OverlayLayout.isValidLayout(req.body)) {
+          res.status(400).json({ error: 'Overlay layout must be a v2 layout with in-range normalized coordinates.' });
+          return;
+        }
+        const layout = OverlayLayout.normalizeLayout(req.body, overlayViewport);
+        this.api.setConfig('overlay_positions', layout);
+        res.json({ success: true, layout });
       } catch (error) {
         this.logger.error(`Error saving overlay positions: ${error.message}`);
         res.status(500).json({ error: error.message });
@@ -1643,7 +1649,7 @@ class InteractiveStoryPlugin {
         const count = parseInt(req.query.count) || 5;
         const themes = this.storyEngine.getRandomThemes(count);
         
-        this._debugLog('info', `ðŸŽ² Generated ${themes.length} random themes`, {
+        this._debugLog('info', `Ã°Å¸Å½Â² Generated ${themes.length} random themes`, {
           themes: themes.map(t => t.name)
         });
         

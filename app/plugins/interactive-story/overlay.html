@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -754,12 +754,12 @@
     <div class="voting-header" data-i18n="plugins.interactive-story.labels.vote_now_type_your_choice_in_chat">
       Vote Now! Type your choice in chat
     </div>
-    <div class="choice-container" id="choiceContainer"></div>
+    <div class="choice-container draggable" id="choiceContainer" data-element="participants"></div>
     <div class="timer-display" id="timerDisplay" data-i18n="plugins.interactive-story.labels.time_remaining">Time Remaining: --</div>
   </div>
 
   <!-- Generating Overlay -->
-  <div id="generatingOverlay">
+  <div id="generatingOverlay" class="draggable" data-element="generating">
     <div class="spinner" id="generatingSpinner"></div>
     <div class="generating-media" id="generatingMedia">
       <img id="generatingImage" alt="Generating animation">
@@ -769,7 +769,7 @@
   </div>
 
   <!-- Results Overlay -->
-  <div id="resultsOverlay">
+  <div id="resultsOverlay" class="draggable" data-element="results">
     <div class="results-title" data-i18n="plugins.interactive-story.labels.winner">Winner!</div>
     <div class="results-choice" id="winningChoice"></div>
   </div>
@@ -924,224 +924,132 @@
         video.play().catch(() => {});
       }
     }
-
     // ============================================
-    // DRAGGABLE OVERLAY ELEMENTS
+    // RESPONSIVE OVERLAY LAYOUT EDITOR (v2)
     // ============================================
+    const overlayElementIds = ['title', 'content', 'voting', 'generating', 'results', 'participants'];
+    let overlayConfig = { version: 2, positions: {} };
+    let dragState = { isDragging: false, element: null, pointerId: null, offsetX: 0, offsetY: 0, snapToGrid: false };
+    const publicRenderMode = window.LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname(window.location.hostname);
+    const editMode = !publicRenderMode && new URLSearchParams(window.location.search).get('edit') === '1';
 
-    let overlayConfig = {
-      positions: {}
-    };
+    function clampLayoutValue(value) { return Math.max(0, Math.min(1, value)); }
+    function normalizeOverlayLayout(payload) {
+      const positions = payload && payload.positions && typeof payload.positions === 'object' ? payload.positions : {};
+      const normalized = {};
+      overlayElementIds.forEach((elementId) => {
+        const position = positions[elementId];
+        if (!position || typeof position !== 'object') return;
+        const x = Number(position.x);
+        const y = Number(position.y);
+        if (Number.isFinite(x) && Number.isFinite(y)) normalized[elementId] = { x: clampLayoutValue(x), y: clampLayoutValue(y) };
+      });
+      return { version: 2, positions: normalized };
+    }
 
-    let dragState = {
-      isDragging: false,
-      element: null,
-      offsetX: 0,
-      offsetY: 0,
-      snapToGrid: false,
-      gridSize: 20
-    };
-    const publicRenderMode =
-      window.LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname(
-        window.location.hostname
-      );
+    function getOverlayElementMap() {
+      return {
+        title: document.getElementById('titleOverlay'),
+        content: document.getElementById('chapterContent'),
+        voting: document.getElementById('votingOverlay'),
+        generating: document.getElementById('generatingOverlay'),
+        results: document.getElementById('resultsOverlay'),
+        participants: document.getElementById('choiceContainer')
+      };
+    }
 
-    /**
-     * Initialize draggable functionality for overlay elements
-     * Similar to quiz plugin implementation
-     */
+    function applyOverlayPositions() {
+      const elements = getOverlayElementMap();
+      Object.entries(overlayConfig.positions).forEach(([elementId, position]) => {
+        const element = elements[elementId];
+        if (!element) return;
+        element.style.position = 'fixed';
+        element.style.left = `${position.x * 100}%`;
+        element.style.top = `${position.y * 100}%`;
+        element.style.transform = 'none';
+      });
+    }
+
+    function createEditorControls() {
+      const controls = document.createElement('div');
+      controls.id = 'overlayLayoutEditor';
+      controls.setAttribute('role', 'status');
+      controls.style.cssText = 'position:fixed;right:20px;top:20px;z-index:1000;background:#111d;color:#fff;padding:10px 12px;border:1px solid #e94560;border-radius:8px;font:600 14px Arial,sans-serif;display:flex;gap:8px;align-items:center;';
+      controls.innerHTML = '<span>Layout edit mode</span><button type="button" data-layout-action="save">Save</button><button type="button" data-layout-action="reset">Reset</button><button type="button" data-layout-action="snap">Snap: off</button>';
+      controls.querySelector('[data-layout-action="save"]').addEventListener('click', saveOverlayPositions);
+      controls.querySelector('[data-layout-action="reset"]').addEventListener('click', resetOverlayPositions);
+      controls.querySelector('[data-layout-action="snap"]').addEventListener('click', (event) => { dragState.snapToGrid = !dragState.snapToGrid; event.currentTarget.textContent = `Snap: ${dragState.snapToGrid ? 'on' : 'off'}`; });
+      document.body.appendChild(controls);
+    }
+
     function initDraggableElements() {
-      // Load saved positions
       loadOverlayPositions();
-      if (publicRenderMode) {
-        document.documentElement.dataset.publicRenderMode = 'true';
-        return;
-      }
-
-      const draggableElements = document.querySelectorAll('.draggable');
-
-      draggableElements.forEach(element => {
-        element.addEventListener('mousedown', startDrag);
-      });
-
-      document.addEventListener('mousemove', doDrag);
-      document.addEventListener('mouseup', stopDrag);
-
-      // Keyboard shortcuts
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'g' || e.key === 'G') {
-          dragState.snapToGrid = !dragState.snapToGrid;
-          console.log('Snap to grid:', dragState.snapToGrid);
-        }
-        // Reset positions with 'r' key
-        if (e.key === 'r' || e.key === 'R') {
-          if (e.ctrlKey || e.metaKey) {
-            resetOverlayPositions();
-          }
-        }
-      });
-
-      console.log('✅ Draggable overlay elements initialized');
-      console.log('💡 Tip: Hold Ctrl/Cmd and drag elements to reposition them');
-      console.log('💡 Press "G" to toggle snap-to-grid, Ctrl+R to reset positions');
+      if (publicRenderMode) { document.documentElement.dataset.publicRenderMode = 'true'; return; }
+      if (!editMode) return;
+      document.documentElement.dataset.overlayEditMode = 'true';
+      createEditorControls();
+      document.querySelectorAll('.draggable').forEach((element) => element.addEventListener('pointerdown', startDrag));
+      document.addEventListener('pointermove', doDrag);
+      document.addEventListener('pointerup', stopDrag);
+      document.addEventListener('pointercancel', stopDrag);
+      window.addEventListener('resize', applyOverlayPositions);
     }
 
-    function startDrag(e) {
-      // Only allow dragging with Ctrl/Cmd key to prevent accidental moves
-      if (!e.ctrlKey && !e.metaKey) return;
-
-      dragState.isDragging = true;
-      dragState.element = e.currentTarget;
-
-      const rect = dragState.element.getBoundingClientRect();
-      dragState.offsetX = e.clientX - rect.left;
-      dragState.offsetY = e.clientY - rect.top;
-
-      dragState.element.classList.add('dragging');
-      e.preventDefault();
+    function startDrag(event) {
+      if (!editMode || event.button !== 0 || !event.currentTarget.dataset.element) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      dragState = { ...dragState, isDragging: true, element: event.currentTarget, pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top };
+      event.currentTarget.classList.add('dragging');
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
     }
 
-    function doDrag(e) {
-      if (!dragState.isDragging || !dragState.element) return;
-
-      let x = e.clientX - dragState.offsetX;
-      let y = e.clientY - dragState.offsetY;
-
-      // Snap to grid
-      if (dragState.snapToGrid) {
-        x = Math.round(x / dragState.gridSize) * dragState.gridSize;
-        y = Math.round(y / dragState.gridSize) * dragState.gridSize;
-      }
-
-      // Apply position
-      dragState.element.style.position = 'fixed';
-      dragState.element.style.left = x + 'px';
-      dragState.element.style.top = y + 'px';
-      dragState.element.style.transform = 'none';
-
-      e.preventDefault();
+    function doDrag(event) {
+      if (!editMode || !dragState.isDragging || dragState.pointerId !== event.pointerId) return;
+      let x = (event.clientX - dragState.offsetX) / window.innerWidth;
+      let y = (event.clientY - dragState.offsetY) / window.innerHeight;
+      if (dragState.snapToGrid) { x = Math.round(x * 20) / 20; y = Math.round(y * 20) / 20; }
+      const elementId = dragState.element.dataset.element;
+      overlayConfig.positions[elementId] = { x: clampLayoutValue(x), y: clampLayoutValue(y) };
+      applyOverlayPositions();
+      event.preventDefault();
     }
 
-    function stopDrag(e) {
-      if (!dragState.isDragging) return;
-
-      dragState.element.classList.remove('dragging');
-
-      // Save position
-      const elementType = dragState.element.getAttribute('data-element');
-      const rect = dragState.element.getBoundingClientRect();
-
-      if (!overlayConfig.positions) overlayConfig.positions = {};
-      if (!overlayConfig.positions[elementType]) overlayConfig.positions[elementType] = {};
-
-      overlayConfig.positions[elementType].top = rect.top;
-      overlayConfig.positions[elementType].left = rect.left;
-
-      // Send to server
-      saveOverlayPositions();
-
-      dragState.isDragging = false;
-      dragState.element = null;
+    function stopDrag(event) {
+      if (!dragState.isDragging || (event && dragState.pointerId !== event.pointerId)) return;
+      dragState.element?.classList.remove('dragging');
+      dragState.element?.releasePointerCapture?.(dragState.pointerId);
+      dragState = { ...dragState, isDragging: false, element: null, pointerId: null };
     }
 
     async function loadOverlayPositions() {
       try {
         const response = await fetch('/api/interactive-story/overlay-positions');
-        if (!response.ok) {
-          console.log('No saved overlay positions found, using defaults');
-          return;
-        }
-
-        const data = await response.json();
-        overlayConfig = data;
-
-        // Apply saved positions
-        if (overlayConfig.positions) {
-          applyOverlayPositions();
-        }
-
-        console.log('✅ Overlay positions loaded:', overlayConfig.positions);
-      } catch (error) {
-        console.error('Error loading overlay positions:', error);
-      }
-    }
-
-    function applyOverlayPositions() {
-      if (!overlayConfig.positions) return;
-
-      // Apply title position
-      if (overlayConfig.positions.title) {
-        const titleEl = document.getElementById('titleOverlay');
-        const pos = overlayConfig.positions.title;
-        titleEl.style.position = 'fixed';
-        titleEl.style.left = pos.left + 'px';
-        titleEl.style.top = pos.top + 'px';
-        titleEl.style.transform = 'none';
-      }
-
-      // Apply content position
-      if (overlayConfig.positions.content) {
-        const contentEl = document.getElementById('chapterContent');
-        const pos = overlayConfig.positions.content;
-        contentEl.style.position = 'fixed';
-        contentEl.style.left = pos.left + 'px';
-        contentEl.style.top = pos.top + 'px';
-        contentEl.style.transform = 'none';
-      }
-
-      // Apply voting position
-      if (overlayConfig.positions.voting) {
-        const votingEl = document.getElementById('votingOverlay');
-        const pos = overlayConfig.positions.voting;
-        votingEl.style.position = 'fixed';
-        votingEl.style.left = pos.left + 'px';
-        votingEl.style.top = pos.top + 'px';
-        votingEl.style.transform = 'none';
-      }
+        if (!response.ok) return;
+        overlayConfig = normalizeOverlayLayout(await response.json());
+        applyOverlayPositions();
+      } catch (error) { console.error('Error loading overlay positions:', error); }
     }
 
     async function saveOverlayPositions() {
+      if (!editMode || publicRenderMode) return;
       try {
-        const { skipped, response } =
-          await window.LTTHPublicOverlayRenderMode.postJsonLocalOnly(
-            '/api/interactive-story/overlay-positions',
-            overlayConfig
-          );
-        if (skipped) return;
-
-        if (!response.ok) {
-          console.error('Failed to save overlay positions');
-        } else {
-          console.log('✅ Overlay positions saved');
-        }
-      } catch (error) {
-        console.error('Error saving overlay positions:', error);
-      }
+        const { skipped, response } = await window.LTTHPublicOverlayRenderMode.postJsonLocalOnly('/api/interactive-story/overlay-positions', overlayConfig);
+        if (!skipped && !response.ok) console.error('Failed to save overlay positions');
+      } catch (error) { console.error('Error saving overlay positions:', error); }
     }
 
     async function resetOverlayPositions() {
-      overlayConfig.positions = {};
-
-      // Reset styles to defaults
-      const titleEl = document.getElementById('titleOverlay');
-      const contentEl = document.getElementById('chapterContent');
-      const votingEl = document.getElementById('votingOverlay');
-
-      [titleEl, contentEl, votingEl].forEach(el => {
-        if (el) {
-          el.style.position = '';
-          el.style.left = '';
-          el.style.top = '';
-          el.style.transform = '';
-        }
+      if (!editMode || publicRenderMode) return;
+      overlayConfig = { version: 2, positions: {} };
+      Object.values(getOverlayElementMap()).forEach((element) => {
+        if (!element) return;
+        element.style.position = ''; element.style.left = ''; element.style.top = ''; element.style.transform = '';
       });
-
       await saveOverlayPositions();
-      console.log('✅ Overlay positions reset to defaults');
     }
 
-    // Handle chapter ready - show title first
-    socket.on('story:chapter-ready', (chapter) => {
+    // Handle chapter ready - show title first    socket.on('story:chapter-ready', (chapter) => {
       currentChapter = chapter;
       scrollingInProgress = false;
       sentences = [];
@@ -1291,7 +1199,7 @@
 
     // Handle immediate chapter display (fallback when TTS disabled)
     socket.on('story:chapter-display', (data) => {
-      console.log('📖 Chapter display event received:', data.mode, data.chapter?.title);
+      console.log('ðŸ“– Chapter display event received:', data.mode, data.chapter?.title);
 
       if (data.mode === 'immediate' && data.chapter) {
         // Hide title overlay
@@ -1371,7 +1279,7 @@
 
     // Handle image generation failed
     socket.on('story:image-generation-failed', (data) => {
-      console.warn('⚠️ Image generation failed:', data.message);
+      console.warn('âš ï¸ Image generation failed:', data.message);
       // Story continues without image - no action needed on overlay
     });
 
@@ -1515,7 +1423,7 @@
      * Shows full content with proper styling for reading
      */
     function displayImmediateChapter(chapter) {
-      console.log('📖 Displaying chapter immediately for self-reading:', chapter.title);
+      console.log('ðŸ“– Displaying chapter immediately for self-reading:', chapter.title);
 
       // Hide generating overlay
       document.getElementById('generatingOverlay').classList.remove('active');
@@ -1571,7 +1479,7 @@
       // Show text overlay
       document.getElementById('textOverlay').classList.add('visible');
 
-      console.log('✅ Chapter displayed for self-reading');
+      console.log('âœ… Chapter displayed for self-reading');
     }
 
     function displayVoting(choices, duration, voteKeywordPattern = '!letter') {
@@ -1690,7 +1598,7 @@
 
     // Relay TTS playback ended event back to server
     // This is needed because plugin-to-plugin communication requires
-    // client relay: TTS plugin → client → back to server → interactive-story plugin
+    // client relay: TTS plugin â†’ client â†’ back to server â†’ interactive-story plugin
     socket.on('tts:playback:ended', (data) => {
       console.log('TTS playback ended, relaying to server:', data);
       // Re-emit the event to the server so other plugins can receive it
@@ -1699,37 +1607,37 @@
 
     // Socket connection monitoring
     socket.on('connect', () => {
-      console.log('✅ Socket.io connected to server');
+      console.log('âœ… Socket.io connected to server');
     });
 
     socket.on('disconnect', (reason) => {
-      console.warn('⚠️ Socket.io disconnected:', reason);
+      console.warn('âš ï¸ Socket.io disconnected:', reason);
     });
 
     socket.on('connect_error', (error) => {
-      console.error('❌ Socket.io connection error:', error);
+      console.error('âŒ Socket.io connection error:', error);
     });
 
     // Listen for real-time configuration updates
     socket.on('story:config-updated', (updatedConfig) => {
-      console.log('📡 Configuration updated, applying changes...', updatedConfig);
+      console.log('ðŸ“¡ Configuration updated, applying changes...', updatedConfig);
       // Merge with current config and reapply
       if (config) {
         Object.assign(config, updatedConfig);
         applyConfiguration(config);
-        console.log('✅ Configuration applied successfully');
+        console.log('âœ… Configuration applied successfully');
       }
     });
 
     // Initialize
     loadConfiguration().then(() => {
-      console.log('✅ Interactive Story Overlay loaded and configured successfully');
-      console.log('📺 Overlay ready - waiting for story to start...');
+      console.log('âœ… Interactive Story Overlay loaded and configured successfully');
+      console.log('ðŸ“º Overlay ready - waiting for story to start...');
 
       // Initialize draggable elements
       initDraggableElements();
     }).catch((error) => {
-      console.error('❌ Failed to initialize overlay:', error);
+      console.error('âŒ Failed to initialize overlay:', error);
     });
   </script>
 </body>
