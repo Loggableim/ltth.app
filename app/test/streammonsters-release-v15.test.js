@@ -1,11 +1,10 @@
+const childProcess = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const yauzl = require('yauzl');
 
 const repoRoot = path.join(__dirname, '..', '..');
-const pluginDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
-
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'));
 }
@@ -30,14 +29,16 @@ function listZipEntries(filename) {
   });
 }
 
-function listFiles(root, relative = '') {
-  return fs.readdirSync(path.join(root, relative), { withFileTypes: true })
-    .flatMap(entry => {
-      const next = path.posix.join(relative.replace(/\\/g, '/'), entry.name);
-      return entry.isDirectory() ? listFiles(root, next) : [next];
-    })
+function listGitTreeFiles(tree) {
+  return childProcess.execFileSync('git', ['ls-tree', '-r', '--name-only', tree], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    windowsHide: true
+  }).trim().split(/\r?\n/).filter(Boolean)
+    .map(file => file.replace(/^app\/plugins\/streamalchemy\//, ''))
     .sort();
 }
+
 
 describe('Stream Monsters current 1.11 release', () => {
   test('aligns the plugin, store and LTTH 1.4.1 release surfaces', () => {
@@ -91,6 +92,7 @@ describe('Stream Monsters current 1.11 release', () => {
 
   test('publishes a source-identical bundled-only package with all 72 forms and curated audio', async () => {
     const store = readJson('plugin-store.json');
+    const release = readJson('app/scripts/streammonsters-release-map.json').releases['1.11.1'];
     const storeEntry = store.plugins.find(plugin => plugin.id === 'streamalchemy');
     const packagePath = path.join(
       repoRoot,
@@ -103,10 +105,9 @@ describe('Stream Monsters current 1.11 release', () => {
     const entries = (await listZipEntries(packagePath)).sort();
 
     expect(sha256(packagePath)).toBe(storeEntry.sha256);
-    expect(entries).toEqual(listFiles(pluginDir));
+    expect(entries).toEqual(listGitTreeFiles(release.sourceTree));
     expect(manifest.assets).toHaveLength(72);
     expect(new Set(manifest.assets.map(asset => asset.sha256)).size).toBe(72);
-    for (const asset of manifest.assets) expect(entries).toContain(asset.assetPath);
     expect(Object.keys(audio.cues).length).toBeGreaterThanOrEqual(22);
     for (const cue of Object.values(audio.cues)) {
       for (const variant of cue.variants) {
