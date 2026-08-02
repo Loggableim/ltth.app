@@ -1965,7 +1965,9 @@ class InteractiveStoryPlugin {
           });
         } catch (error) {
           const statusCode = error.response?.status || 0;
-          const responseData = error.response?.data || error.message;
+          const responseData = provider === 'ollama'
+            ? 'Ollama API validation request failed'
+            : (error.response?.data || error.message);
 
           const failureKeyValidationMetadata = provider === 'ollama' ? {} : {
             ...keyValidationMetadata,

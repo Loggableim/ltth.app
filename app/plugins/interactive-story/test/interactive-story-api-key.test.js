@@ -174,6 +174,34 @@ describe('Interactive Story Plugin - API keys and routes', () => {
     testConnection.mockRestore();
   });
 
+  test('Ollama connection failures redact an echoed central key from upstream error payloads', async () => {
+    const centralKey = 'ollama-secret-12345';
+    const { plugin, routes } = createPlugin(
+      { ollama_cloud_api_key: centralKey },
+      { debugLogging: true, llmProvider: 'ollama', ollamaBaseUrl: 'https://api.ollama.com/v1' }
+    );
+    plugin._registerRoutes();
+    const json = jest.fn();
+    const upstreamError = new Error(`network rejected Bearer ${centralKey}`);
+    upstreamError.response = {
+      status: 503,
+      data: { error: `upstream rejected Bearer ${centralKey}` }
+    };
+    const testConnection = jest.spyOn(
+      require('../engines/openai-llm-service').prototype,
+      'testConnection'
+    ).mockRejectedValue(upstreamError);
+
+    await routes['post:/api/interactive-story/validate-api-key']({ body: { provider: 'ollama' } }, { json });
+
+    const response = json.mock.calls[0][0];
+    expect(response.details.statusCode).toBe(503);
+    expect(JSON.stringify(response)).not.toContain(centralKey);
+    expect(JSON.stringify(plugin.debugLogs)).not.toContain(centralKey);
+
+    testConnection.mockRestore();
+  });
+
   test('normal config save retains the legacy Ollama key while cloud authentication uses central settings', () => {
     const { plugin, routes } = createPlugin(
       { ollama_cloud_api_key: 'central-ollama-secret' },
