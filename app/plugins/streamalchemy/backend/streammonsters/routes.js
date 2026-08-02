@@ -110,6 +110,7 @@ class StreamMonstersRoutes {
     this.gcceStateProvider = gcceStateProvider;
     this.adminAuth = createAdminAuth();
     this.assetCatalogCache = null;
+    this.demoSequence = 0;
     this.overlayHeartbeat = null;
   }
 
@@ -410,6 +411,15 @@ class StreamMonstersRoutes {
         return res.status(400).json({ success: false, error: error.message });
       }
       const config = this.configProvider.getConfig().streamMonsters;
+      const targetedPreview = preview !== null;
+      preview ||= {
+        scene: 'spawn',
+        templateId: TEMPLATE_CATALOG[0].templateId,
+        layout: 'auto',
+        anchor: 'bottom-center',
+        scale: 100
+      };
+      const demoRequestSequence = ++this.demoSequence;
       // Demo events are previews, not persisted live matches. Derive their
       // correlation id from the request and injected clock so repeated
       // previews/replays produce the same event graph without weakening the
@@ -419,7 +429,8 @@ class StreamMonstersRoutes {
           scene: preview.scene,
           layout: preview.layout,
           templateId: preview.templateId || null,
-          atMs: this.now()
+          atMs: this.now(),
+          requestSequence: demoRequestSequence
         }))
         .digest('hex')
         .slice(0, 24);
@@ -541,7 +552,7 @@ class StreamMonstersRoutes {
       const emit = (event, payload) => this.api.emit(event, {
         ...payload,
         demo: true,
-        ...(preview ? { preview: {
+        ...(targetedPreview ? { preview: {
           scene: preview.scene,
           layout: preview.layout,
           anchor: preview.anchor,
@@ -570,7 +581,7 @@ class StreamMonstersRoutes {
           params: { command: commandReference('adopt') }
         }
       );
-      if (preview) {
+      if (targetedPreview) {
         const primaryCharge = preview.scene === 'special' ? 100 : 50;
         const fighters = [
           {
