@@ -1168,12 +1168,12 @@
       :root {
         --portrait-safe-zone-height:26%;
         --portrait-info-rail-height:clamp(146px,19vh,246px);
-        --egg-shelf-lane-height:66px;
+        --egg-shelf-lane-height:clamp(76px,10vh,92px);
         --portrait-arena-left:2%;
         --portrait-arena-top:11.8%;
         --portrait-arena-right:2%;
         --portrait-arena-bottom:42.2%;
-        --portrait-exception-top:74%;
+        --portrait-exception-top:58%;
         --portrait-exception-right:3%;
         --portrait-exception-bottom:2%;
         --portrait-exception-left:3%;
@@ -1401,49 +1401,61 @@
     }
     @media (orientation: portrait) {
       #portrait-exception-lane {
-        inset:74% 0 0; z-index:80; display:grid; grid-template-rows:auto minmax(0,1fr);
-        gap:clamp(4px,.8vh,10px); overflow:hidden; padding:clamp(5px,1vh,12px) clamp(8px,2vw,22px);
+        top:var(--portrait-exception-top); right:0; bottom:auto; left:0;
+        height:var(--egg-shelf-lane-height); z-index:80; display:block; overflow:hidden; padding:0;
         border-top:1px solid #a984ff66;
         background:linear-gradient(180deg,#050812ed 0%,#02040af7 100%);
       }
-      #egg-lifecycle-notice { justify-self:center; width:min(100%,680px); }
+      #egg-lifecycle-notice {
+        position:absolute; top:clamp(5px,.8vh,10px); left:clamp(8px,2vw,22px); right:clamp(8px,2vw,22px);
+        z-index:2; width:auto;
+      }
       #egg-shelf {
-        position:relative; inset:auto; width:100%; height:100%; min-height:0;
+        position:absolute; top:4px; left:clamp(4px,1vw,12px); right:clamp(4px,1vw,12px);
+        width:auto; height:calc(100% - 8px); min-height:0; max-height:none;
         display:block; overflow:hidden;
       }
       #egg-shelf [data-egg-slots] {
-        display:grid!important; grid-template-columns:repeat(6,minmax(0,1fr));
-        align-items:end; gap:clamp(3px,.7vw,10px); width:100%; height:100%;
+        display:grid!important; grid-template-columns:repeat(var(--egg-visible-count,4),minmax(0,1fr));
+        align-items:stretch; gap:clamp(4px,1vw,8px); width:100%; height:100%;
       }
       #egg-shelf [data-egg-overflow],
       #egg-shelf [data-egg-adopt-summary],
       #egg-shelf [data-egg-focus] { display:none!important; }
       #egg-shelf .egg-shelf-item {
-        display:grid; grid-template-rows:auto minmax(0,1fr) auto auto; align-items:end; justify-items:center;
-        width:100%; height:100%; min-width:0; min-height:0; padding:0 1px;
+        display:grid; grid-template-columns:clamp(26px,7vw,36px) minmax(0,1fr);
+        grid-template-rows:minmax(0,1fr) auto; column-gap:clamp(3px,1vw,6px);
+        align-items:center; justify-items:center; width:100%; height:100%; min-width:0; min-height:0; padding:4px 3px;
         border:1px solid #b4a1ff55; border-radius:clamp(8px,1.7vw,18px);
         background:linear-gradient(180deg,#17213ba8,#090d1dcc); box-shadow:inset 0 1px #ffffff14;
-        transform:none;
+        animation:none!important; transform:none!important; transition:none!important;
       }
-      #egg-shelf .egg-shelf-item.landing { animation:egg-shelf-land var(--egg-motion-duration,900ms) cubic-bezier(.15,.72,.2,1.18) var(--egg-motion-delay,0ms) both; }
+      #egg-shelf .egg-shelf-item.landing { animation:none !important; transform:none !important; }
+      #egg-shelf .egg-shelf-item.public-free .egg-shelf-art {
+        animation:none!important; transform:none!important; transition:none!important;
+      }
       #egg-shelf .egg-shelf-art {
-        grid-row:2; width:min(100%,clamp(64px,12vw,148px)); height:min(100%,clamp(76px,15vh,230px));
+        grid-column:1; grid-row:1 / -1; width:min(100%,clamp(26px,7vw,36px)); height:min(100%,clamp(26px,7vw,36px));
         min-height:0; align-self:center; filter:drop-shadow(0 10px 12px #000c);
       }
-      #egg-shelf .egg-shelf-art[data-fallback="true"] { font-size:clamp(42px,9vw,96px); }
+      #egg-shelf .egg-shelf-art[data-fallback="true"] { font-size:clamp(40px,7vw,72px); }
       #egg-shelf [data-egg-command],
       #egg-shelf [data-egg-timing],
       #egg-shelf .egg-shelf-sourceOwner {
         position:static; right:auto; bottom:auto; left:auto; z-index:auto; width:100%; max-width:100%;
         overflow:hidden; transform:none; text-overflow:ellipsis; white-space:nowrap; text-align:center;
       }
+      #egg-shelf .egg-shelf-item > span:not([data-egg-command]):not([data-egg-timing]) {
+        display:none!important;
+      }
       #egg-shelf [data-egg-command] {
-        grid-row:1; padding:clamp(2px,.35vh,5px) 3px 0; color:#d6cdff;
-        font-size:clamp(10px,2.2vw,19px); font-weight:1000; letter-spacing:.04em;
+        grid-column:2; grid-row:1; align-self:end; padding:0; color:#d6cdff;
+        font-size:clamp(13px,2.45vw,17px); font-weight:1000; letter-spacing:0; line-height:1.02;
+        white-space:normal; overflow-wrap:anywhere; text-align:left;
       }
       #egg-shelf [data-egg-timing] {
-        grid-row:4; padding:0 2px clamp(3px,.55vh,7px); color:#fff; background:transparent; box-shadow:none;
-        font-size:clamp(12px,2.7vw,24px); font-variant-numeric:tabular-nums; font-weight:1000;
+        grid-column:2; grid-row:2; align-self:start; padding:0; color:#fff; background:transparent; box-shadow:none;
+        font-size:clamp(17px,3.4vw,22px); font-variant-numeric:tabular-nums; font-weight:1000; letter-spacing:0; line-height:1; text-align:left;
       }
       #egg-shelf .egg-shelf-sourceOwner { display:none; grid-row:3; padding:0 2px; color:#ffb4c6; font-size:clamp(8px,1.7vw,15px); font-weight:850; }
       #egg-shelf .egg-shelf-item.offer-steal { border-color:#ff5f86aa; background:linear-gradient(180deg,#40172bd9,#100914e8); box-shadow:inset 0 0 24px #ff5f8626,0 0 16px #ff5f8640; }
@@ -2478,10 +2490,12 @@
   const eggStageView = window.StreamMonstersEggStageView?.createEggStageView?.({
     document,
     reducedMotion:Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches),
+    isPortraitLayout:() => Boolean(window.matchMedia?.('(orientation: portrait)')?.matches),
     setTimeout:window.setTimeout.bind(window),
     clearTimeout:window.clearTimeout.bind(window),
     setInterval:window.setInterval.bind(window),
     clearInterval:window.clearInterval.bind(window),
+    getVisibleCount:() => eggShelfVisibleCount,
     getLabels:() => ({
       incubating:text('eggShelfIncubating', 'Schlüpft in {time}'),
       queued:text('eggShelfQueued', 'Warteschlange #{position}'),
@@ -2542,6 +2556,7 @@
   let reconnectEggSnapshotPending = false;
   let publicEventCursor = null;
   let notificationDurationMs = 12_000;
+  let eggShelfVisibleCount = 4;
   let rendererQuality = 'auto';
   let battleIds = [null, null];
   let battleMonsters = [null, null];
@@ -2550,6 +2565,14 @@
   let battleReplaySynchronizer = null;
   let currentCommandPrefix = '!';
   let generalHintText = '';
+  const normalizeEggShelfVisibleCount = value => {
+    const count = Number(value);
+    return Number.isInteger(count) && count >= 1 && count <= 6 ? count : 4;
+  };
+  const applyEggShelfVisibleCount = config => {
+    eggShelfVisibleCount = normalizeEggShelfVisibleCount(config?.eggShelfVisibleCount);
+    eggStageView.render?.();
+  };
   const beginReconnectEggSnapshot = cycle => {
     activeReconnectCycle = Math.max(1, Number(cycle) || 1);
     reconnectEggSnapshotPending = true;
@@ -3356,6 +3379,7 @@
       8_000,
       Math.min(30_000, Number(data?.config?.notificationDurationMs) || 12_000)
     );
+    applyEggShelfVisibleCount(data?.config);
     rendererQuality = ['auto', 'high', 'medium', 'low'].includes(data?.config?.rendererQuality)
       ? data.config.rendererQuality
       : 'auto';
@@ -4264,6 +4288,7 @@
     'streammonsters:tutorial_hint':'tutorial_hint'
   };
   Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
+  socket.on('streammonsters:config_updated', data => applyEggShelfVisibleCount(data?.config));
   socket.on('connect', async () => {
     const reconnectCycle = beginReconnectEggSnapshot(
       reconnectController.generation() + 1

@@ -33,6 +33,26 @@ function egg(visualId, overrides = {}) {
 }
 
 describe('Stream Monsters 1.11 living shelf animation lifecycle', () => {
+  test('keeps newly landed portrait rail cards at their resting size', () => {
+    const document = mountShelf();
+    const setTimeout = jest.fn(() => 1);
+    const view = EggStageView.createEggStageView({
+      document,
+      now: () => 2_000,
+      isPortraitLayout: () => true,
+      setInterval: () => 1,
+      clearInterval: () => {},
+      setTimeout,
+      clearTimeout: () => {}
+    });
+
+    view.applyEvent('egg_landed', { eggStage: egg('portrait-resting-card') });
+
+    const card = document.querySelector('[data-egg-id="portrait-resting-card"]');
+    expect(card.classList).not.toContain('landing');
+    expect(setTimeout).not.toHaveBeenCalled();
+  });
+
   test('keeps the same landing node through timer and stage updates until animationend', () => {
     const document = mountShelf();
     const intervals = [];
@@ -157,16 +177,70 @@ describe('Stream Monsters 1.11 living shelf animation lifecycle', () => {
     expect(afterMotion).toEqual(beforeMotion);
   });
 
-  test('keeps the lower egg rail at six cards and changes complete pages', () => {
+  test('keeps the lower egg rail full while every egg advances one card at a time', () => {
     expect(EggStageView.visibleCapacity(477)).toBe(6);
     expect(EggStageView.visibleCapacity(1_080)).toBe(6);
 
-    const narrow = EggStageView.buildShelfModel(
-      Array.from({ length: 9 }, (_, index) => egg(`egg-${index}`)),
-      { maxVisible: EggStageView.visibleCapacity(477) }
+    const eggs = Array.from({ length: 9 }, (_, index) => egg(`egg-${index}`));
+    const first = EggStageView.buildShelfModel(eggs, { maxVisible: 4, rotationIndex: 0 });
+    const next = EggStageView.buildShelfModel(eggs, { maxVisible: 4, rotationIndex: 1 });
+
+    expect(first.visible).toHaveLength(4);
+    expect(next.visible.map(entry => entry.visualId)).toEqual([
+      'egg-1', 'egg-2', 'egg-3', 'egg-4'
+    ]);
+    expect(first.pageCount).toBe(9);
+    expect(next.pageIndex).toBe(1);
+    expect(next.overflow).toBeNull();
+  });
+
+  test('does not reparent settled portrait cards during countdown renders', () => {
+    const document = mountShelf();
+    const view = EggStageView.createEggStageView({
+      document,
+      now: () => 2_000,
+      isPortraitLayout: () => true,
+      setInterval: () => 1,
+      clearInterval: () => {},
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      getVisibleCount: () => 4
+    });
+    const slots = document.querySelector('[data-egg-slots]');
+
+    view.applySnapshot(Array.from({ length: 4 }, (_, index) => egg(`settled-${index}`)));
+    const cards = [...slots.children];
+    const appendChild = jest.spyOn(slots, 'appendChild');
+
+    view.render();
+
+    expect([...slots.children]).toEqual(cards);
+    expect(appendChild).not.toHaveBeenCalled();
+  });
+
+  test('renders only the compact countdown in a portrait rail footer', () => {
+    const document = mountShelf();
+    const view = EggStageView.createEggStageView({
+      document,
+      now: () => 2_000,
+      isPortraitLayout: () => true,
+      setInterval: () => 1,
+      clearInterval: () => {},
+      setTimeout: () => 1,
+      clearTimeout: () => {}
+    });
+
+    view.applySnapshot([egg('portrait-public', {
+      provenance: 'free',
+      ownershipState: 'offered',
+      adoptionStatus: 'public',
+      adoptable: true,
+      state: 'public',
+      timing: { landedAtMs: 1_000, expiresAtMs: 62_000 }
+    })]);
+
+    expect(document.querySelector('[data-egg-timing]').textContent).toBe(
+      EggStageView.formatCountdown(60_000)
     );
-    expect(narrow.visible).toHaveLength(EggStageView.visibleCapacity(477));
-    expect(narrow.pageCount).toBe(2);
-    expect(narrow.overflow).toBeNull();
   });
 });

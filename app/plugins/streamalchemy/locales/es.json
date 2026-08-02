@@ -47,7 +47,8 @@
           "previewRoundOne": "RONDA 1",
           "previewSpecialHalf": "ESPECIAL · 50 %",
           "eggShelfPreviewAria": "Vista previa de la estantería de huevos",
-          "publicFreeEggTitle": "Huevo gratis público",
+
+          "lowerSafeStripAria": "Franja segura inferior",          "publicFreeEggTitle": "Huevo gratis público",
           "elementalHourGenericExplanation": "La Hora Elemental reduce 30 segundos la incubación de los huevos coincidentes y concede +10 de Hype. Nunca cambia los atributos de combate ni la calidad de eclosión.",
           "assetChecking": "Comprobando integridad",
           "safeMaintenanceAria": "Herramientas de mantenimiento seguras",
@@ -599,6 +600,7 @@
           "rendererMedium": "Media",
           "rendererLow": "Baja",
           "notificationDuration": "Duración de notificaciones (segundos)",
+          "eggShelfVisibleCount": "Huevos visibles en rotación",
           "freeEggDropsEnabled": "Huevos gratis recurrentes",
           "freeEggCooldownSeconds": "Espera del huevo gratis (segundos)",
           "freeEggCooldownHelp": "Tras esta espera, un espectador puede recibir otra oferta personal de huevo gratis.",

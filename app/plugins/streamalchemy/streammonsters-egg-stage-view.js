@@ -651,11 +651,14 @@
   } = {}) {
     const normalized = orderedStageEggs(eggStage, reducedMotion);
     const visibleLimit = Math.max(1, Math.min(MAX_VISIBLE_EGGS, Number(maxVisible) || 1));
-    const pageCount = Math.max(1, Math.ceil(normalized.length / visibleLimit));
-    const pageIndex = ((Number(rotationIndex) || 0) % pageCount + pageCount) % pageCount;
-    const visible = normalized.slice(
-      pageIndex * visibleLimit,
-      (pageIndex + 1) * visibleLimit
+    const total = normalized.length;
+    const pageCount = total > visibleLimit ? total : 1;
+    const pageIndex = total > visibleLimit
+      ? ((Number(rotationIndex) || 0) % total + total) % total
+      : 0;
+    const visible = Array.from(
+      { length: Math.min(visibleLimit, total) },
+      (_, index) => normalized[(pageIndex + index) % total]
     );
     return {
       visible,
@@ -706,6 +709,12 @@
       ? options.getElementName
       : element => element;
     const reducedMotion = Boolean(options.reducedMotion);
+    const isPortraitLayout = typeof options.isPortraitLayout === 'function'
+      ? options.isPortraitLayout
+      : () => false;
+    const getVisibleCount = typeof options.getVisibleCount === 'function'
+      ? options.getVisibleCount
+      : () => MAX_VISIBLE_EGGS;
     const landingTimers = new Map();
     const eggsById = new Map();
     const pendingLandingIds = new Set();
@@ -718,6 +727,20 @@
     function currentLabels() {
       const resolved = getLabels();
       return resolved && typeof resolved === 'object' ? resolved : staticLabels;
+    }
+
+    function currentVisibleCapacity() {
+      const configuredCount = Number(getVisibleCount());
+      const visibleCount = Number.isInteger(configuredCount) &&
+        configuredCount >= 1 && configuredCount <= MAX_VISIBLE_EGGS
+        ? configuredCount
+        : MAX_VISIBLE_EGGS;
+      const viewportWidth = Number(
+        options.viewportWidth?.() ||
+        root.clientWidth ||
+        documentLike.defaultView?.innerWidth
+      );
+      return Math.min(visibleCapacity(viewportWidth), visibleCount);
     }
 
     function safeImageUrl(value) {
@@ -747,6 +770,17 @@
         Number.isFinite(Number(deadline))
         ? formatCountdown(Math.max(0, Number(deadline) - Number(now())))
         : currentLabels().eggCardTimerUnavailable || '--:--';
+    }
+
+    function railTimingText(egg) {
+      if (isPortraitLayout()) return eggTimerText(egg);
+      return shelfTiming(egg, {
+        nowMs: now(),
+        labels: currentLabels(),
+        hatchReference: getHatchReference(),
+        adoptReference: getAdoptReference(),
+        stealReference: getStealReference()
+      });
     }
 
     function eggCardStatus(egg) {
@@ -802,15 +836,23 @@
       const element = boundedText(getElementName(egg.element), 48) || egg.element;
       const status = eggCardStatus(egg);
       const timer = eggTimerText(egg);
-      const command = isStealableEgg(egg)
+      const action = isStealableEgg(egg)
         ? getStealReference()
         : isPublicFreeEgg(egg)
           ? getAdoptReference()
+          : egg.state === 'reserved'
+            ? getAdoptReference()
           : egg.state === 'ready'
             ? getHatchReference()
             : egg.state === 'incubating'
               ? labels.eggCardIncubating || 'INCUBATING'
               : status;
+      const actionAudience = isPublicAdoptableEgg(egg)
+        ? 'everyone'
+        : owner.replace(/^@+/, '');
+      const command = action
+        ? `${action} \u00b7 @${actionAudience}`
+        : action;
       const sourceOwner = isStealableEgg(egg)
         ? safeViewerName(egg.sourceOwnerDisplayName || egg.displayName) || 'Viewer'
         : '';
@@ -841,8 +883,12 @@
     function createEggNode(egg, index) {
       const item = documentLike.createElement('article');
       item.className = 'egg-shelf-item';
-      if (pendingLandingIds.has(egg.visualId) && !reducedMotion) {
+      const animateLanding = pendingLandingIds.has(egg.visualId) &&
+        !reducedMotion && !isPortraitLayout();
+      if (animateLanding) {
         item.classList.add('landing');
+      } else {
+        pendingLandingIds.delete(egg.visualId);
       }
       item.dataset.eggId = egg.visualId;
       item.dataset.state = boundedText(egg.state, 24);
@@ -873,13 +919,7 @@
 
       const timing = documentLike.createElement('span');
       timing.dataset.eggTiming = '';
-      timing.textContent = shelfTiming(egg, {
-        nowMs: now(),
-        labels:currentLabels(),
-        hatchReference: getHatchReference(),
-        adoptReference: getAdoptReference(),
-        stealReference: getStealReference()
-      });
+      timing.textContent = railTimingText(egg);
       item.appendChild(timing);
       updateEggCardMetadata(item, egg);
 
@@ -949,13 +989,7 @@
       item.style.setProperty('--egg-index', String(index));
       const timing = item.querySelector('[data-egg-timing]');
       if (timing) {
-        timing.textContent = shelfTiming(egg, {
-          nowMs: now(),
-        labels:currentLabels(),
-        hatchReference: getHatchReference(),
-        adoptReference: getAdoptReference(),
-        stealReference: getStealReference()
-        });
+        timing.textContent = railTimingText(egg);
       }
       updateEggCardMetadata(item, egg);
       const publicEgg = isPublicAdoptableEgg(egg);
@@ -1104,17 +1138,16 @@
     }
 
     function render() {
-      const viewportWidth = Number(
-        options.viewportWidth?.() ||
-        root.clientWidth ||
-        documentLike.defaultView?.innerWidth
-      );
       const model = buildShelfModel([...eggsById.values()], {
-        maxVisible: visibleCapacity(viewportWidth),
+        maxVisible: currentVisibleCapacity(),
         rotationIndex:pageRotationIndex,
         reducedMotion
       });
       if (slots) {
+        root.style.setProperty(
+          '--egg-visible-count',
+          String(Math.max(1, model.visible.length || currentVisibleCapacity()))
+        );
         const visibleIds = new Set(model.visible.map(egg => egg.visualId));
         slots.querySelectorAll('[data-egg-id]').forEach(item => {
           if (!visibleIds.has(item.dataset.eggId)) item.remove();
@@ -1123,11 +1156,11 @@
           const current = [...slots.children].find(item => (
             item.dataset?.eggId === egg.visualId
           ));
-          slots.appendChild(
-            current
-              ? updateKeyedEggNode(current, egg, index)
-              : createKeyedEggNode(egg, index)
-          );
+          const item = current
+            ? updateKeyedEggNode(current, egg, index)
+            : createKeyedEggNode(egg, index);
+          const expected = slots.children[index];
+          if (expected !== item) slots.insertBefore(item, expected || null);
         });
       }
       updateOverflow(model);
@@ -1218,6 +1251,7 @@
       applyEvent,
       applySnapshot,
       model: () => buildShelfModel([...eggsById.values()], {
+        maxVisible: currentVisibleCapacity(),
         rotationIndex:pageRotationIndex,
         reducedMotion
       }),

@@ -303,6 +303,95 @@ describe('Stream Monsters egg overlay state reliability', () => {
     }
   });
 
+  test('keeps portrait rail cards stationary when live eggs land', async () => {
+    const offer = freeEgg('portrait-stationary', {
+      provenance: 'gift',
+      ownershipState: 'owned',
+      adoptionStatus: 'owned',
+      adoptable: false,
+      state: 'incubating'
+    });
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: []
+    }, { portrait: true });
+    try {
+      harness.socketHandlers.get('streammonsters:egg_landed')({
+        eventId: 'portrait-stationary-landed',
+        correlationId: offer.visualId,
+        eggStage: offer
+      });
+      for (let attempt = 0; attempt < 5; attempt += 1) await flush();
+
+      const card = harness.dom.window.document.querySelector(
+        `[data-egg-id="${offer.visualId}"]`
+      );
+      expect(card).not.toBeNull();
+      expect(card.classList).not.toContain('landing');
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('uses the configured four-card circular rail from the live snapshot', async () => {
+    const eggs = Array.from({ length: 7 }, (_, index) => freeEgg(`rail-${index}`, {
+      provenance: 'gift',
+      ownershipState: 'owned',
+      adoptionStatus: 'owned',
+      adoptable: false,
+      state: 'incubating'
+    }));
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000, eggShelfVisibleCount: 4 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: eggs
+    }, { portrait: true });
+    try {
+      expect(harness.dom.window.document.querySelectorAll(
+        '[data-egg-slots] [data-egg-id]'
+      )).toHaveLength(4);
+    } finally {
+      await harness.close();
+    }
+  });
+
+  test('re-renders the open rail when its visible-card config changes', async () => {
+    const eggs = Array.from({ length: 7 }, (_, index) => freeEgg(`live-rail-${index}`, {
+      provenance: 'gift',
+      ownershipState: 'owned',
+      adoptionStatus: 'owned',
+      adoptable: false,
+      state: 'incubating'
+    }));
+    const harness = await createOverlayHarness({
+      hype: { points: 0 },
+      config: { hatchDurationMs: 90_000, eggShelfVisibleCount: 4 },
+      gcce: { commandPrefix: '!', registeredCommands: [] },
+      battle: { matches: [] },
+      eggStage: eggs
+    }, { portrait: true });
+    try {
+      expect(harness.dom.window.document.querySelectorAll(
+        '[data-egg-slots] [data-egg-id]'
+      )).toHaveLength(4);
+
+      const handler = harness.socketHandlers.get('streammonsters:config_updated');
+      expect(handler).toEqual(expect.any(Function));
+      handler({ config: { eggShelfVisibleCount: 2 } });
+
+      expect(harness.dom.window.document.querySelectorAll(
+        '[data-egg-slots] [data-egg-id]'
+      )).toHaveLength(2);
+    } finally {
+      await harness.close();
+    }
+  });
+
   test('keeps the existing full lifecycle card path in landscape', async () => {
     const offer = freeEgg('landscape-lifecycle', {
       timing: { publicAtMs: 1_000, expiresAtMs: 61_000 }

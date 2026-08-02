@@ -9,7 +9,7 @@
     {
       "label": "app",
       "directory": "app/locales",
-      "keys": 1350
+      "keys": 1382
     },
     {
       "label": "website",
@@ -93,7 +93,7 @@
     {
       "label": "plugin:game-engine",
       "directory": "app/plugins/game-engine/locales",
-      "keys": 1403
+      "keys": 1425
     },
     {
       "label": "plugin:gcce",
@@ -133,7 +133,7 @@
     {
       "label": "plugin:music-bot",
       "directory": "app/plugins/music-bot/locales",
-      "keys": 555
+      "keys": 622
     },
     {
       "label": "plugin:openshock",
@@ -168,12 +168,12 @@
     {
       "label": "plugin:streamalchemy",
       "directory": "app/plugins/streamalchemy/locales",
-      "keys": 983
+      "keys": 1103
     },
     {
       "label": "plugin:stt-ticker",
       "directory": "app/plugins/stt-ticker/locales",
-      "keys": 250
+      "keys": 251
     },
     {
       "label": "plugin:talking-heads",

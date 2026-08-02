@@ -47,7 +47,8 @@
           "previewRoundOne": "MANCHE 1",
           "previewSpecialHalf": "SPÉCIAL · 50 %",
           "eggShelfPreviewAria": "Aperçu de l’étagère à œufs",
-          "publicFreeEggTitle": "Œuf gratuit public",
+
+          "lowerSafeStripAria": "Bande sûre inférieure",          "publicFreeEggTitle": "Œuf gratuit public",
           "elementalHourGenericExplanation": "L’Heure élémentaire réduit de 30 secondes l’incubation des œufs correspondants et accorde +10 Hype. Elle ne modifie jamais les stats de combat ni la qualité d’éclosion.",
           "assetChecking": "Vérification de l’intégrité",
           "safeMaintenanceAria": "Outils de maintenance sécurisés",
@@ -599,6 +600,7 @@
           "rendererMedium": "Moyenne",
           "rendererLow": "Faible",
           "notificationDuration": "Durée des notifications (secondes)",
+          "eggShelfVisibleCount": "Œufs visibles en rotation",
           "freeEggDropsEnabled": "Œufs gratuits récurrents",
           "freeEggCooldownSeconds": "Délai de l’œuf gratuit (secondes)",
           "freeEggCooldownHelp": "Après ce délai, un spectateur peut recevoir une nouvelle offre personnelle d’œuf gratuit.",

@@ -44,6 +44,7 @@ function localRequest(body) {
 
 function createConfigRouteSubject(stored = {}) {
   const registered = [];
+  const emitted = [];
   let persisted = stored;
   const api = {
     getConfig: () => persisted,
@@ -61,7 +62,7 @@ function createConfigRouteSubject(stored = {}) {
         routePath,
         handler
       }),
-      emit: jest.fn(),
+      emit: jest.fn((event, payload) => emitted.push({ event, payload })),
       log: jest.fn()
     },
     pluginDir: __dirname,
@@ -79,6 +80,7 @@ function createConfigRouteSubject(stored = {}) {
     plugin,
     routes,
     persisted: () => persisted,
+    emitted,
     find: (method, routePath) => registered.find(route => (
       route.method === method && route.routePath === routePath
     )).handler
@@ -134,6 +136,24 @@ function creatorHatchPresetControl() {
 }
 
 describe('Stream Monsters 1.11 creator configuration contract', () => {
+  test('broadcasts visible egg changes to an already open overlay', async () => {
+    const subject = createConfigRouteSubject();
+    const res = response();
+
+    await subject.find('POST', '/api/streammonsters/config')(
+      localRequest({ eggShelfVisibleCount: 2 }),
+      res
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(subject.emitted).toContainEqual(expect.objectContaining({
+      event: 'streammonsters:config_updated',
+      payload: expect.objectContaining({
+        config: expect.objectContaining({ eggShelfVisibleCount: 2 })
+      })
+    }));
+  });
+
   test('defaults only fresh setups to 90 seconds and preserves every stored creator duration', () => {
     const plugin = new StreamAlchemyPlugin({
       getConfig: jest.fn(),

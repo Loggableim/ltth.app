@@ -188,6 +188,7 @@
     );
     const tutorialHintIntervalSeconds = Number(values.tutorialHintIntervalSeconds);
     const autoHatchActiveWindowSeconds = Number(values.autoHatchActiveWindowSeconds);
+    const eggShelfVisibleCount = Number(values.eggShelfVisibleCount);
     const requestedHatchDurationMs = Number(values.hatchDurationMs);
     const storedHatchDurationMs = Number(currentConfig.hatchDurationMs);
     const requestedArenaVariant = PORTRAIT_ARENA_VARIANTS.includes(
@@ -234,6 +235,10 @@
       notificationDurationMs: Number.isFinite(notificationDurationMs)
         ? notificationDurationMs
         : 12_000,
+      eggShelfVisibleCount: Number.isInteger(eggShelfVisibleCount) &&
+        eggShelfVisibleCount >= 1 && eggShelfVisibleCount <= 6
+        ? eggShelfVisibleCount
+        : 4,
       freeEggDropsEnabled: values.freeEggDropsEnabled !== false,
       freeEggCooldownSeconds: Number.isFinite(freeEggCooldownSeconds) &&
         freeEggCooldownSeconds >= 60 &&
@@ -244,7 +249,7 @@
       unhatchedEggStealGraceSeconds:
         Number.isFinite(unhatchedEggStealGraceSeconds) &&
         unhatchedEggStealGraceSeconds >= 0 &&
-        unhatchedEggStealGraceSeconds <= 86_400
+        unhatchedEggStealGraceSeconds <= 900
           ? Math.round(unhatchedEggStealGraceSeconds)
           : 600,
       unhatchedEggStealActivityWindowSeconds:

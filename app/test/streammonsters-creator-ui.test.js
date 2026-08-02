@@ -47,6 +47,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
       'hatchPreset',
       'gameplayPace',
       'portraitBattleMode',
+      'eggShelfVisibleCount',
       'portraitArenaVariant',
       'visualPack',
       'landscapeAnchor',
@@ -86,6 +87,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('buildDexSlots');
     expect(html).toContain('/api/streammonsters/creator-catalog');
     expect(html).toContain("portraitArenaVariant:byId('portraitArenaVariant').value");
+    expect(html).toContain("eggShelfVisibleCount:byId('eggShelfVisibleCount').value");
     expect(html).toContain(
       "byId('portraitArenaVariant').addEventListener('change', renderPortraitArenaVariant)"
     );
@@ -173,7 +175,8 @@ describe('Stream Monsters creator UI presentation controls', () => {
         'portraitArenaVariantPreviewSplit',
         'portraitArenaVariantPreviewClassic',
         'portraitArenaLikebarReserved',
-        'portraitArenaEggShelf'
+        'portraitArenaEggShelf',
+        'eggShelfVisibleCount'
       ]) {
         expect(translations[key]).toEqual(expect.any(String));
         expect(translations[key].trim()).not.toBe('');

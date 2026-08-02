@@ -95,6 +95,21 @@ function expectPublicChatPrivacy(entries) {
 }
 
 describe('Stream Monsters plugin integration', () => {
+  test('defaults and normalizes the number of eggs visible in the rail', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    expect(plugin.config.streamMonsters.eggShelfVisibleCount).toBe(4);
+
+    plugin.updateConfig({ streamMonsters: { eggShelfVisibleCount: 6 } });
+    expect(plugin.config.streamMonsters.eggShelfVisibleCount).toBe(6);
+
+    plugin.updateConfig({ streamMonsters: { eggShelfVisibleCount: 7 } });
+    expect(plugin.config.streamMonsters.eggShelfVisibleCount).toBe(4);
+    await plugin.destroy();
+  });
+
   test('starts the real match service on Rules v8 for new matches', async () => {
     const { api } = createApi();
     const plugin = new StreamAlchemyPlugin(api);

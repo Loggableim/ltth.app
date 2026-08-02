@@ -83,6 +83,7 @@ function shelfFixture({ nowMs = 10_000, width = 477 } = {}) {
     }[element] || element),
     getHatchReference: () => '!hatch',
     getAdoptReference: () => '!adopt',
+    getStealReference: () => '!steal',
     setTimeout: jest.fn(() => 1),
     clearTimeout: jest.fn(),
     setInterval: jest.fn((callback, milliseconds) => {
@@ -207,6 +208,57 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     dom.window.close();
   });
 
+
+  test('labels compact egg actions with their eligible viewer audience', () => {
+    const { dom, view } = shelfFixture({ width: 477 });
+    view.applySnapshot([
+      egg('ready-owner', {
+        displayName: 'Ready Owner',
+        ownershipState: 'owned',
+        state: 'ready',
+        timing: { landedAtMs: 1_000, expiresAtMs: 100_000 }
+      }),
+      egg('steal-owner', {
+        displayName: 'Original Owner',
+        offerType: 'steal',
+        ownershipState: 'offered',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { landedAtMs: 1_000, expiresAtMs: 100_000 }
+      }),
+      egg('reserved-owner', {
+        displayName: '@Mira',
+        provenance: 'free',
+        ownershipState: 'offered',
+        state: 'reserved',
+        adoptionStatus: 'reserved',
+        adoptable: false,
+        timing: { landedAtMs: 1_000, publicAtMs: 100_000 }
+      }),
+      egg('public-owner', {
+        displayName: 'Source Viewer',
+        provenance: 'free',
+        ownershipState: 'offered',
+        state: 'public',
+        adoptionStatus: 'public',
+        adoptable: true,
+        timing: { landedAtMs: 1_000, expiresAtMs: 100_000 }
+      })
+    ]);
+
+    const commandText = visualId => dom.window.document
+      .querySelector(`[data-egg-id="${visualId}"] [data-egg-command]`)
+      ?.textContent;
+
+    expect(commandText('ready-owner')).toBe('!hatch \u00b7 @Ready Owner');
+    expect(commandText('steal-owner')).toBe('!steal \u00b7 @everyone');
+    expect(commandText('reserved-owner')).toBe('!adopt \u00b7 @Mira');
+    expect(commandText('public-owner')).toBe('!adopt \u00b7 @everyone');
+
+    view.destroy();
+    dom.window.close();
+  });
   test('counts each card down to the deadline that belongs to its current state', () => {
     const { dom, view } = shelfFixture({ width: 1_920 });
     view.applySnapshot([
@@ -609,14 +661,15 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     }));
   });
 
-  test('anchors the portrait focus shelf in the lower exception grid', () => {
-    const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
+  test('keeps the portrait egg rail compact directly below the arena', () => {
+    const overlayHtml = fs.readFileSync(overlayPath, 'utf8');
+    const dom = new JSDOM(overlayHtml);
     const rules = styleRules(dom.window.document);
     const portraitRules = rules.filter(rule => (
       rule.media.includes('orientation: portrait')
     ));
-    const shelfRule = portraitRules.find(rule => rule.selector === '#egg-shelf');
-    const exceptionRule = portraitRules.find(rule => (
+    const shelfRule = [...portraitRules].reverse().find(rule => rule.selector === '#egg-shelf');
+    const exceptionRule = [...portraitRules].reverse().find(rule => (
       rule.selector === '#portrait-exception-lane'
     ));
     const compactCardRule = portraitRules.find(rule => (
@@ -627,18 +680,28 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       rule.selector === '#card[data-presentation="egg-offer"]'
     ));
     const rootRule = portraitRules.find(rule => rule.selector === ':root');
-    const focusRule = portraitRules.find(rule => (
-      rule.selector === '#egg-shelf [data-egg-focus]'
-    ));
+    const itemRule = portraitRules.find(rule => rule.selector === '#egg-shelf .egg-shelf-item');
+    const artRule = portraitRules.find(rule => rule.selector === '#egg-shelf .egg-shelf-art');
+    const commandRule = portraitRules.find(rule => rule.selector === '#egg-shelf [data-egg-command]');
+    const timingRule = portraitRules.find(rule => rule.selector === '#egg-shelf [data-egg-timing]');
 
-    expect(rootRule?.style.getPropertyValue('--portrait-exception-top')).toBe('74%');
-    expect(rootRule?.style.getPropertyValue('--portrait-exception-bottom')).toBe('2%');
-    expect(exceptionRule?.style.display).toBe('grid');
-    expect(exceptionRule?.style['grid-template-rows']).toBe('auto minmax(0,1fr)');
-    expect(shelfRule?.style.position).toBe('relative');
-    expect(shelfRule?.style.inset).toBe('auto');
-    expect(shelfRule?.style.display).toBe('grid');
-    expect(focusRule?.style.display).toBe('grid');
+    expect(rootRule?.style.getPropertyValue('--portrait-exception-top')).toBe('58%');
+    expect(rootRule?.style.getPropertyValue('--egg-shelf-lane-height'))
+      .toBe('clamp(76px,10vh,92px)');
+    expect(exceptionRule?.style.display).toBe('block');
+    expect(exceptionRule?.style.top).toBe('var(--portrait-exception-top)');
+    expect(exceptionRule?.style.height).toBe('var(--egg-shelf-lane-height)');
+    expect(shelfRule?.style.position).toBe('absolute');
+    expect(shelfRule?.style.top).toBe('4px');
+    expect(shelfRule?.style.height).toBe('calc(100% - 8px)');
+    expect(shelfRule?.style.display).toBe('block');
+    expect(itemRule?.style['grid-template-columns'])
+      .toBe('clamp(26px,7vw,36px) minmax(0,1fr)');
+    expect(overlayHtml).toContain('width:min(100%,clamp(26px,7vw,36px))');
+    expect(commandRule?.style.whiteSpace).toBe('normal');
+    expect(overlayHtml).toContain('font-size:clamp(13px,2.45vw,17px)');
+    expect(overlayHtml).toContain('font-size:clamp(17px,3.4vw,22px)');
+    expect(overlayHtml).toContain('#egg-shelf [data-egg-focus] { display:none!important; }');
     expect(compactCardRule?.style['min-height']).toBe('250px');
     expect(offerRule?.style['min-height']).toBe('0px');
     expect(offerRule?.style.top).toBe('7%');
@@ -646,6 +709,40 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
     const battleRule = portraitRules.find(rule => rule.selector === '#battle');
     expect(battleRule?.style.inset).toBe('0px');
     expect(battleRule?.style.overflow).toBe('hidden');
+    dom.window.close();
+  });
+
+  test('neutralizes a retained landing class in the portrait rail', () => {
+    const dom = new JSDOM(fs.readFileSync(overlayPath, 'utf8'));
+    const portraitRules = styleRules(dom.window.document).filter(rule => (
+      rule.media.includes('orientation: portrait')
+    ));
+    const landingRule = portraitRules.find(rule => (
+      rule.selector === '#egg-shelf .egg-shelf-item.landing'
+    ));
+
+    expect(landingRule?.style.animation).toBe('none');
+    expect(landingRule?.style.getPropertyPriority('animation')).toBe('important');
+    expect(landingRule?.style.transform).toBe('none');
+    expect(landingRule?.style.getPropertyPriority('transform')).toBe('important');
+    dom.window.close();
+  });
+
+  test('fills the fixed portrait rail with configured slots and disables free-egg motion', () => {
+    const overlayHtml = fs.readFileSync(overlayPath, 'utf8');
+    const dom = new JSDOM(overlayHtml);
+    const portraitRules = styleRules(dom.window.document).filter(rule => (
+      rule.media.includes('orientation: portrait')
+    ));
+    const freeArtRule = portraitRules.find(rule => (
+      rule.selector === '#egg-shelf .egg-shelf-item.public-free .egg-shelf-art'
+    ));
+
+    expect(overlayHtml).toContain('--egg-shelf-lane-height:clamp(76px,10vh,92px)');
+    expect(overlayHtml).toContain('grid-template-columns:repeat(var(--egg-visible-count,4),minmax(0,1fr))');
+    expect(overlayHtml).toContain('.egg-shelf-item > span:not([data-egg-command]):not([data-egg-timing])');
+    expect(freeArtRule?.style.animation).toBe('none');
+    expect(freeArtRule?.style.getPropertyPriority('animation')).toBe('important');
     dom.window.close();
   });
 

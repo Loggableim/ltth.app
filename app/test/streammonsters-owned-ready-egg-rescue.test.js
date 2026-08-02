@@ -1236,7 +1236,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     ), 'utf8');
     expect(html).toContain('id="unhatchedEggStealGraceSeconds"');
     expect(html).toContain('id="unhatchedEggStealActivityWindowSeconds"');
-    expect(html).toContain('min="0" max="86400"');
+    expect(html).toContain('min="0" max="900"');
 
     expect(CreatorRuntime.buildConfigPayload({
       values: {
