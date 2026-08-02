@@ -196,17 +196,17 @@ const DEFAULT_CONFIG = {
   chatTargetCommandEnabled: true,
   topOverlayShowCommandHints: true,
   topOverlayShowAbilityLegend: false,
-  maxWeaponPickups: 10,
+  maxWeaponPickups: 14,
   weaponPickupRadius: 14,
-  weaponPickupSpawnIntervalMs: 3400,
-  weaponPickupChance: 0.68,
+  weaponPickupSpawnIntervalMs: 2800,
+  weaponPickupChance: 0.85,
   weaponPickupDurationMs: 24000,
   spawnSafetyAttempts: 24,
   spawnEdgePadding: 110,
   spawnThreatClearanceRatio: 1,
   baseMass: 18,
   minMass: 8,
-  maxMass: 999,
+  maxMass: 6500,
   baseLives: 100,
   spawnDelayMs: 15000,
   spawnBaseLives: 45,
@@ -217,7 +217,7 @@ const DEFAULT_CONFIG = {
   spawnProtectionMs: 4500,
   respawnCooldownMs: 60000,
   minLives: 20,
-  maxLives: 320000,
+  maxLives: 13100000,
   directAbilitiesEnabled: true,
   abilityChargeMs: 60000,
   boostDurationMs: 6000,
@@ -296,7 +296,7 @@ const DEFAULT_CONFIG = {
     huntStrikeBoost: 1.18,
     smallMassSpeedBoost: 0.35,
     largeMassSpeedPenalty: 1.5,
-    minMassSpeedMultiplier: 0.38,
+    minMassSpeedMultiplier: 0.25,
     maxMassSpeedMultiplier: 1.35,
     boundaryAvoidanceDistance: 90,
     boundaryAvoidanceStrength: 0.8,
@@ -490,6 +490,7 @@ const DEFAULT_CONFIG = {
 };
 
 const AI_STATE_MIN_DURATION_MS = 900;
+const OFFENSIVE_WEAPON_TYPES = new Set(['laser', 'pulse', 'freeze', 'dash', 'magnet', 'vampire', 'missile', 'mine', 'blackhole', 'chainsaw']);
 
 class ArenaGame {
   constructor(api, db, logger, options = {}) {
@@ -984,13 +985,13 @@ class ArenaGame {
     }
     const hints = [
       { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena hunt - Angriff' },
-      { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena flee - Überleben' },
+      { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena flee - \u00dcberleben' },
       { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena farm - Sammeln' }
     ];
     if (config.chatTargetCommandEnabled !== false) {
       hints.push({ kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena target Name - Ziel markieren' });
     }
-    hints.push({ kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena role tactician - KI-Rolle wählen' });
+    hints.push({ kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena role tactician - KI-Rolle w\u00e4hlen' });
     return hints;
   }
 
@@ -1184,6 +1185,7 @@ class ArenaGame {
     const activeWeaponType = this._activeWeaponType(player, context.now);
     const hasActiveChainsaw = activeWeaponType === 'chainsaw';
     const mustRetreatFromThreat = this._shouldPrioritizeRetreatFromThreat(player, context, config);
+    let canForceOffensiveHunt = false;
     const candidates = [];
 
     if (context.threat) {
@@ -1213,6 +1215,7 @@ class ArenaGame {
 
     if (context.prey) {
       const weaponContext = this._weaponAttackContext(player, context.prey.target, config);
+      canForceOffensiveHunt = OFFENSIVE_WEAPON_TYPES.has(activeWeaponType) && weaponContext.canAttack;
       const chainsawCommitmentBonus = hasActiveChainsaw && weaponContext.canAttack
         ? 7.4 + this._clamp(
           1 - this._distance(player, context.prey.target) / Math.max(weaponContext.range * 1.35, 1),
@@ -1315,7 +1318,7 @@ class ArenaGame {
       });
     }
 
-    if (context.food && !mustRetreatFromThreat && !(hasActiveChainsaw && context.prey)) {
+    if (context.food && !mustRetreatFromThreat && !canForceOffensiveHunt) {
       const foodSteeringTarget = context.food.steeringTarget || context.food.target;
       candidates.push({
         mode: 'hunt-food',
@@ -2706,8 +2709,8 @@ class ArenaGame {
     if (!target) return;
     if (this._isShieldActive(target)) return;
 
-    const shieldMultiplier = target.weapon && target.weapon.type === 'shield' ? 0.35 : 1;
-    const damage = (physics.laserDamagePerSecond + power * 1.5) * seconds * shieldMultiplier;
+
+    const damage = (physics.laserDamagePerSecond + power * 1.5) * seconds;
     this._addMassEquivalent(target, -damage, config);
     target.energy = this._clamp(target.energy - damage * 2, 0, config.maxEnergy);
     player.score += damage * physics.laserScoreMultiplier;
@@ -2746,8 +2749,8 @@ class ArenaGame {
     if (!target) return;
     if (this._isShieldActive(target)) return;
 
-    const shieldMultiplier = target.weapon && target.weapon.type === 'shield' ? 0.45 : 1;
-    const damage = (physics.missileDamagePerSecond + power * 1.8) * seconds * shieldMultiplier;
+
+    const damage = (physics.missileDamagePerSecond + power * 1.8) * seconds;
     this._addMassEquivalent(target, -damage, config);
     target.energy = this._clamp(target.energy - damage * 1.4, 0, config.maxEnergy);
     player.score += damage * 1.3;
@@ -2783,8 +2786,8 @@ class ArenaGame {
       if (distance <= 0 || distance > radius) continue;
 
       const strength = 1 - distance / radius;
-      const shieldMultiplier = other.weapon && other.weapon.type === 'shield' ? 0.35 : 1;
-      const damage = physics.pulseDamagePerSecond * power * strength * seconds * shieldMultiplier;
+
+      const damage = physics.pulseDamagePerSecond * power * strength * seconds;
       this._addMassEquivalent(other, -damage, config);
       other.energy = this._clamp(other.energy - damage, 0, config.maxEnergy);
 
@@ -2792,7 +2795,7 @@ class ArenaGame {
         x: other.x - player.x,
         y: other.y - player.y
       });
-      const push = physics.pulsePushPerSecond * strength * seconds * shieldMultiplier;
+      const push = physics.pulsePushPerSecond * strength * seconds;
       other.x = this._clamp(other.x + direction.x * push, other.radius, config.arenaWidth - other.radius);
       other.y = this._clamp(other.y + direction.y * push, other.radius, config.arenaHeight - other.radius);
 
@@ -2861,10 +2864,10 @@ class ArenaGame {
         x: player.x - other.x,
         y: player.y - other.y
       });
-      const shieldMultiplier = other.weapon && other.weapon.type === 'shield' ? 0.25 : 1;
+
       const pull = Math.min(
         Math.max(0, distance - player.radius),
-        physics.blackholePlayerPullPerSecond * (1 + power * 0.06) * seconds * shieldMultiplier
+        physics.blackholePlayerPullPerSecond * (1 + power * 0.06) * seconds
       );
       other.x = this._clamp(other.x + direction.x * pull, other.radius, config.arenaWidth - other.radius);
       other.y = this._clamp(other.y + direction.y * pull, other.radius, config.arenaHeight - other.radius);
@@ -2926,11 +2929,11 @@ class ArenaGame {
       const distance = this._distance(player, other);
       if (distance > radius || distance <= 0) continue;
 
-      const shieldMultiplier = other.weapon && other.weapon.type === 'shield' ? 0.35 : 1;
+
       const direction = this._normalizeVector({ x: player.x - other.x, y: player.y - other.y });
       const pull = Math.min(
         Math.max(0, distance - player.radius),
-        (Number(physics.magnetPlayerPullPerSecond) || 90) * (1 + power * 0.06) * seconds * shieldMultiplier
+        (Number(physics.magnetPlayerPullPerSecond) || 90) * (1 + power * 0.06) * seconds
       );
       other.x = this._clamp(other.x + direction.x * pull, other.radius, config.arenaWidth - other.radius);
       other.y = this._clamp(other.y + direction.y * pull, other.radius, config.arenaHeight - other.radius);
@@ -2948,8 +2951,8 @@ class ArenaGame {
     if (!target) return;
     if (this._isShieldActive(target)) return;
 
-    const shieldMultiplier = target.weapon && target.weapon.type === 'shield' ? 0.4 : 1;
-    const drain = (Number(physics.vampireDrainPerSecond) || 18) * (1 + power * 0.18) * seconds * shieldMultiplier;
+
+    const drain = (Number(physics.vampireDrainPerSecond) || 18) * (1 + power * 0.18) * seconds;
     const applied = this._addLives(target, -drain, config);
     const stolenLives = Math.max(0, -applied) * (Number(physics.vampireStealRatio) || 0.72);
     if (stolenLives > 0) {
@@ -3152,11 +3155,8 @@ class ArenaGame {
     if (bomb.vy < 0) distances.push((radius - bomb.y) / bomb.vy);
     return Math.max(0, Math.min(...distances.filter(Number.isFinite)));
   }
-  _bombRetentionForDistance(distance, blastRadius) {
-    const ratio = distance / Math.max(1, blastRadius);
-    if (ratio <= 0.35) return 0.22;
-    if (ratio <= 0.70) return 0.45;
-    return 0.70;
+  _bombRetentionForDistance() {
+    return 0.5;
   }
 
   _detonateBomb(bomb, config) {
@@ -3168,16 +3168,26 @@ class ArenaGame {
       const distance = this._distance(bomb, player);
       if (distance > radius) continue;
       const beforeMass = Number(player.mass) || 0;
-      const targetMass = Math.min(beforeMass, Math.max(Number(config.minMass) + 0.5, beforeMass * this._bombRetentionForDistance(distance, radius)));
+      const targetMass = Math.min(beforeMass, Math.max(Number(config.minMass) + 0.5, beforeMass * this._bombRetentionForDistance()));
       const massLost = Math.max(0, beforeMass - targetMass);
       player.lives = this._massToLives(targetMass, config);
       this._syncRadius(player, config);
       totalMassLost += massLost;
       victims.push(player.username);
     }
-    const foodCount = Math.min(40, Math.floor(totalMassLost / 10));
+    const recoverableMass = totalMassLost * 0.45;
+    const foodUnit = Math.max(0.1, Number(config.foodValue) || DEFAULT_CONFIG.foodValue);
+    const foodCount = recoverableMass > 0
+      ? Math.min(40, Math.max(1, Math.ceil(recoverableMass / foodUnit)))
+      : 0;
     if (foodCount > 0) {
-      this._spawnFoodBurst(bomb, foodCount, config, { source: 'bomb', spread: radius, ignoreCap: true });
+      this._spawnFoodBurst(bomb, foodCount, config, {
+        source: 'bomb',
+        value: recoverableMass / foodCount,
+        spread: radius,
+        excludedUsername: bomb.owner,
+        ignoreCap: true
+      });
     }
     this.io.emit('arena:bomb-exploded', {
       bombId: bomb.id, owner: bomb.owner, x: bomb.x, y: bomb.y, radius,
@@ -3198,6 +3208,7 @@ class ArenaGame {
 
   _consumeFood(player, foodId, food, config, gainMultiplier = 1, energyGain = 1, reason = 'food') {
     if (!this.food.has(foodId)) return 0;
+    if (food.excludedUsername && String(player?.username || '') === food.excludedUsername) return 0;
 
     const gain = food.value * gainMultiplier;
     this.food.delete(foodId);
@@ -3229,6 +3240,7 @@ class ArenaGame {
 
   _canConsumeFood(player, food, config = DEFAULT_CONFIG, reason = 'collision') {
     if (!player || !food) return false;
+    if (food.excludedUsername && String(player.username || '') === food.excludedUsername) return false;
     if (reason !== 'collision') return true;
     if (this._isFoodUsefulForPlayer(player, config)) return true;
 
@@ -3289,6 +3301,7 @@ class ArenaGame {
     food.radius = data.radius;
     food.value = data.value;
     food.source = data.source || 'ambient';
+    food.excludedUsername = data.excludedUsername ? String(data.excludedUsername) : null;
     food.spawnedAt = data.spawnedAt || this.now();
     food.expiresAt = Number(data.expiresAt) || null;
     food.fadeOutMs = Number(data.fadeOutMs) || this._foodFadeOutMs(food.source, null);
@@ -3393,18 +3406,22 @@ class ArenaGame {
   }
 
   _spawnFoodBurst(origin, count, config, options = {}) {
+    const source = String(options.source || 'burst');
+    const maxBurst = source === 'bomb'
+      ? 40
+      : Math.max(1, Number(config.maxFoodBurstPerEvent) || DEFAULT_CONFIG.maxFoodBurstPerEvent);
     const amount = Math.min(
       Math.max(0, Math.floor(Number(count) || 0)),
-      Math.max(1, Number(config.maxFoodBurstPerEvent) || DEFAULT_CONFIG.maxFoodBurstPerEvent)
+      maxBurst
     );
     if (!amount || !origin) return 0;
 
     const ignoreCap = Boolean(options.ignoreCap);
     const cap = Math.max(0, this._targetFoodCount(config));
-    const source = String(options.source || 'burst');
     const radius = Math.max(2, Number(options.radius) || Number(config.foodRadius) || DEFAULT_CONFIG.foodRadius);
     const value = Math.max(0.1, Number(options.value) || Number(config.foodValue) || DEFAULT_CONFIG.foodValue);
     const spread = Math.max(radius * 2, Number(options.spread) || 64);
+    const excludedUsername = options.excludedUsername ? String(options.excludedUsername) : null;
     const fadeOutMs = Number.isFinite(Number(options.fadeOutMs))
       ? Math.max(0, Number(options.fadeOutMs))
       : this._foodFadeOutMs(source, config);
@@ -3414,6 +3431,10 @@ class ArenaGame {
       1
     );
     const now = this.now();
+    const lifetimeMs = this._foodLifetimeMs(source, config);
+    const staggerMs = amount > 1 && lifetimeMs > 0
+      ? Math.max(1, Math.floor(Math.min(2500, lifetimeMs * 0.2) / amount))
+      : 0;
     let spawned = 0;
 
     for (let i = 0; i < amount; i++) {
@@ -3429,8 +3450,9 @@ class ArenaGame {
         radius,
         value,
         source,
+        excludedUsername,
         spawnedAt: now,
-        expiresAt: this._foodExpiresAt(source, now, config),
+        expiresAt: this._foodExpiresAt(source, now + i * staggerMs, config),
         fadeOutMs,
         motionScale
       }));
@@ -3605,6 +3627,10 @@ class ArenaGame {
     return this._isWeaponActive(player && player.weapon, now) ? player.weapon.type : null;
   }
 
+  _hasOffensiveWeapon(player, now = this.now()) {
+    return OFFENSIVE_WEAPON_TYPES.has(this._activeWeaponType(player, now));
+  }
+
   _weaponExpiresSoon(weapon, now = this.now(), thresholdMs = 1500) {
     if (!this._isWeaponActive(weapon, now)) return true;
     if (!weapon.expiresAt) return false;
@@ -3676,7 +3702,7 @@ class ArenaGame {
 
   _tryResolveAbsorption(player, other, config) {
     if (!this.players.has(player.username) || !this.players.has(other.username)) return false;
-    if (this._isShieldActive(other)) return false;
+    if (this._hasAbsorptionShield(other)) return false;
     if (this._tryResolveChainsawCollision(player, other, config)) return true;
     if (this._tryResolveChainsawCollision(other, player, config)) return true;
 
@@ -3760,7 +3786,7 @@ class ArenaGame {
     const maxMass = Math.max(1, Number(config.maxMass) || DEFAULT_CONFIG.maxMass);
     const predatorMass = this._clamp(Number(player.mass) || Number(config.baseMass) || DEFAULT_CONFIG.baseMass, config.minMass, maxMass);
     const preyMass = Math.max(1, Number(other.mass) || Number(config.baseMass) || DEFAULT_CONFIG.baseMass);
-    const balanceCap = maxMass;
+    const balanceCap = Math.min(maxMass, 999);
     const dominance = this._clamp((predatorMass - balanceCap * 0.46) / Math.max(1, balanceCap * 0.42), 0, 1);
     const capPressure = this._clamp((predatorMass - balanceCap * 0.82) / Math.max(1, balanceCap * 0.18), 0, 1);
     const preyGap = this._clamp((predatorMass / preyMass - 1.7) / 3.5, 0, 1);
@@ -3824,7 +3850,7 @@ class ArenaGame {
     if (!weapon || weapon.type !== 'chainsaw' || (weapon.expiresAt && weapon.expiresAt <= this.now())) {
       return false;
     }
-    if (this._isShieldActive(other)) return false;
+    if (this._hasAbsorptionShield(other)) return false;
 
     const physics = config.weaponPhysics || DEFAULT_CONFIG.weaponPhysics;
     const absorbOverlapRatio = Number(config.playerAbsorbOverlapRatio) || DEFAULT_CONFIG.playerAbsorbOverlapRatio;
@@ -4015,7 +4041,8 @@ class ArenaGame {
       : hasDash
         ? Number(physics.dashRequiredMassRatio) || DEFAULT_CONFIG.weaponPhysics.dashRequiredMassRatio
         : 1.25;
-    const shieldMultiplier = other.weapon && other.weapon.type === 'shield' ? 1.55 : 1;
+
+    const targetHasAbsorptionShield = this._hasAbsorptionShield(other);
     const baseEatRadiusRatio = Number(config.eatRadiusRatio) || DEFAULT_CONFIG.eatRadiusRatio;
     const eatRadiusRatio = hasChainsaw
       ? Math.min(baseEatRadiusRatio, 1.03)
@@ -4023,7 +4050,7 @@ class ArenaGame {
         ? Math.min(baseEatRadiusRatio, 1.08)
         : baseEatRadiusRatio;
     const radiusAdvantage = playerRadius > otherRadius * eatRadiusRatio;
-    const canAbsorb = radiusAdvantage && player.mass > other.mass * requiredMassRatio * shieldMultiplier;
+    const canAbsorb = !targetHasAbsorptionShield && radiusAdvantage && player.mass > other.mass * requiredMassRatio;
     const chainsawOverlapBonus = hasChainsaw
       ? Number(physics.chainsawAbsorbOverlapBonus) || DEFAULT_CONFIG.weaponPhysics.chainsawAbsorbOverlapBonus
       : 0;
@@ -5488,7 +5515,8 @@ class ArenaGame {
     const range = Math.max(1, maxMass - baseMass);
     const t = (mass - baseMass) / range;
     const bulkDrag = Math.pow(t, 1.4) * 0.1;
-    return this._clamp(1 - maxPenalty * t - bulkDrag, minMultiplier, 1);
+    const falloffT = Math.pow(t, 0.6);
+    return this._clamp(1 - maxPenalty * falloffT - bulkDrag, minMultiplier, 1);
   }
 
   _effectiveMovementSpeed(player, behavior, config = this.getConfig()) {
@@ -6315,8 +6343,7 @@ class ArenaGame {
       : hasDash
         ? Number(physics.dashRequiredMassRatio) || DEFAULT_CONFIG.weaponPhysics.dashRequiredMassRatio
         : 1.25;
-    const shieldMultiplier = other.weapon && other.weapon.type === 'shield' ? 1.55 : 1;
-    const requiredMass = Math.max(1, other.mass * requiredMassRatio * shieldMultiplier);
+    const requiredMass = Math.max(1, other.mass * requiredMassRatio);
     return Math.max(0, (requiredMass - player.mass) / requiredMass);
   }
 
@@ -6406,48 +6433,48 @@ class ArenaGame {
 
     const physics = config.weaponPhysics || DEFAULT_CONFIG.weaponPhysics;
     const power = Number(weapon.power) || 1;
-    const shieldMultiplier = other.weapon && other.weapon.type === 'shield' ? 0.82 : 1;
     const mass = Math.max(1, player.mass);
     const otherMass = Math.max(1, other.mass);
 
     if (weapon.type === 'laser') {
       return {
-        canAttack: otherMass < mass * 0.98 * shieldMultiplier,
+        canAttack: otherMass < mass * 0.98,
         range: (Number(physics.laserRange) || DEFAULT_CONFIG.weaponPhysics.laserRange) + power * 18
       };
     }
 
     if (weapon.type === 'missile') {
       return {
-        canAttack: otherMass < mass * 1.08 * shieldMultiplier,
+        canAttack: otherMass < mass * 1.08,
         range: (Number(physics.missileRange) || DEFAULT_CONFIG.weaponPhysics.missileRange) + power * 20
       };
     }
 
     if (weapon.type === 'dash') {
       return {
-        canAttack: otherMass < mass * 1.12 * shieldMultiplier,
+        canAttack: otherMass < mass * 1.12,
         range: 150 + power * 24 + Math.max(Number(player.radius) || 0, Number(other.radius) || 0)
       };
     }
 
-    if (weapon.type === 'speed') {
+    if (weapon.type === 'mine') {
       return {
-        canAttack: otherMass < mass * 1.02 * shieldMultiplier,
-        range: 135 + power * 18 + Math.max(Number(player.radius) || 0, Number(other.radius) || 0)
+        canAttack: otherMass < mass * 1.1,
+        range: (Number(physics.mineRadius) || DEFAULT_CONFIG.weaponPhysics.mineRadius) + power * 3 +
+          Math.max(Number(player.radius) || 0, Number(other.radius) || 0)
       };
     }
 
     if (weapon.type === 'vampire') {
       return {
-        canAttack: otherMass < mass * 1.05 * shieldMultiplier,
+        canAttack: otherMass < mass * 1.05,
         range: (Number(physics.vampireRange) || DEFAULT_CONFIG.weaponPhysics.vampireRange) + power * 16
       };
     }
 
     if (weapon.type === 'blackhole') {
       return {
-        canAttack: otherMass < mass * shieldMultiplier,
+        canAttack: otherMass < mass,
         range: (Number(physics.blackholeRadius) || DEFAULT_CONFIG.weaponPhysics.blackholeRadius) + power * 24
       };
     }
@@ -6456,14 +6483,14 @@ class ArenaGame {
       const threatRatio = Number(physics.chainsawThreatMassRatio) ||
         DEFAULT_CONFIG.weaponPhysics.chainsawThreatMassRatio;
       return {
-        canAttack: otherMass <= mass * threatRatio * shieldMultiplier,
+        canAttack: otherMass <= mass * threatRatio,
         range: 110 + power * 26 + Math.max(Number(player.radius) || 0, Number(other.radius) || 0)
       };
     }
 
     if (weapon.type === 'magnet') {
       return {
-        canAttack: otherMass < mass * 0.96 * shieldMultiplier,
+        canAttack: otherMass < mass * 0.96,
         range: (Number(physics.magnetRadius) || DEFAULT_CONFIG.weaponPhysics.magnetRadius) + power * 22
       };
     }
@@ -6471,7 +6498,7 @@ class ArenaGame {
     if (weapon.type === 'pulse' || weapon.type === 'freeze') {
       const rangeKey = weapon.type === 'pulse' ? 'pulseRadius' : 'freezeRadius';
       return {
-        canAttack: otherMass < mass * 0.92 * shieldMultiplier,
+        canAttack: otherMass < mass * 0.92,
         range: (Number(physics[rangeKey]) || DEFAULT_CONFIG.weaponPhysics[rangeKey]) + power * 18
       };
     }
@@ -7554,6 +7581,10 @@ class ArenaGame {
     return abilities;
   }
 
+  _hasAbsorptionShield(player, now = this.now()) {
+    return this._isShieldActive(player, now) ||
+      Boolean(player?.weapon?.type === 'shield' && (!player.weapon.expiresAt || player.weapon.expiresAt > now));
+  }
   _isShieldActive(player, now = this.now()) {
     return Boolean(player && this._abilityState(player, 'shield', this.getConfig()).activeUntil > now);
   }
@@ -7806,7 +7837,7 @@ class ArenaGame {
     if (Number(stored?.inactivityShrinkPerSecond) === LEGACY_DEFAULT_INACTIVITY_SHRINK_PER_SECOND) {
       config.inactivityShrinkPerSecond = DEFAULT_CONFIG.inactivityShrinkPerSecond;
     }
-    const legacyMassCaps = [90, 140, 170, 260, 520];
+    const legacyMassCaps = [90, 140, 170, 260, 520, 999, 2000];
     const shippedAbsorbGrowthProfile = Number(stored?.maxMass) === 666 &&
       Number(stored?.playerAbsorbMassRatio) === 0.82 &&
       Number(stored?.playerAbsorbLifeStealRatio) === 0.84;
@@ -7827,7 +7858,7 @@ class ArenaGame {
     if (
       Number(stored?.maxLives) === LEGACY_DEFAULT_MAX_LIVES ||
       Number(stored?.maxLives) === PREVIOUS_DEFAULT_MAX_LIVES ||
-      Number(stored?.maxLives) === PREVIOUS_ACTION_MAX_LIVES
+      Number(stored?.maxLives) === PREVIOUS_ACTION_MAX_LIVES || Number(stored?.maxLives) === 320000 || Number(stored?.maxLives) === 1250000
     ) {
       config.maxLives = DEFAULT_CONFIG.maxLives;
     }

@@ -1323,7 +1323,7 @@ class GameEnginePlugin {
     if (Number(stored?.inactivityShrinkPerSecond) === 5) {
       config.inactivityShrinkPerSecond = this.defaultConfigs.arena.inactivityShrinkPerSecond;
     }
-    const legacyMassCaps = [90, 140, 170, 260, 520];
+    const legacyMassCaps = [90, 140, 170, 260, 520, 999, 2000];
     const shippedAbsorbGrowthProfile = Number(stored?.maxMass) === 666 &&
       Number(stored?.playerAbsorbMassRatio) === 0.82 &&
       Number(stored?.playerAbsorbLifeStealRatio) === 0.84;
@@ -1341,7 +1341,7 @@ class GameEnginePlugin {
     if (legacyMassCaps.includes(Number(stored?.maxMass))) {
       config.maxMass = this.defaultConfigs.arena.maxMass;
     }
-    if ([2500, 6000, 9000].includes(Number(stored?.maxLives))) {
+    if ([2500, 6000, 9000, 320000, 1250000].includes(Number(stored?.maxLives))) {
       config.maxLives = this.defaultConfigs.arena.maxLives;
     }
     if ([0.7, 0.42, 0.9].includes(Number(stored?.playerAbsorbMassRatio))) {
@@ -1412,13 +1412,13 @@ class GameEnginePlugin {
     if ([50, 100, 1000].includes(Number(stored?.giftTiers?.large?.minValue)) && config.giftTiers?.large) {
       config.giftTiers.large.minValue = this.defaultConfigs.arena.giftTiers.large.minValue;
     }
-    if (Number(stored?.maxWeaponPickups) === 8) {
+    if ([8, 10].includes(Number(stored?.maxWeaponPickups))) {
       config.maxWeaponPickups = this.defaultConfigs.arena.maxWeaponPickups;
     }
-    if (Number(stored?.weaponPickupSpawnIntervalMs) === 4500) {
+    if ([4500, 3400].includes(Number(stored?.weaponPickupSpawnIntervalMs))) {
       config.weaponPickupSpawnIntervalMs = this.defaultConfigs.arena.weaponPickupSpawnIntervalMs;
     }
-    if (Number(stored?.weaponPickupChance) === 0.45) {
+    if ([0.45, 0.68].includes(Number(stored?.weaponPickupChance))) {
       config.weaponPickupChance = this.defaultConfigs.arena.weaponPickupChance;
     }
     if (Number(stored?.weaponPickupDurationMs) === 18000) {
