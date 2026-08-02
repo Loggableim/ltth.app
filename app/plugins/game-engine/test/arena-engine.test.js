@@ -381,7 +381,7 @@ describe('ArenaGame', () => {
     expect(giant.mass).toBeGreaterThan(config.minMass);
   });
 
-  it('does not detonate an armed bomb for a player inside the blast radius without physical contact', () => {
+  it('detonates an armed bomb when an unshielded player enters its blast radius', () => {
     const { arena } = createArena({ bombBlastRadius: 92 }, { now: () => 70000 });
     const config = arena.getConfig();
     const nearby = movementPlayer(arena, config, 'nearby', 12, { x: 180, y: 300, lives: arena._massToLives(12, config) });
@@ -390,7 +390,7 @@ describe('ArenaGame', () => {
 
     arena._updateBombs(config, 0);
 
-    expect(arena.bombs.has('bomb_contact_only')).toBe(true);
+    expect(arena.bombs.has('bomb_contact_only')).toBe(false);
     expect(nearby.mass).toBeCloseTo(12, 1);
   });
   it('knocks bomb victims back near the starting mass and distributes substantial owner-locked food', () => {
@@ -480,6 +480,20 @@ describe('ArenaGame', () => {
     expect(owner.mass).toBeCloseTo(config.bombSurvivorMass, 1);
   });
 
+  it('rejects new bombs at capacity without deleting persistent mines', () => {
+    let now = 70000;
+    const { arena } = createArena({ maxBombs: 2, maxFood: 0, maxWeaponPickups: 0 }, { now: () => now, random: () => 0 });
+    const config = arena.getConfig();
+    const owner = movementPlayer(arena, config, 'owner', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) });
+    arena.players.set(owner.username, owner);
+    arena.bombs.set('persistent_a', { id: 'persistent_a', owner: 'first', phase: 'armed', x: 100, y: 100, radius: 12, blastRadius: 92 });
+    arena.bombs.set('persistent_b', { id: 'persistent_b', owner: 'second', phase: 'armed', x: 800, y: 800, radius: 12, blastRadius: 92 });
+
+    const result = arena._throwBomb(owner, config, now);
+
+    expect(result).toMatchObject({ success: false, error: 'bomb field is full' });
+    expect(Array.from(arena.bombs.keys())).toEqual(['persistent_a', 'persistent_b']);
+  });
   it('keeps older bombs when the same owner throws another one', () => {
     let now = 70000;
     const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => now, random: () => 0 });

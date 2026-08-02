@@ -229,6 +229,7 @@ const DEFAULT_CONFIG = {
   bombSpeed: 650,
   bombRange: 420,
   bombBlastRadius: 92,
+  maxBombs: 32,
   bombSurvivorMass: 24,
   bombFoodRecoveryRatio: 0.75,
   bombFoodMaxCount: 80,
@@ -2401,6 +2402,7 @@ class ArenaGame {
         bombSpeed: config.bombSpeed,
         bombRange: config.bombRange,
         bombBlastRadius: config.bombBlastRadius,
+        maxBombs: config.maxBombs,
         bombSurvivorMass: config.bombSurvivorMass,
         bombFoodRecoveryRatio: config.bombFoodRecoveryRatio,
         bombFoodMaxCount: config.bombFoodMaxCount,
@@ -3051,6 +3053,8 @@ class ArenaGame {
   }
 
   _throwBomb(player, config, now) {
+    const maxBombs = Math.max(1, Math.floor(Number(config.maxBombs) || DEFAULT_CONFIG.maxBombs));
+    if (this.bombs.size >= maxBombs) return { success: false, error: 'bomb field is full' };
     const cooldownUntil = Number(player.bombCooldownUntil) || 0;
     if (now < cooldownUntil) return { success: false, error: `bomb recharges in ${Math.ceil((cooldownUntil - now) / 1000)}s` };
     const directions = [
@@ -3075,7 +3079,7 @@ class ArenaGame {
     for (const [, bomb] of Array.from(this.bombs.entries())) {
       if (bomb.phase === 'armed') {
         const trigger = Array.from(this.players.values()).find(player =>
-          !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
+          !this._isShieldActive(player) && this._bombWithinBlastRadius(bomb, player)
         );
         if (trigger) this._detonateBomb(bomb, config);
         continue;
@@ -3123,6 +3127,11 @@ class ArenaGame {
 
   _bombTouchesPlayer(bomb, player) {
     return this._distance(bomb, player) <= Math.max(1, Number(bomb.radius) || 12) + Math.max(1, Number(player.radius) || 0);
+  }
+
+  _bombWithinBlastRadius(bomb, player) {
+    const blastRadius = Math.max(1, Number(bomb.blastRadius) || DEFAULT_CONFIG.bombBlastRadius);
+    return this._distance(bomb, player) <= blastRadius;
   }
 
   _bombFirstSegmentContact(start, end, player) {
