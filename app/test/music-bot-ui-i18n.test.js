@@ -264,6 +264,9 @@ describe('Music Bot runtime i18n', () => {
       'history.historyToastTitle': 'Verlauf', 'settings.giftsCount': '{count} Geschenke',
       'settings.giftLocalesDefault': 'Katalogsprache: automatisch',
       'health.resolverUnknownState': 'Unbekannter Resolver-Status',
+      'autoDj.smartRadioTitle': 'Intelligentes Radio',
+      'autoDj.genreClassical': 'Klassik',
+      'autoDj.radioScore': 'Bewertung {score}',
       'safety.testToneCompleted': 'Testton abgeschlossen.'
     }],
     ['en', {
