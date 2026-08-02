@@ -228,6 +228,11 @@ async function createLiveOverlay(snapshot) {
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersPortraitArena = {
+        normalizeVariant(value, fallback = 'classic') {
+          return ['split-arena', 'classic'].includes(value) ? value : fallback;
+        }
+      };
       window.StreamMonstersEggStageView = {
         ...eggStageView,
         createEggStageView: options => eggStageView.createEggStageView({
@@ -335,16 +340,16 @@ describe('Stream Monsters review fix round 2 guidance', () => {
       gcce: plugin.getStreamMonstersGCCEState()
     });
 
-    expect(overlay.hint().textContent).toContain('!eier');
-    expect(overlay.hint().textContent).toContain('!schlupf [slot]');
+    expect(overlay.hint().textContent).toContain('/eier');
+    expect(overlay.hint().textContent).toContain('/schlupf [slot]');
     expect(overlay.hint().textContent).not.toContain('/eggs');
 
     await overlay.emit('streammonsters:egg_spawned', events.spawned);
-    expect(overlay.hint().textContent).toContain('!eier');
-    expect(overlay.hint().textContent).toContain('!schlupf [slot]');
+    expect(overlay.hint().textContent).toContain('/eier');
+    expect(overlay.hint().textContent).toContain('/schlupf [slot]');
     expect(overlay.hint().textContent).toContain('2 Minuten');
 
-    expect(events.earlyHatch.hint).toBe('!eier');
+    expect(events.earlyHatch.hint).toBe('/eier');
     await overlay.emit('streammonsters:chat_result', {
       userId: 'viewer-a-secret',
       displayName: 'Public Hatcher',
@@ -554,7 +559,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     delete withoutHint.hint;
 
     await overlay.emit('streammonsters:egg_spawned', withoutHint);
-    expect(overlay.hint().textContent).toContain('!eier');
+    expect(overlay.hint().textContent).toContain('/eier');
     expect(overlay.hint().textContent).not.toContain('/eggs');
 
     await overlay.emit('streammonsters:egg_ready', {

@@ -119,6 +119,11 @@ async function createPresenterHarness({
         };
       });
       window.StreamMonstersOverlayRuntime = OverlayRuntime;
+      window.StreamMonstersPortraitArena = {
+        normalizeVariant(value, fallback = 'classic') {
+          return ['split-arena', 'classic'].includes(value) ? value : fallback;
+        }
+      };
       window.StreamMonstersArenaDirector = ArenaDirector;
       window.StreamMonstersEffectsRenderer = {
         createEffectsRenderer:() => ({
