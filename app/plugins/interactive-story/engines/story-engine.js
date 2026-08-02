@@ -403,12 +403,14 @@ Do not include specific choices - just the setup.`;
     prompt += `5. Provide a SATISFYING CONCLUSION to the story\n`;
     prompt += `6. Include memory tags for characters, locations, and items\n`;
     prompt += `7. Be written ENTIRELY in ${this.language}\n\n`;
+    prompt += `Optionally add NARRATION_SEGMENTS as JSON with exact sentence text plus supported emotion and delivery cues.\n`;
     
     prompt += `IMPORTANT: This is the ENDING. Make it memorable and conclusive!\n\n`;
 
     prompt += `Format your response EXACTLY as follows:\n\n`;
     prompt += `TITLE: [Final chapter title in ${this.language}]\n\n`;
     prompt += `CONTENT:\n[Final chapter text here in ${this.language} - ${sentenceRange}, MUST RESOLVE THE STORY]\n\n`;
+    prompt += `NARRATION_SEGMENTS:\n[{"text":"exact sentence","emotion":"neutral","delivery":null}]\n\n`;
     prompt += `MEMORY_TAGS:\n`;
     prompt += `CHARACTERS: [comma-separated character names]\n`;
     prompt += `LOCATIONS: [comma-separated location names]\n`;
@@ -514,10 +516,11 @@ Do not include specific choices - just the setup.`;
     }
 
     // Extract content (no CHOICES section for final chapter)
-    const contentMatch = response.match(/CONTENT:\s*([\s\S]+?)(?=MEMORY_TAGS:|$)/i);
+    const contentMatch = response.match(/CONTENT:\s*([\s\S]+?)(?=NARRATION_SEGMENTS:|MEMORY_TAGS:|$)/i);
     if (contentMatch) {
       chapter.content = contentMatch[1].trim();
     }
+    chapter.narrationSegments = this._parseNarrationSegments(response);
 
     // Extract memory tags
     const charactersMatch = response.match(/CHARACTERS:\s*(.+)/i);
