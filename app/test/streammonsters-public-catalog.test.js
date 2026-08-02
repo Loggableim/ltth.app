@@ -84,7 +84,8 @@ function renderPublicGuide(locale = 'de') {
     .map(script => script.getAttribute('src'))
     .filter(source => (
       source.startsWith('/js/streammonsters-catalog.generated.js') ||
-      source.startsWith('/js/streammonsters-guide.js')
+      source.startsWith('/js/streammonsters-guide.js') ||
+      source.startsWith('/app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js')
     ));
 
   executableScripts.forEach(source => {
