@@ -115,6 +115,7 @@ describe('Stream Monsters Rules v5 route security', () => {
       rulesVersion: 8,
       gameplayPace: 'arcade-rally',
       portraitBattleMode: 'takeover-74',
+      portraitArenaVariant: 'classic',
       matches: []
     });
   });

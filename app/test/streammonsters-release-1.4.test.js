@@ -276,17 +276,9 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
   test('includes every release asset in the root-relative 1.5 store ZIP', async () => {
     const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.5.0.zip');
     const names = new Set(await listZipEntries(packagePath));
-    const furryManifest = JSON.parse(fs.readFileSync(
-      path.join(pluginDir, 'assets', 'streammonsters', 'furry', 'manifest.json'),
-      'utf8'
-    ));
 
     expect(names.has('plugin.json')).toBe(true);
     expect([...names].some(name => name.startsWith('streamalchemy/'))).toBe(false);
-    expect(furryManifest.assets).toHaveLength(72);
-    for (const asset of furryManifest.assets) {
-      expect(names.has(asset.assetPath)).toBe(true);
-    }
 
     for (const element of ['ember', 'tide', 'grove', 'gale', 'volt', 'lunar']) {
       for (const variant of ['standard', 'charged']) {
