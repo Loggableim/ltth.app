@@ -108,4 +108,77 @@ describe('Interactive Story Plugin - API keys and routes', () => {
       error: 'No Ollama API key configured'
     }));
   });
+  test('Ollama validation only returns configured state and never logs key-derived metadata', async () => {
+    const centralKey = 'ollama-secret-12345';
+    const { plugin, routes } = createPlugin(
+      { ollama_cloud_api_key: centralKey },
+      { debugLogging: true, llmProvider: 'ollama', ollamaBaseUrl: 'https://api.ollama.com/v1' }
+    );
+    plugin._registerRoutes();
+    const json = jest.fn();
+    const testConnection = jest.spyOn(
+      require('../engines/openai-llm-service').prototype,
+      'testConnection'
+    ).mockResolvedValue({ success: true, model: 'qwen3.5:cloud' });
+
+    await routes['post:/api/interactive-story/validate-api-key']({ body: { provider: 'ollama' } }, { json });
+
+    const response = json.mock.calls[0][0];
+    expect(response).toEqual(expect.objectContaining({
+      valid: true,
+      configured: true,
+      provider: 'Ollama',
+      apiKeyConfigured: true
+    }));
+    expect(JSON.stringify(response)).not.toContain(centralKey);
+    expect(JSON.stringify(response)).not.toContain('keyPrefix');
+    expect(JSON.stringify(response)).not.toContain('keyLength');
+    expect(JSON.stringify(plugin.debugLogs)).not.toContain(centralKey);
+    expect(JSON.stringify(plugin.debugLogs)).not.toContain('keyPrefix');
+    expect(JSON.stringify(plugin.debugLogs)).not.toContain('keyLength');
+
+    testConnection.mockRestore();
+  });
+
+  test('normal config save retains the legacy Ollama key while cloud authentication uses central settings', () => {
+    const { plugin, routes } = createPlugin(
+      { ollama_cloud_api_key: 'central-ollama-secret' },
+      { ollamaApiKey: 'legacy-plugin-secret', llmProvider: 'ollama' }
+    );
+    plugin._registerRoutes();
+    const json = jest.fn();
+    const saved = { llmProvider: 'ollama', ollamaBaseUrl: 'https://api.ollama.com/v1', ollamaModel: 'qwen3.5:cloud' };
+
+    routes['post:/api/interactive-story/config']({ body: saved }, { json });
+
+    expect(plugin.api.setConfig).toHaveBeenCalledWith('story-config', expect.objectContaining({
+      ...saved,
+      ollamaApiKey: 'legacy-plugin-secret'
+    }));
+    expect(plugin.llmService.apiKey).toBe('central-ollama-secret');
+    expect(json).toHaveBeenCalledWith({ success: true });
+  });
+
+  test('OpenRouter validation retains its existing key metadata after provider resolution', async () => {
+    const { plugin, routes } = createPlugin({}, {
+      llmProvider: 'openrouter',
+      openRouterApiKey: 'openrouter-secret',
+      openRouterBaseUrl: 'https://openrouter.ai/api/v1',
+      openRouterModel: 'openrouter/free'
+    });
+    plugin._registerRoutes();
+    const json = jest.fn();
+    const testConnection = jest.spyOn(
+      require('../engines/openai-llm-service').prototype,
+      'testConnection'
+    ).mockResolvedValue({ success: true, model: 'openrouter/free' });
+
+    await routes['post:/api/interactive-story/validate-api-key']({ body: { provider: 'openrouter' } }, { json });
+
+    expect(json.mock.calls[0][0].details).toEqual(expect.objectContaining({
+      keyLength: 17,
+      keyPrefix: 'openro...'
+    }));
+    testConnection.mockRestore();
+  });
 });

@@ -1334,7 +1334,12 @@ class InteractiveStoryPlugin {
     // Save configuration
     this.api.registerRoute('post', '/api/interactive-story/config', (req, res) => {
       try {
-        const config = req.body;
+        const submittedConfig = req.body || {};
+        const storedConfig = this.api.getConfig('story-config') || {};
+        const config = { ...submittedConfig };
+        if (!Object.prototype.hasOwnProperty.call(config, 'ollamaApiKey') && storedConfig.ollamaApiKey) {
+          config.ollamaApiKey = storedConfig.ollamaApiKey;
+        }
         this._saveConfig(config);
 
         // Reinitialize the LLM service so provider changes take effect immediately.
@@ -1864,6 +1869,11 @@ class InteractiveStoryPlugin {
           apiUrl = 'https://api.siliconflow.com/v1/chat/completions';
         }
 
+        const keyValidationMetadata = provider === 'ollama' ? {} : {
+          keyLength: apiKey ? apiKey.length : 0,
+          keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A'
+        };
+
     if (!apiKey && requiresApiKey) {
         const settingsPath = provider === 'openai'
           ? 'Settings ? OpenAI API Configuration'
@@ -1883,8 +1893,7 @@ class InteractiveStoryPlugin {
 
         this._debugLog('info', `Validating ${providerName} API connection...`, {
           provider: providerName,
-          keyLength: apiKey ? apiKey.length : 0,
-          keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A',
+          ...keyValidationMetadata,
           apiUrl,
           model: testModel
         });
@@ -1915,8 +1924,7 @@ class InteractiveStoryPlugin {
               apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
               message: `${providerName} API is valid and working!`,
               details: {
-                keyLength: apiKey ? apiKey.length : 0,
-                keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A',
+                ...keyValidationMetadata,
                 testedModel: result.model,
                 baseURL: serviceOptions.baseURL
               }
@@ -1951,8 +1959,7 @@ class InteractiveStoryPlugin {
             apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
             message: `${providerName} API key is valid and working!`,
             details: {
-              keyLength: apiKey.length,
-              keyPrefix: apiKey.substring(0, 6) + '...',
+              ...keyValidationMetadata,
               testedModel: testModel
             }
           });
@@ -2020,8 +2027,7 @@ class InteractiveStoryPlugin {
             troubleshooting,
             details: {
               statusCode,
-              keyLength: apiKey ? apiKey.length : 0,
-              keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A',
+              ...keyValidationMetadata,
               hasWhitespace: apiKey ? apiKey !== apiKey.trim() : false,
               baseURL: serviceOptions.baseURL || null
             }
