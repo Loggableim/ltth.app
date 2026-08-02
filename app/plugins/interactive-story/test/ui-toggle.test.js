@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 describe('Interactive Story UI - Collapsible Sections', () => {
   let uiHtml;
@@ -102,3 +103,17 @@ describe('Interactive Story UI - Collapsible Sections', () => {
   });
 });
 test('requires the Story Studio wiring contract', () => { const source = fs.readFileSync(path.join(__dirname, '../ui.html'), 'utf8'); expect(source).toContain('storyMode: document.getElementById(\'storyMode\').value'); expect(source).toContain('dndJoinKeyword: document.getElementById(\'dndJoinKeyword\').value.trim()'); expect(source).toContain('fishaudioModel: document.getElementById(\'fishaudioModel\').value'); expect(source).toContain('function renderDndParticipantRoster'); expect(source).toContain("socket.on('story:dnd-participants-updated'"); expect(source).toContain('function sendPreviewLayoutAction'); expect(source).not.toContain('openRouterApiKey: document.getElementById(\'openRouterApiKey\').value.trim()'); });
+
+test('moving the Start Story control into the configuration form does not turn it into a save submitter', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../ui.html'), 'utf8');
+  const document = new JSDOM(source).window.document;
+  const configForm = document.getElementById('configForm');
+  const studioStartSlot = document.getElementById('storyStudioStartSlot');
+  const startSection = document.getElementById('startStorySection');
+
+  studioStartSlot.appendChild(startSection);
+
+  const startButton = document.getElementById('startStoryBtn');
+  expect(startButton.form).toBe(configForm);
+  expect(startButton.type).toBe('button');
+});

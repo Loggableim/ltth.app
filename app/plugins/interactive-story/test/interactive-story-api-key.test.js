@@ -222,6 +222,30 @@ describe('Interactive Story Plugin - API keys and routes', () => {
     expect(json).toHaveBeenCalledWith({ success: true });
   });
 
+  test('config save preserves an existing OpenRouter key that the studio never posts back', () => {
+    const openRouterKey = 'openrouter-existing-secret';
+    const { plugin, routes } = createPlugin({}, {
+      llmProvider: 'openrouter',
+      openRouterApiKey: openRouterKey,
+      openRouterBaseUrl: 'https://openrouter.ai/api/v1',
+      openRouterModel: 'openrouter/free'
+    });
+    plugin._registerRoutes();
+    const json = jest.fn();
+
+    routes['post:/api/interactive-story/config']({
+      body: {
+        llmProvider: 'openrouter',
+        openRouterBaseUrl: 'https://openrouter.ai/api/v1',
+        openRouterModel: 'meta-llama/llama-3.3-70b-instruct:free'
+      }
+    }, { json });
+
+    const savedConfig = plugin.api.setConfig.mock.calls[0][1];
+    expect(savedConfig.openRouterApiKey).toBe(openRouterKey);
+    expect(JSON.stringify(json.mock.calls)).not.toContain(openRouterKey);
+    expect(json).toHaveBeenCalledWith({ success: true });
+  });
   test('config save discards a newly submitted legacy Ollama key', () => {
     const { plugin, routes } = createPlugin({}, { llmProvider: 'ollama' });
     plugin._registerRoutes();

@@ -1445,6 +1445,9 @@ class InteractiveStoryPlugin {
         } else if (storedConfig.ollamaApiKey) {
           config.ollamaApiKey = storedConfig.ollamaApiKey;
         }
+        if (!Object.prototype.hasOwnProperty.call(config, 'openRouterApiKey') && storedConfig.openRouterApiKey) {
+          config.openRouterApiKey = storedConfig.openRouterApiKey;
+        }
         this._saveConfig(config);
 
         // Reinitialize the LLM service so provider changes take effect immediately.
