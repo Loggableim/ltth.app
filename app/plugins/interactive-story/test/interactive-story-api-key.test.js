@@ -1,4 +1,5 @@
 const InteractiveStoryPlugin = require('../main');
+const OpenAILLMService = require('../engines/openai-llm-service');
 
 const createPlugin = (settings = {}, savedConfig = {}) => {
   const db = {
@@ -219,6 +220,39 @@ describe('Interactive Story Plugin - API keys and routes', () => {
     }));
     expect(plugin.llmService.apiKey).toBe('central-ollama-secret');
     expect(json).toHaveBeenCalledWith({ success: true });
+  });
+
+  test('config save discards a newly submitted legacy Ollama key', () => {
+    const { plugin, routes } = createPlugin({}, { llmProvider: 'ollama' });
+    plugin._registerRoutes();
+    const json = jest.fn();
+
+    routes['post:/api/interactive-story/config']({
+      body: { llmProvider: 'ollama', ollamaApiKey: 'new-legacy-secret' }
+    }, { json });
+
+    const savedConfig = plugin.api.setConfig.mock.calls[0][1];
+    expect(savedConfig).not.toHaveProperty('ollamaApiKey');
+    expect(JSON.stringify(savedConfig)).not.toContain('new-legacy-secret');
+    expect(json).toHaveBeenCalledWith({ success: true });
+  });
+
+  test('Ollama validation service does not log a raw connection error containing its API key', async () => {
+    const centralKey = 'ollama-secret-12345';
+    const logger = { info: jest.fn(), error: jest.fn() };
+    const service = new OpenAILLMService(centralKey, logger, null, { provider: 'ollama' });
+    service.client.chat.completions.create = jest.fn().mockRejectedValue(
+      new Error(`upstream rejected Bearer ${centralKey}`)
+    );
+
+    const result = await service.testConnection();
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      message: 'Ollama API test failed'
+    }));
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain(centralKey);
+    expect(logger.error).toHaveBeenCalledWith('Ollama API test failed');
   });
 
   test('OpenRouter validation retains its existing key metadata after provider resolution', async () => {

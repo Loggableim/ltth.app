@@ -1337,7 +1337,10 @@ class InteractiveStoryPlugin {
         const submittedConfig = req.body || {};
         const storedConfig = this.api.getConfig('story-config') || {};
         const config = { ...submittedConfig };
-        if (!Object.prototype.hasOwnProperty.call(config, 'ollamaApiKey') && storedConfig.ollamaApiKey) {
+        const submittedLegacyOllamaKey = Object.prototype.hasOwnProperty.call(config, 'ollamaApiKey');
+        if (submittedLegacyOllamaKey) {
+          delete config.ollamaApiKey;
+        } else if (storedConfig.ollamaApiKey) {
           config.ollamaApiKey = storedConfig.ollamaApiKey;
         }
         this._saveConfig(config);
@@ -1855,7 +1858,8 @@ class InteractiveStoryPlugin {
             baseURL: ollamaBaseUrl,
             defaultModel: requestConfig.ollamaModel || config.ollamaModel || 'qwen3.5:cloud',
             allowCustomModels: true,
-            fallbackApiKey: 'ollama'
+            fallbackApiKey: 'ollama',
+            provider: 'ollama'
           };
           testModel = serviceOptions.defaultModel;
           this._debugLog('info', `Validating Ollama endpoint (${requiresApiKey ? 'cloud' : 'local'})`, {
