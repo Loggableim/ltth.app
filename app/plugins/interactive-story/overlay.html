@@ -1057,7 +1057,8 @@
       await saveOverlayPositions();
     }
 
-    // Handle chapter ready - show title first    socket.on('story:chapter-ready', (chapter) => {
+    // Handle chapter ready - show title first
+    socket.on('story:chapter-ready', (chapter) => {
       currentChapter = chapter;
       scrollingInProgress = false;
       sentences = [];

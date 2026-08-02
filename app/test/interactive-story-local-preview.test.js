@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const {
   isPublicQuickTunnelHostname,
   postJsonLocalOnly
@@ -96,5 +97,17 @@ describe('Interactive Story local vote preview', () => {
     expect(startDrag).toContain('event.stopPropagation();');
     expect(startDrag).toContain('element: event.currentTarget');
     expect(source).toContain('overlayConfig.positions[elementId] =');
+  });
+
+  test('compiles every shipped overlay inline script', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'interactive-story', 'overlay.html'), 'utf8');
+    const inlineScripts = Array.from(source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
+      .map((match) => match[1])
+      .filter((script) => script.trim());
+
+    expect(inlineScripts.length).toBeGreaterThan(0);
+    inlineScripts.forEach((script, index) => {
+      expect(() => new vm.Script(script, { filename: `interactive-story-overlay-inline-${index}.js` })).not.toThrow();
+    });
   });
 });
