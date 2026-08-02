@@ -264,7 +264,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     mountArena();
     const view = ArenaView.createArenaView({ document });
     const impact = document.getElementById('arena-impact');
-    impact.textContent = '+2 ♥';
+    impact.textContent = '+2 â™¥';
     impact.classList.add(
       'visible',
       'damage-number',
@@ -692,7 +692,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-result-summary').textContent).toContain('9');
     expect(document.getElementById('arena-result-ratings').textContent).toContain('900');
     expect(document.getElementById('arena-result-ratings').textContent).toContain('916');
-    expect(document.getElementById('arena-result-ratings').textContent).toMatch(/unchanged|unverändert/i);
+    expect(document.getElementById('arena-result-ratings').textContent).toMatch(/unchanged|unverÃ¤ndert/i);
     expect(document.getElementById('arena-result-report').hidden).toBe(true);
     expect(document.getElementById('arena-result-report').textContent).toBe('');
     await playback;
@@ -740,7 +740,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
           ownerSlot: 1,
           choice: 'C',
           skillName: 'Inferno Crown',
-          skillIcon: '🔥'
+          skillIcon: 'ðŸ”¥'
         },
         highlights: {
           largestHit: { slot: 1, amount: 11 },
@@ -779,7 +779,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(report.querySelector('[data-report-fighter="1"]').classList)
       .toContain('is-decisive');
     expect(report.querySelector('.arena-result-decisive').textContent)
-      .toContain('🔥 Inferno Crown');
+      .toContain('ðŸ”¥ Inferno Crown');
     expect(report.querySelector('.arena-result-decisive').textContent)
       .toContain('C');
     expect(report.querySelector('[data-report-highlights]').textContent)
@@ -1515,7 +1515,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     await play('aria-destroy', 3);
     expect(actionCard.hasAttribute('aria-label')).toBe(true);
     const impact = document.getElementById('arena-impact');
-    impact.textContent = '+2 ♥';
+    impact.textContent = '+2 â™¥';
     impact.classList.add('visible', 'heal-number');
     view.destroy();
     expect(actionCard.getAttribute('aria-label')).toBeNull();
@@ -2122,7 +2122,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     });
     const skills = template => ['A', 'B', 'C'].map(choice => ({
       choice,
-      icon: choice === 'A' ? '⚔️' : choice === 'B' ? '🛡️' : '✨',
+      icon: choice === 'A' ? 'âš”ï¸' : choice === 'B' ? 'ðŸ›¡ï¸' : 'âœ¨',
       name: `${template} fallback ${choice}`,
       nameKey: `skillName${template}${choice}Stage1`,
       shortText: `${template} fallback copy ${choice}`,
@@ -2456,18 +2456,18 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     const view = ArenaView.createArenaView({
       document,
       labels: {
-        monster: 'Créature {slot}',
+        monster: 'CrÃ©ature {slot}',
         round: 'Manche {round}',
         roster: 'Choix du monstre',
-        evaded: 'ESQUIVÉ',
+        evaded: 'ESQUIVÃ‰',
         knockout: 'K.-O.',
         winner: '{name} gagne !',
-        battleEnded: 'Combat terminé',
-        cancelledRoster: 'Combat annulé · sélection incomplète',
-        cancelled: 'Combat annulé',
+        battleEnded: 'Combat terminÃ©',
+        cancelledRoster: 'Combat annulÃ© Â· sÃ©lection incomplÃ¨te',
+        cancelled: 'Combat annulÃ©',
         shield: 'Bouclier',
-        special: 'Spécial',
-        skillCopyLunarAttack: 'Une frappe lunaire rend un peu de santé.'
+        special: 'SpÃ©cial',
+        skillCopyLunarAttack: 'Une frappe lunaire rend un peu de santÃ©.'
       },
       clock: {
         wait: async () => {
@@ -2487,7 +2487,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     });
     expect(document.querySelector('#arena-round').textContent).toBe('Choix du monstre');
     expect(document.querySelector('#arena-shield-label-1').textContent).toBe('Bouclier');
-    expect(document.querySelector('#arena-special-label-2').textContent).toBe('Spécial');
+    expect(document.querySelector('#arena-special-label-2').textContent).toBe('SpÃ©cial');
 
     view.openChoice({ matchId: 'localized', round: 2, choices: ['A', 'B'] });
     expect(document.querySelector('#arena-round').textContent).toBe('Manche 2');
@@ -2509,10 +2509,10 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       hits: [{ index: 1, hpDamage: 0, evaded: true }]
     });
     expect(document.querySelector('#arena-skill-prompt').textContent)
-      .toContain('Une frappe lunaire rend un peu de santé.');
+      .toContain('Une frappe lunaire rend un peu de santÃ©.');
     expect(document.querySelector('#arena-skill-prompt').textContent)
       .not.toContain('English fallback');
-    expect(impactCopies).toContain('ESQUIVÉ');
+    expect(impactCopies).toContain('ESQUIVÃ‰');
     expect(document.querySelector('#arena-impact').textContent).toBe('');
     await view.complete({ winnerSlot: 1 });
     expect(document.querySelector('#arena-feed').textContent).toBe('Selene gagne !');
@@ -3107,14 +3107,14 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
         arenaHpAria: '{monster}: Lebenspunkte',
         arenaShieldAria: '{monster}: Schild',
         arenaSpecialAria: '{monster}: Spezialladung',
-        arenaSkillDeckAria: '{monster}: Fähigkeiten'
+        arenaSkillDeckAria: '{monster}: FÃ¤higkeiten'
       },
       fr: {
-        eggShelfAria: 'Étagère des œufs',
+        eggShelfAria: 'Ã‰tagÃ¨re des Å“ufs',
         arenaHpAria: '{monster} : points de vie',
         arenaShieldAria: '{monster} : bouclier',
-        arenaSpecialAria: '{monster} : charge spéciale',
-        arenaSkillDeckAria: '{monster} : compétences'
+        arenaSpecialAria: '{monster} : charge spÃ©ciale',
+        arenaSkillDeckAria: '{monster} : compÃ©tences'
       }
     };
     const localize = (key, params, locale) => (
@@ -3134,14 +3134,14 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.getElementById('arena-hp-1').getAttribute('aria-label'))
       .toBe('Ashfang: Lebenspunkte');
     expect(document.querySelector('[data-skill-deck="2"]').getAttribute('aria-label'))
-      .toBe('Ripple: Fähigkeiten');
+      .toBe('Ripple: FÃ¤higkeiten');
 
     view.setLocale('fr');
-    expect(shelf.getAttribute('aria-label')).toBe('Étagère des œufs');
+    expect(shelf.getAttribute('aria-label')).toBe('Ã‰tagÃ¨re des Å“ufs');
     expect(document.getElementById('arena-charge-2').getAttribute('aria-label'))
-      .toBe('Ripple : charge spéciale');
+      .toBe('Ripple : charge spÃ©ciale');
     expect(document.querySelector('[data-skill-deck="1"]').getAttribute('aria-label'))
-      .toBe('Ashfang : compétences');
+      .toBe('Ashfang : compÃ©tences');
   });
 
   test.each(['de', 'en', 'es', 'fr'])(
@@ -3254,8 +3254,9 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       /@media \(orientation: portrait\)[\s\S]*#arena-result\s*\{[^}]*max-height:[^}]*overflow:hidden/s
     );
     expect(html).toMatch(
-      /if \(type === 'egg_hatched'\)[\s\S]*?presentation:'hatch',[\s\S]*?duration:12_000/
+      /if \(type === 'egg_hatched'\)[\s\S]*?showHatchReveal\(data\)/
     );
+    expect(html).toMatch(/const deadlineMs = startedAt \+ 12_000/);
     expect(html).toMatch(/@media \(orientation: landscape\)\s*\{[^}]*height:65%/s);
     expect(html).toMatch(/@media \(orientation: landscape\)[\s\S]*#arena-feed\s*\{[^}]*top:18%/);
     expect(html).toMatch(
