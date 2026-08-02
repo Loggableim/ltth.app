@@ -19,6 +19,7 @@ const OverlayLayout = require('./utils/overlay-layout');
 // Backend
 const StoryDatabase = require('./backend/database');
 const ParticipantRegistry = require('./backend/participant-registry');
+const { createAdminAuth } = require('../../modules/admin-auth');
 
 /**
  * Interactive Story Generator Plugin
@@ -33,6 +34,7 @@ class InteractiveStoryPlugin {
     // Initialize database
     this.db = new StoryDatabase(api);
     this.participantRegistry = new ParticipantRegistry(this.db);
+    this.adminAuth = createAdminAuth();
 
     // Get persistent storage directories
     const pluginDataDir = api.getPluginDataDir();
@@ -918,7 +920,11 @@ class InteractiveStoryPlugin {
 
     const config = this._loadConfig();
     if (this._isDndMode(config) && this.participantRegistry) {
-      const resolution = this.participantRegistry.resolveRound(this.currentSession.id, this.currentChapter.chapterNumber);
+      const resolution = this.participantRegistry.resolveRound(
+        this.currentSession.id,
+        this.currentChapter.chapterNumber,
+        this._getDndInactivityLimitRounds(config)
+      );
       resolution.eliminated.forEach(participant => this.io.emit('story:dnd-player-eliminated', participant));
       this._emitParticipantRoster();
     }
@@ -1278,8 +1284,49 @@ class InteractiveStoryPlugin {
     return chapter;
   }
 
+  _getSessionMetadata() {
+    const metadata = this.currentSession?.metadata;
+    return metadata && typeof metadata === 'object' ? metadata : null;
+  }
+
   _isDndMode(config = this._loadConfig()) {
-    return config.storyMode === 'dnd';
+    const metadata = this._getSessionMetadata();
+    return (metadata?.storyMode || config.storyMode) === 'dnd';
+  }
+
+  _getDndJoinKeyword(config = this._loadConfig()) {
+    const metadata = this._getSessionMetadata();
+    return String(metadata?.dndJoinKeyword ?? config.dndJoinKeyword ?? '!join').trim();
+  }
+
+  _getDndInactivityLimitRounds(config = this._loadConfig()) {
+    const metadata = this._getSessionMetadata();
+    const value = Number(metadata?.dndInactivityLimitRounds ?? config.dndInactivityLimitRounds);
+    return Number.isInteger(value) && value > 0 ? value : 2;
+  }
+
+  _getDndRoleCatalog() {
+    const roles = this._getSessionMetadata()?.dndRoleCatalog;
+    if (!Array.isArray(roles) || !roles.length) return ParticipantRegistry.ROLE_CATALOG.slice();
+    return roles
+      .filter(role => role && typeof role.id === 'string' && typeof role.name === 'string')
+      .map(role => ({ id: role.id, name: role.name }));
+  }
+
+  _createSessionMetadata(config) {
+    const metadata = { startedBy: 'manual', storyMode: config.storyMode || 'classic' };
+    if (metadata.storyMode === 'dnd') {
+      metadata.dndJoinKeyword = String(config.dndJoinKeyword || '!join').trim();
+      metadata.dndInactivityLimitRounds = this._getDndInactivityLimitRounds(config);
+      metadata.dndRoleCatalog = ParticipantRegistry.ROLE_CATALOG.map(role => ({ ...role }));
+    }
+    return metadata;
+  }
+
+  _registerAdminRoute(method, routePath, handler) {
+    this.api.registerRoute(method, routePath, (req, res, next) => (
+      this.adminAuth(req, res, () => handler(req, res, next))
+    ));
   }
 
   _participantSnapshots(includeEliminated = false) {
@@ -1297,7 +1344,8 @@ class InteractiveStoryPlugin {
       this.currentSession.id,
       userId,
       username,
-      this.currentChapter.chapterNumber
+      this.currentChapter.chapterNumber,
+      this._getDndRoleCatalog()
     );
     this.io.emit('story:dnd-participant-joined', participant);
     this._emitParticipantRoster();
@@ -1326,8 +1374,8 @@ class InteractiveStoryPlugin {
         session: this.currentSession,
         chapter: this._prepareChapterForEmit(this.currentChapter, config),
         voting: this.votingSystem ? this.votingSystem.getStatus() : null,
-        storyMode: config.storyMode || 'classic',
-        joinKeyword: config.dndJoinKeyword || '!join',
+        storyMode: this._isDndMode(config) ? 'dnd' : 'classic',
+        joinKeyword: this._getDndJoinKeyword(config),
         activeParticipants: this._isDndMode(config) ? this._participantSnapshots() : [],
         eliminatedParticipants: this._isDndMode(config) ? this._participantSnapshots(true).filter(participant => participant.status === 'eliminated') : [],
         isGenerating: this.isGenerating,
@@ -1358,7 +1406,7 @@ class InteractiveStoryPlugin {
       return res.json({ success: true, participant: this._joinParticipant(userId, username) });
     });
 
-    this.api.registerRoute('post', '/api/interactive-story/participants/reset', (req, res) => {
+    this._registerAdminRoute('post', '/api/interactive-story/participants/reset', (req, res) => {
       const config = this._loadConfig();
       if (!this._isDndMode(config) || !this.currentSession) {
         return res.status(400).json({ error: 'No active pen-and-paper story session' });
@@ -1530,10 +1578,12 @@ class InteractiveStoryPlugin {
           theme,
           outline: this.storyEngine.getMemory().memory.outline,
           model: sessionModel,
-          metadata: { startedBy: 'manual' }
+          metadata: this._createSessionMetadata(config)
         });
 
-        this.currentSession = { id: sessionId, theme, model: sessionModel };
+        this.currentSession = {
+          id: sessionId, theme, model: sessionModel, metadata: this._createSessionMetadata(config)
+        };
 
         this._debugLog('info', 'Session created', { sessionId, theme });
 
@@ -2237,7 +2287,7 @@ class InteractiveStoryPlugin {
       const config = this._loadConfig();
       const voterId = data.uniqueId || data.userId || data.username || data.nickname || 'unknown';
       const voterName = data.nickname || data.username || 'Viewer';
-      const joinKeyword = String(config.dndJoinKeyword || '!join').trim();
+      const joinKeyword = this._getDndJoinKeyword(config);
       if (this._isDndMode(config) && joinKeyword && message.toLocaleLowerCase() === joinKeyword.toLocaleLowerCase()) {
         this._joinParticipant(voterId, voterName);
         return;

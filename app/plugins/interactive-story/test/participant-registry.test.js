@@ -92,4 +92,11 @@ describe('ParticipantRegistry', () => {
     ]);
     expect(registry.list(sessionId, { includeEliminated: true })[0]).not.toHaveProperty('userId');
   });
+  test('uses the session-specific inactivity limit instead of the default', () => {
+    registry.join(sessionId, 'viewer-1', 'Alice', 0);
+
+    expect(registry.resolveRound(sessionId, 1, 3).updated[0]).toMatchObject({ missedRounds: 1 });
+    expect(registry.resolveRound(sessionId, 2, 3).updated[0]).toMatchObject({ missedRounds: 2 });
+    expect(registry.resolveRound(sessionId, 3, 3).eliminated[0]).toMatchObject({ missedRounds: 3, status: 'eliminated' });
+  });
 });

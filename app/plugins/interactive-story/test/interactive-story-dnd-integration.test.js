@@ -39,7 +39,7 @@ describe('Interactive Story pen-and-paper integration', () => {
     events.chat({ uniqueId: 'bob-id', nickname: 'Bob', comment: '!party now' });
 
     expect(plugin.participantRegistry.join).toHaveBeenCalledTimes(1);
-    expect(plugin.participantRegistry.join).toHaveBeenCalledWith(42, 'alice-id', 'Alice', 1);
+    expect(plugin.participantRegistry.join).toHaveBeenCalledWith(42, 'alice-id', 'Alice', 1, expect.any(Array));
     expect(io.emit).toHaveBeenCalledWith('story:dnd-participant-joined', expect.objectContaining({ username: 'Alice', roleId: 'mage' }));
     expect(io.emit).toHaveBeenCalledWith('story:dnd-participants-updated', [{ username: 'Alice', roleId: 'mage', roleName: 'Mage', status: 'active' }]);
     expect(plugin.votingSystem.processVote).toHaveBeenCalledTimes(1);
@@ -65,7 +65,7 @@ describe('Interactive Story pen-and-paper integration', () => {
 
     expect(plugin.participantRegistry.recordVote).toHaveBeenCalledWith(42, 'alice-id', 1);
     expect(plugin.participantRegistry.recordVote).toHaveBeenCalledTimes(1);
-    expect(plugin.participantRegistry.resolveRound).toHaveBeenCalledWith(42, 1);
+    expect(plugin.participantRegistry.resolveRound).toHaveBeenCalledWith(42, 1, 2);
     expect(io.emit).toHaveBeenCalledWith('story:dnd-player-eliminated', expect.objectContaining({ username: 'Bob', status: 'eliminated' }));
     expect(plugin._generateNextChapterFromChoice).toHaveBeenCalledWith(0);
   });
@@ -103,5 +103,51 @@ describe('Interactive Story pen-and-paper integration', () => {
 
     expect(normalPrompt).not.toContain('ACTIVE PARTY');
     expect(dndPrompt).toContain('ACTIVE PARTY:\n- Alice: Mage\n- Rin: Ranger');
+  });
+  test('uses the active session inactivity limit when resolving a round', async () => {
+    const { plugin } = createPlugin({ storyMode: 'dnd', dndInactivityLimitRounds: 2 });
+    plugin.currentSession.metadata = { storyMode: 'dnd', dndInactivityLimitRounds: 4, dndJoinKeyword: '!party', dndRoleCatalog: [] };
+    plugin.participantRegistry = { resolveRound: jest.fn(() => ({ updated: [], eliminated: [] })), list: jest.fn(() => []) };
+    plugin._generateNextChapterFromChoice = jest.fn().mockResolvedValue({});
+
+    await plugin._handleVoteResults({ winnerIndex: 0, totalVotes: 1 });
+
+    expect(plugin.participantRegistry.resolveRound).toHaveBeenCalledWith(42, 1, 4);
+  });
+
+  test('rejects a remote unauthenticated participant reset before mutating the roster', () => {
+    const { plugin, routes } = createPlugin({ storyMode: 'dnd' });
+    plugin.db.resetParticipants = jest.fn(() => 2);
+    plugin.participantRegistry = { list: jest.fn(() => []) };
+    plugin._registerRoutes();
+    const json = jest.fn();
+    const res = { status: jest.fn(() => res), json };
+
+    routes['post:/api/interactive-story/participants/reset']({ headers: {}, socket: { remoteAddress: '203.0.113.42' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(plugin.db.resetParticipants).not.toHaveBeenCalled();
+  });
+
+  test('uses persisted D&D metadata after the global configuration changes', () => {
+    const config = { storyMode: 'classic', dndJoinKeyword: '!new' };
+    const { plugin, events, routes } = createPlugin(config);
+    plugin.currentSession.metadata = {
+      storyMode: 'dnd', dndJoinKeyword: '!campaign', dndInactivityLimitRounds: 3,
+      dndRoleCatalog: [{ id: 'ranger', name: 'Ranger' }]
+    };
+    plugin.participantRegistry = {
+      join: jest.fn(() => ({ username: 'Alice', roleId: 'ranger', roleName: 'Ranger', status: 'active' })),
+      list: jest.fn(() => [])
+    };
+    plugin._registerTikTokHandlers();
+    plugin._registerRoutes();
+    events.chat({ uniqueId: 'alice-id', nickname: 'Alice', comment: '!CAMPAIGN' });
+    const json = jest.fn();
+    routes['get:/api/interactive-story/status']({}, { json });
+
+    expect(plugin.participantRegistry.join).toHaveBeenCalledWith(42, 'alice-id', 'Alice', 1, [{ id: 'ranger', name: 'Ranger' }]);
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({ storyMode: 'dnd', joinKeyword: '!campaign' }));
   });
 });

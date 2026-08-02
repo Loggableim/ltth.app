@@ -67,4 +67,29 @@ describe('StoryDatabase participant persistence', () => {
     expect(storyDatabase.deleteOldSessions(0)).toBe(1);
     expect(sqlite.prepare('SELECT * FROM story_participants WHERE session_id = ?').get(sessionId)).toBeUndefined();
   });
+  test('persists immutable D&D session metadata across a database reopen', () => {
+    const writerSqlite = new Database(databasePath);
+    openSqlite = writerSqlite;
+    const writer = new StoryDatabase(createApi(writerSqlite));
+    writer.initialize();
+    const sessionId = writer.createSession({
+      theme: 'fantasy',
+      metadata: {
+        storyMode: 'dnd', dndJoinKeyword: '!campaign', dndInactivityLimitRounds: 4,
+        dndRoleCatalog: [{ id: 'ranger', name: 'Ranger' }]
+      }
+    });
+    writerSqlite.close();
+    openSqlite = null;
+
+    const readerSqlite = new Database(databasePath);
+    openSqlite = readerSqlite;
+    const reader = new StoryDatabase(createApi(readerSqlite));
+    reader.initialize();
+
+    expect(reader.getSession(sessionId).metadata).toEqual({
+      storyMode: 'dnd', dndJoinKeyword: '!campaign', dndInactivityLimitRounds: 4,
+      dndRoleCatalog: [{ id: 'ranger', name: 'Ranger' }]
+    });
+  });
 });

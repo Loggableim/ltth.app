@@ -21,14 +21,15 @@ class ParticipantRegistry {
       : 2;
   }
 
-  join(sessionId, userId, username, round) {
+  join(sessionId, userId, username, round, roleCatalog = ROLE_CATALOG) {
     const existing = this.database.getParticipant(sessionId, userId);
     if (existing) {
       return this._toSnapshot(existing);
     }
 
-    const selectedRole = this.selectRole(ROLE_CATALOG.slice());
-    const role = ROLE_CATALOG.find(candidate => candidate.id === selectedRole?.id) || ROLE_CATALOG[0];
+    const roles = Array.isArray(roleCatalog) && roleCatalog.length ? roleCatalog : ROLE_CATALOG;
+    const selectedRole = this.selectRole(roles.map(role => ({ ...role })));
+    const role = roles.find(candidate => candidate.id === selectedRole?.id) || roles[0];
     const participant = this.database.createParticipant(sessionId, {
       userId,
       username,
@@ -45,11 +46,13 @@ class ParticipantRegistry {
     return participant ? this._toSnapshot(participant) : null;
   }
 
-  resolveRound(sessionId, round) {
+  resolveRound(sessionId, round, inactivityLimitRounds = this.inactivityLimitRounds) {
     const result = this.database.resolveParticipantRound(
       sessionId,
       round,
-      this.inactivityLimitRounds
+      Number.isInteger(inactivityLimitRounds) && inactivityLimitRounds > 0
+        ? inactivityLimitRounds
+        : this.inactivityLimitRounds
     );
     return {
       updated: result.updated.map(participant => this._toSnapshot(participant)),
