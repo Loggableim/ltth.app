@@ -96,23 +96,23 @@ const V8_NEUTRAL_ROLE_DAMAGE_TUNING = Object.freeze({
     striker: 0.5,
     guardian: 0.5,
     trickster: 1,
-    sustain: 1.5
+    sustain: 1.4
   }),
   Tide: Object.freeze({
-    striker: 0.8,
-    guardian: 1,
-    trickster: 0,
-    sustain: 1.8
+    striker: 0.7,
+    guardian: 0.9,
+    trickster: 0.1,
+    sustain: 2.2
   }),
   Grove: Object.freeze({
     striker: -0.4,
     guardian: 0,
     trickster: 0.4,
-    sustain: 1.2
+    sustain: 0.8
   }),
   Gale: Object.freeze({
-    striker: -0.75,
-    guardian: -0.5,
+    striker: -0.65,
+    guardian: -0.4,
     trickster: -1.5,
     sustain: 0.8
   }),
@@ -120,13 +120,13 @@ const V8_NEUTRAL_ROLE_DAMAGE_TUNING = Object.freeze({
     striker: 2,
     guardian: 2.5,
     trickster: 1.75,
-    sustain: 3
+    sustain: 3.1
   }),
   Lunar: Object.freeze({
     striker: 1.15,
     guardian: 1.15,
-    trickster: 1.15,
-    sustain: 2.9
+    trickster: 0.75,
+    sustain: 2.7
   })
 });
 const V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING = Object.freeze({
