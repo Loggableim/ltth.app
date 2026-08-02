@@ -83,7 +83,7 @@ rematches when an alternative exists.
 - Battles continue until a monster causes K.O. or a player forfeits. There is
   no live three-round tie-break.
 - Arena Collapse starts at round 5: new shields are halved and neutral arena
-  damage after each round increases by `round - 4`. It cannot reduce a monster
+  damage after each round increases by `2 * (round - 4)` (2 damage in round 5). It cannot reduce a monster
   below 1 HP, so the K.O. remains a monster action.
 - Replays persist sealed choices, effects, rolls, HP, shield, charge, collapse,
   K.O., XP and rating. Rules-v5, Rules-v6, Rules-v7 and old three-round

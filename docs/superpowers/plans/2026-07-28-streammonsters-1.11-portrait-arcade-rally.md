@@ -53,7 +53,7 @@ running LTTH instance during implementation.
   round. Locale presentation beyond six seconds cannot add charge. Existing
   action/defence/hit charge remains.
 - From round 5, Arena Collapse halves newly gained shield and applies
-  `round - 4` neutral, shield-ignoring damage after the round. Collapse never
+  `2 * (round - 4)` (2 damage in round 5) neutral, shield-ignoring damage after the round. Collapse never
   reduces either monster below 1 HP and therefore never creates the K.-o.
 - Persist collapse, charge ticks, actions, K.-o., XP, level-up, and rating
   results deterministically.
