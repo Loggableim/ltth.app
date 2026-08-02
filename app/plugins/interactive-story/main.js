@@ -965,7 +965,7 @@ class InteractiveStoryPlugin {
       if (chapterNumber >= maxChapters) {
         this.logger.info(`Max chapters (${maxChapters}) reached, generating final chapter`);
         
-        const finalChapter = await this.storyEngine.generateFinalChapter(
+        let finalChapter = await this.storyEngine.generateFinalChapter(
           chapterNumber,
           previousChoice,
           this.currentSession.model
@@ -1008,6 +1008,7 @@ class InteractiveStoryPlugin {
         }
 
         // Save final chapter
+        finalChapter = this._prepareChapterForPersistence(finalChapter, config);
         this.db.saveChapter(this.currentSession.id, finalChapter);
         this.currentChapter = finalChapter;
 
@@ -1044,7 +1045,7 @@ class InteractiveStoryPlugin {
       }
 
       // Generate next chapter (not final yet)
-      const nextChapter = await this.storyEngine.generateChapter(
+      let nextChapter = await this.storyEngine.generateChapter(
         chapterNumber,
         previousChoice,
         this.currentSession.model,
@@ -1088,6 +1089,7 @@ class InteractiveStoryPlugin {
       }
 
       // Save chapter
+      nextChapter = this._prepareChapterForPersistence(nextChapter, config);
       this.db.saveChapter(this.currentSession.id, nextChapter);
       this.currentChapter = nextChapter;
 
@@ -1295,6 +1297,17 @@ class InteractiveStoryPlugin {
     return prepared;
   }
 
+  _prepareChapterForPersistence(chapter, config = null) {
+    if (!chapter) return chapter;
+    const preparedChapter = {
+      ...chapter,
+      choices: Array.isArray(chapter.choices) ? [...chapter.choices] : chapter.choices,
+      narrationSegments: Array.isArray(chapter.narrationSegments)
+        ? chapter.narrationSegments.map(segment => ({ ...segment }))
+        : chapter.narrationSegments
+    };
+    return this._prepareChapterNarration(preparedChapter, config);
+  }
   _prepareChapterNarration(chapter, config = null) {
     if (!chapter) return chapter;
     const preparedConfig = config || this._loadConfig();
@@ -1482,7 +1495,7 @@ class InteractiveStoryPlugin {
 
         // Initialize story
         this._debugLog('info', 'Calling LLM API to generate first chapter...', { theme, model: sessionModel });
-        const firstChapter = await this.storyEngine.initializeStory(theme, outline, sessionModel);
+        let firstChapter = await this.storyEngine.initializeStory(theme, outline, sessionModel);
 
         this._debugLog('info', 'First chapter generated successfully', {
           title: firstChapter.title,
@@ -1556,6 +1569,7 @@ class InteractiveStoryPlugin {
         }
 
         // Save chapter
+        firstChapter = this._prepareChapterForPersistence(firstChapter, config);
         this.db.saveChapter(sessionId, firstChapter);
         this.currentChapter = firstChapter;
 
@@ -1637,7 +1651,7 @@ class InteractiveStoryPlugin {
         const chapterNumber = this.currentChapter.chapterNumber + 1;
 
         // Generate final chapter (no choices)
-        const finalChapter = await this.storyEngine.generateFinalChapter(
+        let finalChapter = await this.storyEngine.generateFinalChapter(
           chapterNumber,
           previousChoice,
           this.currentSession.model
@@ -1680,6 +1694,7 @@ class InteractiveStoryPlugin {
         }
 
         // Save final chapter
+        finalChapter = this._prepareChapterForPersistence(finalChapter, config);
         this.db.saveChapter(this.currentSession.id, finalChapter);
         this.currentChapter = finalChapter;
 
@@ -2109,7 +2124,7 @@ class InteractiveStoryPlugin {
           this.logger.info(`Max chapters (${maxChapters}) reached in offline mode, generating final chapter`);
           
           // Generate final chapter (no choices)
-          const finalChapter = await this.storyEngine.generateFinalChapter(
+          let finalChapter = await this.storyEngine.generateFinalChapter(
             chapterNumber,
             previousChoice,
             this.currentSession.model
@@ -2137,6 +2152,7 @@ class InteractiveStoryPlugin {
           }
           
           // Save final chapter
+          finalChapter = this._prepareChapterForPersistence(finalChapter, config);
           this.db.saveChapter(this.currentSession.id, finalChapter);
           this.db.saveVote(this.currentSession.id, this.currentChapter.chapterNumber, choiceIndex, 1);
           this.currentChapter = finalChapter;
@@ -2174,7 +2190,7 @@ class InteractiveStoryPlugin {
         }
         
         // Generate next chapter (not final yet)
-        const nextChapter = await this.storyEngine.generateChapter(
+        let nextChapter = await this.storyEngine.generateChapter(
           chapterNumber,
           previousChoice,
           this.currentSession.model,
@@ -2202,6 +2218,7 @@ class InteractiveStoryPlugin {
         }
         
         // Save chapter with admin choice
+        nextChapter = this._prepareChapterForPersistence(nextChapter, config);
         this.db.saveChapter(this.currentSession.id, nextChapter);
         this.db.saveVote(this.currentSession.id, this.currentChapter.chapterNumber, choiceIndex, 1);
         this.currentChapter = nextChapter;
