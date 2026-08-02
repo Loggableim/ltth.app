@@ -229,6 +229,9 @@ const DEFAULT_CONFIG = {
   bombSpeed: 650,
   bombRange: 420,
   bombBlastRadius: 92,
+  bombSurvivorMass: 24,
+  bombFoodRecoveryRatio: 0.75,
+  bombFoodMaxCount: 80,
   likeLifeValue: 1,
   likeGrowthMaxMass: 42,
   giftLifePerCoin: 25,
@@ -2398,6 +2401,9 @@ class ArenaGame {
         bombSpeed: config.bombSpeed,
         bombRange: config.bombRange,
         bombBlastRadius: config.bombBlastRadius,
+        bombSurvivorMass: config.bombSurvivorMass,
+        bombFoodRecoveryRatio: config.bombFoodRecoveryRatio,
+        bombFoodMaxCount: config.bombFoodMaxCount,
         likeLifeValue: config.likeLifeValue,
         likeGrowthMaxMass: config.likeGrowthMaxMass,
         maxLikeLifeBatch: config.maxLikeLifeBatch,
@@ -3059,9 +3065,6 @@ class ArenaGame {
       phase: 'flying', armedAt: null, expiresAt: null
     };
     player.bombCooldownUntil = now + config.bombCooldownMs;
-    for (const [id, activeBomb] of this.bombs.entries()) {
-      if (activeBomb.owner === player.username) this.bombs.delete(id);
-    }
     this.bombs.set(bomb.id, bomb);
     this.io.emit('arena:bomb-thrown', { ...bomb, direction: direction.name, timestamp: now });
     this.emitState('bomb-thrown', { force: true });
@@ -3070,13 +3073,9 @@ class ArenaGame {
 
   _updateBombs(config, seconds) {
     for (const [, bomb] of Array.from(this.bombs.entries())) {
-      if (bomb.phase === 'armed' && this.now() >= bomb.expiresAt) {
-        this.bombs.delete(bomb.id);
-        continue;
-      }
       if (bomb.phase === 'armed') {
         const trigger = Array.from(this.players.values()).find(player =>
-          player.username !== bomb.owner && !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
+          !this._isShieldActive(player) && this._bombTouchesPlayer(bomb, player)
         );
         if (trigger) this._detonateBomb(bomb, config);
         continue;
@@ -3163,22 +3162,30 @@ class ArenaGame {
     const radius = Math.max(1, Number(bomb.blastRadius) || Number(config.bombBlastRadius) || 1);
     let totalMassLost = 0;
     const victims = [];
+    const baseMass = Math.max(1, Number(config.baseMass) || DEFAULT_CONFIG.baseMass);
+    const minMass = Math.max(1, Number(config.minMass) || DEFAULT_CONFIG.minMass);
+    const maxMass = Math.max(baseMass, Number(config.maxMass) || DEFAULT_CONFIG.maxMass);
+    const survivorMass = this._clamp(
+      Math.max(baseMass, Number(config.bombSurvivorMass) || DEFAULT_CONFIG.bombSurvivorMass),
+      minMass,
+      maxMass
+    );
     for (const player of this.players.values()) {
-      if (player.username === bomb.owner || this._isShieldActive(player)) continue;
+      if (this._isShieldActive(player)) continue;
       const distance = this._distance(bomb, player);
       if (distance > radius) continue;
       const beforeMass = Number(player.mass) || 0;
-      const targetMass = Math.min(beforeMass, Math.max(Number(config.minMass) + 0.5, beforeMass * this._bombRetentionForDistance()));
+      const targetMass = Math.min(beforeMass, survivorMass);
       const massLost = Math.max(0, beforeMass - targetMass);
       player.lives = this._massToLives(targetMass, config);
       this._syncRadius(player, config);
       totalMassLost += massLost;
       victims.push(player.username);
     }
-    const recoverableMass = totalMassLost * 0.45;
+    const recoverableMass = totalMassLost * this._clamp(Number(config.bombFoodRecoveryRatio) || DEFAULT_CONFIG.bombFoodRecoveryRatio, 0, 1);
     const foodUnit = Math.max(0.1, Number(config.foodValue) || DEFAULT_CONFIG.foodValue);
     const foodCount = recoverableMass > 0
-      ? Math.min(40, Math.max(1, Math.ceil(recoverableMass / foodUnit)))
+      ? Math.min(Math.max(1, Math.floor(Number(config.bombFoodMaxCount) || DEFAULT_CONFIG.bombFoodMaxCount)), Math.max(1, Math.ceil(recoverableMass / foodUnit)))
       : 0;
     if (foodCount > 0) {
       this._spawnFoodBurst(bomb, foodCount, config, {
@@ -3408,7 +3415,7 @@ class ArenaGame {
   _spawnFoodBurst(origin, count, config, options = {}) {
     const source = String(options.source || 'burst');
     const maxBurst = source === 'bomb'
-      ? 40
+      ? Math.max(1, Math.floor(Number(config.bombFoodMaxCount) || DEFAULT_CONFIG.bombFoodMaxCount))
       : Math.max(1, Number(config.maxFoodBurstPerEvent) || DEFAULT_CONFIG.maxFoodBurstPerEvent);
     const amount = Math.min(
       Math.max(0, Math.floor(Number(count) || 0)),

@@ -393,7 +393,7 @@ describe('ArenaGame', () => {
     expect(arena.bombs.has('bomb_contact_only')).toBe(true);
     expect(nearby.mass).toBeCloseTo(12, 1);
   });
-  it('applies a fixed 50 percent radial bomb loss and redistributes 45 percent as owner-locked food', () => {
+  it('knocks bomb victims back near the starting mass and distributes substantial owner-locked food', () => {
     const { arena, io } = createArena({ maxFood: 100 }, { now: () => 70000 });
     const config = arena.getConfig();
     const core = movementPlayer(arena, config, 'core', 100, { x: 310, y: 300, lives: arena._massToLives(100, config) });
@@ -407,15 +407,15 @@ describe('ArenaGame', () => {
     const spawnFoodBurst = jest.spyOn(arena, '_spawnFoodBurst');
     arena._updateBombs(config, 0);
 
-    expect(core.mass).toBeCloseTo(50, 0);
-    expect(middle.mass).toBeCloseTo(50, 0);
-    expect(outer.mass).toBeCloseTo(50, 0);
+    expect(core.mass).toBeCloseTo(config.bombSurvivorMass, 0);
+    expect(middle.mass).toBeCloseTo(config.bombSurvivorMass, 0);
+    expect(outer.mass).toBeCloseTo(config.bombSurvivorMass, 0);
     expect((core.kills || 0) + (middle.kills || 0) + (outer.kills || 0)).toBe(0);
-    expect(arena.food.size).toBeLessThanOrEqual(40);
+    expect(arena.food.size).toBeGreaterThan(40);
     expect(spawnFoodBurst).toHaveBeenCalledTimes(1);
     expect(spawnFoodBurst).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'bomb_2' }),
-      40,
+      config.bombFoodMaxCount,
       config,
       expect.objectContaining({
         source: 'bomb',
@@ -426,7 +426,7 @@ describe('ArenaGame', () => {
       })
     );
     const bombFood = Array.from(arena.food.values()).filter(food => food.source === 'bomb');
-    expect(bombFood.reduce((sum, food) => sum + food.value, 0)).toBeCloseTo(150 * 0.45, 5);
+    expect(bombFood.reduce((sum, food) => sum + food.value, 0)).toBeCloseTo(228 * config.bombFoodRecoveryRatio, 5);
     expect(bombFood.every(food => food.excludedUsername === 'owner')).toBe(true);
     expect(arena._canConsumeFood({ username: 'owner', mass: 20, energy: 60 }, bombFood[0], config, 'collision')).toBe(false);
     expect(arena._canConsumeFood({ username: 'collector', mass: 20, energy: 60 }, bombFood[0], config, 'collision')).toBe(true);
@@ -442,7 +442,7 @@ describe('ArenaGame', () => {
     }));
 
   });
-  it('keeps the owner and shielded player unchanged during an actual bomb explosion', () => {
+  it('lets the owner take bomb damage while direct shield protection still holds', () => {
     const now = 70000;
     const { arena } = createArena({}, { now: () => now });
     const config = arena.getConfig();
@@ -460,16 +460,46 @@ describe('ArenaGame', () => {
     arena._updateBombs(config, 0);
 
     expect(arena.bombs.has('bomb_3')).toBe(false);
-    expect(owner.mass).toBeCloseTo(100, 1);
+    expect(owner.mass).toBeCloseTo(config.bombSurvivorMass, 1);
     expect(shielded.mass).toBeCloseTo(100, 1);
-    expect(trigger.mass).toBeCloseTo(50, 0);
+    expect(trigger.mass).toBeCloseTo(config.bombSurvivorMass, 0);
   });
-  it('removes an expired armed bomb before any physical trigger can detonate it', () => {
+  it('lets the owner trigger their own armed bomb after it comes to rest', () => {
+    const { arena } = createArena({}, { now: () => 70000 });
+    const config = arena.getConfig();
+    const owner = movementPlayer(arena, config, 'owner', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) });
+    arena.players.set(owner.username, owner);
+    arena.bombs.set('self_trigger', {
+      id: 'self_trigger', owner: owner.username, phase: 'armed', x: 300, y: 300,
+      radius: 12, blastRadius: 92, expiresAt: 52000
+    });
+
+    arena._updateBombs(config, 0);
+
+    expect(arena.bombs.has('self_trigger')).toBe(false);
+    expect(owner.mass).toBeCloseTo(config.bombSurvivorMass, 1);
+  });
+
+  it('keeps older bombs when the same owner throws another one', () => {
+    let now = 70000;
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => now, random: () => 0 });
+    const config = arena.getConfig();
+    const owner = movementPlayer(arena, config, 'owner', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) });
+    arena.players.set(owner.username, owner);
+
+    expect(arena._throwBomb(owner, config, now).success).toBe(true);
+    owner.bombCooldownUntil = 0;
+    now += 1;
+    expect(arena._throwBomb(owner, config, now).success).toBe(true);
+
+    expect(arena.bombs.size).toBe(2);
+  });
+  it('keeps an armed bomb after its arm timeout when nobody touches it', () => {
     const { arena } = createArena({}, { now: () => 70000 }); const config = arena.getConfig();
-    const victim = movementPlayer(arena, config, 'victim', 100, { x: 300, y: 300, lives: arena._massToLives(100, config) }); arena.players.set(victim.username, victim);
+    const victim = movementPlayer(arena, config, 'victim', 100, { x: 600, y: 600, lives: arena._massToLives(100, config) }); arena.players.set(victim.username, victim);
     arena.bombs.set('expired', { id: 'expired', owner: 'owner', phase: 'armed', x: 300, y: 300, radius: 12, blastRadius: 92, expiresAt: 70000 });
     arena._updateBombs(config, 0);
-    expect(arena.bombs.has('expired')).toBe(false); expect(victim.mass).toBeCloseTo(100, 1);
+    expect(arena.bombs.has('expired')).toBe(true); expect(victim.mass).toBeCloseTo(100, 1);
   });
 
   it('arms a missed flying bomb at its exact range boundary', () => {
@@ -495,7 +525,7 @@ describe('ArenaGame', () => {
     expect(renderedBomb.x + renderedBomb.radius).toBe(config.arenaWidth);
   });
 
-  it('damages a small player crossed before a delayed flying-bomb tick endpoint', () => {
+  it('does not increase a smaller player crossed before a delayed flying-bomb tick endpoint', () => {
     const { arena } = createArena({}, { now: () => 70000 }); const config = arena.getConfig();
     const victim = movementPlayer(arena, config, 'tunnel', 12, {
       x: 180, y: 300, lives: arena._massToLives(12, config)
@@ -510,7 +540,7 @@ describe('ArenaGame', () => {
     arena._updateBombs(config, 0.35);
 
     expect(arena.bombs.has('tunnel')).toBe(false);
-    expect(victim.mass).toBeLessThan(12);
+    expect(victim.mass).toBeCloseTo(12, 1);
   });
 
   it('detonates at the earliest crossed player regardless of map insertion order', () => {
