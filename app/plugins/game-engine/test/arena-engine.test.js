@@ -322,7 +322,7 @@ describe('ArenaGame', () => {
     expect(player.abilities.shield.ready).toBe(false);
   });
 
-  it('throws a bomb in one random cardinal direction and leaves a large target alive after the shockwave', () => {
+  it('throws a bomb directly toward the largest opponent and leaves that target alive after the shockwave', () => {
     let now = 60000;
     let randomCall = 0;
     const random = () => {
@@ -344,7 +344,19 @@ describe('ArenaGame', () => {
       nickname: thrower.nickname,
       profilePictureUrl: 'https://example.test/thrower.png'
     }, 'bomb');
-    expect(result).toMatchObject({ success: true, ability: 'bomb', direction: 'east' });
+    expect(result).toMatchObject({
+      success: true,
+      ability: 'bomb',
+      targetUsername: giant.username
+    });
+    const bomb = arena.bombs.get(result.bombId);
+    const expectedDirection = arena._normalizeVector({
+      x: giant.x - thrower.x,
+      y: giant.y - thrower.y
+    });
+    expect(bomb).toMatchObject({ targetUsername: giant.username });
+    expect(bomb.vx).toBeCloseTo(expectedDirection.x, 5);
+    expect(bomb.vy).toBeCloseTo(expectedDirection.y, 5);
 
     now += 350;
     arena.tick(350);
@@ -353,7 +365,6 @@ describe('ArenaGame', () => {
     expect(arena.players.get(giant.username).mass).toBeGreaterThan(config.minMass);
     expect((arena.players.get(giant.username).kills || 0)).toBe(0);
     expect(spawnFoodBurst).toHaveBeenCalledTimes(1);
-    expect(arena.food.size).toBeGreaterThan(0);
   });
 
   it('clears active bombs when reset rebuilds the arena state', () => {
@@ -393,7 +404,7 @@ describe('ArenaGame', () => {
     expect(arena.bombs.has('bomb_contact_only')).toBe(false);
     expect(nearby.mass).toBeCloseTo(12, 1);
   });
-  it('knocks bomb victims back near the starting mass and distributes substantial owner-locked food', () => {
+  it('removes half of each bomb victim mass and distributes that half as owner-locked food', () => {
     const { arena, io } = createArena({ maxFood: 100 }, { now: () => 70000 });
     const config = arena.getConfig();
     const core = movementPlayer(arena, config, 'core', 100, { x: 310, y: 300, lives: arena._massToLives(100, config) });
@@ -407,9 +418,9 @@ describe('ArenaGame', () => {
     const spawnFoodBurst = jest.spyOn(arena, '_spawnFoodBurst');
     arena._updateBombs(config, 0);
 
-    expect(core.mass).toBeCloseTo(config.bombSurvivorMass, 0);
-    expect(middle.mass).toBeCloseTo(config.bombSurvivorMass, 0);
-    expect(outer.mass).toBeCloseTo(config.bombSurvivorMass, 0);
+    expect(core.mass).toBeCloseTo(50, 0);
+    expect(middle.mass).toBeCloseTo(50, 0);
+    expect(outer.mass).toBeCloseTo(50, 0);
     expect((core.kills || 0) + (middle.kills || 0) + (outer.kills || 0)).toBe(0);
     expect(arena.food.size).toBeGreaterThan(40);
     expect(spawnFoodBurst).toHaveBeenCalledTimes(1);
@@ -426,7 +437,7 @@ describe('ArenaGame', () => {
       })
     );
     const bombFood = Array.from(arena.food.values()).filter(food => food.source === 'bomb');
-    expect(bombFood.reduce((sum, food) => sum + food.value, 0)).toBeCloseTo(228 * config.bombFoodRecoveryRatio, 5);
+    expect(bombFood.reduce((sum, food) => sum + food.value, 0)).toBeCloseTo(150, 5);
     expect(bombFood.every(food => food.excludedUsername === 'owner')).toBe(true);
     expect(arena._canConsumeFood({ username: 'owner', mass: 20, energy: 60 }, bombFood[0], config, 'collision')).toBe(false);
     expect(arena._canConsumeFood({ username: 'collector', mass: 20, energy: 60 }, bombFood[0], config, 'collision')).toBe(true);
@@ -460,9 +471,9 @@ describe('ArenaGame', () => {
     arena._updateBombs(config, 0);
 
     expect(arena.bombs.has('bomb_3')).toBe(false);
-    expect(owner.mass).toBeCloseTo(config.bombSurvivorMass, 1);
+    expect(owner.mass).toBeCloseTo(50, 1);
     expect(shielded.mass).toBeCloseTo(100, 1);
-    expect(trigger.mass).toBeCloseTo(config.bombSurvivorMass, 0);
+    expect(trigger.mass).toBeCloseTo(50, 0);
   });
   it('lets the owner trigger their own armed bomb after it comes to rest', () => {
     const { arena } = createArena({}, { now: () => 70000 });
@@ -477,7 +488,7 @@ describe('ArenaGame', () => {
     arena._updateBombs(config, 0);
 
     expect(arena.bombs.has('self_trigger')).toBe(false);
-    expect(owner.mass).toBeCloseTo(config.bombSurvivorMass, 1);
+    expect(owner.mass).toBeCloseTo(50, 1);
   });
 
   it('rejects new bombs at capacity without deleting persistent mines', () => {

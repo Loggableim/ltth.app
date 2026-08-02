@@ -231,7 +231,8 @@ const DEFAULT_CONFIG = {
   bombBlastRadius: 92,
   maxBombs: 32,
   bombSurvivorMass: 24,
-  bombFoodRecoveryRatio: 0.75,
+  bombHitMassLossRatio: 0.5,
+  bombFoodRecoveryRatio: 1,
   bombFoodMaxCount: 80,
   likeLifeValue: 1,
   likeGrowthMaxMass: 42,
@@ -2404,6 +2405,7 @@ class ArenaGame {
         bombBlastRadius: config.bombBlastRadius,
         maxBombs: config.maxBombs,
         bombSurvivorMass: config.bombSurvivorMass,
+        bombHitMassLossRatio: config.bombHitMassLossRatio,
         bombFoodRecoveryRatio: config.bombFoodRecoveryRatio,
         bombFoodMaxCount: config.bombFoodMaxCount,
         likeLifeValue: config.likeLifeValue,
@@ -3061,9 +3063,16 @@ class ArenaGame {
       { name: 'east', x: 1, y: 0 }, { name: 'south', x: 0, y: 1 },
       { name: 'west', x: -1, y: 0 }, { name: 'north', x: 0, y: -1 }
     ];
-    const direction = directions[Math.min(directions.length - 1, Math.floor(this.random() * directions.length))];
+    const target = this._largestBombTarget(player);
+    const targetVector = target
+      ? { x: Number(target.x) - Number(player.x), y: Number(target.y) - Number(player.y) }
+      : null;
+    const direction = targetVector && this._vectorLength(targetVector) > 0
+      ? { name: 'target', ...this._normalizeVector(targetVector) }
+      : directions[Math.min(directions.length - 1, Math.floor(this.random() * directions.length))];
     const bomb = {
-      id: `bomb_${++this.bombIdCounter}`, owner: player.username, x: player.x, y: player.y,
+      id: `bomb_${++this.bombIdCounter}`, owner: player.username, targetUsername: target?.username || null,
+      x: player.x, y: player.y,
       vx: direction.x, vy: direction.y, radius: 12, travelled: 0, spawnedAt: now,
       range: config.bombRange, speed: config.bombSpeed, blastRadius: config.bombBlastRadius,
       phase: 'flying', armedAt: null, expiresAt: null
@@ -3072,7 +3081,7 @@ class ArenaGame {
     this.bombs.set(bomb.id, bomb);
     this.io.emit('arena:bomb-thrown', { ...bomb, direction: direction.name, timestamp: now });
     this.emitState('bomb-thrown', { force: true });
-    return { success: true, ability: 'bomb', direction: direction.name, bombId: bomb.id };
+    return { success: true, ability: 'bomb', direction: direction.name, targetUsername: bomb.targetUsername, bombId: bomb.id };
   }
 
   _updateBombs(config, seconds) {
@@ -3123,6 +3132,17 @@ class ArenaGame {
         bomb.expiresAt = bomb.armedAt + config.bombArmDurationMs;
       }
     }
+  }
+
+  _largestBombTarget(owner) {
+    let target = null;
+    for (const candidate of this.players.values()) {
+      if (!candidate || candidate.username === owner.username) continue;
+      if (!target || (Number(candidate.mass) || 0) > (Number(target.mass) || 0)) {
+        target = candidate;
+      }
+    }
+    return target;
   }
 
   _bombTouchesPlayer(bomb, player) {
@@ -3184,7 +3204,8 @@ class ArenaGame {
       const distance = this._distance(bomb, player);
       if (distance > radius) continue;
       const beforeMass = Number(player.mass) || 0;
-      const targetMass = Math.min(beforeMass, survivorMass);
+      const lossRatio = this._clamp(Number(config.bombHitMassLossRatio) || DEFAULT_CONFIG.bombHitMassLossRatio, 0, 1);
+      const targetMass = Math.min(beforeMass, Math.max(survivorMass, beforeMass * (1 - lossRatio)));
       const massLost = Math.max(0, beforeMass - targetMass);
       player.lives = this._massToLives(targetMass, config);
       this._syncRadius(player, config);
@@ -7822,6 +7843,8 @@ class ArenaGame {
     config.bombSpeed = this._clamp(Number(config.bombSpeed) || 650, 120, 1800);
     config.bombRange = this._clamp(Number(config.bombRange) || 420, 80, 1200);
     config.bombBlastRadius = this._clamp(Number(config.bombBlastRadius) || 92, 30, 260);
+    config.bombHitMassLossRatio = this._clamp(Number(config.bombHitMassLossRatio) || DEFAULT_CONFIG.bombHitMassLossRatio, 0, 1);
+    config.bombFoodRecoveryRatio = DEFAULT_CONFIG.bombFoodRecoveryRatio;
     if (
       Number(stored?.tickRateMs) === LEGACY_DEFAULT_TICK_RATE_MS ||
       Number(stored?.tickRateMs) === PREVIOUS_DEFAULT_TICK_RATE_MS
