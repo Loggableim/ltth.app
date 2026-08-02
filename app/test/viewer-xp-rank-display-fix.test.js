@@ -11,6 +11,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const ViewerXPDatabase = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/backend/database');
 
 describe('XP Rank Display Fix', () => {
@@ -21,7 +22,7 @@ describe('XP Rank Display Fix', () => {
 
   beforeEach(() => {
     // Create a temporary database for testing
-    dbPath = path.join('/tmp', `test-xp-ranks-${Date.now()}.db`);
+    dbPath = path.join(os.tmpdir(), `test-xp-ranks-${Date.now()}.db`);
     db = new Database(dbPath);
 
     // Mock API object

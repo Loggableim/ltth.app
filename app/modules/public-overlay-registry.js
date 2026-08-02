@@ -164,7 +164,7 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/battles\/[A-Za-z0-9_-]+\/replay$/)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/)),
   rule(['POST'], exact('/api/streammonsters/overlay/heartbeat')),
-  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|arena-director|audio-engine|arena-view|chat-view|portrait-arena)\.js$/)),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/streammonsters-egg-stage-view.js')),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/locales\/(?:de|en|es|fr)\.json$/)),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/branding/stream-monsters-icon.png')),
@@ -256,6 +256,7 @@ advanced-timer:time-removed
 animazingpal:stream-assistant:event
 animazingpal:stream-assistant:reset
 arena:chainsaw-hit
+arena:bomb-exploded
 arena:food-eaten
 arena:mine-triggered
 arena:player-absorbed
@@ -435,6 +436,7 @@ streammonsters:battle_choice_locked
 streammonsters:battle_choice_opened
 streammonsters:battle_choice_rejected
 streammonsters:battle_choices_revealed
+streammonsters:config_updated
 streammonsters:battle_completed
 streammonsters:battle_knockout
 streammonsters:battle_match_found
