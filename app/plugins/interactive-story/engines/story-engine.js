@@ -358,6 +358,7 @@ Do not include specific choices - just the setup.`;
     prompt += `5. Include memory tags for characters, locations, and items\n`;
     prompt += `6. Be written ENTIRELY in ${this.language}\n\n`;
     
+    prompt += `Optionally add NARRATION_SEGMENTS as JSON with exact sentence text plus supported emotion and delivery cues.\n`;
     prompt += `CRITICAL FOR TIKTOK: Keep it tight and impactful while staying within the sentence range. Each sentence must hook the viewer!\n`;
     prompt += `IMPORTANT: Each choice MUST be different from the others. Do NOT repeat or duplicate choices!\n\n`;
 
@@ -368,6 +369,7 @@ Do not include specific choices - just the setup.`;
     for (let i = 1; i <= numChoices; i++) {
       prompt += `${i}. [Unique choice ${i} in ${this.language} - MUST BE DIFFERENT FROM OTHER CHOICES]\n`;
     }
+    prompt += `\nNARRATION_SEGMENTS:\n[{"text":"exact sentence","emotion":"neutral","delivery":null}]\n`;
     prompt += `\nMEMORY_TAGS:\n`;
     prompt += `CHARACTERS: [comma-separated character names]\n`;
     prompt += `LOCATIONS: [comma-separated location names]\n`;
@@ -441,6 +443,7 @@ Do not include specific choices - just the setup.`;
     if (contentMatch) {
       chapter.content = contentMatch[1].trim();
     }
+    chapter.narrationSegments = this._parseNarrationSegments(response);
 
     // Extract choices
     const choicesMatch = response.match(/CHOICES:\s*([\s\S]+?)(?=MEMORY_TAGS:|$)/i);
@@ -542,6 +545,18 @@ Do not include specific choices - just the setup.`;
     }
 
     return chapter;
+  }
+
+  _parseNarrationSegments(response) {
+    const match = response.match(/NARRATION_SEGMENTS:\s*([\s\S]+?)(?=MEMORY_TAGS:|$)/i);
+    if (!match) return [];
+    try {
+      const segments = JSON.parse(match[1].trim());
+      return Array.isArray(segments) ? segments : [];
+    } catch (error) {
+      this.logger.warn(`Ignoring invalid narration metadata: ${error.message}`);
+      return [];
+    }
   }
 
   /**

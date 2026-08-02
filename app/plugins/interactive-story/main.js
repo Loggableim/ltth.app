@@ -13,6 +13,7 @@ const StoryEngine = require('./engines/story-engine');
 // Utils
 const VotingSystem = require('./utils/voting-system');
 const StoryMemory = require('./utils/story-memory');
+const NarrationDirector = require('./utils/narration-director');
 
 // Backend
 const StoryDatabase = require('./backend/database');
@@ -60,7 +61,7 @@ class InteractiveStoryPlugin {
     this.TTS_DISABLED_VOTING_BUFFER_MS = 2000; // 2 second buffer before voting when TTS disabled
     
     // Reading time constants (when TTS is disabled)
-    this.READING_SPEED_WPS = 3.3; // Words per second (≈200 words per minute)
+    this.READING_SPEED_WPS = 3.3; // Words per second (â‰ˆ200 words per minute)
     this.MIN_READING_TIME_MS = 5000; // Minimum 5 seconds
     
     // Timing defaults (overridable by config)
@@ -125,7 +126,7 @@ class InteractiveStoryPlugin {
   }
 
   async init() {
-    this.api.log('📖 Initializing Interactive Story Generator Plugin...', 'info');
+    this.api.log('ðŸ“– Initializing Interactive Story Generator Plugin...', 'info');
 
     try {
       // Ensure data directories exist
@@ -164,22 +165,22 @@ class InteractiveStoryPlugin {
         const openaiApiKey = this._getOpenAIApiKey();
         if (openaiApiKey) {
           this.imageService = new OpenAIImageService(openaiApiKey, this.logger, this.imageCacheDir);
-          this._debugLog('info', '✅ OpenAI Image service initialized', null);
-          this.api.log('✅ OpenAI Image service (DALL-E) initialized', 'info');
+          this._debugLog('info', 'âœ… OpenAI Image service initialized', null);
+          this.api.log('âœ… OpenAI Image service (DALL-E) initialized', 'info');
         } else {
-          this._debugLog('error', '⚠️ OpenAI API key not configured for image generation', null);
-          this.api.log('⚠️ OpenAI API key not configured for image generation', 'warn');
+          this._debugLog('error', 'âš ï¸ OpenAI API key not configured for image generation', null);
+          this.api.log('âš ï¸ OpenAI API key not configured for image generation', 'warn');
         }
       } else {
         // SiliconFlow provider
         const siliconFlowApiKey = this._getSiliconFlowApiKey();
         if (siliconFlowApiKey) {
           this.imageService = new ImageService(siliconFlowApiKey, this.logger, this.imageCacheDir);
-          this._debugLog('info', '✅ SiliconFlow Image service initialized', null);
-          this.api.log('✅ SiliconFlow Image service initialized', 'info');
+          this._debugLog('info', 'âœ… SiliconFlow Image service initialized', null);
+          this.api.log('âœ… SiliconFlow Image service initialized', 'info');
         } else {
-          this._debugLog('error', '⚠️ SiliconFlow API key not configured for image generation', null);
-          this.api.log('⚠️ SiliconFlow API key not configured for image generation', 'warn');
+          this._debugLog('error', 'âš ï¸ SiliconFlow API key not configured for image generation', null);
+          this.api.log('âš ï¸ SiliconFlow API key not configured for image generation', 'warn');
         }
       }
 
@@ -187,17 +188,17 @@ class InteractiveStoryPlugin {
       // The LTTH TTS plugin supports all engines: OpenAI, TikTok, Google, ElevenLabs, Speechify, Fish.audio, SiliconFlow
       // No need for custom TTS service - let the TTS plugin handle everything
       this.api.log('Using LTTH TTS plugin for voice generation (supports all engines)', 'info');
-      this._debugLog('info', '✅ Using LTTH TTS plugin for all TTS operations', null);
+      this._debugLog('info', 'âœ… Using LTTH TTS plugin for all TTS operations', null);
 
       // Ensure storyEngine is always initialized (even without LLM service for theme access)
       if (!this.storyEngine) {
-        this._debugLog('warn', '⚠️ StoryEngine not initialized - creating basic instance for theme access', null);
+        this._debugLog('warn', 'âš ï¸ StoryEngine not initialized - creating basic instance for theme access', null);
         // Create a minimal storyEngine without LLM service for theme/configuration access
         this.storyEngine = new StoryEngine(null, this.logger, {
           language: config.storyLanguage || 'German',
           platform: 'tiktok'
         });
-        this.api.log('⚠️ StoryEngine initialized in limited mode (themes only - configure API keys for full functionality)', 'warn');
+        this.api.log('âš ï¸ StoryEngine initialized in limited mode (themes only - configure API keys for full functionality)', 'warn');
       }
 
       // Initialize voting system
@@ -226,12 +227,12 @@ class InteractiveStoryPlugin {
         this.api.log(`Restored active session: ${activeSession.id}`, 'info');
       }
 
-      this.api.log('✅ Interactive Story Plugin initialized successfully', 'info');
-      this.api.log(`   📂 Images: ${this.imageCacheDir}`, 'info');
-      this.api.log(`   🎵 Audio: ${this.audioCacheDir}`, 'info');
-      this.api.log(`   📦 Exports: ${this.exportDir}`, 'info');
+      this.api.log('âœ… Interactive Story Plugin initialized successfully', 'info');
+      this.api.log(`   ðŸ“‚ Images: ${this.imageCacheDir}`, 'info');
+      this.api.log(`   ðŸŽµ Audio: ${this.audioCacheDir}`, 'info');
+      this.api.log(`   ðŸ“¦ Exports: ${this.exportDir}`, 'info');
     } catch (error) {
-      this.api.log(`❌ Error initializing Interactive Story Plugin: ${error.message}`, 'error');
+      this.api.log(`âŒ Error initializing Interactive Story Plugin: ${error.message}`, 'error');
       throw error;
     }
   }
@@ -402,9 +403,9 @@ class InteractiveStoryPlugin {
     if (provider === 'openai') {
       const openaiApiKey = this._getOpenAIApiKey();
       if (!openaiApiKey) {
-        this._debugLog('error', '⚠️ OpenAI API key not configured in global settings', null);
-        this.api.log('⚠️ OpenAI API key not configured in global settings', 'warn');
-        this.api.log('Please configure API key in Settings → OpenAI API Configuration', 'warn');
+        this._debugLog('error', 'âš ï¸ OpenAI API key not configured in global settings', null);
+        this.api.log('âš ï¸ OpenAI API key not configured in global settings', 'warn');
+        this.api.log('Please configure API key in Settings â†’ OpenAI API Configuration', 'warn');
         return { ok: false, provider: 'openai', providerName: 'OpenAI', missingKey: true };
       }
 
@@ -416,21 +417,21 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', '✅ OpenAI LLM service initialized', {
+      this._debugLog('info', 'âœ… OpenAI LLM service initialized', {
         apiKeyLength: openaiApiKey.length,
         apiKeyPrefix: openaiApiKey.substring(0, 6) + '...',
         timeout: config.llmTimeout,
         maxRetries: config.llmMaxRetries
       });
-      this.api.log('✅ OpenAI LLM service initialized', 'info');
+      this.api.log('âœ… OpenAI LLM service initialized', 'info');
       return { ok: true, provider: 'openai', providerName: 'OpenAI', model: config.openaiModel || 'gpt-5.2' };
     }
 
     if (provider === 'openrouter') {
       const openRouterApiKey = (config.openRouterApiKey || '').trim();
       if (!openRouterApiKey) {
-        this._debugLog('error', '⚠️ OpenRouter API key not configured in plugin settings', null);
-        this.api.log('⚠️ OpenRouter API key not configured in plugin settings', 'warn');
+        this._debugLog('error', 'âš ï¸ OpenRouter API key not configured in plugin settings', null);
+        this.api.log('âš ï¸ OpenRouter API key not configured in plugin settings', 'warn');
         this.api.log('Please add your OpenRouter API key in the Interactive Story configuration', 'warn');
         return { ok: false, provider: 'openrouter', providerName: 'OpenRouter', missingKey: true };
       }
@@ -443,13 +444,13 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', '✅ OpenRouter LLM service initialized', {
+      this._debugLog('info', 'âœ… OpenRouter LLM service initialized', {
         apiKeyLength: openRouterApiKey.length,
         apiKeyPrefix: openRouterApiKey.substring(0, 6) + '...',
         baseURL: config.openRouterBaseUrl || 'https://openrouter.ai/api/v1',
         model: config.openRouterModel || 'openrouter/free'
       });
-      this.api.log('✅ OpenRouter LLM service initialized', 'info');
+      this.api.log('âœ… OpenRouter LLM service initialized', 'info');
       return { ok: true, provider: 'openrouter', providerName: 'OpenRouter', model: config.openRouterModel || 'openrouter/free' };
     }
 
@@ -461,8 +462,8 @@ class InteractiveStoryPlugin {
       const ollamaModel = config.ollamaModel || 'qwen3.5:cloud';
 
       if (isCloudOllama && !ollamaApiKeyFromSettings) {
-        this._debugLog('error', '⚠️ Ollama API key required for cloud endpoint', null);
-        this.api.log('⚠️ Ollama API key required for cloud endpoint', 'warn');
+        this._debugLog('error', 'âš ï¸ Ollama API key required for cloud endpoint', null);
+        this.api.log('âš ï¸ Ollama API key required for cloud endpoint', 'warn');
         this.api.log('Please configure the Ollama API key in central Settings', 'warn');
         return { ok: false, provider: 'ollama', providerName: 'Ollama', missingKey: true };
       }
@@ -476,12 +477,12 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', '✅ Ollama LLM service initialized', {
+      this._debugLog('info', 'âœ… Ollama LLM service initialized', {
         baseURL: ollamaBaseUrl,
         model: ollamaModel,
         apiKeyConfigured: !!ollamaApiKeyFromSettings
       });
-      this.api.log('✅ Ollama LLM service initialized', 'info');
+      this.api.log('âœ… Ollama LLM service initialized', 'info');
       return { ok: true, provider: 'ollama', providerName: 'Ollama', model: ollamaModel };
     }
 
@@ -490,19 +491,19 @@ class InteractiveStoryPlugin {
     if (siliconFlowApiKey) {
       this.llmService = new LLMService(siliconFlowApiKey, this.logger, debugCallback, llmOptions);
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
-      this._debugLog('info', '✅ SiliconFlow LLM service initialized', {
+      this._debugLog('info', 'âœ… SiliconFlow LLM service initialized', {
         apiKeyLength: siliconFlowApiKey.length,
         apiKeyPrefix: siliconFlowApiKey.substring(0, 6) + '...',
         timeout: config.llmTimeout,
         maxRetries: config.llmMaxRetries
       });
-      this.api.log('✅ SiliconFlow LLM service initialized', 'info');
+      this.api.log('âœ… SiliconFlow LLM service initialized', 'info');
       return { ok: true, provider: 'siliconflow', providerName: 'SiliconFlow', model: config.defaultModel || 'deepseek' };
     }
 
-    this._debugLog('error', '⚠️ SiliconFlow API key not configured in global settings', null);
-    this.api.log('⚠️ SiliconFlow API key not configured in global settings', 'warn');
-    this.api.log('Please configure API key in Settings → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)', 'warn');
+    this._debugLog('error', 'âš ï¸ SiliconFlow API key not configured in global settings', null);
+    this.api.log('âš ï¸ SiliconFlow API key not configured in global settings', 'warn');
+    this.api.log('Please configure API key in Settings â†’ TTS API Keys â†’ Fish Speech 1.5 API Key (SiliconFlow)', 'warn');
     return { ok: false, provider: 'siliconflow', providerName: 'SiliconFlow', missingKey: true };
   }
 
@@ -574,6 +575,12 @@ class InteractiveStoryPlugin {
       }
       if (options.voiceId) {
         requestPayload.voiceId = options.voiceId;
+      }
+      if (options.model) {
+        requestPayload.model = options.model;
+      }
+      if (options.emotion) {
+        requestPayload.emotion = options.emotion;
       }
       
       this.logger.debug(`TTS request:`, requestPayload);
@@ -670,7 +677,7 @@ class InteractiveStoryPlugin {
       
       if (!ttsEnabled) {
         // TTS DISABLED: Self-reading mode
-        this.logger.info(`📖 TTS disabled - entering self-reading mode for chapter ${chapter.chapterNumber}`);
+        this.logger.info(`ðŸ“– TTS disabled - entering self-reading mode for chapter ${chapter.chapterNumber}`);
         
         await this._wait(previewDelay);
         
@@ -699,7 +706,7 @@ class InteractiveStoryPlugin {
         const readingTimeMs = Math.max((wordCount / this.READING_SPEED_WPS) * 1000, this.MIN_READING_TIME_MS);
         const readingTimeSeconds = Math.round(readingTimeMs / 1000);
         
-        this.logger.info(`📖 Self-reading mode: waiting ${readingTimeSeconds}s for reading (${wordCount} words)`);
+        this.logger.info(`ðŸ“– Self-reading mode: waiting ${readingTimeSeconds}s for reading (${wordCount} words)`);
         
         // Wait for estimated reading time before signaling completion
         await this._wait(readingTimeMs);
@@ -709,7 +716,7 @@ class InteractiveStoryPlugin {
           chapterNumber: chapter.chapterNumber
         });
         
-        this.logger.info(`📖 Self-reading complete for chapter ${chapter.chapterNumber}`);
+        this.logger.info(`ðŸ“– Self-reading complete for chapter ${chapter.chapterNumber}`);
         return;
       }
 
@@ -717,18 +724,19 @@ class InteractiveStoryPlugin {
       const ttsProvider = config.ttsProvider || 'system';
       
       // Split content into sentences for progressive display
+      this._prepareChapterNarration(chapter, config);
       const sentences = this._splitIntoSentences(chapter.content);
-      const contentText = chapter.content;
+      const contentText = chapter.ttsText || chapter.content;
       
       // Calculate realistic timing based on TTS speed for sentence display
       // Estimate based on typical TTS speaking rate (~2.5 words per second)
       const wordCount = this._getWordCount(contentText);
       const estimatedTTSDuration = (wordCount / 2.5) * 1000;
       
-      this.logger.info(`🎙️ Starting chapter TTS: ${sentences.length} sentences, ${wordCount} words, ~${Math.round(estimatedTTSDuration/1000)}s estimated`);
+      this.logger.info(`ðŸŽ™ï¸ Starting chapter TTS: ${sentences.length} sentences, ${wordCount} words, ~${Math.round(estimatedTTSDuration/1000)}s estimated`);
       
       // STEP 1: Show image alone for preview
-      this.logger.info(`🖼️ Showing title image for ${previewDelay/1000}s before narration`);
+      this.logger.info(`ðŸ–¼ï¸ Showing title image for ${previewDelay/1000}s before narration`);
       await this._wait(previewDelay);
       
       // STEP 2: Show title phase with greyscale image
@@ -739,7 +747,7 @@ class InteractiveStoryPlugin {
       
       // STEP 3: Speak the title and wait for completion
       await this._speakThroughSystemTTS(chapter.title);
-      this.logger.info(`🎙️ Chapter ${chapter.chapterNumber} title TTS completed`);
+      this.logger.info(`ðŸŽ™ï¸ Chapter ${chapter.chapterNumber} title TTS completed`);
       
       await this._wait(contentStartBuffer);
       
@@ -757,10 +765,13 @@ class InteractiveStoryPlugin {
       const totalWords = sentenceWordCounts.reduce((a, b) => a + b, 0);
       
       // Create TTS promise that we'll await at the end
-      const ttsPromise = this._speakThroughSystemTTS(contentText).then(() => {
-        this.logger.info(`🎙️ Chapter ${chapter.chapterNumber} content TTS completed`);
+      const ttsPromise = this._speakThroughSystemTTS(contentText, {
+        model: config.fishaudioModel,
+        emotion: chapter.narrationSegments?.[0]?.emotion
+      }).then(() => {
+        this.logger.info(`ðŸŽ™ï¸ Chapter ${chapter.chapterNumber} content TTS completed`);
       }).catch(err => {
-        this.logger.error(`🎙️ TTS playback error: ${err.message}`);
+        this.logger.error(`ðŸŽ™ï¸ TTS playback error: ${err.message}`);
       });
       
       // STEP 6: Display sentences progressively, weighted by word count
@@ -794,11 +805,11 @@ class InteractiveStoryPlugin {
         chapterNumber: chapter.chapterNumber
       });
       
-      this.logger.info(`✅ Chapter ${chapter.chapterNumber} narration complete`);
+      this.logger.info(`âœ… Chapter ${chapter.chapterNumber} narration complete`);
       
     } catch (error) {
       // Don't fail chapter generation if TTS fails
-      this.logger.error(`❌ Failed to generate TTS for chapter: ${error.message}`);
+      this.logger.error(`âŒ Failed to generate TTS for chapter: ${error.message}`);
       
       // Fallback: Show full chapter immediately if TTS fails
       const chapterForDisplay = this._prepareChapterForEmit(chapter);
@@ -967,7 +978,7 @@ class InteractiveStoryPlugin {
             const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
             const imagePrompt = `${finalChapter.title}: ${finalChapter.content.substring(0, 200)}`;
             
-            this._debugLog('info', `🖼️ Starting image generation for FINAL chapter ${chapterNumber}`, { 
+            this._debugLog('info', `ðŸ–¼ï¸ Starting image generation for FINAL chapter ${chapterNumber}`, { 
               provider: config.imageProvider,
               model: imageModel,
               promptLength: imagePrompt.length
@@ -975,12 +986,12 @@ class InteractiveStoryPlugin {
             
             finalChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
             
-            this._debugLog('info', `✅ Image generated successfully for FINAL chapter ${chapterNumber}`, { 
+            this._debugLog('info', `âœ… Image generated successfully for FINAL chapter ${chapterNumber}`, { 
               imagePath: finalChapter.imagePath,
               model: imageModel
             });
           } catch (imageError) {
-            this._debugLog('error', `❌ Image generation failed for FINAL chapter ${chapterNumber}`, { 
+            this._debugLog('error', `âŒ Image generation failed for FINAL chapter ${chapterNumber}`, { 
               error: imageError.message,
               stack: imageError.stack,
               statusCode: imageError.response?.status,
@@ -1047,7 +1058,7 @@ class InteractiveStoryPlugin {
           const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
           const imagePrompt = `${nextChapter.title}: ${nextChapter.content.substring(0, 200)}`;
           
-          this._debugLog('info', `🖼️ Starting image generation for chapter ${chapterNumber}`, { 
+          this._debugLog('info', `ðŸ–¼ï¸ Starting image generation for chapter ${chapterNumber}`, { 
             provider: config.imageProvider,
             model: imageModel,
             promptLength: imagePrompt.length
@@ -1055,12 +1066,12 @@ class InteractiveStoryPlugin {
           
           nextChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
           
-          this._debugLog('info', `✅ Image generated successfully for chapter ${chapterNumber}`, { 
+          this._debugLog('info', `âœ… Image generated successfully for chapter ${chapterNumber}`, { 
             imagePath: nextChapter.imagePath,
             model: imageModel
           });
         } catch (imageError) {
-          this._debugLog('error', `❌ Image generation failed for chapter ${chapterNumber}`, { 
+          this._debugLog('error', `âŒ Image generation failed for chapter ${chapterNumber}`, { 
             error: imageError.message,
             stack: imageError.stack,
             statusCode: imageError.response?.status,
@@ -1120,9 +1131,9 @@ class InteractiveStoryPlugin {
       });
       
       // Log detailed error information
-      this.logger.error(`❌ Chapter generation failed: ${error.message}`);
+      this.logger.error(`âŒ Chapter generation failed: ${error.message}`);
       if (error.response?.status === 504) {
-        this.logger.error('⏱️ API Gateway Timeout - Story generation interrupted');
+        this.logger.error('â±ï¸ API Gateway Timeout - Story generation interrupted');
         this.logger.error('   You can manually end the story using the "End Story" button');
       }
       
@@ -1269,7 +1280,9 @@ class InteractiveStoryPlugin {
     }
 
     const preparedConfig = config || this._loadConfig();
-    const prepared = { ...chapter };
+    this._prepareChapterNarration(chapter, preparedConfig);
+    const prepared = { ...chapter, content: NarrationDirector.stripMarkers(chapter.content) };
+    delete prepared.ttsText;
 
     if (!this._shouldGenerateImages(preparedConfig)) {
       prepared.imagePath = null;
@@ -1280,6 +1293,17 @@ class InteractiveStoryPlugin {
       prepared.imagePath = this._extractFilename(prepared.imagePath);
     }
     return prepared;
+  }
+
+  _prepareChapterNarration(chapter, config = null) {
+    if (!chapter) return chapter;
+    const preparedConfig = config || this._loadConfig();
+    const director = new NarrationDirector({ model: preparedConfig.fishaudioModel, mode: preparedConfig.narrationEmotionMode, logger: this.logger });
+    const narration = director.prepareChapter(chapter, { theme: this.currentSession?.theme || this.storyEngine?.memory?.memory?.theme, language: preparedConfig.language });
+    chapter.content = narration.displayText;
+    chapter.narrationSegments = narration.segments;
+    chapter.ttsText = narration.ttsText;
+    return chapter;
   }
 
   /**
@@ -1366,7 +1390,7 @@ class InteractiveStoryPlugin {
 
         if (llmInit.ok && this.storyEngine && config.storyLanguage) {
           this.storyEngine.updateConfig({ language: config.storyLanguage });
-          this._debugLog('info', '✅ Story language updated', {
+          this._debugLog('info', 'âœ… Story language updated', {
             language: config.storyLanguage
           });
         }
@@ -1626,7 +1650,7 @@ class InteractiveStoryPlugin {
             const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
             const imagePrompt = `${finalChapter.title}: ${finalChapter.content.substring(0, 200)}`;
             
-            this._debugLog('info', `🖼️ Starting image generation for FINAL chapter ${chapterNumber}`, { 
+            this._debugLog('info', `ðŸ–¼ï¸ Starting image generation for FINAL chapter ${chapterNumber}`, { 
               provider: config.imageProvider,
               model: imageModel,
               promptLength: imagePrompt.length
@@ -1634,12 +1658,12 @@ class InteractiveStoryPlugin {
             
             finalChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
             
-            this._debugLog('info', `✅ Image generated successfully for FINAL chapter ${chapterNumber}`, { 
+            this._debugLog('info', `âœ… Image generated successfully for FINAL chapter ${chapterNumber}`, { 
               imagePath: finalChapter.imagePath,
               model: imageModel
             });
           } catch (imageError) {
-            this._debugLog('error', `❌ Image generation failed for FINAL chapter ${chapterNumber}`, { 
+            this._debugLog('error', `âŒ Image generation failed for FINAL chapter ${chapterNumber}`, { 
               error: imageError.message,
               stack: imageError.stack,
               statusCode: imageError.response?.status,
@@ -1743,7 +1767,7 @@ class InteractiveStoryPlugin {
         const count = parseInt(req.query.count) || 5;
         const themes = this.storyEngine.getRandomThemes(count);
         
-        this._debugLog('info', `🎲 Generated ${themes.length} random themes`, {
+        this._debugLog('info', `ðŸŽ² Generated ${themes.length} random themes`, {
           themes: themes.map(t => t.name)
         });
         
@@ -2099,7 +2123,7 @@ class InteractiveStoryPlugin {
               const imagePrompt = `${finalChapter.title}: ${finalChapter.content.substring(0, 200)}`;
               finalChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
             } catch (imageError) {
-              this._debugLog('warn', `⚠️ Image generation failed, continuing without image`, { 
+              this._debugLog('warn', `âš ï¸ Image generation failed, continuing without image`, { 
                 error: imageError.message,
                 statusCode: imageError.response?.status,
                 responseData: imageError.response?.data
@@ -2164,7 +2188,7 @@ class InteractiveStoryPlugin {
             const imagePrompt = `${nextChapter.title}: ${nextChapter.content.substring(0, 200)}`;
             nextChapter.imagePath = await this.imageService.generateImage(imagePrompt, config.defaultImageModel, style);
           } catch (imageError) {
-            this._debugLog('warn', `⚠️ Image generation failed, continuing without image`, { 
+            this._debugLog('warn', `âš ï¸ Image generation failed, continuing without image`, { 
               error: imageError.message,
               statusCode: imageError.response?.status,
               responseData: imageError.response?.data
