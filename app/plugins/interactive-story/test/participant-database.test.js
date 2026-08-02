@@ -67,6 +67,25 @@ describe('StoryDatabase participant persistence', () => {
     expect(storyDatabase.deleteOldSessions(0)).toBe(1);
     expect(sqlite.prepare('SELECT * FROM story_participants WHERE session_id = ?').get(sessionId)).toBeUndefined();
   });
+  test('resolves participant rounds through the production database wrapper', () => {
+    const sqlite = new Database(databasePath);
+    openSqlite = sqlite;
+    const databaseManagerLike = {
+      db: sqlite,
+      prepare: sql => sqlite.prepare(sql)
+    };
+    const storyDatabase = new StoryDatabase(createApi(databaseManagerLike));
+    storyDatabase.initialize();
+    const sessionId = storyDatabase.createSession({ theme: 'fantasy' });
+    storyDatabase.createParticipant(sessionId, {
+      userId: 'viewer-1', username: 'Alice', roleId: 'bard', roleName: 'Bard', joinedRound: 0
+    });
+
+    expect(storyDatabase.resolveParticipantRound(sessionId, 1)).toMatchObject({
+      updated: [{ user_id: 'viewer-1', missed_rounds: 1, status: 'active' }],
+      eliminated: []
+    });
+  });
   test('persists immutable D&D session metadata across a database reopen', () => {
     const writerSqlite = new Database(databasePath);
     openSqlite = writerSqlite;

@@ -424,7 +424,13 @@ class StoryDatabase {
       VALUES (?, ?, ?, ?)
     `);
     const eliminated = [];
-    const resolve = this.db.transaction(() => {
+    const transactionDatabase = typeof this.db.transaction === 'function'
+      ? this.db
+      : this.db && this.db.db;
+    if (!transactionDatabase || typeof transactionDatabase.transaction !== 'function') {
+      throw new Error('Story database does not expose transaction support');
+    }
+    const resolve = transactionDatabase.transaction(() => {
       for (const participant of activeParticipants) {
         if (participant.joined_round >= round || participant.last_vote_round === round) {
           continue;
