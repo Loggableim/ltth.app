@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1001,6 +1001,7 @@
       dragState = { ...dragState, isDragging: true, element: event.currentTarget, pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top };
       event.currentTarget.classList.add('dragging');
       event.currentTarget.setPointerCapture?.(event.pointerId);
+      event.stopPropagation();
       event.preventDefault();
     }
 
@@ -1199,7 +1200,7 @@
 
     // Handle immediate chapter display (fallback when TTS disabled)
     socket.on('story:chapter-display', (data) => {
-      console.log('ðŸ“– Chapter display event received:', data.mode, data.chapter?.title);
+      console.log('📖 Chapter display event received:', data.mode, data.chapter?.title);
 
       if (data.mode === 'immediate' && data.chapter) {
         // Hide title overlay
@@ -1279,7 +1280,7 @@
 
     // Handle image generation failed
     socket.on('story:image-generation-failed', (data) => {
-      console.warn('âš ï¸ Image generation failed:', data.message);
+      console.warn('⚠️ Image generation failed:', data.message);
       // Story continues without image - no action needed on overlay
     });
 
@@ -1423,7 +1424,7 @@
      * Shows full content with proper styling for reading
      */
     function displayImmediateChapter(chapter) {
-      console.log('ðŸ“– Displaying chapter immediately for self-reading:', chapter.title);
+      console.log('📖 Displaying chapter immediately for self-reading:', chapter.title);
 
       // Hide generating overlay
       document.getElementById('generatingOverlay').classList.remove('active');
@@ -1479,7 +1480,7 @@
       // Show text overlay
       document.getElementById('textOverlay').classList.add('visible');
 
-      console.log('âœ… Chapter displayed for self-reading');
+      console.log('✅ Chapter displayed for self-reading');
     }
 
     function displayVoting(choices, duration, voteKeywordPattern = '!letter') {
@@ -1598,7 +1599,7 @@
 
     // Relay TTS playback ended event back to server
     // This is needed because plugin-to-plugin communication requires
-    // client relay: TTS plugin â†’ client â†’ back to server â†’ interactive-story plugin
+    // client relay: TTS plugin → client → back to server → interactive-story plugin
     socket.on('tts:playback:ended', (data) => {
       console.log('TTS playback ended, relaying to server:', data);
       // Re-emit the event to the server so other plugins can receive it
@@ -1607,37 +1608,37 @@
 
     // Socket connection monitoring
     socket.on('connect', () => {
-      console.log('âœ… Socket.io connected to server');
+      console.log('✅ Socket.io connected to server');
     });
 
     socket.on('disconnect', (reason) => {
-      console.warn('âš ï¸ Socket.io disconnected:', reason);
+      console.warn('⚠️ Socket.io disconnected:', reason);
     });
 
     socket.on('connect_error', (error) => {
-      console.error('âŒ Socket.io connection error:', error);
+      console.error('❌ Socket.io connection error:', error);
     });
 
     // Listen for real-time configuration updates
     socket.on('story:config-updated', (updatedConfig) => {
-      console.log('ðŸ“¡ Configuration updated, applying changes...', updatedConfig);
+      console.log('📡 Configuration updated, applying changes...', updatedConfig);
       // Merge with current config and reapply
       if (config) {
         Object.assign(config, updatedConfig);
         applyConfiguration(config);
-        console.log('âœ… Configuration applied successfully');
+        console.log('✅ Configuration applied successfully');
       }
     });
 
     // Initialize
     loadConfiguration().then(() => {
-      console.log('âœ… Interactive Story Overlay loaded and configured successfully');
-      console.log('ðŸ“º Overlay ready - waiting for story to start...');
+      console.log('✅ Interactive Story Overlay loaded and configured successfully');
+      console.log('📺 Overlay ready - waiting for story to start...');
 
       // Initialize draggable elements
       initDraggableElements();
     }).catch((error) => {
-      console.error('âŒ Failed to initialize overlay:', error);
+      console.error('❌ Failed to initialize overlay:', error);
     });
   </script>
 </body>

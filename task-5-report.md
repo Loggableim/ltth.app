@@ -1,4 +1,4 @@
-﻿# Task 5 – Responsive Overlay Layout v2
+# Task 5 – Responsive Overlay Layout v2
 
 ## Implemented
 

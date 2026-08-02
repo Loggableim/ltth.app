@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -29,5 +29,18 @@ describe('Interactive Story overlay preview loading', () => {
     const source = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'ui.html'), 'utf8');
     expect(source).toContain("searchParams.set('edit', '1');");
     expect(source).toContain('id="editOverlayLayoutBtn"');
+  });
+  test('keeps the edited overlay files as UTF-8 without a byte-order mark or mojibake', () => {
+    const files = [
+      path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'main.js'),
+      path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'overlay.html'),
+      path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'ui.html')
+    ];
+
+    files.forEach((file) => {
+      const bytes = fs.readFileSync(file);
+      expect(bytes.subarray(0, 3)).not.toEqual(Buffer.from([0xef, 0xbb, 0xbf]));
+      expect(bytes.toString('utf8')).not.toContain('Ã');
+    });
   });
 });

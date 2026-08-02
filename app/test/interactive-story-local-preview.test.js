@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const {
   isPublicQuickTunnelHostname,
@@ -88,5 +88,13 @@ describe('Interactive Story local vote preview', () => {
     expect(source).toContain("addEventListener('pointermove', doDrag)");
     expect(source).toContain("addEventListener('pointerup', stopDrag)");
     expect(source).toContain('data-element="participants"');
+  });
+  test('keeps a nested participant drag assigned to participants instead of voting', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'interactive-story', 'overlay.html'), 'utf8');
+    const startDrag = source.slice(source.indexOf('function startDrag(event)'), source.indexOf('function doDrag(event)'));
+
+    expect(startDrag).toContain('event.stopPropagation();');
+    expect(startDrag).toContain('element: event.currentTarget');
+    expect(source).toContain('overlayConfig.positions[elementId] =');
   });
 });
