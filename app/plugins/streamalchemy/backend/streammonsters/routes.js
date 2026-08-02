@@ -410,7 +410,19 @@ class StreamMonstersRoutes {
         return res.status(400).json({ success: false, error: error.message });
       }
       const config = this.configProvider.getConfig().streamMonsters;
-      const demoRunId = crypto.randomUUID();
+      // Demo events are previews, not persisted live matches. Derive their
+      // correlation id from the request and injected clock so repeated
+      // previews/replays produce the same event graph without weakening the
+      // randomness of real match ids.
+      const demoRunId = crypto.createHash('sha256')
+        .update(JSON.stringify({
+          scene: preview.scene,
+          layout: preview.layout,
+          templateId: preview.templateId || null,
+          atMs: this.now()
+        }))
+        .digest('hex')
+        .slice(0, 24);
       const demoMatchId = `demo-match:${demoRunId}`;
       const demoBattleId = demoMatchId;
       const roleScene = /^role_(striker|guardian|trickster|sustain)$/.exec(
