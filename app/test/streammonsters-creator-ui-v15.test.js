@@ -64,6 +64,7 @@ describe('Stream Monsters 1.5 creator workspace', () => {
     const expectedCommands = [
       'eggs',
       'adopt',
+      'steal',
       'hatch',
       'inventory',
       'monsters',
