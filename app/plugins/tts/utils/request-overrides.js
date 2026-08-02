@@ -16,6 +16,9 @@ function resolveTtsRequestOverrides(params = {}, config = {}) {
   const globalSpeed = finiteOr(config.speed, 1);
 
   return {
+    model: typeof params.model === 'string' && params.model.trim()
+      ? params.model.trim()
+      : null,
     emotion: typeof params.emotion === 'string' && params.emotion.trim()
       ? params.emotion.trim()
       : (config.defaultFishaudioEmotion || 'neutral'),
