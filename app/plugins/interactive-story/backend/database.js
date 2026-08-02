@@ -44,6 +44,8 @@ class StoryDatabase {
         )
       `).run();
 
+      this._migrateChapterNarrationColumns();
+
       // Votes table
       this.db.prepare(`
         CREATE TABLE IF NOT EXISTS story_votes (
@@ -88,6 +90,49 @@ class StoryDatabase {
     }
   }
 
+  /**
+   * Add narration metadata columns to existing chapter tables without
+   * replacing stored story data.
+   */
+  _migrateChapterNarrationColumns() {
+    const columns = this.db.prepare('PRAGMA table_info(story_chapters)').all();
+    const columnNames = new Set(columns.map(column => column.name));
+
+    if (!columnNames.has('narration_segments')) {
+      this.db.prepare('ALTER TABLE story_chapters ADD COLUMN narration_segments TEXT').run();
+    }
+
+    if (!columnNames.has('tts_text')) {
+      this.db.prepare('ALTER TABLE story_chapters ADD COLUMN tts_text TEXT').run();
+    }
+  }
+
+  _serializeNarrationSegments(segments) {
+    if (!Array.isArray(segments)) {
+      return null;
+    }
+
+    try {
+      return JSON.stringify(segments);
+    } catch (error) {
+      this.api.log(`Could not serialize narration segments: ${error.message}`, 'warn');
+      return null;
+    }
+  }
+
+  _parseNarrationSegments(value) {
+    if (!value) {
+      return [];
+    }
+
+    try {
+      const segments = JSON.parse(value);
+      return Array.isArray(segments) ? segments : [];
+    } catch (error) {
+      this.api.log(`Could not parse narration segments: ${error.message}`, 'warn');
+      return [];
+    }
+  }
   /**
    * Create a new story session
    * @param {Object} data - Session data
@@ -172,8 +217,8 @@ class StoryDatabase {
   saveChapter(sessionId, chapter) {
     const stmt = this.db.prepare(`
       INSERT INTO story_chapters 
-      (session_id, chapter_number, title, content, choices, memory_tags, image_path, audio_paths, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (session_id, chapter_number, title, content, choices, memory_tags, image_path, audio_paths, narration_segments, tts_text, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -185,6 +230,8 @@ class StoryDatabase {
       JSON.stringify(chapter.memoryTags || {}),
       chapter.imagePath || null,
       JSON.stringify(chapter.audioPaths || []),
+      this._serializeNarrationSegments(chapter.narrationSegments),
+      typeof chapter.ttsText === 'string' ? chapter.ttsText : null,
       new Date().toISOString()
     );
 
@@ -208,6 +255,8 @@ class StoryDatabase {
       chapter.choices = JSON.parse(chapter.choices);
       chapter.memoryTags = JSON.parse(chapter.memory_tags || '{}');
       chapter.audioPaths = JSON.parse(chapter.audio_paths || '[]');
+      chapter.narrationSegments = this._parseNarrationSegments(chapter.narration_segments);
+      chapter.ttsText = typeof chapter.tts_text === 'string' ? chapter.tts_text : null;
     }
     
     return chapter;
@@ -230,6 +279,8 @@ class StoryDatabase {
       ch.choices = JSON.parse(ch.choices);
       ch.memoryTags = JSON.parse(ch.memory_tags || '{}');
       ch.audioPaths = JSON.parse(ch.audio_paths || '[]');
+      ch.narrationSegments = this._parseNarrationSegments(ch.narration_segments);
+      ch.ttsText = typeof ch.tts_text === 'string' ? ch.tts_text : null;
       return ch;
     });
   }
