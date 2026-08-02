@@ -71,7 +71,25 @@ class StoryDatabase {
           FOREIGN KEY (session_id) REFERENCES story_sessions(id)
         )
       `).run();
-
+      // Pen-and-paper participants and round attendance
+      this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS story_participants (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          user_id TEXT NOT NULL,
+          username TEXT NOT NULL,
+          role_id TEXT NOT NULL,
+          role_name TEXT NOT NULL,
+          joined_round INTEGER NOT NULL DEFAULT 0,
+          last_vote_round INTEGER,
+          missed_rounds INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'active',
+          created_at TEXT NOT NULL,
+          eliminated_at TEXT,
+          UNIQUE(session_id, user_id),
+          FOREIGN KEY (session_id) REFERENCES story_sessions(id)
+        )
+      `).run();
       // Story memory table (full memory snapshots)
       this.db.prepare(`
         CREATE TABLE IF NOT EXISTS story_memory (
@@ -334,6 +352,85 @@ class StoryDatabase {
     }
   }
 
+  _normalizeParticipantInput(participant) {
+    return {
+      userId: String(participant.userId),
+      username: String(participant.username || 'Viewer'),
+      roleId: String(participant.roleId),
+      roleName: String(participant.roleName),
+      joinedRound: Number.isInteger(participant.joinedRound) ? participant.joinedRound : 0
+    };
+  }
+
+  createParticipant(sessionId, participant) {
+    const normalized = this._normalizeParticipantInput(participant);
+    this.db.prepare(`
+      INSERT OR IGNORE INTO story_participants
+        (session_id, user_id, username, role_id, role_name, joined_round, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(sessionId, normalized.userId, normalized.username, normalized.roleId, normalized.roleName, normalized.joinedRound, new Date().toISOString());
+    return this.getParticipant(sessionId, normalized.userId);
+  }
+
+  getParticipant(sessionId, userId) {
+    return this.db.prepare(`
+      SELECT * FROM story_participants WHERE session_id = ? AND user_id = ?
+    `).get(sessionId, userId) || null;
+  }
+
+  listParticipants(sessionId, { includeEliminated = false } = {}) {
+    const statusClause = includeEliminated ? '' : "AND status = 'active'";
+    return this.db.prepare(`
+      SELECT * FROM story_participants
+      WHERE session_id = ? ${statusClause}
+      ORDER BY created_at ASC, id ASC
+    `).all(sessionId);
+  }
+
+  recordParticipantVote(sessionId, userId, round) {
+    this.db.prepare(`
+      UPDATE story_participants
+      SET last_vote_round = ?, missed_rounds = 0
+      WHERE session_id = ? AND user_id = ? AND status = 'active'
+    `).run(round, sessionId, userId);
+    const participant = this.getParticipant(sessionId, userId);
+    return participant && participant.status === 'active' ? participant : null;
+  }
+
+  resolveParticipantRound(sessionId, round, inactivityLimitRounds = 2) {
+    const activeParticipants = this.listParticipants(sessionId);
+    const updateAttendance = this.db.prepare(`UPDATE story_participants SET missed_rounds = ? WHERE id = ?`);
+    const eliminateParticipant = this.db.prepare(`
+      UPDATE story_participants
+      SET missed_rounds = ?, status = 'eliminated', eliminated_at = ?
+      WHERE id = ?
+    `);
+    const updated = [];
+    const eliminated = [];
+    const resolve = this.db.transaction(() => {
+      for (const participant of activeParticipants) {
+        if (participant.joined_round >= round || participant.last_vote_round === round) {
+          continue;
+        }
+        const missedRounds = participant.missed_rounds + 1;
+        if (missedRounds >= inactivityLimitRounds) {
+          eliminateParticipant.run(missedRounds, new Date().toISOString(), participant.id);
+          const eliminatedParticipant = { ...participant, missed_rounds: missedRounds, status: 'eliminated' };
+          updated.push(eliminatedParticipant);
+          eliminated.push(eliminatedParticipant);
+        } else {
+          updateAttendance.run(missedRounds, participant.id);
+          updated.push({ ...participant, missed_rounds: missedRounds });
+        }
+      }
+    });
+    resolve();
+    return { updated, eliminated };
+  }
+
+  resetParticipants(sessionId) {
+    return this.db.prepare(`DELETE FROM story_participants WHERE session_id = ?`).run(sessionId).changes;
+  }
   /**
    * Get top voters for a session
    * @param {number} sessionId - Session ID
@@ -432,6 +529,7 @@ class StoryDatabase {
     this.db.prepare(`DELETE FROM story_votes WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_viewer_stats WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_memory WHERE session_id IN (${placeholders})`).run(...sessionIds);
+    this.db.prepare(`DELETE FROM story_participants WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_sessions WHERE id IN (${placeholders})`).run(...sessionIds);
 
     return sessionsToDelete.length;
