@@ -7489,7 +7489,7 @@
         const infoEl = document.getElementById('slot-gift-picker-info');
         if (infoEl) setLocalizedHtml(infoEl, '<span style="color:#FFC107;" data-i18n="plugins.game-engine.ui.catalog.refreshing_short">🔄 Aktualisiere…</span>');
         try {
-          const r = await fetch('/api/gift-catalog/refresh', { method: 'POST' });
+          const r = await fetch('/api/gift-catalog/update', { method: 'POST' });
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
         } catch(err) {
           if (infoEl) setLocalizedHtml(infoEl, `<span style="color:#f44336;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.error_with_message', { error: escapeHtml(err.message) })}</span>`);
