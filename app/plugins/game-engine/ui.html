@@ -8638,7 +8638,21 @@
 
     async function loadOpenShockDevices() {
       try {
+        const pluginsResponse = await fetch('/api/plugins');
+        if (pluginsResponse.ok) {
+          const pluginsData = await pluginsResponse.json();
+          const openshockEnabled = pluginsData.success
+            && pluginsData.plugins?.some(plugin => plugin.id === 'openshock' && plugin.enabled);
+          if (!openshockEnabled) {
+            openshockDevices = [];
+            return;
+          }
+        }
         const res = await fetch('/api/openshock/devices');
+        if (res.status === 404) {
+          openshockDevices = [];
+          return;
+        }
         const data = await res.json();
         if (data.success) {
           openshockDevices = data.devices || [];

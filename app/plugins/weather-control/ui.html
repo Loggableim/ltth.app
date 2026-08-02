@@ -1321,7 +1321,7 @@
                 <h3 data-i18n-key="plugins.weather-control.cards.effects.title">Weather Effects Configuration</h3>
             </div>
             <div class="card-body">
-                <div class="grid grid-2">
+                <div class="grid grid-2" id="weatherEffectsGrid">
                     <!-- Rain Effect -->
                     <div class="effect-card">
                         <div class="effect-header">
@@ -2429,7 +2429,7 @@
 
         function ensureHeatwaveCard() {
             if (document.getElementById('effect-heatwave-enabled')) return;
-            const effectsGrid = document.querySelector('[data-i18n-key="plugins.weather-control.cards.effects.title"]')?.closest('.card')?.querySelector('.grid');
+            const effectsGrid = document.getElementById('weatherEffectsGrid') || document.querySelector('[data-i18n-key="plugins.weather-control.cards.effects.title"]')?.closest('.card')?.querySelector('.grid') || document.querySelector('.card-body > .grid');
             if (!effectsGrid) return;
 
             const card = document.createElement('div');
@@ -2951,9 +2951,12 @@
                             document.getElementById('cmdNameWeatherstop').value = config.chatCommands.commandNames.weatherstop || 'weatherstop';
 
                             // Update display
-                            document.getElementById('displayCmdWeather').textContent = config.chatCommands.commandNames.weather || 'weather';
-                            document.getElementById('displayCmdList').textContent = config.chatCommands.commandNames.weatherlist || 'weatherlist';
-                            document.getElementById('displayCmdStop').textContent = config.chatCommands.commandNames.weatherstop || 'weatherstop';
+                            const displayWeather = document.getElementById('displayCmdWeather');
+                            const displayList = document.getElementById('displayCmdList');
+                            const displayStop = document.getElementById('displayCmdStop');
+                            if (displayWeather) displayWeather.textContent = config.chatCommands.commandNames.weather || 'weather';
+                            if (displayList) displayList.textContent = config.chatCommands.commandNames.weatherlist || 'weatherlist';
+                            if (displayStop) displayStop.textContent = config.chatCommands.commandNames.weatherstop || 'weatherstop';
                         }
                     }
 

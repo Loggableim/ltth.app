@@ -2524,12 +2524,12 @@
          * @returns {HTMLTableRowElement}
          */
         function buildRuleRow(rule, index) {
-            const tr = document.createElement('tr');
+            const row = document.createElement('tr');
 
             // Enabled checkbox
             const tdEnabled = document.createElement('td');
             tdEnabled.innerHTML = `<input type="checkbox" class="rule-enabled" ${rule.enabled ? 'checked' : ''}>`;
-            tr.appendChild(tdEnabled);
+            row.appendChild(tdEnabled);
 
             // Event select
             const tdEvent = document.createElement('td');
@@ -2543,7 +2543,7 @@
                 eventSel.appendChild(o);
             });
             tdEvent.appendChild(eventSel);
-            tr.appendChild(tdEvent);
+            row.appendChild(tdEvent);
 
             // Condition text
             const tdCond = document.createElement('td');
@@ -2553,7 +2553,7 @@
             condInput.value = rule.condition || 'any';
             condInput.placeholder = tr('any', 'any');
             tdCond.appendChild(condInput);
-            tr.appendChild(tdCond);
+            row.appendChild(tdCond);
 
             // Action select
             const tdAction = document.createElement('td');
@@ -2567,7 +2567,7 @@
                 actionSel.appendChild(o);
             });
             tdAction.appendChild(actionSel);
-            tr.appendChild(tdAction);
+            row.appendChild(tdAction);
 
             // Duration
             const tdDur = document.createElement('td');
@@ -2578,7 +2578,7 @@
             durInput.min = 100;
             durInput.step = 100;
             tdDur.appendChild(durInput);
-            tr.appendChild(tdDur);
+            row.appendChild(tdDur);
 
             // Effect (optional)
             const tdEffect = document.createElement('td');
@@ -2593,7 +2593,7 @@
                 effectSel.appendChild(o);
             });
             tdEffect.appendChild(effectSel);
-            tr.appendChild(tdEffect);
+            row.appendChild(tdEffect);
 
             // Amount/Intensity (optional)
             const tdAmount = document.createElement('td');
@@ -2606,7 +2606,7 @@
             amountInput.max = 3;
             amountInput.placeholder = '–';
             tdAmount.appendChild(amountInput);
-            tr.appendChild(tdAmount);
+            row.appendChild(tdAmount);
 
             // Color (optional)
             const tdColor = document.createElement('td');
@@ -2620,7 +2620,7 @@
                 colorInput.style.display = ['color-change', 'color-flash'].includes(actionSel.value) ? 'block' : 'none';
             });
             tdColor.appendChild(colorInput);
-            tr.appendChild(tdColor);
+            row.appendChild(tdColor);
 
             // Remove button
             const tdRemove = document.createElement('td');
@@ -2630,11 +2630,11 @@
             removeBtn.textContent = '✕';
             removeBtn.setAttribute('aria-label', tr('removeTriggerRule', 'Remove trigger rule'));
             removeBtn.title = tr('removeTriggerRule', 'Remove trigger rule');
-            removeBtn.addEventListener('click', () => tr.remove());
+            removeBtn.addEventListener('click', () => row.remove());
             tdRemove.appendChild(removeBtn);
-            tr.appendChild(tdRemove);
+            row.appendChild(tdRemove);
 
-            return tr;
+            return row;
         }
 
         /**
