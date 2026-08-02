@@ -313,7 +313,7 @@
       },
       "labels": {
         "content_start_buffer_seconds": "Tampon de démarrage du contenu (secondes)",
-        "leave_empty_for_local_ollama_required_only_for": "Laissez vide pour l'Ollama local ; requis uniquement pour certains déploiements cloud.",
+        "leave_empty_for_local_ollama_required_only_for": "Gérez la clé API Ollama dans les paramètres centraux. Cette page indique uniquement si une clé est configurée.",
         "fish_audio_tts": "Poisson.audio TTS",
         "adam_deep_male": "Adam (mâle profond)",
         "gpt_4o_mini_cost_effective": "GPT-4o Mini (économique)",

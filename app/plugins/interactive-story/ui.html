@@ -3625,14 +3625,11 @@
 
                   <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.ollama_key">Ollama API Key</label>
 
-                    <input type="password" class="form-control" id="ollamaApiKey" placeholder="Optional for local Ollama" data-i18n-placeholder="plugins.interactive-story.form_controls.ollama_api_key_placeholder">
-
-                  <small class="form-text text-muted" data-i18n="plugins.interactive-story.labels.leave_empty_for_local_ollama_required_only_for">Leave empty for local Ollama; required only for some cloud deployments.</small>
+                  <div class="form-text text-muted" data-i18n="plugins.interactive-story.labels.leave_empty_for_local_ollama_required_only_for">Managed in central Settings. This page only shows whether a key is configured.</div>
 
                 </div>
 
               </div>
-
 
 
               <!-- Model Selection -->
@@ -6017,7 +6014,6 @@
 
           ollamaBaseUrl: document.getElementById('ollamaBaseUrl').value.trim(),
 
-          ollamaApiKey: document.getElementById('ollamaApiKey').value.trim(),
 
           ollamaModel: document.getElementById('ollamaModel').value.trim(),
 
@@ -6907,7 +6903,6 @@
 
         ollamaBaseUrl: document.getElementById('ollamaBaseUrl')?.value || '',
 
-        ollamaApiKey: document.getElementById('ollamaApiKey')?.value || '',
 
         ollamaModel: document.getElementById('ollamaModel')?.value || '',
 
@@ -7187,13 +7182,13 @@
 
           const config = {
 
-            llmProvider: 'openai',
+            llmProvider: 'ollama',
 
             imageProvider: 'openai',
 
             ttsProvider: 'system',
 
-            ttsEngine: 'openai',
+            ttsEngine: 'fishaudio',
 
             openaiModel: 'gpt-4o',
 
@@ -7203,9 +7198,8 @@
 
             openRouterModel: 'openrouter/free',
 
-            ollamaBaseUrl: 'https://ollama.com/api/v1',
+            ollamaBaseUrl: 'https://api.ollama.com/v1',
 
-            ollamaApiKey: '',
 
             ollamaModel: 'qwen3.5:cloud',
 
@@ -7265,7 +7259,7 @@
 
             caseSensitiveVoting: false,
 
-            autoGenerateImages: true,
+            autoGenerateImages: false,
 
             autoGenerateTTS: true,
 
@@ -7298,8 +7292,6 @@
           document.getElementById('openRouterModel').value = config.openRouterModel;
 
           document.getElementById('ollamaBaseUrl').value = config.ollamaBaseUrl;
-
-          document.getElementById('ollamaApiKey').value = config.ollamaApiKey;
 
           document.getElementById('ollamaModel').value = config.ollamaModel;
 
@@ -7395,7 +7387,7 @@
 
         // Provider selection
 
-        document.getElementById('llmProvider').value = config.llmProvider || 'openai';
+        document.getElementById('llmProvider').value = config.llmProvider || 'ollama';
 
         document.getElementById('imageProvider').value = config.imageProvider || 'openai';
 
@@ -7413,9 +7405,7 @@
 
         document.getElementById('openRouterModel').value = config.openRouterModel || 'openrouter/free';
 
-        document.getElementById('ollamaBaseUrl').value = config.ollamaBaseUrl || 'https://ollama.com/api/v1';
-
-        document.getElementById('ollamaApiKey').value = config.ollamaApiKey || '';
+        document.getElementById('ollamaBaseUrl').value = config.ollamaBaseUrl || 'https://api.ollama.com/v1';
 
         document.getElementById('ollamaModel').value = config.ollamaModel || 'qwen3.5:cloud';
 
@@ -7429,7 +7419,7 @@
 
         // TTS voice
 
-        document.getElementById('ttsEngine').value = config.ttsEngine || 'openai';
+        document.getElementById('ttsEngine').value = config.ttsEngine || 'fishaudio';
 
         document.getElementById('ttsVoiceId').value = config.ttsVoiceId || 'alloy';
 
@@ -7501,7 +7491,7 @@
 
         document.getElementById('caseSensitiveVoting').checked = config.caseSensitiveVoting === true;
 
-        document.getElementById('autoGenerateImages').checked = config.autoGenerateImages !== false;
+        document.getElementById('autoGenerateImages').checked = config.autoGenerateImages === true;
 
         document.getElementById('autoGenerateTTS').checked = config.autoGenerateTTS !== false; // Default to true
 

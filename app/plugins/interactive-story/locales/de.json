@@ -313,7 +313,7 @@
       },
       "labels": {
         "content_start_buffer_seconds": "Inhaltsstartpuffer (Sekunden)",
-        "leave_empty_for_local_ollama_required_only_for": "Für das örtliche Ollama leer lassen; Nur für einige Cloud-Bereitstellungen erforderlich.",
+        "leave_empty_for_local_ollama_required_only_for": "Verwalte den Ollama-API-Schlüssel in den zentralen Einstellungen. Diese Seite zeigt nur, ob ein Schlüssel konfiguriert ist.",
         "fish_audio_tts": "Fish.audio-Sprachausgabe",
         "adam_deep_male": "Adam (Tief männlich)",
         "gpt_4o_mini_cost_effective": "GPT-4o Mini (Kostengünstig)",

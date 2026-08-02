@@ -153,7 +153,7 @@ class InteractiveStoryPlugin {
       };
 
       // Initialize services based on provider selection
-      const llmProvider = config.llmProvider || 'openai';
+      const llmProvider = config.llmProvider || 'ollama';
       const imageProvider = config.imageProvider || 'openai';
       const ttsProvider = config.ttsProvider || 'system';
 
@@ -283,6 +283,30 @@ class InteractiveStoryPlugin {
   }
 
   /**
+   * Get the Ollama API key from central settings.
+   * @returns {string|null} API key or null if not configured
+   */
+  _getOllamaApiKey() {
+    try {
+      const db = this.api.getDatabase();
+      const keyPriority = [
+        'ollama_cloud_api_key',
+        'ollama_api_key',
+        'tts_ollama_api_key'
+      ];
+      for (const key of keyPriority) {
+        const value = db.getSetting(key);
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Error retrieving Ollama API key from settings:', error);
+      return null;
+    }
+  }
+  /**
    * Normalize the configured LLM provider name into a friendly label.
    * @param {string} provider - Provider key from config
    * @returns {string} Provider label
@@ -368,7 +392,7 @@ class InteractiveStoryPlugin {
    * @returns {Object} Initialization result
    */
   _initializeLLMService(config, debugCallback, llmOptions) {
-    const provider = config.llmProvider || 'openai';
+    const provider = config.llmProvider || 'ollama';
     const language = config.storyLanguage || 'German';
     const platform = 'tiktok';
 
@@ -431,15 +455,15 @@ class InteractiveStoryPlugin {
 
     if (provider === 'ollama') {
       const ollamaBaseUrl = this._normalizeOllamaBaseUrl(config.ollamaBaseUrl);
-      const rawOllamaApiKey = (config.ollamaApiKey || '').trim();
+      const ollamaApiKeyFromSettings = this._getOllamaApiKey();
       const isCloudOllama = this._isOllamaCloudUrl(ollamaBaseUrl);
-      const ollamaApiKey = isCloudOllama && rawOllamaApiKey ? rawOllamaApiKey : 'ollama';
+      const ollamaApiKey = isCloudOllama && ollamaApiKeyFromSettings ? ollamaApiKeyFromSettings : 'ollama';
       const ollamaModel = config.ollamaModel || 'qwen3.5:cloud';
 
-      if (isCloudOllama && !rawOllamaApiKey) {
+      if (isCloudOllama && !ollamaApiKeyFromSettings) {
         this._debugLog('error', '⚠️ Ollama API key required for cloud endpoint', null);
         this.api.log('⚠️ Ollama API key required for cloud endpoint', 'warn');
-        this.api.log('Please configure Ollama API key in the Interactive Story configuration', 'warn');
+        this.api.log('Please configure the Ollama API key in central Settings', 'warn');
         return { ok: false, provider: 'ollama', providerName: 'Ollama', missingKey: true };
       }
 
@@ -455,7 +479,7 @@ class InteractiveStoryPlugin {
       this._debugLog('info', '✅ Ollama LLM service initialized', {
         baseURL: ollamaBaseUrl,
         model: ollamaModel,
-        apiKeyConfigured: !!(config.ollamaApiKey && config.ollamaApiKey.trim())
+        apiKeyConfigured: !!ollamaApiKeyFromSettings
       });
       this.api.log('✅ Ollama LLM service initialized', 'info');
       return { ok: true, provider: 'ollama', providerName: 'Ollama', model: ollamaModel };
@@ -1112,7 +1136,7 @@ class InteractiveStoryPlugin {
   _loadConfig() {
     const defaultConfig = {
       // Provider selection
-      llmProvider: 'openai', // 'openai', 'openrouter', 'ollama', or 'siliconflow'
+      llmProvider: 'ollama', // 'openai', 'openrouter', 'ollama', or 'siliconflow'
       imageProvider: 'openai', // 'openai' or 'siliconflow'
       ttsProvider: 'system', // Always 'system' (uses LTTH TTS plugin with all engines)
       
@@ -1142,7 +1166,7 @@ class InteractiveStoryPlugin {
       numChoices: 3, // Default to 3 choices for TikTok (quick engagement)
       
       // Generation settings
-      autoGenerateImages: true,
+      autoGenerateImages: false,
       textOnlyMode: false,
       autoGenerateTTS: true, // Enable TTS by default
       storyLanguage: 'German', // Language for story generation
@@ -1152,12 +1176,17 @@ class InteractiveStoryPlugin {
       manualModeTTS: true, // Use TTS in manual mode
       
       // TTS settings
-      ttsEngine: 'openai', // TTS engine: 'openai', 'tiktok', 'google', 'elevenlabs', 'speechify', 'siliconflow', 'fishspeech'
+      ttsEngine: 'fishaudio', // TTS engine: 'openai', 'tiktok', 'google', 'elevenlabs', 'speechify', 'siliconflow', 'fishspeech'
       ttsVoiceMapping: {
         narrator: 'narrator',
         default: 'narrator'
       },
       ttsVoiceId: 'alloy', // Voice ID for selected engine
+      fishaudioModel: 's2.1-pro',
+      narrationEmotionMode: 'auto',
+      storyMode: 'classic',
+      dndJoinKeyword: '!join',
+      dndInactivityLimitRounds: 2,
       
       // Timing configuration (in milliseconds)
       titlePreviewDelay: 5000, // How long to show title image alone before narration (default: 5 seconds)
@@ -1176,6 +1205,7 @@ class InteractiveStoryPlugin {
       overlayVotingColor: '#e94560', // Color for voting highlights
       generatingAnimationMode: 'default',
       generatingAnimationUrl: '',
+      overlayLayoutVersion: 2,
       overlayBackgroundGradient: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)',
       
       // Display duration settings (in milliseconds)
@@ -1295,9 +1325,9 @@ class InteractiveStoryPlugin {
       if (safeConfig.openRouterApiKey) {
         safeConfig.openRouterApiKey = '***configured***';
       }
-      if (safeConfig.ollamaApiKey) {
-        safeConfig.ollamaApiKey = '***configured***';
-      }
+      const ollamaApiKey = this._getOllamaApiKey();
+      safeConfig.ollamaApiKey = (ollamaApiKey || safeConfig.ollamaApiKey) ? '***configured***' : '';
+      safeConfig.apiKeyConfigured = !!ollamaApiKey;
       res.json(safeConfig);
     });
 
@@ -1405,7 +1435,7 @@ class InteractiveStoryPlugin {
         }
 
         const { theme, outline, model } = req.body;
-        const llmProvider = config.llmProvider || 'openai';
+        const llmProvider = config.llmProvider || 'ollama';
         const sessionModel = model || this._getDefaultStoryModel(config, llmProvider);
 
         this._debugLog('info', 'Starting new story', {
@@ -1780,7 +1810,7 @@ class InteractiveStoryPlugin {
       try {
         const config = this._loadConfig();
         const requestConfig = req.body || {};
-        const provider = requestConfig.provider || config.llmProvider || 'openai';
+        const provider = requestConfig.provider || config.llmProvider || 'ollama';
 
         let apiKey = null;
         let providerName = this._getLLMProviderLabel(provider);
@@ -1811,9 +1841,9 @@ class InteractiveStoryPlugin {
           testModel = serviceOptions.defaultModel;
         } else if (provider === 'ollama') {
           const ollamaBaseUrl = this._normalizeOllamaBaseUrl(requestConfig.ollamaBaseUrl || config.ollamaBaseUrl);
-          const rawOllamaApiKey = (requestConfig.ollamaApiKey || config.ollamaApiKey || '').trim();
+          const ollamaApiKey = this._getOllamaApiKey();
           requiresApiKey = this._isOllamaCloudUrl(ollamaBaseUrl);
-          apiKey = requiresApiKey ? rawOllamaApiKey : (rawOllamaApiKey || 'ollama');
+          apiKey = requiresApiKey ? ollamaApiKey : (ollamaApiKey || 'ollama');
           apiUrl = `${ollamaBaseUrl.replace(/\/$/, '')}/chat/completions`;
           useOpenAICompatibleService = true;
           serviceOptions = {
@@ -1825,7 +1855,7 @@ class InteractiveStoryPlugin {
           testModel = serviceOptions.defaultModel;
           this._debugLog('info', `Validating Ollama endpoint (${requiresApiKey ? 'cloud' : 'local'})`, {
             baseURL: ollamaBaseUrl,
-            hasApiKey: !!rawOllamaApiKey
+            hasApiKey: !!ollamaApiKey
           });
         } else {
           apiKey = this._getSiliconFlowApiKey();
@@ -1839,14 +1869,15 @@ class InteractiveStoryPlugin {
           ? 'Settings ? OpenAI API Configuration'
           : provider === 'openrouter'
                 ? 'Interactive Story settings ? OpenRouter API key'
-                : 'Settings ? Interactive Story settings ? Ollama API key';
+                : 'Settings ? Ollama API key';
 
           return res.json({
             valid: false,
             error: `No ${providerName} API key configured`,
             message: `Please configure API key in ${settingsPath}`,
             configured: false,
-            provider: providerName
+            provider: providerName,
+            apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey
           });
         }
 
@@ -1881,6 +1912,7 @@ class InteractiveStoryPlugin {
               valid: true,
               configured: true,
               provider: providerName,
+              apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
               message: `${providerName} API is valid and working!`,
               details: {
                 keyLength: apiKey ? apiKey.length : 0,
@@ -1916,6 +1948,7 @@ class InteractiveStoryPlugin {
             valid: true,
             configured: true,
             provider: providerName,
+            apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
             message: `${providerName} API key is valid and working!`,
             details: {
               keyLength: apiKey.length,
@@ -1981,6 +2014,7 @@ class InteractiveStoryPlugin {
             valid: false,
             configured: true,
             provider: providerName,
+            apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
             error: String(responseData),
             message,
             troubleshooting,

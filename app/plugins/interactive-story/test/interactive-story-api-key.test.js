@@ -1,6 +1,6 @@
 const InteractiveStoryPlugin = require('../main');
 
-const createPlugin = (settings = {}) => {
+const createPlugin = (settings = {}, savedConfig = {}) => {
   const db = {
     prepare: jest.fn(() => ({
       get: jest.fn((key) => {
@@ -18,14 +18,14 @@ const createPlugin = (settings = {}) => {
       debug: jest.fn()
     },
     getSocketIO: () => ({ emit: jest.fn() }),
-    getDatabase: () => db,
+    getDatabase: () => ({ ...db, getSetting: (key) => settings[key] || null }),
     getPluginDataDir: () => '/tmp',
     ensurePluginDataDir: jest.fn(),
     log: jest.fn(),
-    getConfig: jest.fn(() => ({})),
+    getConfig: jest.fn(() => savedConfig),
     setConfig: jest.fn(),
     registerRoute: jest.fn((method, path, handler) => {
-      routes[path] = handler;
+      routes[`${method}:${path}`] = handler;
     }),
     registerSocket: jest.fn(),
     registerTikTokEvent: jest.fn()
@@ -60,7 +60,7 @@ describe('Interactive Story Plugin - API keys and routes', () => {
     plugin.storyEngine = {};
     plugin._registerRoutes();
 
-    const startHandler = routes['/api/interactive-story/start'];
+    const startHandler = routes['post:/api/interactive-story/start'];
     const status = jest.fn().mockReturnThis();
     const json = jest.fn();
 
@@ -69,6 +69,43 @@ describe('Interactive Story Plugin - API keys and routes', () => {
     expect(status).toHaveBeenCalledWith(400);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
       error: expect.stringContaining('API key')
+    }));
+  });
+  test('configuration route masks a legacy Ollama plugin key and exposes central key state only', () => {
+    const { plugin, routes } = createPlugin(
+      { ollama_cloud_api_key: 'central-ollama-key' },
+      { ollamaApiKey: 'legacy-plugin-secret' }
+    );
+    plugin._registerRoutes();
+    const json = jest.fn();
+
+    routes['get:/api/interactive-story/config']({}, { json });
+
+    const response = json.mock.calls[0][0];
+    expect(JSON.stringify(response)).not.toContain('central-ollama-key');
+    expect(JSON.stringify(response)).not.toContain('legacy-plugin-secret');
+    expect(response).toEqual(expect.objectContaining({
+      apiKeyConfigured: true,
+      ollamaApiKey: '***configured***'
+    }));
+  });
+
+  test('cloud Ollama validation reports a missing central key without attempting a request', async () => {
+    const { plugin, routes } = createPlugin({}, {
+      llmProvider: 'ollama',
+      ollamaBaseUrl: 'https://api.ollama.com/v1'
+    });
+    plugin._registerRoutes();
+    const json = jest.fn();
+
+    await routes['post:/api/interactive-story/validate-api-key']({ body: { provider: 'ollama' } }, { json });
+
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      valid: false,
+      configured: false,
+      provider: 'Ollama',
+      apiKeyConfigured: false,
+      error: 'No Ollama API key configured'
     }));
   });
 });

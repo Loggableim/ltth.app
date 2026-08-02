@@ -313,7 +313,7 @@
       },
       "labels": {
         "content_start_buffer_seconds": "Content Start Buffer (seconds)",
-        "leave_empty_for_local_ollama_required_only_for": "Leave empty for local Ollama; required only for some cloud deployments.",
+        "leave_empty_for_local_ollama_required_only_for": "Manage the Ollama API key in central Settings. This page only shows whether a key is configured.",
         "fish_audio_tts": "Fish.audio TTS",
         "adam_deep_male": "Adam (Deep Male)",
         "gpt_4o_mini_cost_effective": "GPT-4o Mini (Cost-effective)",
