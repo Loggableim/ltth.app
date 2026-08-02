@@ -221,7 +221,7 @@ Do not include specific choices - just the setup.`;
    * @param {number} numChoices - Number of choices to generate (3-6)
    * @returns {Promise<Object>} - Chapter data
    */
-  async generateChapter(chapterNumber, previousChoice = null, model = 'deepseek', numChoices = 3) {
+  async generateChapter(chapterNumber, previousChoice = null, model = 'deepseek', numChoices = 3, activeParticipants = []) {
     const themeData = this.themes[this.memory.memory.theme] || this.themes.fantasy;
     const context = this.memory.getContext();
 
@@ -230,7 +230,8 @@ Do not include specific choices - just the setup.`;
       context,
       chapterNumber,
       previousChoice,
-      numChoices
+      numChoices,
+      activeParticipants
     );
 
     this.logger.info(`Generating chapter ${chapterNumber} with ${model}...`);
@@ -280,7 +281,7 @@ Do not include specific choices - just the setup.`;
    * @param {string} model - LLM model to use
    * @returns {Promise<Object>} Chapter object without choices (ending)
    */
-  async generateFinalChapter(chapterNumber, previousChoice = null, model = 'deepseek') {
+  async generateFinalChapter(chapterNumber, previousChoice = null, model = 'deepseek', activeParticipants = []) {
     const themeData = this.themes[this.memory.memory.theme] || this.themes.fantasy;
     const context = this.memory.getContext();
 
@@ -288,7 +289,8 @@ Do not include specific choices - just the setup.`;
       themeData,
       context,
       chapterNumber,
-      previousChoice
+      previousChoice,
+      activeParticipants
     );
 
     this.logger.info(`Generating FINAL chapter ${chapterNumber} with ${model}...`);
@@ -336,7 +338,7 @@ Do not include specific choices - just the setup.`;
   /**
    * Build chapter generation prompt
    */
-  _buildChapterPrompt(themeData, context, chapterNumber, previousChoice, numChoices) {
+  _buildChapterPrompt(themeData, context, chapterNumber, previousChoice, numChoices, activeParticipants = []) {
     // Determine sentence count based on platform
     const sentenceRange = this._getSentenceRange(chapterNumber, false);
     
@@ -348,6 +350,11 @@ Do not include specific choices - just the setup.`;
 
     if (previousChoice) {
       prompt += `PREVIOUS CHOICE: ${previousChoice}\n\n`;
+    }
+
+    if (Array.isArray(activeParticipants) && activeParticipants.length) {
+      const party = activeParticipants.map(participant => `- ${participant.username}: ${participant.roleName}`).join('\n');
+      prompt += `ACTIVE PARTY:\n${party}\n\n`;
     }
 
     prompt += `Write the next chapter of the story in ${this.language}. The chapter should:\n`;
@@ -381,7 +388,7 @@ Do not include specific choices - just the setup.`;
   /**
    * Build final chapter generation prompt (no choices, resolves story)
    */
-  _buildFinalChapterPrompt(themeData, context, chapterNumber, previousChoice) {
+  _buildFinalChapterPrompt(themeData, context, chapterNumber, previousChoice, activeParticipants = []) {
     // Final chapters can be longer to properly resolve the story
     const sentenceRange = this._getSentenceRange(chapterNumber, true);
     
@@ -395,6 +402,10 @@ Do not include specific choices - just the setup.`;
       prompt += `PREVIOUS CHOICE: ${previousChoice}\n\n`;
     }
 
+    if (Array.isArray(activeParticipants) && activeParticipants.length) {
+      const party = activeParticipants.map(participant => `- ${participant.username}: ${participant.roleName}`).join('\n');
+      prompt += `ACTIVE PARTY:\n${party}\n\n`;
+    }
     prompt += `Write the FINAL chapter that CONCLUDES and RESOLVES the story in ${this.language}. The chapter should:\n`;
     prompt += `1. Be engaging and satisfying (${themeData.tone})\n`;
     prompt += `2. Be ${sentenceRange} (can be slightly longer to properly resolve the story)\n`;

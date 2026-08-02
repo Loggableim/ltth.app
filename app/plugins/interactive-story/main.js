@@ -18,6 +18,7 @@ const OverlayLayout = require('./utils/overlay-layout');
 
 // Backend
 const StoryDatabase = require('./backend/database');
+const ParticipantRegistry = require('./backend/participant-registry');
 
 /**
  * Interactive Story Generator Plugin
@@ -31,6 +32,7 @@ class InteractiveStoryPlugin {
 
     // Initialize database
     this.db = new StoryDatabase(api);
+    this.participantRegistry = new ParticipantRegistry(this.db);
 
     // Get persistent storage directories
     const pluginDataDir = api.getPluginDataDir();
@@ -914,6 +916,13 @@ class InteractiveStoryPlugin {
       return;
     }
 
+    const config = this._loadConfig();
+    if (this._isDndMode(config) && this.participantRegistry) {
+      const resolution = this.participantRegistry.resolveRound(this.currentSession.id, this.currentChapter.chapterNumber);
+      resolution.eliminated.forEach(participant => this.io.emit('story:dnd-player-eliminated', participant));
+      this._emitParticipantRoster();
+    }
+
     // Store results for manual mode
     this.lastVoteResults = results;
 
@@ -934,7 +943,6 @@ class InteractiveStoryPlugin {
     }
 
     // Check if manual mode is enabled
-    const config = this._loadConfig();
     if (config.manualMode) {
       this.logger.info('Manual mode enabled - waiting for user to manually advance');
       // Don't auto-generate next chapter, wait for manual advance
@@ -980,10 +988,12 @@ class InteractiveStoryPlugin {
       if (chapterNumber >= maxChapters) {
         this.logger.info(`Max chapters (${maxChapters}) reached, generating final chapter`);
         
+        const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
         let finalChapter = await this.storyEngine.generateFinalChapter(
           chapterNumber,
           previousChoice,
-          this.currentSession.model
+          this.currentSession.model,
+          activeParticipants
         );
 
         finalChapter = await this._maybeGenerateChapterImage(finalChapter, config);
@@ -1025,12 +1035,14 @@ class InteractiveStoryPlugin {
         return { chapter: finalChapter, isFinal: true };
       }
 
+      const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
       // Generate next chapter (not final yet)
       let nextChapter = await this.storyEngine.generateChapter(
         chapterNumber,
         previousChoice,
         this.currentSession.model,
-        config.numChoices
+        config.numChoices,
+        activeParticipants
       );
 
       nextChapter = await this._maybeGenerateChapterImage(nextChapter, config);
@@ -1266,6 +1278,32 @@ class InteractiveStoryPlugin {
     return chapter;
   }
 
+  _isDndMode(config = this._loadConfig()) {
+    return config.storyMode === 'dnd';
+  }
+
+  _participantSnapshots(includeEliminated = false) {
+    if (!this.currentSession || !this.participantRegistry) return [];
+    return this.participantRegistry.list(this.currentSession.id, { includeEliminated });
+  }
+
+  _emitParticipantRoster() {
+    this.io.emit('story:dnd-participants-updated', this._participantSnapshots());
+  }
+
+  _joinParticipant(userId, username) {
+    if (!this.currentSession || !this.currentChapter || !this.participantRegistry) return null;
+    const participant = this.participantRegistry.join(
+      this.currentSession.id,
+      userId,
+      username,
+      this.currentChapter.chapterNumber
+    );
+    this.io.emit('story:dnd-participant-joined', participant);
+    this._emitParticipantRoster();
+    return participant;
+  }
+
   /**
    * Register API routes
    */
@@ -1288,6 +1326,10 @@ class InteractiveStoryPlugin {
         session: this.currentSession,
         chapter: this._prepareChapterForEmit(this.currentChapter, config),
         voting: this.votingSystem ? this.votingSystem.getStatus() : null,
+        storyMode: config.storyMode || 'classic',
+        joinKeyword: config.dndJoinKeyword || '!join',
+        activeParticipants: this._isDndMode(config) ? this._participantSnapshots() : [],
+        eliminatedParticipants: this._isDndMode(config) ? this._participantSnapshots(true).filter(participant => participant.status === 'eliminated') : [],
         isGenerating: this.isGenerating,
         config: {
           maxChapters: config.maxChapters || 5,
@@ -1296,6 +1338,34 @@ class InteractiveStoryPlugin {
           autoGenerateImages: config.autoGenerateImages !== false
         }
       });
+    });
+
+    this.api.registerRoute('get', '/api/interactive-story/participants', (req, res) => {
+      const config = this._loadConfig();
+      if (!this._isDndMode(config) || !this.currentSession) {
+        return res.status(400).json({ error: 'No active pen-and-paper story session' });
+      }
+      return res.json({ activeParticipants: this._participantSnapshots(), eliminatedParticipants: this._participantSnapshots(true).filter(participant => participant.status === 'eliminated') });
+    });
+
+    this.api.registerRoute('post', '/api/interactive-story/participants/join', (req, res) => {
+      const config = this._loadConfig();
+      const userId = String(req.body?.userId || '').trim();
+      const username = String(req.body?.username || '').trim();
+      if (!this._isDndMode(config) || !this.currentSession || !userId || !username) {
+        return res.status(400).json({ error: 'An active pen-and-paper session plus userId and username are required' });
+      }
+      return res.json({ success: true, participant: this._joinParticipant(userId, username) });
+    });
+
+    this.api.registerRoute('post', '/api/interactive-story/participants/reset', (req, res) => {
+      const config = this._loadConfig();
+      if (!this._isDndMode(config) || !this.currentSession) {
+        return res.status(400).json({ error: 'No active pen-and-paper story session' });
+      }
+      const removed = this.db.resetParticipants(this.currentSession.id);
+      this._emitParticipantRoster();
+      return res.json({ success: true, removed });
     });
 
     // Get configuration
@@ -1552,10 +1622,12 @@ class InteractiveStoryPlugin {
         const chapterNumber = this.currentChapter.chapterNumber + 1;
 
         // Generate final chapter (no choices)
+        const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
         let finalChapter = await this.storyEngine.generateFinalChapter(
           chapterNumber,
           previousChoice,
-          this.currentSession.model
+          this.currentSession.model,
+          activeParticipants
         );
 
         finalChapter = await this._maybeGenerateChapterImage(finalChapter, config);
@@ -2157,42 +2229,30 @@ class InteractiveStoryPlugin {
    * Register TikTok event handlers
    */
   _registerTikTokHandlers() {
-    // Listen for chat messages to process votes
     this.api.registerTikTokEvent('chat', (data) => {
-      if (!this.votingSystem || !this.votingSystem.isActive()) {
-        return;
-      }
-
-      // Normalize chat text (some connectors send `message`, others `comment`)
+      if (!this.currentSession) return;
       const message = (data.comment || data.message || '').trim();
-      if (!message) {
-        return;
-      }
-      
-      // Quick filter: Skip obviously non-vote messages (longer than 15 chars, multi-line, or starts with common non-vote patterns)
-      if (message.length > 15 || message.includes('\n') || message.startsWith('@') || message.startsWith('#')) {
-        return;
-      }
-      
-      // Try to process as vote - voting system will handle pattern matching
+      if (!message) return;
+
+      const config = this._loadConfig();
       const voterId = data.uniqueId || data.userId || data.username || data.nickname || 'unknown';
       const voterName = data.nickname || data.username || 'Viewer';
-      const accepted = this.votingSystem.processVote(
-        voterId,
-        voterName,
-        message
-      );
-
-      if (accepted && this.currentSession) {
-        this.db.updateViewerStats(
-          this.currentSession.id,
-          voterId,
-          voterName
-        );
+      const joinKeyword = String(config.dndJoinKeyword || '!join').trim();
+      if (this._isDndMode(config) && joinKeyword && message.toLocaleLowerCase() === joinKeyword.toLocaleLowerCase()) {
+        this._joinParticipant(voterId, voterName);
+        return;
       }
+
+      if (!this.votingSystem || !this.votingSystem.isActive()) return;
+      if (message.length > 15 || message.includes('\n') || message.startsWith('@') || message.startsWith('#')) return;
+
+      const accepted = this.votingSystem.processVote(voterId, voterName, message);
+      if (accepted && this._isDndMode(config) && this.participantRegistry && this.currentChapter) {
+        this.participantRegistry.recordVote(this.currentSession.id, voterId, this.currentChapter.chapterNumber);
+      }
+      if (accepted) this.db.updateViewerStats(this.currentSession.id, voterId, voterName);
     });
   }
-
   _resolveImageCachePath(filename) {
     const safeFilename = path.basename(filename || '');
     if (!safeFilename || safeFilename !== filename) {
