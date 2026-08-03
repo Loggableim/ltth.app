@@ -64,6 +64,42 @@
           }
         }
       },
+      "story_studio": {
+        "title": "Story-Studio",
+        "central_settings": "API-Schl?ssel werden in den zentralen Einstellungen verwaltet und niemals in diesem Studio gespeichert.",
+        "image_off": "Bilder sind standardm??ig aus, damit die Live-Story schneller bleibt.",
+        "fish_audio_default": "Fish.audio ist die empfohlene Standardstimme f?r die Erz?hlung.",
+        "mode": {
+          "label": "Story-Modus",
+          "classic": "Klassisches Chat-Voting",
+          "dnd": "Pen-and-Paper-Gruppe"
+        },
+        "dnd": {
+          "join_keyword": "Beitrittsbefehl",
+          "inactivity_limit": "Inaktive Runden bis zum Entfernen"
+        },
+        "players": {
+          "title": "Live-Spieler",
+          "empty": "Noch keine Spieler beigetreten."
+        },
+        "preview": {
+          "edit": "Layout bearbeiten",
+          "save": "Layout speichern",
+          "reset": "Layout zur?cksetzen",
+          "edit_mode": "Layout-Bearbeitungsmodus",
+          "snap_off": "Raster: aus",
+          "snap_on": "Raster: an"
+        },
+        "voice": {
+          "model": "Fish.audio-Modell",
+          "emotion": "Erz?hlstimmung",
+          "auto": "Automatisch",
+          "calm": "Ruhig",
+          "dramatic": "Dramatisch",
+          "s21_pro": "S2.1 Pro",
+          "s1": "S1"
+        }
+      },
       "hero": {
         "status": {
           "ready": "Bereit für deinen nächsten Stream"
@@ -252,6 +288,13 @@
           "vote_timer": "Verbleibende Zeit: {seconds}s",
           "voting_ended": "Abstimmung beendet"
         },
+        "participants": {
+          "role": "Rolle",
+          "status": {
+            "active": "Aktiv",
+            "eliminated": "Ausgeschieden"
+          }
+        },
         "preview": {
           "adventure_content": "Unser Held erwacht in einem geheimnisvollen Wald, umgeben von uralten Bäumen, die von längst vergangenen Geheimnissen flüstern.",
           "adventure_title": "Der Beginn eines epischen Abenteuers",
@@ -313,7 +356,7 @@
       },
       "labels": {
         "content_start_buffer_seconds": "Inhaltsstartpuffer (Sekunden)",
-        "leave_empty_for_local_ollama_required_only_for": "Für das örtliche Ollama leer lassen; Nur für einige Cloud-Bereitstellungen erforderlich.",
+        "leave_empty_for_local_ollama_required_only_for": "Verwalte den Ollama-API-Schlüssel in den zentralen Einstellungen. Diese Seite zeigt nur, ob ein Schlüssel konfiguriert ist.",
         "fish_audio_tts": "Fish.audio-Sprachausgabe",
         "adam_deep_male": "Adam (Tief männlich)",
         "gpt_4o_mini_cost_effective": "GPT-4o Mini (Kostengünstig)",

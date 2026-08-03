@@ -5,6 +5,7 @@ const {
   isRegisteredEntrypoint,
   isHttpAllowed,
   isIncomingSocketEventAllowed,
+  isLocalOnlyOutgoingSocketEvent,
   isOutgoingSocketEventAllowed,
   listPublicEntrypoints,
   redactPublicPayload
@@ -188,6 +189,13 @@ describe('public overlay Socket.IO registry', () => {
 
   test('denies an unrelated outgoing dashboard event', () => {
     expect(isOutgoingSocketEventAllowed('admin:settings-updated')).toBe(false);
+  });
+
+  test('classifies D&D participant roster updates as local-only', () => {
+    const eventName = 'story:dnd-participants-updated';
+
+    expect(isLocalOnlyOutgoingSocketEvent(eventName)).toBe(true);
+    expect(isOutgoingSocketEventAllowed(eventName)).toBe(false);
   });
 
   test.each([

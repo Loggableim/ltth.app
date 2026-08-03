@@ -7,6 +7,7 @@ const OpenAI = require('openai');
 class OpenAILLMService {
   constructor(apiKey, logger, debugCallback = null, options = {}) {
     this.apiKey = apiKey || options.fallbackApiKey || 'ollama';
+    this.provider = options.provider || 'openai';
     this.logger = logger;
     this.debugCallback = debugCallback;
     this.baseURL = options.baseURL || 'https://api.openai.com/v1';
@@ -192,10 +193,11 @@ class OpenAILLMService {
         usage: response.usage
       };
     } catch (error) {
-      this.logger.error(`OpenAI-compatible API test failed: ${error.message}`);
+      const message = this.provider === 'ollama' ? 'Ollama API test failed' : error.message;
+      this.logger.error(this.provider === 'ollama' ? message : `OpenAI-compatible API test failed: ${message}`);
       return {
         success: false,
-        message: error.message,
+        message,
         error: error
       };
     }

@@ -1088,15 +1088,8 @@ class FishSpeechEngine {
             referenceId = FishSpeechEngine.DEFAULT_REFERENCE_ID;
         }
 
-        // Process emotion injection if provided
-        let processedText = text;
-        if (options.emotion && this.isValidEmotion(options.emotion)) {
-            // Add emotion marker at the beginning of the text if not already present
-            if (!text.trim().startsWith('(')) {
-                processedText = `(${options.emotion}) ${text}`;
-                this.logger.info(`Fish.audio TTS: Injecting emotion '${options.emotion}' into text`);
-            }
-        }
+        const model = options.model || this.model;
+        const processedText = this._formatEmotionText(text, options.emotion, model);
 
         // Extract parameters
         const format = options.format || 'mp3';
@@ -1137,7 +1130,7 @@ class FishSpeechEngine {
                     headers: {
                         'Authorization': `Bearer ${this.apiKey}`,
                         'Content-Type': 'application/json',
-                        'model': this.model  // Fish Audio S1 model
+                        'model': model
                     },
                     responseType: 'arraybuffer',
                     timeout: this.timeout
@@ -1224,15 +1217,8 @@ class FishSpeechEngine {
             referenceId = FishSpeechEngine.DEFAULT_REFERENCE_ID;
         }
 
-        // Process emotion injection if provided
-        let processedText = text;
-        if (options.emotion && this.isValidEmotion(options.emotion)) {
-            // Add emotion marker at the beginning of the text if not already present
-            if (!text.trim().startsWith('(')) {
-                processedText = `(${options.emotion}) ${text}`;
-                this.logger.info(`Fish.audio TTS Stream: Injecting emotion '${options.emotion}' into text`);
-            }
-        }
+        const model = options.model || this.model;
+        const processedText = this._formatEmotionText(text, options.emotion, model);
 
         // Extract parameters - use 'balanced' latency for streaming
         const format = options.format || 'mp3';
@@ -1264,7 +1250,7 @@ class FishSpeechEngine {
                 headers: {
                     'Authorization': `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json',
-                    'model': this.model  // Fish Audio S1 model
+                    'model': model
                 },
                 responseType: 'stream', // Request streaming response
                 timeout: this.timeout
@@ -1350,15 +1336,8 @@ class FishSpeechEngine {
             referenceId = FishSpeechEngine.DEFAULT_REFERENCE_ID;
         }
 
-        // Process emotion injection if provided
-        let processedText = text;
-        if (options.emotion && this.isValidEmotion(options.emotion)) {
-            // Add emotion marker at the beginning of the text if not already present
-            if (!text.trim().startsWith('(')) {
-                processedText = `(${options.emotion}) ${text}`;
-                this.logger.info(`Fish.audio TTS WebSocket: Injecting emotion '${options.emotion}' into text`);
-            }
-        }
+        const model = options.model || this.model;
+        const processedText = this._formatEmotionText(text, options.emotion, model);
 
         // Extract parameters
         const format = options.format || 'mp3';
@@ -1404,7 +1383,8 @@ class FishSpeechEngine {
                         mp3_bitrate: mp3Bitrate,
                         normalize: normalize,
                         latency: latency,
-                        chunk_length: chunkLength
+                        chunk_length: chunkLength,
+                        model: model
                     };
 
                     // If format is opus, add opus_bitrate
@@ -1618,18 +1598,38 @@ class FishSpeechEngine {
     }
 
     /**
-     * Helper: Add emotion marker to text
+     * Add the legacy parenthesized emotion marker for external callers.
+     * Internal synthesis uses _formatEmotionText so its marker can follow
+     * the effective Fish model.
      * @param {string} text - Original text
      * @param {string} emotion - Emotion to add
      * @returns {string} Text with emotion marker
      */
     static addEmotionMarker(text, emotion) {
         if (!text || !emotion) return text;
-        // Only add if not already present
-        if (text.trim().startsWith('(')) {
+        if (text.trim().startsWith('(')) return text;
+        return `(${emotion}) ${text}`;
+    }
+
+    /**
+     * Format a supported emotion as the syntax required by the selected Fish model.
+     * @param {string} text - Original text
+     * @param {string} emotion - Emotion to add
+     * @param {string} model - Effective Fish model
+     * @returns {string} Text with emotion marker
+     */
+    _formatEmotionText(text, emotion, model) {
+        if (!text || !emotion || emotion === 'neutral' || !this.isValidEmotion(emotion)) {
             return text;
         }
-        return `(${emotion}) ${text}`;
+        if (/^\s*(?:\[[^\]]+\]|\([^\)]+\))/.test(text)) {
+            return text;
+        }
+        const marker = /^s2(?:\.1(?:-pro.*)?)?$/i.test(model)
+            ? `[${emotion}]`
+            : `(${emotion})`;
+        this.logger.info(`Fish.audio TTS: Injecting emotion '${emotion}' with model '${model}'`);
+        return `${marker} ${text}`;
     }
 
     /**

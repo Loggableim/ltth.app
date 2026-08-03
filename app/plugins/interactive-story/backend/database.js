@@ -44,6 +44,8 @@ class StoryDatabase {
         )
       `).run();
 
+      this._migrateChapterNarrationColumns();
+
       // Votes table
       this.db.prepare(`
         CREATE TABLE IF NOT EXISTS story_votes (
@@ -69,8 +71,38 @@ class StoryDatabase {
           FOREIGN KEY (session_id) REFERENCES story_sessions(id)
         )
       `).run();
-
+      // Pen-and-paper participants and round attendance
+      this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS story_participants (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          user_id TEXT NOT NULL,
+          username TEXT NOT NULL,
+          role_id TEXT NOT NULL,
+          role_name TEXT NOT NULL,
+          joined_round INTEGER NOT NULL DEFAULT 0,
+          last_vote_round INTEGER,
+          missed_rounds INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'active',
+          created_at TEXT NOT NULL,
+          eliminated_at TEXT,
+          UNIQUE(session_id, user_id),
+          FOREIGN KEY (session_id) REFERENCES story_sessions(id)
+        )
+      `).run();
       // Story memory table (full memory snapshots)
+      this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS story_participant_round_resolutions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          participant_id INTEGER NOT NULL,
+          round INTEGER NOT NULL,
+          resolved_at TEXT NOT NULL,
+          UNIQUE(session_id, participant_id, round),
+          FOREIGN KEY (session_id) REFERENCES story_sessions(id),
+          FOREIGN KEY (participant_id) REFERENCES story_participants(id)
+        )
+      `).run();
       this.db.prepare(`
         CREATE TABLE IF NOT EXISTS story_memory (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,6 +120,49 @@ class StoryDatabase {
     }
   }
 
+  /**
+   * Add narration metadata columns to existing chapter tables without
+   * replacing stored story data.
+   */
+  _migrateChapterNarrationColumns() {
+    const columns = this.db.prepare('PRAGMA table_info(story_chapters)').all();
+    const columnNames = new Set(columns.map(column => column.name));
+
+    if (!columnNames.has('narration_segments')) {
+      this.db.prepare('ALTER TABLE story_chapters ADD COLUMN narration_segments TEXT').run();
+    }
+
+    if (!columnNames.has('tts_text')) {
+      this.db.prepare('ALTER TABLE story_chapters ADD COLUMN tts_text TEXT').run();
+    }
+  }
+
+  _serializeNarrationSegments(segments) {
+    if (!Array.isArray(segments)) {
+      return null;
+    }
+
+    try {
+      return JSON.stringify(segments);
+    } catch (error) {
+      this.api.log(`Could not serialize narration segments: ${error.message}`, 'warn');
+      return null;
+    }
+  }
+
+  _parseNarrationSegments(value) {
+    if (!value) {
+      return [];
+    }
+
+    try {
+      const segments = JSON.parse(value);
+      return Array.isArray(segments) ? segments : [];
+    } catch (error) {
+      this.api.log(`Could not parse narration segments: ${error.message}`, 'warn');
+      return [];
+    }
+  }
   /**
    * Create a new story session
    * @param {Object} data - Session data
@@ -172,8 +247,8 @@ class StoryDatabase {
   saveChapter(sessionId, chapter) {
     const stmt = this.db.prepare(`
       INSERT INTO story_chapters 
-      (session_id, chapter_number, title, content, choices, memory_tags, image_path, audio_paths, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (session_id, chapter_number, title, content, choices, memory_tags, image_path, audio_paths, narration_segments, tts_text, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -185,6 +260,8 @@ class StoryDatabase {
       JSON.stringify(chapter.memoryTags || {}),
       chapter.imagePath || null,
       JSON.stringify(chapter.audioPaths || []),
+      this._serializeNarrationSegments(chapter.narrationSegments),
+      typeof chapter.ttsText === 'string' ? chapter.ttsText : null,
       new Date().toISOString()
     );
 
@@ -208,6 +285,8 @@ class StoryDatabase {
       chapter.choices = JSON.parse(chapter.choices);
       chapter.memoryTags = JSON.parse(chapter.memory_tags || '{}');
       chapter.audioPaths = JSON.parse(chapter.audio_paths || '[]');
+      chapter.narrationSegments = this._parseNarrationSegments(chapter.narration_segments);
+      chapter.ttsText = typeof chapter.tts_text === 'string' ? chapter.tts_text : null;
     }
     
     return chapter;
@@ -230,6 +309,8 @@ class StoryDatabase {
       ch.choices = JSON.parse(ch.choices);
       ch.memoryTags = JSON.parse(ch.memory_tags || '{}');
       ch.audioPaths = JSON.parse(ch.audio_paths || '[]');
+      ch.narrationSegments = this._parseNarrationSegments(ch.narration_segments);
+      ch.ttsText = typeof ch.tts_text === 'string' ? ch.tts_text : null;
       return ch;
     });
   }
@@ -283,6 +364,103 @@ class StoryDatabase {
     }
   }
 
+  _normalizeParticipantInput(participant) {
+    return {
+      userId: String(participant.userId),
+      username: String(participant.username || 'Viewer'),
+      roleId: String(participant.roleId),
+      roleName: String(participant.roleName),
+      joinedRound: Number.isInteger(participant.joinedRound) ? participant.joinedRound : 0
+    };
+  }
+
+  createParticipant(sessionId, participant) {
+    const normalized = this._normalizeParticipantInput(participant);
+    this.db.prepare(`
+      INSERT OR IGNORE INTO story_participants
+        (session_id, user_id, username, role_id, role_name, joined_round, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(sessionId, normalized.userId, normalized.username, normalized.roleId, normalized.roleName, normalized.joinedRound, new Date().toISOString());
+    return this.getParticipant(sessionId, normalized.userId);
+  }
+
+  getParticipant(sessionId, userId) {
+    return this.db.prepare(`
+      SELECT * FROM story_participants WHERE session_id = ? AND user_id = ?
+    `).get(sessionId, userId) || null;
+  }
+
+  listParticipants(sessionId, { includeEliminated = false } = {}) {
+    const statusClause = includeEliminated ? '' : "AND status = 'active'";
+    return this.db.prepare(`
+      SELECT * FROM story_participants
+      WHERE session_id = ? ${statusClause}
+      ORDER BY created_at ASC, id ASC
+    `).all(sessionId);
+  }
+
+  recordParticipantVote(sessionId, userId, round) {
+    this.db.prepare(`
+      UPDATE story_participants
+      SET last_vote_round = ?, missed_rounds = 0
+      WHERE session_id = ? AND user_id = ? AND status = 'active'
+    `).run(round, sessionId, userId);
+    const participant = this.getParticipant(sessionId, userId);
+    return participant && participant.status === 'active' ? participant : null;
+  }
+
+  resolveParticipantRound(sessionId, round, inactivityLimitRounds = 2) {
+    const activeParticipants = this.listParticipants(sessionId);
+    const updateAttendance = this.db.prepare(`UPDATE story_participants SET missed_rounds = ? WHERE id = ?`);
+    const eliminateParticipant = this.db.prepare(`
+      UPDATE story_participants
+      SET missed_rounds = ?, status = 'eliminated', eliminated_at = ?
+      WHERE id = ?
+    `);
+    const updated = [];
+    const claimRoundResolution = this.db.prepare(`
+      INSERT OR IGNORE INTO story_participant_round_resolutions
+        (session_id, participant_id, round, resolved_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    const eliminated = [];
+    const transactionDatabase = typeof this.db.transaction === 'function'
+      ? this.db
+      : this.db && this.db.db;
+    if (!transactionDatabase || typeof transactionDatabase.transaction !== 'function') {
+      throw new Error('Story database does not expose transaction support');
+    }
+    const resolve = transactionDatabase.transaction(() => {
+      for (const participant of activeParticipants) {
+        if (participant.joined_round >= round || participant.last_vote_round === round) {
+          continue;
+        }
+        const missedRounds = participant.missed_rounds + 1;
+        const wasClaimed = claimRoundResolution.run(
+          sessionId, participant.id, round, new Date().toISOString()
+        ).changes === 1;
+        if (!wasClaimed) {
+          continue;
+        }
+        if (missedRounds >= inactivityLimitRounds) {
+          eliminateParticipant.run(missedRounds, new Date().toISOString(), participant.id);
+          const eliminatedParticipant = { ...participant, missed_rounds: missedRounds, status: 'eliminated' };
+          updated.push(eliminatedParticipant);
+          eliminated.push(eliminatedParticipant);
+        } else {
+          updateAttendance.run(missedRounds, participant.id);
+          updated.push({ ...participant, missed_rounds: missedRounds });
+        }
+      }
+    });
+    resolve();
+    return { updated, eliminated };
+  }
+
+  resetParticipants(sessionId) {
+    this.db.prepare(`DELETE FROM story_participant_round_resolutions WHERE session_id = ?`).run(sessionId);
+    return this.db.prepare(`DELETE FROM story_participants WHERE session_id = ?`).run(sessionId).changes;
+  }
   /**
    * Get top voters for a session
    * @param {number} sessionId - Session ID
@@ -381,6 +559,8 @@ class StoryDatabase {
     this.db.prepare(`DELETE FROM story_votes WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_viewer_stats WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_memory WHERE session_id IN (${placeholders})`).run(...sessionIds);
+    this.db.prepare(`DELETE FROM story_participant_round_resolutions WHERE session_id IN (${placeholders})`).run(...sessionIds);
+    this.db.prepare(`DELETE FROM story_participants WHERE session_id IN (${placeholders})`).run(...sessionIds);
     this.db.prepare(`DELETE FROM story_sessions WHERE id IN (${placeholders})`).run(...sessionIds);
 
     return sessionsToDelete.length;

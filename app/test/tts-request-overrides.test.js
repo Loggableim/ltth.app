@@ -13,10 +13,22 @@ describe('TTS per-request fine settings', () => {
     }, globalConfig);
 
     expect(overrides).toEqual({
-      emotion: 'amused', pitch: 3, synthesisVolume: 1, playbackVolume: 67,
+      model: null, emotion: 'amused', pitch: 3, synthesisVolume: 1, playbackVolume: 67,
       speed: 1.2, streaming: false, duckOtherAudio: false
     });
     expect(globalConfig.speed).toBe(1);
+  });
+
+  test('preserves an explicit Fish model and emotion for a downstream Fish request', () => {
+    const overrides = resolveTtsRequestOverrides({
+      model: 's2.1-pro',
+      emotion: 'scared'
+    }, {
+      defaultFishaudioEmotion: 'neutral'
+    });
+
+    expect(overrides.model).toBe('s2.1-pro');
+    expect(overrides.emotion).toBe('scared');
   });
 
   test('clamps malformed request values and falls back to global config', () => {

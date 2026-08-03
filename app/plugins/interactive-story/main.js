@@ -13,9 +13,13 @@ const StoryEngine = require('./engines/story-engine');
 // Utils
 const VotingSystem = require('./utils/voting-system');
 const StoryMemory = require('./utils/story-memory');
+const NarrationDirector = require('./utils/narration-director');
+const OverlayLayout = require('./utils/overlay-layout');
 
 // Backend
 const StoryDatabase = require('./backend/database');
+const ParticipantRegistry = require('./backend/participant-registry');
+const { createAdminAuth } = require('../../modules/admin-auth');
 
 /**
  * Interactive Story Generator Plugin
@@ -29,6 +33,8 @@ class InteractiveStoryPlugin {
 
     // Initialize database
     this.db = new StoryDatabase(api);
+    this.participantRegistry = new ParticipantRegistry(this.db);
+    this.adminAuth = createAdminAuth();
 
     // Get persistent storage directories
     const pluginDataDir = api.getPluginDataDir();
@@ -60,7 +66,7 @@ class InteractiveStoryPlugin {
     this.TTS_DISABLED_VOTING_BUFFER_MS = 2000; // 2 second buffer before voting when TTS disabled
     
     // Reading time constants (when TTS is disabled)
-    this.READING_SPEED_WPS = 3.3; // Words per second (≈200 words per minute)
+    this.READING_SPEED_WPS = 3.3; // Words per second (â‰ˆ200 words per minute)
     this.MIN_READING_TIME_MS = 5000; // Minimum 5 seconds
     
     // Timing defaults (overridable by config)
@@ -125,7 +131,7 @@ class InteractiveStoryPlugin {
   }
 
   async init() {
-    this.api.log('📖 Initializing Interactive Story Generator Plugin...', 'info');
+    this.api.log('ðŸ“– Initializing Interactive Story Generator Plugin...', 'info');
 
     try {
       // Ensure data directories exist
@@ -153,7 +159,7 @@ class InteractiveStoryPlugin {
       };
 
       // Initialize services based on provider selection
-      const llmProvider = config.llmProvider || 'openai';
+      const llmProvider = config.llmProvider || 'ollama';
       const imageProvider = config.imageProvider || 'openai';
       const ttsProvider = config.ttsProvider || 'system';
 
@@ -164,22 +170,22 @@ class InteractiveStoryPlugin {
         const openaiApiKey = this._getOpenAIApiKey();
         if (openaiApiKey) {
           this.imageService = new OpenAIImageService(openaiApiKey, this.logger, this.imageCacheDir);
-          this._debugLog('info', '✅ OpenAI Image service initialized', null);
-          this.api.log('✅ OpenAI Image service (DALL-E) initialized', 'info');
+          this._debugLog('info', 'âœ… OpenAI Image service initialized', null);
+          this.api.log('âœ… OpenAI Image service (DALL-E) initialized', 'info');
         } else {
-          this._debugLog('error', '⚠️ OpenAI API key not configured for image generation', null);
-          this.api.log('⚠️ OpenAI API key not configured for image generation', 'warn');
+          this._debugLog('error', 'âš ï¸ OpenAI API key not configured for image generation', null);
+          this.api.log('âš ï¸ OpenAI API key not configured for image generation', 'warn');
         }
       } else {
         // SiliconFlow provider
         const siliconFlowApiKey = this._getSiliconFlowApiKey();
         if (siliconFlowApiKey) {
           this.imageService = new ImageService(siliconFlowApiKey, this.logger, this.imageCacheDir);
-          this._debugLog('info', '✅ SiliconFlow Image service initialized', null);
-          this.api.log('✅ SiliconFlow Image service initialized', 'info');
+          this._debugLog('info', 'âœ… SiliconFlow Image service initialized', null);
+          this.api.log('âœ… SiliconFlow Image service initialized', 'info');
         } else {
-          this._debugLog('error', '⚠️ SiliconFlow API key not configured for image generation', null);
-          this.api.log('⚠️ SiliconFlow API key not configured for image generation', 'warn');
+          this._debugLog('error', 'âš ï¸ SiliconFlow API key not configured for image generation', null);
+          this.api.log('âš ï¸ SiliconFlow API key not configured for image generation', 'warn');
         }
       }
 
@@ -187,17 +193,17 @@ class InteractiveStoryPlugin {
       // The LTTH TTS plugin supports all engines: OpenAI, TikTok, Google, ElevenLabs, Speechify, Fish.audio, SiliconFlow
       // No need for custom TTS service - let the TTS plugin handle everything
       this.api.log('Using LTTH TTS plugin for voice generation (supports all engines)', 'info');
-      this._debugLog('info', '✅ Using LTTH TTS plugin for all TTS operations', null);
+      this._debugLog('info', 'âœ… Using LTTH TTS plugin for all TTS operations', null);
 
       // Ensure storyEngine is always initialized (even without LLM service for theme access)
       if (!this.storyEngine) {
-        this._debugLog('warn', '⚠️ StoryEngine not initialized - creating basic instance for theme access', null);
+        this._debugLog('warn', 'âš ï¸ StoryEngine not initialized - creating basic instance for theme access', null);
         // Create a minimal storyEngine without LLM service for theme/configuration access
         this.storyEngine = new StoryEngine(null, this.logger, {
           language: config.storyLanguage || 'German',
           platform: 'tiktok'
         });
-        this.api.log('⚠️ StoryEngine initialized in limited mode (themes only - configure API keys for full functionality)', 'warn');
+        this.api.log('âš ï¸ StoryEngine initialized in limited mode (themes only - configure API keys for full functionality)', 'warn');
       }
 
       // Initialize voting system
@@ -226,12 +232,12 @@ class InteractiveStoryPlugin {
         this.api.log(`Restored active session: ${activeSession.id}`, 'info');
       }
 
-      this.api.log('✅ Interactive Story Plugin initialized successfully', 'info');
-      this.api.log(`   📂 Images: ${this.imageCacheDir}`, 'info');
-      this.api.log(`   🎵 Audio: ${this.audioCacheDir}`, 'info');
-      this.api.log(`   📦 Exports: ${this.exportDir}`, 'info');
+      this.api.log('âœ… Interactive Story Plugin initialized successfully', 'info');
+      this.api.log(`   ðŸ“‚ Images: ${this.imageCacheDir}`, 'info');
+      this.api.log(`   ðŸŽµ Audio: ${this.audioCacheDir}`, 'info');
+      this.api.log(`   ðŸ“¦ Exports: ${this.exportDir}`, 'info');
     } catch (error) {
-      this.api.log(`❌ Error initializing Interactive Story Plugin: ${error.message}`, 'error');
+      this.api.log(`âŒ Error initializing Interactive Story Plugin: ${error.message}`, 'error');
       throw error;
     }
   }
@@ -282,6 +288,30 @@ class InteractiveStoryPlugin {
     }
   }
 
+  /**
+   * Get the Ollama API key from central settings.
+   * @returns {string|null} API key or null if not configured
+   */
+  _getOllamaApiKey() {
+    try {
+      const db = this.api.getDatabase();
+      const keyPriority = [
+        'ollama_cloud_api_key',
+        'ollama_api_key',
+        'tts_ollama_api_key'
+      ];
+      for (const key of keyPriority) {
+        const value = db.getSetting(key);
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Error retrieving Ollama API key from settings:', error);
+      return null;
+    }
+  }
   /**
    * Normalize the configured LLM provider name into a friendly label.
    * @param {string} provider - Provider key from config
@@ -359,6 +389,20 @@ class InteractiveStoryPlugin {
     return !!(effectiveConfig && effectiveConfig.autoGenerateImages && !effectiveConfig.textOnlyMode);
   }
 
+  async _maybeGenerateChapterImage(chapter, config, customPrompt) {
+    const chapterWithFallback = { ...chapter, imagePath: null };
+    if (!this._shouldGenerateImages(config) || !this.imageService) return chapterWithFallback;
+    const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
+    const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession?.theme || '') : '';
+    const imagePrompt = customPrompt || `${chapter.title}: ${(chapter.content || '').substring(0, 200)}`;
+    try {
+      chapterWithFallback.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
+    } catch (imageError) {
+      this._debugLog('warn', 'Image generation failed, continuing without image', { error: imageError.message });
+      this.io.emit('story:image-generation-failed', { message: 'Image generation failed, but story continues', error: imageError.message });
+    }
+    return chapterWithFallback;
+  }
   /**
    * Initialize the active LLM service based on the current plugin config.
    * Returns a short status object for logging and validation.
@@ -368,7 +412,7 @@ class InteractiveStoryPlugin {
    * @returns {Object} Initialization result
    */
   _initializeLLMService(config, debugCallback, llmOptions) {
-    const provider = config.llmProvider || 'openai';
+    const provider = config.llmProvider || 'ollama';
     const language = config.storyLanguage || 'German';
     const platform = 'tiktok';
 
@@ -378,9 +422,9 @@ class InteractiveStoryPlugin {
     if (provider === 'openai') {
       const openaiApiKey = this._getOpenAIApiKey();
       if (!openaiApiKey) {
-        this._debugLog('error', '⚠️ OpenAI API key not configured in global settings', null);
-        this.api.log('⚠️ OpenAI API key not configured in global settings', 'warn');
-        this.api.log('Please configure API key in Settings → OpenAI API Configuration', 'warn');
+        this._debugLog('error', 'âš ï¸ OpenAI API key not configured in global settings', null);
+        this.api.log('âš ï¸ OpenAI API key not configured in global settings', 'warn');
+        this.api.log('Please configure API key in Settings â†’ OpenAI API Configuration', 'warn');
         return { ok: false, provider: 'openai', providerName: 'OpenAI', missingKey: true };
       }
 
@@ -392,21 +436,21 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', '✅ OpenAI LLM service initialized', {
+      this._debugLog('info', 'âœ… OpenAI LLM service initialized', {
         apiKeyLength: openaiApiKey.length,
         apiKeyPrefix: openaiApiKey.substring(0, 6) + '...',
         timeout: config.llmTimeout,
         maxRetries: config.llmMaxRetries
       });
-      this.api.log('✅ OpenAI LLM service initialized', 'info');
+      this.api.log('âœ… OpenAI LLM service initialized', 'info');
       return { ok: true, provider: 'openai', providerName: 'OpenAI', model: config.openaiModel || 'gpt-5.2' };
     }
 
     if (provider === 'openrouter') {
       const openRouterApiKey = (config.openRouterApiKey || '').trim();
       if (!openRouterApiKey) {
-        this._debugLog('error', '⚠️ OpenRouter API key not configured in plugin settings', null);
-        this.api.log('⚠️ OpenRouter API key not configured in plugin settings', 'warn');
+        this._debugLog('error', 'âš ï¸ OpenRouter API key not configured in plugin settings', null);
+        this.api.log('âš ï¸ OpenRouter API key not configured in plugin settings', 'warn');
         this.api.log('Please add your OpenRouter API key in the Interactive Story configuration', 'warn');
         return { ok: false, provider: 'openrouter', providerName: 'OpenRouter', missingKey: true };
       }
@@ -419,27 +463,27 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', '✅ OpenRouter LLM service initialized', {
+      this._debugLog('info', 'âœ… OpenRouter LLM service initialized', {
         apiKeyLength: openRouterApiKey.length,
         apiKeyPrefix: openRouterApiKey.substring(0, 6) + '...',
         baseURL: config.openRouterBaseUrl || 'https://openrouter.ai/api/v1',
         model: config.openRouterModel || 'openrouter/free'
       });
-      this.api.log('✅ OpenRouter LLM service initialized', 'info');
+      this.api.log('âœ… OpenRouter LLM service initialized', 'info');
       return { ok: true, provider: 'openrouter', providerName: 'OpenRouter', model: config.openRouterModel || 'openrouter/free' };
     }
 
     if (provider === 'ollama') {
       const ollamaBaseUrl = this._normalizeOllamaBaseUrl(config.ollamaBaseUrl);
-      const rawOllamaApiKey = (config.ollamaApiKey || '').trim();
+      const ollamaApiKeyFromSettings = this._getOllamaApiKey();
       const isCloudOllama = this._isOllamaCloudUrl(ollamaBaseUrl);
-      const ollamaApiKey = isCloudOllama && rawOllamaApiKey ? rawOllamaApiKey : 'ollama';
+      const ollamaApiKey = isCloudOllama && ollamaApiKeyFromSettings ? ollamaApiKeyFromSettings : 'ollama';
       const ollamaModel = config.ollamaModel || 'qwen3.5:cloud';
 
-      if (isCloudOllama && !rawOllamaApiKey) {
-        this._debugLog('error', '⚠️ Ollama API key required for cloud endpoint', null);
-        this.api.log('⚠️ Ollama API key required for cloud endpoint', 'warn');
-        this.api.log('Please configure Ollama API key in the Interactive Story configuration', 'warn');
+      if (isCloudOllama && !ollamaApiKeyFromSettings) {
+        this._debugLog('error', 'âš ï¸ Ollama API key required for cloud endpoint', null);
+        this.api.log('âš ï¸ Ollama API key required for cloud endpoint', 'warn');
+        this.api.log('Please configure the Ollama API key in central Settings', 'warn');
         return { ok: false, provider: 'ollama', providerName: 'Ollama', missingKey: true };
       }
 
@@ -452,12 +496,12 @@ class InteractiveStoryPlugin {
       });
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
 
-      this._debugLog('info', '✅ Ollama LLM service initialized', {
+      this._debugLog('info', 'âœ… Ollama LLM service initialized', {
         baseURL: ollamaBaseUrl,
         model: ollamaModel,
-        apiKeyConfigured: !!(config.ollamaApiKey && config.ollamaApiKey.trim())
+        apiKeyConfigured: !!ollamaApiKeyFromSettings
       });
-      this.api.log('✅ Ollama LLM service initialized', 'info');
+      this.api.log('âœ… Ollama LLM service initialized', 'info');
       return { ok: true, provider: 'ollama', providerName: 'Ollama', model: ollamaModel };
     }
 
@@ -466,19 +510,19 @@ class InteractiveStoryPlugin {
     if (siliconFlowApiKey) {
       this.llmService = new LLMService(siliconFlowApiKey, this.logger, debugCallback, llmOptions);
       this.storyEngine = new StoryEngine(this.llmService, this.logger, { language, platform });
-      this._debugLog('info', '✅ SiliconFlow LLM service initialized', {
+      this._debugLog('info', 'âœ… SiliconFlow LLM service initialized', {
         apiKeyLength: siliconFlowApiKey.length,
         apiKeyPrefix: siliconFlowApiKey.substring(0, 6) + '...',
         timeout: config.llmTimeout,
         maxRetries: config.llmMaxRetries
       });
-      this.api.log('✅ SiliconFlow LLM service initialized', 'info');
+      this.api.log('âœ… SiliconFlow LLM service initialized', 'info');
       return { ok: true, provider: 'siliconflow', providerName: 'SiliconFlow', model: config.defaultModel || 'deepseek' };
     }
 
-    this._debugLog('error', '⚠️ SiliconFlow API key not configured in global settings', null);
-    this.api.log('⚠️ SiliconFlow API key not configured in global settings', 'warn');
-    this.api.log('Please configure API key in Settings → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)', 'warn');
+    this._debugLog('error', 'âš ï¸ SiliconFlow API key not configured in global settings', null);
+    this.api.log('âš ï¸ SiliconFlow API key not configured in global settings', 'warn');
+    this.api.log('Please configure API key in Settings â†’ TTS API Keys â†’ Fish Speech 1.5 API Key (SiliconFlow)', 'warn');
     return { ok: false, provider: 'siliconflow', providerName: 'SiliconFlow', missingKey: true };
   }
 
@@ -550,6 +594,12 @@ class InteractiveStoryPlugin {
       }
       if (options.voiceId) {
         requestPayload.voiceId = options.voiceId;
+      }
+      if (options.model) {
+        requestPayload.model = options.model;
+      }
+      if (options.emotion) {
+        requestPayload.emotion = options.emotion;
       }
       
       this.logger.debug(`TTS request:`, requestPayload);
@@ -646,7 +696,7 @@ class InteractiveStoryPlugin {
       
       if (!ttsEnabled) {
         // TTS DISABLED: Self-reading mode
-        this.logger.info(`📖 TTS disabled - entering self-reading mode for chapter ${chapter.chapterNumber}`);
+        this.logger.info(`ðŸ“– TTS disabled - entering self-reading mode for chapter ${chapter.chapterNumber}`);
         
         await this._wait(previewDelay);
         
@@ -675,7 +725,7 @@ class InteractiveStoryPlugin {
         const readingTimeMs = Math.max((wordCount / this.READING_SPEED_WPS) * 1000, this.MIN_READING_TIME_MS);
         const readingTimeSeconds = Math.round(readingTimeMs / 1000);
         
-        this.logger.info(`📖 Self-reading mode: waiting ${readingTimeSeconds}s for reading (${wordCount} words)`);
+        this.logger.info(`ðŸ“– Self-reading mode: waiting ${readingTimeSeconds}s for reading (${wordCount} words)`);
         
         // Wait for estimated reading time before signaling completion
         await this._wait(readingTimeMs);
@@ -685,7 +735,7 @@ class InteractiveStoryPlugin {
           chapterNumber: chapter.chapterNumber
         });
         
-        this.logger.info(`📖 Self-reading complete for chapter ${chapter.chapterNumber}`);
+        this.logger.info(`ðŸ“– Self-reading complete for chapter ${chapter.chapterNumber}`);
         return;
       }
 
@@ -693,18 +743,19 @@ class InteractiveStoryPlugin {
       const ttsProvider = config.ttsProvider || 'system';
       
       // Split content into sentences for progressive display
+      this._prepareChapterNarration(chapter, config);
       const sentences = this._splitIntoSentences(chapter.content);
-      const contentText = chapter.content;
+      const contentText = chapter.ttsText || chapter.content;
       
       // Calculate realistic timing based on TTS speed for sentence display
       // Estimate based on typical TTS speaking rate (~2.5 words per second)
       const wordCount = this._getWordCount(contentText);
       const estimatedTTSDuration = (wordCount / 2.5) * 1000;
       
-      this.logger.info(`🎙️ Starting chapter TTS: ${sentences.length} sentences, ${wordCount} words, ~${Math.round(estimatedTTSDuration/1000)}s estimated`);
+      this.logger.info(`ðŸŽ™ï¸ Starting chapter TTS: ${sentences.length} sentences, ${wordCount} words, ~${Math.round(estimatedTTSDuration/1000)}s estimated`);
       
       // STEP 1: Show image alone for preview
-      this.logger.info(`🖼️ Showing title image for ${previewDelay/1000}s before narration`);
+      this.logger.info(`ðŸ–¼ï¸ Showing title image for ${previewDelay/1000}s before narration`);
       await this._wait(previewDelay);
       
       // STEP 2: Show title phase with greyscale image
@@ -715,7 +766,7 @@ class InteractiveStoryPlugin {
       
       // STEP 3: Speak the title and wait for completion
       await this._speakThroughSystemTTS(chapter.title);
-      this.logger.info(`🎙️ Chapter ${chapter.chapterNumber} title TTS completed`);
+      this.logger.info(`ðŸŽ™ï¸ Chapter ${chapter.chapterNumber} title TTS completed`);
       
       await this._wait(contentStartBuffer);
       
@@ -733,10 +784,13 @@ class InteractiveStoryPlugin {
       const totalWords = sentenceWordCounts.reduce((a, b) => a + b, 0);
       
       // Create TTS promise that we'll await at the end
-      const ttsPromise = this._speakThroughSystemTTS(contentText).then(() => {
-        this.logger.info(`🎙️ Chapter ${chapter.chapterNumber} content TTS completed`);
+      const ttsPromise = this._speakThroughSystemTTS(contentText, {
+        model: config.fishaudioModel,
+        emotion: chapter.narrationSegments?.[0]?.emotion
+      }).then(() => {
+        this.logger.info(`ðŸŽ™ï¸ Chapter ${chapter.chapterNumber} content TTS completed`);
       }).catch(err => {
-        this.logger.error(`🎙️ TTS playback error: ${err.message}`);
+        this.logger.error(`ðŸŽ™ï¸ TTS playback error: ${err.message}`);
       });
       
       // STEP 6: Display sentences progressively, weighted by word count
@@ -770,11 +824,11 @@ class InteractiveStoryPlugin {
         chapterNumber: chapter.chapterNumber
       });
       
-      this.logger.info(`✅ Chapter ${chapter.chapterNumber} narration complete`);
+      this.logger.info(`âœ… Chapter ${chapter.chapterNumber} narration complete`);
       
     } catch (error) {
       // Don't fail chapter generation if TTS fails
-      this.logger.error(`❌ Failed to generate TTS for chapter: ${error.message}`);
+      this.logger.error(`âŒ Failed to generate TTS for chapter: ${error.message}`);
       
       // Fallback: Show full chapter immediately if TTS fails
       const chapterForDisplay = this._prepareChapterForEmit(chapter);
@@ -864,6 +918,17 @@ class InteractiveStoryPlugin {
       return;
     }
 
+    const config = this._loadConfig();
+    if (this._isDndMode(config) && this.participantRegistry) {
+      const resolution = this.participantRegistry.resolveRound(
+        this.currentSession.id,
+        this.currentChapter.chapterNumber,
+        this._getDndInactivityLimitRounds(config)
+      );
+      resolution.eliminated.forEach(participant => this.io.emit('story:dnd-player-eliminated', participant));
+      this._emitParticipantRoster();
+    }
+
     // Store results for manual mode
     this.lastVoteResults = results;
 
@@ -884,7 +949,6 @@ class InteractiveStoryPlugin {
     }
 
     // Check if manual mode is enabled
-    const config = this._loadConfig();
     if (config.manualMode) {
       this.logger.info('Manual mode enabled - waiting for user to manually advance');
       // Don't auto-generate next chapter, wait for manual advance
@@ -930,49 +994,18 @@ class InteractiveStoryPlugin {
       if (chapterNumber >= maxChapters) {
         this.logger.info(`Max chapters (${maxChapters}) reached, generating final chapter`);
         
-        const finalChapter = await this.storyEngine.generateFinalChapter(
+        const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
+        let finalChapter = await this.storyEngine.generateFinalChapter(
           chapterNumber,
           previousChoice,
-          this.currentSession.model
+          this.currentSession.model,
+          activeParticipants
         );
 
-        // Generate image for final chapter
-        if (this._shouldGenerateImages(config) && this.imageService) {
-          try {
-            const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
-            const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
-            const imagePrompt = `${finalChapter.title}: ${finalChapter.content.substring(0, 200)}`;
-            
-            this._debugLog('info', `🖼️ Starting image generation for FINAL chapter ${chapterNumber}`, { 
-              provider: config.imageProvider,
-              model: imageModel,
-              promptLength: imagePrompt.length
-            });
-            
-            finalChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
-            
-            this._debugLog('info', `✅ Image generated successfully for FINAL chapter ${chapterNumber}`, { 
-              imagePath: finalChapter.imagePath,
-              model: imageModel
-            });
-          } catch (imageError) {
-            this._debugLog('error', `❌ Image generation failed for FINAL chapter ${chapterNumber}`, { 
-              error: imageError.message,
-              stack: imageError.stack,
-              statusCode: imageError.response?.status,
-              responseData: imageError.response?.data,
-              provider: config.imageProvider,
-              model: config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel
-            });
-            finalChapter.imagePath = null;
-            this.io.emit('story:image-generation-failed', { 
-              message: 'Image generation failed, but story continues',
-              error: imageError.message 
-            });
-          }
-        }
+        finalChapter = await this._maybeGenerateChapterImage(finalChapter, config);
 
         // Save final chapter
+        finalChapter = this._prepareChapterForPersistence(finalChapter, config);
         this.db.saveChapter(this.currentSession.id, finalChapter);
         this.currentChapter = finalChapter;
 
@@ -1008,51 +1041,20 @@ class InteractiveStoryPlugin {
         return { chapter: finalChapter, isFinal: true };
       }
 
+      const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
       // Generate next chapter (not final yet)
-      const nextChapter = await this.storyEngine.generateChapter(
+      let nextChapter = await this.storyEngine.generateChapter(
         chapterNumber,
         previousChoice,
         this.currentSession.model,
-        config.numChoices
+        config.numChoices,
+        activeParticipants
       );
 
-      // Generate image
-        if (this._shouldGenerateImages(config) && this.imageService) {
-        try {
-          const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
-          const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
-          const imagePrompt = `${nextChapter.title}: ${nextChapter.content.substring(0, 200)}`;
-          
-          this._debugLog('info', `🖼️ Starting image generation for chapter ${chapterNumber}`, { 
-            provider: config.imageProvider,
-            model: imageModel,
-            promptLength: imagePrompt.length
-          });
-          
-          nextChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
-          
-          this._debugLog('info', `✅ Image generated successfully for chapter ${chapterNumber}`, { 
-            imagePath: nextChapter.imagePath,
-            model: imageModel
-          });
-        } catch (imageError) {
-          this._debugLog('error', `❌ Image generation failed for chapter ${chapterNumber}`, { 
-            error: imageError.message,
-            stack: imageError.stack,
-            statusCode: imageError.response?.status,
-            responseData: imageError.response?.data,
-            provider: config.imageProvider,
-            model: config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel
-          });
-          nextChapter.imagePath = null;
-          this.io.emit('story:image-generation-failed', { 
-            message: 'Image generation failed, but story continues',
-            error: imageError.message 
-          });
-        }
-      }
+      nextChapter = await this._maybeGenerateChapterImage(nextChapter, config);
 
       // Save chapter
+      nextChapter = this._prepareChapterForPersistence(nextChapter, config);
       this.db.saveChapter(this.currentSession.id, nextChapter);
       this.currentChapter = nextChapter;
 
@@ -1096,9 +1098,9 @@ class InteractiveStoryPlugin {
       });
       
       // Log detailed error information
-      this.logger.error(`❌ Chapter generation failed: ${error.message}`);
+      this.logger.error(`âŒ Chapter generation failed: ${error.message}`);
       if (error.response?.status === 504) {
-        this.logger.error('⏱️ API Gateway Timeout - Story generation interrupted');
+        this.logger.error('â±ï¸ API Gateway Timeout - Story generation interrupted');
         this.logger.error('   You can manually end the story using the "End Story" button');
       }
       
@@ -1112,7 +1114,7 @@ class InteractiveStoryPlugin {
   _loadConfig() {
     const defaultConfig = {
       // Provider selection
-      llmProvider: 'openai', // 'openai', 'openrouter', 'ollama', or 'siliconflow'
+      llmProvider: 'ollama', // 'openai', 'openrouter', 'ollama', or 'siliconflow'
       imageProvider: 'openai', // 'openai' or 'siliconflow'
       ttsProvider: 'system', // Always 'system' (uses LTTH TTS plugin with all engines)
       
@@ -1142,7 +1144,7 @@ class InteractiveStoryPlugin {
       numChoices: 3, // Default to 3 choices for TikTok (quick engagement)
       
       // Generation settings
-      autoGenerateImages: true,
+      autoGenerateImages: false,
       textOnlyMode: false,
       autoGenerateTTS: true, // Enable TTS by default
       storyLanguage: 'German', // Language for story generation
@@ -1152,12 +1154,17 @@ class InteractiveStoryPlugin {
       manualModeTTS: true, // Use TTS in manual mode
       
       // TTS settings
-      ttsEngine: 'openai', // TTS engine: 'openai', 'tiktok', 'google', 'elevenlabs', 'speechify', 'siliconflow', 'fishspeech'
+      ttsEngine: 'fishaudio', // TTS engine: 'openai', 'tiktok', 'google', 'elevenlabs', 'speechify', 'siliconflow', 'fishspeech'
       ttsVoiceMapping: {
         narrator: 'narrator',
         default: 'narrator'
       },
       ttsVoiceId: 'alloy', // Voice ID for selected engine
+      fishaudioModel: 's2.1-pro',
+      narrationEmotionMode: 'auto',
+      storyMode: 'classic',
+      dndJoinKeyword: '!join',
+      dndInactivityLimitRounds: 2,
       
       // Timing configuration (in milliseconds)
       titlePreviewDelay: 5000, // How long to show title image alone before narration (default: 5 seconds)
@@ -1176,6 +1183,7 @@ class InteractiveStoryPlugin {
       overlayVotingColor: '#e94560', // Color for voting highlights
       generatingAnimationMode: 'default',
       generatingAnimationUrl: '',
+      overlayLayoutVersion: 2,
       overlayBackgroundGradient: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)',
       
       // Display duration settings (in milliseconds)
@@ -1239,7 +1247,9 @@ class InteractiveStoryPlugin {
     }
 
     const preparedConfig = config || this._loadConfig();
-    const prepared = { ...chapter };
+    this._prepareChapterNarration(chapter, preparedConfig);
+    const prepared = { ...chapter, content: NarrationDirector.stripMarkers(chapter.content) };
+    delete prepared.ttsText;
 
     if (!this._shouldGenerateImages(preparedConfig)) {
       prepared.imagePath = null;
@@ -1250,6 +1260,96 @@ class InteractiveStoryPlugin {
       prepared.imagePath = this._extractFilename(prepared.imagePath);
     }
     return prepared;
+  }
+
+  _prepareChapterForPersistence(chapter, config = null) {
+    if (!chapter) return chapter;
+    const preparedChapter = {
+      ...chapter,
+      choices: Array.isArray(chapter.choices) ? [...chapter.choices] : chapter.choices,
+      narrationSegments: Array.isArray(chapter.narrationSegments)
+        ? chapter.narrationSegments.map(segment => ({ ...segment }))
+        : chapter.narrationSegments
+    };
+    return this._prepareChapterNarration(preparedChapter, config);
+  }
+  _prepareChapterNarration(chapter, config = null) {
+    if (!chapter) return chapter;
+    const preparedConfig = config || this._loadConfig();
+    const director = new NarrationDirector({ model: preparedConfig.fishaudioModel, mode: preparedConfig.narrationEmotionMode, logger: this.logger });
+    const narration = director.prepareChapter(chapter, { theme: this.currentSession?.theme || this.storyEngine?.memory?.memory?.theme, language: preparedConfig.language });
+    chapter.content = narration.displayText;
+    chapter.narrationSegments = narration.segments;
+    chapter.ttsText = narration.ttsText;
+    return chapter;
+  }
+
+  _getSessionMetadata() {
+    const metadata = this.currentSession?.metadata;
+    return metadata && typeof metadata === 'object' ? metadata : null;
+  }
+
+  _isDndMode(config = this._loadConfig()) {
+    const metadata = this._getSessionMetadata();
+    return (metadata?.storyMode || config.storyMode) === 'dnd';
+  }
+
+  _getDndJoinKeyword(config = this._loadConfig()) {
+    const metadata = this._getSessionMetadata();
+    return String(metadata?.dndJoinKeyword ?? config.dndJoinKeyword ?? '!join').trim();
+  }
+
+  _getDndInactivityLimitRounds(config = this._loadConfig()) {
+    const metadata = this._getSessionMetadata();
+    const value = Number(metadata?.dndInactivityLimitRounds ?? config.dndInactivityLimitRounds);
+    return Number.isInteger(value) && value > 0 ? value : 2;
+  }
+
+  _getDndRoleCatalog() {
+    const roles = this._getSessionMetadata()?.dndRoleCatalog;
+    if (!Array.isArray(roles) || !roles.length) return ParticipantRegistry.ROLE_CATALOG.slice();
+    return roles
+      .filter(role => role && typeof role.id === 'string' && typeof role.name === 'string')
+      .map(role => ({ id: role.id, name: role.name }));
+  }
+
+  _createSessionMetadata(config) {
+    const metadata = { startedBy: 'manual', storyMode: config.storyMode || 'classic' };
+    if (metadata.storyMode === 'dnd') {
+      metadata.dndJoinKeyword = String(config.dndJoinKeyword || '!join').trim();
+      metadata.dndInactivityLimitRounds = this._getDndInactivityLimitRounds(config);
+      metadata.dndRoleCatalog = ParticipantRegistry.ROLE_CATALOG.map(role => ({ ...role }));
+    }
+    return metadata;
+  }
+
+  _registerAdminRoute(method, routePath, handler) {
+    this.api.registerRoute(method, routePath, (req, res, next) => (
+      this.adminAuth(req, res, () => handler(req, res, next))
+    ));
+  }
+
+  _participantSnapshots(includeEliminated = false) {
+    if (!this.currentSession || !this.participantRegistry) return [];
+    return this.participantRegistry.list(this.currentSession.id, { includeEliminated });
+  }
+
+  _emitParticipantRoster() {
+    this.io.emit('story:dnd-participants-updated', this._participantSnapshots());
+  }
+
+  _joinParticipant(userId, username) {
+    if (!this.currentSession || !this.currentChapter || !this.participantRegistry) return null;
+    const participant = this.participantRegistry.join(
+      this.currentSession.id,
+      userId,
+      username,
+      this.currentChapter.chapterNumber,
+      this._getDndRoleCatalog()
+    );
+    this.io.emit('story:dnd-participant-joined', participant);
+    this._emitParticipantRoster();
+    return participant;
   }
 
   /**
@@ -1274,6 +1374,10 @@ class InteractiveStoryPlugin {
         session: this.currentSession,
         chapter: this._prepareChapterForEmit(this.currentChapter, config),
         voting: this.votingSystem ? this.votingSystem.getStatus() : null,
+        storyMode: this._isDndMode(config) ? 'dnd' : 'classic',
+        joinKeyword: this._getDndJoinKeyword(config),
+        activeParticipants: this._isDndMode(config) ? this._participantSnapshots() : [],
+        eliminatedParticipants: this._isDndMode(config) ? this._participantSnapshots(true).filter(participant => participant.status === 'eliminated') : [],
         isGenerating: this.isGenerating,
         config: {
           maxChapters: config.maxChapters || 5,
@@ -1284,27 +1388,67 @@ class InteractiveStoryPlugin {
       });
     });
 
+    this.api.registerRoute('get', '/api/interactive-story/participants', (req, res) => {
+      const config = this._loadConfig();
+      if (!this._isDndMode(config) || !this.currentSession) {
+        return res.status(400).json({ error: 'No active pen-and-paper story session' });
+      }
+      return res.json({ activeParticipants: this._participantSnapshots(), eliminatedParticipants: this._participantSnapshots(true).filter(participant => participant.status === 'eliminated') });
+    });
+
+    this.api.registerRoute('post', '/api/interactive-story/participants/join', (req, res) => {
+      const config = this._loadConfig();
+      const userId = String(req.body?.userId || '').trim();
+      const username = String(req.body?.username || '').trim();
+      if (!this._isDndMode(config) || !this.currentSession || !userId || !username) {
+        return res.status(400).json({ error: 'An active pen-and-paper session plus userId and username are required' });
+      }
+      return res.json({ success: true, participant: this._joinParticipant(userId, username) });
+    });
+
+    this._registerAdminRoute('post', '/api/interactive-story/participants/reset', (req, res) => {
+      const config = this._loadConfig();
+      if (!this._isDndMode(config) || !this.currentSession) {
+        return res.status(400).json({ error: 'No active pen-and-paper story session' });
+      }
+      const removed = this.db.resetParticipants(this.currentSession.id);
+      this._emitParticipantRoster();
+      return res.json({ success: true, removed });
+    });
+
     // Get configuration
     this.api.registerRoute('get', '/api/interactive-story/config', (req, res) => {
       const config = this._loadConfig();
       // Don't send API key to client
       const safeConfig = { ...config };
+      safeConfig.storyMode = this._isDndMode(config) ? 'dnd' : 'classic';
       if (safeConfig.siliconFlowApiKey) {
         safeConfig.siliconFlowApiKey = '***configured***';
       }
       if (safeConfig.openRouterApiKey) {
         safeConfig.openRouterApiKey = '***configured***';
       }
-      if (safeConfig.ollamaApiKey) {
-        safeConfig.ollamaApiKey = '***configured***';
-      }
+      const ollamaApiKey = this._getOllamaApiKey();
+      safeConfig.ollamaApiKey = (ollamaApiKey || safeConfig.ollamaApiKey) ? '***configured***' : '';
+      safeConfig.apiKeyConfigured = !!ollamaApiKey;
       res.json(safeConfig);
     });
 
     // Save configuration
     this.api.registerRoute('post', '/api/interactive-story/config', (req, res) => {
       try {
-        const config = req.body;
+        const submittedConfig = req.body || {};
+        const storedConfig = this.api.getConfig('story-config') || {};
+        const config = { ...submittedConfig };
+        const submittedLegacyOllamaKey = Object.prototype.hasOwnProperty.call(config, 'ollamaApiKey');
+        if (submittedLegacyOllamaKey) {
+          delete config.ollamaApiKey;
+        } else if (storedConfig.ollamaApiKey) {
+          config.ollamaApiKey = storedConfig.ollamaApiKey;
+        }
+        if (!Object.prototype.hasOwnProperty.call(config, 'openRouterApiKey') && storedConfig.openRouterApiKey) {
+          config.openRouterApiKey = storedConfig.openRouterApiKey;
+        }
         this._saveConfig(config);
 
         // Reinitialize the LLM service so provider changes take effect immediately.
@@ -1328,7 +1472,7 @@ class InteractiveStoryPlugin {
 
         if (llmInit.ok && this.storyEngine && config.storyLanguage) {
           this.storyEngine.updateConfig({ language: config.storyLanguage });
-          this._debugLog('info', '✅ Story language updated', {
+          this._debugLog('info', 'âœ… Story language updated', {
             language: config.storyLanguage
           });
         }
@@ -1356,27 +1500,32 @@ class InteractiveStoryPlugin {
       }
     });
 
-    // Get overlay positions
+    // Layout v2 stores positions as fractions of the active viewport so OBS sources remain responsive.
+    const overlayViewport = { width: 1920, height: 1080 };
     this.api.registerRoute('get', '/api/interactive-story/overlay-positions', (req, res) => {
       try {
-        const positions = this.api.getConfig('overlay_positions');
-        if (!positions) {
-          res.json({ positions: {} });
-        } else {
-          res.json(positions);
+        const storedLayout = this.api.getConfig('overlay_positions');
+        const layout = OverlayLayout.normalizeLayout(storedLayout, overlayViewport);
+        // Persist a legacy pixel migration once; v2 reads are otherwise side-effect free.
+        if (storedLayout && storedLayout.version !== 2) {
+          this.api.setConfig('overlay_positions', layout);
         }
+        res.json(layout);
       } catch (error) {
         this.logger.error(`Error loading overlay positions: ${error.message}`);
         res.status(500).json({ error: error.message });
       }
     });
 
-    // Save overlay positions
     this.api.registerRoute('post', '/api/interactive-story/overlay-positions', (req, res) => {
       try {
-        const positions = req.body;
-        this.api.setConfig('overlay_positions', positions);
-        res.json({ success: true });
+        if (!OverlayLayout.isValidLayout(req.body)) {
+          res.status(400).json({ error: 'Overlay layout must be a v2 layout with in-range normalized coordinates.' });
+          return;
+        }
+        const layout = OverlayLayout.normalizeLayout(req.body, overlayViewport);
+        this.api.setConfig('overlay_positions', layout);
+        res.json({ success: true, layout });
       } catch (error) {
         this.logger.error(`Error saving overlay positions: ${error.message}`);
         res.status(500).json({ error: error.message });
@@ -1405,7 +1554,7 @@ class InteractiveStoryPlugin {
         }
 
         const { theme, outline, model } = req.body;
-        const llmProvider = config.llmProvider || 'openai';
+        const llmProvider = config.llmProvider || 'ollama';
         const sessionModel = model || this._getDefaultStoryModel(config, llmProvider);
 
         this._debugLog('info', 'Starting new story', {
@@ -1420,7 +1569,7 @@ class InteractiveStoryPlugin {
 
         // Initialize story
         this._debugLog('info', 'Calling LLM API to generate first chapter...', { theme, model: sessionModel });
-        const firstChapter = await this.storyEngine.initializeStory(theme, outline, sessionModel);
+        let firstChapter = await this.storyEngine.initializeStory(theme, outline, sessionModel);
 
         this._debugLog('info', 'First chapter generated successfully', {
           title: firstChapter.title,
@@ -1433,67 +1582,19 @@ class InteractiveStoryPlugin {
           theme,
           outline: this.storyEngine.getMemory().memory.outline,
           model: sessionModel,
-          metadata: { startedBy: 'manual' }
+          metadata: this._createSessionMetadata(config)
         });
 
-        this.currentSession = { id: sessionId, theme, model: sessionModel };
+        this.currentSession = {
+          id: sessionId, theme, model: sessionModel, metadata: this._createSessionMetadata(config)
+        };
 
         this._debugLog('info', 'Session created', { sessionId, theme });
 
-        // Generate image if enabled
-        if (this._shouldGenerateImages(config) && this.imageService) {
-          try {
-            const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
-            const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(theme) : '';
-
-            // For first chapter, create enhanced prompt showing protagonist(s) and theme
-            const memory = this.storyEngine.getMemory().memory;
-            let imagePrompt = '';
-
-            if (memory.characters instanceof Map && memory.characters.size > 0) {
-              const protagonists = Array.from(memory.characters.values())
-                .filter(char => char.status === 'active')
-                .slice(0, 2)
-                .map(char => char.description || char.name)
-                .join(' and ');
-
-              imagePrompt = `${protagonists} in ${firstChapter.title}, ${firstChapter.content.substring(0, 150)}`;
-            } else {
-              imagePrompt = `Protagonist in ${firstChapter.title}, ${firstChapter.content.substring(0, 200)}`;
-            }
-
-            this._debugLog('info', 'Starting FIRST CHAPTER image generation', {
-              provider: config.imageProvider,
-              model: imageModel,
-              promptLength: imagePrompt.length,
-              theme,
-              characterCount: (memory.characters instanceof Map) ? memory.characters.size : 0
-            });
-
-            firstChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
-
-            this._debugLog('info', 'Image generated successfully', {
-              imagePath: firstChapter.imagePath,
-              model: imageModel
-            });
-          } catch (imageError) {
-            this._debugLog('error', 'Image generation failed', {
-              error: imageError.message,
-              stack: imageError.stack,
-              statusCode: imageError.response?.status,
-              responseData: imageError.response?.data,
-              provider: config.imageProvider,
-              model: config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel
-            });
-            firstChapter.imagePath = null;
-            this.io.emit('story:image-generation-failed', {
-              message: 'Image generation failed, but story continues',
-              error: imageError.message
-            });
-          }
-        }
+        firstChapter = await this._maybeGenerateChapterImage(firstChapter, config);
 
         // Save chapter
+        firstChapter = this._prepareChapterForPersistence(firstChapter, config);
         this.db.saveChapter(sessionId, firstChapter);
         this.currentChapter = firstChapter;
 
@@ -1575,49 +1676,18 @@ class InteractiveStoryPlugin {
         const chapterNumber = this.currentChapter.chapterNumber + 1;
 
         // Generate final chapter (no choices)
-        const finalChapter = await this.storyEngine.generateFinalChapter(
+        const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
+        let finalChapter = await this.storyEngine.generateFinalChapter(
           chapterNumber,
           previousChoice,
-          this.currentSession.model
+          this.currentSession.model,
+          activeParticipants
         );
 
-        // Generate image
-        if (this._shouldGenerateImages(config) && this.imageService) {
-          try {
-            const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
-            const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
-            const imagePrompt = `${finalChapter.title}: ${finalChapter.content.substring(0, 200)}`;
-            
-            this._debugLog('info', `🖼️ Starting image generation for FINAL chapter ${chapterNumber}`, { 
-              provider: config.imageProvider,
-              model: imageModel,
-              promptLength: imagePrompt.length
-            });
-            
-            finalChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
-            
-            this._debugLog('info', `✅ Image generated successfully for FINAL chapter ${chapterNumber}`, { 
-              imagePath: finalChapter.imagePath,
-              model: imageModel
-            });
-          } catch (imageError) {
-            this._debugLog('error', `❌ Image generation failed for FINAL chapter ${chapterNumber}`, { 
-              error: imageError.message,
-              stack: imageError.stack,
-              statusCode: imageError.response?.status,
-              responseData: imageError.response?.data,
-              provider: config.imageProvider,
-              model: config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel
-            });
-            finalChapter.imagePath = null;
-            this.io.emit('story:image-generation-failed', { 
-              message: 'Image generation failed, but story continues',
-              error: imageError.message 
-            });
-          }
-        }
+        finalChapter = await this._maybeGenerateChapterImage(finalChapter, config);
 
         // Save final chapter
+        finalChapter = this._prepareChapterForPersistence(finalChapter, config);
         this.db.saveChapter(this.currentSession.id, finalChapter);
         this.currentChapter = finalChapter;
 
@@ -1705,7 +1775,7 @@ class InteractiveStoryPlugin {
         const count = parseInt(req.query.count) || 5;
         const themes = this.storyEngine.getRandomThemes(count);
         
-        this._debugLog('info', `🎲 Generated ${themes.length} random themes`, {
+        this._debugLog('info', `ðŸŽ² Generated ${themes.length} random themes`, {
           themes: themes.map(t => t.name)
         });
         
@@ -1780,7 +1850,7 @@ class InteractiveStoryPlugin {
       try {
         const config = this._loadConfig();
         const requestConfig = req.body || {};
-        const provider = requestConfig.provider || config.llmProvider || 'openai';
+        const provider = requestConfig.provider || config.llmProvider || 'ollama';
 
         let apiKey = null;
         let providerName = this._getLLMProviderLabel(provider);
@@ -1811,21 +1881,22 @@ class InteractiveStoryPlugin {
           testModel = serviceOptions.defaultModel;
         } else if (provider === 'ollama') {
           const ollamaBaseUrl = this._normalizeOllamaBaseUrl(requestConfig.ollamaBaseUrl || config.ollamaBaseUrl);
-          const rawOllamaApiKey = (requestConfig.ollamaApiKey || config.ollamaApiKey || '').trim();
+          const ollamaApiKey = this._getOllamaApiKey();
           requiresApiKey = this._isOllamaCloudUrl(ollamaBaseUrl);
-          apiKey = requiresApiKey ? rawOllamaApiKey : (rawOllamaApiKey || 'ollama');
+          apiKey = requiresApiKey ? ollamaApiKey : (ollamaApiKey || 'ollama');
           apiUrl = `${ollamaBaseUrl.replace(/\/$/, '')}/chat/completions`;
           useOpenAICompatibleService = true;
           serviceOptions = {
             baseURL: ollamaBaseUrl,
             defaultModel: requestConfig.ollamaModel || config.ollamaModel || 'qwen3.5:cloud',
             allowCustomModels: true,
-            fallbackApiKey: 'ollama'
+            fallbackApiKey: 'ollama',
+            provider: 'ollama'
           };
           testModel = serviceOptions.defaultModel;
           this._debugLog('info', `Validating Ollama endpoint (${requiresApiKey ? 'cloud' : 'local'})`, {
             baseURL: ollamaBaseUrl,
-            hasApiKey: !!rawOllamaApiKey
+            hasApiKey: !!ollamaApiKey
           });
         } else {
           apiKey = this._getSiliconFlowApiKey();
@@ -1834,26 +1905,31 @@ class InteractiveStoryPlugin {
           apiUrl = 'https://api.siliconflow.com/v1/chat/completions';
         }
 
+        const keyValidationMetadata = provider === 'ollama' ? {} : {
+          keyLength: apiKey ? apiKey.length : 0,
+          keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A'
+        };
+
     if (!apiKey && requiresApiKey) {
         const settingsPath = provider === 'openai'
           ? 'Settings ? OpenAI API Configuration'
           : provider === 'openrouter'
                 ? 'Interactive Story settings ? OpenRouter API key'
-                : 'Settings ? Interactive Story settings ? Ollama API key';
+                : 'Settings ? Ollama API key';
 
           return res.json({
             valid: false,
             error: `No ${providerName} API key configured`,
             message: `Please configure API key in ${settingsPath}`,
             configured: false,
-            provider: providerName
+            provider: providerName,
+            apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey
           });
         }
 
         this._debugLog('info', `Validating ${providerName} API connection...`, {
           provider: providerName,
-          keyLength: apiKey ? apiKey.length : 0,
-          keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A',
+          ...keyValidationMetadata,
           apiUrl,
           model: testModel
         });
@@ -1881,10 +1957,10 @@ class InteractiveStoryPlugin {
               valid: true,
               configured: true,
               provider: providerName,
+              apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
               message: `${providerName} API is valid and working!`,
               details: {
-                keyLength: apiKey ? apiKey.length : 0,
-                keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A',
+                ...keyValidationMetadata,
                 testedModel: result.model,
                 baseURL: serviceOptions.baseURL
               }
@@ -1916,22 +1992,28 @@ class InteractiveStoryPlugin {
             valid: true,
             configured: true,
             provider: providerName,
+            apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
             message: `${providerName} API key is valid and working!`,
             details: {
-              keyLength: apiKey.length,
-              keyPrefix: apiKey.substring(0, 6) + '...',
+              ...keyValidationMetadata,
               testedModel: testModel
             }
           });
         } catch (error) {
           const statusCode = error.response?.status || 0;
-          const responseData = error.response?.data || error.message;
+          const responseData = provider === 'ollama'
+            ? 'Ollama API validation request failed'
+            : (error.response?.data || error.message);
+
+          const failureKeyValidationMetadata = provider === 'ollama' ? {} : {
+            ...keyValidationMetadata,
+            hasWhitespace: apiKey ? apiKey !== apiKey.trim() : false
+          };
 
           this._debugLog('error', `${providerName} API key validation failed`, {
             statusCode,
             error: responseData,
-            keyLength: apiKey ? apiKey.length : 0,
-            keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A'
+            ...failureKeyValidationMetadata
           });
 
           let message = 'API key validation failed';
@@ -1981,14 +2063,13 @@ class InteractiveStoryPlugin {
             valid: false,
             configured: true,
             provider: providerName,
+            apiKeyConfigured: provider === 'ollama' ? !!this._getOllamaApiKey() : !!apiKey,
             error: String(responseData),
             message,
             troubleshooting,
             details: {
               statusCode,
-              keyLength: apiKey ? apiKey.length : 0,
-              keyPrefix: apiKey ? apiKey.substring(0, 6) + '...' : 'N/A',
-              hasWhitespace: apiKey ? apiKey !== apiKey.trim() : false,
+              ...failureKeyValidationMetadata,
               baseURL: serviceOptions.baseURL || null
             }
           });
@@ -2030,40 +2111,24 @@ class InteractiveStoryPlugin {
         
         const chapterNumber = this.currentChapter.chapterNumber + 1;
         const maxChapters = config.maxChapters || 5;
+        const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
         
         // Check if we've reached max chapters - if so, generate final chapter instead
         if (chapterNumber >= maxChapters) {
           this.logger.info(`Max chapters (${maxChapters}) reached in offline mode, generating final chapter`);
           
           // Generate final chapter (no choices)
-          const finalChapter = await this.storyEngine.generateFinalChapter(
+          let finalChapter = await this.storyEngine.generateFinalChapter(
             chapterNumber,
             previousChoice,
-            this.currentSession.model
+            this.currentSession.model,
+            activeParticipants
           );
           
-          // Generate image
-          if (this._shouldGenerateImages(config) && this.imageService) {
-            try {
-              const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
-              const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
-              const imagePrompt = `${finalChapter.title}: ${finalChapter.content.substring(0, 200)}`;
-              finalChapter.imagePath = await this.imageService.generateImage(imagePrompt, imageModel, style);
-            } catch (imageError) {
-              this._debugLog('warn', `⚠️ Image generation failed, continuing without image`, { 
-                error: imageError.message,
-                statusCode: imageError.response?.status,
-                responseData: imageError.response?.data
-              });
-              finalChapter.imagePath = null;
-              this.io.emit('story:image-generation-failed', { 
-                message: 'Image generation failed, but story continues',
-                error: imageError.message 
-              });
-            }
-          }
+          finalChapter = await this._maybeGenerateChapterImage(finalChapter, config);
           
           // Save final chapter
+          finalChapter = this._prepareChapterForPersistence(finalChapter, config);
           this.db.saveChapter(this.currentSession.id, finalChapter);
           this.db.saveVote(this.currentSession.id, this.currentChapter.chapterNumber, choiceIndex, 1);
           this.currentChapter = finalChapter;
@@ -2101,34 +2166,18 @@ class InteractiveStoryPlugin {
         }
         
         // Generate next chapter (not final yet)
-        const nextChapter = await this.storyEngine.generateChapter(
+        let nextChapter = await this.storyEngine.generateChapter(
           chapterNumber,
           previousChoice,
           this.currentSession.model,
-          config.numChoices
+          config.numChoices,
+          activeParticipants
         );
         
-        // Generate image
-        if (this._shouldGenerateImages(config) && this.imageService) {
-          try {
-            const style = this.imageService.getStyleForTheme(this.currentSession.theme);
-            const imagePrompt = `${nextChapter.title}: ${nextChapter.content.substring(0, 200)}`;
-            nextChapter.imagePath = await this.imageService.generateImage(imagePrompt, config.defaultImageModel, style);
-          } catch (imageError) {
-            this._debugLog('warn', `⚠️ Image generation failed, continuing without image`, { 
-              error: imageError.message,
-              statusCode: imageError.response?.status,
-              responseData: imageError.response?.data
-            });
-            nextChapter.imagePath = null;
-            this.io.emit('story:image-generation-failed', { 
-              message: 'Image generation failed, but story continues',
-              error: imageError.message 
-            });
-          }
-        }
+        nextChapter = await this._maybeGenerateChapterImage(nextChapter, config);
         
         // Save chapter with admin choice
+        nextChapter = this._prepareChapterForPersistence(nextChapter, config);
         this.db.saveChapter(this.currentSession.id, nextChapter);
         this.db.saveVote(this.currentSession.id, this.currentChapter.chapterNumber, choiceIndex, 1);
         this.currentChapter = nextChapter;
@@ -2216,80 +2265,51 @@ class InteractiveStoryPlugin {
     });
 
   this.api.registerSocket('story:regenerate-image', async (socket, data) => {
-      if (!this.currentChapter || !this.imageService) {
-        return;
-      }
+      if (!this.currentChapter) return;
 
-      try {
-        const config = this._loadConfig();
-        if (!this._shouldGenerateImages(config)) {
-          this._debugLog('warn', 'Ignoring image regeneration request because image generation is disabled', {
-            autoGenerateImages: !!config.autoGenerateImages,
-            textOnlyMode: !!config.textOnlyMode
-          });
-          return;
-        }
+      const config = this._loadConfig();
+      const generatedChapter = await this._maybeGenerateChapterImage(
+        this.currentChapter,
+        config,
+        data && data.customPrompt
+      );
+      if (!generatedChapter.imagePath) return;
 
-        const style = this.imageService.getStyleForTheme(this.currentSession.theme);
-        const imagePrompt = (data && data.customPrompt) || `${this.currentChapter.title}: ${this.currentChapter.content.substring(0, 200)}`;
-        
-        const imagePath = await this.imageService.generateImage(
-          imagePrompt,
-          config.defaultImageModel,
-          style
-        );
-
-        this.currentChapter.imagePath = imagePath;
-        this.io.emit('story:image-updated', {
-          imagePath: this._extractFilename(imagePath),
-          chapter: this._prepareChapterForEmit(this.currentChapter, config)
-        });
-      } catch (error) {
-        this.logger.error(`Error regenerating image: ${error.message}`);
-      }
+      this.currentChapter.imagePath = generatedChapter.imagePath;
+      this.io.emit('story:image-updated', {
+        imagePath: this._extractFilename(generatedChapter.imagePath),
+        chapter: this._prepareChapterForEmit(this.currentChapter, config)
+      });
     });
   }
-
   /**
    * Register TikTok event handlers
    */
   _registerTikTokHandlers() {
-    // Listen for chat messages to process votes
     this.api.registerTikTokEvent('chat', (data) => {
-      if (!this.votingSystem || !this.votingSystem.isActive()) {
-        return;
-      }
-
-      // Normalize chat text (some connectors send `message`, others `comment`)
+      if (!this.currentSession) return;
       const message = (data.comment || data.message || '').trim();
-      if (!message) {
-        return;
-      }
-      
-      // Quick filter: Skip obviously non-vote messages (longer than 15 chars, multi-line, or starts with common non-vote patterns)
-      if (message.length > 15 || message.includes('\n') || message.startsWith('@') || message.startsWith('#')) {
-        return;
-      }
-      
-      // Try to process as vote - voting system will handle pattern matching
+      if (!message) return;
+
+      const config = this._loadConfig();
       const voterId = data.uniqueId || data.userId || data.username || data.nickname || 'unknown';
       const voterName = data.nickname || data.username || 'Viewer';
-      const accepted = this.votingSystem.processVote(
-        voterId,
-        voterName,
-        message
-      );
-
-      if (accepted && this.currentSession) {
-        this.db.updateViewerStats(
-          this.currentSession.id,
-          voterId,
-          voterName
-        );
+      const joinKeyword = this._getDndJoinKeyword(config);
+      if (this._isDndMode(config) && joinKeyword && message.toLocaleLowerCase() === joinKeyword.toLocaleLowerCase()) {
+        this._joinParticipant(voterId, voterName);
+        return;
       }
+
+      if (!this.votingSystem || !this.votingSystem.isActive()) return;
+      if (message.length > 15 || message.includes('\n') || message.startsWith('@') || message.startsWith('#')) return;
+
+      const accepted = this.votingSystem.processVote(voterId, voterName, message);
+      if (accepted && this._isDndMode(config) && this.participantRegistry && this.currentChapter) {
+        this.participantRegistry.recordVote(this.currentSession.id, voterId, this.currentChapter.chapterNumber);
+      }
+      if (accepted) this.db.updateViewerStats(this.currentSession.id, voterId, voterName);
     });
   }
-
   _resolveImageCachePath(filename) {
     const safeFilename = path.basename(filename || '');
     if (!safeFilename || safeFilename !== filename) {

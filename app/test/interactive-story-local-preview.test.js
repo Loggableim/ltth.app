@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const {
+  isLocalOverlayHostname,
   isPublicQuickTunnelHostname,
   postJsonLocalOnly
 } = require('../public/js/public-overlay-render-mode');
@@ -19,7 +21,7 @@ describe('Interactive Story local vote preview', () => {
 
     const result = await postJsonLocalOnly(
       '/api/interactive-story/overlay-positions',
-      { positions: { title: { top: 10, left: 20 } } },
+      { version: 2, positions: { title: { x: 0.1, y: 0.2 } } },
       {
         hostname: '127.0.0.1',
         fetchImpl
@@ -36,7 +38,7 @@ describe('Interactive Story local vote preview', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          positions: { title: { top: 10, left: 20 } }
+          version: 2, positions: { title: { x: 0.1, y: 0.2 } }
         })
       }
     );
@@ -59,6 +61,26 @@ describe('Interactive Story local vote preview', () => {
     expect(isPublicQuickTunnelHostname('trycloudflare.com.example.org')).toBe(false);
   });
 
+  test('does not issue a position write from a custom public hostname', async () => {
+    const fetchImpl = jest.fn();
+
+    await expect(postJsonLocalOnly(
+      '/api/interactive-story/overlay-positions',
+      { positions: {} },
+      {
+        hostname: 'story.example.com',
+        fetchImpl
+      }
+    )).resolves.toEqual({ skipped: true, response: null });
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(isLocalOverlayHostname('localhost')).toBe(true);
+    expect(isLocalOverlayHostname('127.0.0.1')).toBe(true);
+    expect(isLocalOverlayHostname('::1')).toBe(true);
+    expect(isLocalOverlayHostname('[::1]')).toBe(true);
+    expect(isLocalOverlayHostname('story.example.com')).toBe(false);
+  });
+
   test('the shipped overlay uses the local-only write guard', () => {
     const source = fs.readFileSync(
       path.join(
@@ -78,7 +100,35 @@ describe('Interactive Story local vote preview', () => {
       'LTTHPublicOverlayRenderMode.postJsonLocalOnly('
     );
     expect(source).toContain(
-      'LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname('
+      'LTTHPublicOverlayRenderMode.isLocalOverlayHostname('
     );
+  });
+  test('ships pointer editing only behind the explicit local edit mode', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'interactive-story', 'overlay.html'), 'utf8');
+    expect(source).toContain("new URLSearchParams(window.location.search).get('edit') === '1'");
+    expect(source).toContain("addEventListener('pointerdown', startDrag)");
+    expect(source).toContain("addEventListener('pointermove', doDrag)");
+    expect(source).toContain("addEventListener('pointerup', stopDrag)");
+    expect(source).toContain('data-element="participants"');
+  });
+  test('keeps a nested participant drag assigned to participants instead of voting', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'interactive-story', 'overlay.html'), 'utf8');
+    const startDrag = source.slice(source.indexOf('function startDrag(event)'), source.indexOf('function doDrag(event)'));
+
+    expect(startDrag).toContain('event.stopPropagation();');
+    expect(startDrag).toContain('element: event.currentTarget');
+    expect(source).toContain('overlayConfig.positions[elementId] =');
+  });
+
+  test('compiles every shipped overlay inline script', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'interactive-story', 'overlay.html'), 'utf8');
+    const inlineScripts = Array.from(source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
+      .map((match) => match[1])
+      .filter((script) => script.trim());
+
+    expect(inlineScripts.length).toBeGreaterThan(0);
+    inlineScripts.forEach((script, index) => {
+      expect(() => new vm.Script(script, { filename: `interactive-story-overlay-inline-${index}.js` })).not.toThrow();
+    });
   });
 });

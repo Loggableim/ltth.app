@@ -2219,7 +2219,8 @@ class TTSPlugin {
         // Manual TTS trigger
         this.api.registerRoute('POST', '/api/tts/speak', async (req, res) => {
             try {
-                const { text, userId, username, voiceId, engine, source = 'manual' } = req.body;
+                const { text, userId, username, voiceId, engine, source = 'manual', model, emotion,
+                    streaming, pitch, synthesisVolume } = req.body;
 
                 if (!text || !username) {
                     return res.status(400).json({
@@ -2231,6 +2232,11 @@ class TTSPlugin {
                 const result = await this.speak({
                     text,
                     userId: userId || username,
+                    model,
+                    emotion,
+                    streaming,
+                    pitch,
+                    synthesisVolume,
                     username,
                     voiceId,
                     engine,
@@ -3507,6 +3513,10 @@ class TTSPlugin {
                 
                 // Priority: user emotion > default Fish.audio emotion
                 const emotion = userSettings?.voice_emotion || requestOverrides.emotion;
+                if (requestOverrides.model) {
+                    synthesisOptions.model = requestOverrides.model;
+                }
+
                 if (emotion && emotion !== 'neutral') {
                     synthesisOptions.emotion = emotion;
                     this._logDebug('SPEAK_STEP5', 'Emotion set for Fish.audio', { emotion });

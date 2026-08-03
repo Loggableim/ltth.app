@@ -1,285 +1,68 @@
-# Interactive Story Generator - Architecture Diagram
+# Interactive Story – Architektur
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         INTERACTIVE STORY PLUGIN                             │
-│                          (Little TikTool Helper)                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              USER INTERFACES                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────────┐         ┌──────────────────┐                          │
-│  │   Admin Panel    │         │   OBS Overlay    │                          │
-│  │    (ui.html)     │         │ (overlay.html)   │                          │
-│  ├──────────────────┤         ├──────────────────┤                          │
-│  │ • Configuration  │         │ • Chapter View   │                          │
-│  │ • Theme Selector │         │ • Voting Display │                          │
-│  │ • Story Control  │         │ • Vote Bars      │                          │
-│  │ • Memory Viewer  │         │ • Results        │                          │
-│  │ • Top Voters     │         │ • Transitions    │                          │
-│  │ • Session Hist.  │         │ • Image Display  │                          │
-│  └────────┬─────────┘         └─────────┬────────┘                          │
-│           │                             │                                    │
-│           └─────────────┬───────────────┘                                    │
-│                         │                                                    │
-└─────────────────────────┼────────────────────────────────────────────────────┘
-                          │
-                          │ Socket.io / HTTP
-                          │
-┌─────────────────────────┼────────────────────────────────────────────────────┐
-│                         ▼                                                    │
-│                   MAIN PLUGIN                                                │
-│                   (main.js)                                                  │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────┐             │
-│  │                    Plugin Coordinator                       │             │
-│  │  • Lifecycle Management (init/destroy)                     │             │
-│  │  • Service Initialization                                  │             │
-│  │  • Route Registration                                      │             │
-│  │  • Event Handling                                          │             │
-│  │  • Session Management                                      │             │
-│  └───┬────────────────────────────────────────────────────┬───┘             │
-│      │                                                    │                 │
-│      │                                                    │                 │
-└──────┼────────────────────────────────────────────────────┼─────────────────┘
-       │                                                    │
-       │                                                    │
-┌──────┼────────────────────────────────────────────────────┼─────────────────┐
-│      │                   CORE ENGINES                     │                 │
-│      │                                                    │                 │
-│  ┌───▼──────────────┐  ┌──────────────┐  ┌──────────────▼──┐               │
-│  │  Story Engine    │  │  LLM Service │  │  Image Service  │               │
-│  │                  │  │              │  │                 │               │
-│  │ • Theme Mgmt     │  │ • DeepSeek   │  │ • FLUX.1        │               │
-│  │ • Chapter Gen    │  │ • Qwen 2.5   │  │ • Z-Image       │               │
-│  │ • Outline Gen    │  │ • Llama 3.1  │  │ • Caching       │               │
-│  │ • Coherence Chk  │  │ • Chat API   │  │ • Style Gen     │               │
-│  │ • Choice Gen     │  │              │  │                 │               │
-│  └────────┬─────────┘  └──────┬───────┘  └─────────┬───────┘               │
-│           │                   │                     │                       │
-│           │                   │                     │                       │
-│  ┌────────▼─────────┐  ┌──────▼────────┐           │                       │
-│  │  Story Memory    │  │  TTS Service  │           │                       │
-│  │                  │  │               │           │                       │
-│  │ • Characters     │  │ • 6 Voices    │           │                       │
-│  │ • Locations      │  │ • Pre-cache   │           │                       │
-│  │ • Items          │  │ • Audio API   │           │                       │
-│  │ • Events         │  │               │           │                       │
-│  │ • Context Gen    │  └───────────────┘           │                       │
-│  └──────────────────┘                              │                       │
-│                                                     │                       │
-└─────────────────────────────────────────────────────┼───────────────────────┘
-                                                      │
-                                                      │
-┌─────────────────────────────────────────────────────┼───────────────────────┐
-│                   UTILITIES & BACKEND               │                       │
-│                                                     │                       │
-│  ┌──────────────────┐          ┌──────────────────▼┐                       │
-│  │  Voting System   │          │    Database       │                       │
-│  │                  │          │                   │                       │
-│  │ • Vote Processing│          │ • Sessions        │                       │
-│  │ • Chat Commands  │          │ • Chapters        │                       │
-│  │ • Timer Mgmt     │          │ • Votes           │                       │
-│  │ • Winner Select  │          │ • Viewer Stats    │                       │
-│  │ • Statistics     │          │ • Memory Snapshots│                       │
-│  └─────────┬────────┘          └───────────────────┘                       │
-│            │                                                                │
-│            │                                                                │
-└────────────┼────────────────────────────────────────────────────────────────┘
-             │
-             │
-┌────────────┼────────────────────────────────────────────────────────────────┐
-│            │                 EXTERNAL INTEGRATIONS                          │
-│            │                                                                │
-│  ┌─────────▼──────────┐  ┌──────────────────┐  ┌──────────────────┐       │
-│  │  TikTok LIVE       │  │  SiliconFlow API │  │  File System     │       │
-│  │  Connector         │  │                  │  │                  │       │
-│  │                    │  │ • Chat Compl.    │  │ • Image Cache    │       │
-│  │ • Chat Events      │  │ • Image Gen      │  │ • Audio Cache    │       │
-│  │ • Viewer Data      │  │ • TTS            │  │ • Exports        │       │
-│  │ • !a, !b, !c       │  │                  │  │ • user_data/     │       │
-│  └────────────────────┘  └──────────────────┘  └──────────────────┘       │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-═══════════════════════════════════════════════════════════════════════════════
-
-                              DATA FLOW DIAGRAM
-
-┌───────────────┐
-│   Streamer    │
-│ Selects Theme │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────────┐
-│ Story Engine      │──► LLM Service ──► SiliconFlow API
-│ Generate Chapter  │                    (DeepSeek/Qwen/Llama)
-└───────┬───────────┘                    
-        │                                 
-        ▼                                 
-┌───────────────────┐                    
-│ Story Memory      │                    
-│ Update Context    │                    
-└───────┬───────────┘                    
-        │                                 
-        ▼                                 
-┌───────────────────┐                    
-│ Image Service     │──► SiliconFlow API
-│ Generate Image    │    (FLUX/Z-Image)
-└───────┬───────────┘                    
-        │                                 
-        ▼                                 
-┌───────────────────┐                    
-│ Database          │                    
-│ Save Chapter      │                    
-└───────┬───────────┘                    
-        │                                 
-        ▼                                 
-┌───────────────────┐                    
-│ Socket.io         │──► OBS Overlay
-│ Emit chapter-ready│    Displays Chapter
-└───────┬───────────┘    
-        │                
-        ▼                
-┌───────────────────┐    
-│ Voting System     │◄── TikTok LIVE Chat
-│ Start Voting      │    (!a, !b, !c)
-└───────┬───────────┘    
-        │                
-        │ (60s timer)    
-        │                
-        ▼                
-┌───────────────────┐    
-│ Voting System     │──► Socket.io ──► OBS Overlay
-│ End & Get Winner  │    vote-update    (Vote Bars)
-└───────┬───────────┘    
-        │                
-        ▼                
-┌───────────────────┐    
-│ Database          │    
-│ Save Vote Results │    
-└───────┬───────────┘    
-        │                
-        ▼                
-┌───────────────────┐    
-│ Story Engine      │──► Generate Next Chapter
-│ Use Winner Choice │    (Loop back to top)
-└───────────────────┘    
-
-═══════════════════════════════════════════════════════════════════════════════
-
-                           API ENDPOINTS MAP
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          HTTP REST API                                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  GET  /api/interactive-story/status          → Current session status      │
-│  GET  /api/interactive-story/config          → Get configuration           │
-│  POST /api/interactive-story/config          → Save configuration          │
-│  POST /api/interactive-story/start           → Start new story             │
-│  POST /api/interactive-story/next-chapter    → Generate next chapter       │
-│  POST /api/interactive-story/end             → End current story           │
-│  GET  /api/interactive-story/themes          → Available themes            │
-│  GET  /api/interactive-story/memory          → Story memory/lore           │
-│  GET  /api/interactive-story/sessions        → Session history             │
-│  GET  /api/interactive-story/session/:id     → Session details             │
-│  GET  /api/interactive-story/top-voters      → Top voter stats             │
-│  GET  /api/interactive-story/image/:filename → Serve cached image          │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         SOCKET.IO EVENTS                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  Client → Server:                                                           │
-│    • story:force-vote-end          → Force end voting                      │
-│    • story:regenerate-image        → Generate new image                    │
-│                                                                              │
-│  Server → Client:                                                           │
-│    • story:chapter-ready           → New chapter available                 │
-│    • story:voting-started          → Voting session started                │
-│    • story:vote-update             → Vote counts updated                   │
-│    • story:voting-ended            → Voting finished with results          │
-│    • story:generation-started      → LLM generating content                │
-│    • story:image-updated           → Image regenerated                     │
-│    • story:ended                   → Story session ended                   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-═══════════════════════════════════════════════════════════════════════════════
-
-                         DATABASE SCHEMA
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  story_sessions                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  id (PK)  │ theme  │ outline  │ model  │ start_time  │ end_time  │ status  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                │
-                │ 1:N
-                ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  story_chapters                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  id  │ session_id (FK)  │ chapter_number  │ title  │ content  │ choices    │
-│      │ memory_tags  │ image_path  │ audio_paths  │ created_at              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  story_votes                                                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  id  │ session_id (FK)  │ chapter_number  │ choice_index  │ vote_count     │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  story_viewer_stats                                                         │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  id  │ session_id (FK)  │ user_id  │ username  │ votes_cast  │ last_vote   │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  story_memory                                                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  id  │ session_id (FK)  │ memory_data (JSON)  │ updated_at                 │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-═══════════════════════════════════════════════════════════════════════════════
+```text
+Studio (ui.html)                         OBS overlay (overlay.html)
+  config, session controls                 public story/vote rendering
+                                           local-only participant roster
+  local preview/layout controls            local ?edit=1 layout editor only
+          |                                              |
+          +---------------- REST / Socket.IO ------------+
+                                 |
+                     InteractiveStoryPlugin (main.js)
+          +----------------------+-----------------------+
+          |                      |                       |
+   StoryEngine / LLM       NarrationDirector       ParticipantRegistry
+   provider configuration   clean display text      !join and round state
+   chapter lifecycle        Fish cue TTS text       role/absence handling
+          |                      |                       |
+          +----------------------+-----------------------+
+                                 |
+                         StoryDatabase (SQLite)
+                 sessions, chapters, votes, memory,
+                 narration metadata, participants, round claims
 ```
 
-## Key Architectural Principles
+## Provider and credential boundary
 
-### 1. **Modularity**
-- Each component is independent and replaceable
-- Clear interfaces between layers
-- Dependency injection via Plugin API
+Interactive Story selects the configured LLM provider in `main.js`. The Ollama Cloud default uses the OpenAI-compatible endpoint `https://api.ollama.com/v1` and model `qwen3.5:cloud`.
 
-### 2. **Event-Driven**
-- Socket.io for real-time updates
-- Observer pattern for state changes
-- Decoupled communication
+Ollama Cloud credentials belong to LTTH central settings, not plugin data. `_getOllamaApiKey()` checks `ollama_cloud_api_key`, then `ollama_api_key`, then `tts_ollama_api_key`. Cloud endpoints require a central key; local Ollama endpoints use the local fallback. The config read route masks any configured key and exposes only a boolean/key placeholder, so browser clients never receive the secret.
 
-### 3. **Scalability**
-- Caching reduces API calls
-- Database indexes for performance
-- Async operations throughout
+Provider integration failures are handled as runtime failures. Source-level tests verify routing and masking; they do not establish live provider availability or credential validity.
 
-### 4. **Reliability**
-- Error handling at every layer
-- Graceful degradation
-- Auto-recovery mechanisms
+## Chapter and image lifecycle
 
-### 5. **Maintainability**
-- Clear separation of concerns
-- Comprehensive logging
-- Well-documented code
+1. The Story Engine creates a chapter and choice set.
+2. `NarrationDirector` derives clean display content, validated segment metadata, and optional cue-bearing `ttsText`.
+3. The prepared chapter is persisted and emitted; display content contains no Fish cue markers.
+4. `_maybeGenerateChapterImage()` runs only when `autoGenerateImages` is true and `textOnlyMode` is false. Both provider absence and generation errors resolve non-blockingly with `imagePath: null`.
+5. Voting events select the next branch and repeat the lifecycle.
 
-### 6. **Security**
-- API keys in database
-- Input validation
-- SQL injection prevention
-- XSS protection
+`autoGenerateImages` is false in the default configuration. Image generation is therefore opt-in and never a prerequisite for a chapter.
+
+## Fish.audio narration contract
+
+The Studio persists `fishaudioModel` and `narrationEmotionMode`; defaults are `s2.1-pro` and `auto`. `NarrationDirector` recognizes a fixed allow-list of emotion and delivery labels, strips arbitrary marker text from display content, and emits:
+
+- `(cue)` for Fish S1;
+- `[cue]` for Fish S2-family models.
+
+The system TTS call receives the selected Fish model and first validated segment emotion. Narration segments and `ttsText` persist as chapter metadata, with additive database migration/hydration for existing installations.
+
+## Pen-and-paper participation
+
+For a pen-and-paper session, `main.js` snapshots `storyMode`, join keyword, inactivity limit, and role catalog into session metadata. `ParticipantRegistry` creates one participant per session/viewer and returns public snapshots only.
+
+`resolveParticipantRound()` records one resolution claim per `(session, participant, round)` before changing attendance. This makes retries idempotent. A participant who joined the current round is ineligible for its missed-round penalty; a vote resets missed rounds. The default inactivity limit is two consecutive eligible misses, after which the participant becomes eliminated. Active session metadata takes precedence over later global configuration changes.
+
+## Overlay boundary and layout v2
+
+Layout positions are normalized fractions (`version: 2`) stored through `GET/POST /api/interactive-story/overlay-positions`. Legacy pixel positions migrate on read; malformed or out-of-range layout writes are rejected.
+
+`overlay.html?edit=1` enables drag handlers and Save, Reset, and Snap controls only when the page is same-origin and local. The overlay maps title, content, voting, generating, results, and participants to normalized positions. It accepts same-origin layout messages only in edit mode.
+
+Quick Tunnel/public hosts enter render-only mode. They do not register the editor interaction, do not show the editor state, and use `LTTHPublicOverlayRenderMode.postJsonLocalOnly()` so layout writes are skipped before a request is sent. They receive story and voting data only: D&D participant events and roster metadata are deliberately local-only for OBS overlays.
+
+## Test seams
+
+Focused suites cover the provider config/key masking, optional-image fallback, narration contracts and persistence, participant database/round idempotency, Studio wiring, local preview write guard, and overlay layout normalization. Browser interaction and live external-provider outcomes remain separate integration checks.

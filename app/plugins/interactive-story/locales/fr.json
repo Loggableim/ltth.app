@@ -64,6 +64,42 @@
           }
         }
       },
+      "story_studio": {
+        "title": "Studio d'histoire",
+        "central_settings": "Les cles API sont gerees dans les reglages centraux et ne sont jamais stockees dans ce studio.",
+        "image_off": "Les images sont desactivees par defaut pour une histoire en direct plus rapide.",
+        "fish_audio_default": "Fish.audio est le narrateur par defaut recommande.",
+        "mode": {
+          "label": "Mode d'histoire",
+          "classic": "Vote classique du chat",
+          "dnd": "Groupe jeu de role"
+        },
+        "dnd": {
+          "join_keyword": "Mot-cle pour rejoindre",
+          "inactivity_limit": "Tours inactifs avant retrait"
+        },
+        "players": {
+          "title": "Joueurs en direct",
+          "empty": "Aucun joueur n'a encore rejoint."
+        },
+        "preview": {
+          "edit": "Modifier la mise en page",
+          "save": "Enregistrer la mise en page",
+          "reset": "Reinitialiser la mise en page",
+          "edit_mode": "Mode d'?dition de mise en page",
+          "snap_off": "Alignement : d?sactiv?",
+          "snap_on": "Alignement : actif"
+        },
+        "voice": {
+          "model": "Modele Fish.audio",
+          "emotion": "Emotion de narration",
+          "auto": "Automatique",
+          "calm": "Calme",
+          "dramatic": "Dramatique",
+          "s21_pro": "S2.1 Pro",
+          "s1": "S1"
+        }
+      },
       "hero": {
         "status": {
           "ready": "Prêt pour votre prochain stream"
@@ -252,6 +288,13 @@
           "vote_timer": "Temps restant : {seconds}s",
           "voting_ended": "Vote terminé"
         },
+        "participants": {
+          "role": "Rôle",
+          "status": {
+            "active": "Actif",
+            "eliminated": "Éliminé"
+          }
+        },
         "preview": {
           "adventure_content": "Notre héros se réveille dans une forêt mystérieuse, entouré d’arbres anciens qui murmurent des secrets d’autrefois.",
           "adventure_title": "Le début d’une aventure épique",
@@ -313,7 +356,7 @@
       },
       "labels": {
         "content_start_buffer_seconds": "Tampon de démarrage du contenu (secondes)",
-        "leave_empty_for_local_ollama_required_only_for": "Laissez vide pour l'Ollama local ; requis uniquement pour certains déploiements cloud.",
+        "leave_empty_for_local_ollama_required_only_for": "Gérez la clé API Ollama dans les paramètres centraux. Cette page indique uniquement si une clé est configurée.",
         "fish_audio_tts": "Poisson.audio TTS",
         "adam_deep_male": "Adam (mâle profond)",
         "gpt_4o_mini_cost_effective": "GPT-4o Mini (économique)",
