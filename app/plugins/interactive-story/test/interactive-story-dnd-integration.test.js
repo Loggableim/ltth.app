@@ -26,6 +26,34 @@ function createPlugin(config = {}) {
 }
 
 describe('Interactive Story pen-and-paper integration', () => {
+  function createPromptCapturingEngine() {
+    const prompts = [];
+    const llmService = {
+      generateCompletion: jest.fn(async (prompt) => {
+        prompts.push(prompt);
+        return `TITLE: The Party Continues
+
+CONTENT:
+Alice and Rin move through the ancient gate while the storm gathers behind them. The companions keep their distinct strengths in mind and face the danger together, determined to finish the quest they began.
+
+CHOICES:
+1. Enter the gate
+2. Search the walls
+3. Make camp
+
+MEMORY_TAGS:
+CHARACTERS: Alice, Rin
+LOCATIONS: Ancient Gate
+ITEMS: Map`;
+      })
+    };
+    const engine = new StoryEngine(llmService, {
+      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn()
+    }, { language: 'English' });
+    engine.memory.initialize('fantasy', 'The party must cross an ancient gate.');
+    return { engine, prompts };
+  }
+
   test('joins on the exact configured keyword before vote filtering and publishes a public roster', () => {
     const { plugin, events, io } = createPlugin({ storyMode: 'dnd', dndJoinKeyword: '!party' });
     plugin.participantRegistry = {
@@ -104,6 +132,58 @@ describe('Interactive Story pen-and-paper integration', () => {
     expect(normalPrompt).not.toContain('ACTIVE PARTY');
     expect(dndPrompt).toContain('ACTIVE PARTY:\n- Alice: Mage\n- Rin: Ranger');
   });
+
+  test('includes active participant roles in a chapter prompt selected through the offline admin route', async () => {
+    const { plugin, routes } = createPlugin({ storyMode: 'dnd', offlineMode: true, maxChapters: 5, autoGenerateTTS: false });
+    const { engine, prompts } = createPromptCapturingEngine();
+    plugin.currentSession.metadata = { storyMode: 'dnd' };
+    plugin.storyEngine = engine;
+    plugin.participantRegistry = {
+      list: jest.fn(() => [
+        { username: 'Alice', roleId: 'mage', roleName: 'Mage', status: 'active' },
+        { username: 'Rin', roleId: 'ranger', roleName: 'Ranger', status: 'active' }
+      ])
+    };
+    plugin.db.saveChapter = jest.fn();
+    plugin.db.saveVote = jest.fn();
+    plugin._generateChapterTTS = jest.fn();
+    plugin._registerRoutes();
+    const res = { status: jest.fn(() => res), json: jest.fn() };
+
+    await routes['post:/api/interactive-story/admin-choice']({ body: { choiceIndex: 0 } }, res);
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('ACTIVE PARTY:\n- Alice: Mage\n- Rin: Ranger');
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  test('includes active participant roles in a final prompt selected through the offline admin route', async () => {
+    const { plugin, routes } = createPlugin({ storyMode: 'dnd', offlineMode: true, maxChapters: 2, autoGenerateTTS: false, finalChapterDelay: 60000 });
+    const { engine, prompts } = createPromptCapturingEngine();
+    engine._checkCoherence = jest.fn(async () => true);
+    plugin.currentSession.metadata = { storyMode: 'dnd' };
+    plugin.storyEngine = engine;
+    plugin.participantRegistry = {
+      list: jest.fn(() => [
+        { username: 'Alice', roleId: 'mage', roleName: 'Mage', status: 'active' },
+        { username: 'Rin', roleId: 'ranger', roleName: 'Ranger', status: 'active' }
+      ])
+    };
+    plugin.db.saveChapter = jest.fn();
+    plugin.db.saveVote = jest.fn();
+    plugin.db.updateSessionStatus = jest.fn();
+    plugin._generateChapterTTS = jest.fn();
+    plugin._registerRoutes();
+    const res = { status: jest.fn(() => res), json: jest.fn() };
+
+    await routes['post:/api/interactive-story/admin-choice']({ body: { choiceIndex: 0 } }, res);
+    clearTimeout(plugin.finalChapterEndTimer);
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('ACTIVE PARTY:\n- Alice: Mage\n- Rin: Ranger');
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, isFinal: true }));
+  });
+
   test('uses the active session inactivity limit when resolving a round', async () => {
     const { plugin } = createPlugin({ storyMode: 'dnd', dndInactivityLimitRounds: 2 });
     plugin.currentSession.metadata = { storyMode: 'dnd', dndInactivityLimitRounds: 4, dndJoinKeyword: '!party', dndRoleCatalog: [] };

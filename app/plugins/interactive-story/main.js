@@ -2110,6 +2110,7 @@ class InteractiveStoryPlugin {
         
         const chapterNumber = this.currentChapter.chapterNumber + 1;
         const maxChapters = config.maxChapters || 5;
+        const activeParticipants = this._isDndMode(config) ? this._participantSnapshots() : [];
         
         // Check if we've reached max chapters - if so, generate final chapter instead
         if (chapterNumber >= maxChapters) {
@@ -2119,7 +2120,8 @@ class InteractiveStoryPlugin {
           let finalChapter = await this.storyEngine.generateFinalChapter(
             chapterNumber,
             previousChoice,
-            this.currentSession.model
+            this.currentSession.model,
+            activeParticipants
           );
           
           finalChapter = await this._maybeGenerateChapterImage(finalChapter, config);
@@ -2167,7 +2169,8 @@ class InteractiveStoryPlugin {
           chapterNumber,
           previousChoice,
           this.currentSession.model,
-          config.numChoices
+          config.numChoices,
+          activeParticipants
         );
         
         nextChapter = await this._maybeGenerateChapterImage(nextChapter, config);
