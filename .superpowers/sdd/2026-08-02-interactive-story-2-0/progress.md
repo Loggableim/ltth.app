@@ -13,3 +13,6 @@ Task 7: complete after admin/metadata/limit fix (base ca16a0684, final 30b14f2f6
 Task 8: complete after button/OpenRouter fix (base 30b14f2f6, final fc43874b4; clean re-review; focused 38/38).
 Task 9: complete after parser/browser review and follow-up fixes (base fc43874b4, docs c15d2f480, parser 215220a18, final 5664a2152; focused 21 suites/164 tests; lint, build, diff check, and browser smoke green).
 Task 10: complete after DB wrapper review (base 215220a18, final 767bf1000; focused 3 suites/17 tests; lint green).
+Task 11: complete after follow-up fix for admin/offline role prompts (final 2ac76367a; two real admin-prompt regression tests; focused 3 suites/19 tests green; follow-up fixes applied, final review after Task 13).
+Task 12: complete after follow-up fix for the dedicated local D&D roster (final 65813e9af; roster DOM/i18n regression coverage; focused 5 suites/32 tests green; follow-up fixes applied, final review after Task 13).
+Task 13: complete after local-only roster boundary and reload-snapshot hardening (final 3925ef249, docs 8b68f39ae; local-only registry/reload regression coverage; focused 3 suites/122 tests green; 24-suite/288-test Interactive Story gate, lint, build, and diff check green; final review after Task 13).
