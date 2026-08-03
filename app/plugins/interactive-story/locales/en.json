@@ -288,6 +288,13 @@
           "vote_timer": "Time remaining: {seconds}s",
           "voting_ended": "Voting ended"
         },
+        "participants": {
+          "role": "Role",
+          "status": {
+            "active": "Active",
+            "eliminated": "Eliminated"
+          }
+        },
         "preview": {
           "adventure_content": "Our hero awakens in a mysterious forest, surrounded by ancient trees whispering secrets of old.",
           "adventure_title": "The Beginning of an Epic Adventure",

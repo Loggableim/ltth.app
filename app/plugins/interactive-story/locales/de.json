@@ -288,6 +288,13 @@
           "vote_timer": "Verbleibende Zeit: {seconds}s",
           "voting_ended": "Abstimmung beendet"
         },
+        "participants": {
+          "role": "Rolle",
+          "status": {
+            "active": "Aktiv",
+            "eliminated": "Ausgeschieden"
+          }
+        },
         "preview": {
           "adventure_content": "Unser Held erwacht in einem geheimnisvollen Wald, umgeben von uralten Bäumen, die von längst vergangenen Geheimnissen flüstern.",
           "adventure_title": "Der Beginn eines epischen Abenteuers",

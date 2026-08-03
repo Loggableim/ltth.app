@@ -288,6 +288,13 @@
           "vote_timer": "Tiempo restante: {seconds}s",
           "voting_ended": "Votación finalizada"
         },
+        "participants": {
+          "role": "Rol",
+          "status": {
+            "active": "Activo",
+            "eliminated": "Eliminado"
+          }
+        },
         "preview": {
           "adventure_content": "Nuestro héroe despierta en un bosque misterioso, rodeado de árboles antiguos que susurran secretos de otros tiempos.",
           "adventure_title": "El comienzo de una aventura épica",

@@ -377,6 +377,94 @@
       gap: 18px;
     }
 
+    #participantRoster {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      width: min(360px, calc(100vw - 48px));
+      display: none;
+      padding: 18px;
+      color: var(--text-color, #ffffff);
+      background: linear-gradient(145deg, rgba(8, 15, 30, 0.92), rgba(25, 38, 70, 0.82));
+      border: 2px solid rgba(233, 69, 96, 0.65);
+      border-radius: 16px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      z-index: 4;
+      cursor: move;
+    }
+
+    #participantRoster.active {
+      display: block;
+    }
+
+    #participantRoster.dragging {
+      box-shadow: 0 0 36px rgba(233, 69, 96, 0.55);
+    }
+
+    .participant-roster-title {
+      margin-bottom: 12px;
+      color: var(--title-color, #e94560);
+      font-size: 1.25em;
+      font-weight: 750;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .participant-roster-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .participant-roster-empty {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.95em;
+    }
+
+    .participant-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 4px 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.07);
+      border-left: 4px solid var(--title-color, #e94560);
+      border-radius: 9px;
+    }
+
+    .participant-row.eliminated {
+      opacity: 0.62;
+      border-left-color: #ef4444;
+    }
+
+    .participant-name {
+      min-width: 0;
+      overflow: hidden;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .participant-role,
+    .participant-status {
+      font-size: 0.86em;
+    }
+
+    .participant-role {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .participant-status {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+      align-self: center;
+      color: #86efac;
+      font-weight: 700;
+    }
+
+    .participant-row.eliminated .participant-status {
+      color: #fca5a5;
+    }
+
     .choice-item {
       background: linear-gradient(135deg, rgba(233,69,96,0.15) 0%, rgba(15,52,96,0.4) 50%, rgba(0,0,0,0.6) 100%);
       padding: 20px 25px;
@@ -754,9 +842,17 @@
     <div class="voting-header" data-i18n="plugins.interactive-story.labels.vote_now_type_your_choice_in_chat">
       Vote Now! Type your choice in chat
     </div>
-    <div class="choice-container draggable" id="choiceContainer" data-element="participants"></div>
+    <div class="choice-container" id="choiceContainer"></div>
     <div class="timer-display" id="timerDisplay" data-i18n="plugins.interactive-story.labels.time_remaining">Time Remaining: --</div>
   </div>
+
+  <!-- Pen-and-paper participant roster -->
+  <aside id="participantRoster" class="draggable" data-element="participants" aria-live="polite">
+    <div class="participant-roster-title" data-i18n="plugins.interactive-story.story_studio.players.title">Live players</div>
+    <div id="participantRosterList" class="participant-roster-list">
+      <div class="participant-roster-empty" data-i18n="plugins.interactive-story.story_studio.players.empty">No players have joined yet.</div>
+    </div>
+  </aside>
 
   <!-- Generating Overlay -->
   <div id="generatingOverlay" class="draggable" data-element="generating">
@@ -787,6 +883,7 @@
     let sentences = [];
     let sentenceTimer = null;
     let scrollingInProgress = false;
+    let dndParticipants = [];
 
     function translateOverlay(key, params = {}) {
       const translation = window.i18n?.t?.(key, params);
@@ -872,8 +969,56 @@
       }
 
       applyGeneratingAnimation(cfg);
+      updateParticipantRosterVisibility();
 
       console.log('Configuration applied:', cfg);
+    }
+
+    function updateParticipantRosterVisibility() {
+      const roster = document.getElementById('participantRoster');
+      if (!roster) return;
+      roster.classList.toggle('active', config?.storyMode === 'dnd');
+    }
+
+    function renderDndParticipantRoster(participants) {
+      const list = document.getElementById('participantRosterList');
+      if (!list) return;
+
+      dndParticipants = Array.isArray(participants) ? participants : [];
+      list.replaceChildren();
+
+      if (!dndParticipants.length) {
+        const empty = document.createElement('div');
+        empty.className = 'participant-roster-empty';
+        empty.textContent = translateOverlay('plugins.interactive-story.story_studio.players.empty');
+        list.appendChild(empty);
+        updateParticipantRosterVisibility();
+        return;
+      }
+
+      dndParticipants.forEach((participant) => {
+        const status = participant?.status === 'eliminated' ? 'eliminated' : 'active';
+        const row = document.createElement('div');
+        row.className = `participant-row ${status}`;
+
+        const name = document.createElement('div');
+        name.className = 'participant-name';
+        name.textContent = String(participant?.username || participant?.displayName || '');
+
+        const role = document.createElement('div');
+        role.className = 'participant-role';
+        const roleLabel = translateOverlay('plugins.interactive-story.runtime.participants.role');
+        role.textContent = `${roleLabel}: ${String(participant?.roleName || participant?.roleId || '—')}`;
+
+        const statusElement = document.createElement('div');
+        statusElement.className = 'participant-status';
+        statusElement.textContent = translateOverlay(`plugins.interactive-story.runtime.participants.status.${status}`);
+
+        row.append(name, role, statusElement);
+        list.appendChild(row);
+      });
+
+      updateParticipantRosterVisibility();
     }
 
     function applyGeneratingAnimation(cfg) {
@@ -961,7 +1106,7 @@
         voting: document.getElementById('votingOverlay'),
         generating: document.getElementById('generatingOverlay'),
         results: document.getElementById('resultsOverlay'),
-        participants: document.getElementById('choiceContainer')
+        participants: document.getElementById('participantRoster')
       };
     }
 
@@ -1640,6 +1785,10 @@
         applyConfiguration(config);
         console.log('✅ Configuration applied successfully');
       }
+    });
+
+    socket.on('story:dnd-participants-updated', (participants) => {
+      renderDndParticipantRoster(participants);
     });
 
     // Initialize
