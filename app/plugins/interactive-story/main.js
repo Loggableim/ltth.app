@@ -1421,6 +1421,7 @@ class InteractiveStoryPlugin {
       const config = this._loadConfig();
       // Don't send API key to client
       const safeConfig = { ...config };
+      safeConfig.storyMode = this._isDndMode(config) ? 'dnd' : 'classic';
       if (safeConfig.siliconFlowApiKey) {
         safeConfig.siliconFlowApiKey = '***configured***';
       }

@@ -121,6 +121,22 @@ ITEMS: Map`;
     expect(routes['post:/api/interactive-story/participants/reset']).toEqual(expect.any(Function));
   });
 
+  test('exposes the active session D&D mode in config without leaking session metadata', () => {
+    const { plugin, routes } = createPlugin({ storyMode: 'classic' });
+    plugin.currentSession.metadata = {
+      storyMode: 'dnd',
+      dndJoinKeyword: '!campaign',
+      dndRoleCatalog: [{ id: 'ranger', name: 'Ranger' }]
+    };
+    plugin._registerRoutes();
+    const json = jest.fn();
+
+    routes['get:/api/interactive-story/config']({}, { json });
+
+    expect(json.mock.calls[0][0].storyMode).toBe('dnd');
+    expect(json.mock.calls[0][0]).not.toHaveProperty('dndRoleCatalog');
+  });
+
   test('adds active role summaries to the next chapter prompt only in pen-and-paper mode', () => {
     const engine = new StoryEngine(null, { info: jest.fn(), warn: jest.fn(), error: jest.fn() }, { language: 'English' });
     const normalPrompt = engine._buildChapterPrompt(engine.themes.fantasy, '', 2, 'Scout ahead', 2);

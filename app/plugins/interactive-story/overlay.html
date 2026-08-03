@@ -978,7 +978,7 @@
     function updateParticipantRosterVisibility() {
       const roster = document.getElementById('participantRoster');
       if (!roster) return;
-      roster.classList.toggle('active', config?.storyMode === 'dnd');
+      roster.classList.toggle('active', !publicRenderMode && config?.storyMode === 'dnd');
     }
 
     function renderDndParticipantRoster(participants) {

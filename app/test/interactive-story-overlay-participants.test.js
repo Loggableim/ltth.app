@@ -149,6 +149,16 @@ describe('Interactive Story D&D participant overlay', () => {
     dom.window.close();
   });
 
+  test('keeps the D&D roster hidden and local-only on public hosts', async () => {
+    const { dom, window } = createOverlayHarness('dnd', [], false);
+    await flushPromises();
+
+    expect(window.document.getElementById('participantRoster').classList).not.toContain('active');
+    expect(window.fetch).not.toHaveBeenCalledWith('/api/interactive-story/participants');
+
+    dom.window.close();
+  });
+
   test.each(['de', 'en', 'es', 'fr'])('provides participant role and status labels in %s', (locale) => {
     const translations = JSON.parse(fs.readFileSync(path.join(
       __dirname,
