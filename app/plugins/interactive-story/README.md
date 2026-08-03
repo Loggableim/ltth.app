@@ -23,7 +23,7 @@ No live provider request is made merely by saving configuration. A configured ke
 http://localhost:3000/plugins/interactive-story/overlay.html
 ```
 
-Use a normal local OBS URL for production. A public Quick Tunnel overlay is intentionally render-only.
+Use a normal local OBS URL for production. It also shows the pen-and-paper participant roster. A public Quick Tunnel overlay is intentionally render-only and does not receive participant metadata.
 
 ## Story Studio
 
@@ -33,7 +33,7 @@ The Story Studio controls both classic and pen-and-paper sessions.
 - **Pen-and-paper:** choose the mode before starting, then set the join keyword (default `!join`) and inactivity limit (default two rounds). A viewer joins once, receives one of the Warrior, Mage, Rogue, Healer, Ranger, or Bard roles, and is not penalized for the round in which they joined. Voting in an eligible round resets the missed-round count; two consecutive eligible misses eliminate the participant at the default limit.
 - Session mode, join keyword, inactivity limit, and role catalog are stored with the session. Later global setting changes do not rewrite an active session.
 
-The roster in the Studio and the status API expose only public participant fields: name, role, joined round, missed-round count, and active/eliminated status.
+The local OBS roster, Studio, and status API expose only public participant fields: name, role, joined round, missed-round count, and active/eliminated status.
 
 ## Fish.audio narration cues
 
@@ -70,7 +70,7 @@ POST     /api/interactive-story/end
 GET/POST /api/interactive-story/overlay-positions
 ```
 
-The overlay receives lifecycle and voting Socket.IO events such as `story:chapter-ready`, `story:voting-started`, `story:vote-update`, `story:voting-ended`, and `story:dnd-participants-updated`.
+All overlays receive lifecycle and voting Socket.IO events such as `story:chapter-ready`, `story:voting-started`, `story:vote-update`, and `story:voting-ended`. Only a same-origin local OBS overlay receives `story:dnd-participants-updated` and renders the participant roster; public Quick Tunnel overlays never receive participant metadata.
 
 ## Troubleshooting
 

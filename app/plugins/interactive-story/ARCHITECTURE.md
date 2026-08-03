@@ -2,7 +2,8 @@
 
 ```text
 Studio (ui.html)                         OBS overlay (overlay.html)
-  config, session controls                 public story/vote/roster rendering
+  config, session controls                 public story/vote rendering
+                                           local-only participant roster
   local preview/layout controls            local ?edit=1 layout editor only
           |                                              |
           +---------------- REST / Socket.IO ------------+
@@ -60,7 +61,7 @@ Layout positions are normalized fractions (`version: 2`) stored through `GET/POS
 
 `overlay.html?edit=1` enables drag handlers and Save, Reset, and Snap controls only when the page is same-origin and local. The overlay maps title, content, voting, generating, results, and participants to normalized positions. It accepts same-origin layout messages only in edit mode.
 
-Quick Tunnel/public hosts enter render-only mode. They do not register the editor interaction, do not show the editor state, and use `LTTHPublicOverlayRenderMode.postJsonLocalOnly()` so layout writes are skipped before a request is sent.
+Quick Tunnel/public hosts enter render-only mode. They do not register the editor interaction, do not show the editor state, and use `LTTHPublicOverlayRenderMode.postJsonLocalOnly()` so layout writes are skipped before a request is sent. They receive story and voting data only: D&D participant events and roster metadata are deliberately local-only for OBS overlays.
 
 ## Test seams
 

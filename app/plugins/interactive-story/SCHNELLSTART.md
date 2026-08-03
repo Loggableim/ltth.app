@@ -24,7 +24,7 @@ Füge in OBS eine Browserquelle mit 1920 × 1080 hinzu:
 http://localhost:3000/plugins/interactive-story/overlay.html
 ```
 
-Der normale Overlay-Link ist nur zum Anzeigen. Für eine öffentliche Quick-Tunnel-URL gilt ebenfalls: anzeigen ja, bearbeiten und Layout speichern nein.
+Der lokale OBS-Link zeigt Story, Voting und im Pen-and-Paper-Modus die Teilnehmerliste. Eine öffentliche Quick-Tunnel-URL bleibt absichtlich auf Story und Voting beschränkt: anzeigen ja, bearbeiten, Layout speichern und Teilnehmerdaten nein.
 
 ## 4. Layout lokal bearbeiten
 
