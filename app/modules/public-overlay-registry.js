@@ -534,6 +534,10 @@ zappiehell:goals:update
 zappiehell:overlay:animate
 `.trim().split(/\s+/));
 
+const LOCAL_ONLY_OUTGOING_SOCKET_EVENTS = new Set([
+  'story:dnd-participants-updated'
+]);
+
 const FORBIDDEN_PUBLIC_KEYS =
   /^(?:api[_-]?key|(?:(?:access|auth|refresh)[_-]?)?token|secret|password|credential|cookie)$/i;
 
@@ -617,6 +621,10 @@ function isOutgoingSocketEventAllowed(eventName) {
   return typeof eventName === 'string' && OUTGOING_SOCKET_EVENTS.has(eventName);
 }
 
+function isLocalOnlyOutgoingSocketEvent(eventName) {
+  return typeof eventName === 'string' && LOCAL_ONLY_OUTGOING_SOCKET_EVENTS.has(eventName);
+}
+
 function listPublicEntrypoints() {
   return [...ENTRYPOINTS];
 }
@@ -682,10 +690,12 @@ module.exports = {
   INCOMING_SOCKET_EVENTS,
   OUTGOING_SOCKET_EVENTS,
   normalizePublicPath,
+  LOCAL_ONLY_OUTGOING_SOCKET_EVENTS,
   isRegisteredEntrypoint,
   isHttpAllowed,
   isIncomingSocketEventAllowed,
   isOutgoingSocketEventAllowed,
   listPublicEntrypoints,
+  isLocalOnlyOutgoingSocketEvent,
   redactPublicPayload
 };

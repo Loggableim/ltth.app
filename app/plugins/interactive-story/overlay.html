@@ -907,6 +907,7 @@
         const response = await fetch('/api/interactive-story/config');
         config = await response.json();
         applyConfiguration(config);
+        await loadParticipantRoster();
       } catch (error) {
         console.error('Failed to load configuration:', error);
         // Use defaults if config fails
@@ -1019,6 +1020,24 @@
       });
 
       updateParticipantRosterVisibility();
+    }
+
+    async function loadParticipantRoster() {
+      if (publicRenderMode || config?.storyMode !== 'dnd') return;
+      try {
+        const response = await fetch('/api/interactive-story/participants');
+        if (!response.ok) return;
+        const snapshot = await response.json();
+        const activeParticipants = Array.isArray(snapshot.activeParticipants)
+          ? snapshot.activeParticipants
+          : [];
+        const eliminatedParticipants = Array.isArray(snapshot.eliminatedParticipants)
+          ? snapshot.eliminatedParticipants
+          : [];
+        renderDndParticipantRoster([...activeParticipants, ...eliminatedParticipants]);
+      } catch (error) {
+        console.warn('Failed to load D&D participant roster:', error);
+      }
     }
 
     function applyGeneratingAnimation(cfg) {

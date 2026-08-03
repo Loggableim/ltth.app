@@ -12,7 +12,7 @@ const overlayPath = path.join(
   'overlay.html'
 );
 
-function createOverlayHarness(storyMode = 'dnd') {
+function createOverlayHarness(storyMode = 'dnd', initialParticipants = [], isLocalOverlay = true) {
   const source = fs.readFileSync(overlayPath, 'utf8');
   const dom = new JSDOM(source, {
     url: 'http://127.0.0.1/interactive-story/overlay?edit=1',
@@ -33,7 +33,7 @@ function createOverlayHarness(storyMode = 'dnd') {
     'plugins.interactive-story.runtime.participants.status.eliminated': 'Eliminated'
   }[key] || key) };
   window.LTTHPublicOverlayRenderMode = {
-    isLocalOverlayHostname: () => true,
+    isLocalOverlayHostname: () => isLocalOverlay,
     postJsonLocalOnly: jest.fn().mockResolvedValue({
       skipped: false,
       response: { ok: true }
@@ -54,6 +54,15 @@ function createOverlayHarness(storyMode = 'dnd') {
           overlayTextColor: '#ffffff',
           overlayTitleColor: '#e94560',
           overlayBackgroundGradient: 'transparent'
+        })
+      };
+    }
+    if (url === '/api/interactive-story/participants') {
+      return {
+        ok: true,
+        json: async () => ({
+          activeParticipants: initialParticipants,
+          eliminatedParticipants: []
         })
       };
     }
@@ -120,6 +129,22 @@ describe('Interactive Story D&D participant overlay', () => {
     ]);
 
     expect(window.document.getElementById('participantRoster').classList).not.toContain('active');
+
+    dom.window.close();
+  });
+
+  test('loads active participant snapshot after local D&D configuration', async () => {
+    const initialParticipants = [
+      { username: 'Alice', roleName: 'Mage', status: 'active' }
+    ];
+    const { dom, window } = createOverlayHarness('dnd', initialParticipants);
+    await flushPromises();
+
+    expect(window.fetch).toHaveBeenCalledWith('/api/interactive-story/participants');
+    const roster = window.document.getElementById('participantRoster');
+    expect(roster.classList).toContain('active');
+    expect(roster.textContent).toContain('Alice');
+    expect(roster.textContent).toContain('Mage');
 
     dom.window.close();
   });

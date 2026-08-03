@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   isIncomingSocketEventAllowed,
+  isLocalOnlyOutgoingSocketEvent,
   isOutgoingSocketEventAllowed
 } = require('../modules/public-overlay-registry');
 
@@ -101,6 +102,7 @@ describe('public overlay Socket.IO source contract', () => {
     for (const [eventName, sources] of outgoingEvents) {
       if (
         !lifecycleEvents.has(eventName) &&
+        !isLocalOnlyOutgoingSocketEvent(eventName) &&
         !isOutgoingSocketEventAllowed(eventName)
       ) {
         unregistered.push({ eventName, sources });
