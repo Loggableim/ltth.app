@@ -231,7 +231,7 @@ const DEFAULT_CONFIG = {
   bombBlastRadius: 92,
   maxBombs: 32,
   bombSurvivorMass: 24,
-  bombHitMassLossRatio: 0.5,
+  bombHitMassLossRatio: 0.9,
   bombFoodRecoveryRatio: 1,
   bombFoodMaxCount: 80,
   likeLifeValue: 1,
