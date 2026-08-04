@@ -78,6 +78,14 @@ describe('shared EmojiRain command editor', () => {
     });
   });
 
+  test('uses a v-compatible command pattern with an escaped hyphen', () => {
+    const { editor } = createEditor();
+    editor.load(config([command('beans')]));
+
+    const input = editor.root.querySelector('[data-role="command-name"]');
+    expect(input.pattern).toBe('[a-z0-9_\\-]{1,32}');
+  });
+
   test('round-trips one shared command despawn duration in seconds', () => {
     const { editor } = createEditor();
     editor.load(config([]));

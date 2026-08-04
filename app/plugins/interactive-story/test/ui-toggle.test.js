@@ -41,33 +41,33 @@ describe('Interactive Story UI - Collapsible Sections', () => {
     expect(uiHtml).toContain("section.classList.toggle('collapsed')");
   });
 
-  test('all config section headers should have onclick handlers', () => {
-    // Count onclick="toggleConfigSection(this)" occurrences
-    const matches = uiHtml.match(/onclick="toggleConfigSection\(this\)"/g);
+  test('all config section headers should use CSP-safe data actions', () => {
+    const matches = uiHtml.match(/data-action="toggle-config-section"/g);
     expect(matches).toBeTruthy();
     expect(matches.length).toBeGreaterThanOrEqual(EXPECTED_SECTION_COUNT);
+    expect(uiHtml).not.toContain('onclick="toggleConfigSection(this)"');
+    expect(uiHtml).toContain("querySelectorAll('[data-action=\"toggle-config-section\"]')");
+    expect(uiHtml).toContain("addEventListener('click'");
   });
 
-  test('timing configuration section should have onclick handler', () => {
-    // Check for Timing Configuration section with onclick handler
+  test('timing configuration section should use the CSP-safe toggle action', () => {
     const hasTimingSection = uiHtml.includes('Timing Configuration');
     const timingIndex = uiHtml.indexOf('Timing Configuration');
     const timingSectionStart = uiHtml.lastIndexOf('<div class="config-section collapsed">', timingIndex);
-    const nearbyOnclick = uiHtml.substring(timingSectionStart, timingIndex).includes('onclick="toggleConfigSection(this)"');
+    const nearbyAction = uiHtml.substring(timingSectionStart, timingIndex).includes('data-action="toggle-config-section"');
     
     expect(hasTimingSection).toBe(true);
-    expect(nearbyOnclick).toBe(true);
+    expect(nearbyAction).toBe(true);
   });
 
-  test('advanced settings section should have onclick handler', () => {
-    // Check for Advanced Settings section with onclick handler
+  test('advanced settings section should use the CSP-safe toggle action', () => {
     const hasAdvancedSection = uiHtml.includes('Advanced Settings');
     const advancedIndex = uiHtml.indexOf('Advanced Settings');
     const advancedSectionStart = uiHtml.lastIndexOf('<div class="config-section collapsed">', advancedIndex);
-    const nearbyOnclick = uiHtml.substring(advancedSectionStart, advancedIndex).includes('onclick="toggleConfigSection(this)"');
+    const nearbyAction = uiHtml.substring(advancedSectionStart, advancedIndex).includes('data-action="toggle-config-section"');
     
     expect(hasAdvancedSection).toBe(true);
-    expect(nearbyOnclick).toBe(true);
+    expect(nearbyAction).toBe(true);
   });
 
   test('collapsed sections should have proper CSS classes', () => {

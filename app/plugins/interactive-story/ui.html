@@ -3526,7 +3526,7 @@
 
           <div class="config-section">
 
-            <div class="config-section-header" onclick="toggleConfigSection(this)">
+            <div class="config-section-header" data-action="toggle-config-section" role="button" tabindex="0">
 
               <h5 data-i18n="plugins.interactive-story.labels.api_configuration">API Configuration</h5>
 
@@ -3779,7 +3779,7 @@
 
           <div class="config-section">
 
-            <div class="config-section-header" onclick="toggleConfigSection(this)">
+            <div class="config-section-header" data-action="toggle-config-section" role="button" tabindex="0">
 
               <h5 data-i18n="plugins.interactive-story.labels.tts_voice_configuration">TTS Voice Configuration</h5>
 
@@ -3959,7 +3959,7 @@
 
           <div class="config-section">
 
-            <div class="config-section-header" onclick="toggleConfigSection(this)">
+            <div class="config-section-header" data-action="toggle-config-section" role="button" tabindex="0">
 
               <h5 data-i18n="plugins.interactive-story.labels.story_voting_settings">Story & Voting Settings</h5>
 
@@ -4083,7 +4083,7 @@
 
           <div class="config-section collapsed">
 
-            <div class="config-section-header" onclick="toggleConfigSection(this)">
+            <div class="config-section-header" data-action="toggle-config-section" role="button" tabindex="0">
 
               <h5 data-i18n="plugins.interactive-story.labels.overlay_customization">Overlay Customization</h5>
 
@@ -4245,7 +4245,7 @@
 
           <div class="config-section collapsed">
 
-            <div class="config-section-header" onclick="toggleConfigSection(this)">
+            <div class="config-section-header" data-action="toggle-config-section" role="button" tabindex="0">
 
               <h5 data-i18n="plugins.interactive-story.labels.timing_configuration">Timing Configuration</h5>
 
@@ -4353,7 +4353,7 @@
 
           <div class="config-section collapsed">
 
-            <div class="config-section-header" onclick="toggleConfigSection(this)">
+            <div class="config-section-header" data-action="toggle-config-section" role="button" tabindex="0">
 
               <h5 data-i18n="plugins.interactive-story.labels.advanced_settings">Advanced Settings</h5>
 
@@ -4878,13 +4878,11 @@
 
     /**
 
-     * Toggle collapsible configuration section
+     * Toggle collapsible configuration section.
 
-     * IMPORTANT: This function must be defined early in the script
+     * The handler is attached through addEventListener below so strict CSP
 
-     * because it's referenced by inline onclick handlers in the HTML
-
-     * Explicitly attached to window to ensure global accessibility
+     * does not have to allow inline script attributes.
 
      */
 
@@ -4908,9 +4906,11 @@
 
       }
 
-      section.classList.toggle('collapsed');
+      const collapsed = section.classList.toggle('collapsed');
 
-      console.log('Section toggled:', section.classList.contains('collapsed') ? 'collapsed' : 'expanded');
+      headerElement.setAttribute('aria-expanded', String(!collapsed));
+
+      console.log('Section toggled:', collapsed ? 'collapsed' : 'expanded');
 
     };
 
@@ -5958,6 +5958,17 @@
         // Add event listeners for buttons (must be inside DOMContentLoaded)
 
         // Use optional chaining to prevent errors if elements don't exist
+        document.querySelectorAll('[data-action="toggle-config-section"]').forEach((header) => {
+          header.setAttribute('aria-expanded', String(!header.parentElement?.classList.contains('collapsed')));
+          header.addEventListener('click', () => window.toggleConfigSection(header));
+          header.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              window.toggleConfigSection(header);
+            }
+          });
+        });
+
       document.getElementById('previewEditLayoutBtn')?.addEventListener('click', openPreviewLayoutEditor);
       document.getElementById('previewSaveLayoutBtn')?.addEventListener('click', () => sendPreviewLayoutAction('save'));
       document.getElementById('previewResetLayoutBtn')?.addEventListener('click', () => sendPreviewLayoutAction('reset'));

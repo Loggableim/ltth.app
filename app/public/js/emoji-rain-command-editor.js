@@ -175,7 +175,7 @@
 
             const nameInput = this.createElement('input', { type: 'text', role: 'command-name' });
             nameInput.maxLength = 33;
-            nameInput.pattern = '[a-z0-9_-]{1,32}';
+            nameInput.pattern = '[a-z0-9_\\-]{1,32}';
             nameInput.autocomplete = 'off';
             nameInput.value = String(command.command || '');
             const nameControl = this.createElement('div', { className: 'emoji-command-editor__command-name' });
