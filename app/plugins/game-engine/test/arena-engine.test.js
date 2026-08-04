@@ -398,7 +398,7 @@ describe('ArenaGame', () => {
     expect(giant.mass).toBeGreaterThan(config.minMass);
   });
 
-  it('detonates an armed bomb when an unshielded player enters its blast radius', () => {
+  it('eliminates an unshielded player when the bomb damage drops them below minimum mass', () => {
     const { arena } = createArena({ bombBlastRadius: 92 }, { now: () => 70000 });
     const config = arena.getConfig();
     const nearby = movementPlayer(arena, config, 'nearby', 12, { x: 180, y: 300, lives: arena._massToLives(12, config) });
@@ -408,7 +408,8 @@ describe('ArenaGame', () => {
     arena._updateBombs(config, 0);
 
     expect(arena.bombs.has('bomb_contact_only')).toBe(false);
-    expect(nearby.mass).toBeCloseTo(12, 1);
+    expect(arena.players.has(nearby.username)).toBe(false);
+    expect(arena.respawnCooldowns.has(nearby.username)).toBe(true);
   });
   it('removes ninety percent of each bomb victim mass down to the survivor floor and distributes the loss as owner-locked food', () => {
     const { arena, io } = createArena({ maxFood: 100 }, { now: () => 70000 });

@@ -3199,18 +3199,36 @@ class ArenaGame {
       minMass,
       maxMass
     );
+    const lossRatio = this._clamp(Number(config.bombHitMassLossRatio) || DEFAULT_CONFIG.bombHitMassLossRatio, 0, 1);
+    const bombOwner = this.players.get(bomb.owner) || null;
     for (const player of this.players.values()) {
       if (this._isShieldActive(player)) continue;
       const distance = this._distance(bomb, player);
       if (distance > radius) continue;
       const beforeMass = Number(player.mass) || 0;
-      const lossRatio = this._clamp(Number(config.bombHitMassLossRatio) || DEFAULT_CONFIG.bombHitMassLossRatio, 0, 1);
-      const targetMass = Math.min(beforeMass, Math.max(survivorMass, beforeMass * (1 - lossRatio)));
+      const rawTargetMass = Math.max(0, beforeMass * (1 - lossRatio));
+      const isLethal = rawTargetMass < minMass;
+      const targetMass = isLethal
+        ? rawTargetMass
+        : Math.min(beforeMass, Math.max(survivorMass, rawTargetMass));
       const massLost = Math.max(0, beforeMass - targetMass);
-      player.lives = this._massToLives(targetMass, config);
-      this._syncRadius(player, config);
       totalMassLost += massLost;
       victims.push(player.username);
+      if (isLethal) {
+        const activeOwner = bombOwner && this.players.has(bombOwner.username) ? bombOwner : null;
+        const attacker = activeOwner && activeOwner.username !== player.username ? activeOwner : bomb;
+        player.lives = this._massToLives(targetMass, config);
+        if (!this._tryConsumeExtraLife(player, attacker, config)) {
+          this._eliminatePlayer(player, config, 'bomb', attacker);
+          if (activeOwner && activeOwner.username !== player.username) {
+            activeOwner.kills = (activeOwner.kills || 0) + 1;
+            activeOwner.score = (activeOwner.score || 0) + massLost;
+          }
+        }
+        continue;
+      }
+      player.lives = this._massToLives(targetMass, config);
+      this._syncRadius(player, config);
     }
     const recoverableMass = totalMassLost * this._clamp(Number(config.bombFoodRecoveryRatio) || DEFAULT_CONFIG.bombFoodRecoveryRatio, 0, 1);
     const foodUnit = Math.max(0.1, Number(config.foodValue) || DEFAULT_CONFIG.foodValue);
