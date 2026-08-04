@@ -7843,7 +7843,7 @@ class ArenaGame {
     config.bombSpeed = this._clamp(Number(config.bombSpeed) || 650, 120, 1800);
     config.bombRange = this._clamp(Number(config.bombRange) || 420, 80, 1200);
     config.bombBlastRadius = this._clamp(Number(config.bombBlastRadius) || 92, 30, 260);
-    config.bombHitMassLossRatio = this._clamp(Number(config.bombHitMassLossRatio) || DEFAULT_CONFIG.bombHitMassLossRatio, 0, 1);
+    config.bombHitMassLossRatio = DEFAULT_CONFIG.bombHitMassLossRatio;
     config.bombFoodRecoveryRatio = DEFAULT_CONFIG.bombFoodRecoveryRatio;
     if (
       Number(stored?.tickRateMs) === LEGACY_DEFAULT_TICK_RATE_MS ||

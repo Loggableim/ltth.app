@@ -322,6 +322,12 @@ describe('ArenaGame', () => {
     expect(player.abilities.shield.ready).toBe(false);
   });
 
+  it('migrates a persisted bomb damage ratio to the live ninety percent setting', () => {
+    const { arena } = createArena({ bombHitMassLossRatio: 0.5 });
+
+    expect(arena.getConfig().bombHitMassLossRatio).toBeCloseTo(0.9, 5);
+  });
+
   it('throws a bomb directly toward the largest opponent and leaves that target alive after the shockwave', () => {
     let now = 60000;
     let randomCall = 0;
