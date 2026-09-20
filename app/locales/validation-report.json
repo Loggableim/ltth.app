@@ -9,7 +9,7 @@
     {
       "label": "app",
       "directory": "app/locales",
-      "keys": 1382
+      "keys": 1383
     },
     {
       "label": "website",
@@ -113,7 +113,7 @@
     {
       "label": "plugin:interactive-story",
       "directory": "app/plugins/interactive-story/locales",
-      "keys": 344
+      "keys": 371
     },
     {
       "label": "plugin:milestone-leaderboard",
@@ -166,9 +166,9 @@
       "keys": 174
     },
     {
-      "label": "plugin:streamalchemy",
-      "directory": "app/plugins/streamalchemy/locales",
-      "keys": 1103
+      "label": "plugin:stream-monsters",
+      "directory": "app/plugins/stream-monsters/locales",
+      "keys": 1202
     },
     {
       "label": "plugin:stt-ticker",
