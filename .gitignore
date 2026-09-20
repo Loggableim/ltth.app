@@ -68,6 +68,9 @@ build-src/*.test
 runtime/
 app/data/
 app/plugins/*/data/
+# The quiz plugin ships a bundled seed package; runtime data remains ignored elsewhere.
+!app/plugins/quiz-show/data/
+!app/plugins/quiz-show/data/allgemeinwissen-40.json
 
 # Puppeteer / user data (runtime artifacts)
 app/user_data/

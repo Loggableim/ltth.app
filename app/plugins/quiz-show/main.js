@@ -638,12 +638,47 @@ class QuizShowPlugin {
             // Migrate old data if exists
             await this.migrateOldData();
 
+            await this.seedGeneralKnowledgePackage();
+
             const questionCount = this.db.prepare('SELECT COUNT(*) as count FROM questions').get().count;
             this.api.log(`Database initialized with ${questionCount} questions`, 'info');
         } catch (error) {
             this.api.log('Error initializing database: ' + error.message, 'error');
             throw error;
         }
+    }
+
+    /** Seed the bundled German general-knowledge package once per plugin database. */
+    async seedGeneralKnowledgePackage() {
+        const packageName = 'Allgemeinwissen – 40 Fragen';
+        const existingPackage = this.db.prepare('SELECT id FROM question_packages WHERE name = ?').get(packageName);
+        if (existingPackage) return;
+
+        const packageData = require(path.join(__dirname, 'data', 'allgemeinwissen-40.json'));
+        const insertPackage = this.db.prepare(
+            'INSERT INTO question_packages (name, category, question_count, is_selected) VALUES (?, ?, ?, 0)'
+        );
+        const insertQuestion = this.db.prepare(
+            'INSERT INTO questions (question, answers, correct, category, difficulty, info, package_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        const seed = this.db.transaction(() => {
+            const packageResult = insertPackage.run(packageData.name, packageData.category, packageData.questions.length);
+            for (const question of packageData.questions) {
+                insertQuestion.run(
+                    question.question,
+                    JSON.stringify(question.answers),
+                    question.correct,
+                    packageData.category,
+                    question.difficulty,
+                    question.info,
+                    packageResult.lastInsertRowid
+                );
+            }
+            this.db.prepare('INSERT OR IGNORE INTO categories (name) VALUES (?)').run(packageData.category);
+        });
+
+        seed();
+        this.api.log(`Seeded quiz package "${packageName}" (${packageData.questions.length} questions)`, 'info');
     }
 
     async migrateSchema() {
