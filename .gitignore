@@ -86,6 +86,7 @@ tmp-*
 output/
 app/output/
 artifacts/
+marketing-build/
 
 # Workspace runtime files
 .ltth_port
