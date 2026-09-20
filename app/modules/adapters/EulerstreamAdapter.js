@@ -1395,6 +1395,10 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // STEP 1: Extract gift data first so we can inspect the payload before any filtering
             const giftData = this.extractGiftData(data);
+            if (!Number.isSafeInteger(giftData.repeatCount) || giftData.repeatCount < 1 || giftData.repeatCount > 10_000) {
+                this.logger.warn('[GIFT FILTER] Invalid repeatCount rejected before deduplication');
+                return;
+            }
 
             // STEP 1.5: Try catalog lookup to fill in missing gift metadata BEFORE filtering.
             // extractGiftData() may still produce giftName=null / diamondCount=0 for unknown
@@ -2004,8 +2008,8 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     _positiveInt(value, fallback = null) {
-        const parsed = parseInt(value, 10);
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+        const parsed = Number(value);
+        return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
     }
 
     _repeatCountFromAmount(amountValue, diamondCount) {

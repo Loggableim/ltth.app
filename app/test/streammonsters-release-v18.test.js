@@ -14,7 +14,7 @@ const {
 
 const repoRoot = path.join(__dirname, '..', '..');
 const packageDir = path.join(repoRoot, 'plugin-store', 'packages');
-const guide = require('../../scripts/plugin-guides/streamalchemy');
+const guide = require('../../scripts/plugin-guides/stream-monsters');
 
 const LEGACY_ARCHIVES = Object.freeze({
   '1.0.0': '100e98aa4e8b6df3f435502686e120c2f7949edd275503897e3478a325fe6fe3',
@@ -66,9 +66,9 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     ));
     const releaseMap = loadReleaseMap();
     expect(releaseMap).toEqual(expect.objectContaining({
-      schemaVersion: 1,
-      pluginId: 'streamalchemy',
-      sourcePath: 'app/plugins/streamalchemy'
+      schemaVersion: 2,
+      pluginId: 'stream-monsters',
+      aliases: ['streamalchemy']
     }));
     for (const [version, sourceCommit] of Object.entries(RELEASE_COMMITS)) {
       expect(releaseMap.releases[version]).toEqual(expect.objectContaining({
@@ -89,7 +89,7 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
     expect(releaseMap.releases['1.8.0']).not.toHaveProperty('manifestOverrides');
   });
 
-  test('keeps LTTH 1.4.1 fixed while plugin releases advance independently', () => {
+  test('keeps historical mappings while LTTH 1.4.2 publishes Stream Monsters 1.12', () => {
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
     const publicRelease = readJson('version.json');
     const bundleSource = fs.readFileSync(
@@ -97,13 +97,14 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
       'utf8'
     );
 
-    expect(currentRelease.version).toBe('1.4.1');
-    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.11\.1/);
-    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.11\.1/);
-    expect(publicRelease.changelog['1.4.1'].changes.join('\n')).toMatch(
-      /Stream Monsters 1\.5\.0/
+    expect(currentRelease.version).toBe('1.4.2');
+    expect(currentRelease.notes).toMatch(/Stream Monsters 1\.12\.0/);
+    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.12\.0/);
+    expect(publicRelease.changelog['1.4.2'].changes.join('\n')).toMatch(
+      /Stream Monsters 1\.12\.0/
     );
-    expect(bundleSource).toContain('"1.4.1": "1.11.1"');
+    expect(bundleSource).toContain('"1.4.1": {');
+    expect(bundleSource).toContain('"plugin_version": "1.11.1"');
   });
 
   test('keeps 1.8.0 registered as an immutable historical Open Beta release', () => {
@@ -127,7 +128,7 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
         steps: guide.steps.map(step => step.copy[locale])
       });
 
-      expect(localizedGuide).toMatch(/1\.11/);
+      expect(localizedGuide).toMatch(/1\.12/);
       expect(localizedGuide).toMatch(/adopt|adoptier|adopta|adoptez/i);
       expect(localizedGuide).toMatch(/60/);
       expect(localizedGuide).toMatch(/90/);
@@ -313,6 +314,8 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
         releases: {
           '9.9.9': {
             sourceCommit,
+            manifestId: 'streamalchemy',
+            sourcePath: 'app/plugins/streamalchemy',
             manifestVersion: '9.9.9',
             package: 'plugin-store/packages/streamalchemy-9.9.9.zip',
             sha256: '0'.repeat(64)

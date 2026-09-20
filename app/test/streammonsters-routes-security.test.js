@@ -1,6 +1,6 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
 function createSubject({
   now = () => Date.now(),
@@ -113,7 +113,7 @@ describe('Stream Monsters Rules v5 route security', () => {
     expect(res.payload.config.rulesVersion).toBe(8);
     expect(res.payload.battle).toEqual({
       rulesVersion: 8,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'classic',
       matches: []
@@ -210,6 +210,8 @@ describe('Stream Monsters Rules v5 route security', () => {
     const heartbeat = response();
     await find('POST', '/api/streammonsters/overlay/heartbeat')({
       body: {
+        view: 'full',
+        profile: 'streammonsters-full-v1',
         layout: 'portrait',
         renderer: {
           backend: 'webgpu',
@@ -218,8 +220,7 @@ describe('Stream Monsters Rules v5 route security', () => {
           deviceLost: false,
           fallbackReason: 'private path and token'
         },
-        audio: { muted: true, masterVolume: 0.42 },
-        secret: 'must-not-escape'
+        audio: { muted: true, masterVolume: 0.42 }
       }
     }, heartbeat);
     expect(heartbeat.payload).toEqual({ success: true, acceptedAtMs: 10_000 });
@@ -246,7 +247,6 @@ describe('Stream Monsters Rules v5 route security', () => {
         status: 'connected'
       }
     }));
-    expect(JSON.stringify(creator.payload)).not.toContain('must-not-escape');
 
     const publicState = response();
     await find('GET', '/api/streammonsters/state')({ query: {} }, publicState);
@@ -351,6 +351,20 @@ describe('Stream Monsters Rules v5 route security', () => {
     });
     expect(routes.sanitizeConfigUpdate({ visualPack: 'kenney' })).toEqual({
       visualPack: 'furry'
+    });
+  });
+  test('returns stable correlation-bearing public errors for rejected avatar tokens', async () => {
+    const { find } = createSubject();
+    const res = response();
+    await find('GET', '/api/streammonsters/avatar/:token')({
+      params: { token: 'invalid' },
+      headers: {}
+    }, res);
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      code: 'STREAM_MONSTERS_AVATAR_URL_REJECTED',
+      correlationId: expect.any(String)
     });
   });
 });

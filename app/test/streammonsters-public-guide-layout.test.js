@@ -12,7 +12,7 @@ const pacingSource = fs.readFileSync(
     websiteRoot,
     'app',
     'plugins',
-    'streamalchemy',
+    'stream-monsters',
     'streammonsters-rules-v8-pacing.js'
   ),
   'utf8'

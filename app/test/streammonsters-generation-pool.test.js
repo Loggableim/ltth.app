@@ -1,14 +1,14 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
 
 describe('Stream Monsters generation-pool retirement', () => {
   test('removes the executor while preserving historical rows byte-for-byte', () => {
     expect(fs.existsSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'backend',
       'streammonsters',
       'generation-pool.js'

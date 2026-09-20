@@ -7,13 +7,13 @@ const { JSDOM } = require('jsdom');
 const helperPath = path.join(
   process.cwd(),
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'streammonsters-portrait-arena.js'
 );
 const overlayPath = path.join(
   process.cwd(),
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'streammonsters-overlay.html'
 );
 const acceptanceFixturePath = path.join(
@@ -462,6 +462,8 @@ describe('Stream Monsters bounded portrait arena', () => {
     const exceptionLane = document.getElementById('portrait-exception-lane');
 
     expect(Array.from(overlay.children).map(child => child.id)).toEqual([
+      'phase-announcer',
+      'critical-status-announcer',
       'portrait-arena',
       'hatch-reveal',
       'portrait-exception-lane'
@@ -564,14 +566,14 @@ describe('Stream Monsters bounded portrait arena', () => {
       .map(script => script.getAttribute('src'));
 
     const helperIndex = sources.indexOf(
-      '/plugins/streamalchemy/streammonsters-portrait-arena.js'
+      '/plugins/stream-monsters/streammonsters-portrait-arena.js'
     );
     expect(helperIndex).toBeGreaterThan(-1);
     expect(helperIndex).toBeLessThan(sources.indexOf(
-      '/plugins/streamalchemy/streammonsters-effects-renderer.js'
+      '/plugins/stream-monsters/streammonsters-effects-renderer.js'
     ));
     expect(helperIndex).toBeLessThan(sources.indexOf(
-      '/plugins/streamalchemy/streammonsters-arena-view.js'
+      '/plugins/stream-monsters/streammonsters-arena-view.js'
     ));
     dom.window.close();
   });

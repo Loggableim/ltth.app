@@ -29,7 +29,7 @@ module.exports = Object.freeze(applySafeWorkflowContracts([
   require('./schnorrbecher'),
   require('./soundboard'),
   require('./spotlight'),
-  require('./streamalchemy'),
+  require('./stream-monsters'),
   require('./stt-ticker'),
   require('./talking-heads'),
   require('./thermal-printer'),

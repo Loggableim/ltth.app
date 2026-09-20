@@ -4,7 +4,7 @@ const path = require('path');
 const {
   TEMPLATE_CATALOG,
   resolveStageSkill
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 const {
   flattenTranslations
 } = require('../../scripts/lib/plugin-i18n-audit');
@@ -15,7 +15,7 @@ const localeRoot = path.join(
   __dirname,
   '..',
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'locales'
 );
 
@@ -39,19 +39,29 @@ describe('Stream Monsters 1.11 Rules v8 locale contract', () => {
     LOCALES.map(locale => [locale, readLocale(locale)])
   );
 
-  test('resolves every staged skill name and effect in all four languages', () => {
-    const requiredKeys = new Set();
+  test('keeps skill proper nouns identical while localizing every effect', () => {
+    const requiredNameKeys = new Set();
+    const requiredEffectKeys = new Set();
     for (const template of TEMPLATE_CATALOG) {
       for (const stage of [1, 2, 3]) {
         for (const choice of ['A', 'B', 'C']) {
           const skill = resolveStageSkill(template.templateId, choice, stage, 8);
-          requiredKeys.add(skill.nameKey);
-          requiredKeys.add(skill.shortTextKey);
+          requiredNameKeys.add(skill.nameKey);
+          requiredEffectKeys.add(skill.shortTextKey);
         }
       }
     }
 
-    for (const key of requiredKeys) {
+    for (const key of requiredNameKeys) {
+      const fullKey = `${MONSTERS_PREFIX}${key}`;
+      for (const locale of LOCALES) {
+        expect(translations[locale][fullKey]).toEqual(expect.any(String));
+        expect(translations[locale][fullKey].trim()).not.toBe('');
+        expect(translations[locale][fullKey]).toBe(translations.en[fullKey]);
+      }
+    }
+
+    for (const key of requiredEffectKeys) {
       const fullKey = `${MONSTERS_PREFIX}${key}`;
       for (const locale of LOCALES) {
         expect(translations[locale][fullKey]).toEqual(expect.any(String));

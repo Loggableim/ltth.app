@@ -58,7 +58,7 @@ function readRgbaPng(filename) {
 
 describe('Stream Monsters generated egg assets', () => {
   test('ships twelve distinct 1024px RGBA eggs with transparent corners and no text metadata', () => {
-    const assetDir = path.join(process.cwd(), 'plugins', 'streamalchemy', 'assets', 'eggs');
+    const assetDir = path.join(process.cwd(), 'plugins', 'stream-monsters', 'assets', 'eggs');
     const filenames = ELEMENTS.flatMap(element => (
       VARIANTS.map(variant => `${element}-${variant}.png`)
     ));

@@ -1,0 +1,2159 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stream Monsters · Portrait Arcade Rally</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --night:#090c18;
+      --panel:#131a2c;
+      --panel-2:#1a2340;
+      --line:#344267;
+      --ink:#f7f8ff;
+      --muted:#aeb8d2;
+      --violet:#9a76ff;
+      --cyan:#55d7ff;
+      --mint:#55e4aa;
+      --gold:#ffd266;
+      --danger:#ff748e;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 8% -10%,#56358c 0,transparent 34%),
+        radial-gradient(circle at 100% 22%,#163d68 0,transparent 32%),
+        var(--night);
+      font:15px/1.5 Inter,Segoe UI,Arial,sans-serif;
+    }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    main { max-width:1320px; margin:auto; padding:28px 24px 80px; }
+    .hero {
+      position:relative;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(260px,420px);
+      gap:24px;
+      align-items:center;
+      overflow:hidden;
+      padding:24px 28px;
+      border:1px solid #57487c;
+      border-radius:28px;
+      background:linear-gradient(130deg,#211638e8,#101a31e8);
+      box-shadow:0 28px 90px #0008;
+    }
+    .hero-logo { width:min(560px,100%); max-height:132px; object-fit:contain; object-position:left center; }
+    .eyebrow { color:#c9b6ff; text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:800; }
+    .hero h1 { margin:8px 0 6px; font-size:clamp(28px,4vw,48px); line-height:1.05; }
+    .hero p,.section-copy,.muted { color:var(--muted); }
+    .hero-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .metric { padding:13px; border:1px solid #3c4a70; border-radius:16px; background:#0b1120b8; }
+    .metric strong { display:block; font-size:21px; color:var(--cyan); }
+    .nav {
+      position:sticky;
+      top:0;
+      z-index:4;
+      display:flex;
+      gap:8px;
+      overflow:auto;
+      padding:16px 0;
+      background:linear-gradient(var(--night) 70%,transparent);
+    }
+    .nav a { white-space:nowrap; color:var(--muted); text-decoration:none; padding:9px 12px; border:1px solid var(--line); border-radius:999px; background:#101728; }
+    .nav a:hover { color:var(--ink); border-color:var(--violet); }
+    .notice { min-height:42px; padding:10px 14px; margin-bottom:14px; color:var(--muted); border:1px solid var(--line); border-radius:12px; background:#11192b; }
+    .notice.success { color:#bfffe3; border-color:#34795f; }
+    .notice.error { color:#ffd4dc; border-color:#8d4051; }
+    .area { scroll-margin-top:74px; margin-top:18px; padding:22px; border:1px solid var(--line); border-radius:22px; background:linear-gradient(145deg,#151d31ed,#0e1425ed); }
+    .area-head { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:16px; }
+    .area h2 { margin:2px 0; font-size:26px; }
+    .badge { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #456; border-radius:999px; color:var(--muted); background:#0b1221; font-size:12px; }
+    .badge.good { color:#bfffe3; border-color:#39765f; }
+    .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }
+    .card { grid-column:span 4; min-width:0; padding:16px; border:1px solid #334263; border-radius:17px; background:linear-gradient(145deg,#1a2440,#11182a); }
+    .card.wide { grid-column:span 8; }
+    .card.full { grid-column:1/-1; }
+    .card h3 { margin:0 0 6px; font-size:18px; }
+    label { display:grid; gap:5px; margin-top:11px; color:var(--muted); font-size:13px; }
+    input,select { width:100%; min-height:42px; padding:9px 11px; color:var(--ink); border:1px solid #405076; border-radius:10px; background:#0b1120; color-scheme:dark; }
+    select option { color:var(--ink); background:#0b1120; }
+    button { min-height:40px; margin-top:11px; padding:9px 13px; border:0; border-radius:10px; color:white; background:linear-gradient(135deg,var(--violet),#6f54d9); font-weight:800; }
+    button.secondary { color:#dfe8ff; background:#273654; }
+    button.danger { background:#733548; }
+    button:disabled { opacity:.5; cursor:wait; }
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { outline:3px solid var(--cyan); outline-offset:3px; }
+    code { display:block; padding:10px; margin-top:8px; overflow-wrap:anywhere; color:#c5f3ff; border-radius:10px; background:#080c16; }
+    .gift-layout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr); gap:14px; }
+    .catalog,.mapping-list,.collection-list,.leaderboard { display:grid; gap:8px; max-height:390px; overflow:auto; margin-top:12px; }
+    .gift-row,.mapping-row,.pool-row,.viewer-row,.rank-row { display:flex; align-items:center; gap:11px; padding:10px; border:1px solid #303f61; border-radius:12px; background:#0d1424; }
+    .gift-row button { margin:0 0 0 auto; }
+    .gift-img { width:44px; height:44px; object-fit:contain; border-radius:10px; background:#202942; }
+    .grow { flex:1; min-width:0; }
+    .grow strong,.grow small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .grow small { color:var(--muted); }
+    .egg-grid { display:grid; grid-template-columns:repeat(6,minmax(100px,1fr)); gap:10px; margin-top:14px; }
+    .egg-card { position:relative; min-height:154px; overflow:hidden; padding:9px; border:1px solid #344568; border-radius:16px; text-align:center; background:radial-gradient(circle at 50% 35%,#35486d,#101727 68%); }
+    .egg-card.charged { border-color:#b495ff; box-shadow:inset 0 0 28px #8c67ff3d; }
+    .egg-card img { width:100%; height:112px; object-fit:contain; filter:drop-shadow(0 9px 15px #0008); }
+    .egg-card strong { display:block; text-transform:capitalize; font-size:12px; }
+    .coverage { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:12px; }
+    .coverage > div { padding:9px; border-radius:10px; background:#0b1221; text-align:center; color:var(--muted); }
+    .check-row { display:flex; grid-template-columns:none; align-items:center; gap:8px; }
+    .check-row input { width:auto; min-height:0; }
+    progress { width:100%; height:18px; accent-color:var(--violet); }
+    .commands { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .commands code { display:inline-block; margin:0; }
+    .rank-track { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:12px; }
+    .rank-track div { padding:10px; border:1px solid #334263; border-radius:11px; text-align:center; color:var(--muted); background:#0b1221; }
+    .rank-track strong { display:block; color:var(--gold); }
+    .control-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .safe-zone {
+      position:relative; width:min(100%,760px); aspect-ratio:16/9; overflow:hidden; margin-top:14px;
+      border:2px solid #6576a4; border-radius:16px; background:#080c16;
+    }
+    .safe-zone.portrait { width:min(100%,360px); aspect-ratio:9/16; }
+    .safe-box { position:absolute; display:grid; place-items:center; padding:5px; border:2px dashed #607099; border-radius:8px; color:#dce5ff; background:#26324aa8; font-size:11px; text-align:center; }
+    .safe-box.reveal { border-style:solid; border-color:var(--mint); color:#dffff0; background:#285d4ebf; }
+    .safe-box.collision { border-color:var(--danger); background:#752d42c7; }
+    .collision-warning { min-height:24px; margin-top:8px; color:#ffb9c6; font-weight:800; }
+    .dex-grid { display:grid; grid-template-columns:repeat(6,minmax(90px,1fr)); gap:9px; margin-top:12px; }
+    .dex-slot { min-height:150px; padding:9px; border:1px solid #405076; border-radius:13px; text-align:center; background:#0c1426; }
+    .dex-slot img { width:78px; height:78px; object-fit:contain; }
+    .dex-slot.locked img { filter:brightness(0) opacity(.44); }
+    .dex-slot strong,.dex-slot small { display:block; }
+    .dex-slot small { color:var(--muted); }
+    .dex-indicators { display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin-top:6px; }
+    .dex-indicator { padding:2px 6px; border:1px solid #607099; border-radius:999px; color:#ecf2ff; background:#273654; font-size:10px; }
+    .dex-indicator.first { border-color:var(--mint); color:#dffff0; }
+    .dex-element-progress { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .status-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:9px; }
+    .status-tile { min-height:96px; padding:12px; border:1px solid #3a4b70; border-radius:14px; background:linear-gradient(150deg,#18233e,#0b1221); }
+    .status-tile span,.status-tile strong { display:block; overflow-wrap:anywhere; }
+    .status-tile span { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .status-tile strong { margin-top:7px; color:var(--cyan); font-size:17px; }
+    .warning-stack { display:grid; gap:7px; min-height:48px; padding:11px; border:1px solid #55496e; border-radius:12px; background:#0d1424; }
+    .alias-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .alias-command-group { display:grid; align-content:start; gap:10px; padding:12px; border:1px solid #46567d; border-radius:16px; background:#0a1120a8; }
+    .alias-command-group h4 { margin:0; color:var(--cyan); font-size:15px; letter-spacing:.04em; }
+    .command-policy-meta { display:grid; gap:3px; margin-top:5px; color:var(--muted); font-size:12px; white-space:normal; }
+    .alias-row { padding:12px; border:1px solid #344568; border-radius:13px; background:#0c1425; }
+    .alias-row header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .alias-row header code { margin:0; padding:4px 7px; }
+    .alias-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .language-toggles { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .language-toggles label { display:flex; align-items:center; gap:4px; margin:0; padding:4px 7px; border:1px solid #3c4a70; border-radius:999px; background:#10192d; }
+    .language-toggles input { width:auto; min-height:0; }
+    .preview-grid { display:grid; grid-template-columns:repeat(2,minmax(230px,1fr)); gap:16px; align-items:start; margin-top:14px; }
+    .preview-example { min-width:0; }
+    .preview-example h4 { margin:0 0 7px; color:#f6f9ff; font-size:14px; }
+    .preview-example > p { min-height:38px; margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
+    .preview-example .stage-preview { margin-inline:auto; }
+    .obs-composition-guide { margin-top:14px; padding:13px 15px; border:1px solid #586c9c; border-radius:14px; background:#0b1325; }
+    .obs-composition-guide h4 { margin:0; color:#f6f9ff; }
+    .obs-composition-guide p { margin:7px 0; color:var(--muted); }
+    .obs-composition-guide ol { margin:8px 0; padding-left:24px; color:#dce8ff; }
+    .obs-composition-guide li + li { margin-top:4px; }
+    .obs-source-warning { padding:9px 11px; border:1px solid #f4b85f; border-radius:10px; color:#ffe2ae !important; background:#4a321d85; font-weight:750; }
+    .stage-preview { position:relative; overflow:hidden; width:100%; border:2px solid #687caf; border-radius:18px; background:
+      radial-gradient(circle at 50% 32%,#45549c88,transparent 32%),
+      linear-gradient(180deg,#17213b,#0a1020); box-shadow:inset 0 0 60px #0008; }
+    .stage-preview.portrait { max-width:300px; aspect-ratio:9/16; }
+    .stage-preview.landscape { aspect-ratio:16/9; }
+    .preview-zone {
+      position:absolute; z-index:4; left:var(--x); top:var(--y); width:var(--w); height:var(--h);
+      display:grid; place-items:center; overflow:hidden; border:1px dashed #7ceaff8c;
+      border-radius:5px; color:#e9fbff; background:#132b3b61; font-size:8px;
+      font-weight:900; line-height:1; text-transform:uppercase; pointer-events:none;
+    }
+    .preview-zone[data-preview-zone="notification"] { border-color:#ffd76f; background:#563f1f70; }
+    .preview-zone[data-preview-zone="avatar"] { border-color:#a984ff; background:#38275d45; }
+    .preview-zone[data-preview-zone="likes"],
+    .preview-zone[data-preview-zone="shelf"],
+    .preview-zone[data-preview-zone="xp"] { border-color:#6ef1b8; background:#193f3561; }
+    .stage-gameplay { position:absolute; inset:0 0 26% 0; overflow:hidden; background:
+      radial-gradient(ellipse at 50% 84%,#6652bb59,transparent 45%),
+      linear-gradient(180deg,transparent,#141a35b8); }
+    .stage-chat-safe { position:absolute; inset:74% 0 0; display:grid; place-items:center; padding:8px; border-top:2px dashed #ffbf6b; color:#ffe3b8; background:#1c1420e6; text-align:center; font-size:12px; font-weight:800; }
+    .stage-hud { position:absolute; top:4%; left:5%; right:5%; display:flex; justify-content:space-between; gap:8px; }
+    .stage-hud span { padding:4px 7px; border-radius:999px; background:#080c16cc; color:#eaf4ff; font-size:10px; }
+    .stage-monster { position:absolute; bottom:7%; width:43%; aspect-ratio:1; object-fit:contain; filter:drop-shadow(0 13px 18px #0009); }
+    .stage-monster.left { left:4%; }
+    .stage-monster.right { right:4%; transform:scaleX(-1); }
+    .stage-callout { position:absolute; left:50%; top:14%; transform:translateX(-50%); width:max-content; max-width:80%; padding:7px 10px; border:1px solid #bca9ff; border-radius:12px; background:#1c1740e8; text-align:center; font-size:11px; font-weight:900; }
+    #portraitBattlePreview .portrait-arena-preview {
+      z-index:3; border:2px solid var(--violet); border-radius:10px; color:var(--ink);
+      background:
+        radial-gradient(ellipse at 50% 92%,#6652bb70,transparent 48%),
+        linear-gradient(180deg,#202b52,#10152d);
+    }
+    #portraitBattlePreview .portrait-arena-preview .stage-hud { top:5%; left:4%; right:4%; }
+    #portraitBattlePreview .portrait-arena-preview .stage-monster { bottom:2%; }
+    #portraitBattlePreview [data-preview-zone="likebar"] {
+      border-color:#f4b85f; color:#ffe2ae; background:#4a321d99;
+    }
+    #portraitBattlePreview [data-preview-zone="shelf"] {
+      border-color:#6ef1b8; color:#dffff0; background:#193f35a8;
+    }
+    #portraitBattlePreview [data-preview-zone="safe"] {
+      border:0; border-radius:0; color:transparent; background:#1c1420e6;
+    }
+    #portraitBattlePreview[data-arena-variant="split-arena"] .portrait-arena-preview::after {
+      content:""; position:absolute; inset:17% 50% 5%; border-left:1px solid #bca9ff80;
+    }
+    #portraitBattlePreview[data-arena-variant="split-arena"] .stage-monster {
+      bottom:1%; width:42%;
+    }
+    #portraitBattlePreview[data-arena-variant="split-arena"] .stage-callout {
+      top:44%; padding:5px 8px;
+    }
+    #portraitBattlePreview[data-arena-variant="classic"] .stage-monster {
+      bottom:0; width:45%;
+    }
+    #portraitBattlePreview[data-arena-variant="classic"] .stage-callout {
+      top:15%;
+    }
+    .creator-egg-shelf-preview {
+      display:flex; align-items:flex-end; justify-content:center; gap:7px; min-height:84px;
+      margin-top:12px; padding:10px 12px 8px; border:1px solid #6b5fa1;
+      border-radius:15px; background:linear-gradient(180deg,#171e38,#0b1020);
+    }
+    .creator-egg-shelf-preview span {
+      display:grid; place-items:center; width:46px; height:58px; border-radius:50%;
+      background:radial-gradient(circle at 45% 35%,#fff8,#a984ff 45%,#352766 80%);
+      box-shadow:0 8px 13px #0009; font-size:28px;
+    }
+    .creator-egg-shelf-preview .free {
+      outline:3px solid #ffd76f; box-shadow:0 0 18px #ffd76f99,0 8px 13px #0009;
+    }
+    .creator-egg-shelf-preview strong {
+      align-self:center; padding:6px 9px; border-radius:999px; color:#161022; background:#fff;
+    }
+    .asset-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+    .asset-stat { padding:13px; border:1px solid #3a4b70; border-radius:13px; background:#0d1424; }
+    .asset-stat strong,.asset-stat span { display:block; }
+    .asset-stat strong { color:var(--mint); font-size:23px; }
+    .asset-stat span { color:var(--muted); font-size:12px; }
+    .asset-stage-grid { display:grid; grid-template-columns:repeat(8,minmax(90px,1fr)); gap:8px; max-height:620px; overflow:auto; margin-top:10px; }
+    .asset-stage-card { padding:7px; border:1px solid #344568; border-radius:12px; background:#0c1426; text-align:center; }
+    .asset-stage-card img { width:100%; aspect-ratio:1; object-fit:contain; filter:drop-shadow(0 8px 10px #0008); }
+    .asset-stage-card strong,.asset-stage-card small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .asset-stage-card small { color:var(--muted); font-size:10px; }
+    .asset-stage-card.damaged { border-color:var(--danger); }
+    .leaderboard-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .repair-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+    .repair-card { grid-column:auto; }
+    .repair-actions { display:flex; flex-wrap:wrap; gap:9px; }
+    .repair-actions button { flex:1 1 180px; }
+    .repair-confirm { padding:9px 10px; border:1px solid #3a4b70; border-radius:10px; background:#0b1221; }
+    .repair-confirm:has(input:disabled) { opacity:.56; }
+    .repair-result { min-height:48px; margin:11px 0 0; padding:10px; border:1px solid #344568; border-radius:10px; color:var(--muted); background:#0b1221; }
+    .repair-result.success { color:#bfffe3; border-color:#34795f; }
+    .repair-result.error { color:#ffd4dc; border-color:#8d4051; }
+    .repair-card button:disabled { cursor:not-allowed; }
+    .fairness-list { margin:10px 0 0; padding-left:20px; color:var(--muted); }
+    .fairness-list li + li { margin-top:6px; }
+    .presentation-toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:9px; margin:14px 0; }
+    .presentation-toolbar label { flex:1 1 180px; margin:0; }
+    .presentation-canvas { position:relative; overflow:hidden; width:min(100%,640px); margin:auto; aspect-ratio:9/16; border:2px solid #687caf; border-radius:16px; background:#07101f; }
+    .presentation-canvas[data-orientation="landscape"] { width:100%; aspect-ratio:16/9; }
+    .presentation-layer,.presentation-safe-zone { position:absolute; left:calc(var(--x) * 1%); top:calc(var(--y) * 1%); width:calc(var(--w) * 1%); height:calc(var(--h) * 1%); box-sizing:border-box; }
+    .presentation-layer { z-index:2; display:grid; place-items:center; overflow:hidden; border:2px solid #73e6ff; border-radius:7px; color:#fff; background:#173b5cbb; cursor:move; font:800 11px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .presentation-layer[data-mode="dedicated"] { border-color:#bca9ff; background:#412b70bb; }
+    .presentation-layer[data-mode="off"] { opacity:.32; }
+    .presentation-safe-zone { z-index:3; display:grid; place-items:center; border:2px dashed #ffb45e; color:#ffe0b8; background:#633b248c; cursor:move; font:800 10px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .presentation-resize { position:absolute; right:0; bottom:0; width:18px; height:18px; border:0; background:#fff; cursor:nwse-resize; }
+    .presentation-mode { position:absolute; left:3px; bottom:3px; width:auto; min-height:22px; padding:1px; font-size:9px; }
+    .presentation-error { min-height:24px; margin-top:8px; color:#ffb9c6; font-weight:800; }
+    .presentation-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .presentation-actions button { flex:1 1 120px; }
+    .presentation-layer:focus-visible,.presentation-safe-zone:focus-visible { outline:4px solid #fff; outline-offset:2px; }
+    @media (max-width:960px) {
+      .hero,.gift-layout { grid-template-columns:1fr; }
+      .card,.card.wide { grid-column:1/-1; }
+      .egg-grid { grid-template-columns:repeat(4,1fr); }
+      .status-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .control-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .dex-grid { grid-template-columns:repeat(4,minmax(80px,1fr)); }
+      .asset-stage-grid { grid-template-columns:repeat(5,minmax(80px,1fr)); }
+      .alias-grid,.leaderboard-grid,.preview-grid,.repair-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:620px) {
+      main { padding:14px 12px 60px; }
+      .hero,.area { padding:16px; border-radius:18px; }
+      .hero-stats { grid-template-columns:1fr; }
+      .egg-grid { grid-template-columns:repeat(2,1fr); }
+      .coverage,.rank-track { grid-template-columns:repeat(2,1fr); }
+      .status-grid,.asset-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .control-grid { grid-template-columns:1fr; }
+      .dex-grid { grid-template-columns:repeat(2,minmax(80px,1fr)); }
+      .asset-stage-grid { grid-template-columns:repeat(3,minmax(72px,1fr)); }
+      .alias-fields { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<main id="streammonsters-app">
+  <header class="hero">
+    <div>
+      <img class="hero-logo" src="/plugins/stream-monsters/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Portrait Arcade Rally · Version 1.12</div>
+      <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
+      <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Portrait-first PvP, permanente Sammlung und 72 fertig gebündelte Furry-Formen. Geschenke kaufen Tempo und Show, niemals Kampfstärke.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="metric"><strong id="readinessScore">0/6</strong><span data-i18n="plugins.streamalchemy.ui.monsters.readinessLive">Live bereit</span></div>
+      <div class="metric"><strong id="catalogTotal">—</strong><span data-i18n="plugins.streamalchemy.ui.monsters.catalogGifts">Geschenke im Katalog</span></div>
+      <div class="metric"><strong id="hypeMetric">0%</strong><span data-i18n="plugins.streamalchemy.ui.monsters.streamHype">Stream-Hype</span></div>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="Stream Monsters creator areas" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.navAreas">
+    <a href="#live-center" data-i18n="plugins.streamalchemy.ui.monsters.navLiveCenter">1 · Live Center</a>
+    <a href="#gameplay" data-i18n="plugins.streamalchemy.ui.monsters.navGameplay">2 · Gameplay</a>
+    <a href="#gifts-chat" data-i18n="plugins.streamalchemy.ui.monsters.navGiftsChat">3 · Gifts &amp; Chat</a>
+    <a href="#languages" data-i18n="plugins.streamalchemy.ui.monsters.navLanguages">4 · Languages</a>
+    <a href="#overlay-studio" data-i18n="plugins.streamalchemy.ui.monsters.navOverlayStudio">5 · Overlay Studio</a>
+    <a href="#asset-library" data-i18n="plugins.streamalchemy.ui.monsters.navAssetLibrary">6 · Monster &amp; Assets</a>
+    <a href="#community-seasons" data-i18n="plugins.streamalchemy.ui.monsters.navCommunitySeasons">7 · Community &amp; Seasons</a>
+  </nav>
+  <div id="notice" class="notice" role="status" data-i18n="plugins.streamalchemy.ui.monsters.loading">Stream Monsters wird geladen …</div>
+
+  <section id="live-center" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area1">Area 1</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.liveCenterTitle">Live Center</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.liveCenterCopy">One broadcast view for connection, command, arena, renderer and audio health.</p></div><span id="liveBadge" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.liveOffline">● Offline</span></div>
+    <div class="status-grid"
+      aria-label="Live diagnostics"
+      data-i18n-aria-label="plugins.streamalchemy.ui.monsters.liveDiagnosticsAria">
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveTikTokLabel">TikTok</span><strong id="liveTikTok">disconnected</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveGcceLabel">GCCE</span><strong id="liveGcce">fallback</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveObsLabel">OBS</span><strong id="liveObs">configured</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.livePluginLabel">Plugin</span><strong id="livePlugin">enabled</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveQueueLabel">Egg queue</span><strong id="liveQueue">0</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveEggShelfLabel">Living egg shelf</span><strong id="liveEggShelf">0 / 6 · +0</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveHypeLabel">Hype</span><strong id="liveHype">0%</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveBattleLabel">Battle phase</span><strong id="liveBattlePhase">idle</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveCountdownLabel">Countdown</span><strong id="liveCountdown">—</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveRendererLabel">Renderer</span><strong id="liveRenderer">waiting</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.liveAudioLabel">Audio</span><strong id="liveAudio">active</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggOfferCounts">Free egg offers</span><strong id="freeEggOfferCounts">0</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggNextCleanup">Next offer release</span><strong id="freeEggNextCleanup">—</strong></div>
+      <div class="status-tile"><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintState">Tutorial hints</span><strong id="tutorialHintState">waiting</strong></div>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.worldCreator">World &amp; Creator</h3>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.publicName">Public name</span><input id="creatorName" maxlength="60" placeholder="TikTok name" data-i18n-placeholder="plugins.streamalchemy.ui.monsters.creatorPlaceholder"></label>
+        <button id="saveSetup" type="button" data-i18n="plugins.streamalchemy.ui.monsters.saveSetup">Save creator setup</button>
+      </article>
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.obsSource">OBS Browser Source</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.responsiveCopy">Portrait and landscape use independent broadcast layouts.</p>
+        <code id="overlayUrl">/stream-monsters/overlay</code>
+        <button type="button"
+                data-creator-diagnostic-action="copy_overlay_url"
+                data-copy-tiktok-studio-url
+                data-overlay-url-source="#overlayUrl"
+                data-i18n="common.tiktok_studio.copy_url">
+          TikTok-Studio-URL kopieren
+        </button>
+        <button id="runDemo" type="button" data-i18n="plugins.streamalchemy.ui.monsters.runDemo">Run complete demo</button>
+      </article>
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.rules">Effective rules</h3>
+        <p id="dynamicRules" class="muted"></p>
+        <div><span data-i18n="plugins.streamalchemy.ui.monsters.prefix">GCCE prefix</span>: <strong id="activePrefix">!</strong></div>
+        <div><span data-i18n="plugins.streamalchemy.ui.monsters.hatchDuration">Hatch duration</span>: <strong id="activeHatchDuration">—</strong></div>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.liveWarningsTitle">Warnings &amp; actions</h3>
+        <div id="liveWarnings" class="warning-stack" aria-live="polite"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.noLiveWarnings">No live warnings.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="gameplay" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Area 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTitle">Gameplay</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.gameplayCopy">Tune incubation and seasons while the fairness contract stays fixed.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.rulesV8Badge">Rules v8</span></div>
+    <div class="grid">
+      <article class="card wide">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.gameplayTiming">Eggs &amp; seasons</h3>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.hatchPreset">Hatch preset</span><select id="hatchPreset">
+            <option value="30000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Seconds">30 seconds</option>
+            <option value="60000" data-i18n="plugins.streamalchemy.ui.monsters.duration1Minute">1 minute</option>
+            <option value="90000" data-i18n="plugins.streamalchemy.ui.monsters.duration90Seconds">90 seconds</option>
+            <option value="120000" data-i18n="plugins.streamalchemy.ui.monsters.duration2Minutes">2 minutes</option>
+            <option value="300000" data-i18n="plugins.streamalchemy.ui.monsters.duration5Minutes">5 minutes</option>
+            <option value="600000" data-i18n="plugins.streamalchemy.ui.monsters.duration10Minutes">10 minutes</option>
+            <option value="1800000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Minutes">30 minutes</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.gameplayPace">Gameplay pace</span><select id="gameplayPace">
+            <option value="arcade" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceArcade">Arcade</option>
+            <option value="standard" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceStandard">Standard</option>
+            <option value="accessible" data-i18n="plugins.streamalchemy.ui.monsters.gameplayPaceAccessible">Accessible</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleMode">Portrait battle mode</span><select id="portraitBattleMode">
+            <option value="takeover-74" data-i18n="plugins.streamalchemy.ui.monsters.portraitBattleModeTakeover74">74% arena takeover</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.eggExpiry">Egg expiry</span><select id="eggExpiry">
+            <option value="21600000" data-i18n="plugins.streamalchemy.ui.monsters.duration6Hours">6 hours</option><option value="43200000" data-i18n="plugins.streamalchemy.ui.monsters.duration12Hours">12 hours</option>
+            <option value="86400000" data-i18n="plugins.streamalchemy.ui.monsters.duration24Hours">24 hours</option><option value="172800000" data-i18n="plugins.streamalchemy.ui.monsters.duration48Hours">48 hours</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.seasonDuration">Season duration</span><select id="seasonDuration">
+            <option value="7" data-i18n="plugins.streamalchemy.ui.monsters.duration7Days">7 days</option><option value="14" data-i18n="plugins.streamalchemy.ui.monsters.duration14Days">14 days</option>
+            <option value="28" data-i18n="plugins.streamalchemy.ui.monsters.duration28Days">28 days</option><option value="60" data-i18n="plugins.streamalchemy.ui.monsters.duration60Days">60 days</option><option value="90" data-i18n="plugins.streamalchemy.ui.monsters.duration90Days">90 days</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggDropsEnabled">Recurring free eggs</span><input id="freeEggDropsEnabled" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealEnabled">Allow ready-egg steals</span><input id="unhatchedEggStealEnabled" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealGraceSeconds">Ready time before steal (seconds)</span><input id="unhatchedEggStealGraceSeconds" type="number" min="0" max="900" step="1" value="600"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealActivityWindowSeconds">Owner activity window (seconds)</span><input id="unhatchedEggStealActivityWindowSeconds" type="number" min="30" max="86400" step="1" value="300"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
+        </div>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownHelp">Each viewer can claim one free egg after this cooldown.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealHelp">Active owners hatch their ready eggs automatically. An inactive owner's egg becomes available with !steal after its ready time, and every unhatched egg is stealable after 15 minutes.</p>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintHelp">Hints appear only in the overlay and use the active GCCE prefix.</p>
+        <div id="presentationModeStatus" class="badge" role="status" aria-live="polite"></div>
+        <div id="retentionTimerWarning" class="notice" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.retentionTimerWarning">Use at least 60 seconds so chat stays readable.</div>
+        <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">No stream data yet</div>
+      </article>
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.fairnessTitle">Fair play contract</h3>
+        <ul class="fairness-list">
+          <li data-i18n="plugins.streamalchemy.ui.monsters.fairnessGifts">Gifts affect timing and spectacle, never stats.</li>
+          <li data-i18n="plugins.streamalchemy.ui.monsters.fairnessXp">Every legitimate completed battle awards monster XP.</li>
+          <li data-i18n="plugins.streamalchemy.ui.monsters.fairnessPermanent">Collection, levels and evolutions remain permanent.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.communityMomentum">Community momentum</h3>
+        <div id="heartChainStatus" class="badge">Heart Chain · 0</div>
+        <div id="streamMissionStatus" class="badge">Mission · —</div>
+      </article>
+    </div>
+  </section>
+
+  <section id="gifts-chat" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area3">Area 3</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.giftsChatTitle">Gifts &amp; Chat</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.giftsChatCopy">Map the complete TikTok catalog and keep every chat action filter-safe.</p></div><span id="mappingCount" class="badge"></span></div>
+    <div class="gift-layout">
+      <article class="card full">
+          <h3 data-i18n="plugins.streamalchemy.ui.monsters.catalogSearch">Katalog durchsuchen</h3>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.giftNameOrId">Geschenkname oder ID</span><input id="giftSearch" type="search" placeholder="z. B. Rose oder 5655" data-i18n-placeholder="plugins.streamalchemy.ui.monsters.giftSearchPlaceholder"></label>
+          <div id="giftCatalog" class="catalog" aria-live="polite"></div>
+          <button id="giftCatalogMore" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.loadMoreGifts">Load more gifts</button>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.selectedGift">Ausgewähltes Geschenk</h3>
+        <input id="selectedGiftId" type="hidden">
+        <div id="selectedGift" class="gift-row"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.chooseGift">Im Katalog ein Geschenk wählen.</span></div>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.action">Aktion</span><select id="giftEffect"><option value="spawn" data-i18n="plugins.streamalchemy.ui.monsters.spawnEgg">Ei spawnen</option><option value="boost" data-i18n="plugins.streamalchemy.ui.monsters.boostEgg">Ältestes Ei boosten</option></select></label>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.element">Element</span><select id="giftElement"><option value="Random" data-i18n="plugins.streamalchemy.ui.monsters.randomElement">Random</option><option data-i18n="plugins.streamalchemy.ui.monsters.ember">Ember</option><option data-i18n="plugins.streamalchemy.ui.monsters.tide">Tide</option><option data-i18n="plugins.streamalchemy.ui.monsters.grove">Grove</option><option data-i18n="plugins.streamalchemy.ui.monsters.gale">Gale</option><option data-i18n="plugins.streamalchemy.ui.monsters.volt">Volt</option><option data-i18n="plugins.streamalchemy.ui.monsters.lunar">Lunar</option></select></label>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.heartMeHelp">In an untouched setup, Team Heart is suggested by name as a Random spawn; manual mappings are never replaced.</p>
+        <button id="saveGiftMapping" type="button" data-i18n="plugins.streamalchemy.ui.monsters.enableMapping">Mapping aktivieren</button>
+        <h3 style="margin-top:18px" data-i18n="plugins.streamalchemy.ui.monsters.activeSelection">Aktive Auswahl</h3>
+        <div id="mappingList" class="mapping-list"></div>
+      </article>
+    </div>
+    <article class="card full" style="margin-top:14px">
+      <div class="area-head">
+        <div><h3 data-i18n="plugins.streamalchemy.ui.monsters.aliasTitle">Command aliases &amp; language variants</h3><p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.aliasCopy">Comma-separated active and disabled aliases are persisted per action. Locale switches move their suggested alias between the lists.</p></div>
+        <span id="aliasConflictStatus"
+          class="badge"
+          role="status"
+          aria-live="polite"
+          data-i18n="plugins.streamalchemy.ui.monsters.aliasChecking">Checking conflicts…</span>
+      </div>
+      <div id="aliasGrid" class="alias-grid">
+        <article class="alias-row" data-command-alias="eggs">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandEggs">Egg list</strong><code data-command="eggs">!eier</code></header>
+          <div class="alias-fields"><label id="alias-eggs-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsEnabled">Active egg aliases</span><input id="aliasEggsEnabled" data-alias-command="eggs" data-alias-mode="enabled" value="eier, eierliste, meineeier"></label><label id="alias-eggs-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsDisabled">Optional egg aliases</span><input id="aliasEggsDisabled" data-alias-command="eggs" data-alias-mode="disabled" value="eggs, huevos, oeufs"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="eggs" data-locale="de" data-alias="eier" checked>DE</label><label><input type="checkbox" data-alias-locale="eggs" data-locale="en" data-alias="eggs">EN</label><label><input type="checkbox" data-alias-locale="eggs" data-locale="es" data-alias="huevos">ES</label><label><input type="checkbox" data-alias-locale="eggs" data-locale="fr" data-alias="oeufs">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="adopt">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandAdopt">Adopt a free egg</strong><code data-command="adopt">!adopt</code></header>
+          <div class="alias-fields"><label id="alias-adopt-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasAdoptEnabled" data-alias-command="adopt" data-alias-mode="enabled" value="adopt, adoptieren"></label><label id="alias-adopt-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasAdoptDisabled" data-alias-command="adopt" data-alias-mode="disabled" value="adoptar, adopter"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="adopt" data-locale="de" data-alias="adoptieren" checked>DE</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="en" data-alias="adopt" checked>EN</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="es" data-alias="adoptar">ES</label><label><input type="checkbox" data-alias-locale="adopt" data-locale="fr" data-alias="adopter">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="steal">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandSteal">Steal a ready egg</strong><code data-command="steal">!steal</code></header>
+          <div class="alias-fields"><label id="alias-steal-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasStealEnabled" data-alias-command="steal" data-alias-mode="enabled" value="steal, stehlen"></label><label id="alias-steal-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasStealDisabled" data-alias-command="steal" data-alias-mode="disabled" value=""></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="steal" data-locale="de" data-alias="stehlen" checked>DE</label><label><input type="checkbox" data-alias-locale="steal" data-locale="en" data-alias="steal" checked>EN</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="hatch">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandHatch">Hatch</strong><code data-command="hatch">!hatch [slot]</code></header>
+          <div class="alias-fields"><label id="alias-hatch-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasHatchEnabled" data-alias-command="hatch" data-alias-mode="enabled" value="hatch"></label><label id="alias-hatch-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasHatchDisabled" data-alias-command="hatch" data-alias-mode="disabled" value="schluepfen, incubar, eclore"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="hatch" data-locale="de" data-alias="schluepfen">DE</label><label><input type="checkbox" data-alias-locale="hatch" data-locale="en" data-alias="hatch" checked>EN</label><label><input type="checkbox" data-alias-locale="hatch" data-locale="es" data-alias="incubar">ES</label><label><input type="checkbox" data-alias-locale="hatch" data-locale="fr" data-alias="eclore">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="inventory">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandInventory">Inventory</strong><code data-command="inventory">!inventory</code></header>
+          <div class="alias-fields"><label id="alias-inventory-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasInventoryEnabled" data-alias-command="inventory" data-alias-mode="enabled" value="inventory"></label><label id="alias-inventory-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasInventoryDisabled" data-alias-command="inventory" data-alias-mode="disabled" value="inventar, inventario, inventaire"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="inventory" data-locale="de" data-alias="inventar">DE</label><label><input type="checkbox" data-alias-locale="inventory" data-locale="en" data-alias="inventory" checked>EN</label><label><input type="checkbox" data-alias-locale="inventory" data-locale="es" data-alias="inventario">ES</label><label><input type="checkbox" data-alias-locale="inventory" data-locale="fr" data-alias="inventaire">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="monsters">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandMonsters">Monster collection</strong><code data-command="monsters">!monsters</code></header>
+          <div class="alias-fields"><label id="alias-monsters-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasMonstersEnabled" data-alias-command="monsters" data-alias-mode="enabled" value="monsters"></label><label id="alias-monsters-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasMonstersDisabled" data-alias-command="monsters" data-alias-mode="disabled" value="monsterliste, monstruos, monstres"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="monsters" data-locale="de" data-alias="monsterliste">DE</label><label><input type="checkbox" data-alias-locale="monsters" data-locale="en" data-alias="monsters" checked>EN</label><label><input type="checkbox" data-alias-locale="monsters" data-locale="es" data-alias="monstruos">ES</label><label><input type="checkbox" data-alias-locale="monsters" data-locale="fr" data-alias="monstres">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="monster">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandMonster">Monster card</strong><code data-command="monster">!monster [slot]</code></header>
+          <div class="alias-fields"><label id="alias-monster-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasMonsterEnabled" data-alias-command="monster" data-alias-mode="enabled" value="monster"></label><label id="alias-monster-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasMonsterDisabled" data-alias-command="monster" data-alias-mode="disabled" value="monstruo, monstre"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="monster" data-locale="de" data-alias="monster" checked>DE</label><label><input type="checkbox" data-alias-locale="monster" data-locale="en" data-alias="monster" checked>EN</label><label><input type="checkbox" data-alias-locale="monster" data-locale="es" data-alias="monstruo">ES</label><label><input type="checkbox" data-alias-locale="monster" data-locale="fr" data-alias="monstre">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="choose">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandChoose">Choose fighter</strong><code data-command="choose">!choose &lt;slot&gt;</code></header>
+          <div class="alias-fields"><label id="alias-choose-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasChooseEnabled" data-alias-command="choose" data-alias-mode="enabled" value="choose"></label><label id="alias-choose-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasChooseDisabled" data-alias-command="choose" data-alias-mode="disabled" value="waehle, elegir, choisir"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="choose" data-locale="de" data-alias="waehle">DE</label><label><input type="checkbox" data-alias-locale="choose" data-locale="en" data-alias="choose" checked>EN</label><label><input type="checkbox" data-alias-locale="choose" data-locale="es" data-alias="elegir">ES</label><label><input type="checkbox" data-alias-locale="choose" data-locale="fr" data-alias="choisir">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="evolve">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandEvolve">Evolve</strong><code data-command="evolve">!evolve &lt;slot&gt;</code></header>
+          <div class="alias-fields"><label id="alias-evolve-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasEvolveEnabled" data-alias-command="evolve" data-alias-mode="enabled" value="evolve"></label><label id="alias-evolve-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasEvolveDisabled" data-alias-command="evolve" data-alias-mode="disabled" value="entwickle, evolucionar, evoluer"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="evolve" data-locale="de" data-alias="entwickle">DE</label><label><input type="checkbox" data-alias-locale="evolve" data-locale="en" data-alias="evolve" checked>EN</label><label><input type="checkbox" data-alias-locale="evolve" data-locale="es" data-alias="evolucionar">ES</label><label><input type="checkbox" data-alias-locale="evolve" data-locale="fr" data-alias="evoluer">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="battle">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandBattle">Battle queue</strong><code data-command="battle">!battle</code></header>
+          <div class="alias-fields"><label id="alias-battle-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasBattleEnabled" data-alias-command="battle" data-alias-mode="enabled" value="battle"></label><label id="alias-battle-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasBattleDisabled" data-alias-command="battle" data-alias-mode="disabled" value="kampf, batalla, combat"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="battle" data-locale="de" data-alias="kampf">DE</label><label><input type="checkbox" data-alias-locale="battle" data-locale="en" data-alias="battle" checked>EN</label><label><input type="checkbox" data-alias-locale="battle" data-locale="es" data-alias="batalla">ES</label><label><input type="checkbox" data-alias-locale="battle" data-locale="fr" data-alias="combat">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="leavebattle">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandLeaveBattle">Leave battle</strong><code data-command="leavebattle">!leavebattle</code></header>
+          <div class="alias-fields"><label id="alias-leavebattle-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasLeavebattleEnabled" data-alias-command="leavebattle" data-alias-mode="enabled" value="leavebattle"></label><label id="alias-leavebattle-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasLeavebattleDisabled" data-alias-command="leavebattle" data-alias-mode="disabled" value="kampfverlassen, salirbatalla, quittercombat"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="leavebattle" data-locale="de" data-alias="kampfverlassen">DE</label><label><input type="checkbox" data-alias-locale="leavebattle" data-locale="en" data-alias="leavebattle" checked>EN</label><label><input type="checkbox" data-alias-locale="leavebattle" data-locale="es" data-alias="salirbatalla">ES</label><label><input type="checkbox" data-alias-locale="leavebattle" data-locale="fr" data-alias="quittercombat">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="rank">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandRank">Rank</strong><code data-command="rank">!rank</code></header>
+          <div class="alias-fields"><label id="alias-rank-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasRankEnabled" data-alias-command="rank" data-alias-mode="enabled" value="rank, monsterrank"></label><label id="alias-rank-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasRankDisabled" data-alias-command="rank" data-alias-mode="disabled" value="rang, rango, classement"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="rank" data-locale="de" data-alias="rang">DE</label><label><input type="checkbox" data-alias-locale="rank" data-locale="en" data-alias="rank" checked>EN</label><label><input type="checkbox" data-alias-locale="rank" data-locale="es" data-alias="rango">ES</label><label><input type="checkbox" data-alias-locale="rank" data-locale="fr" data-alias="classement">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="quests">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandQuests">Quests</strong><code data-command="quests">!quests</code></header>
+          <div class="alias-fields"><label id="alias-quests-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasQuestsEnabled" data-alias-command="quests" data-alias-mode="enabled" value="quests"></label><label id="alias-quests-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasQuestsDisabled" data-alias-command="quests" data-alias-mode="disabled" value="aufgaben, misiones, quetes"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="quests" data-locale="de" data-alias="aufgaben">DE</label><label><input type="checkbox" data-alias-locale="quests" data-locale="en" data-alias="quests" checked>EN</label><label><input type="checkbox" data-alias-locale="quests" data-locale="es" data-alias="misiones">ES</label><label><input type="checkbox" data-alias-locale="quests" data-locale="fr" data-alias="quetes">FR</label></div>
+        </article>
+        <article class="alias-row" data-command-alias="monstershelp">
+          <header><strong data-i18n="plugins.streamalchemy.ui.monsters.commandHelp">Help</strong><code data-command="monstershelp">!monstershelp</code></header>
+          <div class="alias-fields"><label id="alias-monstershelp-enabled"><span data-i18n="plugins.streamalchemy.ui.monsters.activeAliases">Active aliases</span><input id="aliasMonstershelpEnabled" data-alias-command="monstershelp" data-alias-mode="enabled" value="monstershelp"></label><label id="alias-monstershelp-disabled"><span data-i18n="plugins.streamalchemy.ui.monsters.disabledAliases">Disabled aliases</span><input id="aliasMonstershelpDisabled" data-alias-command="monstershelp" data-alias-mode="disabled" value="monsterhilfe, ayudamonstruos, aidemonstres"></label></div>
+          <div class="language-toggles"><label><input type="checkbox" data-alias-locale="monstershelp" data-locale="de" data-alias="monsterhilfe">DE</label><label><input type="checkbox" data-alias-locale="monstershelp" data-locale="en" data-alias="monstershelp" checked>EN</label><label><input type="checkbox" data-alias-locale="monstershelp" data-locale="es" data-alias="ayudamonstruos">ES</label><label><input type="checkbox" data-alias-locale="monstershelp" data-locale="fr" data-alias="aidemonstres">FR</label></div>
+        </article>
+      </div>
+      <div class="grid" style="margin-top:14px">
+        <article class="card">
+          <h3 data-i18n="plugins.streamalchemy.ui.monsters.tiktokFilterTitle">TikTok filter diagnostics</h3>
+          <strong id="tiktokFilterStatus" class="badge">Not probeable</strong>
+          <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.tiktokFilterNotProbeable">TikTok does not expose its chat-filter decision to plugins. Use custom aliases and verify them with a non-critical test message.</p>
+        </article>
+        <article class="card wide">
+          <h3 data-i18n="plugins.streamalchemy.ui.monsters.cooldownDiagnosticsTitle">Effective command cooldowns</h3>
+          <div id="commandPolicyList" class="mapping-list" aria-live="polite"></div>
+        </article>
+      </div>
+    </article>
+  </section>
+
+  <section id="languages" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Area 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Languages</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.supportedLanguagesBadge">DE · EN · ES · FR</span></div>
+    <div class="grid">
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesTitle">Overlay languages</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayLanguagesCopy">Critical prompts rotate through one or two selected languages without changing the app language.</p>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayPrimaryLocale">Primary language</span><select id="overlayPrimaryLocale">
+            <option value="de" data-i18n="plugins.streamalchemy.ui.monsters.languageGerman">Deutsch</option>
+            <option value="en" data-i18n="plugins.streamalchemy.ui.monsters.languageEnglish">English</option>
+            <option value="es" data-i18n="plugins.streamalchemy.ui.monsters.languageSpanish">Español</option>
+            <option value="fr" data-i18n="plugins.streamalchemy.ui.monsters.languageFrench">Français</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlaySecondsPerLocale">Seconds per language</span><select id="overlaySecondsPerLocale">
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select></label>
+        </div>
+        <span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.overlayActiveLocales">Active overlay languages</span>
+        <div class="language-toggles">
+          <label><input id="overlayLocaleDe" type="checkbox" value="de" checked>DE</label>
+          <label><input id="overlayLocaleEn" type="checkbox" value="en" checked>EN</label>
+          <label><input id="overlayLocaleEs" type="checkbox" value="es">ES</label>
+          <label><input id="overlayLocaleFr" type="checkbox" value="fr">FR</label>
+        </div>
+      </article>
+    </div>
+  </section>
+
+
+  <section id="overlay-studio" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Area 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioTitle">Overlay Studio</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.overlayStudioCopy">Preview the real 1080×1920 and 1920×1080 broadcast geometry before going live.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.portraitFirstBadge">Portrait first · 74/26</span></div>
+    <div class="grid">
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.overlayLayoutTitle">Layout, readability &amp; quality</h3>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLayout">Preview format</span><select id="safeZoneLayout"><option value="portrait" data-i18n="plugins.streamalchemy.ui.monsters.layoutPortrait">Portrait 9:16</option><option value="landscape" data-i18n="plugins.streamalchemy.ui.monsters.layoutLandscape">Landscape 16:9</option></select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.overlayProfile">Portrait profile</span><select id="overlayProfile" aria-describedby="overlayProfileSummary"><option value="tiktok-live-studio-1080x1920" data-i18n="plugins.streamalchemy.ui.monsters.overlayProfileTikTokStudio">TikTok LIVE Studio · 1080×1920</option></select></label>
+          <output id="overlayProfileSummary" class="control-help" data-i18n="plugins.streamalchemy.ui.monsters.overlayProfileSummary">1080×1920 · gameplay 74% · TikTok chat safe zone 26%</output>
+          <label>
+            <span data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariant">Portrait arena variant</span>
+            <select id="portraitArenaVariant" aria-describedby="portraitArenaVariantHelp">
+              <option value="split-arena" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantSplitArena">Split Arena</option>
+              <option value="classic" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantClassic" selected>Classic</option>
+            </select>
+          </label>
+          <output id="portraitArenaVariantHelp" class="control-help" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaVariantHelp">Choose how the bounded portrait arena arranges both fighters. The Likebar remains external and reserved.</output>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.rendererQuality">Renderer quality</span><select id="rendererQuality"><option value="auto" data-i18n="plugins.streamalchemy.ui.monsters.rendererAuto">Auto</option><option value="high" data-i18n="plugins.streamalchemy.ui.monsters.rendererHigh">High</option><option value="medium" data-i18n="plugins.streamalchemy.ui.monsters.rendererMedium">Medium</option><option value="low" data-i18n="plugins.streamalchemy.ui.monsters.rendererLow">Low</option></select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.notificationDuration">Notification duration (seconds)</span><input id="notificationDuration" type="number" min="8" max="30" value="12"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.eggShelfVisibleCount">Visible eggs in rotation</span><select id="eggShelfVisibleCount">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4" selected>4</option><option value="5">5</option><option value="6">6</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitAnchor">Portrait anchor</span><select id="portraitAnchor">
+            <option value="top-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopLeft">Top left</option><option value="top-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopCenter">Top center</option><option value="top-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopRight">Top right</option>
+            <option value="middle-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleLeft">Middle left</option><option value="center" data-i18n="plugins.streamalchemy.ui.monsters.anchorCenter">Center</option><option value="middle-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleRight">Middle right</option>
+            <option value="bottom-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomLeft">Bottom left</option><option value="bottom-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomCenter">Bottom center</option><option value="bottom-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomRight">Bottom right</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitScale">Portrait scale</span><input id="portraitScale" type="number" min="70" max="130" value="100"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.landscapeAnchor">Landscape anchor</span><select id="landscapeAnchor">
+            <option value="top-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopLeft">Top left</option><option value="top-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopCenter">Top center</option><option value="top-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopRight">Top right</option>
+            <option value="middle-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleLeft">Middle left</option><option value="center" data-i18n="plugins.streamalchemy.ui.monsters.anchorCenter">Center</option><option value="middle-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleRight">Middle right</option>
+            <option value="bottom-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomLeft">Bottom left</option><option value="bottom-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomCenter">Bottom center</option><option value="bottom-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomRight">Bottom right</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.landscapeScale">Landscape scale</span><input id="landscapeScale" type="number" min="70" max="130" value="100"></label>
+        </div>
+        <div id="presentationEditor" aria-labelledby="presentationEditorHeading">
+          <h4 id="presentationEditorHeading">OBS layer layout</h4>
+          <div class="presentation-toolbar">
+            <label>Profile<select id="presentationProfile"><option value="portrait-720">Portrait 720p</option><option value="portrait-1080" selected>Portrait 1080p</option><option value="landscape-720">Landscape 720p</option><option value="landscape-1080">Landscape 1080p</option></select></label>
+            <label>Audio owner<select id="presentationAudioOwner"><option value="full">Composite</option><option value="arena">Arena</option><option value="egg-rail">Egg rail</option><option value="primary-cta">Primary CTA</option><option value="journey">Journey</option><option value="reveal">Reveal</option><option value="collection">Collection</option><option value="notifications">Notifications</option><option value="hype">Hype</option><option value="branding">Branding</option></select></label>
+            <div class="presentation-actions"><button id="presentationUndo" type="button">Undo</button><button id="presentationReset" type="button" data-creator-diagnostic-action="apply_safe_layout">Reset</button><button id="presentationCopy" type="button">Copy 720p / 1080p</button></div>
+          </div>
+          <div id="presentationCanvas" class="presentation-canvas" data-orientation="portrait">
+            <div class="presentation-layer" data-presentation-layer="arena" tabindex="0">Arena<select class="presentation-mode" data-layer-mode="arena"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="egg-rail" tabindex="0">Egg rail<select class="presentation-mode" data-layer-mode="egg-rail"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="primary-cta" tabindex="0">Primary CTA<select class="presentation-mode" data-layer-mode="primary-cta"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="journey" tabindex="0">Journey<select class="presentation-mode" data-layer-mode="journey"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="reveal" tabindex="0">Reveal<select class="presentation-mode" data-layer-mode="reveal"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="collection" tabindex="0">Collection<select class="presentation-mode" data-layer-mode="collection"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="notifications" tabindex="0">Notifications<select class="presentation-mode" data-layer-mode="notifications"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="hype" tabindex="0">Hype<select class="presentation-mode" data-layer-mode="hype"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-layer" data-presentation-layer="branding" tabindex="0">Branding<select class="presentation-mode" data-layer-mode="branding"><option>composite</option><option>dedicated</option><option>off</option></select><span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-safe-zone" data-presentation-safe-zone="likebar" tabindex="0">Likebar<span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+            <div class="presentation-safe-zone" data-presentation-safe-zone="tiktokChat" tabindex="0">TikTok chat<span class="presentation-resize" data-resize-handle aria-hidden="true"></span></div>
+          </div>
+          <div id="presentationError" class="presentation-error" role="alert"></div>
+        </div>
+        <aside id="obsTakeoverSourceOrder" class="obs-composition-guide" aria-labelledby="obsSourceOrderHeading">
+          <h4 id="obsSourceOrderHeading" data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderTitle">OBS source order for battle takeover</h4>
+          <p data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderIntro">Put these sources in this order from top to bottom:</p>
+          <ol>
+            <li data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderTakeover">Stream Monsters overlay</li>
+            <li data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderExternal">Avatar, likes and music sources</li>
+            <li data-i18n="plugins.streamalchemy.ui.monsters.obsSourceOrderBase">Base scene or camera</li>
+          </ol>
+          <p id="obsExternalSourcesWarning" class="obs-source-warning" data-i18n="plugins.streamalchemy.ui.monsters.obsExternalSourcesWarning">Stream Monsters cannot hide another OBS source with CSS. Keep those sources below the takeover, or disable them in your battle scene.</p>
+        </aside>
+        <div class="preview-grid">
+          <div class="preview-example" data-preview-example="normal">
+            <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateNormal">Normal stream</h4>
+            <div id="portraitNormalPreview" class="stage-preview portrait" data-preview-mode="normal" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 normal portrait stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.portraitNormalPreviewAria">
+            <div class="preview-zone" data-preview-zone="logo" style="--x:4%;--y:2%;--w:24%;--h:6%">Logo</div>
+            <div class="preview-zone" data-preview-zone="music" style="--x:5%;--y:14.5%;--w:58%;--h:4.5%">Music</div>
+            <div class="preview-zone" data-preview-zone="notification" style="--x:4%;--y:20%;--w:92%;--h:5%">Info</div>
+            <div class="preview-zone" data-preview-zone="avatar" style="--x:2%;--y:26.5%;--w:96%;--h:31%">Avatar</div>
+            <div class="preview-zone" data-preview-zone="likes" style="--x:2%;--y:58.5%;--w:96%;--h:6%">Likes</div>
+            <div class="preview-zone" data-preview-zone="shelf" style="--x:3%;--y:66.5%;--w:94%;--h:7%">Egg shelf</div>
+            <div class="preview-zone" data-preview-zone="xp" style="--x:4%;--y:82.5%;--w:92%;--h:11%">XP</div>
+            <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone · lower 26%</div>
+          </div>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.previewNormalHelp">External avatar, music, likes, egg shelf and XP sources remain visible during normal play.</p>
+          </div>
+          <div class="preview-example" data-preview-example="battle">
+            <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
+            <div id="portraitBattlePreview" class="stage-preview portrait" data-preview-mode="battle" data-arena-variant="classic" data-width="1080" data-height="1920" role="img" aria-label="1080 by 1920 battle portrait stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.portraitBattlePreviewAria">
+              <div class="preview-zone portrait-arena-preview" data-preview-zone="arena" style="--x:2%;--y:11.8%;--w:96%;--h:46%"><div class="stage-hud"><span data-i18n="plugins.streamalchemy.ui.monsters.previewHpFull">HP &middot; 100%</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewRoundOne">ROUND 1</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewSpecialHalf">SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp" alt=""><img class="stage-monster right" src="/plugins/stream-monsters/assets/streammonsters/furry/ripple.webp" alt=""></div>
+              <div class="preview-zone" data-preview-zone="likebar" data-owner="external" style="--x:2%;--y:57.8%;--w:96%;--h:16.2%" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaLikebarReserved">Likebar · external / reserved</div>
+              <div class="preview-zone" data-preview-zone="shelf" style="--x:3%;--y:74%;--w:94%;--h:24%" data-i18n="plugins.streamalchemy.ui.monsters.portraitArenaEggShelf">Egg shelf</div>
+              <div class="preview-zone" data-preview-zone="safe" style="--x:0%;--y:98%;--w:100%;--h:2%" aria-label="Lower safe strip" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.lowerSafeStripAria"></div>
+            </div>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.portraitBattlePreviewHelp">Stream Monsters stays inside the bounded violet arena; the external Likebar remains reserved and the egg shelf uses the lower exception lane.</p>
+          </div>
+          <div class="preview-example" data-preview-example="landscape-battle">
+            <h4 data-i18n="plugins.streamalchemy.ui.monsters.previewStateBattle">Battle takeover</h4>
+            <div id="landscapeStagePreview" class="stage-preview landscape" data-preview-mode="battle" data-width="1920" data-height="1080" role="img" aria-label="1920 by 1080 landscape stage preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.landscapeBattlePreviewAria">
+              <div class="stage-gameplay" data-preview-zone="battle" data-gameplay-percent="74"><div class="stage-hud"><span data-i18n="plugins.streamalchemy.ui.monsters.previewHpFull">HP &middot; 100%</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewRoundOne">ROUND 1</span><span data-i18n="plugins.streamalchemy.ui.monsters.previewSpecialHalf">SPECIAL &middot; 50%</span></div><div class="stage-callout">A &middot; B &middot; C</div><img class="stage-monster left" src="/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp" alt=""><img class="stage-monster right" src="/plugins/stream-monsters/assets/streammonsters/furry/ripple.webp" alt=""></div>
+              <div class="stage-chat-safe" data-preview-zone="safe" data-chat-safe-percent="26" data-i18n="plugins.streamalchemy.ui.monsters.chatSafeZone">TikTok chat safe-zone &middot; lower 26%</div>
+            </div>
+            <p data-i18n="plugins.streamalchemy.ui.monsters.previewBattleHelp">The Stream Monsters source covers the upper 74%; the lower 26% stays clear for TikTok chat.</p>
+          </div>
+        </div>
+        <div id="creatorEggShelfPreview" class="creator-egg-shelf-preview" aria-label="Living egg shelf preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.eggShelfPreviewAria">
+          <span class="free" title="Public free egg" data-i18n-title="plugins.streamalchemy.ui.monsters.publicFreeEggTitle">🥚</span><span>🥚</span><span>🥚</span>
+          <span>🥚</span><span>🥚</span><span>🥚</span><span>🥚</span><span>🥚</span><strong>+3</strong>
+        </div>
+        <p id="elementalHourExplanation" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.elementalHourGenericExplanation">Elemental Hour shortens matching egg hatch time by 30 seconds and grants +10 Hype. It never changes combat stats or hatch quality.</p>
+        <div id="safeZonePreview" class="safe-zone portrait" role="img" aria-label="Anchor collision preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeZonePreviewLabel">
+          <div id="safeLogo" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLogo">Logo</div>
+          <div id="safeHype" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneHype">Hype</div>
+          <div id="safeChat" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneChat">TikTok chat</div>
+          <div id="safeReveal" class="safe-box reveal" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneReveal">Reveal &amp; effects</div>
+        </div>
+        <div id="safeZoneWarning" class="collision-warning" role="alert" aria-live="polite"></div>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.serverAudio">Broadcast audio channels</h3>
+        <div class="control-grid">
+          <label class="check-row"><input id="audioMasterEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioMaster">Master</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioMasterVolume">Master volume</span><input id="audioMasterVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
+          <label class="check-row"><input id="audioUiEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioUi">UI</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioUiVolume">UI volume</span><input id="audioUiVolume" type="number" min="0" max="1" step="0.05" value="0.8"></label>
+          <label class="check-row"><input id="audioEggEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioEgg">Egg</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioEggVolume">Egg volume</span><input id="audioEggVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+          <label class="check-row"><input id="audioBattleEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioBattle">Battle</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioBattleVolume">Battle volume</span><input id="audioBattleVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
+          <label class="check-row"><input id="audioRewardEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioReward">Reward</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioRewardVolume">Reward volume</span><input id="audioRewardVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+        </div>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.demoTitle">Deterministic broadcast demos</h3>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.demoScene">Demo scene</span><select id="demoScene">
+            <option value="spawn" data-i18n="plugins.streamalchemy.ui.monsters.demoSpawn">Spawn</option>
+            <option value="ready" data-i18n="plugins.streamalchemy.ui.monsters.demoReady">Ready</option>
+            <option value="hatch" data-i18n="plugins.streamalchemy.ui.monsters.demoHatch">Hatch</option>
+            <option value="collection" data-i18n="plugins.streamalchemy.ui.monsters.demoCollection">Collection</option>
+            <option value="evolution" data-i18n="plugins.streamalchemy.ui.monsters.demoEvolution">Evolution</option>
+            <option value="match" data-i18n="plugins.streamalchemy.ui.monsters.demoMatch">Match</option>
+            <option value="skill" data-i18n="plugins.streamalchemy.ui.monsters.demoSkill">Skill</option>
+            <option value="multihit" data-i18n="plugins.streamalchemy.ui.monsters.demoMultihit">Multi-hit</option>
+            <option value="special" data-i18n="plugins.streamalchemy.ui.monsters.demoSpecial">Special</option>
+            <option value="ko" data-i18n="plugins.streamalchemy.ui.monsters.demoKo">K.O.</option>
+            <option value="xp" data-i18n="plugins.streamalchemy.ui.monsters.demoXp">XP</option>
+            <option value="rankup" data-i18n="plugins.streamalchemy.ui.monsters.demoRankup">Rank up</option>
+            <option value="attack" data-i18n="plugins.streamalchemy.ui.monsters.demoAttack">Attack · compatibility</option>
+            <option value="defense" data-i18n="plugins.streamalchemy.ui.monsters.demoDefense">Defense · compatibility</option>
+            <option value="free_offer" data-i18n="plugins.streamalchemy.ui.monsters.demoFreeOffer">Free egg offer</option>
+            <option value="free_release" data-i18n="plugins.streamalchemy.ui.monsters.demoFreeRelease">Free egg release</option>
+            <option value="free_claim" data-i18n="plugins.streamalchemy.ui.monsters.demoFreeClaim">Free egg claim</option>
+            <option value="sealed_lock" data-i18n="plugins.streamalchemy.ui.monsters.demoSealedLock">Sealed skill lock</option>
+            <option value="sealed_reveal" data-i18n="plugins.streamalchemy.ui.monsters.demoSealedReveal">Simultaneous skill reveal</option>
+            <option value="role_striker" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleStriker">Striker role</option>
+            <option value="role_guardian" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleGuardian">Guardian role</option>
+            <option value="role_trickster" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleTrickster">Trickster role</option>
+            <option value="role_sustain" data-i18n="plugins.streamalchemy.ui.monsters.demoRoleSustain">Sustain role</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.demoTemplate">Demo monster</span><select id="demoTemplate"></select></label>
+        </div>
+        <button id="runSceneDemo" type="button" data-i18n="plugins.streamalchemy.ui.monsters.runSceneDemo">Preview selected scene</button>
+      </article>
+    </div>
+  </section>
+
+  <section id="asset-library" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area6">Area 6</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryTitle">Monster &amp; Asset Library</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.assetLibraryCopy">Inspect all 24 Stream Monsters and three permanent combat evolution stages from the shipped package.</p></div><span id="assetIntegrity" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.assetChecking">checking integrity</span></div>
+    <div class="asset-summary">
+      <div class="asset-stat"><strong>24</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetTemplates">Stream Monsters</span></div>
+      <div class="asset-stat"><strong>3</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetStages">Stages each</span></div>
+      <div class="asset-stat"><strong id="assetFormsTotal">72</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetForms">Bundled forms</span></div>
+      <div class="asset-stat"><strong id="assetFormsHealthy">—</strong><span data-i18n="plugins.streamalchemy.ui.monsters.assetHealthy">Verified forms</span></div>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.assetEmergencyTitle">Emergency fallback</h3>
+        <p id="kenneyFallbackStatus" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.assetEmergencyCopy">Kenney is used only when a packaged Furry form is missing or damaged.</p>
+      </article>
+      <article class="card wide">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.evolutionIntegrityTitle">Evolution integrity</h3>
+        <p id="assetIntegrityDetails" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.evolutionIntegrityCopy">Stage II and III change only appearance, aura, reveal, title, trail and frame.</p>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.assetStageGalleryTitle">72-form stage gallery</h3>
+        <div id="assetStageGrid" class="asset-stage-grid" aria-live="polite"></div>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.monsterDex">Monsterdex · 24</h3>
+        <p id="dexProgress" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.dexEmpty">0 of 24 discovered</p>
+        <div id="dexElementProgress" class="dex-element-progress"></div>
+        <div id="monsterDex" class="dex-grid" aria-live="polite"></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="community-seasons" class="area" data-creator-area>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area7">Area 7</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsTitle">Community &amp; Seasons</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.communitySeasonsCopy">Search collections and compare competitive Arena Rating with permanent Collector Score.</p></div><span id="seasonCountdown" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.seasonLoading">Loading season</span></div>
+    <div id="visual-library" class="grid">
+      <article class="card">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.findViewer">Find viewer</h3>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.creatorPlaceholder">TikTok name</span><input id="viewerSearch" placeholder="viewer_name" data-i18n-placeholder="plugins.streamalchemy.ui.monsters.viewerPlaceholder"></label>
+        <button id="loadViewer" type="button" data-i18n="plugins.streamalchemy.ui.monsters.loadCollection">Load collection</button>
+      </article>
+      <article class="card wide">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.collection">Collection</h3>
+        <p id="viewerSummary" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.viewerSummaryEmpty">Ranks, active monster and achievements appear after search.</p>
+        <div id="viewerCollection" class="collection-list"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.viewerEmpty">Choose a viewer to inspect eggs and monsters.</span></div>
+      </article>
+    </div>
+    <div class="repair-grid" aria-label="Safe maintenance tools" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeMaintenanceAria">
+      <article class="card repair-card" data-repair-kind="eggs">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.repairEggsTitle">Repair stuck eggs</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsCopy">Preview eggs whose ready or expiry transition is overdue. No egg is changed during preview.</p>
+        <div class="repair-actions">
+          <button id="repairEggsPreview" class="secondary" type="button" data-creator-diagnostic-action="open_repair_dialog" data-i18n="plugins.streamalchemy.ui.monsters.repairEggsPreview">Preview egg repair</button>
+          <button id="repairEggsExecute" class="danger" type="button" disabled data-i18n="plugins.streamalchemy.ui.monsters.repairEggsExecute">Execute egg repair</button>
+        </div>
+        <label class="check-row repair-confirm">
+          <input id="repairEggsConfirm" type="checkbox" disabled>
+          <span data-i18n="plugins.streamalchemy.ui.monsters.repairEggsConfirm">I reviewed the preview and want to reconcile these eggs.</span>
+        </label>
+        <p id="repairEggsResult" class="repair-result" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.repairPreviewPrompt">Run a preview to inspect aggregate counts.</p>
+      </article>
+      <article class="card repair-card" data-repair-kind="matches">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesTitle">Cancel stale matches</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesCopy">Preview timed-out matches that are still open. Active matches inside the grace period are not candidates.</p>
+        <div class="repair-actions">
+          <button id="repairMatchesPreview" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesPreview">Preview stale matches</button>
+          <button id="repairMatchesExecute" class="danger" type="button" disabled data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesTitle">Cancel stale matches</button>
+        </div>
+        <label class="check-row repair-confirm">
+          <input id="repairMatchesConfirm" type="checkbox" disabled>
+          <span data-i18n="plugins.streamalchemy.ui.monsters.repairMatchesConfirm">I reviewed the preview and want to cancel these stale matches.</span>
+        </label>
+        <p id="repairMatchesResult" class="repair-result" role="status" aria-live="polite" data-i18n="plugins.streamalchemy.ui.monsters.repairPreviewPrompt">Run a preview to inspect aggregate counts.</p>
+      </article>
+    </div>
+    <div class="leaderboard-grid" style="margin-top:14px">
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.arenaLeaderboardTitle">Arena Rating</h3>
+        <div class="rank-track"><div><strong>Bronze</strong>&lt; 1000</div><div><strong>Silver</strong>1000</div><div><strong>Gold</strong>1150</div><div><strong>Crystal</strong>1300</div><div><strong>Monster Master</strong>1500</div></div>
+        <div id="arenaLeaderboard" class="leaderboard"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.noArenaRatings">No rated battles yet.</span></div>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.collectorLeaderboardTitle">Collector Score</h3>
+        <div class="rank-track"><div><strong>Bronze</strong>0</div><div><strong>Silver</strong>100</div><div><strong>Gold</strong>250</div><div><strong>Crystal</strong>500</div><div><strong>Monster Master</strong>900</div></div>
+        <div id="collectorLeaderboard" class="leaderboard"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.noSeasonPoints">No Collector Score yet.</span></div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script src="/js/i18n-client.js"></script>
+<script src="/js/tiktok-studio-url.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-presentation.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-layout-editor.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-overlay-runtime.js"></script>
+<script src="/plugins/stream-monsters/streammonsters-creator-runtime.js"></script>
+<script>
+(async () => {
+  if (window.i18n?.init) {
+    await window.i18n.init();
+    window.i18n.updateDOM();
+  }
+  const byId = id => document?.getElementById(id) || null;
+  const jsonHeaders = { 'Content-Type':'application/json' };
+  const translationKey = key => `plugins.streamalchemy.ui.monsters.${key}`;
+  const interpolate = (template, params = {}) => String(template).replace(/\{(\w+)\}/g, (match, key) => (
+    Object.prototype.hasOwnProperty.call(params, key) ? params[key] : match
+  ));
+  const text = (key, fallback, params = {}) => {
+    const fullKey = translationKey(key);
+    const translated = window.i18n?.t?.(fullKey, params);
+    return translated && translated !== fullKey ? translated : interpolate(fallback, params);
+  };
+  const runtimeText = window.StreamMonstersOverlayRuntime;
+  const creatorRuntime = window.StreamMonstersCreatorRuntime;
+  const presentationContract = window.StreamMonstersPresentation;
+  const elementName = element => text(runtimeText.elementKey(element), 'Unknown');
+  const variantName = variant => text(runtimeText.variantKey(variant), 'Unknown');
+  const personalityName = personality => text(runtimeText.personalityKey(personality), 'Unknown');
+  const apiErrorText = error => text(
+    runtimeText.apiErrorKey(error),
+    'The action failed. Please try again.'
+  );
+  const rankLabel = rank => ({
+    Bronze:text('rankBronze', 'Bronze'),
+    Silver:text('rankSilver', 'Silber'),
+    Gold:text('rankGold', 'Gold'),
+    Crystal:text('rankCrystal', 'Kristall'),
+    'Monster Master':text('rankMonsterMaster', 'Monster-Meister')
+  }[rank] || text('rankNew', 'Neuer Rang'));
+  const ACHIEVEMENT_TITLE_KEYS = Object.freeze({
+    first_hatch:'achievementFirstHatch',
+    charged_hatch:'achievementChargedHatch',
+    six_elements:'achievementSixElements',
+    '10_battles':'achievement10Battles',
+    '50_battles':'achievement50Battles',
+    '100_battles':'achievement100Battles',
+    five_win_streak:'achievementFiveWinStreak'
+  });
+  const achievementTitleKey = achievement => (
+    ACHIEVEMENT_TITLE_KEYS[achievement?.achievement_key] || 'achievementUnknown'
+  );
+  const formatDuration = milliseconds => {
+    const totalSeconds = Math.max(0, Math.round((Number(milliseconds) || 0) / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes ? `${minutes}m ${seconds ? `${seconds}s` : ''}`.trim() : `${seconds}s`;
+  };
+  let selectedGift = null;
+  let searchTimer = null;
+  let catalogOffset = 0;
+  let catalogQuery = '';
+  let catalogTotal = 0;
+  let catalogAbortController = null;
+  let catalogRequestSequence = 0;
+  let viewerAbortController = null;
+  let viewerRequestSequence = 0;
+  let currentGcceState = {};
+  let currentLiveStatus = {};
+  let currentCreatorState = {};
+  let currentStateConfig = {};
+  const presentationEditorController = window.StreamMonstersLayoutEditor.mount({
+    document,
+    window,
+    initial:presentationContract.createDefaultPresentation(),
+    onValidity:validation => {
+      byId('saveSetup').disabled = !validation.valid;
+    }
+  });
+  let liveRefreshInFlight = false;
+  const repairPreviews = { eggs:null, matches:null };
+  const repairSuffixes = Object.freeze({ eggs:'Eggs', matches:'Matches' });
+  const CATALOG_PAGE_SIZE = 100;
+  const notice = (message, type = '') => {
+    const root = byId('notice');
+    if (!root) return;
+    root.textContent = message;
+    root.className = `notice ${type}`;
+  };
+  const request = async (url, options = {}) => {
+    const response = await fetch(url, options);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const code = String(payload.errorCode || payload.error || 'STREAM_MONSTERS_REQUEST_FAILED');
+      const failure = new Error(code);
+      failure.code = code;
+      throw failure;
+    }
+    return payload;
+  };
+  const repairControls = kind => {
+    const suffix = repairSuffixes[kind];
+    return {
+      preview:byId(`repair${suffix}Preview`),
+      confirmation:byId(`repair${suffix}Confirm`),
+      execute:byId(`repair${suffix}Execute`),
+      result:byId(`repair${suffix}Result`)
+    };
+  };
+  const applyRepairControlState = (kind, busy = false) => {
+    const controls = repairControls(kind);
+    const candidateCount = Number(repairPreviews[kind]?.candidates) || 0;
+    const canConfirm = Boolean(repairPreviews[kind]) && candidateCount > 0;
+    controls.preview.disabled = busy;
+    controls.confirmation.disabled = busy || !canConfirm;
+    controls.execute.disabled = busy || !canConfirm || !controls.confirmation.checked;
+  };
+  const renderRepairResult = (kind, summary, type = '') => {
+    const root = repairControls(kind).result;
+    root.className = `repair-result ${type}`;
+    if (!summary) {
+      root.textContent = text(
+        'repairFailed',
+        'Repair request failed. Run a new preview before trying again.'
+      );
+      return;
+    }
+    if (kind === 'eggs') {
+      root.textContent = summary.dryRun
+        ? text(
+          'repairEggsPreviewResult',
+          'Dry run: {candidates} candidates ({ready} ready, {expired} expired) and {queued} queued.',
+          {
+            candidates:summary.candidates,
+            ready:summary.readyDue,
+            expired:summary.expiryDue,
+            queued:summary.queued
+          }
+        )
+        : text(
+          'repairEggsExecuteResult',
+          'Egg repair complete: {repaired} transitions reconciled.',
+          { repaired:summary.repaired }
+        );
+      return;
+    }
+    root.textContent = summary.dryRun
+      ? text(
+        'repairMatchesPreviewResult',
+        'Dry run: {candidates} stale matches are candidates for cancellation.',
+        { candidates:summary.candidates }
+      )
+      : text(
+        'repairMatchesExecuteResult',
+        'Match repair complete: {repaired} stale matches cancelled.',
+        { repaired:summary.repaired }
+      );
+  };
+  const runRepair = async (kind, execute = false) => {
+    const controls = repairControls(kind);
+    if (!execute) {
+      repairPreviews[kind] = null;
+      controls.confirmation.checked = false;
+    }
+    applyRepairControlState(kind, true);
+    try {
+      const repairRequest = creatorRuntime.buildRepairRequest(kind, {
+        execute,
+        previewed:Boolean(repairPreviews[kind]),
+        confirmed:controls.confirmation.checked
+      });
+      const payload = await request(repairRequest.url, {
+        method:'POST',
+        headers:jsonHeaders,
+        body:JSON.stringify(repairRequest.body)
+      });
+      const summary = creatorRuntime.summarizeRepairResult(kind, payload);
+      if (execute) {
+        repairPreviews[kind] = null;
+        controls.confirmation.checked = false;
+      } else {
+        repairPreviews[kind] = summary;
+      }
+      renderRepairResult(kind, summary, 'success');
+    } catch (_) {
+      repairPreviews[kind] = null;
+      controls.confirmation.checked = false;
+      renderRepairResult(kind, null, 'error');
+    } finally {
+      applyRepairControlState(kind);
+    }
+  };
+  const giftImage = gift => gift.imageUrl || '/plugins/stream-monsters/assets/branding/stream-monsters-icon.png';
+  const giftRow = (gift, buttonText, onClick) => {
+    const row = document.createElement('div');
+    row.className = 'gift-row';
+    const image = document.createElement('img');
+    image.className = 'gift-img';
+    image.src = giftImage(gift);
+    image.alt = '';
+    const copy = document.createElement('div');
+    copy.className = 'grow';
+    const title = document.createElement('strong');
+    title.textContent = gift.giftName || gift.gift_name;
+    const meta = document.createElement('small');
+    meta.textContent = text('giftMeta', 'ID {id} · {coins} Diamonds', {
+      id: gift.giftId || gift.gift_id,
+      coins: gift.coinValue ?? gift.coin_value ?? 0
+    });
+    copy.append(title, meta);
+    row.append(image, copy);
+    if (buttonText) {
+      const button = document.createElement('button');
+      button.className = 'secondary';
+      button.textContent = buttonText;
+      button.addEventListener('click', onClick);
+      row.append(button);
+    }
+    return row;
+  };
+  const selectGift = gift => {
+    selectedGift = gift;
+    byId('selectedGiftId').value = gift.giftId;
+    const root = byId('selectedGift');
+    root.replaceChildren(giftRow(gift));
+  };
+  const loadCatalog = async (query = '', { append = false } = {}) => {
+    const requestSequence = ++catalogRequestSequence;
+    catalogAbortController?.abort();
+    catalogAbortController = new AbortController();
+    const normalizedQuery = String(query || '').trim();
+    if (!append || normalizedQuery !== catalogQuery) {
+      catalogQuery = normalizedQuery;
+      catalogOffset = 0;
+    }
+    let payload;
+    try {
+      payload = await request(
+        `/api/stream-monsters/gift-catalog?q=${encodeURIComponent(catalogQuery)}` +
+        `&offset=${catalogOffset}&limit=${CATALOG_PAGE_SIZE}`,
+        { signal:catalogAbortController.signal }
+      );
+    } catch (error) {
+      if (requestSequence !== catalogRequestSequence) return null;
+      throw error;
+    }
+    if (requestSequence !== catalogRequestSequence) return null;
+    catalogTotal = Number(payload.total) || 0;
+    byId('catalogTotal').textContent = catalogTotal;
+    const root = byId('giftCatalog');
+    if (!append) root.replaceChildren();
+    (payload.gifts || []).forEach(gift => root.append(giftRow(gift, text('select', 'Auswählen'), () => selectGift(gift))));
+    catalogOffset += (payload.gifts || []).length;
+    byId('giftCatalogMore').hidden = catalogOffset >= catalogTotal;
+    if (!root.children.length) root.textContent = text('noGifts', 'Keine Geschenke gefunden.');
+    return payload;
+  };
+  const loadMappings = async () => {
+    const payload = await request('/api/stream-monsters/gift-mappings');
+    const root = byId('mappingList');
+    root.replaceChildren();
+    (payload.mappings || []).forEach(mapping => {
+      const gift = {
+        giftId:mapping.gift_id,
+        giftName:mapping.gift_name,
+        coinValue:mapping.coin_value,
+        imageUrl:mapping.image_url
+      };
+      root.append(giftRow(gift, text('remove', 'Entfernen'), async () => {
+        await request(`/api/stream-monsters/gift-mappings/${mapping.gift_id}`, { method:'DELETE' });
+        currentStateConfig.giftMappingCustomized = true;
+        await loadMappings();
+      }));
+    });
+    byId('mappingCount').textContent = text('activeCount', '{count} aktiv', { count:(payload.mappings || []).length });
+    if (!(payload.mappings || []).length) root.textContent = text('noMappings', 'Noch keine Gifts aktiviert.');
+    return payload.mappings || [];
+  };
+  const saveGiftMapping = async () => {
+    if (!selectedGift) {
+      const failure = new Error('STREAM_MONSTERS_GIFT_SELECTION_REQUIRED');
+      failure.code = failure.message;
+      throw failure;
+    }
+    const effect = byId('giftEffect').value;
+    await request(`/api/stream-monsters/gift-mappings/${selectedGift.giftId}`, {
+      method:'PUT',
+      headers:jsonHeaders,
+      body:JSON.stringify({ enabled:true, effect, element:byId('giftElement').value })
+    });
+    currentStateConfig.giftMappingCustomized = true;
+    await loadMappings();
+    notice(text('mappingEnabled', '{gift} ist jetzt für Stream Monsters aktiv.', { gift:selectedGift.giftName }), 'success');
+  };
+  const aliasList = value => [...new Set(String(value || '')
+    .split(',')
+    .map(alias => alias.trim().toLocaleLowerCase())
+    .filter(Boolean))];
+  const collectOverlayLanguage = () => {
+    const primaryLocale = byId('overlayPrimaryLocale').value;
+    const selected = ['de', 'en', 'es', 'fr'].filter(locale => (
+      byId(`overlayLocale${locale.charAt(0).toUpperCase()}${locale.slice(1)}`).checked
+    ));
+    const locales = [
+      primaryLocale,
+      ...selected.filter(locale => locale !== primaryLocale)
+    ].slice(0, 2);
+    return creatorRuntime.normalizeOverlayLanguage({
+      primaryLocale,
+      locales,
+      secondsPerLocale:Number(byId('overlaySecondsPerLocale').value)
+    });
+  };
+  const applyOverlayLanguage = languageInput => {
+    const language = creatorRuntime.normalizeOverlayLanguage(languageInput);
+    byId('overlayPrimaryLocale').value = language.primaryLocale;
+    byId('overlaySecondsPerLocale').value = String(language.secondsPerLocale);
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      byId(`overlayLocale${locale.charAt(0).toUpperCase()}${locale.slice(1)}`).checked =
+        language.locales.includes(locale);
+    }
+  };
+  const aliasInput = (command, mode) => document.querySelector(
+    `[data-alias-command="${command}"][data-alias-mode="${mode}"]`
+  );
+  const collectCommandAliases = () => Object.fromEntries(
+    creatorRuntime.COMMAND_ACTIONS.map(command => [command, {
+      enabled:aliasList(aliasInput(command, 'enabled')?.value),
+      disabled:aliasList(aliasInput(command, 'disabled')?.value)
+    }])
+  );
+  const writeAliasList = (command, mode, aliases) => {
+    const input = aliasInput(command, mode);
+    if (input) input.value = [...new Set(aliases)].join(', ');
+  };
+  const renderAliasDiagnostics = () => {
+    const result = creatorRuntime.buildAliasDiagnostics(
+      collectCommandAliases(),
+      currentGcceState
+    );
+    const root = byId('aliasConflictStatus');
+    if (result.healthy) {
+      root.textContent = text('aliasHealthy', 'No alias conflicts');
+      root.className = 'badge good';
+      return result;
+    }
+    const details = [
+      ...result.conflicts.map(conflict => `${conflict.alias}: ${conflict.commands.join(' / ')}`),
+      ...result.registrationConflicts.map(value => `GCCE: ${value}`),
+      ...result.unavailableCommands.map(value => `${value}: unavailable`)
+    ];
+    root.textContent = text('aliasConflicts', 'Conflicts: {details}', {
+      details:details.join(' · ')
+    });
+    root.className = 'badge';
+    return result;
+  };
+  const organizeAliasGroups = () => {
+    const root = byId('aliasGrid');
+    if (!root || root.dataset.grouped === 'true') return;
+    const rows = new Map(
+      [...root.querySelectorAll('[data-command-alias]')]
+        .map(row => [row.dataset.commandAlias, row])
+    );
+    for (const group of creatorRuntime.COMMAND_GROUPS) {
+      const section = document.createElement('section');
+      section.className = 'alias-command-group';
+      section.dataset.commandGroup = group.id;
+      const title = document.createElement('h4');
+      title.textContent = text(group.titleKey, group.id);
+      section.append(title);
+      for (const command of group.commands) {
+        const row = rows.get(command);
+        if (row) section.append(row);
+      }
+      root.append(section);
+    }
+    root.dataset.grouped = 'true';
+  };
+  const renderCommandDiagnostics = gcce => {
+    const filter = gcce?.tiktokFilter || {};
+    byId('tiktokFilterStatus').textContent = filter.status === 'not_probeable'
+      ? text('tiktokFilterNotProbeableStatus', 'Not probeable')
+      : text('statusUnavailable', 'Unavailable');
+    const commandLabelKeys = {
+      eggs:'commandEggs',
+      hatch:'commandHatch',
+      inventory:'commandInventory',
+      monsters:'commandMonsters',
+      monster:'commandMonster',
+      choose:'commandChoose',
+      evolve:'commandEvolve',
+      battle:'commandBattle',
+      leavebattle:'commandLeaveBattle',
+      rank:'commandRank',
+      quests:'commandQuests',
+      adopt:'commandAdopt',
+      steal:'commandSteal',
+      monstershelp:'commandHelp'
+    };
+    const formatCooldown = milliseconds => {
+      const value = Math.max(0, Number(milliseconds) || 0);
+      if (!value) return text('cooldownNone', 'none');
+      return `${Number((value / 1000).toFixed(2)).toLocaleString()} s`;
+    };
+    const root = byId('commandPolicyList');
+    root.replaceChildren();
+    creatorRuntime.buildCommandGroups({
+      gcce,
+      commandAliases:collectCommandAliases()
+    }).forEach(group => {
+      const section = document.createElement('section');
+      section.className = 'alias-command-group';
+      section.dataset.policyGroup = group.id;
+      const heading = document.createElement('h4');
+      heading.textContent = text(group.titleKey, group.id);
+      section.append(heading);
+      group.commands.forEach(policy => {
+        const row = document.createElement('div');
+        row.className = 'gift-row';
+        const copy = document.createElement('div');
+        copy.className = 'grow';
+        const title = document.createElement('strong');
+        title.textContent = policy.reference || text(
+          commandLabelKeys[policy.command],
+          policy.command
+        );
+        const meta = document.createElement('div');
+        meta.className = 'command-policy-meta';
+        const lines = [
+          text('commandPrimaryAlias', 'Primary: {command}', {
+            command:policy.reference || `${policy.prefix}${policy.primaryAlias}`
+          }),
+          text('commandAliasesLabel', 'Aliases: {aliases}', {
+            aliases:policy.enabledAliases.join(', ') || '—'
+          }),
+          text('commandGcceConflict', 'GCCE conflict: {status}', {
+            status:policy.gcceConflict
+              ? text('statusConflict', 'conflict')
+              : text('statusClear', 'clear')
+          }),
+          text('commandTikTokFilter', 'TikTok filter: {status}', {
+            status:policy.tiktokFilterStatus === 'not_probeable'
+              ? text('tiktokFilterNotProbeableStatus', 'Not probeable')
+              : text('statusUnavailable', 'Unavailable')
+          }),
+          text('commandCooldowns', 'Cooldown: viewer {user} · global {global}', {
+            user:formatCooldown(policy.userCooldownMs),
+            global:formatCooldown(policy.globalCooldownMs)
+          }),
+          text('commandOutcome', 'Result: {outcome}', {
+            outcome:text(policy.outcomeKey, policy.command)
+          })
+        ];
+        lines.forEach(line => {
+          const item = document.createElement('span');
+          item.textContent = line;
+          meta.append(item);
+        });
+        copy.append(title, meta);
+        row.append(copy);
+        section.append(row);
+      });
+      root.append(section);
+    });
+  };
+  const syncLocaleAlias = control => {
+    const command = control.dataset.aliasLocale;
+    const alias = String(control.dataset.alias || '').toLocaleLowerCase();
+    const enabled = new Set(aliasList(aliasInput(command, 'enabled')?.value));
+    const disabled = new Set(aliasList(aliasInput(command, 'disabled')?.value));
+    if (control.checked) {
+      enabled.add(alias);
+      disabled.delete(alias);
+    } else {
+      enabled.delete(alias);
+      disabled.add(alias);
+    }
+    writeAliasList(command, 'enabled', enabled);
+    writeAliasList(command, 'disabled', disabled);
+    renderAliasDiagnostics();
+  };
+  const applyAliasState = (commandAliases = {}) => {
+    creatorRuntime.COMMAND_ACTIONS.forEach(command => {
+      const configured = commandAliases[command];
+      if (configured) {
+        writeAliasList(command, 'enabled', configured.enabled || []);
+        writeAliasList(command, 'disabled', configured.disabled || []);
+      }
+      const enabled = new Set(aliasList(aliasInput(command, 'enabled')?.value));
+      document.querySelectorAll(`[data-alias-locale="${command}"]`).forEach(control => {
+        control.checked = enabled.has(String(control.dataset.alias || '').toLocaleLowerCase());
+      });
+    });
+    renderAliasDiagnostics();
+  };
+  const renderViewer = viewer => {
+    const root = byId('viewerCollection');
+    root.replaceChildren();
+    const selectedId = viewer.selectedMonster?.monster_id;
+    const achievements = viewer.achievements || [];
+    const rank = viewer.rank || {};
+    const summary = byId('viewerSummary');
+    const achievementLabel = achievements.length
+      ? achievements.map(entry => text(achievementTitleKey(entry), 'Achievement')).join(', ')
+      : text('noAchievements', 'noch keine Achievements');
+    summary.textContent = text('viewerSummary', '{rank} · {points} Punkte · {achievements}', {
+      rank:rankLabel(rank.rank),
+      points:rank.points || 0,
+      achievements:achievementLabel
+    });
+    const items = [
+      ...(viewer.eggs || []).filter(egg => egg.state !== 'hatched').map(egg => ({
+        title:text('eggTitle', '{element} Ei · {variant}', {
+          element:elementName(egg.element),
+          variant:variantName(egg.variant)
+        }),
+        meta:egg.state === 'ready' ? text('readyForHatch', 'Bereit für !hatch') : text('incubating', 'Brütet'),
+        image:egg.image_url
+      })),
+      ...(viewer.monsters || []).map(monster => ({
+        title:text('monsterTitle', '{name} · Lv.{level}', { name:monster.name, level:monster.level }),
+        meta:text('monsterMeta', '{element} · {personality} · {xp} XP{active}', {
+          element:elementName(monster.element),
+          personality:personalityName(monster.personality),
+          xp:monster.xp,
+          active:monster.monster_id === selectedId ? text('activeSuffix', ' · AKTIV') : ''
+        }),
+        image:monster.image_url
+      }))
+    ];
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'viewer-row';
+      const image = document.createElement('img');
+      image.className = 'gift-img';
+      image.src = item.image || '/plugins/stream-monsters/assets/branding/stream-monsters-icon.png';
+      const copy = document.createElement('div');
+      copy.className = 'grow';
+      const title = document.createElement('strong');
+      title.textContent = item.title;
+      const meta = document.createElement('small');
+      meta.textContent = item.meta;
+      copy.append(title,meta);
+      row.append(image, copy);
+      root.append(row);
+    });
+    if (!items.length) root.textContent = text('noCollectionItems', 'Noch keine Eier oder Monster.');
+  };
+  const renderDex = payload => {
+    const slots = creatorRuntime.buildDexSlots(payload);
+    const root = byId('monsterDex');
+    root.replaceChildren();
+    slots.forEach(slot => {
+      const card = document.createElement('article');
+      card.className = `dex-slot${slot.locked ? ' locked' : ''}`;
+      const image = document.createElement('img');
+      image.src = slot.assetPath;
+      image.alt = slot.locked ? text('dexLocked', 'Locked monster') : slot.name;
+      const title = document.createElement('strong');
+      title.textContent = slot.locked ? text('dexUnknown', '???') : slot.name;
+      const element = document.createElement('small');
+      element.textContent = slot.locked
+        ? text('dexLocked', 'Locked monster')
+        : text('dexElementFound', '{element} · first found', { element:elementName(slot.element) });
+      const mastery = document.createElement('small');
+      mastery.textContent = text('dexMasteryEssence', 'Mastery {mastery} · Essence {essence}', {
+        mastery:slot.masteryProgressLabel,
+        essence:slot.essence
+      });
+      card.append(image,title,element,mastery);
+      if (!slot.locked) {
+        const indicators = document.createElement('div');
+        indicators.className = 'dex-indicators';
+        const values = [
+          { kind:'first', value:text('dexFirstFound', 'First found') },
+          ...slot.masteryUnlocks.map(value => ({
+            kind:'mastery',
+            value:text('dexMasteryUnlock', 'Mastery: {unlock}', { unlock:value })
+          })),
+          ...slot.essenceUnlocks.map(value => ({
+            kind:'essence',
+            value:text('dexEssenceUnlock', 'Essence: {unlock}', { unlock:value })
+          })),
+          ...slot.cosmetics.map(value => ({
+            kind:'cosmetic',
+            value:text('dexCosmeticUnlock', 'Cosmetic: {unlock}', { unlock:value })
+          }))
+        ];
+        values.forEach(indicator => {
+          const badge = document.createElement('span');
+          badge.className = `dex-indicator ${indicator.kind}`;
+          badge.textContent = indicator.value;
+          indicators.append(badge);
+        });
+        card.append(indicators);
+      }
+      if (slot.cosmetic) card.classList.add('cosmetic');
+      root.append(card);
+    });
+    const owned = slots.filter(slot => !slot.locked).length;
+    byId('dexProgress').textContent = text('dexProgress', '{found} of {total} discovered', {
+      found:owned,
+      total:slots.length
+    });
+    const elementProgress = byId('dexElementProgress');
+    elementProgress.replaceChildren();
+    for (const elementNameValue of ['Ember','Tide','Grove','Gale','Volt','Lunar']) {
+      const elementSlots = slots.filter(slot => slot.element === elementNameValue);
+      const found = elementSlots.filter(slot => !slot.locked).length;
+      const badge = document.createElement('span');
+      badge.className = 'dex-indicator';
+      badge.textContent = text('dexElementProgress', '{element} {found}/{total}', {
+        element:elementName(elementNameValue),
+        found,
+        total:elementSlots.length
+      });
+      elementProgress.append(badge);
+    }
+    const templateSelect = byId('demoTemplate');
+    const selected = templateSelect.value;
+    templateSelect.replaceChildren();
+    slots.forEach(slot => {
+      const option = document.createElement('option');
+      option.value = slot.templateId;
+      option.textContent = `${slot.name} · ${elementName(slot.element)}`;
+      option.selected = slot.templateId === selected;
+      templateSelect.append(option);
+    });
+  };
+  const renderAssetSummary = summary => {
+    byId('assetFormsTotal').textContent = String(summary.expectedForms);
+    byId('assetFormsHealthy').textContent = `${summary.healthyForms}/${summary.expectedForms}`;
+    byId('assetIntegrity').textContent = summary.integrity === 'healthy'
+      ? text('assetIntegrityHealthy', '72/72 verified')
+      : text('assetIntegrityDegraded', '{count} packaged forms need attention', {
+        count:summary.damagedForms
+      });
+    byId('assetIntegrity').classList.toggle('good', summary.integrity === 'healthy');
+    byId('assetIntegrityDetails').textContent = summary.integrity === 'healthy'
+      ? text('assetIntegrityDetailsHealthy', 'All packaged forms have valid dimensions, hashes and stage metadata.')
+      : text('assetIntegrityDetailsDegraded', '{healthy}/{total} packaged forms passed the manifest check.', {
+        healthy:summary.healthyForms,
+        total:summary.expectedForms
+      });
+    byId('kenneyFallbackStatus').textContent = text(
+      'assetEmergencyCopy',
+      'Kenney is used only when a packaged Furry form is missing or damaged.'
+    );
+  };
+  const renderAssetStages = entries => {
+    const root = byId('assetStageGrid');
+    root.replaceChildren();
+    entries.forEach(entry => {
+      const card = document.createElement('article');
+      card.className = `asset-stage-card${entry.healthy ? '' : ' damaged'}`;
+      const image = document.createElement('img');
+      image.src = entry.assetUrl;
+      image.loading = 'lazy';
+      image.alt = `${entry.name} · Stage ${entry.stage}`;
+      const name = document.createElement('strong');
+      name.textContent = entry.name;
+      const stage = document.createElement('small');
+      stage.textContent = text('assetStageLabel', 'Stage {stage} · {element}', {
+        stage:entry.stage,
+        element:elementName(entry.element)
+      });
+      card.append(image,name,stage);
+      root.append(card);
+    });
+    if (!entries.length) {
+      root.textContent = text('assetManifestUnavailable', 'The packaged asset manifest is unavailable.');
+    }
+  };
+  const loadAssetIntegrity = async () => {
+    try {
+      const catalog = await request(
+        '/api/stream-monsters/monster-catalog?offset=0&limit=24'
+      );
+      const verifiedAssets = (catalog.templates || []).flatMap(template => (
+        (template.stages || []).map(stage => ({
+          ...stage,
+          templateId:template.templateId,
+          name:template.name,
+          element:stage.element || template.element,
+          species:stage.species || template.species,
+          assetPath:creatorRuntime.normalizePackagedAssetPath(stage.assetPath)
+        }))
+      ));
+      renderAssetStages(creatorRuntime.buildAssetStageEntries({
+        assets:verifiedAssets
+      }));
+      const expectedForms = Number(catalog.assetIntegrity?.expected) || 72;
+      const healthyForms = Math.max(
+        0,
+        Math.min(expectedForms, Number(catalog.assetIntegrity?.available) || 0)
+      );
+      const summary = {
+        templates:Number(catalog.total) || 24,
+        expectedForms,
+        healthyForms,
+        damagedForms:Math.max(0, expectedForms - healthyForms),
+        integrity:catalog.assetIntegrity?.healthy ? 'healthy' : 'degraded',
+        fallback:'kenney_emergency_only'
+      };
+      renderAssetSummary(summary);
+      return summary;
+    } catch (_) {
+      renderAssetStages([]);
+      const summary = creatorRuntime.summarizeAssetLibrary();
+      renderAssetSummary(summary);
+      return summary;
+    }
+  };
+  const loadMonsterCatalog = async (userId = '', options = {}) => {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const route = userId
+      ? '/api/stream-monsters/creator-catalog'
+      : '/api/stream-monsters/monster-catalog';
+    const payload = await request(`${route}${query}`);
+    renderDex(payload);
+    return payload;
+  };
+  const loadViewer = async () => {
+    const userId = byId('viewerSearch').value.trim();
+    if (!userId) return null;
+    const requestSequence = ++viewerRequestSequence;
+    viewerAbortController?.abort();
+    viewerAbortController = new AbortController();
+    const options = { signal:viewerAbortController.signal };
+    let payload;
+    try {
+      payload = await request(`/api/stream-monsters/creator-state?userId=${encodeURIComponent(userId)}`, options);
+      if (requestSequence !== viewerRequestSequence) return null;
+      renderViewer(payload.viewer || {});
+      await loadMonsterCatalog(userId, options);
+    } catch (error) {
+      if (requestSequence !== viewerRequestSequence) return null;
+      throw error;
+    }
+    return requestSequence === viewerRequestSequence ? payload : null;
+  };
+  const renderLeaderboard = (entries, { targetId, type }) => {
+    const root = byId(targetId);
+    root.replaceChildren();
+    (entries || []).forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'rank-row';
+      const place = document.createElement('strong');
+      place.textContent = `#${index + 1}`;
+      const copy = document.createElement('div');
+      copy.className = 'grow';
+      const user = document.createElement('strong');
+      user.textContent = creatorRuntime.leaderboardDisplayName(entry);
+      const rank = document.createElement('small');
+      rank.textContent = type === 'arena'
+        ? text('arenaRankLine', '{tier} · {battles} rated battles', {
+          tier:entry.tier || text('rankNew', 'Unranked'),
+          battles:entry.battles_rated || 0
+        })
+        : text('rankLine', '{rank}{title}', {
+          rank:rankLabel(entry.rank),
+          title:` · ${text('rankCollectorTitle', '{rank} Collector', { rank:rankLabel(entry.rank) })}`
+        });
+      copy.append(user,rank);
+      const points = document.createElement('strong');
+      points.textContent = type === 'arena' ? entry.rating : entry.points;
+      row.append(place,copy,points);
+      root.append(row);
+    });
+    if (!(entries || []).length) root.textContent = type === 'arena'
+      ? text('noArenaRatings', 'No rated battles yet.')
+      : text('noSeasonPoints', 'No Collector Score yet.');
+  };
+  const loadLeaderboards = async () => {
+    const [collector, arena] = await Promise.all([
+      request('/api/stream-monsters/leaderboard?type=collector&limit=25'),
+      request('/api/stream-monsters/leaderboard?type=arena&limit=25')
+    ]);
+    renderLeaderboard(collector.entries || [], {
+      targetId:'collectorLeaderboard',
+      type:'collector'
+    });
+    renderLeaderboard(arena.entries || [], {
+      targetId:'arenaLeaderboard',
+      type:'arena'
+    });
+  };
+  const saveSetup = async () => {
+    const aliasDiagnostics = renderAliasDiagnostics();
+    if (aliasDiagnostics.conflicts.length) {
+      const failure = new Error('STREAM_MONSTERS_ALIAS_CONFLICT');
+      failure.code = failure.message;
+      throw failure;
+    }
+    const audioChannel = name => ({
+      enabled:byId(`audio${name}Enabled`).checked,
+      volume:Number(byId(`audio${name}Volume`).value)
+    });
+    const payload = creatorRuntime.buildConfigPayload({
+      currentConfig: currentStateConfig,
+      values: {
+        creatorName:byId('creatorName').value,
+        hatchDurationMs:byId('hatchPreset').value,
+        gameplayPace:byId('gameplayPace').value,
+        portraitBattleMode:byId('portraitBattleMode').value,
+        portraitArenaVariant:byId('portraitArenaVariant').value,
+        eggExpiryMs:byId('eggExpiry').value,
+        seasonDurationDays:byId('seasonDuration').value,
+        landscapeAnchor:byId('landscapeAnchor').value,
+        landscapeScale:byId('landscapeScale').value,
+        portraitAnchor:byId('portraitAnchor').value,
+        portraitScale:byId('portraitScale').value,
+        rendererQuality:byId('rendererQuality').value,
+        notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
+        eggShelfVisibleCount:byId('eggShelfVisibleCount').value,
+        freeEggDropsEnabled:byId('freeEggDropsEnabled').checked,
+        freeEggCooldownSeconds:byId('freeEggCooldownSeconds').value,
+        unhatchedEggStealEnabled:byId('unhatchedEggStealEnabled').checked,
+        unhatchedEggStealGraceSeconds:byId('unhatchedEggStealGraceSeconds').value,
+        unhatchedEggStealActivityWindowSeconds:
+          byId('unhatchedEggStealActivityWindowSeconds').value,
+        tutorialHintsEnabled:byId('tutorialHintsEnabled').checked,
+        tutorialHintIntervalSeconds:byId('tutorialHintIntervalSeconds').value,
+        overlayLanguage:collectOverlayLanguage(),
+        commandAliases:collectCommandAliases(),
+        audioChannels:{
+          master:audioChannel('Master'),
+          ui:audioChannel('Ui'),
+          egg:audioChannel('Egg'),
+          battle:audioChannel('Battle'),
+          reward:audioChannel('Reward')
+        }
+      }
+    });
+    const presentationValidation = presentationEditorController.validation();
+    if (!presentationValidation.valid) {
+      const failure = new Error('STREAM_MONSTERS_PRESENTATION_INVALID');
+      failure.code = failure.message;
+      throw failure;
+    }
+    payload.presentation = presentationEditorController.snapshot();
+    await request('/api/stream-monsters/config', {
+      method:'POST',
+      headers:jsonHeaders,
+      body:JSON.stringify(payload)
+    });
+    currentStateConfig = { ...currentStateConfig, ...payload };
+    notice(text('setupSaved', 'Regeln, Layout und Audio gespeichert.'), 'success');
+  };
+  const positionSafeBox = (id, rectangle) => {
+    const target = byId(id);
+    target.style.left = `${rectangle.x}%`;
+    target.style.top = `${rectangle.y}%`;
+    target.style.width = `${rectangle.width}%`;
+    target.style.height = `${rectangle.height}%`;
+  };
+  const safeRevealRectangle = (layout, anchor, scale) => {
+    const width = Math.min(layout === 'portrait' ? 90 : 48, (layout === 'portrait' ? 78 : 42) * scale / 100);
+    const height = Math.min(layout === 'portrait' ? 42 : 30, (layout === 'portrait' ? 32 : 22) * scale / 100);
+    const [vertical, horizontal] = anchor === 'center'
+      ? ['middle','center']
+      : (anchor.includes('-') ? anchor.split('-') : ['middle',anchor]);
+    const x = horizontal === 'left' ? 3 : (horizontal === 'right' ? 97 - width : (100 - width) / 2);
+    const y = vertical === 'top' ? 3 : (vertical === 'bottom' ? 97 - height : (100 - height) / 2);
+    return { x, y, width, height };
+  };
+  const renderSafeZone = () => {
+    const layout = byId('safeZoneLayout').value;
+    const anchor = byId(`${layout}Anchor`).value;
+    const scale = Math.max(70, Math.min(130, Number(byId(`${layout}Scale`).value) || 100));
+    const preview = byId('safeZonePreview');
+    preview.classList.toggle('portrait', layout === 'portrait');
+    const portraitProfile = currentStateConfig.overlayProfiles?.portrait || {
+      chatSafeZone:{ x:0, y:74, width:100, height:26 }
+    };
+    const reserved = layout === 'portrait'
+      ? {
+        logo:{ x:4,y:2,width:42,height:8 },
+        hype:{ x:78,y:2,width:18,height:10 },
+        chat:{ ...portraitProfile.chatSafeZone }
+      }
+      : {
+        logo:{ x:2,y:3,width:22,height:12 },
+        hype:{ x:87,y:3,width:10,height:18 },
+        chat:{ x:0,y:74,width:100,height:26 }
+      };
+    const reveal = safeRevealRectangle(layout, anchor, scale);
+    positionSafeBox('safeLogo', reserved.logo);
+    positionSafeBox('safeHype', reserved.hype);
+    positionSafeBox('safeChat', reserved.chat);
+    positionSafeBox('safeReveal', reveal);
+    const collisions = runtimeText.safeZoneCollisions({ reveal, reserved });
+    for (const [name, id] of [['logo','safeLogo'],['hype','safeHype'],['chat','safeChat']]) {
+      byId(id).classList.toggle('collision', collisions.includes(name));
+    }
+    byId('safeReveal').classList.toggle('collision', collisions.length > 0);
+    byId('portraitNormalPreview').closest('.preview-example').hidden = layout !== 'portrait';
+    byId('portraitBattlePreview').closest('.preview-example').hidden = layout !== 'portrait';
+    byId('landscapeStagePreview').closest('.preview-example').hidden = layout !== 'landscape';
+    byId('safeZoneWarning').textContent = collisions.length
+      ? text('safeZoneCollision', 'Collision: {areas}', { areas:collisions.join(', ') })
+      : text('safeZoneClear', 'No safe-zone collisions.');
+  };
+  const renderPortraitArenaVariant = () => {
+    const selector = byId('portraitArenaVariant');
+    const variant = creatorRuntime.PORTRAIT_ARENA_VARIANTS.includes(selector.value)
+      ? selector.value
+      : 'classic';
+    selector.value = variant;
+    byId('portraitBattlePreview').dataset.arenaVariant = variant;
+    byId('portraitArenaVariantHelp').textContent = variant === 'split-arena'
+      ? text(
+        'portraitArenaVariantPreviewSplit',
+        'Split Arena preview: divided fighter lanes inside the violet arena. The Likebar is external and reserved.'
+      )
+      : text(
+        'portraitArenaVariantPreviewClassic',
+        'Classic preview: the familiar face-off inside the same violet arena. The Likebar is external and reserved.'
+      );
+  };
+  const applyPresentationState = state => {
+    currentStateConfig = {
+      ...(state.config || {}),
+      giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
+    };
+    presentationEditorController.load(state.config?.presentation || state.config || {});
+    const storedHatchDurationMs = Number(state.config?.hatchDurationMs ?? 90000);
+    creatorRuntime.hydrateHatchPresetControl(
+      byId('hatchPreset'),
+      storedHatchDurationMs,
+      {
+        label:text('legacyCustomHatchDuration', 'Legacy Custom · {duration}', {
+          duration:formatDuration(storedHatchDurationMs)
+        })
+      }
+    );
+    byId('gameplayPace').value = state.config?.gameplayPace || 'arcade';
+    byId('portraitBattleMode').value =
+      state.config?.portraitBattleMode || 'takeover-74';
+    byId('portraitArenaVariant').value =
+      creatorRuntime.PORTRAIT_ARENA_VARIANTS.includes(
+        state.config?.portraitArenaVariant
+      ) ? state.config.portraitArenaVariant : 'classic';
+    renderPortraitArenaVariant();
+    byId('presentationModeStatus').textContent = text(
+      'presentationModeStatus',
+      '{pace} · {mode}',
+      {
+        pace:text('gameplayPaceArcadeRally', 'Arcade Rally'),
+        mode:text('portraitBattleModeTakeover74', '74% arena takeover')
+      }
+    );
+    byId('eggExpiry').value = String(state.config?.eggExpiryMs || 86400000);
+    byId('seasonDuration').value = String(state.config?.seasonDurationDays || 28);
+    byId('rendererQuality').value = state.config?.rendererQuality || 'auto';
+    byId('notificationDuration').value = String(
+      Math.round((state.config?.notificationDurationMs || 12000) / 1000)
+    );
+    byId('eggShelfVisibleCount').value = String(
+      state.config?.eggShelfVisibleCount || 4
+    );
+    byId('freeEggDropsEnabled').checked =
+      state.config?.freeEggDropsEnabled !== false;
+    byId('freeEggCooldownSeconds').value = String(
+      state.config?.freeEggCooldownSeconds || 86400
+    );
+    byId('unhatchedEggStealEnabled').checked =
+      state.config?.unhatchedEggStealEnabled !== false;
+    byId('unhatchedEggStealGraceSeconds').value = String(
+      state.config?.unhatchedEggStealGraceSeconds ?? 600
+    );
+    byId('unhatchedEggStealActivityWindowSeconds').value = String(
+      state.config?.unhatchedEggStealActivityWindowSeconds || 300
+    );
+    byId('tutorialHintsEnabled').checked =
+      state.config?.tutorialHintsEnabled !== false;
+    byId('tutorialHintIntervalSeconds').value = String(
+      state.config?.tutorialHintIntervalSeconds || 90
+    );
+    applyOverlayLanguage(state.config?.overlayLanguage);
+    currentGcceState = state.gcce || {};
+    applyAliasState(state.config?.commandAliases || {});
+    renderCommandDiagnostics(currentGcceState);
+    byId('landscapeAnchor').value = state.config?.layouts?.landscape?.anchor || 'bottom-center';
+    byId('landscapeScale').value = String(state.config?.layouts?.landscape?.scale || 100);
+    byId('portraitAnchor').value = state.config?.layouts?.portrait?.anchor || 'top-center';
+    byId('portraitScale').value = String(state.config?.layouts?.portrait?.scale || 100);
+    byId('overlayProfile').value = state.config?.overlayProfiles?.portrait?.preset ||
+      'tiktok-live-studio-1080x1920';
+    for (const [name, suffix] of [
+      ['master', 'Master'],
+      ['ui', 'Ui'],
+      ['egg', 'Egg'],
+      ['battle', 'Battle'],
+      ['reward', 'Reward']
+    ]) {
+      const channel = state.config?.audioChannels?.[name] || { enabled:true, volume:1 };
+      byId(`audio${suffix}Enabled`).checked = channel.enabled !== false;
+      byId(`audio${suffix}Volume`).value = String(channel.volume ?? 1);
+    }
+    const counts = creatorRuntime.eggReadinessCounts(state);
+    byId('creatorMetrics').textContent = text(
+      'readinessCounts',
+      '{active} active · {queued} queued · {ready} ready · {duration}',
+      {
+        ...counts,
+        duration:formatDuration(counts.durationMs)
+      }
+    );
+    byId('heartChainStatus').textContent = text('heartChainStatus', 'Heart Chain · {count}', {
+      count:state.heartChain?.chain_length ?? state.heartChain?.chainLength ?? 0
+    });
+    const missionTarget = state.streamMission?.target || 0;
+    const missionBand = String(state.streamMission?.population_band || '');
+    const missionBandSuffix = missionBand
+      ? `${missionBand.charAt(0).toUpperCase()}${missionBand.slice(1)}`
+      : '';
+    const missionPopulation = missionBandSuffix
+      ? text(`missionPopulation${missionBandSuffix}`, missionBand)
+      : '';
+    const missionStatus = text(
+      'missionProgress',
+      'Mission · {mission} · {progress}/{target}',
+      {
+        mission:text(
+          `mission${String(state.streamMission?.mission_key || 'unknown').replace(/(^|_)(\w)/g, (match, gap, letter) => letter.toUpperCase())}`,
+          state.streamMission?.mission_key || '—',
+          { target:missionTarget }
+        ),
+        progress:state.streamMission?.progress || 0,
+        target:missionTarget
+      }
+    );
+    byId('streamMissionStatus').textContent = missionPopulation
+      ? `${missionStatus} · ${missionPopulation}`
+      : missionStatus;
+    renderRetentionTimerWarning();
+    renderSafeZone();
+  };
+  const renderLiveCenter = (status = currentLiveStatus, state = currentCreatorState) => {
+    currentLiveStatus = status || {};
+    currentCreatorState = state || {};
+    const liveState = state?.renderer
+      ? state
+      : {
+        ...state,
+        renderer:{
+          backend:text('rendererConfigured', '{quality} configured', {
+            quality:state?.config?.rendererQuality || 'auto'
+          })
+        }
+      };
+    const view = creatorRuntime.buildCreatorLiveView({
+      status,
+      state:liveState,
+      now:Date.now()
+    });
+    const localizedStatus = value => {
+      const key = creatorRuntime.liveStatusTranslationKey(value);
+      return key ? text(key, value) : value;
+    };
+    const fields = {
+      liveTikTok:localizedStatus(view.tiktok),
+      liveGcce:localizedStatus(view.gcce),
+      liveObs:localizedStatus(view.obs),
+      livePlugin:localizedStatus(view.plugin),
+      liveQueue:String(view.queue),
+      liveEggShelf:(() => {
+        const shelf = creatorRuntime.buildEggShelfDiagnostics(liveState.eggStage);
+        return `${shelf.visible} / 6 · +${shelf.overflow} · ${shelf.publicFree} public`;
+      })(),
+      liveHype:`${view.hype}%`,
+      liveBattlePhase:localizedStatus(view.battlePhase),
+      liveCountdown:view.countdownMs > 0 ? formatDuration(view.countdownMs) : '—',
+      liveRenderer:view.renderer,
+      liveAudio:localizedStatus(view.audio)
+    };
+    Object.entries(fields).forEach(([id, value]) => {
+      byId(id).textContent = value;
+    });
+    const freeEggs = state?.diagnostics?.freeEggs || {};
+    const offers = freeEggs.offers || {};
+    byId('freeEggOfferCounts').textContent = text(
+      'freeEggOfferCountsValue',
+      '{reserved} reserved · {public} public · {claimed} claimed',
+      {
+        reserved:Number(offers.reserved) || 0,
+        public:Number(offers.public) || 0,
+        claimed:Number(offers.claimed) || 0
+      }
+    );
+    byId('freeEggNextCleanup').textContent = freeEggs.nextCleanupAtMs
+      ? formatDuration(Math.max(0, Number(freeEggs.nextCleanupAtMs) - Date.now()))
+      : '—';
+    const hints = state?.diagnostics?.hints || {};
+    byId('tutorialHintState').textContent = hints.enabled === false
+      ? text('statusDisabled', 'disabled')
+      : (hints.pending
+        ? text('tutorialHintPending', 'pending')
+        : text('statusActive', 'active'));
+    byId('liveBadge').textContent = view.tiktok === 'connected'
+      ? text('liveConnected', '● LIVE')
+      : text('liveOffline', '● Offline');
+    byId('liveBadge').classList.toggle('good', view.tiktok === 'connected');
+    const warnings = byId('liveWarnings');
+    warnings.replaceChildren();
+    if (!view.warnings.length) {
+      const empty = document.createElement('span');
+      empty.className = 'muted';
+      empty.textContent = text('noLiveWarnings', 'No live warnings.');
+      warnings.append(empty);
+    } else {
+      view.warnings.forEach(warning => {
+        const row = document.createElement('strong');
+        row.textContent = text(`warning${warning.replace(/(^|_)(\w)/g, (match, gap, letter) => letter.toUpperCase())}`, warning);
+        warnings.append(row);
+      });
+    }
+  };
+  const refreshLiveCenterState = async () => {
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+    try {
+      const [status, state] = await Promise.all([
+        request('/api/status'),
+        request('/api/stream-monsters/creator-state')
+      ]);
+      renderLiveCenter(status, state);
+    } catch (_) {
+      // Keep the last verified live snapshot visible during a transient poll failure.
+    } finally {
+      liveRefreshInFlight = false;
+    }
+  };
+  const renderRetentionTimerWarning = () => {
+    const cooldown = Number(byId('freeEggCooldownSeconds').value);
+    const stealGrace = Number(byId('unhatchedEggStealGraceSeconds').value);
+    const activityWindow = Number(byId('unhatchedEggStealActivityWindowSeconds').value);
+    const interval = Number(byId('tutorialHintIntervalSeconds').value);
+    const warning = byId('retentionTimerWarning');
+    const invalid = !Number.isFinite(cooldown) ||
+      cooldown < 60 ||
+      cooldown > 31536000 ||
+      !Number.isFinite(stealGrace) ||
+      stealGrace < 0 ||
+      stealGrace > 900 ||
+      !Number.isFinite(activityWindow) ||
+      activityWindow < 30 ||
+      activityWindow > 86400 ||
+      !Number.isFinite(interval) ||
+      interval < 60 ||
+      interval > 300;
+    warning.textContent = invalid
+      ? text('retentionTimerInvalid', 'Use valid timer values before saving.')
+      : text('retentionTimerWarning', 'Use at least 60 seconds so chat stays readable.');
+    warning.classList.toggle('error', invalid);
+  };
+  const applyDynamicRules = state => {
+    const prefix = state.gcce?.commandPrefix || '!';
+    const hatchDurationMs = state.config?.hatchDurationMs || 0;
+    const duration = formatDuration(hatchDurationMs);
+    byId('activePrefix').textContent = prefix;
+    byId('activeHatchDuration').textContent = duration;
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} hatch time · prefix {prefix} · 24-hour expiry · Rules v8 skill arena.', { duration, prefix });
+    document.querySelectorAll('[data-command]').forEach(command => {
+      const name = command.dataset.command;
+      const alias = creatorRuntime.resolveCommandReference(name, {
+        gcce:state.gcce,
+        commandAliases:state.config?.commandAliases
+      });
+      const suffix = ['hatch','inventory','monsters'].includes(name)
+        ? ' [slot]'
+        : (['monster','choose','evolve'].includes(name) ? ' <slot>' : '');
+      command.textContent = alias ? `${alias}${suffix}` : '—';
+      command.dataset.enabled = alias ? 'true' : 'false';
+    });
+  };
+  const init = async () => {
+    try {
+      const [status,state,mappings,assetSummary] = await Promise.all([
+        request('/api/status'),
+        request('/api/stream-monsters/creator-state'),
+        loadMappings(),
+        loadAssetIntegrity()
+      ]);
+      byId('creatorName').value = state.config?.creatorName || status.username || '';
+      organizeAliasGroups();
+      byId('overlayUrl').textContent = `${location.origin}/stream-monsters/overlay`;
+      byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
+      applyPresentationState(state);
+      applyDynamicRules(state);
+      renderLiveCenter(status, state);
+      await loadMonsterCatalog(status.username || '');
+      const readiness = [
+        Boolean(byId('creatorName').value),
+        mappings.length > 0,
+        state.config?.enabled !== false,
+        Boolean(byId('overlayUrl').textContent),
+        !state.gcce?.registrationError,
+        assetSummary.integrity === 'healthy'
+      ].filter(Boolean).length;
+      byId('readinessScore').textContent = `${readiness}/6`;
+      const end = state.season?.ends_at_ms;
+      if (end) byId('seasonCountdown').textContent = text('seasonEnds', 'Endet {date}', { date:new Date(end).toLocaleDateString() });
+          notice(text('arenaReady', 'Portrait Arcade Rally ready. Map gifts and test the overlay.'), 'success');
+    } catch (error) {
+      notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', {
+        error:apiErrorText(error)
+      }), 'error');
+    }
+  };
+
+  byId('saveSetup').addEventListener('click', () => saveSetup().catch(error => notice(apiErrorText(error), 'error')));
+  byId('saveGiftMapping').addEventListener('click', () => saveGiftMapping().catch(error => notice(apiErrorText(error), 'error')));
+  byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(apiErrorText(error), 'error')));
+  for (const kind of Object.keys(repairSuffixes)) {
+    const controls = repairControls(kind);
+    controls.preview.addEventListener('click', () => runRepair(kind));
+    controls.confirmation.addEventListener('change', () => applyRepairControlState(kind));
+    controls.execute.addEventListener('click', () => runRepair(kind, true));
+  }
+  byId('runDemo').addEventListener('click', async () => {
+    try {
+      await request('/api/stream-monsters/demo', { method:'POST' });
+      notice(text('demoSent', 'Vollständiger Spawn-, Hatch-, Kenney-, Liga- und Duell-Demoablauf gesendet.'), 'success');
+    } catch (error) {
+      notice(apiErrorText(error), 'error');
+    }
+  });
+  byId('runSceneDemo').addEventListener('click', async () => {
+    const layout = byId('safeZoneLayout').value;
+    const payload = creatorRuntime.normalizeDemoRequest({
+      scene:byId('demoScene').value,
+      templateId:byId('demoTemplate').value,
+      layout,
+      anchor:byId(`${layout}Anchor`).value,
+      scale:byId(`${layout}Scale`).value
+    });
+    try {
+      await request('/api/stream-monsters/demo', {
+        method:'POST',
+        headers:jsonHeaders,
+        body:JSON.stringify(payload)
+      });
+      notice(text('demoSceneSent', '{scene} preview sent to the overlay.', {
+        scene:text(creatorRuntime.demoTranslationKey(payload.scene), payload.scene)
+      }), 'success');
+    } catch (error) {
+      notice(apiErrorText(error), 'error');
+    }
+  });
+  byId('portraitArenaVariant').addEventListener('change', renderPortraitArenaVariant);
+  for (const id of [
+    'safeZoneLayout',
+    'landscapeAnchor',
+    'landscapeScale',
+    'portraitAnchor',
+    'portraitScale'
+  ]) {
+    byId(id).addEventListener('input', renderSafeZone);
+    byId(id).addEventListener('change', renderSafeZone);
+  }
+  for (const id of [
+    'freeEggDropsEnabled',
+    'freeEggCooldownSeconds',
+    'unhatchedEggStealEnabled',
+    'unhatchedEggStealGraceSeconds',
+    'unhatchedEggStealActivityWindowSeconds',
+    'tutorialHintsEnabled',
+    'tutorialHintIntervalSeconds'
+  ]) {
+    byId(id).addEventListener('input', renderRetentionTimerWarning);
+    byId(id).addEventListener('change', renderRetentionTimerWarning);
+  }
+  byId('giftEffect').addEventListener('change', () => {
+    byId('giftElement').disabled = byId('giftEffect').value === 'boost';
+  });
+  byId('giftCatalogMore').addEventListener('click', () => {
+    loadCatalog(catalogQuery, { append:true }).catch(error => notice(apiErrorText(error), 'error'));
+  });
+  document.querySelectorAll('[data-alias-command][data-alias-mode]').forEach(input => {
+    input.addEventListener('input', renderAliasDiagnostics);
+    input.addEventListener('change', renderAliasDiagnostics);
+  });
+  document.querySelectorAll('[data-alias-locale]').forEach(control => {
+    control.addEventListener('change', () => syncLocaleAlias(control));
+  });
+  for (const id of [
+    'overlayPrimaryLocale',
+    'overlayLocaleDe',
+    'overlayLocaleEn',
+    'overlayLocaleEs',
+    'overlayLocaleFr',
+    'overlaySecondsPerLocale'
+  ]) {
+    byId(id).addEventListener('change', () => {
+      applyOverlayLanguage(collectOverlayLanguage());
+    });
+  }
+  byId('giftSearch').addEventListener('input', event => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadCatalog(event.target.value).catch(error => notice(apiErrorText(error), 'error')), 180);
+  });
+  loadCatalog().catch(() => {});
+  loadLeaderboards().catch(() => {});
+  const liveCountdownTimer = setInterval(() => renderLiveCenter(), 1000);
+  const liveStateRefreshTimer = setInterval(refreshLiveCenterState, 5_000);
+  window.addEventListener('pagehide', () => {
+    clearInterval(liveCountdownTimer);
+    clearInterval(liveStateRefreshTimer);
+    catalogAbortController?.abort();
+    viewerAbortController?.abort();
+  }, { once:true });
+  if (window.i18n?.onLanguageChange) {
+    window.i18n.onLanguageChange(() => {
+      Promise.allSettled([
+        init(),
+        loadCatalog(byId('giftSearch').value),
+        loadLeaderboards()
+      ]);
+    });
+  }
+  init();
+})();
+</script>
+</body>
+</html>

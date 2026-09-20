@@ -3,17 +3,18 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const OverlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const ArenaDirector = require(
-  '../plugins/streamalchemy/streammonsters-arena-director'
+  '../plugins/stream-monsters/streammonsters-arena-director'
 );
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const overlayHtml = fs.readFileSync(
   path.join(pluginDir, 'streammonsters-overlay.html'),
   'utf8'
@@ -119,6 +120,7 @@ async function createPresenterHarness({
         };
       });
       window.StreamMonstersOverlayRuntime = OverlayRuntime;
+      window.StreamMonstersPresentation = Presentation;
       window.StreamMonstersPortraitArena = {
         normalizeVariant(value, fallback = 'classic') {
           return ['split-arena', 'classic'].includes(value) ? value : fallback;
@@ -266,6 +268,8 @@ async function createPresenterHarness({
     arenaLocales,
     arenaEvents,
     eggEvents,
+    announcer:() => dom.window.document
+      .getElementById('critical-status-announcer').textContent,
     card,
     toast:() => ({
       visible:dom.window.document.getElementById('toast').classList.contains('visible'),
@@ -453,6 +457,28 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
       .toBeLessThanOrEqual(10_000);
   });
 
+  test('announces one critical egg phase through the dedicated status region', async () => {
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en']
+    });
+    try {
+      await harness.emit('streammonsters:egg_ready', {
+        eventId:'ready-announcer',
+        playerName:'@alpha',
+        egg:{ element:'Ember' },
+        eggStage:{
+          visualId:'ready-announcer',
+          element:'Ember',
+          state:'ready'
+        }
+      });
+      expect(harness.announcer()).toBe('egg ready');
+    } finally {
+      harness.close();
+    }
+  });
+
   test.each([
     {
       event:'streammonsters:egg_ready',
@@ -460,7 +486,8 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         eventId:'ready-locales',
         criticalFinal:true,
         playerName:'@alpha',
-        egg:{ element:'Ember' }
+        egg:{ element:'Ember' },
+        eggStage:{ visualId:'ready-locales', element:'Ember', state:'ready' }
       },
       german:/kann schlüpfen/,
       english:/ready to hatch/
@@ -485,8 +512,8 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         egg:{ element:'Ember' },
         monster:{ name:'Ashfang', element:'Ember' }
       },
-      german:/Ashfang ist da/,
-      english:/Ashfang is here/
+      german:/Hatchling Ashfang ist da/,
+      english:/Hatchling Ashfang is here/
     }
   ])('presents $event in German and English without inheriting a stale locale', async ({
     event,
@@ -543,7 +570,7 @@ describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
         monster:{ name:'Ashfang', element:'Ember' }
       });
       expect(first.visible).toBe(true);
-      expect(first.title).toMatch(/Ashfang ist da/);
+      expect(first.title).toMatch(/Hatchling Ashfang ist da/);
       expect(first.subtitle).toMatch(/automatisch geschlüpft/i);
     } finally {
       harness.close();

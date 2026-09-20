@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 <!-- BEGIN STREAM MONSTERS PRODUCT PROJECTION -->
-- **Stream Monsters product contract v1**: Stream Monsters 1.11.1 uses Rules v8, Arcade Clash, the 90-second fresh default, portrait profile `tiktok-live-studio-1080x1920`, and subscriber-only access. Current package: `streamalchemy-1.11.1.zip`; next release: `1.12.0`.
+- **Stream Monsters product contract v1**: Stream Monsters 1.12.0 uses Rules v8, Arcade Clash, the 90-second fresh default, portrait profile `tiktok-live-studio-1080x1920`, and subscriber-only access. Current package: `stream-monsters-1.12.0.zip`; next release: `1.13.0`.
 <!-- END STREAM MONSTERS PRODUCT PROJECTION -->
 - **Stream Monsters 1.11.1 – Stable Portrait Arcade Rally**: The verified Stable package gives new setups a 90-second incubation default, while stored creator timings and existing egg readiness remain unchanged. German and English are active by default, with Spanish and French available for one- or two-language overlay sequencing.
 - **Rules v8 K.O. Arena**: Battles continue until K.O. or forfeit, sealed A/B/C choices resolve immediately when both fighters lock, passive Special charge is capped per round, and Arena Collapse accelerates living battles from round five.
@@ -32,7 +32,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Overlay onboarding**: Contextual command hints use the active GCCE prefix and aliases, wait behind critical sequences, and never post automatic chat messages.
 - **Release provenance**: Stream Monsters 1.6.0 through 1.10.0 are reproducibly mapped to audited source commits. Every earlier archive remains byte-identical; no tags are claimed by the package map.
 
+## [1.4.2] - 2026-08-01
+
+### Changed
+
+- **Stream Monsters 1.12.0 canonical identity**: The maintained source, manifest, Store tile, dashboard navigation, logs, lifecycle responses and current documentation now use `stream-monsters`.
+- **Atomic compatibility migration**: Loader inventory canonicalizes every manifest before initialization; state and configuration use equivalent atomic canonical and legacy shadows with stable conflict detection.
+- **Transactional Store recovery**: Upgrades and authenticated rollback restore plugin files, runtime, state, configuration and persistent data after a failed promotion.
+- **Release metadata**: LTTH host projections advance to 1.4.2 and the Stream Monsters package map advances to schema 2 with per-release manifest identity, source path and package path.
+
+### Compatibility
+
+- **Permanent aliases**: `streamalchemy` lifecycle, UI, overlay, static, configuration, data, backup, GCCE and IFTTT inputs resolve to one logical `stream-monsters` plugin without duplicate execution.
+- **Historical rollback**: `streamalchemy-1.11.1.zip` remains byte-identical at SHA-256 `46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60` and is the mapped rollback package.
+
 ## [1.4.1] - 2026-07-26
+
 
 ### Added
 

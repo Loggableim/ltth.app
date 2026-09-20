@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const StreamMonstersAssetRegistry = require(
-  '../../plugins/streamalchemy/backend/streammonsters/asset-registry'
+  '../../plugins/stream-monsters/backend/streammonsters/asset-registry'
 );
 
 const AUDIO_ASSET_PATH =
@@ -195,7 +195,7 @@ function collectStreamMonstersManifestDependencies({ appRoot }) {
   const pluginDir = path.join(
     path.resolve(appRoot),
     'plugins',
-    'streamalchemy'
+    'stream-monsters'
   );
   const dependencies = [
     ...collectAudioDependencies(pluginDir),

@@ -2,18 +2,20 @@ const Database = require('better-sqlite3');
 const { EventEmitter } = require('events');
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
+const LayoutEditor = require('../plugins/stream-monsters/streammonsters-layout-editor');
 const os = require('os');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
-const StreamMonstersCollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
+const StreamMonstersCollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
-const creatorRuntime = require('../plugins/streamalchemy/streammonsters-creator-runtime');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
+const creatorRuntime = require('../plugins/stream-monsters/streammonsters-creator-runtime');
 
 const ART_LAB_ROUTES = [
   ['GET', '/api/streamalchemy/config'],
@@ -82,7 +84,7 @@ function createRouteSubject({ dataDir = os.tmpdir() } = {}) {
       registerRoute: (method, routePath, handler) => registered.push({ method, routePath, handler }),
       emit: jest.fn()
     },
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     dataDir,
     store,
     engine: {
@@ -143,7 +145,7 @@ function createApi(storedConfig = {}) {
     events,
     logs,
     api: {
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       getDatabase: () => new Database(':memory:'),
       getConfig: key => settings.get(key),
       setConfig: (key, value) => settings.set(key, value),
@@ -362,7 +364,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
   });
 
   test('ships no executable Art Lab modules and maps legacy UI URLs to the creator UI', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     for (const relativePath of [
       'ui.html',
       'ui-old.html',
@@ -399,7 +401,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
   test.each(['de', 'en', 'es', 'fr'])(
     'localizes every Rules v5 creator control in %s',
     locale => {
-      const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+      const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
       const translations = JSON.parse(fs.readFileSync(
         path.join(pluginDir, 'locales', `${locale}.json`),
         'utf8'
@@ -608,7 +610,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
 
   test('creator UI loads only creator/gameplay APIs and persists the Rules v5 controls', async () => {
     const html = fs.readFileSync(
-      path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'),
+      path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-ui.html'),
       'utf8'
     );
     const requests = [];
@@ -621,7 +623,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       requests.push({ url, options });
       const payload = url === '/api/status'
         ? { username: 'creator' }
-        : url === '/api/streammonsters/creator-state'
+        : url === '/api/stream-monsters/creator-state'
           ? {
             success: true,
             config,
@@ -630,11 +632,11 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
             hype: { points: 0 },
             season: null
           }
-          : url.startsWith('/api/streammonsters/gift-catalog')
+          : url.startsWith('/api/stream-monsters/gift-catalog')
             ? { success: true, gifts: [], total: 0, offset: 0, limit: 40 }
-            : url === '/api/streammonsters/gift-mappings'
+            : url === '/api/stream-monsters/gift-mappings'
               ? { success: true, mappings: [] }
-              : url.startsWith('/api/streammonsters/monster-catalog')
+              : url.startsWith('/api/stream-monsters/monster-catalog')
                 ? {
                   success: true,
                   templates: [],
@@ -642,11 +644,11 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
                   formsTotal: 72,
                   assetIntegrity: { expected: 72, available: 72, healthy: true }
                 }
-              : url.startsWith('/api/streammonsters/creator-catalog')
+              : url.startsWith('/api/stream-monsters/creator-catalog')
                 ? { success: true, templates: [], dex: { owned: 0, total: 24 } }
-                : url.startsWith('/api/streammonsters/leaderboard')
+                : url.startsWith('/api/stream-monsters/leaderboard')
                   ? { success: true, entries: [] }
-                  : url === '/api/streammonsters/config' && options.method === 'POST'
+                  : url === '/api/stream-monsters/config' && options.method === 'POST'
                     ? { success: true, config: JSON.parse(options.body) }
                     : { error: 'unexpected_request' };
       return { ok: !payload.error, json: async () => payload };
@@ -657,6 +659,8 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       beforeParse(window) {
         window.fetch = fetchMock;
         window.StreamMonstersOverlayRuntime = overlayRuntime;
+        window.StreamMonstersPresentation = Presentation;
+        window.StreamMonstersLayoutEditor = LayoutEditor;
         window.StreamMonstersCreatorRuntime = creatorRuntime;
         window.i18n = {
           init: async () => {},
@@ -691,11 +695,11 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     expect(dom.window.document.getElementById('runtimeWizard')).toBeNull();
     expect(requests.map(entry => entry.url)).not.toEqual(expect.arrayContaining([
       '/api/streamalchemy/providers/status',
-      '/api/streammonsters/pool',
-      '/api/streammonsters/local-runtime/status'
+      '/api/stream-monsters/pool',
+      '/api/stream-monsters/local-runtime/status'
     ]));
     expect(requests.map(entry => entry.url)).toContain(
-      '/api/streammonsters/creator-catalog?userId=creator'
+      '/api/stream-monsters/creator-catalog?userId=creator'
     );
 
     dom.window.document.getElementById('seasonDuration').value = '60';
@@ -704,7 +708,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     dom.window.document.getElementById('saveSetup').click();
     await new Promise(resolve => setTimeout(resolve, 20));
     const save = requests.find(entry => (
-      entry.url === '/api/streammonsters/config' && entry.options.method === 'POST'
+      entry.url === '/api/stream-monsters/config' && entry.options.method === 'POST'
     ));
     expect(JSON.parse(save.options.body)).toEqual(expect.objectContaining({
       visualPack: 'furry',

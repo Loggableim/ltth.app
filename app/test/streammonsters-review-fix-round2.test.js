@@ -1,17 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const Presentation = require('../plugins/stream-monsters/streammonsters-presentation');
 const Database = require('better-sqlite3');
 const GCCE = require('../plugins/gcce');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
-const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
-const chatViewRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
-const eggStageView = require('../plugins/streamalchemy/streammonsters-egg-stage-view');
-const arenaDirector = require('../plugins/streamalchemy/streammonsters-arena-director');
-const effectsRenderer = require('../plugins/streamalchemy/streammonsters-effects-renderer');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
+const overlayRuntime = require('../plugins/stream-monsters/streammonsters-overlay-runtime');
+const chatViewRuntime = require('../plugins/stream-monsters/streammonsters-chat-view');
+const eggStageView = require('../plugins/stream-monsters/streammonsters-egg-stage-view');
+const arenaDirector = require('../plugins/stream-monsters/streammonsters-arena-director');
+const effectsRenderer = require('../plugins/stream-monsters/streammonsters-effects-renderer');
 
 const activeDoms = new Set();
 const activeGcceInstances = new Set();
@@ -82,7 +83,7 @@ async function createCollisionRuntime() {
   }]);
 
   const plugin = new StreamAlchemyPlugin({
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     log: jest.fn()
   });
   plugin.config = {
@@ -166,7 +167,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 
 async function createLiveOverlay(snapshot) {
   const html = fs.readFileSync(
-    path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'),
+    path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-overlay.html'),
     'utf8'
   );
   const localePayloads = Object.fromEntries(['de', 'en', 'es', 'fr'].map(locale => [
@@ -175,7 +176,7 @@ async function createLiveOverlay(snapshot) {
       path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ),
@@ -213,7 +214,7 @@ async function createLiveOverlay(snapshot) {
       });
       window.fetch = jest.fn(async input => {
         const localeMatch = String(input || '').match(
-          /\/plugins\/streamalchemy\/locales\/(de|en|es|fr)\.json(?:\?|$)/
+          /\/plugins\/(?:stream-monsters|streamalchemy)\/locales\/(de|en|es|fr)\.json(?:\?|$)/
         );
         if (localeMatch) {
           return {
@@ -228,6 +229,7 @@ async function createLiveOverlay(snapshot) {
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersPresentation = Presentation;
       window.StreamMonstersPortraitArena = {
         normalizeVariant(value, fallback = 'classic') {
           return ['split-arena', 'classic'].includes(value) ? value : fallback;
@@ -323,7 +325,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
 
     expect(plugin.getStreamMonstersCommandReference('rank')).toBe('/monsterrank');
     expect(gcce.registry.getCommand('rank').pluginId).toBe('milestone-leaderboard');
-    expect(gcce.registry.getCommand('monsterrank').pluginId).toBe('streamalchemy');
+    expect(gcce.registry.getCommand('monsterrank').pluginId).toBe('stream-monsters');
 
     await gcce.destroy();
   });

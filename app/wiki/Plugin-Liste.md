@@ -173,20 +173,20 @@ http://localhost:3000/gcce-hud/overlay
 
 ### 4. Stream Monsters
 **Status:** 🟢 Stable
-**Version:** 1.11.1
+**Version:** 1.12.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
-Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier speisen dieselbe faire Brut-Warteschlange. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster mit festen Elementwerten und neuen Skills weiter und kämpfen mit verdeckten A-, B- oder C-Entscheidungen.
+Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier speisen dieselbe faire Brut-Warteschlange. Zuschauer sammeln die 24 Season-1-Stream-Monster mit 72 gebündelten Evolutionsformen, entwickeln sie mit festen Elementwerten und neuen Skills weiter und kämpfen mit verdeckten A-, B- oder C-Entscheidungen.
 
 **Features:**
 - 🎁 Geschenk-Eier und optionale Gratis-Eier teilen drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
 - 🥚 Optionales Gratis-Ei: 60 Sekunden reserviert, danach öffentlich per `!adopt`; Cooldown 60–31.536.000 Sekunden, Standard 24 Stunden
-- 🐾 24 Monster-Vorlagen mit Evolution I, II und III – insgesamt 72 gebündelte Formen
+- 🐾 24 Season-1-Stream-Monster mit Evolution I, II und III – insgesamt 72 gebündelte Formen
 - ⏱️ Neue Setups: 90 Sekunden Brutzeit; gespeicherte Creator-Zeiten und vorhandene Eier bleiben unverändert
 - 🌍 Deutsch und Englisch standardmäßig aktiv; ein oder zwei Overlaysprachen aus DE/EN/ES/FR
-- ⚔️ Verdeckte Rules-v8-K.-o.-Duelle: 8 Sekunden Monsterwahl, 6 Sekunden bei einer bzw. 10 Sekunden bei zwei Sprachen, 10 Sekunden Statwahl und vollständiges Replay
-- 💥 Arena Collapse ab Runde 5 und elementspezifische WebGPU-Effekte mit synchronem Fallback
+- ⚔️ Verdeckte K.-o.-Duelle: 8 Sekunden Monsterwahl, Arcade-Skillwahl 6 Sekunden bei einer bzw. 8 Sekunden bei zwei Sprachen, Statwahl 10 bzw. 12 Sekunden und vollständiges Replay
+- ⚡ Standardaktionen 1,6 Sekunden, Specials 2,4 Sekunden und K.-o.-Reveals 2,8 Sekunden; Arena Collapse wird in Runde 3 angekündigt und beginnt in Runde 4
 - ⚖️ Sechs Elementfamilien sowie Striker, Guardian, Trickster und Sustain mit simulatorisch geprüften Vor- und Nachteilen
 - 🏆 Getrennte Collector-Score- und Arena-Rating-Ranglisten
 - 📋 Gift-/siegunabhängige Daily-/Weekly-Quests; nur 10 Tagesduelle ändern Rating, jedes legitime Duell gibt Monster-XP
@@ -195,22 +195,22 @@ Vom Creator aktivierte TikTok-Geschenke und optionale wiederkehrende Gratis-Eier
 - 🔒 Kein Art Lab, keine KI-Bildgenerierung und kein Modell-Installer im Plugin
 
 **Endpoints:**
-- `GET /api/streammonsters/state` - Öffentlicher aggregierter Zustand
-- `GET /api/streammonsters/battle-state` - Öffentlicher Arena-Zustand
-- `GET /api/streammonsters/battles/:battleId/replay` - Datenschutzreduziertes Replay
-- `GET /api/streammonsters/monster-catalog` - Gebündelter Monsterkatalog
-- `GET /api/streammonsters/leaderboard?type=collector|arena` - Getrennte Ranglisten
+- `GET /api/stream-monsters/state` - Öffentlicher aggregierter Zustand
+- `GET /api/stream-monsters/battle-state` - Öffentlicher Arena-Zustand
+- `GET /api/stream-monsters/battles/:battleId/replay` - Datenschutzreduziertes Replay
+- `GET /api/stream-monsters/monster-catalog` - Gebündelter Monsterkatalog
+- `GET /api/stream-monsters/leaderboard?type=collector|arena` - Getrennte Ranglisten
 
 **Overlay-URL:**
 ```
-http://localhost:3000/streammonsters/overlay
+http://localhost:3000/stream-monsters/overlay
 ```
 
 **Integration:** Wenn GCCE verfügbar ist, ist es der einzige Kommando-Eingang. Prefix und Aliase sind editierbar und konfliktgeprüft; Overlay-Hinweise verwenden die aktive Konfiguration und senden keine Chatnachrichten.
 
 **Faire Grenzen und Kompatibilität:**
 - Bezahlte Gifts verbessern niemals Kampfwerte, XP-Multiplikatoren, Seltenheit oder Gewinnwahrscheinlichkeit.
-- Die stabile Plugin-ID `streamalchemy`, bestehende Spielerdaten und historische Replays bleiben erhalten.
+- Bestehende Spielerdaten und historische Replays bleiben beim Upgrade erhalten.
 
 ---
 

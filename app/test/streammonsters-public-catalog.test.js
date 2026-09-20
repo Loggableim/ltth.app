@@ -18,7 +18,7 @@ const CATALOG_PATH = path.join(
   REPO_ROOT,
   'app',
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'backend',
   'streammonsters',
   'catalog.js'
@@ -27,7 +27,7 @@ const BATTLE_RULES_PATH = path.join(
   REPO_ROOT,
   'app',
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'backend',
   'streammonsters',
   'battle-rules-v8.js'
@@ -46,7 +46,7 @@ function readMonsterLocales() {
       REPO_ROOT,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'locales',
       `${locale}.json`
     );
@@ -80,17 +80,14 @@ function renderPublicGuide(locale = 'de') {
     runScripts: 'outside-only',
     url: `https://ltth.app/streammonsters/?lang=${locale}`
   });
-  const executableScripts = [...dom.window.document.querySelectorAll('script[src]')]
-    .map(script => script.getAttribute('src'))
-    .filter(source => (
-      source.startsWith('/js/streammonsters-catalog.generated.js') ||
-      source.startsWith('/js/streammonsters-guide.js') ||
-      source.startsWith('/app/plugins/streamalchemy/streammonsters-rules-v8-pacing.js')
-    ));
+  const executableScripts = [
+    'js/streammonsters-catalog.generated.js',
+    'app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js',
+    'js/streammonsters-guide.js'
+  ];
 
-  executableScripts.forEach(source => {
-    const cleanSource = source.split('?')[0].replace(/^\//, '');
-    dom.window.eval(fs.readFileSync(path.join(REPO_ROOT, cleanSource), 'utf8'));
+  executableScripts.forEach(relativePath => {
+    dom.window.eval(fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8'));
   });
   return dom;
 }
@@ -120,8 +117,13 @@ describe('Stream Monsters public catalog generator', () => {
         templateId: runtimeTemplate.templateId,
         element: runtimeTemplate.element,
         role: runtimeTemplate.role,
-        name: runtimeTemplate.name,
-        species: runtimeTemplate.species
+        name: runtimeCatalog.projectDefaultMonsterName(
+          runtimeTemplate.templateId,
+          runtimeTemplate.name
+        ),
+        species: runtimeTemplate.species,
+        epithet: runtimeTemplate.epithet,
+        season: runtimeTemplate.season
       });
       expect(template.stages).toHaveLength(3);
 
@@ -212,7 +214,7 @@ describe('Stream Monsters public catalog generator', () => {
       REPO_ROOT,
       'app',
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'assets',
       'streammonsters',
       'furry',
@@ -283,7 +285,7 @@ describe('Stream Monsters public Monsterdex', () => {
       '[data-evolution-stage="2"] [data-choice="A"]'
     );
     expect(ashfangStageTwoAttack.querySelector('.sm-skill-name').textContent)
-      .toBe('Ashfang: Flammenzahn II');
+      .toBe('Inferno Fang');
     expect(ashfangStageTwoAttack.querySelector('.sm-skill-effect').textContent)
       .toBe(
         'Stufe II verstärkt diesen Skill: Verursacht Schaden und ' +
@@ -296,7 +298,7 @@ describe('Stream Monsters public Monsterdex', () => {
       '[data-evolution-stage="2"] [data-choice="A"]'
     );
     expect(spanishAshfangStageTwoAttack.querySelector('.sm-skill-name').textContent)
-      .toBe('Ashfang: Colmillo Ígneo II');
+      .toBe('Inferno Fang');
     expect(spanishAshfangStageTwoAttack.querySelector('.sm-skill-effect').textContent)
       .toBe(
         'La etapa II refuerza esta habilidad: Inflige daño y deja ' +

@@ -1,8 +1,8 @@
 const {
   TEMPLATE_CATALOG,
   buildV5SkillCatalog
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
-const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
+const BattleService = require('../plugins/stream-monsters/backend/streammonsters/battle-service');
 
 function fighter(id, element, templateId, stats = {}) {
   return {

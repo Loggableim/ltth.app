@@ -1,10 +1,10 @@
 const Database = require('better-sqlite3');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 
 function createRuntime() {
@@ -203,7 +203,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
           name: 'Ashfang',
           templateId: 'ashfang',
           level: 4,
-          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+          imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png'
         })
       })
     }));
@@ -268,7 +268,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
         evolutionStage: 2,
         prestigeLevel: 0,
         unspentStatPoints: 3,
-        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
         stats: { vitality: 7, might: 8, guard: 6, agility: 7 }
       },
       eventId: expect.stringMatching(/^sm-[a-f0-9]{32}$/),
@@ -575,7 +575,7 @@ describe('Stream Monsters v1.5 public event projection and reconnect outbox', ()
 
     expect(remote.monster.imageUrl).toBeNull();
     expect(kenney.monster.imageUrl)
-      .toBe('/api/streammonsters/art/kenney-0123456789abcdef.svg');
+      .toBe('/api/stream-monsters/art/kenney-0123456789abcdef.svg');
   });
 
   test('publishes the Rules-v5 battle socket aliases with one shared dedupe identity', () => {

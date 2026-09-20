@@ -3,24 +3,24 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const StreamMonstersBattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 const overlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const creatorRuntime = require(
-  '../plugins/streamalchemy/streammonsters-creator-runtime'
+  '../plugins/stream-monsters/streammonsters-creator-runtime'
 );
 const ArenaView = require(
-  '../plugins/streamalchemy/streammonsters-arena-view'
+  '../plugins/stream-monsters/streammonsters-arena-view'
 );
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 
 describe('Stream Monsters 1.11 overlay language configuration', () => {
   test('defaults to German and English without overwriting valid saved choices', () => {
@@ -137,17 +137,17 @@ describe('Stream Monsters 1.11 overlay language configuration', () => {
     });
   });
 
-  test('keeps the Rules v8 action window at four seconds regardless of overlay language cadence', () => {
+  test('uses the Arcade action window that matches overlay language cadence', () => {
     const service = Object.create(StreamMonstersBattleMatchService.prototype);
     service.rulesVersion = 8;
     service.localeCount = 1;
     service.secondsPerLocale = 5;
 
     service.setLanguageTiming({ localeCount: 1, secondsPerLocale: 5 });
-    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(4_000);
+    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(6_000);
 
     service.setLanguageTiming({ localeCount: 2, secondsPerLocale: 5 });
-    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(4_000);
+    expect(service.actionWindowMs({ rulesVersion: 8 })).toBe(8_000);
   });
 
   test('sanitizes and publishes overlay language config through the creator API contract', () => {
@@ -456,7 +456,7 @@ describe('Stream Monsters 1.11 live arena locale transitions', () => {
     expect(text('#arena-round')).toBe('Runde 2');
     expect(text('#arena-skill-prompt')).toContain('A Angriff');
     expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-name'))
-      .toBe('Ashfang: Flammenzahn');
+      .toBe('Flamefang');
     expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-copy'))
       .toBe('Verursacht Schaden und hinterlässt Brand für die nächste Runde.');
     expect(text('#arena-shield-label-1')).toBe('Schild');
@@ -467,7 +467,7 @@ describe('Stream Monsters 1.11 live arena locale transitions', () => {
     expect(text('#arena-round')).toBe('Round 2');
     expect(text('#arena-skill-prompt')).toContain('A Attack');
     expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-name'))
-      .toBe('Ashfang: Flamefang');
+      .toBe('Flamefang');
     expect(text('[data-skill-deck="1"] [data-skill="A"] .skill-copy'))
       .toBe('Deals damage and leaves Burn for the next round.');
     expect(text('#arena-shield-label-1')).toBe('Shield');

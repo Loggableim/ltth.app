@@ -4,16 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 const ChatView = require(
-  '../plugins/streamalchemy/streammonsters-chat-view'
+  '../plugins/stream-monsters/streammonsters-chat-view'
 );
 
 const overlayPath = path.join(
   process.cwd(),
   'plugins',
-  'streamalchemy',
+  'stream-monsters',
   'streammonsters-overlay.html'
 );
 
@@ -830,7 +830,7 @@ describe('Stream Monsters portrait egg shelf reliability', () => {
       const pluginCatalog = JSON.parse(fs.readFileSync(path.join(
         process.cwd(),
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ), 'utf8')).plugins.streamalchemy.ui.monsters;
@@ -929,7 +929,7 @@ describe('Stream Monsters portrait Smart Egg Focus presentation', () => {
     'provides non-empty %s focus labels in plugin and app locale catalogs',
     locale => {
       const pluginLocale = JSON.parse(fs.readFileSync(
-        path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+        path.join(process.cwd(), 'plugins', 'stream-monsters', 'locales', `${locale}.json`),
         'utf8'
       ));
       const appLocale = JSON.parse(fs.readFileSync(

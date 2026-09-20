@@ -1,18 +1,18 @@
 const Database = require('better-sqlite3');
 const os = require('os');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersStore = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const FreeEggDropService = require(
-  '../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service'
+  '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
 const ChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 
 const activeServices = new Set();
@@ -48,7 +48,7 @@ function createSubject({
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow,
     config
-  });
+  }).start();
   activeServices.add(service);
   return {
     store,
@@ -79,7 +79,7 @@ function createPluginApi() {
     emitted,
     sqlite,
     api: {
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       log: jest.fn(),
       getDatabase: () => sqlite,
       getConfig: key => settings.get(key) || null,
@@ -540,7 +540,7 @@ describe('Stream Monsters free egg lifecycle reliability', () => {
       egg: expect.objectContaining({
         display_name: 'Claimant Name',
         avatar_ref: expect.stringMatching(
-          /^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i
+          /^\/api\/stream-monsters\/avatar\/[a-z0-9_-]{16,1024}$/i
         )
       })
     }));

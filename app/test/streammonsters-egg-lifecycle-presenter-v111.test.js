@@ -1,13 +1,13 @@
 'use strict';
 
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 const EggStageProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/egg-stage-projector'
+  '../plugins/stream-monsters/backend/streammonsters/egg-stage-projector'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const fs = require('fs');
 const path = require('path');
@@ -373,7 +373,7 @@ describe('Stream Monsters 1.11 egg lifecycle cards', () => {
         __dirname,
         '..',
         'plugins',
-        'streamalchemy',
+        'stream-monsters',
         'locales',
         `${locale}.json`
       ), 'utf8')).plugins.streamalchemy.ui.monsters;

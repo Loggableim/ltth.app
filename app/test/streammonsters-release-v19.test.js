@@ -57,7 +57,7 @@ describe('Stream Monsters 1.9 Rules-v7 release contract', () => {
     for (const release of Object.values(releaseMap.releases)) {
       if (!release.sourceTree) continue;
       expect(release.sourceTree).toBe(
-        git('rev-parse', `${release.sourceCommit}:${releaseMap.sourcePath}`)
+        git('rev-parse', `${release.sourceCommit}:${release.sourcePath}`)
       );
     }
   });
@@ -69,7 +69,7 @@ describe('Stream Monsters 1.9 Rules-v7 release contract', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-v19-mismatch-'));
     mismatched.releases['1.8.0'].sourceTree = git(
       'rev-parse',
-      'HEAD:app/plugins/streamalchemy'
+      'HEAD:app/plugins/stream-monsters'
     );
 
     try {

@@ -1,6 +1,6 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
 
 function createMonster(store, userId, seed = 'progression-seed') {
   const egg = store.createEgg({

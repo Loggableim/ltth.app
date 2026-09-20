@@ -1,4 +1,5 @@
 const { createHash, randomUUID } = require('crypto');
+const { canonicalizePluginId } = require('../../modules/plugin-identities');
 
 const objectCorrelationIds = new WeakMap();
 
@@ -53,13 +54,14 @@ class ChatConsumptionRegistry {
   resolve(data, decision = {}) {
     this.prune();
     const correlationId = this.correlationId(data);
+    const pluginId = canonicalizePluginId(decision.pluginId);
     const record = Object.freeze({
       schemaVersion: 1,
       correlationId,
-      pluginId: String(decision.pluginId || ''),
+      pluginId,
       success: decision.success === true,
       consumed: (
-        decision.pluginId === 'streamalchemy' &&
+        pluginId === 'stream-monsters' &&
         decision.handled === true
       )
     });

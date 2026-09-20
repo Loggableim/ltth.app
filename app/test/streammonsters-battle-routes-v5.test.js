@@ -1,16 +1,16 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const BattleService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-service'
 );
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
 
 function createRoutes() {
@@ -33,7 +33,7 @@ function createRoutes() {
       },
       emit: jest.fn()
     },
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     dataDir: path.join(process.cwd(), 'tmp', 'streammonsters-routes-v5'),
     store: {
       getEggStateCounts: () => ({}),
@@ -149,7 +149,7 @@ function createRealRoutes(rulesVersion = 5) {
       },
       emit: jest.fn()
     },
-    pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
     dataDir: path.join(process.cwd(), 'tmp', 'streammonsters-routes-v5-real'),
     store,
     engine: { streamKey: null, hatchDurationFor: () => 120_000 },

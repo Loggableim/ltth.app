@@ -1,24 +1,24 @@
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const FreeEggDropService = require(
-  '../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service'
+  '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
 const EggStageProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/egg-stage-projector'
+  '../plugins/stream-monsters/backend/streammonsters/egg-stage-projector'
 );
 const { safeAssetReference } = EggStageProjector;
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 const activeFreeEggServices = new Set();
 
@@ -56,7 +56,7 @@ function createSubject({
     engine,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow
-  });
+  }).start();
   activeFreeEggServices.add(freeEggs);
   return {
     sqlite,
@@ -367,10 +367,14 @@ describe('Stream Monsters 1.10 egg ownership and public stage', () => {
   });
 
   test('accepts exact packaged assets but rejects traversal-shaped avatar references', () => {
-    expect(safeAssetReference(
-      '/plugins/streamalchemy/assets/eggs/ember-standard.png'
-    )).toBe('/plugins/streamalchemy/assets/eggs/ember-standard.png');
     [
+      '/plugins/stream-monsters/assets/eggs/ember-standard.png',
+      '/plugins/streamalchemy/assets/eggs/ember-standard.png'
+    ].forEach(reference => {
+      expect(safeAssetReference(reference)).toBe(reference);
+    });
+    [
+      '/plugins/stream-monsters/assets/../private.txt',
       '/plugins/streamalchemy/assets/../private.txt',
       '/plugins/streamalchemy/assets/%2e%2e/private.txt',
       '/plugins/streamalchemy/assets/eggs/../../private.txt',

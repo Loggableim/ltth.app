@@ -1,4 +1,4 @@
-const AudioEngine = require('../plugins/streamalchemy/streammonsters-audio-engine');
+const AudioEngine = require('../plugins/stream-monsters/streammonsters-audio-engine');
 
 function contextHarness() {
   const scheduled = [];

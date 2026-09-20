@@ -1,9 +1,9 @@
 'use strict';
 
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
 function response() {
   return {
@@ -15,7 +15,7 @@ function response() {
   };
 }
 
-function harness() {
+function harness({ idFactory } = {}) {
   const registered = [];
   const emitted = [];
   const store = new StreamMonstersDatabase(new Database(':memory:'));
@@ -35,7 +35,8 @@ function harness() {
     configProvider: {
       getConfig: () => ({ streamMonsters: { hatchDurationMs: 120_000 } }),
       updateConfig: jest.fn()
-    }
+    },
+    idFactory
   });
   routes.register();
   return {
@@ -248,12 +249,12 @@ describe('Stream Monsters targeted demo API', () => {
           expect.objectContaining({
             slot: 1,
             name: 'Ashfang',
-            imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp'
+            imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp'
           }),
           expect.objectContaining({
             slot: 2,
             imageUrl: expect.stringMatching(
-              /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/.+\.webp$/
+              /^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/.+\.webp$/
             )
           })
         ]);
@@ -404,6 +405,31 @@ describe('Stream Monsters targeted demo API', () => {
     expect(secondAction.eventId).not.toBe(firstAction.eventId);
   });
 
+  test('uses the injected ID factory for deterministic battle previews', () => {
+    const { demo, emitted } = harness({ idFactory: () => 'fixed-run-id' });
+    const res = response();
+
+    demo(localRequest({
+      scene: 'skill',
+      templateId: 'ashfang',
+      layout: 'portrait'
+    }), res);
+
+    expect(res.statusCode).toBe(200);
+    const opened = emitted.find(entry => (
+      entry.event === 'streammonsters:battle_choice_opened'
+    ))?.payload;
+    const action = emitted.find(entry => (
+      entry.event === 'streammonsters:battle_skill_used'
+    ))?.payload;
+    expect(opened.matchId).toBe('demo-match:fixed-run-id');
+    expect(action).toEqual(expect.objectContaining({
+      battleId: 'demo-match:fixed-run-id',
+      matchId: 'demo-match:fixed-run-id',
+      eventId: 'demo-match:fixed-run-id:attack'
+    }));
+  });
+
   test.each([
     [{ scene: 'unknown' }, 'STREAM_MONSTERS_DEMO_SCENE_INVALID'],
     [{ scene: 'attack', templateId: 'missing' }, 'STREAM_MONSTERS_DEMO_TEMPLATE_INVALID'],
@@ -415,7 +441,12 @@ describe('Stream Monsters targeted demo API', () => {
     const res = response();
     demo(localRequest(body), res);
     expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ success: false, error });
+    expect(res.body).toEqual({
+      success: false,
+      code: error,
+      correlationId: expect.any(String)
+    });
+    expect(res.body).not.toHaveProperty('error');
     expect(emitted).toEqual([]);
   });
 });

@@ -3,20 +3,20 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
 const BattleMatchService = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+  '../plugins/stream-monsters/backend/streammonsters/battle-match-service'
 );
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 const {
   GAMEPLAY_PACES,
   HATCH_PRESETS,
   PORTRAIT_BATTLE_MODES,
   buildConfigPayload,
   hydrateHatchPresetControl
-} = require('../plugins/streamalchemy/streammonsters-creator-runtime');
+} = require('../plugins/stream-monsters/streammonsters-creator-runtime');
 
 function response() {
   return {
@@ -89,7 +89,7 @@ function createConfigRouteSubject(stored = {}) {
 
 function creatorHatchPresetControl() {
   const html = fs.readFileSync(
-    path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'),
+    path.join(process.cwd(), 'plugins', 'stream-monsters', 'streammonsters-ui.html'),
     'utf8'
   );
   const markup = html.match(/<select id="hatchPreset">([\s\S]*?)<\/select>/)?.[1] || '';
@@ -171,7 +171,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
         600_000,
         1_800_000
       ],
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'split-arena'
     }));
@@ -227,18 +227,18 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       const payload = buildConfigPayload({
         currentConfig: {
           hatchDurationMs,
-          gameplayPace: 'arcade-rally',
+          gameplayPace: 'arcade',
           portraitBattleMode: 'takeover-74'
         },
         values: {
           hatchDurationMs: select.value,
-          gameplayPace: 'arcade-rally',
+          gameplayPace: 'arcade',
           portraitBattleMode: 'takeover-74'
         }
       });
       expect(payload).not.toHaveProperty('hatchDurationMs');
       expect(payload).toEqual(expect.objectContaining({
-        gameplayPace: 'arcade-rally',
+        gameplayPace: 'arcade',
         portraitBattleMode: 'takeover-74'
       }));
 
@@ -262,7 +262,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       const subject = createConfigRouteSubject({
         streamMonsters: {
           hatchDurationMs,
-          gameplayPace: 'arcade-rally',
+          gameplayPace: 'arcade',
           portraitBattleMode: 'takeover-74'
         }
       });
@@ -309,7 +309,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     const legacy = {
       streamMonsters: {
         hatchDurationMs: 120_000,
-        gameplayPace: 'arcade-rally',
+        gameplayPace: 'arcade',
         portraitBattleMode: true
       }
     };
@@ -317,7 +317,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     plugin.config = plugin.loadConfig(legacy);
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
       hatchDurationMs: 120_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74'
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
@@ -327,7 +327,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     }).loadConfig(saved);
     expect(reloaded.streamMonsters).toEqual(expect.objectContaining({
       hatchDurationMs: 120_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74'
     }));
     expect(plugin.loadConfig(saved)).toEqual(reloaded);
@@ -396,14 +396,14 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
 
     await subject.find('POST', '/api/streammonsters/config')(localRequest({
       hatchDurationMs: 90_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74'
     }), res);
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.config).toEqual(expect.objectContaining({
       hatchDurationMs: 90_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74'
     }));
     const reloaded = new StreamAlchemyPlugin({
@@ -412,7 +412,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     }).loadConfig(subject.persisted());
     expect(reloaded.streamMonsters).toEqual(expect.objectContaining({
       hatchDurationMs: 90_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74'
     }));
   });
@@ -432,7 +432,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     await subject.find('POST', '/api/streammonsters/config')(localRequest(body), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error });
+    expect(res.payload).toEqual({ success: false, code: error, correlationId: expect.any(String) });
   });
 
   test('accepts the documented true portrait legacy value at the admin boundary', async () => {
@@ -454,7 +454,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     const service = new BattleMatchService({
       store,
       rulesVersion: 8,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'split-arena',
       autoStart: false
@@ -470,17 +470,17 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
 
     expect(routes.publicConfig({
       enabled: true,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'split-arena'
     })).toEqual(expect.objectContaining({
       hatchDurationMs: 90_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'split-arena'
     }));
     expect(service.getPublicSnapshot()).toEqual(expect.objectContaining({
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'split-arena',
       matches: []
@@ -552,24 +552,24 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
       600_000,
       1_800_000
     ]);
-    expect(GAMEPLAY_PACES).toEqual(['arcade-rally']);
+    expect(GAMEPLAY_PACES).toEqual(['arcade', 'standard', 'accessible']);
     expect(PORTRAIT_BATTLE_MODES).toEqual(['takeover-74']);
     expect(buildConfigPayload({
       values: {
         hatchDurationMs: '90000',
-        gameplayPace: 'arcade-rally',
+        gameplayPace: 'arcade',
         portraitBattleMode: 'takeover-74'
       }
     })).toEqual(expect.objectContaining({
       hatchDurationMs: 90_000,
-      gameplayPace: 'arcade-rally',
+      gameplayPace: 'arcade',
       portraitBattleMode: 'takeover-74'
     }));
     expect(buildConfigPayload({
       currentConfig: {},
       values: {
         hatchDurationMs: '',
-        gameplayPace: 'arcade-rally',
+        gameplayPace: 'arcade',
         portraitBattleMode: 'takeover-74'
       }
     })).toEqual(expect.objectContaining({

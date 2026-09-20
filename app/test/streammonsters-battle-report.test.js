@@ -4,7 +4,7 @@ const {
   buildCombatReport,
   sanitizeCombatReport
 } = require(
-  '../plugins/streamalchemy/backend/streammonsters/battle-report'
+  '../plugins/stream-monsters/backend/streammonsters/battle-report'
 );
 
 const fighters = [

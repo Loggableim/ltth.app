@@ -1,9 +1,9 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
 
 function response() {
   return {
@@ -154,7 +154,7 @@ describe('Stream Monsters 1.2 public API', () => {
         visualPack: 'furry',
         audioChannels: { battle: { enabled: true, volume: 0.55 } }
       }
-    });
+    }, { expectedRevision: undefined });
   });
 
   test('creates, lists and deletes only curated gift mappings', () => {
@@ -327,7 +327,7 @@ describe('Stream Monsters 1.2 public API', () => {
 
     expect(configProvider.updateConfig).toHaveBeenCalledWith({
       streamMonsters: { creatorName: 'Creator', giftMappingCustomized: true }
-    });
+    }, { expectedRevision: undefined });
   });
 
   test('keeps the public Dex redacted, exposes creator ownership, and tombstones pool preparation', async () => {

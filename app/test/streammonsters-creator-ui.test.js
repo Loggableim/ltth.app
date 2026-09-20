@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 
 describe('Stream Monsters creator UI presentation controls', () => {
   test.each(['de', 'en', 'es', 'fr'])(
@@ -40,7 +40,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('missionPopulation${');
   });
 
-  test('wires persisted duration, pack, layout, Random mapping and scene demo controls', () => {
+  test('wires duration, layout, Random mapping and scene demo controls', () => {
     const html = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
 
     for (const id of [
@@ -49,7 +49,6 @@ describe('Stream Monsters creator UI presentation controls', () => {
       'portraitBattleMode',
       'eggShelfVisibleCount',
       'portraitArenaVariant',
-      'visualPack',
       'landscapeAnchor',
       'landscapeScale',
       'portraitAnchor',
@@ -69,9 +68,9 @@ describe('Stream Monsters creator UI presentation controls', () => {
     for (const duration of ['30000', '60000', '90000', '120000', '300000', '600000', '1800000']) {
       expect(html).toContain(`value="${duration}"`);
     }
-    expect(html).toContain('value="arcade-rally"');
+    expect(html).toContain('value="arcade"');
     expect(html).toContain('value="takeover-74"');
-    expect(html).toContain('value="furry"');
+    expect(html).not.toContain('id="visualPack"');
     expect(html).not.toContain('value="art_lab"');
     expect(html).not.toContain('value="kenney"');
     for (const scene of ['spawn', 'hatch', 'attack', 'defense', 'special']) {
@@ -85,7 +84,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('legacyCustomHatchDuration');
     expect(html).toContain('safeZoneCollisions');
     expect(html).toContain('buildDexSlots');
-    expect(html).toContain('/api/streammonsters/creator-catalog');
+    expect(html).toContain('/api/stream-monsters/creator-catalog');
     expect(html).toContain("portraitArenaVariant:byId('portraitArenaVariant').value");
     expect(html).toContain("eggShelfVisibleCount:byId('eggShelfVisibleCount').value");
     expect(html).toContain(

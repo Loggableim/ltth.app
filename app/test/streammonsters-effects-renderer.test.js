@@ -10,7 +10,7 @@ const {
   createEffectsRenderer,
   phaseForProgress,
   sceneChoreography
-} = require('../plugins/streamalchemy/streammonsters-effects-renderer');
+} = require('../plugins/stream-monsters/streammonsters-effects-renderer');
 
 function deferred() {
   let resolve;
@@ -836,7 +836,7 @@ describe('Stream Monsters effects renderer', () => {
     const html = fs.readFileSync(path.join(
       process.cwd(),
       'plugins',
-      'streamalchemy',
+      'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
     const dom = new JSDOM(html);

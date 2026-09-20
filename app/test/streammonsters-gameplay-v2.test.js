@@ -1,11 +1,11 @@
 const Database = require('better-sqlite3');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
-const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const BattleService = require('../plugins/stream-monsters/backend/streammonsters/battle-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
+const StreamMonstersRoutes = require('../plugins/stream-monsters/backend/streammonsters/routes');
 
 function createStore() {
   const sqlite = new Database(':memory:');
@@ -121,7 +121,7 @@ describe('Stream Monsters current rules migration', () => {
       hatchDurationMs: 1_800_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
-    expect(setConfig).toHaveBeenCalledWith('streamalchemy_config', plugin.config);
+    expect(setConfig).toHaveBeenCalledWith('config', plugin.config);
   });
 
   test('archives retired image-generation settings without exposing or changing them', () => {

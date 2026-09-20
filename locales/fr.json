@@ -271,7 +271,7 @@
       "suggestFeatures": "Suggérer des Fonctionnalités",
       "viewRoadmap": "Voir la Feuille de Route →",
       "close": "Fermer l'avis beta",
-      "compact": "Version 1.4.1 - nouveautés et retours",
+      "compact": "Version 1.4.2 - nouveautés et retours",
       "toggle": "Afficher ou masquer la mise à jour et les retours"
     }
   },
@@ -1330,7 +1330,7 @@
   "docs.plugin.quiz-show.title": "Pup Cid's Little Quiz Show Plugin",
   "docs.plugin.soundboard.title": "Soundboard",
   "docs.plugin.spotlight.title": "Spotlight",
-  "docs.plugin.streamalchemy.title": "Stream Monsters",
+  "docs.plugin.stream-monsters.title": "Stream Monsters",
   "docs.plugin.stt-ticker.title": "STT Ticker",
   "docs.plugin.talking-heads.title": "Talking Heads",
   "docs.plugin.tts.title": "Text-to-Speech System",
@@ -2058,7 +2058,7 @@
           "002": "PupCid's Little TikTool Helper",
           "003": "Lade die neueste Version von LTTH herunter und starte dein professionelles TikTok LIVE Streaming.",
           "004": "LTTH Windows Launcher",
-          "005": "Version 1.4.1",
+          "005": "Version 1.4.2",
           "006": "Der Launcher lädt automatisch Version",
           "007": "herunter und hält LTTH auf dem neuesten Stand",
           "008": "Letztes Update:",

@@ -1,8 +1,8 @@
 const Database = require('better-sqlite3');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const BattleService = require('../plugins/stream-monsters/backend/streammonsters/battle-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
 
 function createCommands(options = {}) {
   let now = 1_000;

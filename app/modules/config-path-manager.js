@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const {
+    canonicalizePluginId,
+    getPersistentStorageId
+} = require('./plugin-identities');
 
 /**
  * ConfigPathManager - Manages persistent storage location for user configurations
@@ -134,7 +138,49 @@ class ConfigPathManager {
      * Get plugin data directory path
      */
     getPluginDataDir(pluginId) {
-        return path.join(this.getPluginsDir(), pluginId, 'data');
+        const canonicalId = canonicalizePluginId(pluginId);
+        const persistentId = getPersistentStorageId(canonicalId);
+        const persistentDir = path.join(this.getPluginsDir(), persistentId, 'data');
+        if (canonicalId !== persistentId) {
+            const canonicalDir = path.join(this.getPluginsDir(), canonicalId, 'data');
+            if (fs.existsSync(canonicalDir)) {
+                this.mergeMissingPluginData(canonicalDir, persistentDir);
+            }
+        }
+        return persistentDir;
+    }
+
+    mergeMissingPluginData(sourceDir, targetDir, relativeDir = '') {
+        if (!fs.existsSync(sourceDir)) return;
+        if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+        for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+            const sourcePath = path.join(sourceDir, entry.name);
+            const targetPath = path.join(targetDir, entry.name);
+            const relativePath = path.join(relativeDir, entry.name);
+            const sourceStat = fs.lstatSync(sourcePath);
+            if (sourceStat.isSymbolicLink()) {
+                console.warn(`[ConfigPathManager] Skipping symlink in canonical plugin data: ${relativePath}`);
+                continue;
+            }
+            if (!fs.existsSync(targetPath)) {
+                if (entry.isDirectory()) {
+                    this.mergeMissingPluginData(sourcePath, targetPath, relativePath);
+                } else if (entry.isFile()) {
+                    fs.copyFileSync(sourcePath, targetPath);
+                }
+                continue;
+            }
+            const targetStat = fs.lstatSync(targetPath);
+            if (entry.isDirectory() && targetStat.isDirectory()) {
+                this.mergeMissingPluginData(sourcePath, targetPath, relativePath);
+            } else if (
+                !entry.isFile() ||
+                !targetStat.isFile() ||
+                !fs.readFileSync(sourcePath).equals(fs.readFileSync(targetPath))
+            ) {
+                console.warn(`[ConfigPathManager] Preserved legacy plugin data conflict: ${relativePath}`);
+            }
+        }
     }
 
     /**

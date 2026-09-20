@@ -191,6 +191,7 @@ const BackupManager = require('./modules/backup-manager');
 const CloudSyncEngine = require('./modules/cloud-sync');
 const { createAdminAuth } = require('./modules/admin-auth');
 const { obsCacheControl } = require('./modules/obs-cache-control');
+const { mountPluginStaticAliases } = require('./modules/plugin-static-aliases');
 const {
     buildStableOverlayClerkAuthorizedParties,
     buildStoreAuthConfig,
@@ -3989,6 +3990,7 @@ function writeObsOverlayWrapper(resolvedPort) {
         // Register static file serving AFTER plugins are loaded
         // This ensures plugin-registered routes take precedence over static file serving
         
+        mountPluginStaticAliases(app, pluginsDir, 'stream-monsters');
         app.use('/plugins', express.static(pluginsDir));
         logger.info('📂 Plugin static files served from /plugins/* with global OBS cache protection');
 
@@ -4039,8 +4041,6 @@ function writeObsOverlayWrapper(resolvedPort) {
         } else {
             logger.info('ℹ️  No plugins found in /plugins directory');
             
-            // Still register static file serving even with no plugins.
-            app.use('/plugins', express.static(pluginsDir));
             iftttEngine.setupTimerTriggers();
             logger.info('IFTTT timer triggers initialized');
             logger.info('📂 Plugin static files served from /plugins/* with global OBS cache protection');

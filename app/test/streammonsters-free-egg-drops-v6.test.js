@@ -3,15 +3,15 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { Worker } = require('worker_threads');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
-const FreeEggDropService = require('../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service');
-const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
-const StreamMonstersChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
+const FreeEggDropService = require('../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service');
+const ProgressionService = require('../plugins/stream-monsters/backend/streammonsters/progression-service');
+const StreamMonstersChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
 const {
   normalizeIngressEventId
-} = require('../plugins/streamalchemy/backend/streammonsters/ingress-event-id');
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+} = require('../plugins/stream-monsters/backend/streammonsters/ingress-event-id');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 
 const activeServices = new Set();
 
@@ -47,7 +47,7 @@ function createSubject({ now = 1_000, config = {} } = {}) {
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow,
     config
-  }));
+  })).start();
   return {
     store,
     engine,
@@ -118,9 +118,9 @@ function runContendingAdopters({ databasePath, attempts = 20 } = {}) {
   `;
   const modules = {
     databaseModule: require.resolve('better-sqlite3'),
-    storeModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/database'),
-    engineModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/game-engine'),
-    serviceModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service')
+    storeModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/database'),
+    engineModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/game-engine'),
+    serviceModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service')
   };
   const workers = Array.from({ length: attempts }, (_, index) => {
     let resolveReady;
@@ -480,7 +480,7 @@ describe('Stream Monsters recurring free egg drops', () => {
       engine: subject.engine,
       emit: (event, payload) => subject.emitted.push({ event, payload }),
       now: () => 1_001
-    }));
+    })).start();
 
     expect(reloaded.adopt({
       userId: 'viewer-a', streamKey: 'creator:stream-1', eventId: 'adopt-a', nowMs: 1_001
@@ -530,7 +530,7 @@ describe('Stream Monsters recurring free egg drops', () => {
         engine: subject.engine,
         emit: (event, payload) => subject.emitted.push({ event, payload }),
         now: subject.now
-      }));
+      })).start();
 
       expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
         .toBe('public');

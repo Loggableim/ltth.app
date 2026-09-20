@@ -1,16 +1,16 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const AssetRegistry = require('../plugins/stream-monsters/backend/streammonsters/asset-registry');
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION,
   getTemplatesForElement
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
+const StreamMonstersEngine = require('../plugins/stream-monsters/backend/streammonsters/game-engine');
 const ViewerActivityTracker = require(
-  '../plugins/streamalchemy/backend/streammonsters/viewer-activity-tracker'
+  '../plugins/stream-monsters/backend/streammonsters/viewer-activity-tracker'
 );
 
 function createCollection(options = {}) {
@@ -313,7 +313,8 @@ describe('Stream Monsters 1.4 collection layer', () => {
     TEMPLATE_CATALOG.forEach(template => {
       expect(template).toEqual(expect.objectContaining({
         templateId: expect.any(String), element: expect.any(String), name: expect.any(String),
-        species: expect.any(String), assetPath: expect.any(String),
+        species: expect.any(String), epithet: expect.any(String),
+        season: 'season-1', assetPath: expect.any(String),
         skills: expect.objectContaining({ attack: expect.any(Object), defense: expect.any(Object), special: expect.any(Object) })
       }));
     });
@@ -382,14 +383,14 @@ describe('Stream Monsters 1.4 collection layer', () => {
     `);
     const store = new StreamMonstersDatabase(sqlite, {
       assetRegistry: new AssetRegistry({
-        pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+        pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
       })
     });
     store.initialize();
     expect(store.getMonster('legacy-monster')).toEqual(expect.objectContaining({
       template_id: expect.stringMatching(/^(ripple|brine|reefbite|axi)$/), name: 'Legacy Name',
       image_url: expect.stringMatching(
-        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.webp$/
+        /^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.webp$/
       ),
       visual_source: 'furry',
       visual_key: expect.stringMatching(/^furry:(ripple|brine|reefbite|axi)$/),
@@ -714,7 +715,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
 
   test('persists the healthy registry WebP when hatching despite a stale bundle probe', () => {
     const assetRegistry = new AssetRegistry({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
     });
     const resolveVisual = jest.spyOn(assetRegistry, 'resolveVisual');
     const { store, collection } = createCollection({ assetRegistry });
@@ -757,7 +758,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(kenneyBuilder.build).not.toHaveBeenCalled();
     expect(persisted).toEqual(expect.objectContaining({
       image_url: expect.stringMatching(
-        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[a-z0-9-]+\.webp$/
+        /^\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/[a-z0-9-]+\.webp$/
       ),
       visual_source: 'furry',
       asset_version: FURRY_ASSET_VERSION

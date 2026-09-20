@@ -97,7 +97,7 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
       data: expect.objectContaining({
         schemaVersion: 1,
         correlationId: 'tiktok:evt-success',
-        pluginId: 'streamalchemy',
+        pluginId: 'stream-monsters',
         success: true,
         consumed: true
       })
@@ -169,7 +169,7 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
       event: 'gcce:chat_consumed',
       data: expect.objectContaining({
         correlationId: 'tiktok:evt-failed',
-        pluginId: 'streamalchemy',
+        pluginId: 'stream-monsters',
         success: false,
         consumed: true
       })
@@ -241,7 +241,7 @@ describe('Stream Monsters 1.10 GCCE to TTS consumption contract', () => {
       event: 'gcce:chat_consumed',
       data: expect.objectContaining({
         correlationId: `tiktok:evt-${rejection}`,
-        pluginId: 'streamalchemy',
+        pluginId: 'stream-monsters',
         success: false,
         consumed: false
       })

@@ -1,10 +1,10 @@
 {
-  "version": "1.4.1",
-  "releaseDate": "2026-07-26",
+  "version": "1.4.2",
+  "releaseDate": "2026-08-01",
   "status": "stable",
-  "downloadVersion": "1.4.1",
-  "downloadNote": "LTTH remains at 1.4.1 while Stream Monsters 1.11.1 is available as a separately versioned Stable plugin package with a 90-second fresh default, bilingual portrait guidance, K.O.-only Rules v8 battles, Arena Collapse, durable command deduplication, 72 bundled evolution forms, and element-specific WebGPU effects.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.1",
+  "downloadVersion": "1.4.2",
+  "downloadNote": "LTTH 1.4.2 promotes Stream Monsters 1.12.0 to the canonical stream-monsters identity while preserving the permanent streamalchemy compatibility aliases, player data, dual configuration shadows, backups, automation, and the authenticated 1.11.1 rollback path.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.2",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,19 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.4.2": {
+      "date": "2026-08-01",
+      "changes": [
+        "CHANGED: Stream Monsters 1.12.0 now uses the canonical stream-monsters plugin identity, source directory, store tile, dashboard link and public routes",
+        "COMPATIBILITY: The permanent streamalchemy lifecycle, UI, overlay, static, config, data, backup, GCCE and IFTTT aliases continue to resolve to one logical plugin",
+        "MIGRATION: Loader inventory canonicalizes every manifest before initialization and atomically dual-writes equivalent state and configuration shadows",
+        "SAFETY: Independent state, configuration or backup edits fail closed with stable conflict codes instead of overwriting either copy",
+        "STORE: The verified 1.11.1 package remains byte-identical and available through an authenticated transactional rollback",
+        "RECOVERY: Store upgrade and rollback restore plugin files, runtime, loader state, configuration and persistent data after injected failures",
+        "ROUTING: Canonical /stream-monsters and /api/stream-monsters routes ship with permanent compact and legacy aliases while retired Art Lab APIs remain HTTP 410",
+        "RELEASE: Active host metadata advances to LTTH 1.4.2 and the release map advances to schema 2"
+      ]
+    },
     "1.4.1": {
       "date": "2026-07-26",
       "changes": [

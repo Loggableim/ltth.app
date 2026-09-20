@@ -2,17 +2,17 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const AssetRegistry = require(
-  '../plugins/streamalchemy/backend/streammonsters/asset-registry'
+  '../plugins/stream-monsters/backend/streammonsters/asset-registry'
 );
 const {
   TEMPLATE_CATALOG,
   FURRY_ASSET_VERSION,
   getEvolutionAssetPath
-} = require('../plugins/streamalchemy/backend/streammonsters/catalog');
+} = require('../plugins/stream-monsters/backend/streammonsters/catalog');
 
 describe('Stream Monsters furry template assets', () => {
   test('ships one canonical schema-3 WebP for every template and evolution stage', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     const manifestPath = path.join(
       pluginDir,
       'assets',
@@ -37,7 +37,7 @@ describe('Stream Monsters furry template assets', () => {
 
     TEMPLATE_CATALOG.forEach(template => {
       expect(template.assetPath).toBe(
-        `/plugins/streamalchemy/assets/streammonsters/furry/${template.templateId}.webp`
+        `/plugins/stream-monsters/assets/streammonsters/furry/${template.templateId}.webp`
       );
       [1, 2, 3].forEach(stage => {
         const asset = assetsByKey.get(`${template.templateId}:${stage}`);
@@ -47,7 +47,7 @@ describe('Stream Monsters furry template assets', () => {
           element: template.element,
           species: template.species,
           stage,
-          assetPath: publicUrl.replace('/plugins/streamalchemy/', ''),
+          assetPath: publicUrl.replace('/plugins/stream-monsters/', ''),
           mediaType: 'image/webp',
           dimensions: [1024, 1024],
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
@@ -75,19 +75,19 @@ describe('Stream Monsters furry template assets', () => {
   });
 
   test('keeps every canonical product preview on WebP', () => {
-    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
     const creatorUi = fs.readFileSync(
       path.join(pluginDir, 'streammonsters-ui.html'),
       'utf8'
     );
     expect(creatorUi).toContain(
-      '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp'
+      '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp'
     );
     expect(creatorUi).toContain(
-      '/plugins/streamalchemy/assets/streammonsters/furry/ripple.webp'
+      '/plugins/stream-monsters/assets/streammonsters/furry/ripple.webp'
     );
     expect(creatorUi).not.toMatch(
-      /\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[^"' ]+\.png/
+      /\/plugins\/stream-monsters\/assets\/streammonsters\/furry\/[^"' ]+\.png/
     );
   });
 });

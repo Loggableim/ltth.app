@@ -3,10 +3,10 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 
 function response() {
@@ -62,7 +62,7 @@ describe('Stream Monsters public leaderboards', () => {
         },
         emit: jest.fn()
       },
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters'),
       store,
       engine: { streamKey: null, hatchDurationFor: () => 120_000 },
       progression: {

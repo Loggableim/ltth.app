@@ -6,34 +6,34 @@ const os = require('os');
 const path = require('path');
 const { Worker } = require('worker_threads');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersEngine = require(
-  '../plugins/streamalchemy/backend/streammonsters/game-engine'
+  '../plugins/stream-monsters/backend/streammonsters/game-engine'
 );
 const ProgressionService = require(
-  '../plugins/streamalchemy/backend/streammonsters/progression-service'
+  '../plugins/stream-monsters/backend/streammonsters/progression-service'
 );
 const ChatCommands = require(
-  '../plugins/streamalchemy/backend/streammonsters/chat-commands'
+  '../plugins/stream-monsters/backend/streammonsters/chat-commands'
 );
 const FreeEggDropService = require(
-  '../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service'
+  '../plugins/stream-monsters/backend/streammonsters/free-egg-drop-service'
 );
 const PublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
 const EggStageView = require(
-  '../plugins/streamalchemy/streammonsters-egg-stage-view'
+  '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
 const StreamMonstersRoutes = require(
-  '../plugins/streamalchemy/backend/streammonsters/routes'
+  '../plugins/stream-monsters/backend/streammonsters/routes'
 );
 const CreatorRuntime = require(
-  '../plugins/streamalchemy/streammonsters-creator-runtime'
+  '../plugins/stream-monsters/streammonsters-creator-runtime'
 );
 const OverlayRuntime = require(
-  '../plugins/streamalchemy/streammonsters-overlay-runtime'
+  '../plugins/stream-monsters/streammonsters-overlay-runtime'
 );
 const {
   isOutgoingSocketEventAllowed
@@ -42,7 +42,7 @@ const {
 let OwnedReadyEggRescueService = null;
 try {
   OwnedReadyEggRescueService = require(
-    '../plugins/streamalchemy/backend/streammonsters/owned-ready-egg-rescue-service'
+    '../plugins/stream-monsters/backend/streammonsters/owned-ready-egg-rescue-service'
   );
 } catch {
   // The first RED run proves the standalone service does not exist yet.
@@ -181,9 +181,9 @@ async function runContendingRescuers({ databasePath, attempts = 12 }) {
   `;
   const modules = {
     databaseModule: require.resolve('better-sqlite3'),
-    storeModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/database'),
+    storeModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/database'),
     serviceModule: require.resolve(
-      '../plugins/streamalchemy/backend/streammonsters/owned-ready-egg-rescue-service'
+      '../plugins/stream-monsters/backend/streammonsters/owned-ready-egg-rescue-service'
     )
   };
   const workers = Array.from({ length: attempts }, (_, index) => {
@@ -232,11 +232,11 @@ async function runHatchAgainstRescue({ databasePath }) {
   const gate = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
   const common = {
     databaseModule: require.resolve('better-sqlite3'),
-    storeModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/database'),
+    storeModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/database'),
     serviceModule: require.resolve(
-      '../plugins/streamalchemy/backend/streammonsters/owned-ready-egg-rescue-service'
+      '../plugins/stream-monsters/backend/streammonsters/owned-ready-egg-rescue-service'
     ),
-    engineModule: require.resolve('../plugins/streamalchemy/backend/streammonsters/game-engine'),
+    engineModule: require.resolve('../plugins/stream-monsters/backend/streammonsters/game-engine'),
     databasePath,
     gate,
     nowMs: 2_000
@@ -1232,7 +1232,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
   test('exposes and validates the steal timing creator controls', () => {
     const html = fs.readFileSync(path.join(
       __dirname,
-      '../plugins/streamalchemy/streammonsters-ui.html'
+      '../plugins/stream-monsters/streammonsters-ui.html'
     ), 'utf8');
     expect(html).toContain('id="unhatchedEggStealGraceSeconds"');
     expect(html).toContain('id="unhatchedEggStealActivityWindowSeconds"');
@@ -1270,7 +1270,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
     }
     const overlay = fs.readFileSync(path.join(
       __dirname,
-      '../plugins/streamalchemy/streammonsters-overlay.html'
+      '../plugins/stream-monsters/streammonsters-overlay.html'
     ), 'utf8');
     expect(overlay).toContain(
       "'streammonsters:owned_ready_egg_public':'owned_ready_egg_public'"

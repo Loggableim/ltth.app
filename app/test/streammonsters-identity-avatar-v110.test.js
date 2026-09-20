@@ -2,16 +2,16 @@
 
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require(
-  '../plugins/streamalchemy/backend/streammonsters/database'
+  '../plugins/stream-monsters/backend/streammonsters/database'
 );
 const StreamMonstersPublicEventProjector = require(
-  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
 );
-const chatView = require('../plugins/streamalchemy/streammonsters-chat-view');
+const chatView = require('../plugins/stream-monsters/streammonsters-chat-view');
 const {
   avatarProxyReference,
   fetchAvatar
-} = require('../plugins/streamalchemy/backend/streammonsters/avatar-proxy');
+} = require('../plugins/stream-monsters/backend/streammonsters/avatar-proxy');
 
 describe('Stream Monsters 1.10 public owner identity and avatar security', () => {
   test('keeps the stored unique id when a later event contains only a numeric platform id', () => {
@@ -211,7 +211,7 @@ describe('Stream Monsters 1.10 public owner identity and avatar security', () =>
     expect(avatarProxyReference('https://127.0.0.1/a.webp')).toBeNull();
     expect(avatarProxyReference('https://tiktokcdn.com.attacker.example/a.webp')).toBeNull();
     expect(avatarProxyReference('https://p16-sign-va.tiktokcdn.com/a.webp'))
-      .toMatch(/^\/api\/streammonsters\/avatar\/[a-z0-9_-]{16,1024}$/i);
+      .toMatch(/^\/api\/stream-monsters\/avatar\/[a-z0-9_-]{16,1024}$/i);
 
     const arrayBuffer = jest.fn(async () => Uint8Array.from([1, 2, 3, 4]).buffer);
     const read = jest.fn()

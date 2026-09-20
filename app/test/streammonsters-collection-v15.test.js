@@ -1,9 +1,9 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
-const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
-const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
-const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const StreamMonstersDatabase = require('../plugins/stream-monsters/backend/streammonsters/database');
+const AssetRegistry = require('../plugins/stream-monsters/backend/streammonsters/asset-registry');
+const CollectionService = require('../plugins/stream-monsters/backend/streammonsters/collection-service');
+const ChatCommands = require('../plugins/stream-monsters/backend/streammonsters/chat-commands');
 
 function createCollection(progression = null, assetRegistry = null) {
   const sqlite = new Database(':memory:');
@@ -37,7 +37,7 @@ function createCollection(progression = null, assetRegistry = null) {
     personality: 'Brave',
     rarity: 'Standard',
     stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
-    imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+    imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.png',
     visualSource: 'furry',
     visualKey: 'furry:ashfang',
     createdAtMs: 2
@@ -108,7 +108,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       }),
       monster: expect.objectContaining({
         evolution_stage: 2,
-        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp',
+        image_url: '/plugins/stream-monsters/assets/streammonsters/furry/evolution/ember/ashfang-stage2.webp',
         visual_source: 'furry',
         visual_key: 'furry:ashfang:stage-2',
         stats: { vitality: 7, might: 10, guard: 6, agility: 8 }
@@ -140,7 +140,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       }),
       monster: expect.objectContaining({
         evolution_stage: 3,
-        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp',
+        image_url: '/plugins/stream-monsters/assets/streammonsters/furry/evolution/ember/ashfang-stage3.webp',
         visual_key: 'furry:ashfang:stage-3',
         stats: { vitality: 7, might: 12, guard: 6, agility: 9 }
       })
@@ -212,7 +212,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     let evolutionRules;
     expect(() => {
       evolutionRules = require(
-        '../plugins/streamalchemy/backend/streammonsters/evolution-rules'
+        '../plugins/stream-monsters/backend/streammonsters/evolution-rules'
       );
     }).not.toThrow();
 
@@ -263,7 +263,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
 
   test('upgrades automatic Kenney fallback visuals to their bundled canonical Furry form', () => {
     const assetRegistry = new AssetRegistry({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
     });
     const { sqlite, store } = createCollection(null, assetRegistry);
     sqlite.prepare(`
@@ -279,7 +279,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
     expect(store.getMonster('monster-a')).toEqual(expect.objectContaining({
       template_id: 'ashfang',
       evolution_stage: 1,
-      image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
+      image_url: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp',
       visual_source: 'furry',
       visual_key: 'furry:ashfang'
     }));
@@ -334,7 +334,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
 
   test('exposes pagination, large cards, and duplicate fusion through viewer commands', () => {
     const assetRegistry = new AssetRegistry({
-      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      pluginDir: path.join(process.cwd(), 'plugins', 'stream-monsters')
     });
     const { store, collection } = createCollection(null, assetRegistry);
     const commands = new ChatCommands({
@@ -365,7 +365,7 @@ describe('Stream Monsters 1.5 collection and combat evolution', () => {
       personality: 'Bold',
       rarity: 'Standard',
       stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
-      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.webp',
+      imageUrl: '/plugins/stream-monsters/assets/streammonsters/furry/ashfang.webp',
       visualSource: 'furry',
       visualKey: 'furry:ashfang',
       createdAtMs: 3

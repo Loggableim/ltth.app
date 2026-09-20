@@ -16,6 +16,7 @@ const EngineCircuitBreaker = require('./utils/engine-circuit-breaker');
 const { resolvePlaybackDuration } = require('./utils/audio-duration');
 const { resolveTtsRequestOverrides } = require('./utils/request-overrides');
 const EventTTSHandler = require('./event-tts-handler');
+const { canonicalizePluginId } = require('../../modules/plugin-identities');
 
 /**
  * TTS Plugin - Main Class
@@ -2853,7 +2854,7 @@ class TTSPlugin {
         const decision = await gcce.waitForChatConsumption(data, {
             timeoutMs: 2_000
         });
-        return decision?.pluginId === 'streamalchemy' &&
+        return canonicalizePluginId(decision?.pluginId) === 'stream-monsters' &&
             decision?.consumed === true;
     }
 

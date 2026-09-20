@@ -444,7 +444,7 @@ describe('PluginStore', () => {
       const byId = new Map(registry.plugins.map((plugin) => [plugin.id, plugin]));
 
       assert.strictEqual(registry.generatedFrom, 'local-manifests');
-      assert.strictEqual(byId.get('streamalchemy').channel, 'stable');
+      assert.strictEqual(byId.get('stream-monsters').channel, 'stable');
       assert.strictEqual(byId.get('tts').channel, 'open-beta');
     } finally {
       existsSyncSpy.mockRestore();

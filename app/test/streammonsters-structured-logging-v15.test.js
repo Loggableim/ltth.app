@@ -1,6 +1,6 @@
-const StreamAlchemyPlugin = require('../plugins/streamalchemy');
+const StreamAlchemyPlugin = require('../plugins/stream-monsters');
 const StreamMonstersCommandIngress = require(
-  '../plugins/streamalchemy/backend/streammonsters/command-ingress'
+  '../plugins/stream-monsters/backend/streammonsters/command-ingress'
 );
 
 describe('Stream Monsters structured diagnostics', () => {

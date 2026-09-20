@@ -33,9 +33,9 @@ function normalizeRelativePath(value) {
 function loadReleaseMap(filename = RELEASE_MAP_PATH) {
   const releaseMap = JSON.parse(fs.readFileSync(filename, 'utf8'));
   if (
-    releaseMap.schemaVersion !== 1
-    || releaseMap.pluginId !== 'streamalchemy'
-    || releaseMap.sourcePath !== 'app/plugins/streamalchemy'
+    releaseMap.schemaVersion !== 2
+    || releaseMap.pluginId !== 'stream-monsters'
+    || JSON.stringify(releaseMap.aliases) !== JSON.stringify(['streamalchemy'])
     || !isPlainObject(releaseMap.releases)
   ) {
     throw new Error('Invalid Stream Monsters release map');
@@ -47,12 +47,16 @@ function loadReleaseMap(filename = RELEASE_MAP_PATH) {
       !/^\d+\.\d+\.\d+$/.test(version)
       || !isPlainObject(release)
       || release.manifestVersion !== version
+      || !['stream-monsters', 'streamalchemy'].includes(release.manifestId)
+      || release.sourcePath !== `app/plugins/${release.manifestId}`
       || !/^[a-f0-9]{40}$/.test(String(release.sourceCommit || ''))
       || (
         release.sourceTree !== undefined
         && !/^[a-f0-9]{40}$/.test(String(release.sourceTree))
       )
-      || release.package !== `plugin-store/packages/streamalchemy-${version}.zip`
+      || release.package !== (
+        `plugin-store/packages/${release.manifestId}-${version}.zip`
+      )
       || !/^[a-f0-9]{64}$/.test(String(release.sha256 || ''))
       || (
         release.packageBuilder !== undefined
@@ -234,11 +238,16 @@ function readGitPluginFiles({ repoRoot, sourceCommit, sourceTree, sourcePath }) 
   });
 }
 
-function applyManifestVersion(files, manifestVersion, manifestOverrides = {}) {
+function applyManifestVersion(
+  files,
+  manifestVersion,
+  expectedManifestId,
+  manifestOverrides = {}
+) {
   const manifestFile = files.find(file => file.relativePath === 'plugin.json');
   if (!manifestFile) throw new Error('Release source has no root plugin.json');
   const manifest = JSON.parse(manifestFile.bytes.toString('utf8'));
-  if (manifest.id !== 'streamalchemy') {
+  if (manifest.id !== expectedManifestId) {
     throw new Error(`Unexpected plugin id in release source: ${manifest.id}`);
   }
   Object.assign(manifest, manifestOverrides, { version: manifestVersion });
@@ -375,8 +384,13 @@ async function buildReleaseFromGit({
     repoRoot: path.resolve(repoRoot),
     sourceCommit: release.sourceCommit,
     sourceTree: release.sourceTree,
-    sourcePath: releaseMap.sourcePath
-  }), release.manifestVersion, release.manifestOverrides), release, version);
+    sourcePath: release.sourcePath
+  }),
+  release.manifestVersion,
+  release.manifestId,
+  release.manifestOverrides),
+  release,
+  version);
   const result = await buildArchiveFromFiles({
     files,
     outputPath: outputPath || path.join(repoRoot, release.package),
@@ -387,6 +401,8 @@ async function buildReleaseFromGit({
     version,
     sourceCommit: release.sourceCommit,
     sourceTree: release.sourceTree || null,
+    sourcePath: release.sourcePath,
+    manifestId: release.manifestId,
     manifestVersion: release.manifestVersion
   };
 }
