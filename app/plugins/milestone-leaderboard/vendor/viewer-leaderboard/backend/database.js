@@ -819,7 +819,13 @@ class ViewerXPDatabase {
       if (this.batchTimer) {
         clearTimeout(this.batchTimer);
       }
-      this.batchTimer = setTimeout(() => this.processBatch(), this.batchTimeout);
+      this.batchTimer = setTimeout(() => {
+        try {
+          this.processBatch();
+        } catch (err) {
+          this.api?.log?.(`[ViewerXP] Error in scheduled processBatch: ${err.message}`, 'error');
+        }
+      }, this.batchTimeout);
     }
   }
 
@@ -1023,10 +1029,24 @@ class ViewerXPDatabase {
       }
     });
 
-    transaction(batch);
+    try {
+      transaction(batch);
+    } catch (err) {
+      this.api?.log?.(`[ViewerXP] Failed to process batch: ${err.message}`, 'error');
+      // If the database was busy or locked, put the items back into queue so they aren't lost
+      if (err.code === 'SQLITE_BUSY' || err.message?.includes('locked')) {
+        this.batchQueue.unshift(...batch);
+      }
+      return [];
+    }
 
     // Check for level ups after batch
-    const levelUps = this.checkLevelUps(batch.map(b => b.username));
+    let levelUps = [];
+    try {
+      levelUps = this.checkLevelUps(batch.map(b => b.username));
+    } catch (lvlErr) {
+      this.api?.log?.(`[ViewerXP] Failed to check level ups: ${lvlErr.message}`, 'error');
+    }
     
     // Return level ups for the plugin to handle
     return levelUps;

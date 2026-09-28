@@ -262,6 +262,9 @@ class FreeEggDropService {
       return this.store.runInImmediateTransaction(() => (
         this.releaseExpiredOffers(null, nowMs)
       ));
+    } catch (error) {
+      // Safe fallback if SQLite is busy or connection closed; timer will rearm in finally
+      return [];
     } finally {
       // A transient SQLite failure must not strand future offer transitions.
       this.rearmReleaseTimer();

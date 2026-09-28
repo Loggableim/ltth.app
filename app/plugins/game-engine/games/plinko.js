@@ -1910,7 +1910,16 @@ class PlinkoGame {
   startCleanupTimer() {
     // Run cleanup every 30 seconds
     this.cleanupTimer = setInterval(() => {
-      this.cleanupOldBalls();
+      try {
+        const cleanupPromise = this.cleanupOldBalls();
+        if (cleanupPromise && typeof cleanupPromise.catch === 'function') {
+          cleanupPromise.catch(err => {
+            this.logger?.warn?.(`[Plinko] Async cleanup error: ${err.message}`);
+          });
+        }
+      } catch (err) {
+        this.logger?.warn?.(`[Plinko] Cleanup error: ${err.message}`);
+      }
     }, CLEANUP_INTERVAL_MS);
     if (typeof this.cleanupTimer.unref === 'function') {
       this.cleanupTimer.unref();
