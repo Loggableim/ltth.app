@@ -1061,6 +1061,34 @@
       "sha256": "3a1dfd59447057022eeb2216258a2d1ce146e07fcf6013e22582b9e865f5ca37",
       "pricing": { "type": "free", "amount": 0, "currency": "EUR" },
       "screenshots": []
+    },
+    {
+      "id": "sidekick",
+      "name": {
+        "en": "Sidekick",
+        "de": "Sidekick",
+        "es": "Sidekick",
+        "fr": "Sidekick"
+      },
+      "description": {
+        "en": "Intelligent stream assistant with Animaze and VNyan avatar integration. Features TikTok LIVE event triggers, emotion expressions, item drops, speech synchronization, customizable gift rules, and stream HUD overlay.",
+        "de": "Intelligenter Stream-Assistent mit Animaze- und VNyan-Avatar-Integration. Bietet TikTok LIVE Event-Trigger, Emotions-Ausdrücke, Item-Drops, Sprach-Synchronisation, anpassbare Geschenk-Regeln und Stream-HUD-Overlay.",
+        "es": "Asistente inteligente de transmisión con integración de avatares Animaze y VNyan. Ofrece activadores de eventos TikTok LIVE, expresiones emocionales, lanzamiento de objetos, sincronización de voz, reglas de regalos personalizables y overlay HUD.",
+        "fr": "Assistant de stream intelligent avec intégration d'avatars Animaze et VNyan. Propose des déclencheurs d'événements TikTok LIVE, des expressions émotionnelles, des lancers d'objets, la synchronisation vocale, des règles de cadeaux personnalisables et un overlay HUD."
+      },
+      "version": "1.0.0",
+      "author": "Pup Cid",
+      "category": "tool",
+      "channel": "open-beta",
+      "badges": [],
+      "packageUrl": "https://ltth.app/plugin-store/packages/sidekick-1.0.0.zip",
+      "sha256": "4b8f6081e4412490dd5305a46cd5d91d88eb2bf7a3758a1673cb90bb6a0e3fe7",
+      "pricing": {
+        "type": "free",
+        "amount": 0,
+        "currency": "EUR"
+      },
+      "screenshots": []
     }
   ]
 }

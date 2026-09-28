@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release separation**: LTTH stays at 1.4.1. Stream Monsters 1.11.1 ships as a separately versioned deterministic Stable plugin package; the 1.11.0 store artifact and all earlier packages remain immutable.
 - **Release hardening**: Durable provider-event receipts prevent duplicate GCCE/fallback actions, public events no longer expose internal monster IDs, and Arena Collapse cannot stall forever through repeated defense.
 
+## [1.4.3] - 2026-09-28
+
+### Added
+- **Sidekick Avatar Integration**: Full support for VNyan avatar driver alongside Animaze with WebSocket API, expression trigger mappings, custom gift rules, item-drops, and stream HUD overlay.
+- **Persistent Live Reconnect**: Eulerstream adapter automatically continues bounded reconnect attempts on confirmed LIVE sessions instead of failing with `circuit_open`.
+- **Plugin Store Expansion**: Sidekick is packaged and added to the official plugin store catalog.
+
+### Fixed & Hardened
+- **SQLite Concurrency & WAL Mode**: SQLite databases run with `journal_mode = WAL` and a 5000ms `busy_timeout` to eliminate deadlocks and locking failures across plugins and worker processes.
+- **Process Crash Protection**: Standard output/error streams in logger catch `EPIPE` exceptions with `exitOnError: false` to prevent unexpected crashes when GUI launcher pipes close.
+- **TikTok Challenge Separation**: Disambiguated TikTok challenge/captcha responses from explicit offline room states.
+- **Plugin Concurrency Resilience**: Milestone Leaderboard requeues XP batches on `SQLITE_BUSY`, Stream Monsters safeguards egg release transactions, and Plinko guards async cleanup intervals.
+
 ## [1.4.2] - 2026-08-01
 
 ### Changed

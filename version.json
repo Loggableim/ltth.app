@@ -1,10 +1,10 @@
 {
-  "version": "1.4.2",
-  "releaseDate": "2026-08-01",
+  "version": "1.4.3",
+  "releaseDate": "2026-09-28",
   "status": "stable",
-  "downloadVersion": "1.4.2",
-  "downloadNote": "LTTH 1.4.2 promotes Stream Monsters 1.12.0 to the canonical stream-monsters identity while preserving the permanent streamalchemy compatibility aliases, player data, dual configuration shadows, backups, automation, and the authenticated 1.11.1 rollback path.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.2",
+  "downloadVersion": "1.4.3",
+  "downloadNote": "LTTH 1.4.3 delivers SQLite WAL concurrency hardening, persistent live reconnect for Eulerstream, process EPIPE protection, and introduces the enhanced Sidekick plugin with VNyan avatar driver support.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.3",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,18 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.4.3": {
+      "date": "2026-09-28",
+      "changes": [
+        "NEW: Sidekick plugin with VNyan avatar driver integration, WebSocket control, custom gift rules, item drops, and live emotion expressions",
+        "STABILITY: SQLite enabled with WAL mode and 5000ms busy timeout to prevent concurrency deadlocks across plugins and profiles",
+        "STABILITY: Eulerstream persistent reconnect keeps attempting reconnection to confirmed LIVE sessions instead of failing with circuit_open",
+        "STABILITY: TikTok challenge/captcha detection cleanly separated from explicit offline room states",
+        "ROBUSTNESS: Standard streams logger protected against unhandled EPIPE errors on GUI launcher pipe termination",
+        "PLUGINS: Milestone Leaderboard reschedules batch updates on SQLITE_BUSY; Plinko cleanup timer hardened with async promise error catching",
+        "STORE: Sidekick added to official plugin store registry and catalog"
+      ]
+    },
     "1.4.2": {
       "date": "2026-08-01",
       "changes": [
