@@ -62,10 +62,23 @@ const errorRotateFileTransport = new DailyRotateFile({
   level: 'error'
 });
 
+// Prevent process crash from EPIPE on standard streams (e.g. when GUI launcher closes pipe)
+if (process.stdout && typeof process.stdout.on === 'function') {
+  process.stdout.on('error', (err) => {
+    if (err && err.code === 'EPIPE') return;
+  });
+}
+if (process.stderr && typeof process.stderr.on === 'function') {
+  process.stderr.on('error', (err) => {
+    if (err && err.code === 'EPIPE') return;
+  });
+}
+
 // Create the logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: fileFormat,
+  exitOnError: false,
   transports: [
     // Console transport
     new winston.transports.Console({

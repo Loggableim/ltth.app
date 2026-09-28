@@ -103,6 +103,32 @@ describe('Eulerstream quota-safe connection state', () => {
     expect(adapter._autoReconnectTimer).toBeNull();
   });
 
+  test('confirmed LIVE session continues persistent reconnect attempts after initial 5 delays', () => {
+    jest.useFakeTimers();
+    const { adapter, io } = createAdapter();
+    adapter._connectionHadLive = true;
+    const observedDelays = [];
+
+    for (let index = 0; index < 5; index++) {
+      adapter._scheduleBoundedReconnect('streamer', 1006);
+      const retryStatus = io.emit.mock.calls.filter(call => call[0] === 'tiktok:status').at(-1)[1];
+      observedDelays.push(retryStatus.delay);
+      clearTimeout(adapter._autoReconnectTimer);
+      adapter._autoReconnectTimer = null;
+    }
+
+    adapter._scheduleBoundedReconnect('streamer', 1006);
+    const sixthRetryStatus = io.emit.mock.calls.filter(call => call[0] === 'tiktok:status').at(-1)[1];
+    observedDelays.push(sixthRetryStatus.delay);
+
+    expect(observedDelays).toEqual([5000, 15000, 30000, 60000, 120000, 60000]);
+    expect(adapter.connectionState).toBe('retry_wait');
+    expect(sixthRetryStatus.isPersistentRetry).toBe(true);
+    expect(adapter._autoReconnectTimer).not.toBeNull();
+    clearTimeout(adapter._autoReconnectTimer);
+    adapter._autoReconnectTimer = null;
+  });
+
   test('same room resumes persisted stats while a different room resets once', async () => {
     const saved = {
       viewers: 12,

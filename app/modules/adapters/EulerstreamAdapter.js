@@ -1,4 +1,4 @@
-﻿const { WebcastEventEmitter, createWebSocketUrl, ClientCloseCode, deserializeWebSocketMessage, SchemaVersion } = require('@eulerstream/euler-websocket-sdk');
+const { WebcastEventEmitter, createWebSocketUrl, ClientCloseCode, deserializeWebSocketMessage, SchemaVersion } = require('@eulerstream/euler-websocket-sdk');
 const EventEmitter = require('events');
 const WebSocket = require('ws');
 const BaseAdapter = require('./BaseAdapter');
@@ -2683,14 +2683,40 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     _scheduleBoundedReconnect(username, code) {
-        if (!username || this.autoReconnectCount >= this.reconnectDelays.length) {
-            this.connectionState = 'circuit_open';
-            this._circuitReason = 'retries_exhausted';
-            this.broadcastStatus('circuit_open', {
+        if (!username) return;
+
+        const wasLive = Boolean(this._connectionHadLive || this._resumeConfirmedSession);
+
+        if (this.autoReconnectCount >= this.reconnectDelays.length) {
+            if (!wasLive) {
+                this.connectionState = 'circuit_open';
+                this._circuitReason = 'retries_exhausted';
+                this.broadcastStatus('circuit_open', {
+                    code,
+                    reason: this._circuitReason,
+                    message: 'Automatic reconnect attempts are exhausted. Please retry manually.',
+                    retryable: false
+                });
+                return;
+            }
+
+            // Stream was confirmed LIVE - do not abandon, continue periodic reconnection
+            const delay = 60000;
+            this.autoReconnectCount++;
+            this.connectionState = 'retry_wait';
+            this.broadcastStatus('retrying', {
                 code,
-                reason: this._circuitReason,
-                message: 'Automatic reconnect attempts are exhausted. Please retry manually.',
-                retryable: false
+                error: `WebSocket closed (${code}). Continuing to reconnect to active stream.`,
+                delay,
+                attempt: this.autoReconnectCount,
+                username,
+                isPersistentRetry: true
+            });
+            this.logger.info(`🔄 Persistent live reconnect attempt ${this.autoReconnectCount} in ${delay / 1000}s...`);
+            this._scheduleReconnectTimer('_autoReconnectTimer', delay, () => {
+                this.connect(username, { resumeConfirmedSession: true }).catch(err => {
+                    this.logger.error(`Persistent live reconnect attempt ${this.autoReconnectCount} failed:`, err.message);
+                });
             });
             return;
         }
@@ -3165,9 +3191,13 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     _isExplicitTikTokOfflinePage(html) {
-        return typeof html === 'string' && (
-            /"(?:isLive|is_live|liveStatus)"\s*:\s*(?:false|0)/i.test(html) ||
-            /(?:live(?:\s+stream)?\s+(?:has\s+ended|is\s+not\s+available|isn't\s+available|not\s+available|ended))/i.test(html)
+        if (typeof html !== 'string' || !html) return false;
+        if (this._isTikTokChallengePage(html)) return false;
+
+        return (
+            /(?:live(?:\s+stream)?\s+(?:has\s+ended|ended)|this\s+live\s+has\s+ended|der\s+live-stream\s+ist\s+beendet)/i.test(html) ||
+            /"(?:liveRoom|roomInfo)"\s*:\s*\{[^}]*"status"\s*:\s*4\b/i.test(html) ||
+            /"status"\s*:\s*4\b.*?"(?:liveRoom|roomInfo)"/i.test(html)
         );
     }
 

@@ -36,7 +36,9 @@ describe('DatabaseManager startup integrity policy', () => {
 
     new DatabaseManager('C:\\profiles\\default.db');
 
-    expect(database.pragma).not.toHaveBeenCalled();
+    expect(database.pragma).not.toHaveBeenCalledWith('integrity_check');
+    expect(database.pragma).toHaveBeenCalledWith('journal_mode = WAL');
+    expect(database.pragma).toHaveBeenCalledWith('busy_timeout = 5000');
     expect(initializeTables).toHaveBeenCalledTimes(1);
     expect(setupShutdownHandler).toHaveBeenCalledTimes(1);
   });

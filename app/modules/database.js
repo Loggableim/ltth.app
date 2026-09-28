@@ -20,6 +20,12 @@ class DatabaseManager {
         
         try {
             this.db = new Database(dbPath);
+            try {
+                this.db.pragma('journal_mode = WAL');
+                this.db.pragma('busy_timeout = 5000');
+            } catch (pragmaErr) {
+                console.warn('⚠️ [DATABASE] Failed to set WAL/busy_timeout pragmas:', pragmaErr.message);
+            }
 
             // A missing settings table is the reliable signal for a genuinely new
             // profile database. Existing profiles without a persisted setting must
@@ -34,6 +40,12 @@ class DatabaseManager {
                 this.handleCorruptedDatabase(dbPath);
                 // Retry opening after recovery
                 this.db = new Database(dbPath);
+                try {
+                    this.db.pragma('journal_mode = WAL');
+                    this.db.pragma('busy_timeout = 5000');
+                } catch (pragmaErr) {
+                    console.warn('⚠️ [DATABASE] Failed to set WAL/busy_timeout pragmas:', pragmaErr.message);
+                }
             } else {
                 throw error;
             }
