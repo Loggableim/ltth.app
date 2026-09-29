@@ -1,6 +1,6 @@
 # Snapshot Status
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-09-28
 
 ## Scope
 
@@ -51,7 +51,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
-- Version: `1.4.2` (see `version.json` and `app/package.json`)
+- Version: `1.4.3` (see `version.json` and `app/package.json`)
 
 ## Dependency State
 
