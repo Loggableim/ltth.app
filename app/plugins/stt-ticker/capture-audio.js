@@ -30,6 +30,18 @@
     };
   }
 
+  function analyzeSpeechChunk(samples, sampleRate, config = {}) {
+    const analysis = analyzeVoiceActivity(samples, sampleRate, config);
+    // Brief speech surrounded by silence must not be diluted by whole-chunk RMS.
+    if (!samples?.length || !Number.isFinite(sampleRate) || sampleRate <= 0) return analysis;
+    const frameSamples = Math.max(1, Math.round(sampleRate * 0.03));
+    for (let offset = 0; offset < samples.length && !analysis.hasSpeech; offset += frameSamples) {
+      const frame = samples.slice(offset, offset + frameSamples);
+      if (analyzeVoiceActivity(frame, sampleRate, config).hasSpeech) analysis.hasSpeech = true;
+    }
+    return analysis;
+  }
+
   function floatToLinear16(samples) {
     const output = new Uint8Array((samples?.length || 0) * 2);
     const view = new DataView(output.buffer);
@@ -82,22 +94,30 @@
           return { frames: [frame], utteranceBoundary: false, state: 'speech', analysis };
         }
 
-        this.pendingSpeech.push(frame);
-        this.pendingSpeechMs += analysis.chunkMs;
-        const minChunkMs = Math.max(0, Number(this.config.minChunkMs) || 600);
-        if (this.pendingSpeechMs >= minChunkMs) {
-          const frames = this.pendingSpeech;
-          this.pendingSpeech = [];
-          this.pendingSpeechMs = 0;
-          this.open = true;
-          return { frames, utteranceBoundary: false, state: 'speech', analysis };
-        }
-        return { frames: [], utteranceBoundary: false, state: 'pending', analysis };
+        // Open immediately: brief replies must not wait for minChunkMs.
+        const frames = [...this.pendingSpeech, frame];
+        this.pendingSpeech = [];
+        this.pendingSpeechMs = 0;
+        this.open = true;
+        return { frames, utteranceBoundary: false, state: 'speech', analysis };
       }
 
-      this.pendingSpeech = [];
-      this.pendingSpeechMs = 0;
       if (!this.open) {
+        // Retain quiet consonants just before the first loud speech frame.
+        this.pendingSpeech.push(frame);
+        this.pendingSpeechMs += analysis.chunkMs;
+        const preRollMs = Math.max(0, Number(this.config.preRollMs ?? 300));
+        while (this.pendingSpeech.length && this.pendingSpeechMs > preRollMs) {
+          const excessSamples = Math.ceil((this.pendingSpeechMs - preRollMs) * this.sampleRate / 1000);
+          const first = this.pendingSpeech[0];
+          if (excessSamples >= first.length) {
+            this.pendingSpeech.shift();
+            this.pendingSpeechMs -= first.length / this.sampleRate * 1000;
+          } else {
+            this.pendingSpeech[0] = first.slice(excessSamples);
+            this.pendingSpeechMs -= excessSamples / this.sampleRate * 1000;
+          }
+        }
         return { frames: [], utteranceBoundary: false, state: 'silence', analysis };
       }
 
@@ -117,5 +137,5 @@
     }
   }
 
-  return { analyzeVoiceActivity, floatToLinear16, DeepgramVadGate };
+  return { analyzeVoiceActivity, analyzeSpeechChunk, floatToLinear16, DeepgramVadGate };
 }));

@@ -301,6 +301,7 @@ class AsrPipeline {
       mimeType: options.mimeType,
       filename: options.filename,
       language: apiLanguage,
+      model: this.config.asr?.fishaudioModel || 'transcribe-1-pro',
       timeout: 30000
     });
 
@@ -346,6 +347,7 @@ class AsrPipeline {
       filename: options.filename,
       language: dgLanguage,
       languageDefault: asrCfg.languageDefault,
+      keyterms: asrCfg.keyterms,
       model
     });
   }
@@ -371,6 +373,7 @@ class AsrPipeline {
     return await client.transcribe(audioBuffer, {
       mimeType: options.mimeType,
       filename: options.filename,
+      language: asrCfg.languageMode === 'fixed' ? asrCfg.languageFixed : undefined,
       model: elModel
     });
   }

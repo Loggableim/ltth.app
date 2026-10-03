@@ -1307,6 +1307,8 @@
               <option value="deepgram" data-i18n="plugins.stt-ticker.labels.deepgram_0_26_h">Deepgram (~$0.26/h)</option>
               <option value="elevenlabs" data-i18n="plugins.stt-ticker.labels.elevenlabs_speech_to_text">ElevenLabs (Speech-to-Text)</option>
             </select>
+            <label for="asr-keyterms" data-i18n="plugins.stt-ticker.quality.vocabulary">Deepgram Nova-3: Namen und Begriffe (mit Komma trennen)</label>
+            <textarea id="asr-keyterms" rows="2" placeholder="LTTH, TikTok"></textarea>
           </div>
           <div>
             <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.stt_model">STT-Modell</label>
@@ -1627,7 +1629,8 @@
           } else if (vrchat.bridgeAvailable) {
             vrchatStatus.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.osc_bridge_ready', 'OSC Bridge ready');
             vrchatStatus.style.color = '#4CAF50';
-          } else {            vrchatStatus.textContent = translateUi(
+          } else {
+            vrchatStatus.textContent = translateUi(
               'plugins.stt-ticker.stt_ticker.ui.messages.osc_bridge_unavailable',
               'OSC Bridge unavailable — captions stay active.'
             );
@@ -1726,6 +1729,7 @@
       if (modeAuto) modeAuto.checked = (mode === 'auto');
       if (modeFixed) modeFixed.checked = (mode === 'fixed');
 
+      document.getElementById('asr-keyterms').value = (Array.isArray(asr.keyterms) ? asr.keyterms : []).join(', ');
       populateLanguageSelect('asr-languageDefault', asr.languageDefault || 'de');
       populateLanguageSelect('asr-languageFixed', asr.languageFixed || 'de');
 
@@ -1851,7 +1855,8 @@
         renderLangTags(ml.outputLanguages);
       }
       const status = document.getElementById('ml-status');
-      if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {        status.textContent = translateUi(
+      if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {
+        status.textContent = translateUi(
           'plugins.stt-ticker.stt_ticker.ui.messages.no_target_language',
           'No target language selected — standard captions are active.'
         );
@@ -1954,7 +1959,8 @@
           body: JSON.stringify({ vrchatChatbox: { enabled } })
         });
         const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');        status.textContent = enabled
+        if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
+        status.textContent = enabled
           ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_enable_pending', 'Enabled — checking OSC Bridge.')
           : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_disabled', 'Disabled');
         status.style.color = enabled ? '#4CAF50' : '#888';
@@ -1968,6 +1974,7 @@
     async function saveAsrConfig() {
       const asr = {
         provider: document.getElementById('asr-provider')?.value || 'fish.audio',
+        keyterms: document.getElementById('asr-keyterms').value.split(',').map(term => term.trim()).filter(Boolean),
         languageMode: document.getElementById('language-mode-auto')?.checked ? 'auto' : 'fixed',
         languageDefault: document.getElementById('asr-languageDefault').value,
         languageFixed: document.getElementById('asr-languageFixed').value,

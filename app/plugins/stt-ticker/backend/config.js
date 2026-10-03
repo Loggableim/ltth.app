@@ -46,9 +46,11 @@ const DEFAULT_CONFIG = {
     fallbackLanguage: 'en',     // Fallback wenn Heuristik nichts findet
     languageWhitelist: SUPPORTED_SOURCE_LANGUAGES,  // alle UI-Quellsprachen erlauben
     deepgramApiKey: '',         // Deepgram API-Key (NIE im Git, persistent in Plugin-Config)
+    keyterms: [],              // optional stream names / vocabulary for Nova-3
+    fishaudioModel: 'transcribe-1-pro',
     deepgramModel: 'nova-3',     // explicit Deepgram default
     elevenlabsApiKey: '',        // ElevenLabs API-Key für ASR
-    elevenlabsModel: 'scribe_v2',  // ElevenLabs ASR Modell (Scribe Realtime v2)
+    elevenlabsModel: 'scribe_v2',  // ElevenLabs batch ASR model
     fishaudioApiKey: ''          // Fish.audio API-Key (für ASR, Fallback zum TTS-Plugin)
   },
 
@@ -67,7 +69,8 @@ const DEFAULT_CONFIG = {
     rmsThreshold: 0.012,        // min RMS-Amplitude (0..1) — alles darunter = Stille
     minSpeechRatio: 0.04,       // min Anteil (0..1) "lauter" Samples im Chunk
     frameSizeMs: 30,            // Frame-Größe für Ratio-Berechnung
-    minChunkMs: 600,            // min Audio-Länge bevor überhaupt geprüft wird (kürzere Chunks = überspringen)
+    preRollMs: 300,             // keep quiet speech onsets before live VAD opens
+    minChunkMs: 100,            // min Audio-Länge bevor überhaupt geprüft wird (kürzere Chunks = überspringen)
     sustainedSilenceMs: 1500    // ms durchgehender Stille bevor Status auf "Silence" wechselt
   },
 

@@ -18,7 +18,7 @@ class ElevenLabsAsrClient {
   static DEFAULT_MAX_AUDIO_BYTES = 25 * 1024 * 1024;  // 25 MB
 
   static MODELS = {
-    'scribe_v2': { name: 'Scribe Realtime v2', multilingual: true },
+    'scribe_v2': { name: 'Scribe v2 (Batch)', multilingual: true },
     'scribe_v1': { name: 'Scribe v1', multilingual: true },
     'scribe_v1_experimental': { name: 'Scribe v1 Experimental', multilingual: true }
   };
@@ -59,6 +59,8 @@ class ElevenLabsAsrClient {
       knownLength: audioBuffer.length
     });
     form.append('model_id', model);
+    form.append('tag_audio_events', 'false');
+    if (options.language) form.append('language_code', options.language);
 
     try {
       const response = await axios.post(this.apiUrl, form, {
@@ -88,8 +90,10 @@ class ElevenLabsAsrClient {
     }
 
     let language = null;
-    if (data.language && typeof data.language === 'string') {
-      language = data.language.toLowerCase().slice(0, 2);
+    const code = data.language_code || data.language;
+    const iso3 = { deu: 'de', eng: 'en', spa: 'es', fra: 'fr', ita: 'it', por: 'pt', nld: 'nl', jpn: 'ja', zho: 'zh', kor: 'ko' };
+    if (typeof code === 'string') {
+      language = iso3[code.toLowerCase()] || code.toLowerCase().slice(0, 2);
     }
 
     return {

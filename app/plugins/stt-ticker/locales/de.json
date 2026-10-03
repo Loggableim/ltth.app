@@ -1,6 +1,7 @@
 {
   "plugins": {
     "stt-ticker": {
+      "quality": { "vocabulary": "Deepgram Nova-3: Namen und Begriffe (mit Komma trennen)" },
       "form_controls": {
         "admin_iframe_title": "STT-Ticker-Verwaltung",
         "deepgram_api_key_placeholder": "z. B. 1234567890abcdef...",

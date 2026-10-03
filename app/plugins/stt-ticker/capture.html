@@ -887,7 +887,8 @@
   <script src="/js/tiktok-studio-url.js"></script>
   <script>
     const SAMPLE_RATE = 16000;
-    const CHUNK_DURATION_MS = 5000;
+    const CHUNK_DURATION_MS = 12000;
+    let wavSilenceMs = 0;
     const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
     const API = window.location.origin;
 
@@ -1575,13 +1576,17 @@
           for (let i = 0; i < input.length; i++) {
             audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
           }
-          if (audioBuffer.length >= CHUNK_SAMPLES) sendWavChunk();
+          const activity = window.SttTickerCaptureAudio.analyzeVoiceActivity(input, audioContext.sampleRate, vad);
+          wavSilenceMs = activity.hasSpeech ? 0 : wavSilenceMs + input.length / audioContext.sampleRate * 1000;
+          if (audioBuffer.length >= CHUNK_SAMPLES
+            || (audioBuffer.length >= SAMPLE_RATE * 0.6 && wavSilenceMs >= 900)) sendWavChunk();
         };
         if (effectiveProvider !== 'deepgram') {
           captureInterval = setInterval(function() {
             if (audioBuffer.length > 0) sendWavChunk();
           }, CHUNK_DURATION_MS + 1000);
         }
+        wavSilenceMs = 0;
         isCapturing = true;
         lastSpeechAt = Date.now();
         setStatus('Höre zu...', 'listening');
@@ -1604,6 +1609,7 @@
 
     function stopCapture() {
       isCapturing = false;
+      if (!deepgramLiveActive && audioBuffer.length) sendWavChunk();
       if (deepgramLiveActive) socket.emit('stt-ticker:deepgram:stop');
       deepgramLiveActive = false;
       if (deepgramVadGate) deepgramVadGate.reset();
@@ -1613,7 +1619,7 @@
       if (audioSource) { audioSource.disconnect(); audioSource = null; }
       if (audioContext) { audioContext.close(); audioContext = null; }
       if (audioStream) { audioStream.getTracks().forEach(function(t) { t.stop(); }); audioStream = null; }
-      audioBuffer = [];
+      if (!sendingWav) audioBuffer = [];
       setStatus('Gestoppt', 'idle');
       btnStart.disabled = false;
       btnStop.disabled = true;
@@ -1625,7 +1631,7 @@
       if (audioBuffer.length < 1600 || sendingWav) return;
       sendingWav = true;
       const samples = audioBuffer.splice(0);
-      const vadResult = detectVoiceActivity(samples);
+      const vadResult = window.SttTickerCaptureAudio.analyzeSpeechChunk(samples, SAMPLE_RATE, vad);
       if (vad.enabled && !vadResult.hasSpeech) {
         stats.skipped++;
         updateStats();
@@ -1636,7 +1642,7 @@
         sendingWav = false;
         return;
       }
-      if (vad.enabled && vadResult.chunkMs < (vad.minChunkMs || 600)) {
+      if (vad.enabled && vadResult.chunkMs < 100) {
         stats.skipped++;
         updateStats();
         log('Zu kurz übersprungen (' + vadResult.chunkMs + 'ms)', 'silence');
@@ -1649,7 +1655,10 @@
       updateStats();
       setStatus('Höre zu - Transkribiere', 'listening');
       log('Sende ' + vadResult.chunkMs + 'ms (RMS=' + vadResult.rms.toFixed(4) + ')');
-      sendAudioToServer(wavBlob).finally(function() { sendingWav = false; });
+      sendAudioToServer(wavBlob).finally(function() {
+        sendingWav = false;
+        if (audioBuffer.length >= CHUNK_SAMPLES || (!isCapturing && audioBuffer.length)) sendWavChunk();
+      });
     }
 
     function encodeWav(samples, sampleRate) {

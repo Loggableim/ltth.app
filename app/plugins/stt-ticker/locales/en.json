@@ -1,6 +1,7 @@
 {
   "plugins": {
     "stt-ticker": {
+      "quality": { "vocabulary": "Deepgram Nova-3: names and vocabulary (comma separated)" },
       "form_controls": {
         "admin_iframe_title": "STT Ticker Admin",
         "deepgram_api_key_placeholder": "e.g. 1234567890abcdef...",

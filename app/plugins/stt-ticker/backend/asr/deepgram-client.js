@@ -92,6 +92,9 @@ class DeepgramAsrClient {
       maxRetries: 1
     };
 
+    const keyterms = DeepgramAsrClient.normalizeKeyterms(options.keyterms);
+    if (model === 'nova-3' && keyterms.length) requestOptions.keyterm = keyterms;
+
     if (options.profanityFilter) requestOptions.profanity_filter = true;
     if (options.diarize) requestOptions.diarize = true;
     if (options.keywords) requestOptions.keywords = options.keywords;
@@ -286,6 +289,12 @@ class DeepgramAsrClient {
 
   static getSdkStatus() {
     return getDeepgramSdkStatus();
+  }
+
+  static normalizeKeyterms(value) {
+    return Array.isArray(value)
+      ? [...new Set(value.filter(term => typeof term === 'string').map(term => term.trim()).filter(Boolean))].slice(0, 50).map(term => term.slice(0, 100))
+      : [];
   }
 
   static resolveRequestLanguage(model = 'nova-3', language, languageDefault = 'de') {

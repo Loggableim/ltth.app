@@ -64,6 +64,7 @@ class FishAsrClient {
     return axios.post(this.apiUrl, msgpack.encode(payload), {
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
+        model: options.model,
         'Content-Type': 'application/msgpack',
         Accept: 'application/json, application/msgpack'
       },
@@ -87,6 +88,7 @@ class FishAsrClient {
     return axios.post(this.apiUrl, form, {
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
+        model: options.model,
         Accept: 'application/json, application/msgpack',
         ...form.getHeaders()
       },
@@ -110,6 +112,7 @@ class FishAsrClient {
 
   _normalizeRequestOptions(options) {
     return {
+      model: options.model === 'transcribe-1-pro' ? 'transcribe-1-pro' : 'transcribe-1',
       language: options.language === undefined ? null : this._validateLanguage(options.language),
       ignoreTimestamps: this._resolveIgnoreTimestamps(options.ignoreTimestamps ?? options.ignore_timestamps),
       mimeType: this._validateMimeType(options.mimeType),

@@ -224,6 +224,8 @@ class DeepgramLiveSessionManager {
         requestedLanguage,
         asr.languageDefault
       ),
+      ...(model === 'nova-3' && DeepgramAsrClient.normalizeKeyterms(asr.keyterms).length
+        ? { keyterm: DeepgramAsrClient.normalizeKeyterms(asr.keyterms) } : {}),
       encoding: 'linear16',
       sample_rate: input.sampleRate,
       channels: 1,

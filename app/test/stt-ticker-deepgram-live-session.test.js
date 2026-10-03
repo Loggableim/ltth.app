@@ -283,3 +283,13 @@ describe('STT Ticker Deepgram live session recovery', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 });
+
+
+test('live multilingual Nova-3 sends stream vocabulary to the provider', async () => {
+  const { manager, connect, socket } = createHarness({ config: {
+    asr: { deepgramModel: 'nova-3', languageMode: 'auto', keyterms: [' LTTH ', 'TikTok', 'LTTH'] }
+  } });
+  await manager.start(socket, { sampleRate: 16000, channels: 1 });
+  expect(connect.mock.calls[0][0]).toMatchObject({ language: 'multi', keyterm: ['LTTH', 'TikTok'] });
+  await manager.stop(socket.id);
+});
