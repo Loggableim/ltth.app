@@ -154,14 +154,14 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     }));
   });
 
-  test('defaults only fresh setups to 90 seconds and preserves every stored creator duration', () => {
+  test('defaults only fresh setups to 60 seconds and preserves every stored creator duration', () => {
     const plugin = new StreamAlchemyPlugin({
       getConfig: jest.fn(),
       setConfig: jest.fn()
     });
 
     expect(plugin.loadConfig({}).streamMonsters).toEqual(expect.objectContaining({
-      hatchDurationMs: 90_000,
+      hatchDurationMs: 60_000,
       incubationPresetsMs: [
         30_000,
         60_000,
@@ -287,14 +287,14 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
     }
   );
 
-  test('uses the fresh 90-second default in the standalone game engine', () => {
+  test('uses the fresh 60-second default in the standalone game engine', () => {
     const sqlite = new Database(':memory:');
     const store = new StreamMonstersDatabase(sqlite);
     store.initialize();
 
     const engine = new StreamMonstersEngine({ store });
 
-    expect(engine.config.hatchDurationMs).toBe(90_000);
+    expect(engine.config.hatchDurationMs).toBe(60_000);
     sqlite.close();
   });
 
@@ -573,7 +573,7 @@ describe('Stream Monsters 1.11 creator configuration contract', () => {
         portraitBattleMode: 'takeover-74'
       }
     })).toEqual(expect.objectContaining({
-      hatchDurationMs: 90_000
+      hatchDurationMs: 60_000
     }));
   });
 

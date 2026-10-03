@@ -21,7 +21,7 @@
     }
   },
   "defaults": {
-    "hatchDurationMs": 90000,
+    "hatchDurationMs": 60000,
     "portraitBattleMode": "takeover-74",
     "portraitArenaVariant": "split-arena",
     "portraitProfile": "tiktok-live-studio-1080x1920"

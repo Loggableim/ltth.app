@@ -216,4 +216,75 @@ describe('Stream Monsters durable command ingress deduplication', () => {
     `).all()).toEqual([{ event_id: 'command:event-5' }]);
     sqlite.close();
   });
+
+  test('deduplicates rapid chat commands lacking provider event ID using deterministic fingerprint', async () => {
+    const { sqlite, store } = createStore();
+    let executions = 0;
+    const ingress = new StreamMonstersCommandIngress({
+      execute: async () => {
+        executions += 1;
+        return { success: true, status: 'hatched' };
+      },
+      emit: () => {},
+      resolveUserId: data => data.userId,
+      claimEvent: input => store.claimCommandIngressEvent(input),
+      now: () => 50_000
+    });
+    ingress.setCommands([commandDefinition()], '!');
+
+    const rawData = {
+      provider: 'tiktok',
+      userId: 'viewer-rapid',
+      comment: '!hatch',
+      createTime: 1_700_000_123
+    };
+
+    const first = await ingress.handleFallback(rawData);
+    const second = await ingress.handleFallback(rawData);
+
+    expect(first.success).toBe(true);
+    expect(second).toEqual({
+      success: true,
+      handled: true,
+      status: 'duplicate_event',
+      duplicate: true,
+      suppressed: true
+    });
+    expect(executions).toBe(1);
+    sqlite.close();
+  });
+
+  test('claimProviderEvent directly returns duplicate receipt when event is already claimed', async () => {
+    const { sqlite, store } = createStore();
+    const ingress = new StreamMonstersCommandIngress({
+      execute: async () => ({ success: true }),
+      emit: () => {},
+      resolveUserId: data => data.userId,
+      claimEvent: input => store.claimCommandIngressEvent(input),
+      now: () => 60_000
+    });
+
+    const context = {
+      userId: 'viewer-direct',
+      rawData: {
+        comment: '!hatch',
+        createTime: 1_700_000_456
+      }
+    };
+
+    const firstClaim = await ingress.claimProviderEvent('hatch', context, 'fallback');
+    expect(firstClaim.claimed).toBe(true);
+
+    const duplicateClaim = await ingress.claimProviderEvent('hatch', context, 'fallback');
+    expect(duplicateClaim).toEqual(expect.objectContaining({
+      success: true,
+      handled: true,
+      status: 'duplicate_event',
+      duplicate: true,
+      suppressed: true,
+      claimed: false
+    }));
+    sqlite.close();
+  });
 });
+

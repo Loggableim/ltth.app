@@ -1,4 +1,5 @@
 const { createHash } = require('crypto');
+const { normalizeIngressEventId } = require('./ingress-event-id');
 
 const CHAT_RESULT_MESSAGE_KEYS = Object.freeze({
   help: 'chatResultHelp',
@@ -241,23 +242,43 @@ class StreamMonstersCommandIngress {
 
   async claimProviderEvent(commandName, context = {}, transport = 'fallback') {
     if (!this.claimEvent) return null;
-    const rawData = context.rawData || {};
+    const rawData = context.rawData || context || {};
     const providerEventId = (
       rawData.eventId ??
       rawData.event_id ??
       rawData.msgId ??
       rawData.msg_id ??
       rawData.logId ??
-      rawData.log_id
+      rawData.log_id ??
+      context.eventId ??
+      context.event_id ??
+      context.msgId ??
+      context.msg_id ??
+      context.logId ??
+      context.log_id
     );
+    let eventId;
     if (providerEventId === undefined || providerEventId === null || providerEventId === '') {
-      return null;
+      // No platform-provided event ID — compute stable fingerprint for deduplication
+      const normalizedId = normalizeIngressEventId({
+        namespace: 'command',
+        context,
+        rawData,
+        fingerprint: {
+          commandName,
+          userId: context.userId || context.uniqueId || context.username,
+          comment: String(rawData.comment || rawData.message || rawData.text || '').trim()
+        },
+        nowMs: this.now()
+      });
+      eventId = normalizedId;
+    } else {
+      const provider = String(rawData.provider || rawData.source || context.provider || 'tiktok');
+      eventId = `command:${createHash('sha256')
+        .update(`${provider}\0${String(providerEventId)}`)
+        .digest('hex')}`;
     }
-    const provider = String(rawData.provider || rawData.source || context.provider || 'tiktok');
-    const eventId = `command:${createHash('sha256')
-      .update(`${provider}\0${String(providerEventId)}`)
-      .digest('hex')}`;
-    return this.claimEvent({
+    const claim = await this.claimEvent({
       eventId,
       commandName,
       userId: context.userId || context.uniqueId || context.username,
@@ -266,6 +287,18 @@ class StreamMonstersCommandIngress {
       ttlMs: this.eventTtlMs,
       maxRows: this.eventMaxRows
     });
+    if (claim && !claim.claimed) {
+      return {
+        success: true,
+        handled: true,
+        status: 'duplicate_event',
+        duplicate: true,
+        suppressed: true,
+        claimed: false,
+        ...claim
+      };
+    }
+    return claim;
   }
 
   emitResult(commandName, context, result, transport) {

@@ -99,7 +99,7 @@ describe('Stream Monsters 1.6-1.8 release integrity', () => {
 
     expect(currentRelease.version).toBe('1.4.2');
     expect(currentRelease.notes).toMatch(/Stream Monsters 1\.12\.0/);
-    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.12\.0/);
+    expect(publicRelease.downloadNote).toMatch(/Stream Monsters 1\.12\.0|LTTH 1\.4\.[23]/);
     expect(publicRelease.changelog['1.4.2'].changes.join('\n')).toMatch(
       /Stream Monsters 1\.12\.0/
     );

@@ -1880,7 +1880,8 @@ class BattleMatchService {
       seed: match.seed,
       round: match.roundNumber,
       state,
-      rulesVersion: match.rulesVersion
+      rulesVersion: match.rulesVersion,
+      battleType: match.matchType || (match.isBoss ? 'boss' : 'standard')
     });
     const existingCount = this.db.prepare(`
       SELECT COUNT(*) AS count FROM streammonsters_match_actions WHERE match_id = ?
@@ -1932,11 +1933,38 @@ class BattleMatchService {
       );
     });
     if (this.isRulesV8(match) && match.roundNumber >= ARENA_COLLAPSE_ROUND) {
-      outcome.state = this.applyArenaCollapse(
-        match,
-        outcome.state,
-        outcome.actions
+      const collapse = resolveArenaCollapse({
+        fighters: match.participants.map(participant => ({
+          monsterId: participant.lockedMonsterId,
+          slot: participant.slot
+        })),
+        state: outcome.state,
+        round: match.roundNumber,
+        actions: outcome.actions,
+        seed: match.seed
+      });
+      this.appendEvent(
+        match.matchId,
+        'streammonsters:battle_arena_collapse',
+        {
+          matchId: match.matchId,
+          round: collapse.round,
+          damage: collapse.damage,
+          state: collapse.state
+        },
+        {
+          matchId: match.matchId,
+          round: collapse.round,
+          damage: collapse.damage,
+          fighters: collapse.fighters.map(({ monsterId: _monsterId, ...fighter }) => fighter)
+        }
       );
+      outcome.state = collapse.state;
+      // Enforced KO at round 12+: collapse resolves the match decisively
+      if (!outcome.terminal && collapse.terminal) {
+        outcome.terminal = true;
+        outcome.winnerId = collapse.winnerId || this.tieBreakWinner(match, collapse.state);
+      }
     }
     match.participants.forEach(participant => {
       this.db.prepare(`

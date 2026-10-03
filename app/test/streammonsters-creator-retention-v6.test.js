@@ -168,7 +168,7 @@ describe('Stream Monsters Rules v6 retention creator API', () => {
         freeEggCooldownSeconds: 86_400,
         unhatchedEggStealEnabled: true,
         unhatchedEggStealGraceSeconds: 600,
-        unhatchedEggStealActivityWindowSeconds: 300,
+        unhatchedEggStealActivityWindowSeconds: 43_200,
         tutorialHintsEnabled: true,
         tutorialHintIntervalSeconds: 90
       }));

@@ -1254,7 +1254,7 @@ describe('Stream Monsters owned-ready egg rescue', () => {
       }
     })).toEqual(expect.objectContaining({
       unhatchedEggStealGraceSeconds: 600,
-      unhatchedEggStealActivityWindowSeconds: 300
+      unhatchedEggStealActivityWindowSeconds: 43_200
     }));
   });
 

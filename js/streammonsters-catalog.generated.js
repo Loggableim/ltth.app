@@ -1141,7 +1141,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.4
+                  "power": 4.5
                 },
                 {
                   "type": "burn",
@@ -1221,7 +1221,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.4
+                  "power": 7.5
                 },
                 {
                   "type": "heal",
@@ -1264,7 +1264,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.4
+                  "power": 4.5
                 },
                 {
                   "type": "burn",
@@ -1344,7 +1344,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.4
+                  "power": 7.5
                 },
                 {
                   "type": "heal",
@@ -1387,7 +1387,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.4
+                  "power": 4.5
                 },
                 {
                   "type": "burn",
@@ -1467,7 +1467,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.4
+                  "power": 8.5
                 },
                 {
                   "type": "heal",
@@ -1521,7 +1521,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.1
+                  "power": 4
                 },
                 {
                   "type": "weaken",
@@ -1597,7 +1597,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.1
+                  "power": 6
                 },
                 {
                   "type": "heal",
@@ -1644,7 +1644,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.1
+                  "power": 5
                 },
                 {
                   "type": "weaken",
@@ -1720,7 +1720,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.1
+                  "power": 6
                 },
                 {
                   "type": "heal",
@@ -1767,7 +1767,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.1
+                  "power": 5
                 },
                 {
                   "type": "weaken",
@@ -1843,7 +1843,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.1
+                  "power": 7
                 },
                 {
                   "type": "heal",
@@ -1901,7 +1901,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.9
+                  "power": 5
                 },
                 {
                   "type": "weaken",
@@ -1973,7 +1973,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.9
+                  "power": 7
                 },
                 {
                   "type": "heal",
@@ -2020,7 +2020,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.9
+                  "power": 5
                 },
                 {
                   "type": "weaken",
@@ -2092,7 +2092,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.9
+                  "power": 7
                 },
                 {
                   "type": "heal",
@@ -2139,7 +2139,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.9
+                  "power": 5
                 },
                 {
                   "type": "weaken",
@@ -2211,7 +2211,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.9
+                  "power": 8
                 },
                 {
                   "type": "heal",
@@ -2269,7 +2269,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.8
+                  "power": 5.8999999999999995
                 },
                 {
                   "type": "weaken",
@@ -2341,7 +2341,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.8
+                  "power": 7.8999999999999995
                 },
                 {
                   "type": "heal",
@@ -2384,7 +2384,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.8
+                  "power": 6.8999999999999995
                 },
                 {
                   "type": "weaken",
@@ -2456,7 +2456,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.8
+                  "power": 7.8999999999999995
                 },
                 {
                   "type": "heal",
@@ -2499,7 +2499,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.8
+                  "power": 6.8999999999999995
                 },
                 {
                   "type": "weaken",
@@ -2571,7 +2571,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.799999999999999
+                  "power": 8.9
                 },
                 {
                   "type": "heal",
@@ -2625,7 +2625,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.2
+                  "power": 4.8
                 },
                 {
                   "type": "weaken",
@@ -2701,7 +2701,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.2
+                  "power": 5.8
                 },
                 {
                   "type": "heal",
@@ -2744,7 +2744,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.2
+                  "power": 4.8
                 },
                 {
                   "type": "weaken",
@@ -2820,7 +2820,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.2
+                  "power": 5.8
                 },
                 {
                   "type": "heal",
@@ -2863,7 +2863,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.2
+                  "power": 4.8
                 },
                 {
                   "type": "weaken",
@@ -2939,7 +2939,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.2
+                  "power": 6.8
                 },
                 {
                   "type": "heal",
@@ -3373,7 +3373,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 3.8
+                  "power": 4.2
                 },
                 {
                   "type": "thorns",
@@ -3449,7 +3449,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 2.8
+                  "power": 3.2
                 },
                 {
                   "type": "shield",
@@ -3496,7 +3496,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 3.8
+                  "power": 4.2
                 },
                 {
                   "type": "thorns",
@@ -3572,7 +3572,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 2.8
+                  "power": 3.2
                 },
                 {
                   "type": "shield",
@@ -3619,7 +3619,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 3.8
+                  "power": 4.2
                 },
                 {
                   "type": "thorns",
@@ -3695,7 +3695,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 3.8
+                  "power": 4.2
                 },
                 {
                   "type": "shield",
@@ -4827,7 +4827,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.449999999999999,
+                  "power": 6.35,
                   "hits": 2
                 }
               ],
@@ -4896,7 +4896,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 9.45,
+                  "power": 9.35,
                   "hits": 3
                 }
               ],
@@ -4936,7 +4936,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.449999999999999,
+                  "power": 7.35,
                   "hits": 2
                 }
               ],
@@ -5005,7 +5005,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 9.45,
+                  "power": 9.35,
                   "hits": 3
                 }
               ],
@@ -5045,7 +5045,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.449999999999999,
+                  "power": 7.35,
                   "hits": 2
                 }
               ],
@@ -5114,7 +5114,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 11.45,
+                  "power": 11.35,
                   "hits": 3
                 }
               ],
@@ -5165,7 +5165,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.6,
+                  "power": 5.5,
                   "hits": 2
                 }
               ],
@@ -5234,7 +5234,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.6,
+                  "power": 8.5,
                   "hits": 3
                 },
                 {
@@ -5278,7 +5278,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.6,
+                  "power": 5.5,
                   "hits": 2
                 }
               ],
@@ -5347,7 +5347,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.6,
+                  "power": 8.5,
                   "hits": 3
                 },
                 {
@@ -5391,7 +5391,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.6,
+                  "power": 5.5,
                   "hits": 2
                 }
               ],
@@ -5460,7 +5460,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 9.6,
+                  "power": 9.5,
                   "hits": 3
                 },
                 {
@@ -6613,7 +6613,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.6
+                  "power": 5.5
                 },
                 {
                   "type": "pierce",
@@ -6693,7 +6693,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.6
+                  "power": 8.5
                 },
                 {
                   "type": "pierce",
@@ -6740,7 +6740,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.6
+                  "power": 5.5
                 },
                 {
                   "type": "pierce",
@@ -6820,7 +6820,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.6
+                  "power": 8.5
                 },
                 {
                   "type": "pierce",
@@ -6867,7 +6867,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.6
+                  "power": 5.5
                 },
                 {
                   "type": "pierce",
@@ -6947,7 +6947,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 9.6
+                  "power": 9.5
                 },
                 {
                   "type": "pierce",
@@ -8097,7 +8097,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.7
+                  "power": 4.9
                 },
                 {
                   "type": "heal",
@@ -8173,7 +8173,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.7
+                  "power": 6.9
                 },
                 {
                   "type": "lifesteal",
@@ -8220,7 +8220,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.7
+                  "power": 4.9
                 },
                 {
                   "type": "heal",
@@ -8296,7 +8296,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 6.7
+                  "power": 6.9
                 },
                 {
                   "type": "lifesteal",
@@ -8343,7 +8343,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.7
+                  "power": 4.9
                 },
                 {
                   "type": "heal",
@@ -8419,7 +8419,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.7
+                  "power": 7.9
                 },
                 {
                   "type": "lifesteal",
@@ -8477,7 +8477,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 4.75
+                  "power": 5.15
                 },
                 {
                   "type": "heal",
@@ -8557,7 +8557,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.75
+                  "power": 8.15
                 },
                 {
                   "type": "lifesteal",
@@ -8600,7 +8600,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.75
+                  "power": 6.15
                 },
                 {
                   "type": "heal",
@@ -8680,7 +8680,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 7.75
+                  "power": 8.15
                 },
                 {
                   "type": "lifesteal",
@@ -8723,7 +8723,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 5.75
+                  "power": 6.15
                 },
                 {
                   "type": "heal",
@@ -8803,7 +8803,7 @@
               "effects": [
                 {
                   "type": "damage",
-                  "power": 8.75
+                  "power": 9.15
                 },
                 {
                   "type": "lifesteal",

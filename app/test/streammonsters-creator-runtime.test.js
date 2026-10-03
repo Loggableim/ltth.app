@@ -149,7 +149,7 @@ describe('Stream Monsters creator controls', () => {
       freeEggCooldownSeconds: 86_400,
       unhatchedEggStealEnabled: true,
       unhatchedEggStealGraceSeconds: 600,
-      unhatchedEggStealActivityWindowSeconds: 300,
+      unhatchedEggStealActivityWindowSeconds: 43_200,
       autoHatchActiveViewers: true,
       autoHatchActiveWindowSeconds: 300,
       tutorialHintsEnabled: true,
@@ -198,7 +198,7 @@ describe('Stream Monsters creator controls', () => {
     })).toEqual(expect.objectContaining({
       unhatchedEggStealEnabled: true,
       unhatchedEggStealGraceSeconds: 600,
-      unhatchedEggStealActivityWindowSeconds: 300
+      unhatchedEggStealActivityWindowSeconds: 43_200
     }));
   });
 

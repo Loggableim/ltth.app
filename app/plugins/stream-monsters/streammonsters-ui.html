@@ -408,7 +408,7 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.freeEggCooldownSeconds">Free egg cooldown (seconds)</span><input id="freeEggCooldownSeconds" type="number" min="60" max="31536000" step="1" value="86400"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealEnabled">Allow ready-egg steals</span><input id="unhatchedEggStealEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealGraceSeconds">Ready time before steal (seconds)</span><input id="unhatchedEggStealGraceSeconds" type="number" min="0" max="900" step="1" value="600"></label>
-          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealActivityWindowSeconds">Owner activity window (seconds)</span><input id="unhatchedEggStealActivityWindowSeconds" type="number" min="30" max="86400" step="1" value="300"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.unhatchedEggStealActivityWindowSeconds">Owner activity window (seconds)</span><input id="unhatchedEggStealActivityWindowSeconds" type="number" min="30" max="86400" step="1" value="43200"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintsEnabled">Overlay tutorial hints</span><input id="tutorialHintsEnabled" type="checkbox" checked></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.tutorialHintIntervalSeconds">Hint interval (seconds)</span><input id="tutorialHintIntervalSeconds" type="number" min="60" max="300" step="1" value="90"></label>
         </div>
@@ -1756,7 +1756,7 @@
       giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
     };
     presentationEditorController.load(state.config?.presentation || state.config || {});
-    const storedHatchDurationMs = Number(state.config?.hatchDurationMs ?? 90000);
+    const storedHatchDurationMs = Number(state.config?.hatchDurationMs ?? 60000);
     creatorRuntime.hydrateHatchPresetControl(
       byId('hatchPreset'),
       storedHatchDurationMs,
@@ -1802,7 +1802,7 @@
       state.config?.unhatchedEggStealGraceSeconds ?? 600
     );
     byId('unhatchedEggStealActivityWindowSeconds').value = String(
-      state.config?.unhatchedEggStealActivityWindowSeconds || 300
+      state.config?.unhatchedEggStealActivityWindowSeconds || 43200
     );
     byId('tutorialHintsEnabled').checked =
       state.config?.tutorialHintsEnabled !== false;

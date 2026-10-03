@@ -58,7 +58,7 @@ function createSubject({ nowMs = 1_000, emit = () => {}, isViewerActive = () => 
     config: {
       unhatchedEggStealEnabled: true,
       unhatchedEggStealGraceSeconds: 600,
-      unhatchedEggStealActivityWindowSeconds: 300
+      unhatchedEggStealActivityWindowSeconds: 43_200
     }
   });
   return {
@@ -304,7 +304,7 @@ describe('Stream Monsters unhatched egg steals', () => {
       subject.service.setConfig({
         unhatchedEggStealEnabled: false,
         unhatchedEggStealGraceSeconds: 600,
-        unhatchedEggStealActivityWindowSeconds: 300
+        unhatchedEggStealActivityWindowSeconds: 43_200
       }, 602_000);
 
       expect(subject.service.listPublic()).toEqual([]);
@@ -314,6 +314,52 @@ describe('Stream Monsters unhatched egg steals', () => {
           payload: expect.objectContaining({ reason: 'steal_disabled' })
         })
       ]));
+    } finally {
+      subject.sqlite.close();
+    }
+  });
+
+  test('releases an unhatched egg for adoption after exactly 12 hours (43,200,000 ms) of viewer inactivity', () => {
+    const subject = createSubject({ nowMs: 0 });
+    try {
+      expect(subject.service.config.activityWindowSeconds).toBe(43_200);
+      const activityWindowMs = subject.service.config.activityWindowSeconds * 1_000;
+      expect(activityWindowMs).toBe(43_200_000);
+
+      // Egg becomes ready during viewer interaction; owner is active initially
+      const readyAtMs = activityWindowMs - (subject.service.config.graceSeconds * 1_000);
+      createReadyEgg(subject.store, {
+        eggId: 'egg-12h',
+        userId: 'viewer-idle',
+        readyAtMs,
+        expiresAtMs: activityWindowMs + 86_400_000,
+        displayName: 'Owner A'
+      });
+      subject.service.observeReadyEgg('egg-12h', { observedAtMs: readyAtMs });
+
+      // Owner active within 12-hour window (43,199,999 ms)
+      const beforeResult = subject.service.sweep({
+        isViewerActive: userId => userId === 'viewer-idle',
+        atMs: activityWindowMs - 1
+      });
+      expect(beforeResult.published).toEqual([]);
+      expect(subject.service.listPublic(activityWindowMs - 1)).toEqual([]);
+
+      // Inactivity threshold reached after exactly 12 hours (43,200,000 ms)
+      subject.setNow(activityWindowMs);
+      const afterResult = subject.service.sweep({
+        isViewerActive: () => false,
+        atMs: activityWindowMs
+      });
+      expect(afterResult.published).toHaveLength(1);
+      expect(subject.service.listPublic(activityWindowMs)).toEqual([
+        expect.objectContaining({
+          offerType: 'steal',
+          sourceOwnerDisplayName: 'Owner A',
+          state: 'public',
+          adoptable: true
+        })
+      ]);
     } finally {
       subject.sqlite.close();
     }

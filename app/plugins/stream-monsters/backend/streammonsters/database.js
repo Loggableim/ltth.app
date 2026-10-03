@@ -15,36 +15,62 @@ class StreamMonstersDatabase {
     this.assetRegistry = assetRegistry;
     this.transactionDepth = 0;
     this.afterCommitCallbacks = null;
-  }
-
-  runInTransaction(operation) {
-    return this.runTransaction(operation, false);
-  }
-
-  runInImmediateTransaction(operation) {
-    return this.runTransaction(operation, true);
-  }
-
-  runTransaction(operation, immediate) {
-    if (this.transactionDepth > 0) return operation();
-    const callbacks = [];
-    this.transactionDepth = 1;
-    this.afterCommitCallbacks = callbacks;
-    let result;
     try {
-      const transaction = this.db.transaction(operation);
-      result = immediate && typeof transaction.immediate === 'function'
-        ? transaction.immediate()
-        : transaction();
-    } catch (error) {
+      if (typeof this.db?.pragma === 'function') {
+        this.db.pragma('busy_timeout = 5000');
+      }
+    } catch (_pragmaError) {
+      // Non-fatal: some test stubs don't support pragma
+    }
+  }
+
+  runInTransaction(operation, options) {
+    return this.runTransaction(operation, false, options);
+  }
+
+  runInImmediateTransaction(operation, options) {
+    return this.runTransaction(operation, true, options);
+  }
+
+  runTransaction(operation, immediate, { maxRetries = 5, baseBackoffMs = 25 } = {}) {
+    if (this.transactionDepth > 0) return operation();
+    let attempt = 0;
+    while (true) {
+      const callbacks = [];
+      this.transactionDepth = 1;
+      this.afterCommitCallbacks = callbacks;
+      let result;
+      try {
+        const transaction = this.db.transaction(operation);
+        result = immediate && typeof transaction.immediate === 'function'
+          ? transaction.immediate()
+          : transaction();
+      } catch (error) {
+        this.transactionDepth = 0;
+        this.afterCommitCallbacks = null;
+        const isBusy = Boolean(
+          error?.code === 'SQLITE_BUSY' ||
+          error?.code === 'SQLITE_LOCKED' ||
+          /busy|locked/i.test(error?.message || String(error))
+        );
+        if (isBusy && attempt < maxRetries) {
+          const jitter = Math.floor(Math.random() * baseBackoffMs);
+          const delayMs = baseBackoffMs * (2 ** attempt) + jitter;
+          try {
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs);
+          } catch (_waitError) {
+            // fallback: spin in tight loop if Atomics.wait unavailable
+          }
+          attempt += 1;
+          continue;
+        }
+        throw error;
+      }
       this.transactionDepth = 0;
       this.afterCommitCallbacks = null;
-      throw error;
+      callbacks.forEach(callback => this.invokeAfterCommit(callback));
+      return result;
     }
-    this.transactionDepth = 0;
-    this.afterCommitCallbacks = null;
-    callbacks.forEach(callback => this.invokeAfterCommit(callback));
-    return result;
   }
 
   invokeAfterCommit(callback) {
@@ -66,6 +92,13 @@ class StreamMonstersDatabase {
   }
 
   initialize() {
+    try {
+      if (typeof this.db?.pragma === 'function') {
+        this.db.pragma('busy_timeout = 5000');
+      }
+    } catch (_pragmaError) {
+      // Non-fatal: some test stubs don't support pragma
+    }
     const migrate = () => {
       this.db.exec(`
       CREATE TABLE IF NOT EXISTS streammonsters_eggs (

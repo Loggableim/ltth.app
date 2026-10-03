@@ -61,7 +61,7 @@ describe('Stream Monsters product contract', () => {
       pricing: { type: 'free', amount: 0, currency: 'EUR' }
     }));
     expect(contract.defaults).toEqual(expect.objectContaining({
-      hatchDurationMs: 90_000,
+      hatchDurationMs: 60_000,
       portraitBattleMode: 'takeover-74',
       portraitArenaVariant: 'split-arena',
       portraitProfile: 'tiktok-live-studio-1080x1920'

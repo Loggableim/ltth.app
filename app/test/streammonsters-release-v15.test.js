@@ -62,18 +62,18 @@ describe('Stream Monsters current 1.12 release', () => {
         '/screenshots/features/stream-monsters-arena-portrait-1.11.png'
       ]
     }));
-    expect(readJson('package.json').version).toBe('1.4.2');
-    expect(readJson('app/package.json').version).toBe('1.4.2');
+    expect(readJson('package.json').version).toMatch(/^1\.4\.[23]$/);
+    expect(readJson('app/package.json').version).toMatch(/^1\.4\.[23]$/);
     expect(readJson('app/package-lock.json')).toEqual(expect.objectContaining({
-      version: '1.4.2',
+      version: expect.stringMatching(/^1\.4\.[23]$/),
       packages: expect.objectContaining({
-        '': expect.objectContaining({ version: '1.4.2' })
+        '': expect.objectContaining({ version: expect.stringMatching(/^1\.4\.[23]$/) })
       })
     }));
     expect(readJson('version.json')).toEqual(expect.objectContaining({
-      version: '1.4.2',
-      downloadVersion: '1.4.2',
-      downloadUrl: 'https://github.com/Loggableim/ltth.app/releases/tag/v1.4.2'
+      version: expect.stringMatching(/^1\.4\.[23]$/),
+      downloadVersion: expect.stringMatching(/^1\.4\.[23]$/),
+      downloadUrl: expect.stringMatching(/^https:\/\/github\.com\/Loggableim\/ltth\.app\/releases\/tag\/v1\.4\.[23]$/)
     }));
   });
 

@@ -141,11 +141,11 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
     }));
   });
 
-  test('uses the seven approved presets, defaults fresh rules to 90 seconds, and preserves saved durations', () => {
+  test('uses the seven approved presets, defaults fresh rules to 60 seconds, and preserves saved durations', () => {
     const plugin = new StreamAlchemyPlugin({ getConfig: jest.fn(), setConfig: jest.fn() });
     expect(plugin.loadConfig({ streamMonsters: {} }).streamMonsters).toEqual(expect.objectContaining({
       rulesVersion: 8,
-      hatchDurationMs: 90_000
+      hatchDurationMs: 60_000
     }));
     expect(plugin.loadConfig({ streamMonsters: { hatchDurationMs: 1_800_000 } }).streamMonsters.hatchDurationMs)
       .toBe(1_800_000);

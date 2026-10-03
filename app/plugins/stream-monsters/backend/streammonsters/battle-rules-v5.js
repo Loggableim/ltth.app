@@ -103,7 +103,8 @@ function damageFor(
   effect,
   disableElementAdvantage = false,
   rulesVersion = RULES_VERSION,
-  roundingRoll = null
+  roundingRoll = null,
+  pacingMultiplier = 1
 ) {
   const might = Math.max(0, Number(fighter.stats?.might) || 0);
   const guard = Math.max(0, Number(target.stats?.guard) || 0);
@@ -127,12 +128,22 @@ function damageFor(
     (evolutionStage === 1 || templateRole !== 'sustain')
     ? Number(V8_LEVEL_ONE_ELEMENT_DAMAGE_TUNING[fighter.element]) || 0
     : 0;
-  const rawDamage = effect.power +
+  const galeGuardianScalingBonus = rulesVersion >= V8_RULES_VERSION &&
+    fighter.element === 'Gale' &&
+    templateRole === 'guardian' &&
+    (evolutionStage > 1 || Math.max(1, Number(fighter.level) || 1) > 1)
+    ? 0.75
+    : 0;
+  let rawDamage = effect.power +
     (might * 0.6) -
     (guard * 0.25) -
     weakened +
     elementBonus +
-    levelOneElementBonus;
+    levelOneElementBonus +
+    galeGuardianScalingBonus;
+  if (rulesVersion >= V8_RULES_VERSION && Number.isFinite(pacingMultiplier) && pacingMultiplier !== 1) {
+    rawDamage *= pacingMultiplier;
+  }
   if (rulesVersion >= V8_RULES_VERSION && Number.isFinite(roundingRoll)) {
     const floor = Math.floor(rawDamage);
     const fraction = rawDamage - floor;
@@ -245,7 +256,8 @@ function resolveAction({
   sequence,
   seed,
   disableElementAdvantage = false,
-  rulesVersion = RULES_VERSION
+  rulesVersion = RULES_VERSION,
+  pacingMultiplier = 1
 }) {
   const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState, {
     round,
@@ -334,7 +346,8 @@ function resolveAction({
         effect,
         disableElementAdvantage,
         rulesVersion,
-        damageRoundingRoll
+        damageRoundingRoll,
+        pacingMultiplier
       );
       const count = Math.max(1, Number(effect.hits) || 1);
       if (count > 1) outcomes.push({ type: 'multihit', hits: count });
@@ -503,7 +516,8 @@ function resolveInteractiveRound({
   round = 1,
   state = {},
   disableElementAdvantage = false,
-  rulesVersion = RULES_VERSION
+  rulesVersion = RULES_VERSION,
+  pacingMultiplier = 1
 }) {
   if (!Array.isArray(fighters) || fighters.length !== 2) {
     throw new Error('STREAM_MONSTERS_V5_REQUIRES_TWO_FIGHTERS');
@@ -532,7 +546,8 @@ function resolveInteractiveRound({
       sequence: actions.length + 1,
       seed,
       disableElementAdvantage,
-      rulesVersion
+      rulesVersion,
+      pacingMultiplier
     }));
     if (states[target.monster_id].hp <= 0) break;
   }

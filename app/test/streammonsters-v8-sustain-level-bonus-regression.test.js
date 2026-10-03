@@ -1,6 +1,6 @@
 const {
   resolveInteractiveRound
-} = require('../plugins/streamalchemy/backend/streammonsters/battle-rules-v5');
+} = require('../plugins/stream-monsters/backend/streammonsters/battle-rules-v5');
 
 function totalDamage(templateId, level) {
   return Array.from({ length: 64 }, (_, index) => {

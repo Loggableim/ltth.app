@@ -174,7 +174,7 @@
     const storedDuration = Number(hatchDurationMs);
     const value = Number.isFinite(storedDuration) && storedDuration > 0
       ? Math.round(storedDuration)
-      : 90_000;
+      : 60_000;
     const legacyCustom = !HATCH_PRESETS.includes(value);
     if (legacyCustom) {
       const option = select.ownerDocument.createElement('option');
@@ -267,7 +267,7 @@
         unhatchedEggStealActivityWindowSeconds >= 30 &&
         unhatchedEggStealActivityWindowSeconds <= 86_400
           ? Math.round(unhatchedEggStealActivityWindowSeconds)
-          : 300,
+          : 43_200,
       autoHatchActiveViewers: values.autoHatchActiveViewers !== false,
       autoHatchActiveWindowSeconds: Number.isFinite(autoHatchActiveWindowSeconds) &&
         autoHatchActiveWindowSeconds >= 30 &&
@@ -293,7 +293,7 @@
     if (HATCH_PRESETS.includes(requestedHatchDurationMs)) {
       payload.hatchDurationMs = requestedHatchDurationMs;
     } else if (!Number.isFinite(storedHatchDurationMs) || storedHatchDurationMs <= 0) {
-      payload.hatchDurationMs = 90_000;
+      payload.hatchDurationMs = 60_000;
     }
     return payload;
   }

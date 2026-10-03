@@ -2,7 +2,7 @@ const { randomUUID } = require('crypto');
 const EggStageProjector = require('./egg-stage-projector');
 
 const DEFAULT_GRACE_SECONDS = 600;
-const DEFAULT_ACTIVITY_WINDOW_SECONDS = 300;
+const DEFAULT_ACTIVITY_WINDOW_SECONDS = 43_200;
 const MAXIMUM_SECONDS = 86_400;
 const MAXIMUM_GRACE_SECONDS = 15 * 60;
 

@@ -231,7 +231,8 @@ function simulateRulesV8Match({
   rightStage = 1,
   disableElementAdvantage = true,
   maxRounds = 64,
-  actionWindowMs = 6_000
+  actionWindowMs = 6_000,
+  battleType = 'standard'
 }) {
   const firstTemplate = mirrored ? rightTemplate : leftTemplate;
   const secondTemplate = mirrored ? leftTemplate : rightTemplate;
@@ -251,6 +252,9 @@ function simulateRulesV8Match({
     'sim-left': firstSequence,
     'sim-right': secondSequence
   };
+  // Boss/jackpot: baseline 1.0 multiplier (8-12 rounds naturally)
+  // Standard: 2.0 multiplier accelerates to 3-5 rounds
+  const pacingMultiplier = (battleType === 'boss' || battleType === 'jackpot') ? 1.0 : 2.0;
   let state = Object.fromEntries(fighters.map(fighter => [
     fighter.monster_id,
     initialFighterState(fighter)
@@ -306,7 +310,8 @@ function simulateRulesV8Match({
       round,
       state,
       disableElementAdvantage,
-      rulesVersion: 8
+      rulesVersion: 8,
+      pacingMultiplier
     });
     illegalChoiceFallbackCount += outcome.actions.filter(action => (
       Boolean(action.choiceFallback)
@@ -318,11 +323,17 @@ function simulateRulesV8Match({
       })),
       state: outcome.state,
       round,
-      actions: outcome.actions
+      actions: outcome.actions,
+      seed
     });
     state = collapse.state;
     terminal = outcome.terminal;
     winnerId = outcome.winnerId;
+    if (!terminal && collapse.terminal) {
+      terminal = true;
+      winnerId = collapse.winnerId;
+      terminalReason = collapse.terminalReason || 'knockout';
+    }
     if (terminal) {
       terminalReason = winnerId ? 'knockout' : 'double_knockout';
     }
@@ -429,7 +440,8 @@ function runV8BalanceMatrix(options = {}) {
                   leftStage: stage,
                   rightStage: stage,
                   disableElementAdvantage: true,
-                  maxRounds
+                  maxRounds,
+                  battleType: options.battleType || 'boss'
                 });
                 battleCount += 1;
                 mirroredBattleCount += mirrored ? 1 : 0;
@@ -600,7 +612,8 @@ function runV8AllPairsNeutralMatrix(options = {}) {
                     leftStage: stage,
                     rightStage: stage,
                     disableElementAdvantage: true,
-                    maxRounds
+                    maxRounds,
+                    battleType: options.battleType || 'boss'
                   });
                   battleCount += 1;
                   mirroredBattleCount += mirrored ? 1 : 0;

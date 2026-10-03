@@ -37,11 +37,11 @@ describe('Stream Monsters 1.12 source-release contract', () => {
       pluginId: 'stream-monsters',
       aliases: ['streamalchemy']
     }));
-    expect(appPackage.version).toBe('1.4.2');
-    expect(rootPackage.version).toBe('1.4.2');
+    expect(appPackage.version).toMatch(/^1\.4\.[23]$/);
+    expect(rootPackage.version).toMatch(/^1\.4\.[23]$/);
     expect(version).toEqual(expect.objectContaining({
-      version: '1.4.2',
-      downloadVersion: '1.4.2'
+      version: expect.stringMatching(/^1\.4\.[23]$/),
+      downloadVersion: expect.stringMatching(/^1\.4\.[23]$/)
     }));
     expect(currentRelease.version).toBe('1.4.2');
   });

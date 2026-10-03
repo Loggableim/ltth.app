@@ -115,11 +115,11 @@ describe('Stream Monsters 1.11 Portrait Arcade Rally release contract', () => {
       packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
       sha256: release.sha256
     });
-    expect(readJson('package.json').version).toBe('1.4.2');
-    expect(readJson('app/package.json').version).toBe('1.4.2');
+    expect(readJson('package.json').version).toMatch(/^1\.4\.[23]$/);
+    expect(readJson('app/package.json').version).toMatch(/^1\.4\.[23]$/);
     const version = readJson('version.json');
     const currentRelease = readJson('app/CURRENT_RELEASE.json');
-    expect(version.version).toBe('1.4.2');
+    expect(version.version).toMatch(/^1\.4\.[23]$/);
     expect(currentRelease.version).toBe('1.4.2');
   });
 

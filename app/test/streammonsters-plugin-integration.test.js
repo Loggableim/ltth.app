@@ -352,7 +352,7 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
       unhatchedEggStealEnabled: true,
       unhatchedEggStealGraceSeconds: 600,
-      unhatchedEggStealActivityWindowSeconds: 300
+      unhatchedEggStealActivityWindowSeconds: 43200
     }));
     expect(plugin.streamMonstersUnhatchedEggSteals).toBeDefined();
     expect(plugin.streamMonstersChatCommands.unhatchedEggStealService)

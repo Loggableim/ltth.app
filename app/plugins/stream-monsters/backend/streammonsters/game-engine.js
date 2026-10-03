@@ -43,7 +43,7 @@ class StreamMonstersEngine {
     this.getCommandReference = getCommandReference;
     this.eggStageProjector = new EggStageProjector({ store, now });
     this.config = {
-      hatchDurationMs: 90_000,
+      hatchDurationMs: 60_000,
       eggExpiryMs: 24 * 60 * 60 * 1000,
       chargedHatchMultiplier: 0.75,
       maxUnhatchedEggs: 3,
@@ -123,7 +123,7 @@ class StreamMonstersEngine {
   }
 
   processGift(input = {}) {
-    return this.store.runInTransaction(() => this.processGiftAtomic(input));
+    return this.store.runInImmediateTransaction(() => this.processGiftAtomic(input));
   }
 
   processGiftBatch(input = {}) {
@@ -135,7 +135,7 @@ class StreamMonstersEngine {
     const overflowEssence = Math.min(MAX_OVERFLOW_ESSENCE, Math.floor(
       Math.max(0, repeatCount - MAX_NORMAL_GIFT_REPEATS) / OVERFLOW_REPEATS_PER_ESSENCE
     ));
-    return this.store.runInTransaction(() => {
+    return this.store.runInImmediateTransaction(() => {
       let processedCount = 0;
       for (let index = 0; index < normalRepeatCount; index += 1) {
         const result = this.processGiftAtomic({

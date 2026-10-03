@@ -461,7 +461,7 @@ class StreamMonstersPlugin {
         ownedReadyEggRescueGraceSeconds: 600,
         unhatchedEggStealEnabled: true,
         unhatchedEggStealGraceSeconds: 600,
-        unhatchedEggStealActivityWindowSeconds: 300,
+        unhatchedEggStealActivityWindowSeconds: 43_200,
         autoHatchActiveViewers: true,
         autoHatchActiveWindowSeconds: 300,
         tutorialHintsEnabled: true,

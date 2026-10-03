@@ -586,16 +586,18 @@ class StreamMonstersRoutes {
       // correlation id from the request and injected clock so repeated
       // previews/replays produce the same event graph without weakening the
       // randomness of real match ids.
-      const demoRunId = crypto.createHash('sha256')
-        .update(JSON.stringify({
-          scene: preview.scene,
-          layout: preview.layout,
-          templateId: preview.templateId || null,
-          atMs: this.now(),
-          requestSequence: demoRequestSequence
-        }))
-        .digest('hex')
-        .slice(0, 24);
+      const demoRunId = typeof this.idFactory === 'function'
+        ? this.idFactory()
+        : crypto.createHash('sha256')
+            .update(JSON.stringify({
+              scene: preview.scene,
+              layout: preview.layout,
+              templateId: preview.templateId || null,
+              atMs: this.now(),
+              requestSequence: demoRequestSequence
+            }))
+            .digest('hex')
+            .slice(0, 24);
       const demoMatchId = `demo-match:${demoRunId}`;
       const demoBattleId = demoMatchId;
       const roleScene = /^role_(striker|guardian|trickster|sustain)$/.exec(
@@ -1656,7 +1658,7 @@ class StreamMonstersRoutes {
     const seconds = Number(value);
     return Number.isFinite(seconds) && seconds >= 30 && seconds <= 86_400
       ? Math.round(seconds)
-      : 300;
+      : 43_200;
   }
 
   normalizeTutorialHintIntervalSeconds(value) {
