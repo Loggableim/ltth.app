@@ -3,17 +3,17 @@
 <head data-i18n-title="homeV2.meta.title">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ltth.app bringt TikTok-LIVE-Events, Automatisierung und OBS-Overlays in ein lokales Control Center für Windows.">
+  <meta name="description" content="LTTH ist dein lokales TikTok-LIVE-Tool für Alerts, Automationen, Plugins und OBS-Overlays." data-i18n="homeV2.meta.description" data-i18n-attr="content">
   <meta name="keywords" content="TikTok LIVE Tool, TikTok Streamer Software, OBS Overlay, Streaming Automation, TikTok Alerts, Text to Speech">
   <meta name="author" content="Loggableim">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="ltth.app | TikTok LIVE Control Center">
-  <meta property="og:description" content="Lokale Kontrolle für TikTok LIVE: Events, Automationen, Plugins und OBS-Overlays an einem Ort.">
+  <meta property="og:title" content="LTTH – TikTok LIVE Tool für Alerts & OBS-Overlays" data-i18n="homeV2.meta.title" data-i18n-attr="content">
+  <meta property="og:description" content="LTTH ist dein lokales TikTok-LIVE-Tool für Alerts, Automationen, Plugins und OBS-Overlays." data-i18n="homeV2.meta.description" data-i18n-attr="content">
   <meta property="og:url" content="https://ltth.app">
   <meta property="og:image" content="https://ltth.app/app/public/dashboard-logo.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ltth.app | TikTok LIVE Control Center">
-  <meta name="twitter:description" content="Lokale Kontrolle für TikTok LIVE: Events, Automationen, Plugins und OBS-Overlays an einem Ort.">
+  <meta name="twitter:title" content="LTTH – TikTok LIVE Tool für Alerts & OBS-Overlays" data-i18n="homeV2.meta.title" data-i18n-attr="content">
+  <meta name="twitter:description" content="LTTH ist dein lokales TikTok-LIVE-Tool für Alerts, Automationen, Plugins und OBS-Overlays." data-i18n="homeV2.meta.description" data-i18n-attr="content">
   <meta name="twitter:image" content="https://ltth.app/app/public/dashboard-logo.png">
   <title data-i18n="homeV2.meta.title">ltth.app | TikTok LIVE Control Center</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
@@ -28,16 +28,16 @@
   <link rel="alternate" hreflang="x-default" href="https://ltth.app/">
   <link rel="canonical" href="https://ltth.app/">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/layout.css?v=mobile-20260713d">
-  <link rel="stylesheet" href="/css/home.css?v=mobile-20260713d">
-  <script type="application/ld+json">
+  <link rel="stylesheet" href="/css/layout.css?v=website-target-20261007">
+  <link rel="stylesheet" href="/css/home.css?v=website-target-20261007">
+  <script id="home-software-schema" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "ltth.app",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Windows",
-    "description": "A local control center for TikTok LIVE events, automations, plugins and OBS overlays.",
+    "description": "LTTH is a local TikTok LIVE tool for alerts, automations, plugins and OBS overlays.",
     "creator": { "@type": "Organization", "name": "Loggableim", "url": "https://github.com/Loggableim" },
     "softwareHelp": { "@type": "WebPage", "url": "https://ltth.app/docs.html" }
   }
@@ -51,32 +51,27 @@
       <div class="home-shell home-hero__grid">
         <div class="home-hero__copy">
           <p class="home-eyebrow"><span class="home-status-dot" aria-hidden="true"></span><span data-i18n="homeV2.hero.eyebrow">DEIN TIKTOK LIVE CONTROL CENTER</span></p>
-          <h1 id="home-title"><span data-i18n="homeV2.hero.titleFirst">Dein Stream.</span><span class="home-title-accent" data-i18n="homeV2.hero.titleSecond">Deine Kontrolle.</span></h1>
-          <p class="home-lead" data-i18n="homeV2.hero.description">Verbinde TikTok LIVE, Automationen, Plugins und OBS in einer lokalen Oberfläche, die mit deinem Stream mitdenkt.</p>
+          <h1 id="home-title"><span data-i18n="homeV2.hero.titleFirst">TikTok LIVE</span><span class="home-title-accent"><span data-i18n="homeV2.hero.titleSecond">Alerts &amp; OBS-Overlays</span>.</span></h1>
+          <p class="home-lead" data-i18n="homeV2.hero.description">Steuere Live-Events, Sounds und Plugins in einer lokalen Oberfläche. Verbinde deinen TikTok-LIVE-Stream und gestalte dein Setup mit OBS-Overlays.</p>
           <div class="home-actions">
             <a class="home-button home-button--primary" href="/download.html" data-i18n="homeV2.hero.primaryCta">Downloaden</a>
-            <a class="home-button home-button--secondary" href="/features/" data-i18n="homeV2.hero.secondaryCta">Alle Apps ansehen</a>
+            <a class="home-button home-button--secondary" href="/plugins.html" data-i18n="homeV2.hero.secondaryCta">Plugins entdecken</a>
           </div>
-          <ul class="home-trust-list" aria-label="Product highlights">
+          <ul class="home-trust-list" aria-label="Produktvorteile" data-i18n-aria-label="homeV2.hero.proofLabel">
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span data-i18n="homeV2.hero.proof1">Lokal auf deinem Rechner</span></li>
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span data-i18n="homeV2.hero.proof2">Für Windows und OBS gemacht</span></li>
           </ul>
+          <a class="home-scroll-cue" href="#product-scenes">
+            <span data-i18n="homeV2.hero.scrollCta">LTTH in Aktion ansehen</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </a>
         </div>
-        <div class="home-hero__visual">
-          <div class="home-glow home-glow--one" aria-hidden="true"></div>
-          <div class="home-glow home-glow--two" aria-hidden="true"></div>
-          <div class="home-control-stage" aria-hidden="true">
-            <div class="home-control-stage__top"><span></span><span></span><span></span><b>ltth.app</b><i>LIVE</i></div>
-            <div class="home-control-stage__sidebar"><em></em><em></em><em></em><em></em><em></em></div>
-            <div class="home-control-stage__content">
-              <div class="home-control-stage__connection"><span class="home-control-stage__pulse"></span><div><b>TikTok LIVE</b><small data-i18n="homeV2.controlStage.connectionReady">Connection ready</small></div><strong data-i18n="homeV2.controlStage.connected">Connected</strong></div>
-              <div class="home-control-stage__metrics"><span></span><span></span><span></span></div>
-              <div class="home-control-stage__actions"><b data-i18n="homeV2.controlStage.quickActions">Quick actions</b><div><span></span><span></span><span></span></div></div>
-              <div class="home-control-stage__feed"><span></span><span></span><span></span><span></span></div>
-            </div>
+        <figure class="home-hero__visual home-product-frame" aria-labelledby="hero-product-caption">
+          <div class="home-product-frame__crop">
+            <img src="/screenshots/features/dashboard-main.png" class="home-hero__product-shot" width="1280" height="800" fetchpriority="high" alt="LTTH Dashboard mit TikTok-LIVE-Verbindung und Schnellaktionen" data-i18n-alt="homeV2.images.dashboardAlt">
           </div>
-          <img src="/assets/zwinkern.png" class="home-hero__mascot" width="220" height="220" alt="PupCid mascot winking" data-i18n-alt="homeV2.images.mascotAlt">
-        </div>
+          <figcaption id="hero-product-caption" data-i18n="homeV2.scenes.dashboard.caption">Dashboard mit Live-Verbindung und Schnellaktionen</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -110,13 +105,37 @@
       </div>
     </section>
 
+    <section class="home-product-scenes" id="product-scenes" aria-labelledby="product-scenes-title">
+      <div class="home-shell">
+        <div class="home-section-intro">
+          <p class="home-eyebrow" data-i18n="homeV2.scenes.eyebrow">LTTH IM EINSATZ</p>
+          <h2 id="product-scenes-title" data-i18n="homeV2.scenes.title">Sieh dir LTTH in Aktion an.</h2>
+          <p data-i18n="homeV2.scenes.description">Von Live-Events bis zum OBS-Overlay: Ein Blick auf die Werkzeuge, die deinen Stream verbinden.</p>
+        </div>
+        <div class="home-product-scenes__grid">
+          <article class="home-product-scene">
+            <img src="/screenshots/features/flows-editor.png" width="1280" height="800" loading="lazy" alt="LTTH Flow-Editor mit TikTok-Eventkomponenten und Flow-Einstellungen" data-i18n-alt="homeV2.scenes.flow.alt">
+            <div><h3 data-i18n="homeV2.scenes.flow.title">Events zu Aktionen verbinden</h3><p data-i18n="homeV2.scenes.flow.description">Baue Abläufe aus Gifts, Chat, Bedingungen und deinen gewünschten Reaktionen.</p></div>
+          </article>
+          <article class="home-product-scene">
+            <img src="/screenshots/features/goals-overlay.png" width="1280" height="800" loading="lazy" alt="LTTH Live Goals mit Zielen und OBS-Overlay-Einstellungen" data-i18n-alt="homeV2.scenes.goals.alt">
+            <div><h3 data-i18n="homeV2.scenes.goals.title">Live-Ziele für OBS gestalten</h3><p data-i18n="homeV2.scenes.goals.description">Richte Ziele ein und platziere die passende Browser-Quelle in deiner Szene.</p></div>
+          </article>
+          <article class="home-product-scene">
+            <img src="/screenshots/features/live-fireworks.png" width="1280" height="720" loading="lazy" alt="LTTH Fireworks Plugin mit Live-Effekten" data-i18n-alt="homeV2.scenes.plugins.alt">
+            <div><h3 data-i18n="homeV2.scenes.plugins.title">Plugins passend zum Stream wählen</h3><p data-i18n="homeV2.scenes.plugins.description">Erweitere LTTH um Tools, die du für deinen eigenen Live-Auftritt brauchst.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="home-showcase" aria-labelledby="showcase-title">
       <div class="home-shell home-showcase__grid">
         <div class="home-showcase__copy">
           <p class="home-eyebrow" data-i18n="homeV2.showcase.eyebrow">EIN WORKSPACE, KEIN CHAOS</p>
           <h2 id="showcase-title" data-i18n="homeV2.showcase.title">Gebaut für den Moment, in dem dein Chat loslegt.</h2>
           <p data-i18n="homeV2.showcase.description">Vom Flow-Editor bis zum Browser-Overlay: LTTH hält die Werkzeuge nah an der Live-Situation und macht sie direkt nutzbar.</p>
-          <a class="home-text-link" href="/features/"><span data-i18n="homeV2.showcase.cta">Entdecke die Apps</span> <span aria-hidden="true">→</span></a>
+          <a class="home-text-link" href="/plugins.html"><span data-i18n="homeV2.showcase.cta">Plugins entdecken</span> <span aria-hidden="true">→</span></a>
         </div>
         <figure class="home-showcase-rotator" data-home-rotator aria-label="Plugin showcase">
           <div class="home-rotator-stack">
@@ -172,6 +191,27 @@
       </div>
     </section>
 
+    <section class="home-closed-beta" aria-labelledby="closed-beta-title">
+      <div class="home-shell">
+        <p class="home-eyebrow" data-i18n="homeV2.closedBeta.eyebrow">CLOSED BETA · COMING SOON</p>
+        <h2 id="closed-beta-title" data-i18n="homeV2.closedBeta.title">11 apps in closed beta</h2>
+        <p class="home-closed-beta__description" data-i18n="homeV2.closedBeta.description">These apps are still being developed for local builds. They are not available for public download.</p>
+        <ul class="home-closed-beta__apps" aria-label="Closed beta apps" data-i18n-aria-label="homeV2.closedBeta.listLabel">
+          <li>AnimazingPal</li>
+          <li>Interactive Story</li>
+          <li>Music Bot</li>
+          <li>OSC Bridge</li>
+          <li>Schnorrbecher</li>
+          <li>Sidekick</li>
+          <li>Stream Monsters</li>
+          <li>Talking Heads</li>
+          <li>Visual FX Frame WebGPU</li>
+          <li>WebGPU EmojiRain</li>
+          <li>WebGPU Weather Control</li>
+        </ul>
+      </div>
+    </section>
+
     <section class="home-steps" aria-labelledby="steps-title">
       <div class="home-shell">
         <div class="home-section-intro home-section-intro--center">
@@ -194,7 +234,7 @@
           <h2 id="final-cta-title" data-i18n="homeV2.finalCta.title">Mach aus Live-Events ein Erlebnis.</h2>
           <p data-i18n="homeV2.finalCta.description">Starte mit dem LTTH Windows Launcher und richte dein persönliches Live-Control-Center ein.</p>
           <div class="home-platform-list" aria-label="Available platforms">
-            <span>Windows</span><span>Apple</span><span>Linux</span>
+            <span>Windows</span><span>macOS</span><span>Linux</span>
           </div>
         </div>
         <a class="home-button home-button--primary home-download-button" href="/download.html">
@@ -213,7 +253,30 @@
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       if (window.LTTHLayout) await LTTHLayout.init();
-      if (window.I18n) I18n.init(window.__ltthLang || 'de');
+      if (window.I18n) {
+        await I18n.init(window.__ltthLang || 'de');
+        document.addEventListener('i18nApplied', () => {
+          const schema = document.getElementById('home-software-schema');
+          if (!schema) return;
+          try {
+            const data = JSON.parse(schema.textContent);
+            data.description = I18n.t('homeV2.meta.description');
+            schema.textContent = JSON.stringify(data);
+          } catch (error) {
+            console.warn('Could not localize homepage metadata schema.', error);
+          }
+        });
+        const schema = document.getElementById('home-software-schema');
+        if (schema) {
+          try {
+            const data = JSON.parse(schema.textContent);
+            data.description = I18n.t('homeV2.meta.description');
+            schema.textContent = JSON.stringify(data);
+          } catch (error) {
+            console.warn('Could not localize homepage metadata schema.', error);
+          }
+        }
+      }
     });
   </script>
 </body>

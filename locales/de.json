@@ -1041,16 +1041,19 @@
   },
   "homeV2": {
     "meta": {
-      "title": "ltth.app | TikTok LIVE Control Center"
+      "title": "LTTH – TikTok LIVE Tool für Alerts & OBS-Overlays",
+      "description": "Steuere Live-Events, Sounds und Plugins lokal. Verbinde deinen TikTok-LIVE-Stream und richte OBS-Overlays ein."
     },
     "skip": "Zum Inhalt springen",
     "hero": {
       "eyebrow": "DEIN TIKTOK LIVE CONTROL CENTER",
-      "titleFirst": "Dein Stream.",
-      "titleSecond": "Deine Kontrolle.",
-      "description": "Verbinde TikTok LIVE, Automationen, Plugins und OBS in einer lokalen Oberfläche, die mit deinem Stream mitdenkt.",
+      "titleFirst": "TikTok LIVE",
+      "titleSecond": "Alerts, Automationen und OBS-Overlays",
+      "description": "Steuere Live-Events, Sounds und Plugins in einer lokalen Oberfläche. Verbinde deinen TikTok-LIVE-Stream und gestalte dein Setup mit OBS-Overlays.",
       "primaryCta": "Downloaden",
-      "secondaryCta": "Alle Apps ansehen",
+      "secondaryCta": "Plugins entdecken",
+      "scrollCta": "LTTH in Aktion ansehen",
+      "proofLabel": "Produktvorteile",
       "proof1": "Lokal auf deinem Rechner",
       "proof2": "Für Windows und OBS gemacht",
       "liveLabel": "LIVE"
@@ -1081,7 +1084,30 @@
       "eyebrow": "EIN WORKSPACE, KEIN CHAOS",
       "title": "Gebaut für den Moment, in dem dein Chat loslegt.",
       "description": "Vom Flow-Editor bis zum Browser-Overlay: LTTH hält die Werkzeuge nah an der Live-Situation und macht sie direkt nutzbar.",
-      "cta": "Entdecke die Apps"
+      "cta": "Plugins entdecken"
+    },
+    "scenes": {
+      "eyebrow": "LTTH IM EINSATZ",
+      "title": "Sieh dir LTTH in Aktion an.",
+      "description": "Von Live-Events bis zum OBS-Overlay: Ein Blick auf die Werkzeuge, die deinen Stream verbinden.",
+      "dashboard": {
+        "caption": "Dashboard mit Live-Verbindung und Schnellaktionen"
+      },
+      "flow": {
+        "alt": "LTTH Flow-Editor mit TikTok-Eventkomponenten und Flow-Einstellungen",
+        "title": "Events zu Aktionen verbinden",
+        "description": "Baue Abläufe aus Gifts, Chat, Bedingungen und deinen gewünschten Reaktionen."
+      },
+      "goals": {
+        "alt": "LTTH Live Goals mit Zielen und OBS-Overlay-Einstellungen",
+        "title": "Live-Ziele für OBS gestalten",
+        "description": "Richte Ziele ein und platziere die passende Browser-Quelle in deiner Szene."
+      },
+      "plugins": {
+        "alt": "LTTH Fireworks Plugin mit Live-Effekten",
+        "title": "Plugins passend zum Stream wählen",
+        "description": "Erweitere LTTH um Tools, die du für deinen eigenen Live-Auftritt brauchst."
+      }
     },
     "rotator": {
       "previous": "Vorheriges Plugin",
@@ -1095,6 +1121,12 @@
         "advancedTimer": "Aktuelle Advanced Timer Plugin-Ansicht",
         "hybridshock": "Aktuelle Hybridshock Plugin-Ansicht"
       }
+    },
+    "closedBeta": {
+      "eyebrow": "CLOSED BETA · KOMMT BALD",
+      "title": "11 Apps in geschlossener Beta",
+      "description": "Diese Apps werden weiterhin lokal entwickelt. Sie sind derzeit nicht öffentlich zum Download verfügbar.",
+      "listLabel": "Apps in geschlossener Beta"
     },
     "steps": {
       "eyebrow": "SCHNELL STARTKLAR",
@@ -1115,7 +1147,7 @@
     "finalCta": {
       "eyebrow": "DEIN NÄCHSTER STREAM",
       "title": "Mach aus Live-Events ein Erlebnis.",
-      "description": "Starte mit dem LTTH Windows Launcher und richte dein persönliches Live-Control-Center ein. Auch verfügbar für Apple & Linux.",
+      "description": "Starte mit dem LTTH Windows Launcher und richte dein persönliches Live-Control-Center ein. Auch für macOS und Linux verfügbar.",
       "cta": "Downloaden"
     },
     "images": {
