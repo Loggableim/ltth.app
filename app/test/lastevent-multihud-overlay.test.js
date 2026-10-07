@@ -158,7 +158,7 @@ describe('LastEvent Multi-HUD overlay', () => {
   test('ignores stale all-user responses that resolve after a session reset', async () => {
     const staleResponse = createDeferredUsersResponse({
       success: true,
-      sessionId: 'session-old',
+      overlaySessionToken: 'overlay-old',
       users: {
         follower: { nickname: 'Stale Follower', eventType: 'follower' }
       }
@@ -173,7 +173,7 @@ describe('LastEvent Multi-HUD overlay', () => {
         follower: null
       },
       allResponses: [
-        { json: async () => ({ success: true, sessionId: 'session-current', users: { follower: null } }) },
+        { json: async () => ({ success: true, overlaySessionToken: 'overlay-current', users: { follower: null } }) },
         staleResponse.response
       ]
     });
@@ -185,7 +185,7 @@ describe('LastEvent Multi-HUD overlay', () => {
       selectedEvents: ['follower'],
       rotationIntervalSeconds: 5
     });
-    harness.handlers['lastevent.session.reset']({ sessionId: 'session-new' });
+    harness.handlers['lastevent.session.reset']({ overlaySessionToken: 'overlay-new' });
     staleResponse.resolve();
     await settingsPromise;
     await flushPromises();

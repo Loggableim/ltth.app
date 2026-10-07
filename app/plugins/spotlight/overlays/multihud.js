@@ -19,7 +19,7 @@ let selectedEvents = [];
 let rotationIntervalSeconds = 5;
 let currentEventIndex = 0;
 let rotationTimer = null;
-let sessionId = null;
+let overlaySessionToken = null;
 let requestGeneration = 0;
 let i18nChangeListenerRegistered = false;
 
@@ -52,12 +52,12 @@ socket.on('disconnect', () => {
 socket.on('lastevent.multihud.update', async (data) => {
   console.log('Received multihud update:', data);
   if (data && data.type && data.user) {
-    const incomingSessionId = data.sessionId || data.user.sessionId;
-    if (incomingSessionId && sessionId && incomingSessionId !== sessionId) {
+    const incomingSessionToken = data.overlaySessionToken || data.user.overlaySessionToken;
+    if (incomingSessionToken && overlaySessionToken && incomingSessionToken !== overlaySessionToken) {
       return;
     }
-    if (incomingSessionId) {
-      sessionId = incomingSessionId;
+    if (incomingSessionToken) {
+      overlaySessionToken = incomingSessionToken;
     }
 
     // Update our local event data
@@ -108,8 +108,8 @@ socket.on(`lastevent.settings.${OVERLAY_TYPE}`, async (newSettings) => {
 socket.on('lastevent.session.reset', (payload = {}) => {
   console.log('Session reset - clearing overlay');
   requestGeneration += 1;
-  if (payload.sessionId) {
-    sessionId = payload.sessionId;
+  if (payload.overlaySessionToken) {
+    overlaySessionToken = payload.overlaySessionToken;
   }
   allEventData = {};
   if (renderer && typeof renderer.clear === 'function') {
@@ -175,13 +175,13 @@ async function loadAllEventData() {
       return false;
     }
 
-    if (data.sessionId && sessionId && data.sessionId !== sessionId) {
+    if (data.overlaySessionToken && overlaySessionToken && data.overlaySessionToken !== overlaySessionToken) {
       return false;
     }
     
     if (data.success && data.users) {
-      if (data.sessionId) {
-        sessionId = data.sessionId;
+      if (data.overlaySessionToken) {
+        overlaySessionToken = data.overlaySessionToken;
       }
       allEventData = data.users;
       console.log('Loaded all event data:', allEventData);

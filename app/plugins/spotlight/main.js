@@ -1,3 +1,5 @@
+const { randomBytes } = require('crypto');
+
 /**
  * Spotlight Plugin
  *
@@ -52,6 +54,7 @@ class SpotlightPlugin {
     };
     this.longestStreak = null;
     this.sessionId = this.createSessionId();
+    this.overlaySessionToken = this.createOverlaySessionToken();
     this.lastTerminalStreamSessionToken = null;
     this.chatterPersistDelayMs = 1000;
     this.pendingPersistTimers = new Map();
@@ -160,6 +163,10 @@ class SpotlightPlugin {
     return `session_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   }
 
+  createOverlaySessionToken() {
+    return randomBytes(32).toString('base64url');
+  }
+
   async persistConfig(key, value) {
     const result = await this.api.setConfig(key, value);
     if (result === false) {
@@ -241,6 +248,44 @@ class SpotlightPlugin {
     }
 
     await this.persistConfig(key, dataToSave);
+  }
+
+  projectPublicOverlayUser(userData) {
+    if (!userData || typeof userData !== 'object' || Array.isArray(userData)) {
+      return null;
+    }
+
+    const publicUser = {};
+    for (const field of ['nickname', 'profilePictureUrl', 'eventType', 'label']) {
+      if (Object.prototype.hasOwnProperty.call(userData, field) && userData[field] !== undefined) {
+        publicUser[field] = userData[field];
+      }
+    }
+    publicUser.overlaySessionToken = this.overlaySessionToken;
+
+    if (userData.metadata && typeof userData.metadata === 'object' && !Array.isArray(userData.metadata)) {
+      const metadata = {};
+      for (const field of ['giftName', 'giftPictureUrl', 'giftCount', 'coins']) {
+        if (Object.prototype.hasOwnProperty.call(userData.metadata, field) && userData.metadata[field] !== undefined) {
+          metadata[field] = userData.metadata[field];
+        }
+      }
+      if (Object.keys(metadata).length > 0) {
+        publicUser.metadata = metadata;
+      }
+    }
+
+    return publicUser;
+  }
+
+  broadcastOverlayUser(type, userData) {
+    const publicUser = this.projectPublicOverlayUser(userData);
+    this.api.emit(`lastevent.update.${type}`, publicUser);
+    this.api.emit('lastevent.multihud.update', {
+      type,
+      overlaySessionToken: this.overlaySessionToken,
+      user: publicUser
+    });
   }
 
   schedulePersist(key, value) {
@@ -437,8 +482,7 @@ class SpotlightPlugin {
 
     await this.saveLastUser(type, testUser);
 
-    this.api.emit(`lastevent.update.${type}`, testUser);
-    this.api.emit('lastevent.multihud.update', { type, user: testUser });
+    this.broadcastOverlayUser(type, testUser);
 
     return testUser;
   }
@@ -575,8 +619,8 @@ class SpotlightPlugin {
           return res.status(404).json({ success: false, error: 'Invalid event type' });
         }
 
-        const userData = this.lastUsers[type];
-        res.json({ success: true, type, sessionId: this.sessionId, user: userData });
+        const userData = this.projectPublicOverlayUser(this.lastUsers[type]);
+        res.json({ success: true, type, overlaySessionToken: this.overlaySessionToken, user: userData });
       } catch (error) {
         this.api.log(`Error getting last user for ${req.params.type}: ${error.message}`);
         res.status(500).json({ success: false, error: error.message });
@@ -590,9 +634,9 @@ class SpotlightPlugin {
         const eventTypes = selectedEvents || this.getDisplayEventTypes();
         const allUsers = {};
         for (const type of eventTypes) {
-          allUsers[type] = this.lastUsers[type];
+          allUsers[type] = this.projectPublicOverlayUser(this.lastUsers[type]);
         }
-        res.json({ success: true, sessionId: this.sessionId, users: allUsers });
+        res.json({ success: true, overlaySessionToken: this.overlaySessionToken, users: allUsers });
       } catch (error) {
         this.api.log(`Error getting all last users: ${error.message}`);
         res.status(500).json({ success: false, error: error.message });
@@ -633,7 +677,7 @@ class SpotlightPlugin {
     this.api.registerRoute('POST', '/api/lastevent/reset-session', async (req, res) => {
       try {
         await this.resetSession();
-        res.json({ success: true, sessionId: this.sessionId, message: 'Stream session reset successfully' });
+        res.json({ success: true, message: 'Stream session reset successfully' });
       } catch (error) {
         this.api.log(`Error resetting session: ${error.message}`);
         res.status(500).json({ success: false, error: error.message });
@@ -707,6 +751,7 @@ class SpotlightPlugin {
     this.cancelAllPendingPersists();
 
     this.sessionId = this.createSessionId();
+    this.overlaySessionToken = this.createOverlaySessionToken();
     await this.persistConfig('session:id', this.sessionId);
 
     // Reset in-memory tracking
@@ -730,7 +775,7 @@ class SpotlightPlugin {
 
     // Notify all overlay clients to clear their displays
     this.api.emit('lastevent.session.reset', {
-      sessionId: this.sessionId,
+      overlaySessionToken: this.overlaySessionToken,
       timestamp: new Date().toISOString()
     });
 
@@ -754,10 +799,7 @@ class SpotlightPlugin {
       await this.saveLastUser(overlayType, userData);
 
       // Broadcast to overlays
-      this.api.emit(`lastevent.update.${overlayType}`, userData);
-
-      // Also broadcast to multihud overlay if it's tracking this event type
-      this.api.emit('lastevent.multihud.update', { type: overlayType, user: userData });
+      this.broadcastOverlayUser(overlayType, userData);
 
       const logLevel = this.highVolumeEventTypes.has(overlayType) ? 'debug' : 'info';
       this.api.log(`Updated last ${overlayType}: ${userData.nickname}`, logLevel);
@@ -789,8 +831,7 @@ class SpotlightPlugin {
         label: 'Top Gift'
       };
       await this.saveLastUser('topgift', this.topGift);
-      this.api.emit('lastevent.update.topgift', this.topGift);
-      this.api.emit('lastevent.multihud.update', { type: 'topgift', user: this.topGift });
+      this.broadcastOverlayUser('topgift', this.topGift);
       this.api.log(`New top gift: ${giftName} (${giftCoins} coins) from ${userData.nickname}`);
     }
 
@@ -862,8 +903,7 @@ class SpotlightPlugin {
       };
       
       await this.saveLastUser('giftstreak', streakData);
-      this.api.emit('lastevent.update.giftstreak', streakData);
-      this.api.emit('lastevent.multihud.update', { type: 'giftstreak', user: streakData });
+      this.broadcastOverlayUser('giftstreak', streakData);
     }
   }
 
