@@ -270,7 +270,6 @@ plinko:request-leaderboard
 slot:spin-completed
 unified-queue:request-status
 wheel:request-config
-wheel:spin-complete
 goals:subscribe
 multigoals:subscribe
 tts:playback:ended
