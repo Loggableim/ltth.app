@@ -58,11 +58,14 @@ class InteractiveStoryPlugin {
     this.finalChapterEndPending = false; // Flag to prevent race conditions
     this.lastVoteResults = null; // Store last voting results for manual mode
     
-    // TTS playback tracking
-    // Maps username -> Promise resolve function for tracking TTS playback completion
+    // TTS playback tracking is correlated by the private TTS queue playback ID.
     this.ttsPlaybackResolvers = new Map();
-    this.TTS_USERNAME = 'Story Narrator (interactive-story)'; // Unique identifier for event matching
+    this.ttsPlaybackEarlyEnds = new Map();
+    this._ttsPlaybackTrackingDestroyed = false;
+    this.TTS_USERNAME = 'Story Narrator (interactive-story)';
     this.TTS_PLAYBACK_TIMEOUT_MS = 60000; // 60 seconds timeout for TTS playback
+    this.TTS_EARLY_END_BUFFER_TTL_MS = 5000;
+    this.TTS_EARLY_END_BUFFER_MAX = 32;
     this.TTS_DISABLED_VOTING_BUFFER_MS = 2000; // 2 second buffer before voting when TTS disabled
     
     // Reading time constants (when TTS is disabled)
@@ -545,27 +548,7 @@ class InteractiveStoryPlugin {
   async _speakThroughSystemTTS(text, options = {}) {
     try {
       const config = this._loadConfig();
-      
-      // Create promise that resolves when TTS playback ends
-      const playbackEndPromise = new Promise((resolve, reject) => {
-        // Set timeout to prevent hanging if TTS playback event is never received
-        // Timeout value is configurable via TTS_PLAYBACK_TIMEOUT_MS (default: 60 seconds)
-        // When timeout occurs, promise resolves with { timeout: true } flag
-        const timeout = setTimeout(() => {
-          this.ttsPlaybackResolvers.delete(this.TTS_USERNAME);
-          const timeoutSeconds = this.TTS_PLAYBACK_TIMEOUT_MS / 1000;
-          this.logger.warn(`TTS playback timeout (${timeoutSeconds}s) - continuing anyway`);
-          resolve({ timeout: true });
-        }, this.TTS_PLAYBACK_TIMEOUT_MS);
-        
-        // Store resolver for when tts:playback:ended event arrives
-        // Event is emitted by LTTH TTS plugin when audio playback completes
-        this.ttsPlaybackResolvers.set(this.TTS_USERNAME, (data) => {
-          clearTimeout(timeout);
-          resolve(data); // Resolve with event data (no timeout flag)
-        });
-      });
-      
+
       // Build TTS request payload
       // Let the TTS plugin handle engine selection if not specified
       const requestPayload = {
@@ -603,40 +586,125 @@ class InteractiveStoryPlugin {
       }
       
       this.logger.debug(`TTS request:`, requestPayload);
-      
-      // Call the LTTH TTS plugin API
-      const response = await axios.post('http://localhost:3000/api/tts/speak', requestPayload, {
-        timeout: 30000
+
+      // Use the loaded plugin's private method so the queue ID stays inside the
+      // process and never appears in the public HTTP/socket response contracts.
+      const ttsPlugin = this.api.getPlugin?.('tts');
+      if (!ttsPlugin || typeof ttsPlugin._speakForPlugin !== 'function') {
+        throw new Error('TTS plugin is unavailable for internal narration');
+      }
+      const response = await ttsPlugin._speakForPlugin({
+        ...requestPayload,
+        teamLevel: 999,
+        priority: 50
       });
-      
-      if (response.data && response.data.success) {
+
+      if (response && response.success) {
+        const playbackId = String(response.playbackId || '').trim();
+        if (!playbackId) {
+          throw new Error('TTS queued narration without a playback ID');
+        }
         this.logger.info(`TTS generation started (engine: ${requestPayload.engine || 'default'}, voice: ${requestPayload.voiceId || 'default'}) - waiting for playback to complete`);
-        
-        // Wait for actual playback to complete (via tts:playback:ended event)
-        const playbackResult = await playbackEndPromise;
-        
+
+        if (this._ttsPlaybackTrackingDestroyed) return response;
+
+        const playbackResult = await this._waitForSystemTtsPlayback(playbackId);
+
         // Check if playback timed out (timeout flag is set by promise resolver)
         if (playbackResult?.timeout === true) {
           this.logger.warn('TTS playback timed out but continuing story flow');
         } else if (playbackResult) {
-          this.logger.info('TTS playback completed - continuing story flow');
+          const outcome = playbackResult.rendererOutcome || 'ended';
+          this.logger.info(`TTS playback ${outcome} - continuing story flow`);
         }
-        
-        return response.data;
+
+        return response;
       } else {
-        // Clean up resolver on failure
-        this.ttsPlaybackResolvers.delete(this.TTS_USERNAME);
-        throw new Error('TTS generation failed: ' + (response.data.error || 'Unknown error'));
+        throw new Error('TTS generation failed: ' + (response?.error || 'Unknown error'));
       }
     } catch (error) {
-      // Clean up resolver on error
-      this.ttsPlaybackResolvers.delete(this.TTS_USERNAME);
       this.logger.error(`System TTS error: ${error.message}`);
       
       // Don't throw - allow story to continue even if TTS fails
       // This prevents the entire story system from breaking due to TTS issues
       this.logger.warn('Continuing story without TTS due to error');
       return { success: false, error: error.message };
+    }
+  }
+
+  _isInteractiveStoryPlaybackEvent(data) {
+    return Boolean(
+      data &&
+      String(data.playbackId || '').trim() &&
+      data.username === this.TTS_USERNAME &&
+      data.userId === 'interactive-story' &&
+      data.source === 'interactive-story' &&
+      (data.rendererOutcome === 'ended' || data.rendererOutcome === 'failed')
+    );
+  }
+
+  _handleTtsPlaybackEnded(data) {
+    if (!this._isInteractiveStoryPlaybackEvent(data)) return false;
+    const playbackId = String(data.playbackId).trim();
+    const waiter = this.ttsPlaybackResolvers.get(playbackId);
+    if (waiter) {
+      clearTimeout(waiter.timeout);
+      this.ttsPlaybackResolvers.delete(playbackId);
+      waiter.resolve(data);
+      return true;
+    }
+
+    const previous = this.ttsPlaybackEarlyEnds.get(playbackId);
+    if (previous) clearTimeout(previous.timeout);
+    const timeout = setTimeout(() => {
+      this.ttsPlaybackEarlyEnds.delete(playbackId);
+    }, this.TTS_EARLY_END_BUFFER_TTL_MS);
+    this.ttsPlaybackEarlyEnds.set(playbackId, { data, timeout });
+    while (this.ttsPlaybackEarlyEnds.size > this.TTS_EARLY_END_BUFFER_MAX) {
+      const oldestId = this.ttsPlaybackEarlyEnds.keys().next().value;
+      const oldest = this.ttsPlaybackEarlyEnds.get(oldestId);
+      clearTimeout(oldest.timeout);
+      this.ttsPlaybackEarlyEnds.delete(oldestId);
+    }
+    return true;
+  }
+
+  _waitForSystemTtsPlayback(playbackId) {
+    if (this._ttsPlaybackTrackingDestroyed) {
+      return Promise.resolve({ timeout: true, reason: 'interactive-story-destroyed' });
+    }
+
+    const buffered = this.ttsPlaybackEarlyEnds.get(playbackId);
+    if (buffered) {
+      clearTimeout(buffered.timeout);
+      this.ttsPlaybackEarlyEnds.delete(playbackId);
+      return Promise.resolve(buffered.data);
+    }
+
+    return new Promise(resolve => {
+      const waiter = {
+        resolve,
+        timeout: setTimeout(() => {
+          if (this.ttsPlaybackResolvers.get(playbackId) !== waiter) return;
+          this.ttsPlaybackResolvers.delete(playbackId);
+          const timeoutSeconds = this.TTS_PLAYBACK_TIMEOUT_MS / 1000;
+          this.logger.warn(`TTS playback timeout (${timeoutSeconds}s) - continuing anyway`);
+          resolve({ timeout: true });
+        }, this.TTS_PLAYBACK_TIMEOUT_MS)
+      };
+      this.ttsPlaybackResolvers.set(playbackId, waiter);
+    });
+  }
+
+  _cleanupTtsPlaybackTracking() {
+    for (const [playbackId, waiter] of this.ttsPlaybackResolvers) {
+      clearTimeout(waiter.timeout);
+      waiter.resolve({ timeout: true, reason: 'interactive-story-destroyed' });
+      this.ttsPlaybackResolvers.delete(playbackId);
+    }
+    for (const [playbackId, buffered] of this.ttsPlaybackEarlyEnds) {
+      clearTimeout(buffered.timeout);
+      this.ttsPlaybackEarlyEnds.delete(playbackId);
     }
   }
   
@@ -2244,18 +2312,12 @@ class InteractiveStoryPlugin {
    * Register Socket.io event handlers
    */
   _registerSocketHandlers() {
-    // Listen for TTS playback ended events
-    // Note: registerSocket callback receives (socket, data) where socket is the client socket
-    this.api.registerSocket('tts:playback:ended', (socket, data) => {
-      this.logger.debug(`TTS playback ended event received:`, data);
-      
-      // Check if we have a resolver waiting for this (match by username)
-      if (data && this.ttsPlaybackResolvers.has(data.username)) {
-        const resolve = this.ttsPlaybackResolvers.get(data.username);
-        this.ttsPlaybackResolvers.delete(data.username);
-        resolve(data);
-      }
-    });
+    // Consume the server-side TTS event bus. A client socket relay is untrusted
+    // and cannot prove that a specific queued playback actually ended.
+    if (typeof this.api.on === 'function') {
+      this._ttsPlaybackEndedHandler = data => this._handleTtsPlaybackEnded(data);
+      this.api.on('tts:playback:ended', this._ttsPlaybackEndedHandler);
+    }
     
     this.api.registerSocket('story:force-vote-end', async (socket) => {
       if (this.votingSystem && this.votingSystem.isActive()) {
@@ -2327,6 +2389,13 @@ class InteractiveStoryPlugin {
 
   async destroy() {
     this.api.log('Interactive Story Plugin shutting down...', 'info');
+
+    this._ttsPlaybackTrackingDestroyed = true;
+    this._cleanupTtsPlaybackTracking();
+    if (this._ttsPlaybackEndedHandler) {
+      this.api.removeListener?.('tts:playback:ended', this._ttsPlaybackEndedHandler);
+      this._ttsPlaybackEndedHandler = null;
+    }
 
     // Stop any active voting
     if (this.votingSystem && this.votingSystem.isActive()) {
