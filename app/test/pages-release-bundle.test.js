@@ -27,6 +27,11 @@ function createTempRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-pages-bundle-'));
   fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
   fs.mkdirSync(path.join(root, 'app'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'app', 'config'), { recursive: true });
+  fs.copyFileSync(
+    path.join(__dirname, '..', 'config', 'plugin-release-policy.json'),
+    path.join(root, 'app', 'config', 'plugin-release-policy.json')
+  );
 
   const sourceScript = path.join(__dirname, '..', '..', 'scripts', 'build_pages_bundle.py');
   const targetScript = path.join(root, 'scripts', 'build_pages_bundle.py');
@@ -45,12 +50,24 @@ function createTempRepo() {
       2
     )
   );
-  fs.writeFileSync(path.join(root, 'app', 'ltth_latest.zip'), Buffer.from('zip-bundle'));
+  writeZip(path.join(root, 'app', 'ltth_latest.zip'), {
+    'ltth_1.3.24/app/config/distribution-mode.json': '{"channel":"public"}',
+    'ltth_1.3.24/app/plugins/goals/plugin.json': '{"id":"goals"}'
+  });
   fs.mkdirSync(path.join(root, 'auth'), { recursive: true });
   fs.writeFileSync(path.join(root, 'auth', 'index.html'), '<!doctype html><title>Auth</title>');
   fs.writeFileSync(path.join(root, 'auth', 'bridge.js'), 'window.__authBridge = true;');
 
   return root;
+}
+
+function writeZip(filename, entries) {
+  fs.mkdirSync(path.dirname(filename), { recursive: true });
+  const python = findPythonCommand();
+  const result = spawnSync(python.command, [...python.args, '-c',
+    'import json,sys,zipfile; z=zipfile.ZipFile(sys.argv[1],"w"); [z.writestr(k,v) for k,v in json.loads(sys.argv[2]).items()]; z.close()',
+    filename, JSON.stringify(entries)], { encoding: 'utf8' });
+  if (result.status !== 0) throw new Error(result.stderr || 'ZIP fixture failed');
 }
 
 describe('Pages release bundle', () => {
@@ -98,9 +115,42 @@ describe('Pages release bundle', () => {
       version: '1.3.24',
       notes: 'Release notes'
     });
-    expect(fs.readFileSync(zipPath)).toEqual(Buffer.from('zip-bundle'));
+    expect(fs.readFileSync(zipPath)).toEqual(fs.readFileSync(path.join(tempRoot, 'app', 'ltth_latest.zip')));
     expect(fs.readFileSync(authIndexPath, 'utf8')).toBe('<!doctype html><title>Auth</title>');
     expect(fs.readFileSync(authBridgePath, 'utf8')).toBe('window.__authBridge = true;');
+  });
+
+  it.each(['plugin.json', 'Plugin.json'])('omits closed-beta packages and renamed %s app manifests without deleting local sources', (manifestFilename) => {
+    tempRoot = createTempRepo();
+    const packages = path.join(tempRoot, 'plugin-store', 'packages');
+    writeZip(path.join(packages, 'goals-1.0.0.zip'), {
+      'plugin.json': '{"id":"goals"}',
+      'vendor/public-helper/plugin.json': '{"id":"public_helper"}'
+    });
+    writeZip(path.join(packages, 'music-bot-1.0.0.zip'), { 'plugin.json': '{"id":"music-bot"}' });
+    writeZip(path.join(packages, 'renamed-package.zip'), { 'plugin.json': '{"id":"talking-heads"}' });
+    writeZip(path.join(packages, 'legacy-alias.zip'), { 'plugin.json': '{"id":"streamalchemy"}' });
+    writeZip(path.join(packages, 'closed-dependency.zip'), {
+      'plugin.json': '{"id":"open-wrapper"}',
+      'vendor/talking-heads/plugin.json': '{"id":"talking-heads"}'
+    });
+    writeZip(path.join(tempRoot, 'app', 'ltth_latest.zip'), {
+      'ltth_1.4.4/app/config/distribution-mode.json': '{"channel":"public"}',
+      'ltth_1.4.4/app/plugins/renamed/main.js': 'local code',
+      [`ltth_1.4.4/app/Plugins/renamed/${manifestFilename}`]: '{"id":"public-wrapper","aliases":["streamalchemy"]}'
+    });
+    const output = path.join(tempRoot, 'out');
+    const python = findPythonCommand();
+    const result = spawnSync(python.command, [...python.args,
+      path.join(tempRoot, 'scripts', 'build_pages_bundle.py'), '--output', output], { encoding: 'utf8' });
+    expect(result.status).toBe(0);
+    expect(fs.existsSync(path.join(output, 'plugin-store', 'packages', 'goals-1.0.0.zip'))).toBe(true);
+    for (const name of ['music-bot-1.0.0.zip', 'renamed-package.zip', 'legacy-alias.zip', 'closed-dependency.zip']) {
+      expect(fs.existsSync(path.join(output, 'plugin-store', 'packages', name))).toBe(false);
+      expect(fs.existsSync(path.join(packages, name))).toBe(true);
+    }
+    expect(fs.existsSync(path.join(output, 'app', 'ltth_latest.zip'))).toBe(false);
+    expect(fs.existsSync(path.join(tempRoot, 'app', 'ltth_latest.zip'))).toBe(true);
   });
 
   it('triggers Pages deployments when app release artifacts change', () => {

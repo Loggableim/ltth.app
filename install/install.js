@@ -600,6 +600,9 @@ async function downloadSource() {
 }
 
 async function installDeps() {
+    const configDir = path.join(cfg.dir, 'app', 'config');
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, 'distribution-mode.json'), '{"channel":"public"}\n');
     log('Installiere npm-Abhaengigkeiten...');
     await exec('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], { cwd: path.join(cfg.dir, 'app') });
     ok('Abhaengigkeiten installiert');

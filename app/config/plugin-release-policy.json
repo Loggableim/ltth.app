@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "closedBeta": [
+    "animazingpal",
+    "interactive-story",
+    "music-bot",
+    "osc-bridge",
+    "schnorrbecher",
+    "sidekick",
+    "stream-monsters",
+    "talking-heads",
+    "visual-fx-frame-webgpu",
+    "webgpu-emoji-rain",
+    "webgpu-weather-control"
+  ],
+  "aliases": {
+    "streamalchemy": "stream-monsters"
+  }
+}

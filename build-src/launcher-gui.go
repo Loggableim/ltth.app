@@ -4415,6 +4415,14 @@ func compareVersions(v1, v2 string) int {
 	return 0
 }
 
+func writePublicDistributionMarker(appDir string) error {
+	configDir := filepath.Join(appDir, "config")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(configDir, "distribution-mode.json"), []byte("{\"channel\":\"public\"}\n"), 0644)
+}
+
 func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -4422,13 +4430,141 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	}
 	defer r.Close()
 
+	// Validate the release policy and every app path before writing any bytes.
+	blocked := map[string]bool{}
+	appRoot := ""
+	seenPaths := map[string]bool{}
+	var policyFile *zip.File
+	for _, f := range r.File {
+		name := strings.ReplaceAll(f.Name, "\\", "/")
+		parts := strings.SplitN(name, "/", 3)
+		if len(parts) < 3 || parts[1] != "app" {
+			continue
+		}
+		if appRoot != "" && appRoot != parts[0] {
+			return fmt.Errorf("multiple app roots in update archive")
+		}
+		appRoot = parts[0]
+		key := strings.ToLower(strings.TrimSuffix(parts[2], "/"))
+		if key == "" || seenPaths[key] {
+			return fmt.Errorf("duplicate or empty app archive path")
+		}
+		seenPaths[key] = true
+		if strings.HasPrefix(parts[2], "/") || strings.Contains(parts[2], "//") {
+			return fmt.Errorf("illegal app archive path: %s", f.Name)
+		}
+		for _, segment := range strings.Split(parts[2], "/") {
+			if segment == ".." || segment == "." || strings.Contains(segment, ":") || strings.TrimRight(segment, " .") != segment {
+				return fmt.Errorf("illegal app archive path: %s", f.Name)
+			}
+		}
+		if f.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("symlink in app archive: %s", f.Name)
+		}
+		if parts[2] == "config/plugin-release-policy.json" {
+			if policyFile != nil {
+				return fmt.Errorf("duplicate release policy")
+			}
+			policyFile = f
+		}
+	}
+	if policyFile == nil {
+		return fmt.Errorf("update archive is missing plugin release policy")
+	}
+	policyReader, err := policyFile.Open()
+	if err != nil {
+		return err
+	}
+	policyBytes, err := io.ReadAll(io.LimitReader(policyReader, 65537))
+	policyReader.Close()
+	if err != nil || len(policyBytes) > 65536 {
+		return fmt.Errorf("invalid release policy size")
+	}
+	var policy struct {
+		SchemaVersion int               `json:"schemaVersion"`
+		ClosedBeta    []string          `json:"closedBeta"`
+		Aliases       map[string]string `json:"aliases"`
+	}
+	policyDecoder := json.NewDecoder(bytes.NewReader(policyBytes))
+	policyDecoder.DisallowUnknownFields()
+	if err := policyDecoder.Decode(&policy); err != nil || policy.SchemaVersion != 1 || len(policy.ClosedBeta) == 0 {
+		return fmt.Errorf("invalid plugin release policy")
+	}
+	if err := policyDecoder.Decode(new(interface{})); err != io.EOF {
+		return fmt.Errorf("trailing plugin release policy data")
+	}
+	validID := func(id string) bool {
+		if len(id) == 0 || len(id) > 64 || !(id[0] >= 'a' && id[0] <= 'z' || id[0] >= '0' && id[0] <= '9') {
+			return false
+		}
+		for _, c := range id {
+			if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-' || c == '_') {
+				return false
+			}
+		}
+		return true
+	}
+	for _, id := range policy.ClosedBeta {
+		if !validID(id) || blocked[id] {
+			return fmt.Errorf("invalid closed beta plugin ID")
+		}
+		blocked[id] = true
+	}
+	for alias, canonical := range policy.Aliases {
+		if !validID(alias) || !validID(canonical) || !blocked[canonical] || alias == canonical || blocked[alias] {
+			return fmt.Errorf("invalid closed beta plugin alias")
+		}
+	}
+	for alias := range policy.Aliases {
+		blocked[alias] = true
+	}
+	// Directory names are not identities: vendor/renamed manifests may also
+	// identify a closed plugin. Inspect all manifests before creating files.
+	blockedDirectories := map[string]bool{}
+	for id := range blocked {
+		blockedDirectories[id] = true
+	}
+	for _, f := range r.File {
+		parts := strings.Split(strings.ReplaceAll(f.Name, "\\", "/"), "/")
+		if len(parts) < 5 || parts[1] != "app" || !strings.EqualFold(parts[2], "plugins") || !strings.EqualFold(parts[len(parts)-1], "plugin.json") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		data, err := io.ReadAll(io.LimitReader(rc, 1048577))
+		rc.Close()
+		if err != nil || len(data) > 1048576 {
+			return fmt.Errorf("invalid plugin manifest size: %s", f.Name)
+		}
+		var manifest struct {
+			ID       string   `json:"id"`
+			Aliases  []string `json:"aliases"`
+			Replaces []string `json:"replaces"`
+		}
+		if err := json.Unmarshal(data, &manifest); err != nil || !validID(manifest.ID) {
+			return fmt.Errorf("invalid plugin manifest: %s", f.Name)
+		}
+		identities := append([]string{manifest.ID}, manifest.Aliases...)
+		identities = append(identities, manifest.Replaces...)
+		for _, id := range identities {
+			if !validID(id) {
+				return fmt.Errorf("invalid plugin manifest identity: %s", f.Name)
+			}
+			if blocked[id] {
+				blockedDirectories[strings.ToLower(parts[3])] = true
+			}
+		}
+	}
+
 	cleanDest, err := filepath.Abs(destDir)
 	if err != nil {
 		return err
 	}
 	foundApp := false
 	for _, f := range r.File {
-		name := filepath.ToSlash(f.Name)
+		name := strings.ReplaceAll(f.Name, "\\", "/")
 		parts := strings.SplitN(name, "/", 3)
 		if len(parts) < 3 || parts[1] != "app" {
 			continue
@@ -4438,6 +4574,13 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 			continue
 		}
 		foundApp = true
+		segments := strings.Split(relPath, "/")
+		if len(segments) >= 2 && strings.EqualFold(segments[0], "plugins") && blockedDirectories[strings.ToLower(segments[1])] {
+			continue
+		}
+		if strings.EqualFold(relPath, "config/distribution-mode.json") {
+			continue
+		}
 		targetPath, err := filepath.Abs(filepath.Join(cleanDest, filepath.FromSlash(relPath)))
 		if err != nil {
 			return err
@@ -4477,7 +4620,10 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	if !foundApp {
 		return fmt.Errorf("update archive did not contain app/")
 	}
-	return nil
+	if err := os.MkdirAll(filepath.Join(cleanDest, "config"), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(cleanDest, "config", "distribution-mode.json"), []byte("{\"channel\":\"public\"}\n"), 0644)
 }
 
 // downloadAndApplyUpdate downloads the zipball of the given release and applies
@@ -4563,7 +4709,12 @@ func (l *Launcher) downloadAndApplyUpdate(release *GitHubRelease) error {
 	return nil
 }
 
-func (l *Launcher) ensureAppReadyOnStartup() error {
+func (l *Launcher) ensureAppReadyOnStartup() (result error) {
+	defer func() {
+		if result == nil && l.hasInstalledApp() {
+			result = writePublicDistributionMarker(l.appDir)
+		}
+	}()
 	settings := l.settings
 	if settings.UpdateChannel == "" {
 		settings = l.loadSettings()

@@ -1811,6 +1811,9 @@ function Main {
 
     Log "Windows-Installer uebergibt Installation, Updates und Native-Module-Rebuilds an launcher.exe."
 
+    $distributionConfigDir = Join-Path $LTTHDir 'app/config'
+    New-Item -ItemType Directory -Path $distributionConfigDir -Force | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $distributionConfigDir 'distribution-mode.json'), '{"channel":"public"}', (New-Object System.Text.UTF8Encoding($false)))
     $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     if (-not $launcherStarted) {
         Fail "Launcher konnte nicht gestartet werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte launcher.exe manuell starten und die Launcher-Logs pruefen."

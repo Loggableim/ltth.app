@@ -47,12 +47,15 @@ ROOT_TOP_LEVEL_FILES = [
 ]
 
 APP_EXCLUDED_PREFIXES = (
+    ".codex-isolated/",
     ".playwright-cli/",
     "archive/",
+    "coverage/",
     "logs/",
     "node_modules/",
     "output/",
     "test/",
+    "test_user_configs/",
     "user_configs/",
     "user_data/",
 )
@@ -379,12 +382,53 @@ def build_bundle_zip(
 
 
 def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> None:
+    policy_path = app_root / "config" / "plugin-release-policy.json"
+    policy = json.loads(policy_path.read_text(encoding="utf-8-sig"))
+    closed_beta = policy.get("closedBeta")
+    aliases = policy.get("aliases", {})
+    if (type(policy.get("schemaVersion")) is not int or policy.get("schemaVersion") != 1
+            or set(policy) - {"schemaVersion", "closedBeta", "aliases"} or not isinstance(closed_beta, list)
+            or not all(isinstance(item, str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", item) for item in closed_beta)
+            or len(set(closed_beta)) != len(closed_beta) or not isinstance(aliases, dict)
+            or not all(isinstance(key, str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", key)
+                       and key not in closed_beta and value in closed_beta for key, value in aliases.items())):
+        raise ValueError("Invalid plugin release policy")
+    excluded_ids = set(closed_beta) | set(aliases)
+    excluded_directories = set(excluded_ids)
+    plugins_root = app_root / "plugins"
+    if plugins_root.exists():
+        for plugin_dir in plugins_root.iterdir():
+            if not plugin_dir.is_dir() or plugin_dir.name.lower() in excluded_directories:
+                continue
+            for manifest_path in (path for path in plugin_dir.rglob("*") if path.is_file() and path.name.lower() == "plugin.json"):
+                if manifest_path.stat().st_size > 1024 * 1024:
+                    raise ValueError(f"Plugin manifest too large: {manifest_path}")
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+                manifest_aliases = manifest.get("aliases", [])
+                replaces = manifest.get("replaces", [])
+                if (not isinstance(manifest.get("id"), str)
+                        or not isinstance(manifest_aliases, list) or not isinstance(replaces, list)):
+                    raise ValueError(f"Invalid plugin manifest: {manifest_path}")
+                identities = [manifest["id"], *manifest_aliases, *replaces]
+                if not all(isinstance(identity, str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", identity) for identity in identities):
+                    raise ValueError(f"Invalid plugin manifest identities: {manifest_path}")
+                if any(identity in excluded_ids for identity in identities):
+                    excluded_directories.add(plugin_dir.name.lower())
+                    break
     files = sorted(path for path in app_root.rglob("*") if path.is_file())
     for file_path in files:
         rel_path = file_path.relative_to(app_root).as_posix()
+        parts = rel_path.split("/")
+        if len(parts) >= 2 and parts[0].lower() == "plugins" and parts[1].lower() in excluded_directories:
+            continue
+        if rel_path == "config/distribution-mode.json":
+            continue
         if should_exclude_app_path(rel_path):
             continue
         add_file_entry(archive, file_path, f"{root_prefix}/app/{rel_path}")
+    marker = zipfile.ZipInfo(f"{root_prefix}/app/config/distribution-mode.json", date_time=FIXED_ZIP_DATETIME)
+    marker.compress_type = zipfile.ZIP_DEFLATED
+    archive.writestr(marker, '{"channel":"public"}\n')
 
 
 def should_exclude_app_path(relative_path: str) -> bool:

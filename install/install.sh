@@ -354,6 +354,8 @@ download_source() {
 
 # ---------- Dependencies installieren ----------
 install_deps() {
+    mkdir -p "$LTTH_DIR/app/config"
+    printf '%s\n' '{"channel":"public"}' > "$LTTH_DIR/app/config/distribution-mode.json" || return 1
     log "Installiere npm-Abhaengigkeiten..."
     (cd "$LTTH_DIR/app" && npm install --no-audit --no-fund --loglevel=error)
     ok "Abhaengigkeiten installiert"
