@@ -29,6 +29,15 @@
       .replace(/>/g, '&gt;');
   }
 
+  function isValidEntry(entry) {
+    return !!entry && typeof entry === 'object' && !Array.isArray(entry) &&
+      typeof entry.username === 'string' &&
+      (entry.nickname == null || typeof entry.nickname === 'string') &&
+      (entry.profile_picture_url == null || typeof entry.profile_picture_url === 'string') &&
+      Number.isFinite(entry.score) && entry.score >= 0 &&
+      Number.isInteger(entry.rank) && entry.rank >= 1;
+  }
+
   function normalizeTheme(theme) {
     var value = String(theme || '').toLowerCase();
     if (value === 'day' || value === 'light') return 'day';
@@ -47,6 +56,23 @@
     if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     return String(n);
+  }
+
+  function translate(key, fallback) {
+    if (!window.i18n || typeof window.i18n.t !== 'function') return fallback;
+    var value = window.i18n.t(key);
+    return typeof value === 'string' && value !== key ? value : fallback;
+  }
+
+  function boardLabel(board) {
+    var key = board === 'gifts' ? 'gifts' : 'likes';
+    var icon = board === 'gifts' ? '🎁' : '❤️';
+    var fallback = board === 'gifts' ? 'Gifts' : 'Likes';
+    return icon + ' ' + translate('plugins.toptier.toptier.ui.navigation.' + key, fallback);
+  }
+
+  function noEntriesLabel() {
+    return translate('plugins.toptier.toptier.ui.messages.no_entries', 'Keine Einträge');
   }
 
   // ==============================
@@ -78,11 +104,39 @@
   var previousRenderedScores = {};
   var spotlightIdx = 0;
   var spotlightTimer = null;
+  var overlaySocket = null;
+  var overlayDestroyed = false;
+  var animationTimeouts = new Set();
+
+  function registerSocketHandler(eventName, handler) {
+    if (!overlaySocket) return;
+    overlaySocket.on(eventName, function () {
+      if (overlayDestroyed) return;
+      handler.apply(null, arguments);
+    });
+  }
+
+  function cleanupOverlay(event) {
+    if (event && event.persisted === true) return;
+    if (overlayDestroyed) return;
+    overlayDestroyed = true;
+    if (window.socket === overlaySocket) window.socket = null;
+    if (spotlightTimer !== null) {
+      clearInterval(spotlightTimer);
+      spotlightTimer = null;
+    }
+    animationTimeouts.forEach(function (timeoutId) { clearTimeout(timeoutId); });
+    animationTimeouts.clear();
+    if (overlaySocket && typeof overlaySocket.disconnect === 'function') {
+      overlaySocket.disconnect();
+    }
+  }
 
   // ==============================
   // Init
   // ==============================
   function init() {
+    if (overlayDestroyed) return;
     var container = document.getElementById('tt-root');
     if (!container) return;
 
@@ -95,43 +149,57 @@
     container.style.setProperty('--tt-bg-opacity', String(paramOpacity));
 
     // Connect Socket.IO
-    var socket = io();
+    overlaySocket = io();
+    // Standalone overlays do not load dashboard.js, which normally exposes
+    // the app-owned socket to the shared i18n client.
+    if (!window.socket) window.socket = overlaySocket;
 
-    socket.on('connect', function () {
+    registerSocketHandler('connect', function () {
       if (paramBoard === 'both' || paramBoard === 'likes' || paramBoard === 'combined') {
-        socket.emit('toptier:get-board', { board: 'likes' });
+        overlaySocket.emit('toptier:get-board', { board: 'likes' });
       }
       if (paramBoard === 'both' || paramBoard === 'gifts' || paramBoard === 'combined') {
-        socket.emit('toptier:get-board', { board: 'gifts' });
+        overlaySocket.emit('toptier:get-board', { board: 'gifts' });
       }
     });
 
-    socket.on('toptier:update', function (data) {
-      if (!data) return;
+    registerSocketHandler('toptier:update', function (data) {
+      if (!data || typeof data !== 'object' || Array.isArray(data) ||
+          !['likes', 'gifts'].includes(data.board) || !Array.isArray(data.entries)) return;
+      var validEntries = data.entries.filter(isValidEntry);
+      if (data.entries.length > 0 && validEntries.length === 0) return;
+      var entries = validEntries.slice(0, paramCount);
       if (data.board === 'likes') {
-        likesData = (data.entries || []).slice(0, paramCount);
+        likesData = entries;
       } else if (data.board === 'gifts') {
-        giftsData = (data.entries || []).slice(0, paramCount);
+        giftsData = entries;
       }
       render();
     });
 
-    socket.on('toptier:rank-change', function (data) {
+    registerSocketHandler('toptier:rank-change', function (data) {
       if (!data) return;
       markRankChange(data.username, data.oldRank, data.newRank);
     });
 
-    socket.on('toptier:new-leader', function (data) {
+    registerSocketHandler('toptier:new-leader', function (data) {
       if (!data) return;
       markNewLeader(data.username);
     });
 
-    socket.on('toptier:decay', function (data) {
+    registerSocketHandler('toptier:decay', function (data) {
       if (!data || !data.affectedUsers) return;
       for (var i = 0; i < data.affectedUsers.length; i++) {
         markDecay(data.affectedUsers[i]);
       }
     });
+
+    if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+      window.i18n.onLanguageChange(function () { render(); });
+      if (window.i18n.ready && typeof window.i18n.ready.then === 'function') {
+        window.i18n.ready.then(function () { render(); });
+      }
+    }
 
     // Start spotlight rotation if needed
     if (paramVariant === 'spotlight') {
@@ -143,6 +211,7 @@
   // Render dispatcher
   // ==============================
   function render() {
+    if (overlayDestroyed) return;
     var container = document.getElementById('tt-root');
     if (!container) return;
 
@@ -165,11 +234,11 @@
 
   function getActiveBoards() {
     var boards = [];
-    if (paramBoard === 'likes' || paramBoard === 'both') {
-      boards.push({ type: 'likes', data: likesData, label: '\u2764\uFE0F Likes' });
+    if (paramBoard === 'likes' || paramBoard === 'both' || paramBoard === 'combined') {
+      boards.push({ type: 'likes', data: likesData, label: boardLabel('likes') });
     }
-    if (paramBoard === 'gifts' || paramBoard === 'both') {
-      boards.push({ type: 'gifts', data: giftsData, label: '\uD83C\uDF81 Gifts' });
+    if (paramBoard === 'gifts' || paramBoard === 'both' || paramBoard === 'combined') {
+      boards.push({ type: 'gifts', data: giftsData, label: boardLabel('gifts') });
     }
     return boards;
   }
@@ -203,27 +272,27 @@
 
     // Likes section
     html += '<div class="tt-combined-section tt-combined-likes">';
-    html += '<div class="tt-board-title">\u2764\uFE0F Likes</div>';
+    html += '<div class="tt-board-title">' + escHtml(boardLabel('likes')) + '</div>';
     if (likesData.length) {
       var maxLikes = likesData[0].score || 1;
       for (var i = 0; i < likesData.length; i++) {
         html += renderEntry(likesData[i], maxLikes, 'tt-fade-in ' + staggerClass(i));
       }
     } else {
-      html += '<div class="tt-no-entries">Keine Eintr\u00E4ge</div>';
+      html += '<div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div>';
     }
     html += '</div>';
 
     // Gifts section
     html += '<div class="tt-combined-section tt-combined-gifts">';
-    html += '<div class="tt-board-title">\uD83C\uDF81 Gifts</div>';
+    html += '<div class="tt-board-title">' + escHtml(boardLabel('gifts')) + '</div>';
     if (giftsData.length) {
       var maxGifts = giftsData[0].score || 1;
       for (var j = 0; j < giftsData.length; j++) {
         html += renderEntry(giftsData[j], maxGifts, 'tt-fade-in ' + staggerClass(j));
       }
     } else {
-      html += '<div class="tt-no-entries">Keine Eintr\u00E4ge</div>';
+      html += '<div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div>';
     }
     html += '</div>';
 
@@ -235,7 +304,7 @@
   // 1. Classic List
   // ==============================
   function renderClassicList(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
     var maxScore = entries[0].score || 1;
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     for (var i = 0; i < entries.length; i++) {
@@ -249,7 +318,7 @@
   // 2. Animated Race (FLIP-technique via CSS transitions)
   // ==============================
   function renderAnimatedRace(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
     var maxScore = entries[0].score || 1;
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     for (var i = 0; i < entries.length; i++) {
@@ -265,7 +334,7 @@
   // 3. Spotlight / Rotation
   // ==============================
   function renderSpotlight(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
     var idx = spotlightIdx % entries.length;
     var entry = entries[idx];
     var avatarSrc = entry.profile_picture_url || AVATAR_PLACEHOLDER;
@@ -297,7 +366,7 @@
   // 4. Podium View
   // ==============================
   function renderPodium(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
     var top3 = entries.slice(0, 3);
     var rest = entries.slice(3);
     var maxScore = entries[0].score || 1;
@@ -336,7 +405,7 @@
   // 5. Ticker
   // ==============================
   function renderTicker(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
 
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     html += '<div class="tt-ticker-wrap"><div class="tt-ticker-track">';
@@ -363,7 +432,7 @@
   // 6. Holographic Cards
   // ==============================
   function renderHolographic(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
 
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     html += '<div class="tt-holo-grid">';
@@ -390,7 +459,7 @@
   // 7. Scoreboard
   // ==============================
   function renderScoreboard(boardType, entries, label) {
-    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">Keine Eintr\u00E4ge</div></div>';
+    if (!entries.length) return '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div><div class="tt-no-entries">' + escHtml(noEntriesLabel()) + '</div></div>';
 
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     html += '<table class="tt-scoreboard-table"><thead><tr>';
@@ -466,7 +535,11 @@
           el.classList.remove('tt-score-tick-anim');
           void el.offsetWidth;
           el.style.animation = 'tt-score-tick 0.5s ease-out';
-          setTimeout(function () { el.style.animation = ''; }, 500);
+          var timeoutId = setTimeout(function () {
+            animationTimeouts.delete(timeoutId);
+            if (!overlayDestroyed && el.isConnected) el.style.animation = '';
+          }, 500);
+          animationTimeouts.add(timeoutId);
         }
         previousRenderedScores[key] = score;
       })(scoreEls[i]);
@@ -521,6 +594,9 @@
   // ==============================
   // Boot
   // ==============================
+  window.addEventListener('pagehide', cleanupOverlay);
+  window.addEventListener('beforeunload', cleanupOverlay);
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

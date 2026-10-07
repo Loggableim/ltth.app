@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Overlay onboarding**: Contextual command hints use the active GCCE prefix and aliases, wait behind critical sequences, and never post automatic chat messages.
 - **Release provenance**: Stream Monsters 1.6.0 through 1.10.0 are reproducibly mapped to audited source commits. Every earlier archive remains byte-identical; no tags are claimed by the package map.
 
+## [1.4.4] - 2026-10-07
+
+### Interim release
+
+- Pending event batches are persisted before database closure; SQLite write failures preserve queued data for recovery, and shutdown deadlines do not report false success.
+- Overlay lifecycle and socket ownership fixes preserve BFCache recovery and final cleanup. ViewerXP reward labels follow language changes during active animations without restarting them.
+- Focused CPU regressions and isolated Timer, Spotlight and ViewerXP backend/browser checks passed with temporary profiles and verified cleanup.
+- OBS matrix acceptance and remaining TikTok/LIVE/provider, public tunnel and release installer acceptance are still open. This version is an interim release, not a completed acceptance claim.
+
 ## [1.4.2] - 2026-08-01
 
 ### Changed

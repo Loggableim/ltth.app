@@ -14,7 +14,7 @@ const EMOJI_RAIN_IMAGE_PREFIXES = [
 ];
 
 class DatabaseManager {
-    constructor(dbPath, streamerId = null) {
+    constructor(dbPath, streamerId = null, { registerShutdownHandlers = true } = {}) {
         this.dbPath = dbPath;
         this.streamerId = streamerId; // Current streamer ID for scoped queries
         
@@ -80,7 +80,7 @@ class DatabaseManager {
         this._emojiRainConfigCacheTs = 0;
 
         // Graceful shutdown handler (nur einmal registrieren)
-        this.setupShutdownHandler();
+        if (registerShutdownHandlers) this.setupShutdownHandler();
     }
 
     /**
@@ -118,16 +118,9 @@ class DatabaseManager {
             this.isClosing = true;
 
             try {
-                // Flush mit Timeout-Schutz
-                await Promise.race([
-                    this.flushEventBatch(),
-                    new Promise(resolve => setTimeout(resolve, 3000))
-                ]);
-                if (this.db?.open) {
-                    this.db.close();
-                }
-                this.isClosed = true;
+                this.close();
             } catch (error) {
+                this._isShuttingDown = false;
                 console.error('Error during graceful shutdown:', error);
             }
         };
@@ -1246,13 +1239,22 @@ class DatabaseManager {
     }
 
     flushEventBatch() {
-        if (this.eventBatchQueue.length === 0) {
+        try {
+            this._flushEventBatchSync();
             return Promise.resolve();
+        } catch (error) {
+            return Promise.reject(error);
+        }
+    }
+
+    _flushEventBatchSync() {
+        if (this.eventBatchQueue.length === 0) {
+            return;
         }
 
         if (!this._isDbOpen()) {
             this.eventBatchQueue = [];
-            return Promise.resolve();
+            return;
         }
 
         // Clear timer
@@ -1265,7 +1267,6 @@ class DatabaseManager {
         const eventsToFlush = [...this.eventBatchQueue];
         this.eventBatchQueue = [];
 
-        return new Promise((resolve, reject) => {
             try {
                 // Prepare batch insert
                 const stmt = this.db.prepare(`
@@ -1292,16 +1293,14 @@ class DatabaseManager {
                     }
                 }
                 
-                resolve();
             } catch (error) {
                 console.error('Error flushing event batch:', error);
                 // Bei Fehler zurück in Queue
-                if (!this.isClosing && !this.isClosed) {
+                if (!this.isClosed) {
                     this.eventBatchQueue.unshift(...eventsToFlush);
                 }
-                reject(error);
+                throw error;
             }
-        });
     }
 
     getEventLogs(limit = 100) {
@@ -3027,11 +3026,11 @@ class DatabaseManager {
         }
 
         if (this.eventBatchQueue.length > 0 && this._isDbOpen()) {
-            const flushPromise = this.flushEventBatch();
-            if (flushPromise && typeof flushPromise.catch === 'function') {
-                flushPromise.catch((error) => {
-                    console.error('[Database] Error flushing events during close:', error);
-                });
+            try {
+                this._flushEventBatchSync();
+            } catch (error) {
+                this.isClosing = false;
+                throw error;
             }
         }
 

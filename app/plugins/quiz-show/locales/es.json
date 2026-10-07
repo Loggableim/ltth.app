@@ -205,6 +205,9 @@
           "unknown": "Desconocido",
           "leaderboard_round": "Ronda",
           "leaderboard_round_season": "Ronda + temporada",
+          "joker_50": "Comodín 50:50",
+          "joker_info": "Comodín de información",
+          "joker_time": "Comodín de tiempo",
           "points": "{points} puntos",
           "achievement": "Logro"
         }

@@ -1,10 +1,10 @@
 {
-  "version": "1.4.3",
-  "releaseDate": "2026-09-28",
-  "status": "stable",
-  "downloadVersion": "1.4.3",
-  "downloadNote": "LTTH 1.4.3 delivers SQLite WAL concurrency hardening, persistent live reconnect for Eulerstream, process EPIPE protection, and introduces the enhanced Sidekick plugin with VNyan avatar driver support.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.3",
+  "version": "1.4.4",
+  "releaseDate": "2026-10-07",
+  "status": "beta",
+  "downloadVersion": "1.4.4",
+  "downloadNote": "LTTH 1.4.4 is an interim release with verified shutdown persistence, overlay lifecycle/localization fixes and isolated backend checks. OBS matrix acceptance and remaining live/provider checks are still open.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.4",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,15 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.4.4": {
+      "date": "2026-10-07",
+      "changes": [
+        "FIXED: Pending event batches persist before database closure; failed SQLite writes remain recoverable and shutdown deadlines cannot report false success.",
+        "FIXED: Original overlays retain Socket.IO ownership through BFCache and clean up on final pagehide; ViewerXP reward labels update during active language changes without restarting animations.",
+        "VERIFIED: Focused CPU regressions and isolated Timer, Spotlight and ViewerXP backend/browser checks with temporary profiles and clean process shutdown.",
+        "INTERIM: OBS matrix acceptance and remaining TikTok/LIVE/provider, public tunnel and release installer acceptance remain open."
+      ]
+    },
     "1.4.3": {
       "date": "2026-09-28",
       "changes": [

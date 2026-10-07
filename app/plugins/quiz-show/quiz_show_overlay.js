@@ -15,6 +15,143 @@
     // ============================================
 
     const socket = io();
+    const ownsWindowSocket = !window.socket;
+    if (ownsWindowSocket) window.socket = socket;
+    let destroyed = false;
+    const socketHandlers = [];
+    const ownedTimeouts = new Set();
+    const ownedIntervals = new Set();
+    const ownedAnimationFrames = new Set();
+
+    function scheduleTimeout(callback, delay, ...args) {
+        let timerId;
+        timerId = window.setTimeout(() => {
+            ownedTimeouts.delete(timerId);
+            if (!destroyed) callback(...args);
+        }, delay);
+        ownedTimeouts.add(timerId);
+        return timerId;
+    }
+
+    function scheduleInterval(callback, delay, ...args) {
+        const timerId = window.setInterval(() => {
+            if (!destroyed) callback(...args);
+        }, delay);
+        ownedIntervals.add(timerId);
+        return timerId;
+    }
+
+    function clearTrackedTimeout(timerId) {
+        window.clearTimeout(timerId);
+        ownedTimeouts.delete(timerId);
+    }
+
+    function clearTrackedInterval(timerId) {
+        window.clearInterval(timerId);
+        ownedIntervals.delete(timerId);
+    }
+
+    function requestOwnedAnimationFrame(callback) {
+        let frameId;
+        frameId = window.requestAnimationFrame(timestamp => {
+            ownedAnimationFrames.delete(frameId);
+            if (!destroyed) callback(timestamp);
+        });
+        ownedAnimationFrames.add(frameId);
+        return frameId;
+    }
+
+    function cancelOwnedAnimationFrame(frameId) {
+        window.cancelAnimationFrame(frameId);
+        ownedAnimationFrames.delete(frameId);
+    }
+
+    function registerSocketHandler(event, handler) {
+        const guardedHandler = (...args) => {
+            if (!destroyed) handler(...args);
+        };
+        socket.on(event, guardedHandler);
+        socketHandlers.push({ event, handler: guardedHandler });
+    }
+
+    function destroyRenderer() {
+        if (destroyed) return;
+        destroyed = true;
+        socketHandlers.forEach(({ event, handler }) => socket.off?.(event, handler));
+        socketHandlers.length = 0;
+        ownedTimeouts.forEach(timerId => window.clearTimeout(timerId));
+        ownedIntervals.forEach(timerId => window.clearInterval(timerId));
+        ownedAnimationFrames.forEach(frameId => window.cancelAnimationFrame(frameId));
+        ownedTimeouts.clear();
+        ownedIntervals.clear();
+        ownedAnimationFrames.clear();
+        if (ownsWindowSocket && window.socket === socket) delete window.socket;
+        socket.disconnect?.();
+    }
+
+    function requestPublicState() {
+        if (destroyed) return;
+        socket.emit('quiz-show:get-public-state');
+    }
+
+    function setRuntimeText(element, value) {
+        if (!element) return;
+        element.removeAttribute('data-i18n');
+        element.removeAttribute('data-i18n-fallback');
+        element.textContent = value == null ? '' : String(value);
+    }
+
+    function renderRoundNumberDisplay() {
+        const roundNumberDisplay = document.getElementById('roundNumberDisplay');
+        const roundNumberText = document.getElementById('roundNumberText');
+        if (!roundNumberDisplay || !roundNumberText) return;
+        if (!gameData.showRoundNumber) {
+            roundNumberDisplay.style.display = 'none';
+            return;
+        }
+
+        roundNumberDisplay.style.display = 'flex';
+        const key = gameData.totalRounds > 0
+            ? 'plugins.quiz-show.runtime.overlay.round_of_total'
+            : 'plugins.quiz-show.runtime.overlay.round';
+        const params = gameData.totalRounds > 0
+            ? { current: gameData.currentRound, total: gameData.totalRounds }
+            : { current: gameData.currentRound };
+        const translated = t(key, params);
+        const fallback = gameData.totalRounds > 0
+            ? `${gameData.currentRound} / ${gameData.totalRounds}`
+            : String(gameData.currentRound);
+        setRuntimeText(roundNumberText, translated === key ? fallback : translated);
+    }
+
+    function refreshLocalizedRuntimeLabels() {
+        if (destroyed) return;
+        if (gameData.question) renderRoundNumberDisplay();
+
+        const errorInstruction = document.querySelector('#error-overlay .error-instruction');
+        if (errorInstruction) {
+            setRuntimeText(errorInstruction, t('plugins.quiz-show.runtime.overlay.no_questions_instruction'));
+        }
+
+        if (activeLeaderboardDisplayType) renderLeaderboardType();
+        refreshLocalizedLeaderboardRows();
+        if (activeJokerNotification) renderJokerNotificationUser();
+    }
+
+    window.i18n?.onLanguageChange?.(() => {
+        if (!destroyed) scheduleTimeout(refreshLocalizedRuntimeLabels, 0);
+    });
+    window.i18n?.ready?.then(() => {
+        if (!destroyed) scheduleTimeout(refreshLocalizedRuntimeLabels, 0);
+    }).catch(() => {});
+
+    window.addEventListener('pagehide', event => {
+        if (!event.persisted) destroyRenderer();
+    });
+
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) requestPublicState();
+    });
 
     function isSplitscreenOverlay() {
         return window.location.pathname.toLowerCase().includes('/quiz-show/overlay/splitscreen');
@@ -87,6 +224,8 @@
             position: 'above'
         }
     };
+    let activeLeaderboardDisplayType = null;
+    let activeJokerNotification = null;
 
     // HUD Configuration (loaded from server)
     let hudConfig = {
@@ -527,47 +666,51 @@
     // ============================================
 
     function initializeSocketListeners() {
-        socket.on('connect', () => {
+        registerSocketHandler('connect', () => {
             console.log('Overlay connected to server');
+            requestPublicState();
         });
 
-        socket.on('disconnect', () => {
+        registerSocketHandler('disconnect', () => {
             console.log('Overlay disconnected from server');
         });
 
-        socket.on('quiz-show:state-update', handleStateUpdate);
-        socket.on('quiz-show:time-update', handleTimeUpdate);
-        socket.on('quiz-show:round-ended', handleRoundEnded);
-        socket.on('quiz-show:joker-activated', handleJokerActivated);
-        socket.on('quiz-show:stopped', handleQuizStopped);
-        socket.on('quiz-show:hud-config-updated', handleHUDConfigUpdated);
-        socket.on('quiz-show:play-sound', handlePlaySound);
-        socket.on('quiz-show:quiz-ended', handleQuizEnded);
-        socket.on('quiz-show:brand-kit-updated', handleBrandKitUpdated);
-        socket.on('quiz-show:error', handleQuizError);
-        socket.on('quiz-show:hide-timer', handleHideTimer);
+        registerSocketHandler('quiz-show:state-update', handleStateUpdate);
+        registerSocketHandler('quiz-show:time-update', handleTimeUpdate);
+        registerSocketHandler('quiz-show:round-ended', handleRoundEnded);
+        registerSocketHandler('quiz-show:joker-activated', handleJokerActivated);
+        registerSocketHandler('quiz-show:stopped', handleQuizStopped);
+        registerSocketHandler('quiz-show:hud-config-updated', handleHUDConfigUpdated);
+        registerSocketHandler('quiz-show:play-sound', handlePlaySound);
+        registerSocketHandler('quiz-show:quiz-ended', handleQuizEnded);
+        registerSocketHandler('quiz-show:brand-kit-updated', handleBrandKitUpdated);
+        registerSocketHandler('quiz-show:error', handleQuizError);
+        registerSocketHandler('quiz-show:hide-timer', handleHideTimer);
         
         // NEW: Leaderboard events
-        socket.on('quiz-show:show-leaderboard', handleShowLeaderboard);
-        socket.on('quiz-show:hide-leaderboard', handleHideLeaderboard);
-        socket.on('quiz-show:leaderboard-updated', handleLeaderboardUpdated);
+        registerSocketHandler('quiz-show:show-leaderboard', handleShowLeaderboard);
+        registerSocketHandler('quiz-show:hide-leaderboard', handleHideLeaderboard);
+        registerSocketHandler('quiz-show:leaderboard-updated', handleLeaderboardUpdated);
         
         // NEW: Custom layout events
-        socket.on('quiz-show:layout-updated', handleLayoutUpdated);
+        registerSocketHandler('quiz-show:layout-updated', handleLayoutUpdated);
         
         // NEW: Config update events for real-time UI updates
-        socket.on('quiz-show:config-updated', handleConfigUpdated);
+        registerSocketHandler('quiz-show:config-updated', handleConfigUpdated);
 
         // NEW: Slot machine events
-        socket.on('quiz-show:slot-machine-start', handleSlotMachineStart);
-        socket.on('quiz-show:slot-machine-stop', handleSlotMachineStop);
+        registerSocketHandler('quiz-show:slot-machine-start', handleSlotMachineStart);
+        registerSocketHandler('quiz-show:slot-machine-stop', handleSlotMachineStop);
 
-        socket.on('quiz-show:category-vote-started', handleCategoryVoteUpdate);
-        socket.on('quiz-show:category-vote-update', handleCategoryVoteUpdate);
-        socket.on('quiz-show:category-vote-ended', handleCategoryVoteEnded);
-        socket.on('quiz-show:duel-update', handleDuelUpdate);
-        socket.on('quiz-show:duel-ended', handleDuelUpdate);
-        socket.on('quiz-show:achievement-unlocked', handleAchievementUnlocked);
+        registerSocketHandler('quiz-show:category-vote-started', handleCategoryVoteUpdate);
+        registerSocketHandler('quiz-show:category-vote-update', handleCategoryVoteUpdate);
+        registerSocketHandler('quiz-show:category-vote-ended', handleCategoryVoteEnded);
+        registerSocketHandler('quiz-show:duel-update', handleDuelUpdate);
+        registerSocketHandler('quiz-show:duel-ended', handleDuelUpdate);
+        registerSocketHandler('quiz-show:achievement-unlocked', handleAchievementUnlocked);
+
+        // The socket can connect before DOMContentLoaded registers its handlers.
+        if (socket.connected) requestPublicState();
     }
 
     function handleQuizError(data) {
@@ -634,7 +777,7 @@
         console.log(`State transition: ${currentState} -> ${newState}`);
 
         if (stateTimeout) {
-            clearTimeout(stateTimeout);
+            clearTrackedTimeout(stateTimeout);
             stateTimeout = null;
         }
 
@@ -647,7 +790,7 @@
         switch (state) {
             case States.RUNNING:
                 if (timerAnimation) {
-                    cancelAnimationFrame(timerAnimation);
+                    cancelOwnedAnimationFrame(timerAnimation);
                     timerAnimation = null;
                 }
                 break;
@@ -668,7 +811,7 @@
                 if (timerSection) {
                     timerSection.style.display = '';
                 }
-                stateTimeout = setTimeout(() => {
+                stateTimeout = scheduleTimeout(() => {
                     transitionToState(States.RUNNING);
                 }, 1500 / hudConfig.animationSpeed);
                 break;
@@ -695,17 +838,17 @@
                     timerSectionTimeUp.classList.add('timer-at-zero');
                     
                     // After brief pause, fade out the timer
-                    setTimeout(() => {
+                    scheduleTimeout(() => {
                         timerSectionTimeUp.classList.add('timer-fade-out');
                         
                         // Hide timer after fade-out completes
-                        setTimeout(() => {
+                        scheduleTimeout(() => {
                             timerSectionTimeUp.style.display = 'none';
                             timerSectionTimeUp.classList.remove('timer-at-zero', 'timer-fade-out');
                         }, 500 / hudConfig.animationSpeed);
                     }, 300 / hudConfig.animationSpeed);
                 }
-                stateTimeout = setTimeout(() => {
+                stateTimeout = scheduleTimeout(() => {
                     transitionToState(States.REVEAL_CORRECT);
                 }, 1000 / hudConfig.animationSpeed);
                 break;
@@ -714,7 +857,7 @@
                 revealCorrectAnswer();
                 // Display for configured duration (server enforces minimum 6 seconds, fallback for safety)
                 const displayDuration = (gameData.answerDisplayDuration || 6) * 1000;
-                stateTimeout = setTimeout(() => {
+                stateTimeout = scheduleTimeout(() => {
                     transitionToState(States.WAIT_NEXT);
                 }, displayDuration / hudConfig.animationSpeed);
                 break;
@@ -799,7 +942,7 @@
                     answersSection.style.display = 'none';
                     
                     // Show answers after delay
-                    setTimeout(() => {
+                    scheduleTimeout(() => {
                         // Re-check element exists before manipulation
                         const answersSectionCheck = document.getElementById('answersSection');
                         if (!answersSectionCheck) return;
@@ -822,23 +965,7 @@
             }
             
             // Update round number display
-            const roundNumberDisplay = document.getElementById('roundNumberDisplay');
-            const roundNumberText = document.getElementById('roundNumberText');
-            
-            if (gameData.showRoundNumber && roundNumberDisplay && roundNumberText) {
-                roundNumberDisplay.style.display = 'flex';
-                
-                if (gameData.totalRounds > 0) {
-                    roundNumberText.textContent = t('plugins.quiz-show.runtime.overlay.round_of_total', {
-                        current: gameData.currentRound,
-                        total: gameData.totalRounds
-                    });
-                } else {
-                    roundNumberText.textContent = t('plugins.quiz-show.runtime.overlay.round', { current: gameData.currentRound });
-                }
-            } else if (roundNumberDisplay) {
-                roundNumberDisplay.style.display = 'none';
-            }
+            renderRoundNumberDisplay();
 
             // Update category display
             const categoryDisplay = document.getElementById('categoryDisplay');
@@ -846,7 +973,7 @@
             
             if (gameData.category && categoryDisplay && categoryText) {
                 categoryDisplay.style.display = 'flex';
-                categoryText.textContent = gameData.category;
+                setRuntimeText(categoryText, gameData.category);
             } else if (categoryDisplay) {
                 categoryDisplay.style.display = 'none';
             }
@@ -909,7 +1036,7 @@
         
         // Display final voter icons after TTS
         if (gameData.voterIconsConfig.enabled) {
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 animateVoterIcons();
             }, 500); // Small delay to sync with TTS
         }
@@ -977,7 +1104,7 @@
 
     function displayQuestion(questionText) {
         const questionElement = document.getElementById('questionText');
-        questionElement.textContent = questionText;
+        setRuntimeText(questionElement, questionText);
 
         // Dynamic font sizing
         const length = questionText.length;
@@ -1030,7 +1157,7 @@
             if (currentState !== States.RUNNING && currentState !== States.TIME_LOW) return;
 
             updateTimerDisplay(gameData.timeRemaining, gameData.totalTime);
-            timerAnimation = requestAnimationFrame(animate);
+            timerAnimation = requestOwnedAnimationFrame(animate);
         };
 
         animate();
@@ -1038,7 +1165,7 @@
 
     function stopTimer() {
         if (timerAnimation) {
-            cancelAnimationFrame(timerAnimation);
+            cancelOwnedAnimationFrame(timerAnimation);
             timerAnimation = null;
         }
     }
@@ -1057,7 +1184,7 @@
         const timerValue = document.getElementById('timerValue');
         const timerProgress = document.getElementById('timerProgress');
 
-        if (timerValue) timerValue.textContent = seconds;
+        setRuntimeText(timerValue, seconds);
 
         if (timerProgress) {
             const circumference = 2 * Math.PI * 85;
@@ -1082,7 +1209,7 @@
         const timerBarValue = document.getElementById('timerBarValue');
         const timerBarProgress = document.getElementById('timerBarProgress');
 
-        if (timerBarValue) timerBarValue.textContent = seconds;
+        setRuntimeText(timerBarValue, seconds);
 
         if (timerBarProgress) {
             timerBarProgress.style.width = (percentage * 100) + '%';
@@ -1100,16 +1227,14 @@
 
     function updateNeonTimer(seconds) {
         const timerNeonValue = document.getElementById('timerNeonValue');
-        if (timerNeonValue) {
-            timerNeonValue.textContent = seconds;
-        }
+        setRuntimeText(timerNeonValue, seconds);
     }
 
     function updateRingTimer(seconds, total, percentage) {
         const timerRingValue = document.getElementById('timerRingValue');
         const timerRingProgress = document.getElementById('timerRingProgress');
 
-        if (timerRingValue) timerRingValue.textContent = seconds;
+        setRuntimeText(timerRingValue, seconds);
 
         if (timerRingProgress) {
             const circumference = 2 * Math.PI * 90;
@@ -1138,7 +1263,7 @@
         answersSection.classList.add(animClass);
         timerSection.classList.add(animClass);
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
             questionSection.classList.remove(animClass);
             answersSection.classList.remove(animClass);
             timerSection.classList.remove(animClass);
@@ -1149,7 +1274,7 @@
         const overlay = document.getElementById('overlay-container');
         overlay.classList.add('time-up-flash');
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
             overlay.classList.remove('time-up-flash');
         }, 500 / hudConfig.animationSpeed);
 
@@ -1162,7 +1287,7 @@
         });
 
         // Apply color wipe after timeout
-        setTimeout(() => {
+        scheduleTimeout(() => {
             cards.forEach((card, index) => {
                 if (!card.classList.contains('hidden-answer')) {
                     if (index === gameData.correctIndex) {
@@ -1210,7 +1335,7 @@
 
             // Display for configured duration (server enforces minimum 6 seconds, fallback for safety)
             const displayDuration = (gameData.answerDisplayDuration || 6) * 1000;
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 correctReveal.classList.add('hidden');
                 correctReveal.classList.remove('animate-reveal');
             }, displayDuration / hudConfig.animationSpeed);
@@ -1222,7 +1347,7 @@
                 const wrongAnimClass = `anim-${hudConfig.wrongAnimation}`;
                 card.classList.add('wrong-answer', wrongAnimClass);
 
-                setTimeout(() => {
+                scheduleTimeout(() => {
                     card.classList.remove(wrongAnimClass);
                 }, 500 / hudConfig.animationSpeed);
             }
@@ -1232,6 +1357,22 @@
     // ============================================
     // JOKER FUNCTIONS
     // ============================================
+
+    function renderJokerNotificationUser() {
+        const title = document.getElementById('jokerTitle');
+        const user = document.getElementById('jokerUser');
+        if (!activeJokerNotification) return;
+        const titleKeys = { '50': 'joker_50', info: 'joker_info', time: 'joker_time' };
+        const titleKey = titleKeys[activeJokerNotification.type];
+        if (titleKey && title) {
+            const key = `plugins.quiz-show.runtime.overlay.${titleKey}`;
+            const translatedTitle = t(key);
+            if (translatedTitle !== key) setRuntimeText(title, translatedTitle);
+        }
+        if (user) {
+            setRuntimeText(user, t('plugins.quiz-show.runtime.overlay.by_user', { user: activeJokerNotification.username }));
+        }
+    }
 
     function showJokerNotification(joker) {
         const notification = document.getElementById('jokerNotification');
@@ -1248,15 +1389,17 @@
         const data = jokerData[joker.type] || { icon: '', title: 'Joker' };
 
         icon.textContent = data.icon;
-        title.textContent = data.title;
-        user.textContent = t('plugins.quiz-show.runtime.overlay.by_user', { user: joker.username });
+        setRuntimeText(title, data.title);
+        activeJokerNotification = { type: joker.type, username: joker.username };
+        renderJokerNotificationUser();
 
         notification.classList.remove('hidden');
         notification.classList.add('animate-slide-in');
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
             notification.classList.add('hidden');
             notification.classList.remove('animate-slide-in');
+            activeJokerNotification = null;
         }, 3000 / hudConfig.animationSpeed);
     }
 
@@ -1265,7 +1408,7 @@
 
         indices.forEach((index, i) => {
             if (cards[index]) {
-                setTimeout(() => {
+                scheduleTimeout(() => {
                     cards[index].classList.add('hidden-answer');
                 }, i * 200 / hudConfig.animationSpeed);
             }
@@ -1288,7 +1431,7 @@
         if (cards[index]) {
             cards[index].classList.add('wrong-hint');
 
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 cards[index].classList.add('reveal-line');
             }, 100);
         }
@@ -1307,7 +1450,7 @@
         const timerSection = document.getElementById('timerSection');
         timerSection.classList.add('time-boost');
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
             timerSection.classList.remove('time-boost');
         }, 1000 / hudConfig.animationSpeed);
     }
@@ -1352,15 +1495,15 @@
         `;
 
         // Animate in
-        setTimeout(() => {
+        scheduleTimeout(() => {
             mvpOverlay.style.opacity = '1';
             mvpOverlay.querySelector('div').style.transform = 'scale(1)';
         }, 100);
 
         // Auto-hide after 5 seconds
-        setTimeout(() => {
+        scheduleTimeout(() => {
             mvpOverlay.style.opacity = '0';
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 if (mvpOverlay.parentNode) {
                     mvpOverlay.parentNode.removeChild(mvpOverlay);
                 }
@@ -1399,12 +1542,12 @@
             <div class="error-content" style="transform: scale(0); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
                 <div style="font-size: 3em; margin-bottom: 15px;">❓</div>
                 <h2 style="font-size: 2em; margin-bottom: 10px; font-weight: bold;">${escapeHtml(message)}</h2>
-                <p style="font-size: 1.2em; opacity: 0.9;">${t('plugins.quiz-show.runtime.overlay.no_questions_instruction')}</p>
+            <p class="error-instruction" style="font-size: 1.2em; opacity: 0.9;">${t('plugins.quiz-show.runtime.overlay.no_questions_instruction')}</p>
             </div>
         `;
 
         // Animate in
-        setTimeout(() => {
+        scheduleTimeout(() => {
             errorOverlay.style.opacity = '1';
             const content = errorOverlay.querySelector('.error-content');
             if (content) {
@@ -1413,9 +1556,9 @@
         }, 100);
 
         // Auto-hide after 8 seconds
-        setTimeout(() => {
+        scheduleTimeout(() => {
             errorOverlay.style.opacity = '0';
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 errorOverlay.remove();
             }, 300);
         }, 8000);
@@ -1682,11 +1825,8 @@
             hideQuizSections();
 
             // Set display type
-            leaderboardType.textContent = displayType === 'round'
-                ? t('plugins.quiz-show.runtime.overlay.leaderboard_round')
-                : displayType === 'season'
-                    ? t('plugins.quiz-show.runtime.leaderboard.season')
-                    : t('plugins.quiz-show.runtime.overlay.leaderboard_round_season');
+            activeLeaderboardDisplayType = displayType;
+            renderLeaderboardType();
 
             // Clear existing entries
             leaderboardList.innerHTML = '';
@@ -1714,7 +1854,9 @@
 
                 const points = document.createElement('div');
                 points.className = 'leaderboard-points';
-                points.textContent = t('plugins.quiz-show.runtime.overlay.points', { points: entry.points || 0 });
+                const pointsValue = entry.points || 0;
+                points.dataset.points = String(pointsValue);
+                points.textContent = t('plugins.quiz-show.runtime.overlay.points', { points: pointsValue });
 
                 li.appendChild(rank);
                 li.appendChild(avatar);
@@ -1733,6 +1875,26 @@
         } catch (error) {
             console.error('Error displaying leaderboard:', error);
         }
+    }
+
+    function renderLeaderboardType() {
+        const leaderboardType = document.getElementById('leaderboardType');
+        if (!leaderboardType || !activeLeaderboardDisplayType) return;
+        const key = activeLeaderboardDisplayType === 'round'
+            ? 'plugins.quiz-show.runtime.overlay.leaderboard_round'
+            : activeLeaderboardDisplayType === 'season'
+                ? 'plugins.quiz-show.runtime.leaderboard.season'
+                : 'plugins.quiz-show.runtime.overlay.leaderboard_round_season';
+        setRuntimeText(leaderboardType, t(key));
+    }
+
+    function refreshLocalizedLeaderboardRows() {
+        const leaderboardOverlay = document.getElementById('leaderboardOverlay');
+        if (!leaderboardOverlay || leaderboardOverlay.classList.contains('hidden')) return;
+
+        leaderboardOverlay.querySelectorAll('.leaderboard-points[data-points]').forEach(points => {
+            setRuntimeText(points, t('plugins.quiz-show.runtime.overlay.points', { points: points.dataset.points }));
+        });
     }
 
     function handleHideLeaderboard() {
@@ -1763,6 +1925,14 @@
         }
     }
 
+    function clearCurrentRoundLeaderboard() {
+        const leaderboardOverlay = document.getElementById('leaderboardOverlay');
+        const leaderboardList = document.getElementById('leaderboardList');
+        if (leaderboardList) leaderboardList.innerHTML = '';
+        if (leaderboardOverlay) leaderboardOverlay.classList.add('hidden');
+        showQuizSections();
+    }
+
     // ============================================
     // CURRENT GAME LEADERBOARD
     // ============================================
@@ -1773,19 +1943,23 @@
             const response = await fetch('/api/quiz-show/leaderboard?type=round');
             if (!response.ok) {
                 console.error('Failed to fetch current game leaderboard');
+                clearCurrentRoundLeaderboard();
                 return;
             }
 
             const data = await response.json();
-            if (data.success && data.leaderboard) {
-                handleShowLeaderboard({
-                    leaderboard: data.leaderboard,
-                    displayType: 'round',
-                    animationStyle: 'fade'
-                });
+            if (data?.success !== true || !Array.isArray(data.leaderboard) || data.leaderboard.length === 0) {
+                clearCurrentRoundLeaderboard();
+                return;
             }
+            handleShowLeaderboard({
+                leaderboard: data.leaderboard,
+                displayType: 'round',
+                animationStyle: 'fade'
+            });
         } catch (error) {
             console.error('Error showing current game leaderboard:', error);
+            clearCurrentRoundLeaderboard();
         }
     }
 
@@ -2149,7 +2323,7 @@
                 ? t('plugins.quiz-show.runtime.voting.selected', { category: data.selectedCategory })
                 : t('plugins.quiz-show.runtime.voting.ended');
         }
-        setTimeout(() => {
+        scheduleTimeout(() => {
             if (overlay) overlay.classList.add('hidden');
         }, 3500);
     }
@@ -2164,7 +2338,7 @@
 
         const setText = (id, text) => {
             const element = document.getElementById(id);
-            if (element) element.textContent = text;
+            setRuntimeText(element, text);
         };
         setText('duelLeftLabel', duel.left.label);
         setText('duelLeftScore', duel.left.score);
@@ -2184,7 +2358,7 @@
         title.textContent = award.label || award.id || t('plugins.quiz-show.runtime.overlay.achievement');
         user.textContent = award.username || award.userId || '';
         overlay.classList.remove('hidden');
-        setTimeout(() => {
+        scheduleTimeout(() => {
             overlay.classList.add('hidden');
         }, 5000);
     }
@@ -2210,7 +2384,7 @@
             
             // Clear any existing interval to prevent overlap
             if (slotMachineInterval) {
-                clearInterval(slotMachineInterval);
+                clearTrackedInterval(slotMachineInterval);
                 slotMachineInterval = null;
             }
             
@@ -2222,8 +2396,8 @@
             let currentIndex = 0;
             categoryDisplay.classList.add('spinning');
             
-            slotMachineInterval = setInterval(() => {
-                categoryDisplay.textContent = categories[currentIndex];
+            slotMachineInterval = scheduleInterval(() => {
+                setRuntimeText(categoryDisplay, categories[currentIndex]);
                 currentIndex = (currentIndex + 1) % categories.length;
             }, spinSpeed || 100);
             
@@ -2248,22 +2422,22 @@
             
             // Stop spinning
             if (slotMachineInterval) {
-                clearInterval(slotMachineInterval);
+                clearTrackedInterval(slotMachineInterval);
                 slotMachineInterval = null;
             }
             
             // Remove spinning class and add stopped class
             categoryDisplay.classList.remove('spinning');
             categoryDisplay.classList.add('stopped');
-            categoryDisplay.textContent = selectedCategory;
+            setRuntimeText(categoryDisplay, selectedCategory);
             
             // Wait for stopped animation, then show selected display
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 selectedCategoryText.textContent = selectedCategory;
                 selectedDisplay.classList.remove('hidden');
                 
                 // Hide overlay after showing selection for a moment
-                setTimeout(() => {
+                scheduleTimeout(() => {
                     const slotMachineOverlay = document.getElementById('slotMachineOverlay');
                     slotMachineOverlay.classList.add('hidden');
                     categoryDisplay.classList.remove('stopped');
@@ -2279,15 +2453,6 @@
     // ============================================
     // CLEANUP
     // ============================================
-
-    window.addEventListener('beforeunload', () => {
-        if (timerAnimation) {
-            cancelAnimationFrame(timerAnimation);
-        }
-        if (stateTimeout) {
-            clearTimeout(stateTimeout);
-        }
-    });
 
     console.log('Quiz Show Overlay loaded successfully');
 })();

@@ -21,6 +21,7 @@ const expectedEntrypoints = [
   '/overlay/clarity/stream',
   '/plugins/coinbattle/overlay',
   '/emoji-rain/obs-hud',
+  '/emoji-rain/overlay',
   '/fireworks/overlay',
   '/flame-overlay/overlay',
   '/overlay/game-engine/arena',
@@ -32,6 +33,7 @@ const expectedEntrypoints = [
   '/overlay/game-engine/unified',
   '/overlay/game-engine/wheel',
   '/plugins/gcce/overlay-hud',
+  '/gcce/overlay',
   '/goals/overlay',
   '/goals/multigoal-overlay',
   '/interactive-story/overlay',
@@ -41,7 +43,11 @@ const expectedEntrypoints = [
   '/quiz-show/overlay/splitscreen',
   '/quiz-show/leaderboard-overlay',
   '/overlay/coincup',
+  '/overlay/sidekick/hud',
   '/overlay/spotlight/:type',
+  '/overlay/viewer-xp/level-up',
+  '/overlay/viewer-xp/leaderboard',
+  '/overlay/viewer-xp/xp-bar',
   '/stream-monsters/overlay',
   '/streammonsters/overlay',
   '/streamalchemy/overlay',
@@ -51,6 +57,7 @@ const expectedEntrypoints = [
   '/visual-fx-frame-webgpu/overlay',
   '/weather-control/overlay',
   '/webgpu-emoji-rain/obs-hud',
+  '/webgpu-emoji-rain/overlay',
   '/webgpu-fireworks/overlay',
   '/webgpu-weather-control/overlay'
 ];
@@ -91,10 +98,15 @@ describe('public overlay HTTP registry', () => {
     ['GET', '/socket.io/socket.io.js'],
     ['POST', '/socket.io/'],
     ['GET', '/js/i18n-client.js'],
+
     ['GET', '/js/public-overlay-render-mode.js'],
     ['GET', '/plugins/advanced-timer/overlay/overlay.js'],
     ['GET', '/api/advanced-timer/timers/timer-1'],
     ['GET', '/api/clarityhud/settings/chat'],
+    ['GET', '/api/i18n/translations/de'],
+    ['GET', '/api/emoji-rain/overlay/state'],
+    ['GET', '/api/webgpu-emoji-rain/overlay/state'],
+    ['GET', '/plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js'],
     ['GET', '/plugins/coinbattle/overlay/overlay.js'],
     ['GET', '/uploads/animations/animation-1.webm'],
     ['GET', '/plugins/schnorrbecher/overlay/coincup.js'],
@@ -123,11 +135,52 @@ describe('public overlay HTTP registry', () => {
     expect(isHttpAllowed({ method, pathname })).toBe(true);
   });
 
+  test.each(['/api/webgpu-emoji-rain/config', '/api/webgpu-emoji-rain/user-mappings'])('keeps unprojected WebGPU initial data local-only: %s', pathname => {
+    expect(isHttpAllowed({ method: 'GET', pathname })).toBe(false);
+    expect(isHttpAllowed({ method: 'HEAD', pathname })).toBe(false);
+  });
+
+  test('keeps ClarityHUD multi-stream status local-only', () => {
+    expect(isHttpAllowed({ method: 'GET', pathname: '/api/clarityhud/multi/status' })).toBe(false);
+    expect(isHttpAllowed({ method: 'HEAD', pathname: '/api/clarityhud/multi/status' })).toBe(false);
+  });
+
+  test('allows Quiz Show round leaderboard only with one exact round query on GET/HEAD', () => {
+    for (const method of ['GET', 'HEAD']) {
+      expect(isHttpAllowed({ method, pathname: '/api/quiz-show/leaderboard?type=round' })).toBe(true);
+    }
+    for (const method of ['GET', 'HEAD', 'POST']) {
+      for (const pathname of [
+        '/api/quiz-show/leaderboard',
+        '/api/quiz-show/leaderboard?type=season',
+        '/api/quiz-show/leaderboard?type=round&type=round',
+        '/api/quiz-show/leaderboard?type=round&extra=1',
+        '/api/quiz-show/leaderboard?type=%72ound',
+        '/api/quiz-show/leaderboard?Type=round',
+        '/api/quiz-show/leaderboard?type=round#fragment'
+      ]) {
+        expect(isHttpAllowed({ method, pathname })).toBe(false);
+      }
+    }
+  });
+
+  test('limits EmojiRain overlay state to public GET and HEAD reads', () => {
+    expect(isHttpAllowed({ method: 'GET', pathname: '/api/emoji-rain/overlay/state' })).toBe(true);
+    expect(isHttpAllowed({ method: 'HEAD', pathname: '/api/emoji-rain/overlay/state' })).toBe(true);
+    expect(isHttpAllowed({ method: 'POST', pathname: '/api/emoji-rain/overlay/state' })).toBe(false);
+    expect(isHttpAllowed({ method: 'GET', pathname: '/api/emoji-rain/overlay/metrics' })).toBe(false);
+  });
+
+  test('allows the public EmojiRain opacity update event without opening incoming controls', () => {
+    expect(isOutgoingSocketEventAllowed('emoji-rain:opacity')).toBe(true);
+    expect(isIncomingSocketEventAllowed('emoji-rain:opacity')).toBe(false);
+    expect(isOutgoingSocketEventAllowed('emoji-rain:admin-config')).toBe(false);
+  });
+
   test.each([
     ['GET', '/'],
     ['GET', '/dashboard.html'],
     ['GET', '/api/network/config'],
-    ['GET', '/api/i18n/translations/de'],
     ['GET', '/api/talkingheads/overlay/translations/it'],
     ['POST', '/api/talkingheads/overlay/translations/de'],
     ['POST', '/api/plugins/game-engine/reload'],
@@ -143,7 +196,9 @@ describe('public overlay HTTP registry', () => {
     ['POST', '/api/game-engine/wheel/spin'],
     ['TRACE', '/animation-overlay.html'],
     ['POST', '/api/interactive-story/overlay-positions'],
-    ['POST', '/api/quiz-show/hud-config']
+    ['POST', '/api/quiz-show/hud-config'],
+    ['GET', '/api/quiz-show/leaderboard'],
+    ['HEAD', '/api/quiz-show/leaderboard']
   ])('denies unregistered request %s %s', (method, pathname) => {
     expect(isHttpAllowed({ method, pathname })).toBe(false);
   });
@@ -156,6 +211,9 @@ describe('public overlay Socket.IO registry', () => {
     'game-engine:request-state',
     'goals:subscribe',
     'musicbot:request-status',
+    'sidekick:public-status:request',
+    'viewer-xp:public-profile:request',
+    'viewer-xp:public-leaderboard:request',
     'weather:client-ready',
     'webgpu-weather:overlay-state',
     'talkingheads:avatar:spin:complete'
@@ -189,7 +247,23 @@ describe('public overlay Socket.IO registry', () => {
     'talkingheads:animation:stop',
     'talkingheads:avatar:spawn',
     'talkingheads:avatar:spin:start',
-    'weather:trigger'
+    'weather:trigger',
+    'flame-overlay:config-update',
+    'flame-overlay:trigger',
+    'flame-overlay:clear-triggers',
+    'emoji-rain:opacity',
+    'webgpu-emoji-rain:spawn',
+    'webgpu-emoji-rain:config-update',
+    'sidekick:public-status',
+    'viewer-xp:public-level-up',
+    'viewer-xp:public-update',
+    'viewer-xp:public-profile',
+    'viewer-xp:public-leaderboard'
+    ,'flame-overlay:trigger'
+    ,'flame-overlay:config-update'
+    ,'flame-overlay:clear-triggers'
+    ,'webgpu-emoji-rain:spawn'
+    ,'webgpu-emoji-rain:config-update'
   ])('allows required outgoing event %s', eventName => {
     expect(isOutgoingSocketEventAllowed(eventName)).toBe(true);
   });

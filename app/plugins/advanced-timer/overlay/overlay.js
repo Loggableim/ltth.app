@@ -4,6 +4,8 @@
  */
 
 const socket = typeof io === 'function' ? io() : { on() {}, emit() {}, off() {} };
+const ownsWindowSocket = !window.socket;
+if (ownsWindowSocket) window.socket = socket;
 let timerId = null;
 let timer = null;
 let template = 'default'; // default, progress, circular, minimal, big
@@ -14,12 +16,43 @@ const OVERLAY_TEXT_KEYS = Object.freeze({
     missingDescription: 'plugins.advanced-timer.runtime.overlayMissingDescription',
     missingExample: 'plugins.advanced-timer.runtime.overlayMissingExample',
     timerNotFound: 'plugins.advanced-timer.runtime.overlayTimerNotFound',
+    temporarilyUnavailable: 'plugins.advanced-timer.runtime.overlayTemporarilyUnavailable',
     mostRecent: 'plugins.advanced-timer.runtime.overlayMostRecent',
     previous: 'plugins.advanced-timer.runtime.overlayPrevious'
 });
 
+let overlayDestroyed = false;
+let timerLoadGeneration = 0;
+let timerStateRevision = 0;
+let timerViewRendered = false;
+let initialTimerLoadFinished = false;
+let reconnectRefreshPending = false;
+let socketNeedsRefreshOnConnect = false;
+let socketListenersRegistered = false;
+function handleTimerOverlayPageHide(event) {
+    if (event.persisted || overlayDestroyed) return;
+    overlayDestroyed = true;
+    timerLoadGeneration += 1;
+    if (rotatorState.rotationTimer) {
+        clearInterval(rotatorState.rotationTimer);
+        rotatorState.rotationTimer = null;
+    }
+    window.removeEventListener('pagehide', handleTimerOverlayPageHide);
+    if (ownsWindowSocket && window.socket === socket) delete window.socket;
+    socket.disconnect?.();
+}
+window.addEventListener('pagehide', handleTimerOverlayPageHide);
+window.addEventListener('pageshow', event => {
+    if (event.persisted) requestTimerRefresh();
+});
+
 function overlayText(name, params) {
-    return window.i18n.t(OVERLAY_TEXT_KEYS[name], params);
+    const key = OVERLAY_TEXT_KEYS[name];
+    const translated = window.i18n?.t?.(key, params);
+    if (typeof translated === 'string' && translated !== key) return translated;
+    if (name === 'timerNotFound') return 'Timer not found.';
+    if (name === 'temporarilyUnavailable') return 'Timer temporarily unavailable. Reload the overlay to try again.';
+    return key;
 }
 
 // Get timer ID from URL parameters
@@ -93,6 +126,19 @@ function renderMissingTimer() {
     }
 }
 
+function renderTimerLoadError(textName) {
+    const container = document.getElementById('timer-container');
+    if (!container) return;
+
+    const message = document.createElement('div');
+    message.className = 'timer-overlay-error';
+    message.dataset.i18n = OVERLAY_TEXT_KEYS[textName];
+    message.setAttribute('role', 'alert');
+    message.style.cssText = 'margin:24px auto;padding:16px 22px;max-width:90vw;border-radius:10px;background:rgba(8,12,20,.94);color:#fff;font:600 20px/1.4 sans-serif;text-align:center;';
+    message.textContent = overlayText(textName);
+    container.replaceChildren(message);
+}
+
 // ── Rotator + Threshold state ──────────────────────────────────────
 
 const rotatorState = {
@@ -124,52 +170,129 @@ const SOURCE_EMOJI = {
     rule: '🧠'
 };
 
+async function loadTimerState() {
+    if (!timerId || overlayDestroyed) return false;
+    const generation = ++timerLoadGeneration;
+    const stateRevision = timerStateRevision;
+    const isCurrentRequest = () => !overlayDestroyed
+        && generation === timerLoadGeneration
+        && stateRevision === timerStateRevision;
+
+    try {
+        const response = await fetch(`/api/advanced-timer/timers/${timerId}`);
+        if (!isCurrentRequest()) return false;
+        if (response.status === 404) {
+            timerViewRendered = false;
+            renderTimerLoadError('timerNotFound');
+            return false;
+        }
+        if (!response.ok) {
+            timerViewRendered = false;
+            renderTimerLoadError('temporarilyUnavailable');
+            return false;
+        }
+
+        const data = await response.json();
+        if (!isCurrentRequest()) return false;
+        if (!data.success || !data.timer) {
+            timerViewRendered = false;
+            renderTimerLoadError('temporarilyUnavailable');
+            return false;
+        }
+
+        timer = data.timer;
+        if (!timerViewRendered) {
+            renderTimer();
+            timerViewRendered = true;
+        } else {
+            updateTimerDisplay();
+            updateTimerState();
+        }
+        return true;
+    } catch (error) {
+        if (!isCurrentRequest()) return false;
+        console.error('Error loading timer:', error);
+        timerViewRendered = false;
+        renderTimerLoadError('temporarilyUnavailable');
+        return false;
+    }
+}
+
+function requestTimerRefresh() {
+    if (!timerId || overlayDestroyed) return;
+    if (!initialTimerLoadFinished) {
+        reconnectRefreshPending = true;
+        return;
+    }
+    void loadTimerState();
+}
+
 /**
  * Initialize overlay
  */
 async function init() {
-    if (!timerId) return;
+    if (!timerId || overlayDestroyed) return;
+    setupSocketListeners();
 
-    try {
-        // Fetch timer data
-        const response = await fetch(`/api/advanced-timer/timers/${timerId}`);
-        const data = await response.json();
-
-        if (data.success) {
-            timer = data.timer;
-            renderTimer();
-            setupSocketListeners();
-
-            // Fetch initial rotator + threshold settings so we render correctly on first frame
-            try {
-                const r = await fetch(`/api/advanced-timer/timers/${timerId}/rotator`);
-                const rj = await r.json();
-                if (rj.success && rj.settings) {
-                    rotatorState.settings = rj.settings;
-                    rotatorState.activePosition = rj.settings.position || 'top';
-                }
-            } catch (e) { /* rotator optional */ }
-            try {
-                const t = await fetch(`/api/advanced-timer/timers/${timerId}/threshold-effects`);
-                const tj = await t.json();
-                if (tj.success && tj.settings) {
-                    // No-op: settings are read on demand per event
-                }
-            } catch (e) { /* threshold optional */ }
-        } else {
-            console.error('Timer not found');
-            document.getElementById('timer-container').innerHTML = '<div style="color: white; text-align: center;">' + overlayText('timerNotFound') + '</div>';
-        }
-    } catch (error) {
-        console.error('Error loading timer:', error);
+    let loaded = await loadTimerState();
+    initialTimerLoadFinished = true;
+    if (reconnectRefreshPending && !overlayDestroyed) {
+        reconnectRefreshPending = false;
+        loaded = (await loadTimerState()) || loaded;
     }
+    if (!loaded || overlayDestroyed) return;
+
+    // Fetch initial rotator + threshold settings so we render correctly on first frame
+    try {
+        const r = await fetch(`/api/advanced-timer/timers/${timerId}/rotator`);
+        if (overlayDestroyed) return;
+        const rj = await r.json();
+        if (overlayDestroyed) return;
+        if (rj.success && rj.settings) {
+            rotatorState.settings = rj.settings;
+            rotatorState.activePosition = rj.settings.position || 'top';
+        }
+    } catch (e) { /* rotator optional */ }
+    try {
+        const t = await fetch(`/api/advanced-timer/timers/${timerId}/threshold-effects`);
+        if (overlayDestroyed) return;
+        const tj = await t.json();
+        if (overlayDestroyed) return;
+        if (tj.success && tj.settings) {
+            // No-op: settings are read on demand per event
+        }
+    } catch (e) { /* threshold optional */ }
 }
 
 /**
  * Setup Socket.IO listeners
  */
 function setupSocketListeners() {
-    socket.on('advanced-timer:tick', (data) => {
+    if (overlayDestroyed || socketListenersRegistered) return;
+    socketListenersRegistered = true;
+    socketNeedsRefreshOnConnect = !socket.connected;
+    const on = (event, handler) => socket.on(event, data => {
+        if (overlayDestroyed) return;
+        if (timer && data?.id === timerId && [
+            'advanced-timer:tick', 'advanced-timer:started', 'advanced-timer:paused',
+            'advanced-timer:stopped', 'advanced-timer:completed', 'advanced-timer:reset',
+            'advanced-timer:time-added', 'advanced-timer:time-removed'
+        ].includes(event)) {
+            timerStateRevision += 1;
+        }
+        if (timer) handler(data);
+    });
+
+    socket.on('disconnect', () => {
+        if (!overlayDestroyed) socketNeedsRefreshOnConnect = true;
+    });
+    socket.on('connect', () => {
+        if (overlayDestroyed || !socketNeedsRefreshOnConnect) return;
+        socketNeedsRefreshOnConnect = false;
+        requestTimerRefresh();
+    });
+
+    on('advanced-timer:tick', (data) => {
         if (data.id === timerId) {
             timer.current_value = data.currentValue;
             timer.state = data.state;
@@ -177,35 +300,35 @@ function setupSocketListeners() {
         }
     });
 
-    socket.on('advanced-timer:started', (data) => {
+    on('advanced-timer:started', (data) => {
         if (data.id === timerId) {
             timer.state = 'running';
             updateTimerState();
         }
     });
 
-    socket.on('advanced-timer:paused', (data) => {
+    on('advanced-timer:paused', (data) => {
         if (data.id === timerId) {
             timer.state = 'paused';
             updateTimerState();
         }
     });
 
-    socket.on('advanced-timer:stopped', (data) => {
+    on('advanced-timer:stopped', (data) => {
         if (data.id === timerId) {
             timer.state = 'stopped';
             updateTimerState();
         }
     });
 
-    socket.on('advanced-timer:completed', (data) => {
+    on('advanced-timer:completed', (data) => {
         if (data.id === timerId) {
             timer.state = 'completed';
             updateTimerState();
         }
     });
 
-    socket.on('advanced-timer:reset', (data) => {
+    on('advanced-timer:reset', (data) => {
         if (data.id === timerId) {
             timer.current_value = data.currentValue;
             timer.state = 'stopped';
@@ -214,14 +337,14 @@ function setupSocketListeners() {
         }
     });
 
-    socket.on('advanced-timer:time-added', (data) => {
+    on('advanced-timer:time-added', (data) => {
         if (data.id === timerId) {
             timer.current_value = data.currentValue;
             updateTimerDisplay();
         }
     });
 
-    socket.on('advanced-timer:time-removed', (data) => {
+    on('advanced-timer:time-removed', (data) => {
         if (data.id === timerId) {
             timer.current_value = data.currentValue;
             updateTimerDisplay();
@@ -229,14 +352,14 @@ function setupSocketListeners() {
     });
 
     // ── Rotator snapshot ──
-    socket.on('advanced-timer:rotator-snapshot', (data) => {
+    on('advanced-timer:rotator-snapshot', (data) => {
         if (data && data.timerId === timerId) {
             applyRotatorSnapshot(data);
         }
     });
 
     // ── Threshold effect ──
-    socket.on('advanced-timer:threshold-effect', (data) => {
+    on('advanced-timer:threshold-effect', (data) => {
         if (data && data.timerId === timerId) {
             playThresholdEffect(data);
         }

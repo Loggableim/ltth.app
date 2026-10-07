@@ -15,6 +15,28 @@ function generateId() {
     return `goal_${crypto.randomUUID()}`;
 }
 
+const BOOLEAN_GOAL_FIELDS = new Set([
+    'enabled',
+    'reset_on_stream_end',
+    'firework_enabled',
+    'firework_progress_enabled'
+]);
+
+function normalizeGoalBooleanFields(data) {
+    const normalized = { ...data };
+    for (const field of BOOLEAN_GOAL_FIELDS) {
+        if (!Object.prototype.hasOwnProperty.call(normalized, field)) continue;
+
+        const value = normalized[field];
+        if (value === true || value === 1) normalized[field] = 1;
+        else if (value === false || value === 0) normalized[field] = 0;
+        else {
+            return { error: `${field} must be a boolean or 0/1` };
+        }
+    }
+    return { value: normalized };
+}
+
 class GoalsAPI {
     constructor(plugin) {
         this.plugin = plugin;
@@ -128,9 +150,13 @@ class GoalsAPI {
         // Create new goal
         this.api.registerRoute('post', '/api/goals', async (req, res) => {
             try {
+                const normalizedFlags = normalizeGoalBooleanFields(req.body || {});
+                if (normalizedFlags.error) {
+                    return res.status(400).json({ success: false, error: normalizedFlags.error });
+                }
                 const goalData = {
                     id: generateId(),
-                    ...req.body
+                    ...normalizedFlags.value
                 };
 
                 // Validate required fields
@@ -191,8 +217,12 @@ class GoalsAPI {
         // Update goal
         this.api.registerRoute('put', '/api/goals/:id', (req, res) => {
             try {
+                const normalizedFlags = normalizeGoalBooleanFields(req.body || {});
+                if (normalizedFlags.error) {
+                    return res.status(400).json({ success: false, error: normalizedFlags.error });
+                }
                 const previousGoal = this.db.getGoal(req.params.id);
-                const goal = this.db.updateGoal(req.params.id, req.body);
+                const goal = this.db.updateGoal(req.params.id, normalizedFlags.value);
 
                 // If target_value or on_reach_action changed, update the initial target
                 // This handles manual changes to the target or behavior mode

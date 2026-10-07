@@ -35,12 +35,14 @@ class TimerDatabase {
         try {
             // Get config path manager
             const configPathManager = this.api.getConfigPathManager();
-            if (!configPathManager) {
-                throw new Error('ConfigPathManager not available');
-            }
-            
-            // Get plugin data directory from config path manager
-            const pluginDataDir = configPathManager.getPluginDataDir('advanced-timer');
+            if (!configPathManager) throw new Error('ConfigPathManager not available');
+
+            // Keep all plugin files, including uploaded assets, within the active profile.
+            const pluginDataDir = this.api.getPluginDataDir
+                ? this.api.getPluginDataDir({ profileScoped: true })
+                : configPathManager.getPluginDataDir('advanced-timer', {
+                    profileId: this.api.getActiveProfile?.()
+                });
             
             // Ensure directory exists
             if (!fs.existsSync(pluginDataDir)) {

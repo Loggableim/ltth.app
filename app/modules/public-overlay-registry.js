@@ -18,6 +18,7 @@ const ENTRYPOINTS = Object.freeze([
   '/overlay/clarity/stream',
   '/plugins/coinbattle/overlay',
   '/emoji-rain/obs-hud',
+  '/emoji-rain/overlay',
   '/fireworks/overlay',
   '/flame-overlay/overlay',
   '/overlay/game-engine/arena',
@@ -29,6 +30,7 @@ const ENTRYPOINTS = Object.freeze([
   '/overlay/game-engine/unified',
   '/overlay/game-engine/wheel',
   '/plugins/gcce/overlay-hud',
+  '/gcce/overlay',
   '/goals/overlay',
   '/goals/multigoal-overlay',
   '/interactive-story/overlay',
@@ -38,7 +40,11 @@ const ENTRYPOINTS = Object.freeze([
   '/quiz-show/overlay/splitscreen',
   '/quiz-show/leaderboard-overlay',
   '/overlay/coincup',
+  '/overlay/sidekick/hud',
   '/overlay/spotlight/:type',
+  '/overlay/viewer-xp/level-up',
+  '/overlay/viewer-xp/leaderboard',
+  '/overlay/viewer-xp/xp-bar',
   '/stream-monsters/overlay',
   '/streammonsters/overlay',
   '/streamalchemy/overlay',
@@ -48,6 +54,7 @@ const ENTRYPOINTS = Object.freeze([
   '/visual-fx-frame-webgpu/overlay',
   '/weather-control/overlay',
   '/webgpu-emoji-rain/obs-hud',
+  '/webgpu-emoji-rain/overlay',
   '/webgpu-fireworks/overlay',
   '/webgpu-weather-control/overlay'
 ]);
@@ -65,10 +72,11 @@ function pattern(expression) {
   return value => expression.test(value);
 }
 
-function rule(methods, matcher) {
+function rule(methods, matcher, options = {}) {
   return Object.freeze({
     methods: new Set(methods),
-    matcher
+    matcher,
+    ...(options.exactQuery !== undefined ? { exactQuery: options.exactQuery } : {})
   });
 }
 
@@ -76,6 +84,7 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/socket.io/socket.io.js')),
   rule(['GET', 'POST'], exact('/socket.io/')),
   rule(['GET', 'HEAD'], exact('/js/i18n-client.js')),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/i18n\/translations\/(?:de|en|es|fr)$/)),
   rule(['GET', 'HEAD'], exact('/js/public-overlay-render-mode.js')),
   rule(['GET', 'HEAD'], exact('/js/matter.min.js')),
   rule(['GET', 'HEAD'], exact('/css/themes.css')),
@@ -101,7 +110,6 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/clarityhud\/overlays\/(?:chat|full|multi|stream)\.js$/)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/clarityhud\/settings\/(?:chat|full|multi|stream)$/)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/clarityhud\/state\/(?:chat|full)$/)),
-  rule(['GET', 'HEAD'], exact('/api/clarityhud/multi/status')),
 
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/coinbattle\/overlay\/(?:gpu-animations\.css|overlay\.js|styles\.css|template-manager\.js|victory-animations\.css)$/)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/plugins\/coinbattle\/leaderboard\/(?:lifetime|season|weekly)$/)),
@@ -110,12 +118,18 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/js/emoji-rain-engine.js')),
   rule(['GET', 'HEAD'], exact('/js/emoji-rain-obs-hud.js')),
   rule(['GET', 'HEAD'], exact('/api/emoji-rain/config')),
+  rule(['GET', 'HEAD'], exact('/api/emoji-rain/overlay/state')),
   rule(['GET', 'HEAD'], exact('/api/emoji-rain/user-mappings')),
+  rule(['GET', 'HEAD'], pattern(/^\/emoji-rain\/obs-hud\/(?:emojiregen|herzballons|geschenkeregen|emojiregen-geschenkeregen|emojis|hearts|gifts|emoji-gifts)$/)),
 
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/fireworks\/gpu\/(?:engine|particle-system-soa|webgl-particle-engine)\.js$/)),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/fireworks\/audio\/[A-Za-z0-9._ ,()-]+\.mp3$/i)),
 
   rule(['GET', 'HEAD'], exact('/api/flame-overlay/config')),
+  rule(['GET', 'HEAD'], exact('/api/sidekick/public-status')),
+  rule(['GET', 'HEAD'], exact('/api/sidekick/public-events')),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/milestone-leaderboard\/vendor\/viewer-leaderboard\/overlays\/(?:xp-bar|leaderboard|level-up)\.html$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/viewer-leaderboard\/(?:viewer-xp-i18n\.js|locales\/(?:de|en|es|fr)\.json)$/)),
   rule(['GET', 'HEAD'], exact('/flame-overlay/default-config.js')),
   rule(['GET', 'HEAD'], pattern(/^\/flame-overlay\/(?:effects-engine|post-processor)\.js$/)),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/flame-overlay\/textures\/[A-Za-z0-9._-]+\.(?:jpg|png|webp)$/i)),
@@ -148,7 +162,7 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/api/quiz-show/brand-kit')),
   rule(['GET', 'HEAD'], exact('/api/quiz-show/hud-config')),
   rule(['GET', 'HEAD'], exact('/api/quiz-show/state')),
-  rule(['GET', 'HEAD'], exact('/api/quiz-show/leaderboard')),
+  rule(['GET', 'HEAD'], exact('/api/quiz-show/leaderboard'), { exactQuery: 'type=round' }),
   rule(['GET', 'HEAD'], pattern(/^\/api\/quiz-show\/layouts\/[^/]+$/)),
 
   rule(['GET', 'HEAD'], exact('/plugins/schnorrbecher/overlay/coincup.css')),
@@ -176,6 +190,7 @@ const HTTP_RULES = Object.freeze([
   rule(['POST'], exact('/api/stream-monsters/overlay/heartbeat')),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|portrait-arena|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/stream-monsters\/streammonsters-(?:effects-renderer|overlay-runtime|rules-v8-pacing|portrait-arena|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
+  rule(['GET', 'HEAD'], exact('/plugins/stream-monsters/streammonsters-presentation.js')),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/streammonsters-egg-stage-view.js')),
   rule(['GET', 'HEAD'], exact('/plugins/stream-monsters/streammonsters-egg-stage-view.js')),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/locales\/(?:de|en|es|fr)\.json$/)),
@@ -207,6 +222,12 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/plugins/toptier/assets/overlay.js')),
 
   rule(['GET', 'HEAD'], exact('/api/visual-fx-frame-webgpu/config')),
+  rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/renderer/adaptive-quality.js')),
+  rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/renderer/effect-pipelines.js')),
+  rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/renderer/gpu-resources.js')),
+  rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/renderer/hdr-post-processor.js')),
+  rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js')),
+  rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine.js')),
   rule(['GET', 'HEAD'], exact('/plugins/visual-fx-frame-webgpu/default-config.js')),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/visual-fx-frame-webgpu\/renderer\/(?:adaptive-quality|effect-pipelines|gpu-resources|hdr-post-processor|overlay-controller|webgpu-effects-engine)\.js$/)),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/visual-fx-frame-webgpu\/textures\/[A-Za-z0-9._-]+\.(?:jpg|png|webp)$/i)),
@@ -217,6 +238,12 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/plugins/weather-control/weather-engine.js')),
 
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/webgpu-emoji-rain\/gpu\/(?:engine|webgpu-emoji-engine)\.js$/)),
+  // Full backend config and user mappings have no approved public display DTO.
+  // These initial reads stay local until that contract is reviewed.
+  rule(['GET', 'HEAD'], exact('/api/webgpu-emoji-rain/overlay/state')),
+  rule(['GET', 'HEAD'], pattern(/^\/webgpu-emoji-rain\/obs-hud\/(?:emojiregen|herzballons|geschenkeregen|emojiregen-geschenkeregen|emojis|hearts|gifts|emoji-gifts)$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/webgpu-emoji-rain\/(?:gpu\/(?:engine|webgpu-emoji-engine)\.js|lib\/webgpu-config\.js)$/)),
+  rule(['GET', 'HEAD'], exact('/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js')),
   rule(['GET', 'HEAD'], exact('/plugins/webgpu-emoji-rain/lib/webgpu-config.js')),
 
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/webgpu-fireworks\/gpu\/[A-Za-z0-9._-]+\.js$/)),
@@ -236,6 +263,7 @@ fireworks:register-overlay
 fireworks:active-count-response
 fireworks:fps-update
 game-engine:request-state
+quiz-show:get-public-state
 plinko:ball-landed
 plinko:request-config
 plinko:request-leaderboard
@@ -253,6 +281,10 @@ zappiehell:request:state
 coinJar.sync.request
 toptier:get-board
 visual-fx-frame-webgpu:renderer-status
+sidekick:public-status:request
+viewer-xp:public-profile:request
+viewer-xp:public-leaderboard:request
+webgpu-emoji-rain:renderer-metrics
 weather:overlay-state
 weather:client-ready
 weather:request-gamification-state
@@ -318,6 +350,7 @@ emoji-rain:clear
 emoji-rain:config-update
 emoji-rain:gift-balls
 emoji-rain:heart-balloons
+emoji-rain:opacity
 emoji-rain:spawn
 emoji-rain:toggle
 emoji-rain:user-mappings-update
@@ -506,6 +539,9 @@ streammonsters:stream_started
 streammonsters:tutorial_hint
 streammonsters:upset
 streammonsters:win_streak
+streammonsters:collection_shown
+streammonsters:mastery_unlocked
+streammonsters:stream_mission_completed
 stt-ticker:clear
 stt-ticker:interim
 stt-ticker:transcript
@@ -515,11 +551,33 @@ talkingheads:animation:start
 talkingheads:animation:stop
 talkingheads:avatar:spawn
 talkingheads:avatar:spin:start
+sidekick:public-status
 toptier:decay
 toptier:new-leader
 toptier:rank-change
 toptier:update
 tts:playback:ended
+talkingheads:config:update
+viewer-xp:public-level-up
+viewer-xp:public-profile
+viewer-xp:public-update
+viewer-xp:public-leaderboard
+flame-overlay:config-update
+flame-overlay:trigger
+flame-overlay:clear-triggers
+webgpu-emoji-rain:spawn
+webgpu-emoji-rain:heart-balloons
+webgpu-emoji-rain:gift-balls
+webgpu-emoji-rain:clear
+webgpu-emoji-rain:pause
+webgpu-emoji-rain:resume
+webgpu-emoji-rain:toggle
+webgpu-emoji-rain:opacity
+webgpu-emoji-rain:speed
+webgpu-emoji-rain:theme
+webgpu-emoji-rain:bounding-box
+webgpu-emoji-rain:config-update
+webgpu-emoji-rain:user-mappings-update
 unified-queue:chess-queued
 unified-queue:cleared
 unified-queue:connect4-queued
@@ -602,6 +660,14 @@ function normalizePublicPath(rawUrl) {
   return decoded || '/';
 }
 
+function hasExactRawQuery(rawUrl, expectedQuery) {
+  if (typeof rawUrl !== 'string' || typeof expectedQuery !== 'string') return false;
+  if (rawUrl.includes('#')) return false;
+  const queryIndex = rawUrl.indexOf('?');
+  if (queryIndex === -1) return expectedQuery === '';
+  return rawUrl.slice(queryIndex + 1) === expectedQuery;
+}
+
 function isRegisteredEntrypoint(pathname) {
   let normalized;
   try {
@@ -628,10 +694,10 @@ function isHttpAllowed({ method, pathname }) {
     return true;
   }
 
-  return HTTP_RULES.some(candidate => (
-    candidate.methods.has(normalizedMethod) &&
-    candidate.matcher(normalizedPath)
-  ));
+  return HTTP_RULES.some(candidate => {
+    if (!candidate.methods.has(normalizedMethod) || !candidate.matcher(normalizedPath)) return false;
+    return candidate.exactQuery === undefined || hasExactRawQuery(pathname, candidate.exactQuery);
+  });
 }
 
 function isIncomingSocketEventAllowed(eventName) {
@@ -711,6 +777,7 @@ module.exports = {
   INCOMING_SOCKET_EVENTS,
   OUTGOING_SOCKET_EVENTS,
   normalizePublicPath,
+  hasExactRawQuery,
   LOCAL_ONLY_OUTGOING_SOCKET_EVENTS,
   isRegisteredEntrypoint,
   isHttpAllowed,

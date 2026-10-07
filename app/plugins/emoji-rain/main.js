@@ -2456,11 +2456,11 @@ class EmojiRainPlugin {
       try {
         const { opacity } = req.body;
         
-        if (opacity === undefined || opacity < 0 || opacity > 1) {
+        if (typeof opacity !== 'number' || !Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
           return res.status(400).json({ success: false, error: 'opacity must be between 0 and 1' });
         }
         
-        this.overlayState.opacity = parseFloat(opacity);
+        this.overlayState.opacity = opacity;
         this.api.emit('emoji-rain:opacity', { opacity: this.overlayState.opacity });
         
         this.api.log(`🔆 [EmojiRain] Opacity set to: ${opacity}`, 'info');
@@ -2476,11 +2476,11 @@ class EmojiRainPlugin {
       try {
         const { speed } = req.body;
         
-        if (speed === undefined || speed <= 0 || speed > 5) {
+        if (typeof speed !== 'number' || !Number.isFinite(speed) || speed < 0.1 || speed > 5) {
           return res.status(400).json({ success: false, error: 'speed must be between 0.1 and 5' });
         }
         
-        this.overlayState.speed = parseFloat(speed);
+        this.overlayState.speed = speed;
         this.api.emit('emoji-rain:speed', { speed: this.overlayState.speed });
         
         this.api.log(`⚡ [EmojiRain] Speed set to: ${speed}`, 'info');
@@ -2518,8 +2518,7 @@ class EmojiRainPlugin {
       try {
         res.json({
           success: true,
-          state: this.overlayState,
-          queuedSpawns: this.spawnQueue.length
+          state: { opacity: this.overlayState.opacity }
         });
       } catch (error) {
         this.api.log(`❌ [EmojiRain] Error getting overlay state: ${error.message}`, 'error');

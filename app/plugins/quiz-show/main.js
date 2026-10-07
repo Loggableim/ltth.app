@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
+const { hasExactRawQuery } = require('../../modules/public-overlay-registry');
 
 class QuizShowPlugin {
     constructor(api) {
@@ -1604,6 +1605,18 @@ class QuizShowPlugin {
             } catch (error) {
                 this.api.log('Error getting state: ' + error.message, 'error');
                 res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        this.api.registerRoute('get', '/api/quiz-show/leaderboard', (req, res) => {
+            if (!hasExactRawQuery(req.originalUrl || req.url || '', 'type=round')) {
+                return res.status(400).json({ success: false, error: 'Unsupported leaderboard query' });
+            }
+            try {
+                return res.json({ success: true, leaderboard: this.buildCurrentRoundLeaderboard() });
+            } catch (error) {
+                this.api.log('Error building current round leaderboard: ' + error.message, 'error');
+                return res.status(500).json({ success: false, error: 'Leaderboard unavailable' });
             }
         });
 
@@ -3306,6 +3319,11 @@ class QuizShowPlugin {
     }
 
     registerSocketEvents() {
+        this.api.registerSocket('quiz-show:get-public-state', (socket, ...requestArgs) => {
+            if (requestArgs.length !== 0 || !socket || typeof socket.emit !== 'function') return;
+            socket.emit('quiz-show:state-update', this.buildGameStatePayload());
+        });
+
         // Start quiz
         this.api.registerSocket('quiz-show:start', async (socket, data) => {
             try {
@@ -3581,7 +3599,7 @@ class QuizShowPlugin {
             const userId = data.uniqueId || data.nickname || data.userId;
             const username = data.nickname || data.username || userId;
             const message = (data.message || data.comment || '').trim();
-            const isSuperFan = data.teamMemberLevel >= 1 || data.isSubscriber;
+            const isSuperFan = data.isSuperFan === true || data.superFan === true;
 
             if (this.gameState.categoryVote && this.gameState.categoryVote.active) {
                 const recorded = this.recordCategoryVote({ userId, username, message });
@@ -4732,6 +4750,81 @@ class QuizShowPlugin {
         }
     }
 
+    buildCurrentRoundLeaderboard() {
+        // This is a display-only read. Unlike calculateResults(), it never awards points,
+        // applies progression, or changes pointsAwardedForRound.
+        const state = this.gameState;
+        const question = state?.currentQuestion;
+        const questionAnswers = Array.isArray(question?.answers) ? question.answers : [];
+        const configuredCorrectIndex = question?.correct;
+        if (typeof configuredCorrectIndex !== 'number' && typeof configuredCorrectIndex !== 'string') return [];
+        let rawCorrectAnswerIndex;
+        try {
+            rawCorrectAnswerIndex = Number(configuredCorrectIndex);
+        } catch (_) {
+            return [];
+        }
+        if (!Number.isInteger(rawCorrectAnswerIndex)
+            || rawCorrectAnswerIndex < 0
+            || rawCorrectAnswerIndex >= questionAnswers.length) return [];
+
+        const firstPoints = this.config?.pointsFirstCorrect;
+        const otherPoints = this.config?.pointsOtherCorrect;
+        if (!Number.isSafeInteger(firstPoints) || firstPoints < 0
+            || !Number.isSafeInteger(otherPoints) || otherPoints < 0) return [];
+
+        const rawAnswers = state?.answers;
+        if (!(rawAnswers instanceof Map)) return [];
+
+        let answersEntries;
+        try {
+            answersEntries = Array.from(rawAnswers.entries());
+        } catch (_) {
+            return [];
+        }
+        if (answersEntries.length > 100 || answersEntries.some(entry => !Array.isArray(entry) || entry.length < 2)) return [];
+
+        const orderedAnswers = [];
+        for (let index = 0; index < answersEntries.length; index += 1) {
+            const [userId, answerData] = answersEntries[index];
+            let timestamp;
+            const rawTimestamp = answerData?.timestamp;
+            timestamp = typeof rawTimestamp === 'number' || typeof rawTimestamp === 'string'
+                ? Number(rawTimestamp)
+                : NaN;
+            orderedAnswers.push({ userId, answerData, timestamp, index });
+        }
+        orderedAnswers.sort((left, right) => {
+            const leftFinite = Number.isFinite(left.timestamp);
+            const rightFinite = Number.isFinite(right.timestamp);
+            if (leftFinite && rightFinite && left.timestamp !== right.timestamp) return left.timestamp - right.timestamp;
+            if (leftFinite !== rightFinite) return leftFinite ? -1 : 1;
+            return left.index - right.index;
+        });
+
+        const correctAnswerText = questionAnswers[rawCorrectAnswerIndex] || '';
+        if (typeof correctAnswerText !== 'string') return [];
+        const correctUsers = [];
+        try {
+            for (const { userId, answerData } of orderedAnswers) {
+                if (!answerData || typeof answerData !== 'object' || Array.isArray(answerData)) continue;
+                if (answerData.answer !== undefined && answerData.answer !== null
+                    && typeof answerData.answer !== 'string' && typeof answerData.answer !== 'number') return [];
+                if (!this.isAnswerCorrect(answerData.answer, rawCorrectAnswerIndex, correctAnswerText)) continue;
+                if (typeof answerData.username !== 'string' || answerData.username.length > 120) return [];
+                correctUsers.push({ userId, username: answerData.username });
+            }
+        } catch (_) {
+            return [];
+        }
+
+        if (correctUsers.length > 100) return [];
+        return correctUsers.map((user, index) => ({
+            username: user.username,
+            points: index === 0 ? firstPoints : otherPoints
+        }));
+    }
+
     calculateResults() {
         const currentQuestion = this.gameState?.currentQuestion || {};
         const currentQuestionAnswers = Array.isArray(currentQuestion.answers) ? currentQuestion.answers : [];
@@ -4844,13 +4937,21 @@ class QuizShowPlugin {
     }
 
     isAnswerCorrect(answer, correctIndex, correctText) {
-        const normalized = String(answer ?? '').toLowerCase().trim();
+        let normalized = String(answer ?? '').toLowerCase().trim();
         const normalizedCorrectText = String(correctText ?? '').toLowerCase().trim();
         const rawIndex = Number(correctIndex);
         const index = Number.isFinite(rawIndex) && String(correctIndex).trim() !== '' ? Math.trunc(rawIndex) : -1;
 
         // Check letter (A, B, C, D)
         const letters = ['a', 'b', 'c', 'd'];
+        if (this.config.allowExclamation && normalized.startsWith('!')) {
+            const prefixedAnswer = normalized.slice(1).trim();
+            if (letters.includes(prefixedAnswer)) normalized = prefixedAnswer;
+        } else if (this.config.allowSlash && normalized.startsWith('/')) {
+            const prefixedAnswer = normalized.slice(1).trim();
+            if (letters.includes(prefixedAnswer)) normalized = prefixedAnswer;
+        }
+
         if (index >= 0 && index <= 3 && normalized === letters[index]) {
             return true;
         }
@@ -5219,8 +5320,8 @@ class QuizShowPlugin {
         return { timeBoost: boost };
     }
 
-    broadcastGameState() {
-        const state = {
+    buildGameStatePayload() {
+        return {
             isRunning: this.gameState.isRunning,
             roundState: this.gameState.roundState,
             currentRound: this.gameState.currentRound,
@@ -5257,8 +5358,10 @@ class QuizShowPlugin {
             ultraKompaktModus: this.config.ultraKompaktModus, // NEW: Ultra-compact mode
             ultraKompaktAnswerDelay: this.config.ultraKompaktAnswerDelay // NEW: Answer delay in ultra-compact mode
         };
+    }
 
-        this.api.emit('quiz-show:state-update', state);
+    broadcastGameState() {
+        this.api.emit('quiz-show:state-update', this.buildGameStatePayload());
     }
 
     clearEndGameTimeouts() {

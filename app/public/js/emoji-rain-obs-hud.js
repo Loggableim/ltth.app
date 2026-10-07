@@ -246,6 +246,103 @@
         // State
         let engine, render;
         let socket;
+        const socketHandlers = [];
+        let overlayDestroyed = false;
+        let opacityEventReceived = false;
+        let hasOverlayOpacity = false;
+        let configRequestRevision = 0;
+        let mappingsRequestRevision = 0;
+        let opacityRequestRevision = 0;
+        let updateFrameId = null;
+        let periodicCleanupTimer = null;
+
+        function isValidOpacity(value) {
+            return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+        }
+
+        function applyOverlayOpacity(value) {
+            if (overlayDestroyed || !isValidOpacity(value)) return false;
+            const container = document.getElementById('canvas-container');
+            if (!container) return false;
+            container.style.opacity = String(value);
+            hasOverlayOpacity = true;
+            return true;
+        }
+
+        function registerSocketHandler(eventName, handler) {
+            const guardedHandler = (...args) => {
+                if (!overlayDestroyed) handler(...args);
+            };
+            socket.on(eventName, guardedHandler);
+            socketHandlers.push({ eventName, handler: guardedHandler });
+        }
+
+        async function loadOverlayOpacity() {
+            const requestRevision = ++opacityRequestRevision;
+            if (!hasOverlayOpacity) applyOverlayOpacity(1);
+            try {
+                const response = await fetch('/api/emoji-rain/overlay/state');
+                if (!response.ok || overlayDestroyed || requestRevision !== opacityRequestRevision) return;
+                const data = await response.json();
+                if (overlayDestroyed || requestRevision !== opacityRequestRevision || opacityEventReceived || !data || data.success !== true || !data.state ||
+                    Object.keys(data.state).length !== 1 || !isValidOpacity(data.state.opacity)) return;
+                applyOverlayOpacity(data.state.opacity);
+            } catch (error) {
+                // Keep the safe visible fallback when the read-only state request fails.
+            }
+        }
+
+        function handleOverlayOpacityEvent(payload) {
+            if (overlayDestroyed || !payload || typeof payload !== 'object' || Array.isArray(payload) ||
+                Object.keys(payload).length !== 1 || !Object.prototype.hasOwnProperty.call(payload, 'opacity')) return;
+            if (applyOverlayOpacity(payload.opacity)) {
+                opacityEventReceived = true;
+                opacityRequestRevision += 1;
+            }
+        }
+
+        function refreshOverlayState() {
+            if (overlayDestroyed) return;
+            opacityEventReceived = false;
+            void loadConfig();
+            void loadUserEmojiMappings();
+            void loadOverlayOpacity();
+        }
+
+        function scheduleUpdateLoop() {
+            if (!overlayDestroyed) updateFrameId = requestAnimationFrame(updateLoop);
+        }
+
+        function cleanupOverlay() {
+            if (overlayDestroyed) return;
+            overlayDestroyed = true;
+            if (updateFrameId !== null) {
+                cancelAnimationFrame(updateFrameId);
+                updateFrameId = null;
+            }
+            if (periodicCleanupTimer !== null) {
+                clearInterval(periodicCleanupTimer);
+                periodicCleanupTimer = null;
+            }
+            if (socket && typeof socket.off === 'function') {
+                socketHandlers.forEach(({ eventName, handler }) => socket.off(eventName, handler));
+            }
+            socketHandlers.length = 0;
+            if (socket && typeof socket.disconnect === 'function') socket.disconnect();
+        }
+
+        function cleanupFinalOverlay() {
+            if (overlayDestroyed) return;
+            cleanupOverlay();
+            emojis.slice().forEach(removeEmoji);
+            heartBalloons.slice().forEach(removeHeartBalloon);
+            emojis = [];
+            heartBalloons = [];
+            emojiBodyMap.clear();
+            rateLimitQueue = [];
+            particlePool.forEach(particle => particle?.parentNode?.removeChild(particle));
+            particlePool = [];
+        }
         let emojis = []; // Track emoji bodies and DOM elements
         let heartBalloons = [];
         let emojiBodyMap = new Map(); // BUG 2 fix: Map physics bodies to emoji objects for O(1) lookup
@@ -1433,6 +1530,7 @@
 
         // Main update loop with dynamic FPS targeting
         function updateLoop(currentTime) {
+            if (overlayDestroyed) return;
             // Calculate delta time
             const deltaTime = currentTime - lastUpdateTime;
 
@@ -1441,7 +1539,7 @@
 
             // Throttle to target FPS
             if (deltaTime < targetFrameTime) {
-                requestAnimationFrame(updateLoop);
+                scheduleUpdateLoop();
                 return;
             }
 
@@ -1615,7 +1713,7 @@
                 updatePerfHUD(currentTime);
             }
 
-            requestAnimationFrame(updateLoop);
+            scheduleUpdateLoop();
         }
 
         /**
@@ -1890,6 +1988,7 @@
 
         // Handle spawn event from server
         function handleSpawnEvent(data) {
+            if (overlayDestroyed || !data || typeof data !== 'object' || Array.isArray(data)) return;
             if (!config.enabled || !config.obs_hud_enabled) return;
 
             if (data.mode === 'heart-balloons' || data.type === 'heart-balloons') {
@@ -1910,7 +2009,10 @@
                 return;
             }
 
-            const count = data.count || 1;
+            const requestedCount = data.count === undefined ? 1 : data.count;
+            if (typeof requestedCount !== 'number' || !Number.isFinite(requestedCount) || requestedCount <= 0) return;
+            const count = Math.min(Math.ceil(requestedCount), MAX_RATE_LIMIT_QUEUE_SIZE);
+            if (count < 1) return;
             const emoji = data.emoji || getRandomEmoji();
             const x = data.x !== undefined ? data.x : Math.random();
             const y = data.y !== undefined ? data.y : 0;
@@ -2061,9 +2163,12 @@
 
         // Load configuration from server
         async function loadConfig() {
+            const requestRevision = ++configRequestRevision;
             try {
                 const response = await fetch('/api/emoji-rain/config');
+                if (overlayDestroyed || requestRevision !== configRequestRevision) return;
                 const data = await response.json();
+                if (overlayDestroyed || requestRevision !== configRequestRevision) return;
 
                 if (data.success && data.config) {
                     Object.assign(config, data.config);
@@ -2092,15 +2197,20 @@
                     syncVisualModeState();
                 }
             } catch (error) {
-                console.error('❌ Failed to load config:', error);
+                if (!overlayDestroyed && requestRevision === configRequestRevision) {
+                    console.error('❌ Failed to load config:', error);
+                }
             }
         }
 
         // Load user emoji mappings
         async function loadUserEmojiMappings() {
+            const requestRevision = ++mappingsRequestRevision;
             try {
                 const response = await fetch('/api/emoji-rain/user-mappings');
+                if (overlayDestroyed || requestRevision !== mappingsRequestRevision) return;
                 const data = await response.json();
+                if (overlayDestroyed || requestRevision !== mappingsRequestRevision) return;
 
                 if (data.success && data.mappings) {
                     userEmojiMap = data.mappings;
@@ -2109,7 +2219,9 @@
                     console.log('👤 [USER MAPPINGS] Users:', Object.keys(userEmojiMap).join(', '));
                 }
             } catch (error) {
-                console.error('❌ Failed to load user emoji mappings:', error);
+                if (!overlayDestroyed && requestRevision === mappingsRequestRevision) {
+                    console.error('❌ Failed to load user emoji mappings:', error);
+                }
             }
         }
 
@@ -2151,27 +2263,32 @@
         function initSocket() {
             socket = io();
 
-            socket.on('connect', () => {
+            registerSocketHandler('emoji-rain:opacity', handleOverlayOpacityEvent);
+
+            let connectSeen = false;
+            registerSocketHandler('connect', () => {
                 console.log('✅ Connected to server');
+                connectSeen = true;
+                refreshOverlayState();
             });
 
-            socket.on('emoji-rain:spawn', (data) => {
+            registerSocketHandler('emoji-rain:spawn', (data) => {
                 handleSpawnEvent(data);
             });
 
-            socket.on('emoji-rain:heart-balloons', (data) => {
+            registerSocketHandler('emoji-rain:heart-balloons', (data) => {
                 if (overlayAllowsEventCategory('hearts')) {
                     spawnHeartBalloons(data);
                 }
             });
 
-            socket.on('emoji-rain:gift-balls', (data) => {
+            registerSocketHandler('emoji-rain:gift-balls', (data) => {
                 if (overlayAllowsEventCategory('gifts')) {
                     spawnGiftBalls(data);
                 }
             });
 
-            socket.on('emoji-rain:clear', () => {
+            registerSocketHandler('emoji-rain:clear', () => {
                 emojis.forEach(emoji => removeEmoji(emoji));
                 emojis = [];
                 heartBalloons.forEach(balloon => removeHeartBalloon(balloon));
@@ -2179,8 +2296,9 @@
                 rateLimitQueue = [];
             });
 
-            socket.on('emoji-rain:config-update', (data) => {
+            registerSocketHandler('emoji-rain:config-update', (data) => {
                 if (data.config) {
+                    configRequestRevision += 1;
                     const oldToasterMode = config.toaster_mode;
                     Object.assign(config, data.config);
                     syncVisualModeState();
@@ -2222,19 +2340,25 @@
                 }
             });
 
-            socket.on('emoji-rain:toggle', (data) => {
+            registerSocketHandler('emoji-rain:toggle', (data) => {
                 config.enabled = data.enabled;
                 console.log('🔄 Emoji rain ' + (data.enabled ? 'enabled' : 'disabled'));
             });
 
-            socket.on('emoji-rain:user-mappings-update', (data) => {
+            registerSocketHandler('emoji-rain:user-mappings-update', (data) => {
                 if (data.mappings) {
+                    mappingsRequestRevision += 1;
                     userEmojiMap = data.mappings;
                     console.log('🔄 [OBS HUD] User emoji mappings updated', userEmojiMap);
                     console.log('👤 [USER MAPPINGS UPDATE] Total mappings:', Object.keys(userEmojiMap).length);
                     console.log('👤 [USER MAPPINGS UPDATE] Users:', Object.keys(userEmojiMap).join(', '));
                 }
             });
+
+            if (socket.connected && !connectSeen) {
+                connectSeen = true;
+                refreshOverlayState();
+            }
         }
 
         // Initialize everything
@@ -2242,16 +2366,21 @@
             console.log('🌧️ Initializing OBS HUD Emoji Rain Overlay...');
 
             await loadConfig();
+            if (overlayDestroyed) return;
             await loadUserEmojiMappings();
+            if (overlayDestroyed) return;
             initPhysics();
             initSocket();
+            await loadOverlayOpacity();
+            if (overlayDestroyed) return;
 
             // Start update loop
-            requestAnimationFrame(updateLoop);
+            scheduleUpdateLoop();
             
             // Start periodic cleanup timer for OBS cache prevention
             // Clean up every 30 seconds to prevent gradual buildup
-            setInterval(() => {
+            periodicCleanupTimer = setInterval(() => {
+                if (overlayDestroyed) return;
                 if (emojis.length > config.max_emojis_on_screen * 0.8) {
                     console.log('[OBS HUD] 🧹 Periodic cleanup triggered (emoji count high)');
                     const removeCount = Math.floor(emojis.length * 0.3);
@@ -2305,25 +2434,6 @@
             init();
         }
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            // Clean up all emojis
-            emojis.forEach(emoji => removeEmoji(emoji));
-            heartBalloons.forEach(balloon => removeHeartBalloon(balloon));
-            heartBalloons = [];
-
-            // BUG 2 fix: clear emojiBodyMap on unload
-            emojiBodyMap.clear();
-
-            // Clear rate limit queue
-            rateLimitQueue = [];
-
-            // Clear particle pool
-            particlePool = [];
-
-            console.log('🧹 Cleanup completed');
-        });
-
         // OBS Browser Source specific: Handle visibility changes
         // When OBS hides the browser source, we should cleanup to prevent cache buildup
         document.addEventListener('visibilitychange', () => {
@@ -2339,7 +2449,8 @@
         });
 
         // Additional OBS-specific cleanup on page hide
-        window.addEventListener('pagehide', () => {
+        window.addEventListener('pagehide', (event) => {
+            if (event.persisted) return;
             console.log('[OBS HUD] 📄 Page hiding - final cleanup');
-            performAggressiveCleanup();
+            cleanupFinalOverlay();
         });

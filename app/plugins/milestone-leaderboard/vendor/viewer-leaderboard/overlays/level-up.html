@@ -314,7 +314,7 @@
       <div class="level-up-title" data-i18n="plugins.milestone-leaderboard.labels.level_up">LEVEL UP!</div>
       <div class="username" id="username">Player</div>
       <div class="level-display">
-        <div class="level-number" id="oldLevel" data-i18n="plugins.milestone-leaderboard.ui.defaults.one">1</div>
+        <div class="level-number" id="oldLevel">1</div>
         <div class="level-arrow">→</div>
         <div class="level-number new" id="newLevel">2</div>
       </div>
@@ -327,6 +327,8 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const ownsWindowSocket = !window.socket;
+    if (ownsWindowSocket) window.socket = socket;
     const container = document.getElementById('levelUpContainer');
     const usernameEl = document.getElementById('username');
     const oldLevelEl = document.getElementById('oldLevel');
@@ -334,6 +336,37 @@
     const rewardsEl = document.getElementById('rewards');
 
     let currentAnimation = null;
+    let isDisposed = false;
+    const animationTimeouts = new Set();
+
+    window.i18n?.onLanguageChange?.(() => {
+      if (isDisposed) return;
+      for (const element of rewardsEl.querySelectorAll('[data-viewer-xp-label]')) {
+        element.textContent = ViewerXpI18n.text(element.dataset.viewerXpLabel, '');
+      }
+    });
+
+    function scheduleAnimationTimeout(callback, delay) {
+      const timeout = setTimeout(() => {
+        animationTimeouts.delete(timeout);
+        if (!isDisposed) callback();
+      }, delay);
+      animationTimeouts.add(timeout);
+      return timeout;
+    }
+
+    function handleLevelUpPageHide(event) {
+      if (event.persisted || isDisposed) return;
+      isDisposed = true;
+      for (const timeout of animationTimeouts) clearTimeout(timeout);
+      animationTimeouts.clear();
+      container.classList.remove('show', 'hide', 'animation-flash', 'animation-gold');
+      document.querySelectorAll('.particle, .confetti').forEach(element => element.remove());
+      window.removeEventListener('pagehide', handleLevelUpPageHide);
+      if (ownsWindowSocket && window.socket === socket) delete window.socket;
+      socket.disconnect();
+    }
+    window.addEventListener('pagehide', handleLevelUpPageHide);
 
     // Connection status logging
     socket.on('connect', () => {
@@ -355,12 +388,14 @@
     const minLevel = parseInt(urlParams.get('minLevel')) || 1;
 
     // Listen for level-up events
-    socket.on('viewer-xp:level-up', (data) => {
+    socket.on('viewer-xp:public-level-up', (data) => {
+      if (isDisposed) return;
       console.log('⬆️ Level Up: Received level-up event', data);
       showLevelUp(data);
     });
 
     function showLevelUp(data) {
+      if (isDisposed) return;
       if (data?.newLevel && data.newLevel < minLevel) {
         return;
       }
@@ -382,6 +417,7 @@
       if (data.rewards) {
         const rewardTitle = document.createElement('div');
         rewardTitle.className = 'reward-title';
+        rewardTitle.dataset.viewerXpLabel = 'rewards';
         rewardTitle.textContent = ViewerXpI18n.text('rewards', '🎁 Rewards');
         rewardsEl.appendChild(rewardTitle);
 
@@ -395,6 +431,7 @@
         if (data.rewards.name_color) {
           const badge = document.createElement('div');
           badge.className = 'reward-badge';
+          badge.dataset.viewerXpLabel = 'new_color';
           badge.textContent = ViewerXpI18n.text('new_color', '🎨 New color');
           badge.style.color = data.rewards.name_color;
           rewardsEl.appendChild(badge);
@@ -426,9 +463,9 @@
       }
 
       // Auto-hide after duration
-      currentAnimation = setTimeout(() => {
+      currentAnimation = scheduleAnimationTimeout(() => {
         container.classList.add('hide');
-        setTimeout(() => {
+        scheduleAnimationTimeout(() => {
           container.classList.remove('show', 'hide');
         }, 500);
       }, duration);
@@ -445,7 +482,7 @@
         particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
         document.body.appendChild(particle);
 
-        setTimeout(() => {
+        scheduleAnimationTimeout(() => {
           particle.remove();
         }, 5000);
       }
@@ -465,7 +502,7 @@
         confetti.style.animationDuration = (Math.random() * 3 + 3) + 's';
         document.body.appendChild(confetti);
 
-        setTimeout(() => {
+        scheduleAnimationTimeout(() => {
           confetti.remove();
         }, 7000);
       }
@@ -506,7 +543,7 @@
 
     // Test mode: trigger level up on page load if test=true
     if (urlParams.get('test') === 'true') {
-      setTimeout(() => {
+      scheduleAnimationTimeout(() => {
         showLevelUp({
           username: 'TestUser',
           oldLevel: 4,

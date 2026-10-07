@@ -69,7 +69,13 @@
           }
         },
         "overlay": {
-          "no_goals_configured": "No hay metas configuradas"
+          "no_goals_configured": "No hay metas configuradas",
+          "goal_not_found": "Meta no encontrada.",
+          "temporarily_unavailable": "Meta temporalmente no disponible. Inténtalo de nuevo más tarde.",
+          "remaining": "Faltan {value}",
+          "goal_reached": "¡Meta alcanzada! 🎉",
+          "goal_label": "Meta",
+          "target_label": "Meta:"
         },
         "create_button": "+ Create New Goal",
         "page_title": "Live Goals",

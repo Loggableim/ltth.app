@@ -1,5 +1,5 @@
 {
-  "version": "1.4.2",
-  "updated_at": "2026-08-01T00:00:00Z",
-  "notes": "LTTH Version 1.4.2 Release Notes\n\nStream Monsters 1.12.0 now uses the canonical stream-monsters identity while retaining permanent streamalchemy compatibility.\n\n- CHANGED: Canonical source, manifest, store, dashboard, lifecycle and public routes use stream-monsters\n- COMPATIBILITY: Legacy lifecycle, UI, overlay, static, config, data, backup, GCCE and IFTTT aliases resolve to the same logical plugin\n- SAFETY: Atomic dual state/config shadows and backup conflict detection fail closed on independent edits\n- RECOVERY: Transactional upgrade and authenticated rollback restore files, runtime, state, config and persistent data on failure\n- PACKAGE: The historical streamalchemy-1.11.1.zip remains byte-identical with SHA-256 46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60\n"
+  "version": "1.4.4",
+  "updated_at": "2026-10-07T00:00:00Z",
+  "notes": "LTTH 1.4.4 is an interim release with verified shutdown persistence, overlay lifecycle/localization fixes and isolated backend checks. OBS matrix acceptance and remaining live/provider checks are still open."
 }

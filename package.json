@@ -1,6 +1,6 @@
 {
   "name": "ltth.app-snapshot",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "ltth.app snapshot for Loggableim/ltth.app - runtime app, website assets, and Windows launcher sources",
   "private": true,
   "license": "CC-BY-NC-4.0",
@@ -25,7 +25,7 @@
     "website:plugins:check": "node scripts/verify-plugin-catalog.js",
     "website:contrast:check": "node scripts/verify-site-contrast.js",
     "website:features:locales:check": "node scripts/verify-feature-hub-locales.js",
-    "docs:screenshots": "set SCREENSHOT_COLLECTION=docs&& node scripts/capture-product-screenshots.js",
+    "docs:screenshots": "set SCREENSHOT_COLLECTION=docs&& runtime\\node\\node.exe scripts/capture-product-screenshots.js",
     "docs:screenshots:check": "node scripts/verify-docs-screenshot-coverage.js",
     "docs:gallery:build": "node scripts/build-plugin-docs-gallery.js",
     "docs:gallery:approve": "node scripts/approve-plugin-docs-gallery.js",

@@ -100,7 +100,10 @@ class ScoreEngine {
       const nickname = data.nickname || username;
       const profilePictureUrl = data.profilePictureUrl || '';
       // Coins = score directly. 1 rose = 1 coin = 1 point, 1 galaxy = 1000 coins = 1000 points.
-      const baseCoins = (data.coins || data.diamondCount || 0) * (data.repeatCount || data.count || 1);
+      const hasNormalizedCoins = data.coins !== undefined && data.coins !== null && Number.isFinite(Number(data.coins));
+      const baseCoins = hasNormalizedCoins
+        ? Number(data.coins)
+        : (Number(data.diamondCount) || 0) * (Number(data.repeatCount || data.count) || 1);
       const delta = baseCoins;
       if (delta <= 0) return;
       const sessionId = this.sessionManager.getCurrentSessionId();

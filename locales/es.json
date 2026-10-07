@@ -271,7 +271,7 @@
       "suggestFeatures": "Sugerir Funciones",
       "viewRoadmap": "Ver Roadmap →",
       "close": "Cerrar aviso beta",
-      "compact": "Versión 1.4.2 - novedades y comentarios",
+      "compact": "Versión 1.4.4 - novedades y comentarios",
       "toggle": "Mostrar u ocultar la actualización y los comentarios"
     }
   },
@@ -2058,7 +2058,7 @@
           "002": "PupCid's Little TikTool Helper",
           "003": "Lade die neueste Version von LTTH herunter und starte dein professionelles TikTok LIVE Streaming.",
           "004": "LTTH Windows Launcher",
-          "005": "Version 1.4.2",
+          "005": "Version 1.4.4",
           "006": "Der Launcher lädt automatisch Version",
           "007": "herunter und hält LTTH auf dem neuesten Stand",
           "008": "Letztes Update:",
@@ -3770,6 +3770,7 @@
   },
   "docs.plugin.schnorrbecher.title": "Schnorrbecher",
   "docs.plugin.webgpu-weather-control.title": "Control meteorológico WebGPU",
+  "docs.plugin.sidekick.title": "Sidekick",
   "docs.plugin.breadcrumb.docs": "Documentación",
   "docs.plugin.breadcrumb.label": "Navegación de migas de pan",
   "docs.plugin.definition.purpose": "Objetivo y público",

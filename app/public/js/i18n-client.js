@@ -20,6 +20,7 @@ class I18nClient {
         this.listeners = [];
         this.initialized = false;
         this.onLanguageChangeCallbacks = [];
+        this._disposed = false;
         this._readyResolve = null;
         this.ready = new Promise(resolve => { this._readyResolve = resolve; });
         
@@ -34,6 +35,12 @@ class I18nClient {
      * Initialize i18n with locale from URL (?lang=), localStorage, or default
      */
     async init() {
+        if (this._disposed) {
+            this.initialized = true;
+            this._readyResolve();
+            return this;
+        }
+
         // Check URL parameter first (?lang=) — overrides localStorage
         const urlParams = new URLSearchParams(window.location.search);
         const urlLocale = urlParams.get('lang');
@@ -43,6 +50,11 @@ class I18nClient {
         // supported language isolated so missing keys cannot borrow English
         // silently during a language switch.
         await this.loadTranslations(this.defaultLocale);
+        if (this._disposed) {
+            this.initialized = true;
+            this._readyResolve();
+            return this;
+        }
         if (savedLocale !== this.defaultLocale) {
             await this.loadTranslations(savedLocale);
         }
@@ -70,6 +82,7 @@ class I18nClient {
             }
             
             const data = await response.json();
+            if (this._disposed) return false;
             this.translations[locale] = data;
             this.currentLocale = locale;
             if (document && document.documentElement) {
@@ -95,6 +108,7 @@ class I18nClient {
      * Change language and reload translations
      */
     async changeLanguage(locale) {
+        if (this._disposed) return false;
         locale = this.normalizeLocale(locale);
         console.log(`[i18n] changeLanguage called: ${this.currentLocale} -> ${locale}`);
         
@@ -104,6 +118,7 @@ class I18nClient {
         }
 
         const success = await this.loadTranslations(locale);
+        if (this._disposed) return false;
         
         if (success) {
             console.log(`[i18n] Translations loaded successfully for: ${locale}`);
@@ -129,6 +144,12 @@ class I18nClient {
         }
         
         return success;
+    }
+
+    dispose() {
+        if (this._disposed) return;
+        this._disposed = true;
+        this._readyResolve();
     }
 
     /**
@@ -478,15 +499,29 @@ class I18nClient {
 // Create global instance
 const i18n = new I18nClient();
 
+let i18nClientDisposed = false;
+let initializeI18nOnDomReady = null;
+
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-        await i18n.init();
-        i18n.updateDOM();
-    });
+    initializeI18nOnDomReady = async () => {
+        try {
+            await i18n.init();
+            if (!i18nClientDisposed) i18n.updateDOM();
+        } catch (error) {
+            console.error('[i18n] Initialization failed:', error);
+            i18n.dispose();
+        }
+    };
+    document.addEventListener('DOMContentLoaded', initializeI18nOnDomReady);
 } else {
     // DOM already loaded
-    i18n.init().then(() => i18n.updateDOM());
+    i18n.init()
+        .then(() => { if (!i18nClientDisposed) i18n.updateDOM(); })
+        .catch(error => {
+            console.error('[i18n] Initialization failed:', error);
+            i18n.dispose();
+        });
 }
 
 // Make available globally
@@ -494,63 +529,118 @@ window.i18n = i18n;
 
 // Shared handler for language change events
 const handleLanguageChange = async (data, fromPostMessage = false) => {
+    if (i18nClientDisposed || !data || typeof data.locale !== 'string') return;
     const newLocale = data.locale;
     console.log(`[i18n] Received language change event: ${newLocale}`);
     
     if (i18n.currentLocale !== newLocale) {
         const success = await i18n.changeLanguage(newLocale);
-        if (success) {
-            i18n.updateDOM();
-            console.log(`[i18n] Language updated to: ${newLocale} (via event)`);
-            
-            // Only propagate to iframes if this is the parent window AND
-            // the change didn't originate from a postMessage (prevents infinite loops)
-            if (window === window.top && !fromPostMessage) {
-                const iframes = document.querySelectorAll('iframe');
-                iframes.forEach(iframe => {
-                    try {
-                        // Note: contentWindow is accessible even for cross-origin iframes,
-                        // but postMessage will succeed/fail based on actual permissions.
-                        // The try-catch handles all failure scenarios (cross-origin, security, etc.)
-                        const iframeWindow = iframe.contentWindow;
-                        if (iframeWindow) {
-                            iframeWindow.postMessage({
-                                type: 'language-changed',
-                                locale: newLocale
-                            }, window.location.origin);
-                        }
-                    } catch (e) {
-                        // Expected for cross-origin iframes or iframes with security restrictions
-                        console.debug('[i18n] Skipping language change for iframe (not accessible):', e.message);
+        if (i18nClientDisposed || !success) return;
+        i18n.updateDOM();
+        console.log(`[i18n] Language updated to: ${newLocale} (via event)`);
+
+        // Only propagate to iframes if this is the parent window AND
+        // the change didn't originate from a postMessage (prevents infinite loops)
+        if (window === window.top && !fromPostMessage) {
+            const iframes = document.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                try {
+                    // Note: contentWindow is accessible even for cross-origin iframes,
+                    // but postMessage will succeed/fail based on actual permissions.
+                    // The try-catch handles all failure scenarios (cross-origin, security, etc.)
+                    const iframeWindow = iframe.contentWindow;
+                    if (iframeWindow) {
+                        iframeWindow.postMessage({
+                            type: 'language-changed',
+                            locale: newLocale
+                        }, window.location.origin);
                     }
-                });
-            }
+                } catch (e) {
+                    // Expected for cross-origin iframes or iframes with security restrictions
+                    console.debug('[i18n] Skipping language change for iframe (not accessible):', e.message);
+                }
+            });
         }
     }
 };
 
-// Listen for language changes via socket.io (for real-time sync across tabs/plugins)
-if (typeof io !== 'undefined') {
-    // Wait for socket.io to be ready
-    const setupSocketListener = () => {
-        if (window.socket) {
-            // Listen for both event names (server uses 'locale-changed', client may emit 'language-changed')
-            window.socket.on('locale-changed', handleLanguageChange);
-            window.socket.on('language-changed', handleLanguageChange);
-            
-            console.log('[i18n] Socket.io language sync enabled');
-        } else {
-            // Retry after a short delay if socket not ready yet
-            setTimeout(setupSocketListener, 100);
-        }
-    };
-    
-    // Start trying to setup the listener
-    setupSocketListener();
+// Listen for language changes via an existing app-owned Socket.IO socket.
+const SOCKET_SYNC_RETRY_DELAY_MS = 100;
+const SOCKET_SYNC_MAX_RETRIES = 20;
+const SOCKET_SYNC_EVENTS = ['locale-changed', 'language-changed'];
+let socketSyncRetryTimer = null;
+let socketSyncRetryCount = 0;
+let socketSyncBound = false;
+let socketSyncSocket = null;
+
+function handleSocketLanguageChange(data) {
+    if (i18nClientDisposed) return;
+    handleLanguageChange(data).catch(error => {
+        if (!i18nClientDisposed) console.error('[i18n] Socket language sync failed:', error);
+    });
 }
 
+function removeSocketSyncListeners() {
+    if (!socketSyncSocket) return;
+    for (const eventName of SOCKET_SYNC_EVENTS) {
+        if (typeof socketSyncSocket.off === 'function') {
+            socketSyncSocket.off(eventName, handleSocketLanguageChange);
+        } else if (typeof socketSyncSocket.removeListener === 'function') {
+            socketSyncSocket.removeListener(eventName, handleSocketLanguageChange);
+        }
+    }
+    socketSyncSocket = null;
+    socketSyncBound = false;
+}
+
+function setupSocketListener() {
+    if (i18nClientDisposed || socketSyncBound) return;
+    const candidate = window.socket;
+    if (candidate && typeof candidate.on === 'function') {
+        socketSyncSocket = candidate;
+        socketSyncBound = true;
+        for (const eventName of SOCKET_SYNC_EVENTS) candidate.on(eventName, handleSocketLanguageChange);
+        console.log('[i18n] Socket.io language sync enabled');
+        return;
+    }
+    if (socketSyncRetryCount >= SOCKET_SYNC_MAX_RETRIES) return;
+    socketSyncRetryCount += 1;
+    socketSyncRetryTimer = window.setTimeout(() => {
+        socketSyncRetryTimer = null;
+        setupSocketListener();
+    }, SOCKET_SYNC_RETRY_DELAY_MS);
+}
+
+function handleI18nPageHide(event) {
+    if (event && event.persisted === true) return;
+    disposeI18nClient();
+}
+
+function disposeI18nClient() {
+    if (i18nClientDisposed) return;
+    i18nClientDisposed = true;
+    i18n.dispose();
+    if (initializeI18nOnDomReady) {
+        document.removeEventListener('DOMContentLoaded', initializeI18nOnDomReady);
+        initializeI18nOnDomReady = null;
+    }
+    if (socketSyncRetryTimer !== null) {
+        window.clearTimeout(socketSyncRetryTimer);
+        socketSyncRetryTimer = null;
+    }
+    removeSocketSyncListeners();
+    window.removeEventListener('message', onI18nMessage);
+    window.removeEventListener('pagehide', handleI18nPageHide);
+}
+
+window.addEventListener('pagehide', handleI18nPageHide);
+// The shared client may be loaded before Socket.IO on standalone plugin overlays.
+// Listening for window.socket does not require io; start the bounded retry either way.
+setupSocketListener();
+
 // Listen for postMessage from parent window (for iframe language sync)
-window.addEventListener('message', (event) => {
+function onI18nMessage(event) {
+    if (i18nClientDisposed) return;
     // Accept messages from same origin for security
     // Note: Exact origin matching is intentional. All plugin UIs are served from
     // the same origin (the app server), so subdomain/parent domain matching is
@@ -562,6 +652,10 @@ window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'language-changed') {
         // Pass true as second parameter to indicate this came from postMessage
         // This prevents infinite propagation loops
-        handleLanguageChange({ locale: event.data.locale }, true);
+        handleLanguageChange({ locale: event.data.locale }, true).catch(error => {
+            if (!i18nClientDisposed) console.error('[i18n] Message language sync failed:', error);
+        });
     }
-});
+}
+
+window.addEventListener('message', onI18nMessage);

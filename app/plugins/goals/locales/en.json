@@ -15,7 +15,15 @@
             "empty_goals": "No goals created yet", "create_first_goal": "Create Your First Goal", "edit_goal": "Edit", "delete_goal": "Delete", "create_goal": "Create New Goal", "template_label": "Template", "overlay_url": "Overlay URL", "copy": "Copy", "reset": "Reset", "set_value": "Set Value", "error_saving_goal": "Error saving goal: {error}", "confirm_delete_goal": "Are you sure you want to delete this goal?", "error_deleting_goal": "Error deleting goal: {error}", "error_resetting_goal": "Error resetting goal: {error}", "error_incrementing_goal": "Error incrementing goal: {error}", "enter_new_value": "Enter new value:", "error_setting_value": "Error setting value: {error}", "url_copied": "URL copied to clipboard!", "template_not_found": "Template not found", "error_rendering_preview": "Error rendering preview", "edit_multigoal": "Edit MultiGoal", "create_multigoal": "Create MultiGoal", "no_goals_available": "No goals available. Create some goals first.", "select_two_goals": "Please select at least 2 goals for the multigoal rotation", "error_saving_multigoal": "Error saving multigoal: {error}", "empty_multigoals": "No multigoals created yet", "create_first_multigoal": "Create Your First MultiGoal", "animation_slide": "Slide", "animation_fade": "Fade", "animation_cube": "Cube", "animation_wave": "Wave", "animation_particle": "Particle", "goal_count": "{count} goals", "interval": "Interval", "interval_value": "{seconds}s", "animation": "Animation", "size": "Size", "included_goals": "Included goals", "goal_not_found": "Goal not found ({id})", "confirm_delete_multigoal": "Are you sure you want to delete {name}?", "error_deleting_multigoal": "Error deleting multigoal: {error}", "copied": "Copied!"
           }
         },
-        "overlay": { "no_goals_configured": "No goals configured" },
+        "overlay": {
+          "no_goals_configured": "No goals configured",
+          "goal_not_found": "Goal not found.",
+          "temporarily_unavailable": "Goal temporarily unavailable. Please try again later.",
+          "remaining": "{value} remaining",
+          "goal_reached": "Goal reached! 🎉",
+          "goal_label": "Goal",
+          "target_label": "Goal:"
+        },
         "create_button": "+ Create New Goal",
         "page_title": "Live Goals",
         "page_description": "Each goal has its own overlay URL. Position them in OBS.",

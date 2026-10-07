@@ -6,6 +6,7 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const { inspectLegacy, importLegacy } = require('./legacy-data');
 
 const ALLOWED_FRAME_MIME = new Set(['image/png','image/jpeg','image/webp','image/gif','image/svg+xml']);
 const MAX_FRAME_BYTES = 8 * 1024 * 1024; // 8 MB per frame is plenty for transparent PNGs
@@ -20,7 +21,7 @@ class TimerAPI {
 
     _ensureFrameUpload() {
         if (this.upload) return this.upload;
-        const dir = path.join(this.api.getPluginDataDir(), 'frames');
+        const dir = path.join(this.api.getPluginDataDir({ profileScoped: true }), 'frames');
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
@@ -50,6 +51,38 @@ class TimerAPI {
     }
 
     registerRoutes() {
+        this.api.registerRoute('get', '/api/advanced-timer/legacy-data/status', (req, res) => {
+            try {
+                res.json(inspectLegacy(this.api, this.plugin.db));
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        this.api.registerRoute('get', '/api/advanced-timer/legacy-data/preview', (req, res) => {
+            try {
+                const preview = inspectLegacy(this.api, this.plugin.db);
+                res.json({ ...preview, requiresExplicitConfirmation: true, targetProfile: this.api.getActiveProfile() });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        this.api.registerRoute('post', '/api/advanced-timer/legacy-data/import', (req, res) => {
+            try {
+                if (req.body?.confirm !== true) {
+                    return res.status(400).json({ success: false, error: 'Explicit confirmation is required' });
+                }
+                const result = importLegacy(this.api, this.plugin.db);
+                res.json({ ...result, targetProfile: this.api.getActiveProfile() });
+                if (result.cleanupWarning) {
+                    this.api.log(`Legacy timer import committed with cleanup warning: ${result.cleanupWarning}`, 'warn');
+                }
+            } catch (error) {
+                res.status(409).json({ success: false, error: error.message, originalsPreserved: true });
+            }
+        });
+
         // Serve overlay HTML
         this.api.registerRoute('get', '/advanced-timer/overlay', (req, res) => {
             try {
@@ -928,7 +961,7 @@ class TimerAPI {
                 }
                 const existing = this.plugin.db.getThresholdFrame(id, slotNum);
                 if (existing && existing.filename) {
-                    const fPath = path.join(this.uploadDir || path.join(this.api.getPluginDataDir(), 'frames'), existing.filename);
+                    const fPath = path.join(this.uploadDir || path.join(this.api.getPluginDataDir({ profileScoped: true }), 'frames'), existing.filename);
                     if (fs.existsSync(fPath)) {
                         try { fs.unlinkSync(fPath); } catch (_) {}
                     }
@@ -945,7 +978,7 @@ class TimerAPI {
         this.api.registerRoute('get', '/advanced-timer/frames/:filename', (req, res) => {
             try {
                 const filename = req.params.filename || '';
-                const root = path.resolve(this.uploadDir || path.join(this.api.getPluginDataDir(), 'frames'));
+                const root = path.resolve(this.uploadDir || path.join(this.api.getPluginDataDir({ profileScoped: true }), 'frames'));
                 const fPath = path.resolve(root, filename);
                 if (!filename || filename !== path.basename(filename) || !fPath.startsWith(root + path.sep)) {
                     return res.status(400).send('Invalid filename');

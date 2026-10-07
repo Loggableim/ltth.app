@@ -6,6 +6,14 @@ const {
     getPersistentStorageId
 } = require('./plugin-identities');
 
+function isPathInside(parentPath, childPath) {
+    const relativePath = path.relative(path.resolve(parentPath), path.resolve(childPath));
+    return relativePath !== ''
+        && relativePath !== '..'
+        && !relativePath.startsWith(`..${path.sep}`)
+        && !path.isAbsolute(relativePath);
+}
+
 /**
  * ConfigPathManager - Manages persistent storage location for user configurations
  * 
@@ -17,10 +25,20 @@ const {
  * - Custom path: User-defined location (e.g., cloud sync folder)
  */
 class ConfigPathManager {
-    constructor() {
+    constructor(options = {}) {
         this.APP_NAME = 'ltth.app';
         this.customConfigPath = null;
         this.settingsFile = null;
+        this.appDir = path.resolve(options.appDir || path.join(__dirname, '..'));
+        this.env = options.env || process.env;
+        this.docsCaptureMode = this.env.LTTH_DOCS_CAPTURE === 'true';
+
+        if (this.docsCaptureMode) {
+            const profileRoot = String(this.env.LOCALAPPDATA || '').trim();
+            if (!profileRoot || !isPathInside(os.tmpdir(), profileRoot)) {
+                throw new Error('Documentation capture requires LOCALAPPDATA inside the system temp directory');
+            }
+        }
         
         // Initialize settings file path in app directory (for bootstrap)
         this.initializeBootstrapSettings();
@@ -42,8 +60,10 @@ class ConfigPathManager {
      * This file only stores the custom config path if set by user
      */
     initializeBootstrapSettings() {
-        const appDir = path.join(__dirname, '..');
-        this.settingsFile = path.join(appDir, '.config_path');
+        this.settingsFile = path.join(this.appDir, '.config_path');
+
+        // Capture profiles must not consult a user-selected production path.
+        if (this.docsCaptureMode) return;
         
         // Read custom path if exists
         if (fs.existsSync(this.settingsFile)) {
@@ -80,13 +100,16 @@ class ConfigPathManager {
      * Get the default config directory based on platform
      */
     getDefaultConfigDir() {
+        if (this.docsCaptureMode) {
+            return path.join(path.resolve(this.env.LOCALAPPDATA), this.APP_NAME);
+        }
         const platform = os.platform();
         const homeDir = os.homedir();
 
         switch (platform) {
             case 'win32':
                 // Windows: %LOCALAPPDATA%\ltth.app
-                return path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), this.APP_NAME);
+                return path.join(this.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), this.APP_NAME);
             
             case 'darwin':
                 // macOS: ~/Library/Application Support/ltth.app
@@ -137,11 +160,18 @@ class ConfigPathManager {
     /**
      * Get plugin data directory path
      */
-    getPluginDataDir(pluginId) {
+    getPluginDataDir(pluginId, options = {}) {
         const canonicalId = canonicalizePluginId(pluginId);
         const persistentId = getPersistentStorageId(canonicalId);
-        const persistentDir = path.join(this.getPluginsDir(), persistentId, 'data');
-        if (canonicalId !== persistentId) {
+        const profileId = options && options.profileId;
+        if (profileId !== undefined && profileId !== null && (
+            typeof profileId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(profileId)
+        )) {
+            throw new Error('Invalid profile ID for plugin data path');
+        }
+        const pluginRoot = path.join(this.getPluginsDir(), persistentId);
+        const persistentDir = path.join(pluginRoot, ...(profileId ? ['profiles', profileId] : []), 'data');
+        if (!profileId && canonicalId !== persistentId) {
             const canonicalDir = path.join(this.getPluginsDir(), canonicalId, 'data');
             if (fs.existsSync(canonicalDir)) {
                 this.mergeMissingPluginData(canonicalDir, persistentDir);
@@ -255,10 +285,11 @@ class ConfigPathManager {
      * Migrate existing configs from app directory to persistent location
      */
     migrateFromAppDirectory() {
-        const appDir = path.join(__dirname, '..');
-        const oldUserConfigsDir = path.join(appDir, 'user_configs');
-        const oldUserDataDir = path.join(appDir, 'user_data');
-        const oldUploadsDir = path.join(appDir, 'uploads');
+        if (this.docsCaptureMode) return false;
+
+        const oldUserConfigsDir = path.join(this.appDir, 'user_configs');
+        const oldUserDataDir = path.join(this.appDir, 'user_data');
+        const oldUploadsDir = path.join(this.appDir, 'uploads');
 
         const newUserConfigsDir = this.getUserConfigsDir();
         const newUserDataDir = this.getUserDataDir();

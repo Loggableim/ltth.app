@@ -16,6 +16,85 @@ const { createViewerProfilesIntegration } = require('./backend/viewer-profiles-b
 const path = require('path');
 const fs = require('fs');
 
+function publicText(value, maxLength = 120) {
+  return typeof value === 'string' ? value.slice(0, maxLength) : '';
+}
+
+function publicNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function publicColor(value) {
+  return typeof value === 'string' && /^#[0-9a-f]{3,8}$/i.test(value) ? value : null;
+}
+
+function publicAvatarUrl(value) {
+  if (typeof value !== 'string' || value.length > 2048) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const allowed = ['tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokcdn-eu.com', 'ibytedtos.com', 'byteoversea.com'];
+    if (
+      url.protocol !== 'https:' ||
+      url.username ||
+      url.password ||
+      !allowed.some(domain => host === domain || host.endsWith(`.${domain}`))
+    ) return null;
+    return url.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+function projectPublicProfile(profile) {
+  if (!profile) return null;
+  return {
+    username: publicText(profile.username, 80),
+    name_color: publicColor(profile.name_color),
+    title: publicText(profile.title, 80),
+    level: publicNumber(profile.level),
+    xp_progress: publicNumber(profile.xp_progress),
+    xp_for_next_level: publicNumber(profile.xp_for_next_level),
+    xp_progress_percent: Math.min(100, publicNumber(profile.xp_progress_percent)),
+    profilePictureUrl: publicAvatarUrl(profile.profilePictureUrl)
+  };
+}
+
+function projectPublicLeaderboard(rows, days) {
+  return (Array.isArray(rows) ? rows : []).slice(0, 50).map((row, index) => {
+    const projected = {
+      username: publicText(row.username, 80),
+      name_color: publicColor(row.name_color),
+      title: publicText(row.title, 80),
+      level: publicNumber(row.level),
+      xp: publicNumber(days ? row.xp_period : (row.total_xp_earned ?? row.xp)),
+      rank: index + 1
+    };
+    if (days) projected.xp_period = projected.xp;
+    return projected;
+  });
+}
+
+function projectPublicLevelUp(username, oldLevel, newLevel, rewards) {
+  const result = {
+    username: publicText(username, 80),
+    oldLevel: publicNumber(oldLevel),
+    newLevel: publicNumber(newLevel)
+  };
+  if (rewards && typeof rewards === 'object') {
+    const safeRewards = {};
+    if (typeof rewards.title === 'string') safeRewards.title = publicText(rewards.title, 80);
+    const color = publicColor(rewards.name_color);
+    if (color) safeRewards.name_color = color;
+    if (typeof rewards.announcement_message === 'string') safeRewards.announcement_message = publicText(rewards.announcement_message, 160);
+    const animation = rewards.special_effects?.animation;
+    if (['flash', 'gold'].includes(animation)) safeRewards.special_effects = { animation };
+    if (Object.keys(safeRewards).length) result.rewards = safeRewards;
+  }
+  return result;
+}
+
 class ViewerXPPlugin extends EventEmitter {
   constructor(api) {
     super();
@@ -1118,6 +1197,34 @@ class ViewerXPPlugin extends EventEmitter {
         const days = params?.days || null;
         const leaderboard = this.db.getTopViewers(limit, days);
         socket.emit('viewer-xp:leaderboard', leaderboard);
+      });
+
+      socket.on('viewer-xp:public-profile:request', (value) => {
+        const username = typeof value === 'string' ? value : value?.username;
+        if (typeof username !== 'string' || username.length < 1 || username.length > 80) return;
+        socket.emit('viewer-xp:public-profile', projectPublicProfile(this.db.getViewerProfile(username)));
+      });
+
+      socket.on('viewer-xp:public-leaderboard:request', (params = {}) => {
+        const parseBoundedInteger = (value, minimum, maximum) => {
+          if (typeof value === 'number') {
+            return Number.isSafeInteger(value) && value >= minimum && value <= maximum ? value : null;
+          }
+          if (typeof value === 'string' && /^\d+$/.test(value)) {
+            const parsed = Number(value);
+            return Number.isSafeInteger(parsed) && parsed >= minimum && parsed <= maximum ? parsed : null;
+          }
+          return null;
+        };
+        const limit = params?.limit === undefined ? 10 : parseBoundedInteger(params.limit, 1, 50);
+        const days = params?.days === undefined || params.days === null
+          ? null
+          : parseBoundedInteger(params.days, 1, 365);
+        if (limit === null || (params?.days !== undefined && params.days !== null && days === null)) {
+          socket.emit('viewer-xp:public-leaderboard', []);
+          return;
+        }
+        socket.emit('viewer-xp:public-leaderboard', projectPublicLeaderboard(this.db.getTopViewers(limit, days), days));
       });
 
       // Preview/test support: relay overlay events triggered from admin UI
@@ -2614,6 +2721,11 @@ class ViewerXPPlugin extends EventEmitter {
 
       if (io) {
         io.emit('viewer-xp:update', eventData);
+        io.emit('viewer-xp:public-update', {
+          username: publicText(username, 80),
+          amount: publicNumber(amount),
+          profile: projectPublicProfile(profile)
+        });
       }
 
       // NEW: Emit to new event log channel (to subscribed clients only)
@@ -2684,6 +2796,7 @@ class ViewerXPPlugin extends EventEmitter {
         newLevel,
         rewards
       });
+      io.emit('viewer-xp:public-level-up', projectPublicLevelUp(username, oldLevel, newLevel, rewards));
 
       // Emit IFTTT event for level up
       this.emitIFTTTEvent('viewer-xp:level-up', {
@@ -2956,7 +3069,8 @@ class ViewerXPPlugin extends EventEmitter {
     try {
       const mainDb = this.api.getDatabase();
       const userId = data.userId || username;
-      mainDb.updateUserStatistics(userId, username, { likes: 1 });
+      const likeCount = Math.max(1, Math.floor(Number(data.likeCount) || 1));
+      mainDb.updateUserStatistics(userId, username, { likes: likeCount });
     } catch (error) {
       this.api.log(`Error updating shared statistics: ${error.message}`, 'error');
     }
@@ -3017,7 +3131,9 @@ class ViewerXPPlugin extends EventEmitter {
 
     // FIX: Use data.coins (already calculated as diamondCount * repeatCount)
     // instead of data.gift?.diamond_count (which is just the raw diamond value per gift)
-    const coins = data.coins || 0;
+    const coins = data.coins !== undefined && data.coins !== null && Number.isFinite(Number(data.coins))
+      ? Number(data.coins)
+      : (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);
     
     // Track previous coin total and rank for milestone detection
     let previousCoins = 0;
@@ -3094,7 +3210,7 @@ class ViewerXPPlugin extends EventEmitter {
     const nickname = data.nickname || data.username || 'Unknown User';
     const uniqueId = data.uniqueId || '';
     const profilePictureUrl = data.profilePictureUrl || '';
-    const diamondCount = data.diamondCount || data.coins || 0;
+    const diamondCount = coins;
     
     if (userId && diamondCount > 0) {
       // Update session data (in-memory)

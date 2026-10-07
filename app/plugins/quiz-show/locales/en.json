@@ -205,6 +205,9 @@
           "unknown": "Unknown",
           "leaderboard_round": "Round",
           "leaderboard_round_season": "Round + Season",
+          "joker_50": "50:50 Joker",
+          "joker_info": "Info Joker",
+          "joker_time": "Time Joker",
           "points": "{points} pts",
           "achievement": "Achievement"
         }

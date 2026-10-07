@@ -69,7 +69,13 @@
           }
         },
         "overlay": {
-          "no_goals_configured": "Aucun objectif configuré"
+          "no_goals_configured": "Aucun objectif configuré",
+          "goal_not_found": "Objectif introuvable.",
+          "temporarily_unavailable": "Objectif temporairement indisponible. Réessayez plus tard.",
+          "remaining": "Il reste {value}",
+          "goal_reached": "Objectif atteint ! 🎉",
+          "goal_label": "Objectif",
+          "target_label": "Objectif :"
         },
         "create_button": "+ Create New Goal",
         "page_title": "Live Goals",

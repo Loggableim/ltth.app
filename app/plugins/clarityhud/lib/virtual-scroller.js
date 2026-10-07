@@ -29,6 +29,7 @@ class VirtualScroller {
 
     // Performance
     this.rafId = null;
+    this.destroyed = false;
     this.lastUpdate = 0;
     this.throttleMs = 16; // ~60 FPS
 
@@ -159,17 +160,22 @@ class VirtualScroller {
    * Request update (throttled)
    */
   requestUpdate() {
-    if (this.rafId) {
+    if (this.destroyed || this.rafId !== null) {
       return;
     }
 
     this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      if (this.destroyed) return;
       const now = Date.now();
       if (now - this.lastUpdate >= this.throttleMs) {
         this.update();
         this.lastUpdate = now;
+      } else {
+        // Preserve pending work when this frame arrives inside the throttle
+        // window; a future frame must render even if no new event arrives.
+        this.requestUpdate();
       }
-      this.rafId = null;
     });
   }
 
@@ -211,7 +217,8 @@ class VirtualScroller {
     }
 
     for (let i = 0; i < newItems.length; i++) {
-      if (newItems[i].index !== this.visibleItems[i].index) {
+      if (newItems[i].index !== this.visibleItems[i].index ||
+          newItems[i].data !== this.visibleItems[i].data) {
         return true;
       }
     }
@@ -312,8 +319,10 @@ class VirtualScroller {
    * Destroy scroller
    */
   destroy() {
-    if (this.rafId) {
+    this.destroyed = true;
+    if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
+      this.rafId = null;
     }
 
     if (this.resizeObserver) {

@@ -203,8 +203,35 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const ownsWindowSocket = !window.socket;
+    if (ownsWindowSocket) window.socket = socket;
     let currentViewer = null;
     let displayTimeout = null;
+    let isDisposed = false;
+    const animationTimeouts = new Set();
+
+    function scheduleAnimationTimeout(callback, delay) {
+      const timeout = setTimeout(() => {
+        animationTimeouts.delete(timeout);
+        if (!isDisposed) callback();
+      }, delay);
+      animationTimeouts.add(timeout);
+      return timeout;
+    }
+
+    function handleXpBarPageHide(event) {
+      if (event.persisted || isDisposed) return;
+      isDisposed = true;
+      if (displayTimeout) clearTimeout(displayTimeout);
+      for (const timeout of animationTimeouts) clearTimeout(timeout);
+      animationTimeouts.clear();
+      document.querySelectorAll('.xp-gain, .level-up-animation').forEach(element => element.remove());
+      document.getElementById('xpContainer').classList.remove('visible');
+      window.removeEventListener('pagehide', handleXpBarPageHide);
+      if (ownsWindowSocket && window.socket === socket) delete window.socket;
+      socket.disconnect();
+    }
+    window.addEventListener('pagehide', handleXpBarPageHide);
 
     // Connection status logging
     socket.on('connect', () => {
@@ -227,7 +254,7 @@
 
     // Update display
     function updateDisplay(profile) {
-      if (!profile) return;
+      if (isDisposed || !profile) return;
 
       currentViewer = profile;
 
@@ -257,14 +284,22 @@
       // Auto-hide
       if (autoHide) {
         if (displayTimeout) clearTimeout(displayTimeout);
-        displayTimeout = setTimeout(() => {
+        displayTimeout = scheduleAnimationTimeout(() => {
           container.classList.remove('visible');
         }, displayDuration);
       }
     }
 
+    window.i18n?.onLanguageChange?.(() => {
+      if (isDisposed || !currentViewer) return;
+      document.getElementById('levelBadge').textContent = ViewerXpI18n.text(
+        'xp_level', 'Level {level}', { level: currentViewer.level }
+      );
+    });
+
     // Show XP gain animation
     function showXPGain(amount, username) {
+      if (isDisposed) return;
       const container = document.getElementById('xpContainer');
       const rect = container.getBoundingClientRect();
 
@@ -276,26 +311,28 @@
 
       document.body.appendChild(element);
 
-      setTimeout(() => {
+      scheduleAnimationTimeout(() => {
         element.remove();
       }, 2000);
     }
 
     // Show level up animation
     function showLevelUp(data) {
+      if (isDisposed) return;
       const element = document.createElement('div');
       element.className = 'level-up-animation';
       element.textContent = ViewerXpI18n.text('level_up', '🎉 Level {level}! 🎉', { level: data.newLevel });
 
       document.body.appendChild(element);
 
-      setTimeout(() => {
+      scheduleAnimationTimeout(() => {
         element.remove();
       }, 2000);
     }
 
     // Listen for XP updates
-    socket.on('viewer-xp:update', (data) => {
+    socket.on('viewer-xp:public-update', (data) => {
+      if (isDisposed) return;
       console.log('📊 XP Bar: Received update event', data);
       if (data.profile) {
         updateDisplay(data.profile);
@@ -304,15 +341,17 @@
     });
 
     // Listen for level ups
-    socket.on('viewer-xp:level-up', (data) => {
+    socket.on('viewer-xp:public-level-up', (data) => {
+      if (isDisposed) return;
       console.log('⬆️ XP Bar: Received level-up event', data);
       showLevelUp(data);
       // Request updated profile
-      socket.emit('viewer-xp:get-profile', data.username);
+      socket.emit('viewer-xp:public-profile:request', data.username);
     });
 
     // Listen for profile updates
-    socket.on('viewer-xp:profile', (profile) => {
+    socket.on('viewer-xp:public-profile', (profile) => {
+      if (isDisposed) return;
       console.log('👤 XP Bar: Received profile event', profile);
       if (profile) {
         updateDisplay(profile);
@@ -322,7 +361,7 @@
     // Request initial profile if username provided
     const initialUsername = urlParams.get('username');
     if (initialUsername) {
-      socket.emit('viewer-xp:get-profile', initialUsername);
+      socket.emit('viewer-xp:public-profile:request', initialUsername);
     }
   </script>
 </body>

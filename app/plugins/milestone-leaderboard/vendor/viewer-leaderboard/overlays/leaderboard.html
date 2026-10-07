@@ -343,6 +343,22 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const ownsWindowSocket = !window.socket;
+    if (ownsWindowSocket) window.socket = socket;
+    let isDisposed = false;
+    let refreshIntervalTimer = null;
+
+    function handleLeaderboardPageHide(event) {
+      if (event.persisted || isDisposed) return;
+      isDisposed = true;
+      clearInterval(refreshIntervalTimer);
+      clearTimeout(window.refreshDebounce);
+      window.refreshDebounce = null;
+      window.removeEventListener('pagehide', handleLeaderboardPageHide);
+      if (ownsWindowSocket && window.socket === socket) delete window.socket;
+      socket.disconnect();
+    }
+    window.addEventListener('pagehide', handleLeaderboardPageHide);
 
     // Connection status logging
     socket.on('connect', () => {
@@ -359,8 +375,9 @@
 
     // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const limit = parseInt(urlParams.get('limit') || '10');
-    const days = urlParams.get('days') ? parseInt(urlParams.get('days')) : null;
+    const limit = Math.max(1, Math.min(50, parseInt(urlParams.get('limit') || '10') || 10));
+    const rawDays = urlParams.get('days') ? parseInt(urlParams.get('days')) : null;
+    const days = Number.isInteger(rawDays) && rawDays > 0 ? Math.min(365, rawDays) : null;
     const refreshInterval = parseInt(urlParams.get('refresh') || '30000');
     const theme = urlParams.get('theme');
     const accent = urlParams.get('accent');
@@ -412,11 +429,14 @@
       }
     }
 
+    let latestLeaderboardData = null;
+
     // Update leaderboard display
     function updateLeaderboard(data) {
+      latestLeaderboardData = data;
       const list = document.getElementById('leaderboardList');
 
-      if (!data || data.length === 0) {
+      if (!Array.isArray(data) || data.length === 0) {
         list.innerHTML = `<li class="no-data">${ViewerXpI18n.text('no_viewers', 'No viewers yet')}</li>`;
         return;
       }
@@ -430,21 +450,42 @@
 
         const xpValue = days ? viewer.xp_period : viewer.xp;
 
-        item.innerHTML = `
-          <div class="rank">
-            <span class="rank-icon">${getRankIcon(rank)}</span>
-          </div>
-          <div class="viewer-info">
-            <div class="viewer-name" style="color: ${viewer.name_color || '#FFFFFF'}">
-              ${viewer.username}
-            </div>
-            ${viewer.title ? `<div class="viewer-title">${viewer.title}</div>` : ''}
-          </div>
-          <div class="level-info">
-            <div class="level-badge">${ViewerXpI18n.text('leaderboard_level', 'Level {level}', { level: viewer.level })}</div>
-            <div class="xp-amount">${formatNumber(xpValue)} XP</div>
-          </div>
-        `;
+        const rankContainer = document.createElement('div');
+        rankContainer.className = 'rank';
+        const rankIcon = document.createElement('span');
+        rankIcon.className = 'rank-icon';
+        rankIcon.textContent = getRankIcon(rank);
+        rankContainer.appendChild(rankIcon);
+
+        const viewerInfo = document.createElement('div');
+        viewerInfo.className = 'viewer-info';
+        const viewerName = document.createElement('div');
+        viewerName.className = 'viewer-name';
+        viewerName.textContent = typeof viewer.username === 'string' ? viewer.username : '';
+        viewerName.style.color = typeof viewer.name_color === 'string'
+          && /^#[\da-f]{3}(?:[\da-f]{3})?(?:[\da-f]{2})?$/i.test(viewer.name_color)
+          ? viewer.name_color
+          : '#FFFFFF';
+        viewerInfo.appendChild(viewerName);
+
+        if (typeof viewer.title === 'string' && viewer.title) {
+          const viewerTitle = document.createElement('div');
+          viewerTitle.className = 'viewer-title';
+          viewerTitle.textContent = viewer.title;
+          viewerInfo.appendChild(viewerTitle);
+        }
+
+        const levelInfo = document.createElement('div');
+        levelInfo.className = 'level-info';
+        const levelBadge = document.createElement('div');
+        levelBadge.className = 'level-badge';
+        levelBadge.textContent = ViewerXpI18n.text('leaderboard_level', 'Level {level}', { level: viewer.level });
+        const xpAmount = document.createElement('div');
+        xpAmount.className = 'xp-amount';
+        xpAmount.textContent = `${formatNumber(xpValue)} XP`;
+        levelInfo.append(levelBadge, xpAmount);
+
+        item.append(rankContainer, viewerInfo, levelInfo);
 
         list.appendChild(item);
       });
@@ -458,19 +499,26 @@
       );
     }
 
+    window.i18n?.onLanguageChange?.(() => {
+      if (!isDisposed && latestLeaderboardData !== null) updateLeaderboard(latestLeaderboardData);
+    });
+
     // Fetch leaderboard
     function fetchLeaderboard() {
-      socket.emit('viewer-xp:get-leaderboard', { limit, days });
+      if (isDisposed) return;
+      socket.emit('viewer-xp:public-leaderboard:request', { limit, days });
     }
 
     // Listen for leaderboard updates
-    socket.on('viewer-xp:leaderboard', (data) => {
+    socket.on('viewer-xp:public-leaderboard', (data) => {
+      if (isDisposed) return;
       console.log('📊 Leaderboard: Received leaderboard data', data);
       updateLeaderboard(data);
     });
 
     // Listen for XP updates to refresh leaderboard
-    socket.on('viewer-xp:update', () => {
+    socket.on('viewer-xp:public-update', () => {
+      if (isDisposed) return;
       console.log('📊 Leaderboard: XP update detected, scheduling refresh...');
       // Debounce refresh
       clearTimeout(window.refreshDebounce);
@@ -478,7 +526,8 @@
     });
 
     // Listen for level ups to refresh leaderboard
-    socket.on('viewer-xp:level-up', () => {
+    socket.on('viewer-xp:public-level-up', () => {
+      if (isDisposed) return;
       console.log('📊 Leaderboard: Level up detected, refreshing...');
       fetchLeaderboard();
     });
@@ -487,7 +536,7 @@
     fetchLeaderboard();
 
     // Auto-refresh
-    setInterval(fetchLeaderboard, refreshInterval);
+    refreshIntervalTimer = setInterval(fetchLeaderboard, refreshInterval);
   </script>
 </body>
 </html>

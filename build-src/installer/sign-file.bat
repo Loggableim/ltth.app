@@ -88,7 +88,7 @@ echo.
 
 REM Set default timestamp server if not specified
 if "%TIMESTAMP_URL%"=="" (
-    set TIMESTAMP_URL=https://timestamp.digicert.com
+    set TIMESTAMP_URL=http://timestamp.digicert.com
 )
 
 echo [INFO] Timestamp server: %TIMESTAMP_URL%
@@ -118,7 +118,8 @@ if %ERRORLEVEL% == 0 (
     if %ERRORLEVEL% == 0 (
         echo [SUCCESS] Signature verified
     ) else (
-        echo [WARNING] Signature verification failed
+        echo [ERROR] Signature verification failed
+        exit /b 1
     )
     
     exit /b 0

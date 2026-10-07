@@ -191,7 +191,8 @@ const TIMER_TEXT_KEYS = Object.freeze({
 });
 
 function tr(name, params) {
-    return t(TIMER_TEXT_KEYS[name], params);
+    const key = TIMER_TEXT_KEYS[name] || `plugins.advanced-timer.ui.legacyData.${name}`;
+    return t(key, params);
 }
 
 // ---------------------------------------------------------------------------
@@ -209,9 +210,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupCreateForm();
     setupSocketListeners();
     loadTimers();
+    loadLegacyTimerData();
+    document.getElementById('advancedTimerLegacyPreviewBtn')?.addEventListener('click', async () => {
+        const preview = await loadLegacyTimerData(true);
+        const target = document.getElementById('advancedTimerLegacyPreview');
+        if (target) {
+            target.hidden = false;
+            const rows = Object.entries(preview.rows || {}).filter(([, count]) => count).map(([table, count]) => `${table}: ${count}`).join(', ') || tr('legacyNoRows');
+            const frames = (preview.frames || []).join(', ') || tr('legacyNoFrames');
+            const conflicts = (preview.frameConflicts || []).join(', ') || tr('legacyNoConflicts');
+            target.textContent = tr('legacyPreview', { profile: preview.targetProfile || tr('legacyActiveProfile'), rows, frames, conflicts });
+        }
+        const button = document.getElementById('advancedTimerLegacyImportBtn');
+        if (button) button.disabled = !preview.canImport;
+    });
+    document.getElementById('advancedTimerLegacyImportBtn')?.addEventListener('click', async () => {
+        if (!confirm(tr('legacyConfirm'))) return;
+        const response = await fetch('/api/advanced-timer/legacy-data/import', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) return alert(result.error || tr('legacyFailed'));
+        alert(result.cleanupWarning
+            ? `${tr('legacyComplete')}\n\n${tr('legacyCleanupWarning', { warning: result.cleanupWarning })}`
+            : tr('legacyComplete'));
+        await loadLegacyTimerData();
+    });
     loadGiftCatalog();
     loadProfiles();
 });
+
+async function loadLegacyTimerData(showPreview = false) {
+    const endpoint = showPreview
+        ? '/api/advanced-timer/legacy-data/preview'
+        : '/api/advanced-timer/legacy-data/status';
+    const response = await fetch(endpoint);
+    const data = await response.json();
+    const panel = document.getElementById('advancedTimerLegacyPanel');
+    if (panel) panel.hidden = !data.hasLegacyData;
+    const status = document.getElementById('advancedTimerLegacyStatus');
+    if (status && data.hasLegacyData) status.textContent = tr('legacyFound');
+    return data;
+}
 
 async function waitForI18nReady() {
     if (!window.i18n) {

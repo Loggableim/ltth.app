@@ -35,7 +35,7 @@
 ; Application Information
 !define PRODUCT_NAME "PupCid's Little TikTool Helper"
 !define PRODUCT_NAME_SHORT "LTTH"
-!define PRODUCT_VERSION "1.3.3"
+!define PRODUCT_VERSION "1.4.4"
 !define PRODUCT_PUBLISHER "PupCid / Loggableim"
 !define PRODUCT_WEB_SITE "https://ltth.app"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\launcher.exe"

@@ -1,7 +1,16 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+
+function isPathInside(parentPath, childPath) {
+  const relativePath = path.relative(path.resolve(parentPath), path.resolve(childPath));
+  return relativePath !== ''
+    && relativePath !== '..'
+    && !relativePath.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(relativePath);
+}
 
 function getAppRoot() {
   return path.resolve(__dirname, '..');
@@ -119,21 +128,35 @@ function archiveLogFiles(sourceDir, archiveBaseDir, sourceLabel, skipPaths = [])
 }
 
 function archiveStartupLogs(options = {}) {
-  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
-  const rootLogsDir = options.rootLogsDir || getRootLogsDir();
+  const env = options.env || process.env;
+  const docsCaptureMode = env.LTTH_DOCS_CAPTURE === 'true';
+  const isTest = env.NODE_ENV === 'test' || Boolean(env.JEST_WORKER_ID);
+  const rootLogsDir = options.rootLogsDir || (env.LTTH_LOG_DIR
+    ? path.resolve(env.LTTH_LOG_DIR)
+    : getRootLogsDir());
   const legacyLogsDir = options.legacyLogsDir || getLegacyLogsDir();
   const archiveBaseDir = options.archiveBaseDir || path.join(rootLogsDir, 'archive', timestampForArchive());
   const skipPaths = [
     ...(options.skipPaths || []),
-    process.env.LTTH_CURRENT_LAUNCHER_LOG
+    env.LTTH_CURRENT_LAUNCHER_LOG
   ].filter(Boolean);
 
-  const archiveRootLogs = options.archiveRootLogs !== undefined
+  if (docsCaptureMode) {
+    const profileRoot = String(env.LOCALAPPDATA || '').trim();
+    if (!profileRoot || !isPathInside(os.tmpdir(), profileRoot)) {
+      throw new Error('Documentation capture requires LOCALAPPDATA inside the system temp directory');
+    }
+    if (!env.LTTH_LOG_DIR || !isPathInside(profileRoot, rootLogsDir)) {
+      throw new Error('Documentation capture requires LTTH_LOG_DIR inside its isolated profile');
+    }
+  }
+
+  const archiveRootLogs = !docsCaptureMode && (options.archiveRootLogs !== undefined
     ? options.archiveRootLogs
-    : !isTest && process.env.LTTH_LOG_ARCHIVE_DONE !== 'true';
-  const archiveLegacyLogs = options.archiveLegacyLogs !== undefined
+    : !isTest && env.LTTH_LOG_ARCHIVE_DONE !== 'true');
+  const archiveLegacyLogs = !docsCaptureMode && (options.archiveLegacyLogs !== undefined
     ? options.archiveLegacyLogs
-    : !isTest;
+    : !isTest);
 
   ensureDir(rootLogsDir);
 

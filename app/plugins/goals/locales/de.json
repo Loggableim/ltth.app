@@ -69,7 +69,13 @@
           }
         },
         "overlay": {
-          "no_goals_configured": "Keine Ziele konfiguriert"
+          "no_goals_configured": "Keine Ziele konfiguriert",
+          "goal_not_found": "Ziel nicht gefunden.",
+          "temporarily_unavailable": "Ziel vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.",
+          "remaining": "{value} bis zum Ziel",
+          "goal_reached": "Ziel erreicht! 🎉",
+          "goal_label": "Ziel",
+          "target_label": "Ziel:"
         },
         "create_button": "+ Neues Ziel erstellen",
         "page_title": "Live-Ziele",

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 const EventEmitter = require('events');
 const express = require('express');
@@ -55,6 +56,40 @@ function clearPluginRequireCache(entryPath, pluginPath) {
     }
 }
 
+function isStrictlyInsidePath(parentPath, childPath) {
+    const relativePath = path.relative(path.resolve(parentPath), path.resolve(childPath));
+    return relativePath !== '' && relativePath !== '..' &&
+        !relativePath.startsWith(`..${path.sep}`) && !path.isAbsolute(relativePath);
+}
+
+function realpathForExistingPathOrNearestParent(targetPath) {
+    let currentPath = path.resolve(targetPath);
+    const missingSegments = [];
+
+    while (true) {
+        let exists;
+        try {
+            fs.lstatSync(currentPath);
+            exists = true;
+        } catch (error) {
+            if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') throw error;
+            exists = false;
+        }
+
+        if (exists) {
+            const realCurrentPath = fs.realpathSync(currentPath);
+            return path.resolve(realCurrentPath, ...missingSegments.reverse());
+        }
+
+        const parentPath = path.dirname(currentPath);
+        if (parentPath === currentPath) {
+            throw new Error('No existing parent for documentation capture database path');
+        }
+        missingSegments.push(path.basename(currentPath));
+        currentPath = parentPath;
+    }
+}
+
 function getPluginRouteAliases(pluginId, routePath) {
     const canonicalId = canonicalizePluginId(pluginId);
     const normalized = routePath.startsWith('/') ? routePath : `/${routePath}`;
@@ -78,7 +113,7 @@ function getPluginRouteAliases(pluginId, routePath) {
  * Ermöglicht sicheren Zugriff auf System-Funktionen
  */
 class PluginAPI {
-    constructor(pluginId, pluginDir, app, io, db, logger, pluginLoader, configPathManager, iftttEngine = null, tiktok = null) {
+    constructor(pluginId, pluginDir, app, io, db, logger, pluginLoader, configPathManager, iftttEngine = null, tiktok = null, activeProfile = null, isDocsCapture = false, docsCaptureProfileRoot = null) {
         this.pluginId = canonicalizePluginId(pluginId);
         this.pluginDir = pluginDir;
         this.app = app;
@@ -87,6 +122,27 @@ class PluginAPI {
         this.logger = logger;
         this.pluginLoader = pluginLoader;
         this.configPathManager = configPathManager;
+        this.activeProfile = activeProfile;
+        Object.defineProperty(this, 'isDocsCapture', {
+            value: isDocsCapture === true,
+            enumerable: true,
+            configurable: false,
+            writable: false
+        });
+        Object.defineProperty(this, 'assertDocsCaptureDatabasePath', {
+            value: this.assertDocsCaptureDatabasePath.bind(this),
+            enumerable: true,
+            configurable: false,
+            writable: false
+        });
+        Object.defineProperty(this, 'docsCaptureProfileRoot', {
+            value: isDocsCapture && typeof docsCaptureProfileRoot === 'string'
+                ? path.resolve(docsCaptureProfileRoot)
+                : null,
+            enumerable: true,
+            configurable: false,
+            writable: false
+        });
         this.iftttEngine = iftttEngine;
         this.tiktok = tiktok; // Reference to TikTok module for event cleanup
 
@@ -747,6 +803,58 @@ class PluginAPI {
     }
 
     /**
+     * Assert that a plugin database belongs to the isolated docs-capture
+     * profile. Normal launches deliberately treat this as a no-op.
+     * @param {string} databasePath - The absolute SQLite file path (DatabaseManager.dbPath).
+     */
+    assertDocsCaptureDatabasePath(databasePath) {
+        if (!this.isDocsCapture) return true;
+
+        const deny = () => {
+            const error = new Error('Documentation capture database path is outside the isolated profile');
+            error.code = 'DOCS_CAPTURE_DATABASE_PATH_DENIED';
+            throw error;
+        };
+
+        try {
+            const profileRoot = this.docsCaptureProfileRoot;
+            if (!profileRoot || !path.isAbsolute(profileRoot) || typeof databasePath !== 'string' ||
+                !path.isAbsolute(databasePath) || databasePath === ':memory:') {
+                deny();
+            }
+
+            const tempRoot = fs.realpathSync(os.tmpdir());
+            const realProfileRoot = fs.realpathSync(profileRoot);
+            const relativeProfile = path.relative(tempRoot, realProfileRoot);
+            if (!relativeProfile || relativeProfile === '..' || relativeProfile.startsWith(`..${path.sep}`) ||
+                path.isAbsolute(relativeProfile)) {
+                deny();
+            }
+
+            const expectedConfigDir = path.join(profileRoot, 'ltth.app');
+            const expectedUserConfigsDir = path.join(expectedConfigDir, 'user_configs');
+            const requestedPath = path.resolve(databasePath);
+            if (requestedPath !== path.join(expectedUserConfigsDir, 'default.db')) deny();
+
+            const realConfigDir = fs.realpathSync(expectedConfigDir);
+            const realUserConfigsDir = fs.realpathSync(expectedUserConfigsDir);
+            const realDatabasePath = realpathForExistingPathOrNearestParent(requestedPath);
+            const relativeConfig = path.relative(realProfileRoot, realConfigDir);
+            const relativeUserConfigs = path.relative(realConfigDir, realUserConfigsDir);
+            if (!relativeConfig || relativeConfig === '..' || relativeConfig.startsWith(`..${path.sep}`) ||
+                path.isAbsolute(relativeConfig) || relativeUserConfigs !== 'user_configs' ||
+                path.dirname(realDatabasePath) !== realUserConfigsDir ||
+                path.basename(realDatabasePath) !== path.basename(requestedPath)) {
+                deny();
+            }
+            return true;
+        } catch (error) {
+            if (error?.code === 'DOCS_CAPTURE_DATABASE_PATH_DENIED') throw error;
+            deny();
+        }
+    }
+
+    /**
      * Gibt Zugriff auf Socket.io
      */
     getSocketIO() {
@@ -784,16 +892,26 @@ class PluginAPI {
      * This directory is located in the user profile and survives updates
      * @returns {string} Absolute path to plugin's data directory
      */
-    getPluginDataDir() {
-        return this.configPathManager.getPluginDataDir(this.pluginId);
+    getPluginDataDir(options = {}) {
+        if (options.profileScoped && !this.activeProfile) {
+            throw new Error(`Cannot resolve profile-scoped data without an active profile (${this.pluginId})`);
+        }
+        const profileId = options.profileScoped
+            ? this.activeProfile.replace(/[^a-zA-Z0-9_-]/g, '_')
+            : null;
+        return this.configPathManager.getPluginDataDir(this.pluginId, profileId ? { profileId } : undefined);
+    }
+
+    getActiveProfile() {
+        return this.activeProfile;
     }
 
     /**
      * Ensure the plugin's data directory exists
      * @returns {string} Absolute path to plugin's data directory
      */
-    ensurePluginDataDir() {
-        const pluginDataDir = this.getPluginDataDir();
+    ensurePluginDataDir(options = {}) {
+        const pluginDataDir = this.getPluginDataDir(options);
         const fs = require('fs');
         if (!fs.existsSync(pluginDataDir)) {
             fs.mkdirSync(pluginDataDir, { recursive: true });
@@ -849,7 +967,7 @@ class PluginAPI {
  * PluginLoader - Lädt und verwaltet Plugins
  */
 class PluginLoader extends EventEmitter {
-    constructor(pluginsDir, app, io, db, logger, configPathManager, activeProfile = null) {
+    constructor(pluginsDir, app, io, db, logger, configPathManager, activeProfile = null, runtimeOptions = {}) {
         super();
         this.pluginsDir = pluginsDir;
         this.app = app;
@@ -858,6 +976,20 @@ class PluginLoader extends EventEmitter {
         this.logger = logger;
         this.configPathManager = configPathManager;
         this.activeProfile = activeProfile;
+        Object.defineProperty(this, 'isDocsCapture', {
+            value: runtimeOptions?.docsCapture === true,
+            enumerable: true,
+            configurable: false,
+            writable: false
+        });
+        Object.defineProperty(this, 'docsCaptureProfileRoot', {
+            value: this.isDocsCapture && typeof runtimeOptions?.docsCaptureProfileRoot === 'string'
+                ? path.resolve(runtimeOptions.docsCaptureProfileRoot)
+                : null,
+            enumerable: true,
+            configurable: false,
+            writable: false
+        });
 
         // Geladene Plugins
         this.plugins = new Map();
@@ -1329,8 +1461,12 @@ class PluginLoader extends EventEmitter {
      * Load all plugins from the plugins directory
      * PERFORMANCE: Plugins are now loaded in parallel (max 5 simultaneously)
      */
-    async loadAllPlugins() {
+    async loadAllPlugins(options = {}) {
         try {
+            const allowedPluginIds = options.allowedPluginIds;
+            if (allowedPluginIds !== undefined && !(allowedPluginIds instanceof Set)) {
+                throw new TypeError('allowedPluginIds must be a Set when provided');
+            }
             // Create plugins directory if it doesn't exist
             if (!fs.existsSync(this.pluginsDir)) {
                 fs.mkdirSync(this.pluginsDir, { recursive: true });
@@ -1351,7 +1487,10 @@ class PluginLoader extends EventEmitter {
 
                 return true;
             });
-            const inventory = this.buildPluginInventory(pluginDirs);
+            const discoveredInventory = this.buildPluginInventory(pluginDirs);
+            const inventory = allowedPluginIds
+                ? discoveredInventory.filter(item => allowedPluginIds.has(item.canonicalId))
+                : discoveredInventory;
             this.pruneStalePluginState(inventory);
             this.enforceMutuallyExclusivePluginState();
 
@@ -1516,7 +1655,10 @@ class PluginLoader extends EventEmitter {
                 this,
                 this.configPathManager,
                 this.iftttEngine,
-                this.tiktok // Pass TikTok module reference for event cleanup
+                this.tiktok, // Pass TikTok module reference for event cleanup
+                this.activeProfile,
+                this.isDocsCapture,
+                this.docsCaptureProfileRoot
             );
 
             // Plugin instanziieren

@@ -12,6 +12,19 @@ class GoalOverlayRenderer {
         this.container = document.getElementById('goal-container');
         this.animationFrame = null;
         this.currentAnimation = null;
+        this.cleanedUp = false;
+        this.errorKey = null;
+        this.pageHideHandler = event => {
+            if (event.persisted) return;
+            this.cleanupSocket();
+        };
+        this.languageChangeHandler = () => {
+            if (this.cleanedUp) return;
+            if (this.goal) this.render();
+            else if (this.errorKey) this.showError(this.errorKey);
+        };
+        window.i18n?.onLanguageChange?.(this.languageChangeHandler);
+        window.i18n?.ready?.then?.(() => this.languageChangeHandler());
     }
 
     /**
@@ -36,26 +49,43 @@ class GoalOverlayRenderer {
      */
     connectSocket() {
         this.socket = io();
+        // Standalone overlay pages do not load dashboard.js, which normally
+        // exposes the app socket to the shared i18n client.
+        if (!window.socket) window.socket = this.socket;
+        window.addEventListener('pagehide', this.pageHideHandler);
+        const on = (event, handler) => this.socket.on(event, data => {
+            if (!this.cleanedUp) handler(data);
+        });
 
-        this.socket.on('connect', () => {
+        on('connect', () => {
             console.log('Connected to server');
             this.subscribeToGoal();
         });
 
-        this.socket.on('disconnect', () => {
+        on('disconnect', () => {
             console.log('Disconnected from server');
+            if (!this.cleanedUp) this.showError('temporarily_unavailable');
+        });
+
+        on('goals:error', (data) => {
+            if (!data || String(data.goalId) !== String(this.goalId)) return;
+            const isNotFound = /goal\s+not\s+found/i.test(String(data.error || ''));
+            this.showError(isNotFound ? 'goal_not_found' : 'temporarily_unavailable');
         });
 
         // Goal subscribed
-        this.socket.on('goals:subscribed', (data) => {
+        on('goals:subscribed', (data) => {
+            if (!data || String(data.goalId) !== String(this.goalId)) return;
             console.log('Subscribed to goal:', data.goalId);
+            this.errorNotice = null;
+            this.errorKey = null;
             this.goal = data.goal;
             this.state = data.state;
             this.render();
         });
 
         // Value changed
-        this.socket.on('goals:value-changed', (data) => {
+        on('goals:value-changed', (data) => {
             if (data.goalId !== this.goalId) return;
 
             console.log('Value changed:', data);
@@ -65,7 +95,7 @@ class GoalOverlayRenderer {
         });
 
         // Goal reached
-        this.socket.on('goals:reached', (data) => {
+        on('goals:reached', (data) => {
             if (data.goalId !== this.goalId) return;
 
             console.log('Goal reached!');
@@ -75,7 +105,7 @@ class GoalOverlayRenderer {
         });
 
         // Reach complete (after behavior applied)
-        this.socket.on('goals:reach-complete', (data) => {
+        on('goals:reach-complete', (data) => {
             if (data.goalId !== this.goalId) return;
 
             console.log('Reach complete:', data);
@@ -85,7 +115,7 @@ class GoalOverlayRenderer {
         });
 
         // Config changed
-        this.socket.on('goals:config-changed', (data) => {
+        on('goals:config-changed', (data) => {
             if (data.goal.id !== this.goalId) return;
 
             console.log('Config changed');
@@ -94,7 +124,7 @@ class GoalOverlayRenderer {
         });
 
         // Goal reset
-        this.socket.on('goals:reset', (data) => {
+        on('goals:reset', (data) => {
             if (data.goalId !== this.goalId) return;
 
             console.log('Goal reset');
@@ -104,11 +134,19 @@ class GoalOverlayRenderer {
         });
 
         // Goal deleted
-        this.socket.on('goals:deleted', (data) => {
+        on('goals:deleted', (data) => {
             if (data.goalId !== this.goalId) return;
 
             console.log('Goal deleted');
-            this.container.innerHTML = '';
+            this.goal = null;
+            this.state = null;
+            this.errorKey = null;
+            this.errorNotice = null;
+            if (!this.container) return;
+            this.container.replaceChildren();
+            this.container.classList.remove('hidden');
+            this.container.style.width = '';
+            this.container.style.height = '';
         });
     }
 
@@ -119,11 +157,62 @@ class GoalOverlayRenderer {
         this.socket.emit('goals:subscribe', this.goalId);
     }
 
+    overlayText(key) {
+        const translationKey = `plugins.goals.goals.overlay.${key}`;
+        const translated = window.i18n?.t?.(translationKey);
+        if (typeof translated === 'string' && translated !== translationKey) return translated;
+        if (key === 'goal_not_found') return 'Goal not found.';
+        return 'Goal temporarily unavailable. Please try again later.';
+    }
+
+    overlayLabel(key, params = {}) {
+        const translationKey = `plugins.goals.goals.overlay.${key}`;
+        const translated = window.i18n?.t?.(translationKey, params);
+        if (typeof translated === 'string' && translated !== translationKey) return translated;
+        const fallbacks = {
+            remaining: `{value} remaining`,
+            goal_reached: 'Goal reached! 🎉',
+            goal_label: 'Goal',
+            target_label: 'Goal:'
+        };
+        const fallback = fallbacks[key];
+        if (key === 'remaining' && fallback) {
+            return fallback.replace(/\{value\}/g, String(params.value ?? ''));
+        }
+        return fallback || translationKey;
+    }
+
+    showError(key) {
+        if (this.cleanedUp) return;
+        this.goal = null;
+        this.state = null;
+        this.errorKey = key;
+        if (!this.container) return;
+
+        const notice = document.createElement('div');
+        notice.className = 'goal-overlay-error';
+        notice.setAttribute('role', 'alert');
+        notice.style.cssText = 'display:flex;width:100%;min-height:64px;align-items:center;justify-content:center;padding:16px 22px;border-radius:10px;background:rgba(8,12,20,.94);color:#fff;font:600 20px/1.4 sans-serif;text-align:center;';
+        notice.textContent = this.overlayText(key);
+        this.container.classList.remove('hidden');
+        this.container.replaceChildren(notice);
+        this.errorNotice = notice;
+    }
+
+    cleanupSocket() {
+        if (this.cleanedUp) return;
+        this.cleanedUp = true;
+        window.removeEventListener('pagehide', this.pageHideHandler);
+        if (!this.socket) return;
+        if (window.socket === this.socket) window.socket = null;
+        this.socket.disconnect();
+    }
+
     /**
      * Render goal
      */
     render() {
-        if (!this.goal) return;
+        if (this.cleanedUp || !this.goal) return;
 
         // Check if hidden
         if (this.state && this.state.state === 'hidden') {
@@ -138,7 +227,13 @@ class GoalOverlayRenderer {
         const theme = this.goal.theme || {};
 
         // Render template
-        const html = template.render(this.goal, theme);
+        const labels = {
+            remaining: value => this.overlayLabel('remaining', { value }),
+            goalReached: this.overlayLabel('goal_reached'),
+            goal: this.overlayLabel('goal_label'),
+            target: this.overlayLabel('target_label')
+        };
+        const html = template.render(this.goal, theme, labels);
         const styles = template.getStyles(theme);
 
         // Update container
@@ -188,7 +283,8 @@ class GoalOverlayRenderer {
         const element = this.container.querySelector('[class*="fill"], [class*="progress"]');
         if (!element) return;
 
-        animation.apply(element, this.goal).then(() => {
+        animation.apply(element, this.goal, () => !this.cleanedUp).then(() => {
+            if (this.cleanedUp) return;
             // Signal animation end
             this.socket.emit('goals:animation-end', {
                 goalId: this.goalId,
@@ -204,7 +300,8 @@ class GoalOverlayRenderer {
         const animation = this.getAnimation(animationId);
         if (!animation) return;
 
-        animation.apply(this.container, this.goal).then(() => {
+        animation.apply(this.container, this.goal, () => !this.cleanedUp).then(() => {
+            if (this.cleanedUp) return;
             // Signal animation end
             this.socket.emit('goals:animation-end', {
                 goalId: this.goalId,
@@ -257,7 +354,7 @@ class GoalOverlayRenderer {
  */
 
 const CompactBarTemplate = {
-    render(goal, theme) {
+    render(goal, theme, labels) {
         const progress = Math.min(100, (goal.current_value / goal.target_value) * 100);
         const remaining = Math.max(0, goal.target_value - goal.current_value);
         const icon = this.getIcon(goal.goal_type);
@@ -280,7 +377,7 @@ const CompactBarTemplate = {
                         <div class="compact-bar-fill" style="width: ${progress}%"></div>
                     </div>
                     <div class="compact-bar-remaining">
-                        ${remaining > 0 ? `${this.format(remaining)} remaining` : 'Goal Reached! 🎉'}
+                        ${this.escape(remaining > 0 ? labels.remaining(this.format(remaining)) : labels.goalReached)}
                     </div>
                 </div>
             </div>
@@ -592,7 +689,7 @@ const FloatingPillTemplate = {
 
 // Vertical Meter Template
 const VerticalMeterTemplate = {
-    render(goal, theme) {
+    render(goal, theme, labels) {
         const progress = Math.min(100, (goal.current_value / goal.target_value) * 100);
         const icon = this.getIcon(goal.goal_type);
 
@@ -612,7 +709,7 @@ const VerticalMeterTemplate = {
                 </div>
                 <div class="vertical-meter-footer">
                     <div class="vertical-meter-current">${this.format(goal.current_value)}</div>
-                    <div class="vertical-meter-target">${this.format(goal.target_value)}</div>
+                    <div class="vertical-meter-target"><span class="vertical-meter-target-label">${this.escape(labels.target)}</span> ${this.format(goal.target_value)}</div>
                 </div>
             </div>
         `;
@@ -637,7 +734,6 @@ const VerticalMeterTemplate = {
             .vertical-meter-footer { text-align: center; }
             .vertical-meter-current { font-size: 1.8rem; font-weight: 700; color: ${primaryColor}; text-shadow: 0 0 15px ${primaryColor}60; margin-bottom: 5px; }
             .vertical-meter-target { font-size: 0.9rem; color: #64748b; }
-            .vertical-meter-target::before { content: 'Goal: '; }
         `;
     },
 
@@ -803,7 +899,7 @@ const HexagonProgressTemplate = {
 
 // Glassy Card Template (NEW - Glassmorphism style)
 const GlassyCardTemplate = {
-    render(goal, theme) {
+    render(goal, theme, labels) {
         const progress = Math.min(100, (goal.current_value / goal.target_value) * 100);
         const icon = this.getIcon(goal.goal_type);
 
@@ -822,7 +918,7 @@ const GlassyCardTemplate = {
                         </div>
                         <div class="glassy-stat-divider"></div>
                         <div class="glassy-stat-item">
-                            <div class="glassy-stat-label">Goal</div>
+                            <div class="glassy-stat-label">${this.escape(labels.goal)}</div>
                             <div class="glassy-stat-value">${this.format(goal.target_value)}</div>
                         </div>
                     </div>
@@ -893,17 +989,17 @@ const SmoothProgressAnimation = {
     apply(element, goal) {
         return new Promise(resolve => {
             // Already smooth via CSS transition
-            setTimeout(resolve, 500);
+            setTimeout(() => resolve(), 500);
         });
     }
 };
 
 const BounceAnimation = {
-    apply(element, goal) {
+    apply(element, goal, isActive = () => true) {
         return new Promise(resolve => {
             element.style.animation = 'bounce 0.6s ease';
             setTimeout(() => {
-                element.style.animation = '';
+                if (isActive()) element.style.animation = '';
                 resolve();
             }, 600);
         });
@@ -911,11 +1007,11 @@ const BounceAnimation = {
 };
 
 const GlowAnimation = {
-    apply(element, goal) {
+    apply(element, goal, isActive = () => true) {
         return new Promise(resolve => {
             element.style.animation = 'glow-pulse 0.8s ease';
             setTimeout(() => {
-                element.style.animation = '';
+                if (isActive()) element.style.animation = '';
                 resolve();
             }, 800);
         });
@@ -923,19 +1019,19 @@ const GlowAnimation = {
 };
 
 const CelebrationAnimation = {
-    apply(container, goal) {
+    apply(container, goal, isActive = () => true) {
         return new Promise(resolve => {
             // Create celebration effect
             container.style.animation = 'celebrate 2s ease';
-            this.createConfetti(container);
+            this.createConfetti(container, isActive);
             setTimeout(() => {
-                container.style.animation = '';
+                if (isActive()) container.style.animation = '';
                 resolve();
             }, 2000);
         });
     },
 
-    createConfetti(container) {
+    createConfetti(container, isActive = () => true) {
         const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#ffa07a', '#98d8c8', '#f7dc6f'];
         for (let i = 0; i < 50; i++) {
             const confetti = document.createElement('div');
@@ -950,7 +1046,9 @@ const CelebrationAnimation = {
                 border-radius: 50%;
             `;
             container.appendChild(confetti);
-            setTimeout(() => confetti.remove(), 4000);
+            setTimeout(() => {
+                if (isActive()) confetti.remove();
+            }, 4000);
         }
     }
 };

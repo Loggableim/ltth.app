@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release separation**: LTTH stays at 1.4.1. Stream Monsters 1.11.1 ships as a separately versioned deterministic Stable plugin package; the 1.11.0 store artifact and all earlier packages remain immutable.
 - **Release hardening**: Durable provider-event receipts prevent duplicate GCCE/fallback actions, public events no longer expose internal monster IDs, and Arena Collapse cannot stall forever through repeated defense.
 
+## [1.4.4] - 2026-10-07
+
+### Interim release
+
+- Pending event batches are persisted before database closure; SQLite write failures preserve queued data for recovery, and shutdown deadlines do not report false success.
+- Overlay lifecycle and socket ownership fixes preserve BFCache recovery and final cleanup. ViewerXP reward labels follow language changes during active animations without restarting them.
+- Focused CPU regressions and isolated Timer, Spotlight and ViewerXP backend/browser checks passed with temporary profiles and verified cleanup.
+- OBS matrix acceptance and remaining TikTok/LIVE/provider, public tunnel and release installer acceptance are still open. This version is an interim release, not a completed acceptance claim.
+
 ## [1.4.3] - 2026-09-28
 
 ### Added

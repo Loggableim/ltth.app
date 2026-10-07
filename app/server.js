@@ -5,6 +5,12 @@
 // ===========================================================================
 const fs = require('fs');
 const path = require('path');
+const docsCapturePolicy = require('./modules/docs-capture-policy');
+const docsCaptureMode = docsCapturePolicy.isDocumentationCapture(process.env);
+const docsCaptureAllowedPluginIds = docsCapturePolicy.validateDocumentationCaptureEnvironment(process.env);
+const docsCaptureProfileRoot = docsCaptureMode
+    ? docsCapturePolicy.getValidatedDocumentationCaptureProfileRoot(docsCaptureAllowedPluginIds)
+    : null;
 
 if (process.env.ELECTRON === 'true' || process.env.ELECTRON_RUN_AS_NODE === '1') {
   const path = require('path');
@@ -39,8 +45,11 @@ if (process.env.ELECTRON === 'true' || process.env.ELECTRON_RUN_AS_NODE === '1')
   }
 }
 
-// Load environment variables first
-require('dotenv').config();
+// Normal launches may load .env. A documentation capture receives a strict,
+// allowlisted child environment and must never import app-local credentials.
+if (docsCapturePolicy.shouldLoadDotenv(process.env)) {
+  require('dotenv').config();
+}
 
 function loadClerkEnvFallback() {
     const exampleEnvPath = path.join(__dirname, '.env.example');
@@ -85,7 +94,9 @@ function loadClerkEnvFallback() {
     }
 }
 
-loadClerkEnvFallback();
+if (docsCapturePolicy.shouldLoadDotenv(process.env)) {
+    loadClerkEnvFallback();
+}
 
 const express = require('express');
 const http = require('http');
@@ -561,7 +572,7 @@ const initState = require('./modules/initialization-state');
 const dbPath = profileManager.getProfilePath(activeProfile);
 let db;
 try {
-    db = new Database(dbPath, activeProfile); // Pass streamer_id as activeProfile
+    db = new Database(dbPath, activeProfile, { registerShutdownHandlers: false }); // Server owns shutdown ordering.
 } catch (error) {
     logger.error(`❌ Database initialization failed for profile "${activeProfile}" at ${dbPath}: ${error.stack || error.message}`);
     process.exit(1);
@@ -654,7 +665,9 @@ const iftttServices = {
 };
 const iftttEngine = new IFTTTEngine(db, logger, iftttServices);
 logger.info('⚡ IFTTT Engine initialized (replaces FlowEngine)');
-iftttEngine.init().catch(err => logger.error('❌ IFTTT Engine init error:', err));
+if (!docsCaptureMode) {
+    iftttEngine.init().catch(err => logger.error('❌ IFTTT Engine init error:', err));
+}
 
 // PERFORMANCE OPTIMIZATION: Session Extractor is now lazy-loaded
 // It will be initialized on first use via getSessionExtractor()
@@ -669,13 +682,25 @@ logger.info(`✅ Leaderboard initialized with streamer scope: ${activeProfile}`)
 // Plugin-System initialisieren
 // A docs capture may mount one throwaway plugin fixture. Normal LTTH launches
 // always retain the shipped plugin directory.
-const docsCapturePluginDir = process.env.LTTH_DOCS_CAPTURE === 'true'
+const docsCapturePluginDir = docsCaptureMode
     ? process.env.LTTH_DOCS_CAPTURE_PLUGIN_DIR
     : '';
-const pluginsDir = docsCapturePluginDir
-    ? path.resolve(docsCapturePluginDir)
+const pluginsDir = docsCaptureMode
+    ? path.resolve(docsCapturePluginDir || path.join(configPathManager.getConfigDir(), 'docs-capture-empty-plugins'))
     : path.join(__dirname, 'plugins');
-const pluginLoader = new PluginLoader(pluginsDir, app, io, db, logger, configPathManager, activeProfile);
+if (docsCaptureMode && !docsCapturePluginDir && !fs.existsSync(pluginsDir)) {
+    fs.mkdirSync(pluginsDir, { recursive: true });
+}
+const pluginLoader = new PluginLoader(
+    pluginsDir,
+    app,
+    io,
+    db,
+    logger,
+    configPathManager,
+    activeProfile,
+    { docsCapture: docsCaptureMode, docsCaptureProfileRoot }
+);
 logger.info('🔌 Plugin Loader initialized');
 
 // Set TikTok module reference for dynamic event registration
@@ -3961,13 +3986,19 @@ function writeObsOverlayWrapper(resolvedPort) {
 (async () => {
     // ========== PORT RESOLUTION (VOR Plugin-Loading) ==========
     PORT = portManager.preferredPort;
-    const pluginsDisabledByLauncher = process.env.DISABLE_PLUGINS === 'true' || process.env.LTTH_SAFE_MODE === 'true';
+    const pluginsDisabledByLauncher = docsCaptureMode
+        ? docsCaptureAllowedPluginIds.size === 0
+        : process.env.DISABLE_PLUGINS === 'true' || process.env.LTTH_SAFE_MODE === 'true';
     logger.info(`🔌 Port binding starts at ${PORT} (range ${portManager.preferredPort}-${portManager.maxPort})`);
 
     // Plugins laden VOR Server-Start, damit alle Routen verfügbar sind
     logger.info('🔌 Loading plugins...');
     try {
-        const plugins = pluginsDisabledByLauncher ? [] : await pluginLoader.loadAllPlugins();
+        const plugins = pluginsDisabledByLauncher
+            ? []
+            : await pluginLoader.loadAllPlugins(docsCaptureMode
+                ? { allowedPluginIds: docsCaptureAllowedPluginIds }
+                : undefined);
         const loadedCount = pluginLoader.plugins.size;
 
         initState.setPluginsLoaded(loadedCount);
@@ -4069,20 +4100,24 @@ function writeObsOverlayWrapper(resolvedPort) {
         initState.setServerStarted();
         ALLOWED_ORIGINS = networkManager.getAllowedOrigins(PORT);
         logger.info(`📋 CORS whitelist initialized for port ${PORT} (mode: ${networkManager.bindMode})`);
-        await stableOverlayRoutingLifecycle.afterServerListening();
-
-        try {
-            writeCurrentPortFile(PORT);
-            logger.info(`📝 Runtime port file written: ${LTTH_PORT_FILE_PATH}`);
-        } catch (error) {
-            logger.error(`❌ Failed to write runtime port file: ${error.message}`);
+        if (docsCapturePolicy.shouldStartExternalConnectors(process.env)) {
+            await stableOverlayRoutingLifecycle.afterServerListening();
         }
 
-        try {
-            writeObsOverlayWrapper(PORT);
-            logger.info(`🎬 OBS local wrapper updated: ${OBS_WRAPPER_FILE_PATH}`);
-        } catch (error) {
-            logger.error(`❌ Failed to write OBS local wrapper: ${error.message}`);
+        if (!docsCaptureMode) {
+            try {
+                writeCurrentPortFile(PORT);
+                logger.info(`📝 Runtime port file written: ${LTTH_PORT_FILE_PATH}`);
+            } catch (error) {
+                logger.error(`❌ Failed to write runtime port file: ${error.message}`);
+            }
+
+            try {
+                writeObsOverlayWrapper(PORT);
+                logger.info(`🎬 OBS local wrapper updated: ${OBS_WRAPPER_FILE_PATH}`);
+            } catch (error) {
+                logger.error(`❌ Failed to write OBS local wrapper: ${error.message}`);
+            }
         }
 
         scheduleDeferredConfigRepair();
@@ -4112,7 +4147,7 @@ function writeObsOverlayWrapper(resolvedPort) {
 
         // OBS WebSocket auto-connect (if configured)
     const obsConfigStr = db.getSetting('obs_websocket_config');
-    if (obsConfigStr) {
+    if (!docsCaptureMode && obsConfigStr) {
         try {
             const obsConfig = JSON.parse(obsConfigStr);
             if (obsConfig.enabled && obsConfig.host && obsConfig.port) {
@@ -4137,13 +4172,15 @@ function writeObsOverlayWrapper(resolvedPort) {
     // TikTok auto-reconnect (if configured)
     const autoReconnectSetting = db.getSetting('tiktok_auto_reconnect');
     const savedUsername = db.getSetting('last_connected_username');
-    const autoReconnectPolicy = shouldAutoReconnectOnStartup({
-        autoReconnectSetting,
-        savedUsername,
-        env: process.env
-    });
+    const autoReconnectPolicy = docsCaptureMode
+        ? { enabled: false, reason: 'docs_capture' }
+        : shouldAutoReconnectOnStartup({
+            autoReconnectSetting,
+            savedUsername,
+            env: process.env
+        });
     
-    if (autoReconnectPolicy.enabled) {
+    if (!docsCaptureMode && autoReconnectPolicy.enabled) {
         logger.info(`🔄 Auto-Reconnect aktiviert: Versuche Verbindung zu @${savedUsername}...`);
         setTimeout(async () => {
             try {
@@ -4156,7 +4193,7 @@ function writeObsOverlayWrapper(resolvedPort) {
                 logger.info('   Sie können manuell über das Dashboard verbinden.');
             }
         }, TIKTOK_AUTO_RECONNECT_DELAY_MS);
-    } else if (savedUsername) {
+    } else if (!docsCaptureMode && savedUsername) {
         logger.info(`ℹ️  Auto-Reconnect deaktiviert. Letzter Stream: @${savedUsername}`);
         
         // Update gift catalog independently when not auto-connecting
@@ -4183,14 +4220,16 @@ function writeObsOverlayWrapper(resolvedPort) {
     }
 
         // Cloud Sync initialisieren (wenn aktiviert)
-        try {
-            await cloudSync.initialize();
-        } catch (error) {
-            logger.warn(`⚠️  Cloud Sync konnte nicht initialisiert werden: ${error.message}`);
+        if (!docsCaptureMode) {
+            try {
+                await cloudSync.initialize();
+            } catch (error) {
+                logger.warn(`⚠️  Cloud Sync konnte nicht initialisiert werden: ${error.message}`);
+            }
         }
 
         // Auto-start tunnel if configured
-        if (networkManager.tunnelEnabled) {
+        if (!docsCaptureMode && networkManager.tunnelEnabled) {
             logger.info(`🚇 Auto-starting tunnel (provider: ${networkManager.tunnelProvider})...`);
             networkManager.startTunnel(PORT).then(url => {
                 logger.info(`🚇 Tunnel ready: ${url}`);
@@ -4539,19 +4578,33 @@ async function gracefulShutdown(signal) {
     // Prevent multiple invocations (e.g. SIGINT + SIGTERM arriving close together)
     if (_isShuttingDown) return;
     _isShuttingDown = true;
+    const shutdownAttempt = {};
+    gracefulShutdown.activeAttempt = shutdownAttempt;
 
     logger.info(`\n\n🛑 Shutting down gracefully (${signal})...`);
 
     // Force-Exit nach 5 Sekunden falls server.close() hängt
     const forceExitTimer = setTimeout(() => {
         logger.warn('⚠️  Graceful shutdown timed out after 5s, forcing exit...');
-        process.exit(0);
+        try {
+            // SQLite writes are synchronous; persist even events queued by slow cleanup.
+            db._flushEventBatchSync();
+        } catch (error) {
+            gracefulShutdown.activeAttempt = null;
+            _isShuttingDown = false;
+            process.exitCode = 1;
+            logger.error(`Forced shutdown aborted to preserve pending events: ${error.message}`);
+            return;
+        }
+        gracefulShutdown.activeAttempt = null;
+        process.exit(1);
     }, 5000);
     forceExitTimer.unref();
 
     // This shutdown path has its own 2s client bound. It must finish before
     // slower plugin cleanup can consume the process-wide 5s force-exit budget.
     await stableOverlayRoutingLifecycle.shutdown();
+    if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
 
     // Plugins own routes, sockets, timers and optional servers. Release them
     // first and in reverse load order so dependants disappear before providers.
@@ -4563,6 +4616,7 @@ async function gracefulShutdown(signal) {
         } catch (error) {
             logger.error(`Failed to unload plugin ${pluginId} during shutdown: ${error.message}`);
         }
+        if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
     }
 
     // TikTok-Verbindung trennen
@@ -4581,15 +4635,26 @@ async function gracefulShutdown(signal) {
     } catch (error) {
         logger.error('Error shutting down cloud sync:', error);
     }
+    if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
 
     // Alle Socket.io-Verbindungen sofort trennen damit server.close() nicht endlos wartet
     io.disconnectSockets(true);
 
     // Datenbank schließen
-    db.close();
+    try {
+        db.close();
+    } catch (error) {
+        clearTimeout(forceExitTimer);
+        gracefulShutdown.activeAttempt = null;
+        _isShuttingDown = false;
+        process.exitCode = 1;
+        logger.error(`Database flush failed; shutdown aborted to preserve pending events: ${error.message}`);
+        return;
+    }
 
     // Server schließen
     server.close(() => {
+        if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
         clearTimeout(forceExitTimer);
         logger.info('✅ Server closed');
         process.exit(0);
