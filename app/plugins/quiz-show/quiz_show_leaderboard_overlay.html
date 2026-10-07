@@ -274,7 +274,7 @@
             'use strict';
 
             const socket = io();
-            let currentType = 'season';
+            let currentType = 'round';
 
             // Listen for config updates to check ultra-kompakt mode
             socket.on('quiz-show:config-updated', (config) => {
@@ -292,7 +292,7 @@
 
             // Listen for leaderboard updates
             socket.on('quiz-show:leaderboard-show', (data) => {
-                updateLeaderboard(data.leaderboard, data.type || 'season');
+                updateLeaderboard(data.leaderboard, data.type || 'round');
             });
 
             socket.on('quiz-show:leaderboard-update', (data) => {
@@ -366,11 +366,11 @@
             // Load initial leaderboard and config
             async function loadInitialLeaderboard() {
                 try {
-                    const response = await fetch('/api/quiz-show/leaderboard');
+                    const response = await fetch('/api/quiz-show/leaderboard?type=round');
                     const data = await response.json();
 
                     if (data.success && data.leaderboard) {
-                        updateLeaderboard(data.leaderboard, 'season');
+                        updateLeaderboard(data.leaderboard, 'round');
                     }
                 } catch (error) {
                     console.error('Error loading leaderboard:', error);
