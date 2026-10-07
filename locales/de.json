@@ -1123,6 +1123,12 @@
       "mascotAlt": "Zwinkerndes PupCid-Maskottchen",
       "flowAlt": "LTTH Flow-Editor",
       "overlayAlt": "LTTH Overlay-Konfiguration"
+    },
+    "closedBeta": {
+      "eyebrow": "CLOSED BETA · KOMMT BALD",
+      "title": "11 Apps in geschlossener Beta",
+      "description": "Diese Apps werden weiterhin lokal entwickelt. Sie sind derzeit nicht öffentlich zum Download verfügbar.",
+      "listLabel": "Apps in geschlossener Beta"
     }
   },
   "webgpuLanding.eyebrow": "OBS + WebGPU",

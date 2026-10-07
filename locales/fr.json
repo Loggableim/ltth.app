@@ -1183,6 +1183,12 @@
       "mascotAlt": "Mascotte PupCid qui fait un clin d'œil",
       "flowAlt": "Éditeur de flux LTTH",
       "overlayAlt": "Configuration d'overlay LTTH"
+    },
+    "closedBeta": {
+      "eyebrow": "BÊTA FERMÉE · BIENTÔT DISPONIBLE",
+      "title": "11 apps en bêta fermée",
+      "description": "Ces apps sont encore développées pour les versions locales. Elles ne sont pas disponibles au téléchargement public.",
+      "listLabel": "Apps en bêta fermée"
     }
   },
   "webgpuLanding.eyebrow": "OBS + WebGPU",

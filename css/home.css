@@ -66,6 +66,12 @@
 .home-trust-list li { align-items: center; display: flex; gap: 0.4rem; }
 .home-trust-list svg { fill: none; height: 1rem; stroke: var(--home-green); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; width: 1rem; }
 
+.home-closed-beta { background: linear-gradient(135deg, #171a19, #211a30); border-block: 1px solid var(--home-line); padding: clamp(3rem, 6vw, 5rem) 0; }
+.home-closed-beta h2 { color: var(--home-ink); font-size: clamp(1.8rem, 4vw, 2.7rem); letter-spacing: -0.04em; margin: 0; }
+.home-closed-beta__description { color: var(--home-muted); line-height: 1.65; margin: 0.85rem 0 1.5rem; max-width: 50rem; }
+.home-closed-beta__apps { display: flex; flex-wrap: wrap; gap: 0.65rem; list-style: none; margin: 0; padding: 0; }
+.home-closed-beta__apps li { background: rgba(255, 255, 255, 0.055); border: 1px solid var(--home-line); border-radius: 999px; color: var(--home-ink); font-size: 0.9rem; padding: 0.55rem 0.85rem; }
+
 .home-hero__visual { min-height: 28rem; position: relative; }
 .home-glow { border-radius: 50%; filter: blur(1px); pointer-events: none; position: absolute; }
 .home-glow--one { background: rgba(66, 223, 100, 0.22); height: 16rem; right: 3%; top: 1%; width: 16rem; }
