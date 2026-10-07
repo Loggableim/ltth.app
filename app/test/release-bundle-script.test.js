@@ -89,6 +89,11 @@ function createTempRepo() {
   fs.writeFileSync(path.join(root, 'app', 'output', 'playwright', 'private.png'), 'runtime-output');
   fs.mkdirSync(path.join(root, 'app', '.playwright-cli'), { recursive: true });
   fs.writeFileSync(path.join(root, 'app', '.playwright-cli', 'session.json'), 'runtime-session');
+  const profilesRoot = path.join(root, 'app', 'user_configs');
+  fs.mkdirSync(profilesRoot, { recursive: true });
+  for (const name of ['.active_profile', 'fixture.db', 'fixture.json', 'test-config.json']) {
+    fs.writeFileSync(path.join(profilesRoot, name), 'synthetic-private-profile');
+  }
 
   const rgsRoot = path.join(
     root,
@@ -213,6 +218,7 @@ describe('Release bundle script', () => {
     const names = JSON.parse(inspect.stdout.trim());
     expect(names).toContain('ltth_1.3.24/launcher.exe');
     expect(names).toContain('ltth_1.3.24/app/package.json');
+    expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_configs/'))).toEqual([]);
     expect(names).toContain('ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/License.txt');
     expect(names).toContain(
       'ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/Animated body parts/Heads/head1/idle_0.png'

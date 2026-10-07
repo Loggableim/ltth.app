@@ -53,6 +53,7 @@ APP_EXCLUDED_PREFIXES = (
     "node_modules/",
     "output/",
     "test/",
+    "user_configs/",
 )
 
 APP_EXCLUDED_EXACT = {

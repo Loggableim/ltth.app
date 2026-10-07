@@ -416,13 +416,13 @@ Section "!LTTH Core Application" SEC_CORE
   File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\scripts"
   File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\test"
   File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\tts"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\user_configs"
   File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\user_data"
   File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\wiki"
   
   ; Create runtime directories that were excluded from packaging
   ; These directories are needed for the application to run properly
   CreateDirectory "$INSTDIR\app\logs"
+  CreateDirectory "$INSTDIR\app\user_configs"
   
   Banner::destroy
   
