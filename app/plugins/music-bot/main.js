@@ -385,7 +385,7 @@ class MusicBotPlugin extends EventEmitter {
     this._emitSetupStatus();
   }
 
-  async destroy() {
+  async destroy(context = {}) {
     if (this._destroyed) return;
     this._destroyed = true;
     this._cancelNextSongVote('plugin-destroyed');
@@ -417,7 +417,9 @@ class MusicBotPlugin extends EventEmitter {
       this.api.log(`[music-bot] Failed to shutdown playlist imports: ${error.message}`, 'error');
     });
     this.playbackEngine?.removeAllListeners?.();
-    const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.()).catch((error) => {
+    const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.({
+      reconcileOrphans: context.reason === 'application-shutdown'
+    })).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
     });
     await Promise.all([

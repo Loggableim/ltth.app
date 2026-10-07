@@ -543,7 +543,7 @@ describe('Music Bot orphan reconciliation', () => {
   test.each([
     ['emergency stop', (controller) => controller.emergencyStop()],
     ['player reset', (controller) => controller.resetPlayer()],
-    ['shutdown', (controller) => controller.shutdown()]
+    ['application shutdown', (controller) => controller.shutdown({ reconcileOrphans: true })]
   ])('%s also removes marked orphan processes', async (_label, invoke) => {
     const processRegistry = {
       findMarkedProcesses: jest.fn(async () => []),
@@ -556,7 +556,7 @@ describe('Music Bot orphan reconciliation', () => {
     expect(processRegistry.cleanupMarked).toHaveBeenCalledWith({ timeoutMs: 2000 });
   });
 
-  test('waits for slot shutdown before scanning marked processes', async () => {
+  test('application shutdown waits for slot shutdown before scanning marked processes', async () => {
     const order = [];
     const processRegistry = {
       findMarkedProcesses: jest.fn(async () => []),
@@ -577,7 +577,7 @@ describe('Music Bot orphan reconciliation', () => {
       }
     });
 
-    await controller.shutdown();
+    await controller.shutdown({ reconcileOrphans: true });
 
     expect(order).toEqual([
       'slot-shutdown-start',

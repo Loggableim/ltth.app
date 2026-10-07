@@ -1083,6 +1083,31 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     });
   });
 
+  test('shutdown retires its owned slots without scanning or terminating other marked processes', async () => {
+    const registry = {
+      findMarkedProcesses: jest.fn(async () => [{ pid: 987654, known: false }]),
+      cleanupMarked: jest.fn(async () => ({ found: [987654], killed: [987654], remaining: [] }))
+    };
+    const engine = new FakeEngine('owned-slot');
+    const controller = new PlaybackController(
+      { defaultVolume: 50, crossfadeDuration: 0 },
+      { log: jest.fn() },
+      {
+        processRegistry: registry,
+        engineFactory: () => engine
+      }
+    );
+
+    await controller.play({ id: 'owned-track', title: 'Owned', url: 'owned.mp3' });
+    await controller.shutdown();
+
+    expect(engine.shutdownCalls).toBe(1);
+    expect(engine.destroyed).toBe(true);
+    expect(registry.findMarkedProcesses).not.toHaveBeenCalled();
+    expect(registry.cleanupMarked).not.toHaveBeenCalled();
+    expect(controller.lifecycle).toBe('destroyed');
+  });
+
   test('forwards confirmed heartbeat failure across controller slot generations without engine replay', async () => {
     let nextPid = 100;
     const engines = [];

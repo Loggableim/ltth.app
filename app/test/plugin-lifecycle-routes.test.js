@@ -34,12 +34,17 @@ describe('plugin route lifecycle', () => {
       module.exports = class RouteTestPlugin {
         constructor(api) {
           this.api = api;
+          this.destroyContext = null;
         }
 
         async init() {
           this.api.registerRoute('GET', '/api/route-test/ping', (req, res) => {
             res.json({ success: true });
           });
+        }
+
+        async destroy(context) {
+          this.destroyContext = context;
         }
       };
     `);
@@ -60,7 +65,8 @@ describe('plugin route lifecycle', () => {
 
     await request(app).get('/api/route-test/ping').expect(200, { success: true });
 
-    await loader.unloadPlugin('route-test');
+    await loader.unloadPlugin('route-test', { reason: 'application-shutdown' });
+    expect(plugin.instance.destroyContext).toEqual({ reason: 'application-shutdown' });
 
     await request(app).get('/api/route-test/ping').expect(404);
     fs.rmSync(base, { recursive: true, force: true });

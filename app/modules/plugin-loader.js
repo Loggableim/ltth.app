@@ -1761,7 +1761,7 @@ class PluginLoader extends EventEmitter {
     /**
      * Entlädt ein Plugin
      */
-    async unloadPlugin(pluginId) {
+    async unloadPlugin(pluginId, context = {}) {
         const canonicalId = canonicalizePluginId(pluginId);
         const plugin = this.plugins.get(canonicalId);
         if (!plugin) return false;
@@ -1774,7 +1774,7 @@ class PluginLoader extends EventEmitter {
                 }
             }
             if (typeof plugin.instance.destroy === 'function') {
-                await plugin.instance.destroy();
+                await plugin.instance.destroy(context);
             }
         } catch (error) {
             errors.push(error);

@@ -393,17 +393,17 @@ class PlaybackController extends EventEmitter {
     });
   }
 
-  shutdown() {
+  shutdown({ reconcileOrphans = false } = {}) {
     if (this.lifecycle === 'destroyed') {
       return Promise.resolve();
     }
     this.lifecycle = 'destroying';
     this._abortActiveTransition('shutdown');
     return this._enqueueIntent('shutdown', async () => {
-      // Let each owned slot finish its acknowledged IPC quit before the
-      // registry scans for any remaining marked orphan processes.
+      // Let each owned slot finish its acknowledged IPC quit before any
+      // requested application-wide orphan reconciliation.
       await this._terminateAllSlots();
-      await this._cleanupMarkedProcesses();
+      if (reconcileOrphans) await this._cleanupMarkedProcesses();
       this.lifecycle = 'destroyed';
       this.transportState = 'idle';
     });

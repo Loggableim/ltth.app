@@ -914,6 +914,20 @@ describe('Music Bot Safety Lock runtime integration', () => {
     expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
   });
 
+  test('plugin shutdown requests orphan reconciliation only for application shutdown', async () => {
+    const ordinary = hydratePlugin();
+    await ordinary.plugin.destroy();
+    expect(ordinary.plugin.playbackEngine.shutdown).toHaveBeenCalledWith({
+      reconcileOrphans: false
+    });
+
+    const application = hydratePlugin();
+    await application.plugin.destroy({ reason: 'application-shutdown' });
+    expect(application.plugin.playbackEngine.shutdown).toHaveBeenCalledWith({
+      reconcileOrphans: true
+    });
+  });
+
   test('destroy invalidates a deferred AutoDJ selection before it can start playback', async () => {
     const { plugin, queue, setNowPlaying } = hydratePlugin();
     queue.splice(0, queue.length);
