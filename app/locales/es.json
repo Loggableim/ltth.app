@@ -774,6 +774,9 @@
     "search": "Buscar"
   },
   "events": {
+    "superfan_label": "SuperFan",
+    "superfan_join": "SuperFan se ha unido al LIVE",
+    "superfan_event": "Evento SuperFan recibido",
     "gift": "{username} envió {giftName} x{repeatCount} ({coins} monedas)",
     "follow": "¡{username} te siguió!",
     "subscribe": "¡{username} se suscribió!",

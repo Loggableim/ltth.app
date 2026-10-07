@@ -412,6 +412,9 @@
     "minigames": "Mini Games"
   },
   "events": {
+    "superfan_label": "SuperFan",
+    "superfan_join": "SuperFan joined the LIVE",
+    "superfan_event": "SuperFan event received",
     "gift": "{username} sent {giftName} x{repeatCount} ({coins} coins)",
     "follow": "{username} followed!",
     "subscribe": "{username} subscribed!",
