@@ -181,3 +181,25 @@ test('mode changes retain unrelated ZIP validation error', async () => {
     expect(doc.getElementById('importAlert').classList.contains('hidden')).toBe(false);
   } finally { dom.window.close(); }
 });
+
+test('details button uses visibility class, opens truthful report, resets for next preview', async () => {
+  const { dom, window, validate } = await load();
+  try {
+    await validate();
+    const doc = window.document;
+    const button = doc.getElementById('toggleLogBtn');
+    expect(button.classList.contains('hidden')).toBe(true);
+    doc.getElementById('doImportBtn').click();
+    await tick();
+    expect(button.style.display).not.toBe('none');
+    expect(button.classList.contains('hidden')).toBe(false);
+    button.click();
+    expect(doc.getElementById('importResultLog').classList.contains('show')).toBe(true);
+    expect(doc.getElementById('importResultLog').textContent).toContain('rollback failed');
+    doc.getElementById('newImportBtn').click();
+    expect(button.classList.contains('hidden')).toBe(true);
+    expect(button.onclick).toBeNull();
+    expect(doc.getElementById('importResultLog').textContent).toBe('');
+    expect(doc.getElementById('importResultLog').classList.contains('show')).toBe(false);
+  } finally { dom.window.close(); }
+});

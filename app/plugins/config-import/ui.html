@@ -615,7 +615,7 @@
             <h2 data-i18n="plugins.config-import.config-import.ui.resultTitle">📋 Import Result</h2>
             <div id="importResultMsg"></div>
             <div id="importResultLog" class="log-area"></div>
-            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="plugins.config-import.config-import.ui.showDetails">
+            <button class="btn btn-secondary hidden" id="toggleLogBtn" style="margin-top:10px;" data-i18n="plugins.config-import.config-import.ui.showDetails">
                 🔽 Show Details
             </button>
             <div style="margin-top:16px;">
@@ -961,7 +961,17 @@
         validateBtn.disabled = true;
     }
 
+    function resetImportDetails() {
+        const log = document.getElementById('importResultLog');
+        const button = document.getElementById('toggleLogBtn');
+        log.replaceChildren();
+        log.classList.remove('show');
+        button.onclick = null;
+        hideEl(button);
+    }
+
     function resetImport() {
+        resetImportDetails();
         clearFile();
         parsedPreview = null;
         previewPersistentStateAvailable = false;
@@ -1136,7 +1146,7 @@
 
             const logArea = document.getElementById('importResultLog');
             const toggleBtn = document.getElementById('toggleLogBtn');
-            logArea.innerHTML = '';
+            resetImportDetails();
 
             if (data.success) {
                 document.getElementById('importResultMsg').innerHTML =
