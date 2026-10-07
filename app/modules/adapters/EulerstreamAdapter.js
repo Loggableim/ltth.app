@@ -4,23 +4,12 @@ const WebSocket = require('ws');
 const BaseAdapter = require('./BaseAdapter');
 const axios = require('axios');
 
-// Shared fallback keys are a last resort. They must never connect silently:
-// the dashboard requires an explicit confirmation before an initial use.
-const BUILTIN_FALLBACK_API_KEYS = Object.freeze([
-    'euler_MmI1NTliMGU3M2QzMzhmM2U3ZmIxMTBkZWVhZDJjZTNmZTU0MDJlNmRmNWJiMTRjM2M3OTU3',
-    'euler_M2NiZDI1MDBhZTE2YWJjYzM3NDg4OTAwZTFkNDE2MzQ1N2QyZGQ2ZDk3MWYxNWMyMjM5N2Ix',
-    'euler_OWU0NWQ5ZDYyZWIxMWI2YzkyYmM1YTViMmY2OWIzMDUxNjU2ZjQzOGY2Y2VkYzI5YmZlNWI2'
-]);
 const ENV_FALLBACK_API_KEYS = String(process.env.EULER_FALLBACK_API_KEY || '')
     .split(/[\s,]+/)
     .map(key => key.trim())
     .filter(Boolean);
-const FALLBACK_API_KEYS = Object.freeze(
-    ENV_FALLBACK_API_KEYS.length > 0 ? ENV_FALLBACK_API_KEYS : BUILTIN_FALLBACK_API_KEYS
-);
+const FALLBACK_API_KEYS = Object.freeze(ENV_FALLBACK_API_KEYS);
 
-// Maximum number of milliseconds a gift event timestamp may be in the future before it
-// is rejected as invalid in _generateEventHash(). Prevents hash collisions from skewed clocks.
 const MAX_FUTURE_TIMESTAMP_MS = 60000;
 
 /**
@@ -503,9 +492,8 @@ class EulerstreamAdapter extends BaseAdapter {
             this._connectionKeySelection = keySelection;
             
             if (!apiKey) {
-                const errorMsg = 'No API key configured. Please set your Eulerstream API key either:\n' +
-                    '1. In the Dashboard Settings UI, or\n' +
-                    '2. Via EULER_API_KEY environment variable.\n' +
+                const errorMsg = 'No Eulerstream API key is configured. Set one in Dashboard Settings, ' +
+                    'or use EULER_API_KEY / EULER_FALLBACK_API_KEY environment variables.\n' +
                     'Get your free API key at https://www.eulerstream.com';
                 this.logger.error('❌ ' + errorMsg);
                 throw new Error(errorMsg);
@@ -3725,4 +3713,3 @@ EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS = 2;
 EulerstreamAdapter.TIKTOK_LIVE_PAGE_TIMEOUT_MS = 10000;
 
 module.exports = EulerstreamAdapter;
-

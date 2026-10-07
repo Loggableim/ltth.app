@@ -109,6 +109,26 @@ describe('Eulerstream fallback key consent', () => {
     process.env = originalEnv;
   });
 
+  test('reports missing configuration without opening a socket when no explicit key exists', async () => {
+    delete process.env.EULER_FALLBACK_API_KEY;
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
+    adapter = new EulerstreamAdapter(
+      { emit: jest.fn() },
+      createMockDb(),
+      createMockLogger()
+    );
+
+    await expect(adapter.connect('testuser')).rejects.toThrow(
+      'No Eulerstream API key is configured. Set one in Dashboard Settings'
+    );
+    expect(createWebSocketUrl).not.toHaveBeenCalled();
+    expect(adapter.getEulerApiKeyInfo()).toEqual(expect.objectContaining({
+      configured: false,
+      usingFallback: false
+    }));
+  });
+
   test('requires explicit confirmation before a fallback key can open a socket', async () => {
     const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
     const io = { emit: jest.fn() };
@@ -196,8 +216,9 @@ describe('Eulerstream fallback key consent', () => {
     }));
   });
 
-  test('uses an euler API key as the built-in fallback only after consent', async () => {
-    delete process.env.EULER_FALLBACK_API_KEY;
+  test('uses an explicitly configured synthetic fallback only after consent', async () => {
+    process.env.EULER_FALLBACK_API_KEY = FALLBACK_KEY;
+    jest.resetModules();
     const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
     const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
     const io = { emit: jest.fn() };
@@ -211,7 +232,7 @@ describe('Eulerstream fallback key consent', () => {
 
     expect(createWebSocketUrl).toHaveBeenCalledWith(expect.objectContaining({
       uniqueId: 'testuser',
-      apiKey: expect.stringMatching(/^euler_/)
+      apiKey: FALLBACK_KEY
     }));
     expect(io.emit).not.toHaveBeenCalledWith('fallback-key-warning', expect.any(Object));
   });
