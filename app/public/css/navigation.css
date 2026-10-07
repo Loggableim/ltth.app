@@ -1261,7 +1261,6 @@ html:is(
     grid-column: 1 / -1;
 }
 
-.dashboard-side-column .shoutbox-section,
 .dashboard-side-column .updates-section {
     padding: 1.25rem;
 }
@@ -1272,10 +1271,6 @@ html:is(
 
 .dashboard-side-column .updates-content {
     max-height: 280px;
-}
-
-.dashboard-side-column .shoutbox-container {
-    min-height: 320px;
 }
 
 #view-dashboard {

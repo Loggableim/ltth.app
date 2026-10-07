@@ -47,7 +47,6 @@
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
         'thermal-printer': '#64748b',
-        chatango: '#f97316',
         animazingpal: '#ef4444',
         'config-import': '#06b6d4',
         plugins: '#22c55e',

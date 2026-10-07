@@ -2092,65 +2092,6 @@
             }
         }
 
-        /* Shoutbox / Community Chat Section - Theme-Aware */
-        .shoutbox-section {
-            margin-bottom: 2rem;
-        }
-
-        .shoutbox-container {
-            background: var(--color-bg-card);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 0;
-            min-height: 500px;
-            height: 600px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .shoutbox-container:hover {
-            border-color: var(--color-accent-primary);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Hide Chatango script tag text content - Chatango will replace with iframe */
-        .shoutbox-container > script,
-        script[id^="cid"][data-cfasync="false"] {
-            display: none !important;
-        }
-
-        /* Chatango iframe will be inserted by the script */
-        .shoutbox-container > iframe {
-            display: block;
-            width: 100% !important;
-            height: 100% !important;
-            border: none;
-        }
-
-        .chatango-loading {
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-
-        /* Mobile responsiveness for shoutbox */
-        @media (max-width: 768px) {
-            .shoutbox-container {
-                min-height: 400px;
-                height: 500px;
-                padding: 0;
-            }
-        }
-
-        /* Theme-specific adjustments for Chatango integration */
-        [data-theme="day"] .shoutbox-container {
-            background: var(--color-bg-secondary);
-        }
-
-        [data-theme="contrast"] .shoutbox-container {
-            border-width: 2px;
-            border-color: var(--color-text-primary);
-        }
-
         /* Modal Styles */
         .modal-overlay {
             position: fixed;
@@ -2679,10 +2620,6 @@
                             <i data-lucide="printer"></i>
                             <span class="sidebar-item-text" data-i18n="navigation.thermal_printer">Thermal Printer</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="chatango" data-plugin="chatango" data-tooltip="Chatango">
-                            <i data-lucide="message-circle"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.chatango">Chatango</span>
-                        </a>
                         <a href="#" class="sidebar-item" data-view="animazingpal" data-plugin="animazingpal" data-tooltip="AnimazingPal">
                             <i data-lucide="brain"></i>
                             <span class="sidebar-item-text" data-i18n="navigation.animazingpal">AnimazingPal</span>
@@ -3012,21 +2949,6 @@
                         </div>
 
                         <div class="dashboard-side-column">
-
-                    <!-- 4. Community Chat / Shoutbox Section -->
-                    <section class="dashboard-section shoutbox-section" data-plugin="chatango">
-                        <h2 class="section-title">
-                            <i data-lucide="message-square"></i>
-                            <span data-i18n="dashboard.community_chat">Community Chat</span>
-                        </h2>
-                        <div class="shoutbox-container" id="chatango-embed-container">
-                            <!-- Chatango embed will be loaded dynamically by chatango-theme-adapter.js -->
-                            <!-- when the chatango plugin is enabled -->
-                            <div class="chatango-loading" style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--color-text-secondary);">
-                                <span data-i18n="chatango.loading">Loading Community Chat...</span>
-                            </div>
-                        </div>
-                    </section>
 
                     <!-- 5. Updates / Features / Changelog Section -->
                     <section class="dashboard-section updates-section" id="updates-section">
@@ -3614,15 +3536,6 @@
                     <section class="view-section">
                         <div class="iframe-container">
                             <iframe data-src="/thermal-printer/ui" title="Thermal Printer"></iframe>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- View: Chatango -->
-                <div id="view-chatango" class="content-view" data-plugin="chatango">
-                    <section class="view-section">
-                        <div class="iframe-container">
-                            <iframe data-src="/chatango/ui" title="Chatango Integration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -5015,12 +4928,6 @@
     <audio id="dashboard-tts-audio"></audio>
     <div id="dashboard-soundboard-pool"></div>
 
-    <!-- Chatango Bottom-Right Widget -->
-    <div id="chatango-widget-container" data-plugin="chatango">
-        <!-- Chatango widget will be loaded dynamically by chatango-theme-adapter.js -->
-        <!-- when the chatango plugin is enabled -->
-    </div>
-
     <!-- Scripts -->
     <!-- Theme manager must load early to prevent flash of unstyled content -->
     <script src="/js/theme-manager.js"></script>
@@ -5054,7 +4961,6 @@
     <script src="/js/stable-overlay-routing.js"></script>
     <script src="/js/network-overlay-tunnel.js"></script>
     <script src="/js/network-settings.js"></script>
-    <script src="/js/chatango-theme-adapter.js"></script>
     <script src="/js/flow-presets.js"></script>
     <script src="/js/flow-wizard.js"></script>
 </body>
