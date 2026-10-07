@@ -31,7 +31,9 @@ class EffectsEngine {
         this.socket = null;
         this.socketListeners = [];
         this.resizeHandler = () => this.handleResize();
-        this.beforeUnloadHandler = () => this.destroy();
+        this.pageHideHandler = (event) => {
+            if (!event || event.persisted !== true) this.destroy();
+        };
         this.contextLostHandler = (event) => this.handleContextLost(event);
         this.contextRestoredHandler = () => this.handleContextRestored();
         this.destroyed = false;
@@ -51,7 +53,7 @@ class EffectsEngine {
     }
     
     async init() {
-        if (!this.canvas) {
+        if (!this.canvas || this.destroyed) {
             console.error('Cannot initialize: canvas is null');
             return;
         }
@@ -65,6 +67,8 @@ class EffectsEngine {
         }
         
         await this.loadConfig();
+        if (this.destroyed) return;
+
         this.setupAllShaders();
         if (!this.switchEffect(this.config.effectType ?? 'flames')) {
             this.switchEffect('flames');
@@ -76,7 +80,6 @@ class EffectsEngine {
         this.handleResize();
         
         window.addEventListener('resize', this.resizeHandler);
-        window.addEventListener('beforeunload', this.beforeUnloadHandler);
         
         this.setupSocketListener();
         this.scheduleRender();
@@ -96,9 +99,12 @@ class EffectsEngine {
     setupLifecycleListeners() {
         this.canvas.addEventListener('webglcontextlost', this.contextLostHandler);
         this.canvas.addEventListener('webglcontextrestored', this.contextRestoredHandler);
+        window.addEventListener('pagehide', this.pageHideHandler);
     }
 
     handleContextLost(event) {
+        if (this.destroyed) return;
+
         if (event && typeof event.preventDefault === 'function') {
             event.preventDefault();
         }
@@ -148,15 +154,21 @@ class EffectsEngine {
         const defaults = this.getDefaultConfig();
         try {
             const response = await fetch('/api/flame-overlay/config');
+            if (this.destroyed) return;
+
             const data = await response.json();
+            if (this.destroyed) return;
+
             if (data.success) {
                 this.config = { ...defaults, ...data.config };
                 return;
             }
         } catch (error) {
+            if (this.destroyed) return;
             console.error('Failed to load config:', error);
         }
 
+        if (this.destroyed) return;
         this.config = defaults;
     }
 
@@ -202,8 +214,12 @@ class EffectsEngine {
 
     registerSocketListener(eventName, handler) {
         if (!this.socket || typeof this.socket.on !== 'function') return;
-        this.socket.on(eventName, handler);
-        this.socketListeners.push([eventName, handler]);
+        const guardedHandler = (...args) => {
+            if (this.destroyed) return;
+            handler(...args);
+        };
+        this.socket.on(eventName, guardedHandler);
+        this.socketListeners.push([eventName, guardedHandler]);
     }
 
     applyConfigUpdate(data) {
@@ -323,6 +339,7 @@ class EffectsEngine {
         if (existingTimer) clearTimeout(existingTimer);
 
         const timer = setTimeout(() => {
+            if (this.destroyed) return;
             this.triggerTimers.delete(triggerId);
             const trigger = this.activeTriggers.find(activeTrigger => activeTrigger.id === triggerId);
             this.removeTrigger(triggerId, trigger ? trigger.revert !== false : true);
@@ -497,6 +514,11 @@ class EffectsEngine {
             .filter(field => Number.isFinite(Number(startConfig[field])) && Number.isFinite(Number(targetConfig[field])));
 
         const interpolate = () => {
+            if (this.destroyed) {
+                this.revertAnimationId = null;
+                return;
+            }
+
             const elapsed = Date.now() - startTime;
             const t = Math.min(elapsed / duration, 1.0);
             // Quadratic ease-in-out: accelerates then decelerates
@@ -1854,6 +1876,7 @@ void main() {
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, wrap);
         };
         image.onerror = (error) => {
+            if (this.destroyed || this.contextLost) return;
             console.warn(`Texture '${name}' failed to load, using placeholder`, error);
         };
         image.src = url;
@@ -2145,7 +2168,7 @@ void main() {
     }
     
     handleResize() {
-        if (!this.canvas || !this.gl) return;
+        if (this.destroyed || !this.canvas || !this.gl) return;
 
         const dimensions = this.getConfiguredCanvasDimensions();
         const dpr = this.getRenderPixelRatio(dimensions);
@@ -2397,7 +2420,7 @@ void main() {
         }
 
         window.removeEventListener('resize', this.resizeHandler);
-        window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+        window.removeEventListener('pagehide', this.pageHideHandler);
         this.canvas.removeEventListener('webglcontextlost', this.contextLostHandler);
         this.canvas.removeEventListener('webglcontextrestored', this.contextRestoredHandler);
 
