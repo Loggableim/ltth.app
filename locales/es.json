@@ -1318,7 +1318,6 @@
   "docs.plugin.advanced-timer.title": "Advanced Timer",
   "docs.plugin.animazingpal.title": "AnimazingPal",
   "docs.plugin.api-bridge.title": "API Bridge",
-  "docs.plugin.chatango.title": "Chatango Integration",
   "docs.plugin.clarityhud.title": "ClarityHUD",
   "docs.plugin.coinbattle.title": "CoinBattle",
   "docs.plugin.config-import.title": "Config Backup & Restore",
@@ -2707,30 +2706,6 @@
           "020": "Nach dem Setup sind die Plugin-Funktionen sofort nutzbar.",
           "021": "Jetzt herunterladen",
           "022": "? Alle Features"
-        }
-      },
-      "plugin-chatango": {
-        "text": {
-          "001": "Chatango - PupCid's Little TikTool Helper",
-          "002": "Zusatzkanal in den Streambetrieb einbinden.",
-          "003": "Chatango erweitert den Chat-Kontext mit eigenen Moderationsregeln.",
-          "004": "Jetzt herunterladen",
-          "005": "Der Chatango-Embed folgt jetzt dem normalen LTTH-Dashboard-Look statt als grüner Fremdkörper aufzutauchen.",
-          "006": "Was macht Chatango? (Kurzfassung)",
-          "007": "Kanalzugriff absichern",
-          "008": "Moderationslog und Kontrolle",
-          "009": "Optionaler Overlay-Feed",
-          "010": "Tutorial (3 Schritte)",
-          "011": "Schritt 1:",
-          "012": "Chatango Zugangsdaten eintragen.",
-          "013": "Schritt 2:",
-          "014": "Kanalregeln festlegen.",
-          "015": "Schritt 3:",
-          "016": "Kurztest mit Beispielnachricht senden.",
-          "017": "Jetzt ausprobieren",
-          "018": "Nach dem Setup sind die Plugin-Funktionen sofort nutzbar.",
-          "019": "Jetzt herunterladen",
-          "020": "? Alle Features"
         }
       },
       "plugin-clarity-hud": {

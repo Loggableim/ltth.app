@@ -219,12 +219,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ltth.app/features/plugin-chatango.html</loc>
-    <lastmod>2026-07-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ltth.app/features/plugin-gcce-hud.html</loc>
     <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
@@ -460,16 +454,6 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/api-bridge.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/api-bridge.html?lang=es"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/api-bridge.html?lang=fr"/>
-  </url>
-  <url>
-    <loc>https://ltth.app/docs/plugins/chatango.html</loc>
-    <lastmod>2026-07-13</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/chatango.html?lang=de"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/chatango.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/chatango.html?lang=es"/>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/chatango.html?lang=fr"/>
   </url>
   <url>
     <loc>https://ltth.app/docs/plugins/clarityhud.html</loc>
