@@ -1,4 +1,5 @@
 {
+  "features.closedBeta.notice": "Closed Beta · Coming soon. This app is not available for public download yet; local development continues.",
   "home": {
     "meta": {
       "canonical": "https://ltth.app/?lang=en",
