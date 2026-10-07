@@ -385,6 +385,17 @@
 }
 
 /* High Contrast Mode (Vision Impaired) */
+@media (max-height: 600px) {
+  [data-theme="contrast"] .theme-dropdown {
+    position: fixed;
+    top: 4rem;
+    right: 0.5rem;
+    max-height: calc(100vh - 5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 [data-theme="contrast"] {
     color-scheme: dark;
 
