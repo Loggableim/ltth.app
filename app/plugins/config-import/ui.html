@@ -465,6 +465,14 @@
                     📁 Plugin Data Files
                 </span></label>
                 <label class="checkbox-label">
+                    <input type="checkbox" id="incProfileScopedPluginData"><span>
+                    <span data-i18n="plugins.config-import.config-import.ui.profileScopedExportFiles">🔒 Advanced Timer and Schnorrbecher data for the current profile</span>
+                </span></label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incSchnorrbecherPersistentState"><span>
+                    <span data-i18n="plugins.config-import.config-import.ui.profileScopedExportState">Include Schnorrbecher persistent state (session state is always omitted)</span>
+                </span></label>
+                <label class="checkbox-label">
                     <input type="checkbox" id="incUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs">
                     User Configs
                 </span></label>
@@ -542,6 +550,16 @@
             <div class="summary-grid" id="summaryGrid"></div>
 
             <div id="previewWarnings"></div>
+
+            <div class="card" style="margin:12px 0;padding:14px;">
+                <strong data-i18n="plugins.config-import.config-import.ui.profileScopedTitle">Profile-scoped plugin data</strong>
+                <p id="profileScopedImportInfo" style="margin:6px 0 10px;" data-i18n="plugins.config-import.config-import.ui.profileScopedInfo">Archive metadata never selects the target profile.</p>
+                <label class="checkbox-label"><input type="checkbox" id="impProfileScopedPluginData"><span data-i18n="plugins.config-import.config-import.ui.profileScopedFiles">Import profile-scoped Advanced Timer / Schnorrbecher files</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impSchnorrbecherPersistentState" disabled><span data-i18n="plugins.config-import.config-import.ui.profileScopedState">Import Schnorrbecher persistent state (session state is never imported)</span></label>
+                <label for="profileScopedTarget" data-i18n="plugins.config-import.config-import.ui.targetProfile">Target profile</label>
+                <select id="profileScopedTarget" style="display:block;min-width:220px;margin-top:4px;"></select>
+                <p id="profileScopedActiveInfo" style="margin:6px 0 0;"></p>
+            </div>
 
             <p class="section-title" data-i18n="plugins.config-import.config-import.ui.pluginDetails">Plugin details</p>
             <div style="overflow-x:auto;">
@@ -708,6 +726,31 @@
     const exportStatus = document.getElementById('exportStatus');
     const exportResultCard = document.getElementById('exportResultCard');
     const exportAlert = document.getElementById('exportAlert');
+    const exportScopedToggle = document.getElementById('incProfileScopedPluginData');
+    const exportStateToggle = document.getElementById('incSchnorrbecherPersistentState');
+    const exportPluginDataToggle = document.getElementById('incPluginData');
+    const importTargetProfile = document.getElementById('profileScopedTarget');
+    const importGlobalSettings = document.getElementById('impGlobal');
+    const importPluginSettings = document.getElementById('impPluginSettings');
+    let serverActiveProfile = null;
+    function syncProfileScopedSettingsAvailability() {
+        const targetDiffers = Boolean(serverActiveProfile && importTargetProfile.value !== serverActiveProfile);
+        for (const checkbox of [importGlobalSettings, importPluginSettings]) {
+            if (!checkbox) continue;
+            if (targetDiffers) checkbox.checked = false;
+            checkbox.disabled = targetDiffers;
+        }
+        const activeInfo = document.getElementById('profileScopedActiveInfo');
+        if (activeInfo) activeInfo.textContent = t('plugins.config-import.config-import.ui.activeProfileInfo', { profile: serverActiveProfile || t('plugins.config-import.config-import.ui.unknownActiveProfile') });
+    }
+    importTargetProfile.addEventListener('change', syncProfileScopedSettingsAvailability);
+    const syncExportStateToggle = () => {
+        exportStateToggle.disabled = !exportScopedToggle.checked || !exportPluginDataToggle.checked;
+        if (exportStateToggle.disabled) exportStateToggle.checked = false;
+    };
+    exportScopedToggle.addEventListener('change', syncExportStateToggle);
+    exportPluginDataToggle.addEventListener('change', syncExportStateToggle);
+    syncExportStateToggle();
 
     function loadCapabilities() {
         fetch('/api/config-backup/capabilities')
@@ -739,7 +782,9 @@
             includePluginData: document.getElementById('incPluginData').checked,
             includeUserConfigs: document.getElementById('incUserConfigs').checked,
             includeUploads: document.getElementById('incUploads').checked,
-            includeUserData: document.getElementById('incUserData').checked
+            includeUserData: document.getElementById('incUserData').checked,
+            includeProfileScopedPluginData: document.getElementById('incProfileScopedPluginData').checked,
+            includeSchnorrbecherPersistentState: document.getElementById('incSchnorrbecherPersistentState').checked
         };
 
         try {
@@ -942,6 +987,13 @@
             `<strong>${t('plugins.config-import.config-import.ui.manifestBackupFrom')}</strong> ${escHtml(manifest.exportedAt || t('plugins.config-import.config-import.ui.unknownValue'))} &nbsp;|&nbsp; ` +
             `<strong>${t('plugins.config-import.config-import.ui.manifestAppVersion')}</strong> ${escHtml(appInfo.version || '?')} &nbsp;|&nbsp; ` +
             `<strong>${t('plugins.config-import.config-import.ui.manifestProfile')}</strong> ${escHtml(manifest.sourceProfile || t('plugins.config-import.config-import.ui.noProfile'))}`;
+        const scoped = preview.profileScopedPluginData || {};
+        document.getElementById('profileScopedImportInfo').textContent = scoped.plugins?.length
+            ? t('plugins.config-import.config-import.ui.scopedArchiveInfo', { profile: scoped.sourceProfile || t('plugins.config-import.config-import.ui.unknownValue'), plugins: scoped.plugins.join(', ') })
+            : t('plugins.config-import.config-import.ui.scopedArchiveMissing');
+        document.getElementById('impProfileScopedPluginData').disabled = !scoped.plugins?.length;
+        document.getElementById('impSchnorrbecherPersistentState').disabled = !scoped.schnorrbecherPersistentStateAvailable;
+        document.getElementById('impSchnorrbecherPersistentState').checked = false;
 
         // Summary grid
         const grid = document.getElementById('summaryGrid');
@@ -1011,6 +1063,18 @@
     document.getElementById('doImportBtn').addEventListener('click', async () => {
         await i18nReady;
         if (!selectedFile) return;
+        const includeScoped = document.getElementById('impProfileScopedPluginData').checked;
+        const includeJarState = document.getElementById('impSchnorrbecherPersistentState').checked;
+        const targetProfile = document.getElementById('profileScopedTarget').value;
+        if (includeScoped && targetProfile !== serverActiveProfile && (importGlobalSettings.checked || importPluginSettings.checked)) {
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.settingsTargetMustBeActive'), 'error');
+            return;
+        }
+        if (includeJarState && !includeScoped) {
+            showAlert(importAlert, 'Persistent Schnorrbecher state requires profile-scoped data import.', 'error');
+            return;
+        }
+        if (includeScoped && (!targetProfile || !window.confirm(t('plugins.config-import.config-import.ui.confirmProfileScopedImport', { profile: targetProfile })))) return;
         const btn = document.getElementById('doImportBtn');
         btn.disabled = true;
         showEl(document.getElementById('doImportStatus'));
@@ -1024,6 +1088,9 @@
         fd.append('includeUserConfigs', document.getElementById('impUserConfigs').checked);
         fd.append('includeUploads', document.getElementById('impUploads').checked);
         fd.append('includeUserData', document.getElementById('impUserData').checked);
+        fd.append('includeProfileScopedPluginData', includeScoped);
+        fd.append('includeSchnorrbecherPersistentState', includeJarState);
+        fd.append('targetProfile', targetProfile);
 
         try {
             const resp = await fetch('/api/config-backup/import', { method: 'POST', body: fd });
@@ -1274,6 +1341,21 @@
     i18nReady.then(() => {
         window.i18n?.updateDOM();
         loadCapabilities();
+        fetch('/api/profiles').then(response => response.json()).then(data => {
+            const select = document.getElementById('profileScopedTarget');
+            select.replaceChildren();
+            for (const profile of data.profiles || []) {
+                const option = document.createElement('option');
+                option.value = profile.username;
+                option.textContent = profile.username + (profile.isActive
+                    ? ` (${t('plugins.config-import.config-import.ui.currentProfileSuffix')})`
+                    : '');
+                option.selected = profile.isActive;
+                select.appendChild(option);
+            }
+            serverActiveProfile = data.activeProfile || (data.profiles || []).find(profile => profile.isActive)?.username || null;
+            syncProfileScopedSettingsAvailability();
+        }).catch(() => {});
         loadLegacyDiscovery();
     });
 

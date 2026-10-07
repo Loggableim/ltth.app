@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { isDeepStrictEqual } = require('util');
 const os = require('os');
 const zl = require('zip-lib');
 const { validateManifest } = require('./manifest');
@@ -25,6 +26,41 @@ const {
     getPluginIdentity
 } = require('../plugin-identities');
 const { valuesEqual } = require('../plugin-identity-sync');
+const { PROFILE_SCOPED_PLUGIN_DATA, normalizeScopedPluginIds, validateProfileId, canonicalProfileId } = require('./profile-scoped-data');
+const { DEFAULT_STATE: DEFAULT_COIN_JAR_STATE } = require('./schnorrbecher-state-schema');
+
+function isEmptyInitializedCoinJarState(filePath) {
+    try {
+        const rawState = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        return rawState !== null && typeof rawState === 'object' && !Array.isArray(rawState) &&
+            isDeepStrictEqual(rawState, DEFAULT_COIN_JAR_STATE);
+    } catch (_) {
+        return false;
+    }
+}
+
+function findUnsafeProfilePath(pluginRoot, targetPath) {
+    const root = path.resolve(pluginRoot);
+    const target = path.resolve(targetPath);
+    const relative = path.relative(root, target);
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+        return { path: target, reason: 'escapes the plugin data root' };
+    }
+
+    let current = root;
+    const candidates = [current, ...relative.split(path.sep).filter(Boolean).map(part => (current = path.join(current, part)))];
+    for (const candidate of candidates) {
+        try {
+            if (fs.lstatSync(candidate).isSymbolicLink()) {
+                return { path: candidate, reason: 'is a symbolic link' };
+            }
+        } catch (error) {
+            if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+            return { path: candidate, reason: `cannot be inspected (${error.message})` };
+        }
+    }
+    return null;
+}
 
 function normalizeBackupPluginSettings(pluginId, settings = {}) {
     const canonicalId = canonicalizePluginId(pluginId);
@@ -254,7 +290,10 @@ function previewImport(parsed, deps, opts = {}) {
         ? detectSettingsConflicts(parsed.globalSettings, currentGlobal)
         : { new: [], conflicts: [], unchanged: [] };
 
-    const allPluginIds = Object.keys(parsed.pluginSettings);
+    const allPluginIds = [...new Set([
+        ...Object.keys(parsed.pluginSettings || {}),
+        ...Object.keys(parsed.dataFiles || {})
+    ])];
     const filterIds = canonicalPluginFilter(pluginFilter);
     const selectedPluginIds = filterIds
         ? allPluginIds.filter(id => filterIds.has(canonicalizePluginId(id)))
@@ -294,7 +333,14 @@ function previewImport(parsed, deps, opts = {}) {
         ),
         userConfigFiles: (parsed.userConfigsFiles || []).length,
         uploadFiles: (parsed.uploadFiles || []).length,
-        userDataFiles: (parsed.userDataFiles || []).length
+        userDataFiles: (parsed.userDataFiles || []).length,
+        profileScopedPluginData: {
+            sourceProfile: parsed.manifest.sourceProfile || null,
+            plugins: normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []),
+            requiresExplicitTargetProfile: normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []).length > 0,
+            schnorrbecherPersistentStateAvailable: normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []).includes('schnorrbecher') &&
+                (parsed.dataFiles?.schnorrbecher || []).some(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json')
+        }
     };
 }
 
@@ -327,8 +373,14 @@ async function performImport(parsed, deps, opts = {}) {
         includeUserConfigs = true,
         includeUploads = true,
         includeUserData = true,
-        pluginFilter = null
+        pluginFilter = null,
+        includeProfileScopedPluginData = false,
+        includeSchnorrbecherPersistentState = false,
+        targetProfile = null
     } = opts;
+
+    const importProfileScopedPluginData = includeProfileScopedPluginData === true;
+    const importSchnorrbecherPersistentState = includeSchnorrbecherPersistentState === true;
 
     const warnings = [...(parsed.warnings || [])];
     const errors = [...(parsed.errors || [])];
@@ -346,6 +398,79 @@ async function performImport(parsed, deps, opts = {}) {
         };
     }
 
+    const archivedScopedPlugins = new Set(normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []));
+    const activeProfileId = canonicalProfileId(deps.activeProfile);
+    if (importProfileScopedPluginData && archivedScopedPlugins.size &&
+        activeProfileId && targetProfile && canonicalProfileId(targetProfile) !== activeProfileId &&
+        (includeGlobalSettings || includePluginSettings)) {
+        errors.push('Global and plugin settings can only be restored to the currently active profile; disable settings import to target another profile');
+        return { success: false, report, warnings, errors };
+    }
+    const schnorrStateFile = (parsed.dataFiles?.schnorrbecher || []).find(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json');
+    if (schnorrStateFile && importSchnorrbecherPersistentState) {
+        const configFile = (parsed.dataFiles?.schnorrbecher || []).find(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-config.json');
+        let archivedPersistenceMode = null;
+        try { archivedPersistenceMode = JSON.parse(fs.readFileSync(configFile.tmpPath, 'utf8')).persistenceMode; } catch (_) { /* invalid config will block state import */ }
+        if (!importProfileScopedPluginData || !archivedScopedPlugins.has('schnorrbecher') || archivedPersistenceMode !== 'persistent') {
+            errors.push('Schnorrbecher state import requires profile-scoped metadata and an archived persistent config');
+            return { success: false, report, warnings, errors };
+        }
+    }
+    let scopedTargetProfile = null;
+    const replaceInitializedTargets = new Set();
+    if (includePluginData && importProfileScopedPluginData && archivedScopedPlugins.size) {
+        if (mode !== 'merge') {
+            errors.push('Profile-scoped plugin data only supports merge mode so existing target files are never overwritten');
+        }
+        if (!validateProfileId(targetProfile)) {
+            errors.push('A valid explicitly selected target profile is required for profile-scoped plugin data');
+        } else {
+            const userConfigsDir = configPathManager?.getUserConfigsDir?.();
+            const targetPath = userConfigsDir && path.join(userConfigsDir, `${targetProfile}.db`);
+            if (!targetPath || !fs.existsSync(targetPath)) {
+                errors.push('The selected target profile does not exist');
+            } else {
+                scopedTargetProfile = targetProfile;
+            }
+        }
+        if (!errors.length) {
+            for (const pluginId of archivedScopedPlugins) {
+                if (pluginFilter && !canonicalPluginFilter(pluginFilter).has(pluginId)) continue;
+                const destBase = configPathManager.getPluginDataDir(pluginId, { profileId: scopedTargetProfile });
+                const pluginRoot = path.dirname(configPathManager.getPluginDataDir(pluginId));
+                for (const file of parsed.dataFiles?.[pluginId] || []) {
+                    if (pluginId === 'schnorrbecher' &&
+                        file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' &&
+                        !importSchnorrbecherPersistentState) continue;
+                    const pathCheck = validateEntryPath(file.relPath);
+                    if (!pathCheck.valid) {
+                        errors.push(`[${pluginId}] Profile-scoped import preflight failed: ${pathCheck.error}`);
+                        continue;
+                    }
+                    const destPath = path.join(destBase, file.relPath);
+                    const destCheck = validateDestinationPath(destPath, destBase);
+                    const existing = fs.existsSync(destPath);
+                    const unsafePath = findUnsafeProfilePath(pluginRoot, destPath);
+                    const emptyJarInitialization = pluginId === 'schnorrbecher' &&
+                        file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' &&
+                        importSchnorrbecherPersistentState && isEmptyInitializedCoinJarState(destPath);
+                    if (emptyJarInitialization) replaceInitializedTargets.add(destPath);
+                    if (!pathCheck.valid || !destCheck.valid || unsafePath || (existing && !emptyJarInitialization)) {
+                        const reason = !pathCheck.valid
+                            ? pathCheck.error
+                            : !destCheck.valid
+                                ? destCheck.error
+                                : unsafePath
+                                    ? `Profile-scoped import path ${unsafePath.reason}: ${unsafePath.path}`
+                                    : `Destination already exists: ${file.relPath}`;
+                        errors.push(`[${pluginId}] Profile-scoped import preflight failed: ${reason}`);
+                    }
+                }
+            }
+        }
+        if (errors.length) return { success: false, report, warnings, errors };
+    }
+
     // ── Global settings ───────────────────────────────────────────────────────
     if (includeGlobalSettings && parsed.globalSettings) {
         try {
@@ -357,7 +482,10 @@ async function performImport(parsed, deps, opts = {}) {
     }
 
     // ── Plugin settings ───────────────────────────────────────────────────────
-    const allPluginIds = Object.keys(parsed.pluginSettings || {});
+    const allPluginIds = [...new Set([
+        ...Object.keys(parsed.pluginSettings || {}),
+        ...Object.keys(parsed.dataFiles || {})
+    ])];
     const filterIds = canonicalPluginFilter(pluginFilter);
     const selectedPluginIds = filterIds
         ? allPluginIds.filter(id => filterIds.has(canonicalizePluginId(id)))
@@ -395,7 +523,133 @@ async function performImport(parsed, deps, opts = {}) {
 
         // Plugin data files
         if (includePluginData && parsed.dataFiles && parsed.dataFiles[pluginId]) {
-            const destBase = configPathManager.getPluginDataDir(pluginId);
+            const profileScoped = archivedScopedPlugins.has(pluginId);
+            if (PROFILE_SCOPED_PLUGIN_DATA.includes(pluginId) && !profileScoped) {
+                warnings.push(`[${pluginId}] Unmarked legacy plugin data skipped; choose an explicit legacy import in the plugin UI.`);
+                report.plugins[pluginId].skippedFiles.push(...parsed.dataFiles[pluginId].map(file => file.relPath));
+                continue;
+            }
+            if (pluginId === 'schnorrbecher' && schnorrStateFile && !importSchnorrbecherPersistentState) {
+                warnings.push('[schnorrbecher] State file skipped; persistent state requires explicit selection in the import preview.');
+                report.plugins[pluginId].skippedFiles.push('coin-jar-state.json');
+            }
+            if (profileScoped && (!importProfileScopedPluginData || !scopedTargetProfile)) {
+                warnings.push(`[${pluginId}] Profile-scoped data skipped; choose a target profile and explicitly enable profile data import.`);
+                report.plugins[pluginId].skippedFiles.push(...parsed.dataFiles[pluginId].map(file => file.relPath));
+                continue;
+            }
+            const destBase = profileScoped
+                ? configPathManager.getPluginDataDir(pluginId, { profileId: scopedTargetProfile })
+                : configPathManager.getPluginDataDir(pluginId);
+            if (profileScoped) {
+                const files = parsed.dataFiles[pluginId].filter(file => !(pluginId === 'schnorrbecher' &&
+                    file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' && !importSchnorrbecherPersistentState));
+                const staged = [];
+                const pluginRoot = path.dirname(configPathManager.getPluginDataDir(pluginId));
+                let stageDir = null;
+                let preserveStageForRecovery = false;
+                try {
+                    const unsafeBase = findUnsafeProfilePath(pluginRoot, destBase);
+                    if (unsafeBase) {
+                        throw new Error(`Profile-scoped import path ${unsafeBase.reason}: ${unsafeBase.path}`);
+                    }
+                    fs.mkdirSync(destBase, { recursive: true });
+                    const unsafeBeforeStage = findUnsafeProfilePath(pluginRoot, destBase);
+                    if (unsafeBeforeStage) {
+                        throw new Error(`Profile-scoped import path became unsafe before staging: ${unsafeBeforeStage.path} ${unsafeBeforeStage.reason}`);
+                    }
+                    stageDir = fs.mkdtempSync(path.join(destBase, '.ltth-backup-stage-'));
+                    for (const file of files) {
+                        const stagePath = path.join(stageDir, file.relPath);
+                        const unsafeStage = findUnsafeProfilePath(pluginRoot, stagePath);
+                        if (unsafeStage) {
+                            throw new Error(`Profile-scoped stage path became unsafe before directory creation: ${unsafeStage.path} ${unsafeStage.reason}`);
+                        }
+                        const unsafeBeforeStageMkdir = findUnsafeProfilePath(pluginRoot, stagePath);
+                        if (unsafeBeforeStageMkdir) {
+                            throw new Error(`Profile-scoped stage path became unsafe before directory creation: ${unsafeBeforeStageMkdir.path} ${unsafeBeforeStageMkdir.reason}`);
+                        }
+                        fs.mkdirSync(path.dirname(stagePath), { recursive: true });
+                        const unsafeBeforeStageCopy = findUnsafeProfilePath(pluginRoot, stagePath);
+                        if (unsafeBeforeStageCopy) {
+                            throw new Error(`Profile-scoped stage path became unsafe before copy: ${unsafeBeforeStageCopy.path} ${unsafeBeforeStageCopy.reason}`);
+                        }
+                        fs.copyFileSync(file.tmpPath, stagePath);
+                        staged.push({ stagePath, destPath: path.join(destBase, file.relPath), relPath: file.relPath });
+                    }
+                    const installed = [];
+                    const replacedTargets = [];
+                    try {
+                        for (const file of staged) {
+                            const unsafePath = findUnsafeProfilePath(pluginRoot, file.destPath);
+                            if (unsafePath) {
+                                throw new Error(`Destination path became unsafe before directory creation: ${unsafePath.path} ${unsafePath.reason}`);
+                            }
+                            fs.mkdirSync(path.dirname(file.destPath), { recursive: true });
+                            const unsafeBeforeExchange = findUnsafeProfilePath(pluginRoot, file.destPath);
+                            if (unsafeBeforeExchange) {
+                                throw new Error(`Destination path became unsafe before exchange: ${unsafeBeforeExchange.path} ${unsafeBeforeExchange.reason}`);
+                            }
+                            if (replaceInitializedTargets.has(file.destPath) && fs.existsSync(file.destPath)) {
+                                const previous = path.join(stageDir, `.previous-${replacedTargets.length}`);
+                                fs.renameSync(file.destPath, previous);
+                                replacedTargets.push({ target: file.destPath, backup: previous });
+                                if (!isEmptyInitializedCoinJarState(previous)) {
+                                    throw new Error(`Destination changed after preflight; preserved concurrent state for ${file.relPath}`);
+                                }
+                            }
+                            const unsafeBeforeInstall = findUnsafeProfilePath(pluginRoot, file.destPath);
+                            if (unsafeBeforeInstall) {
+                                throw new Error(`Destination path became unsafe before install: ${unsafeBeforeInstall.path} ${unsafeBeforeInstall.reason}`);
+                            }
+                            fs.copyFileSync(file.stagePath, file.destPath, fs.constants.COPYFILE_EXCL);
+                            installed.push(file.destPath);
+                            report.plugins[pluginId].importedFiles.push(file.relPath);
+                        }
+                    } catch (error) {
+                        const rollbackErrors = [];
+                        for (const installedPath of installed.reverse()) {
+                            try {
+                                const unsafeInstalled = findUnsafeProfilePath(pluginRoot, installedPath);
+                                if (unsafeInstalled) throw new Error(`unsafe rollback target ${unsafeInstalled.path} ${unsafeInstalled.reason}`);
+                                fs.unlinkSync(installedPath);
+                            } catch (rollbackError) { rollbackErrors.push(`${installedPath}: ${rollbackError.message}`); }
+                        }
+                        for (const entry of replacedTargets.reverse()) {
+                            try {
+                                const unsafeBackup = findUnsafeProfilePath(pluginRoot, entry.backup);
+                                const unsafeTarget = findUnsafeProfilePath(pluginRoot, entry.target);
+                                if (unsafeBackup || unsafeTarget) {
+                                    const unsafePath = unsafeBackup || unsafeTarget;
+                                    throw new Error(`unsafe rollback path ${unsafePath.path} ${unsafePath.reason}`);
+                                }
+                                fs.linkSync(entry.backup, entry.target);
+                                fs.unlinkSync(entry.backup);
+                            } catch (rollbackError) {
+                                rollbackErrors.push(`${entry.target}: ${rollbackError.message}`);
+                            }
+                        }
+                        if (rollbackErrors.length) {
+                            preserveStageForRecovery = true;
+                            error.message += `; rollback failed: ${rollbackErrors.join('; ')}; recovery data retained at ${stageDir}`;
+                        }
+                        throw error;
+                    }
+                } catch (error) {
+                    errors.push(`[${pluginId}] Profile-scoped import failed: ${error.message}`);
+                } finally {
+                    if (!preserveStageForRecovery && stageDir) {
+                        const unsafeCleanup = findUnsafeProfilePath(pluginRoot, stageDir);
+                        if (unsafeCleanup) {
+                            preserveStageForRecovery = true;
+                            errors.push(`[${pluginId}] Stage cleanup skipped because the recovery path became unsafe: ${unsafeCleanup.path} ${unsafeCleanup.reason}`);
+                        } else {
+                            cleanupTempDir(stageDir);
+                        }
+                    }
+                }
+                continue;
+            }
 
             for (const { tmpPath, relPath } of parsed.dataFiles[pluginId]) {
                 // Path traversal check
@@ -415,7 +669,7 @@ async function performImport(parsed, deps, opts = {}) {
                 }
 
                 // In merge mode, skip existing files
-                if (mode === 'merge' && fs.existsSync(destPath)) {
+                if ((mode === 'merge' || profileScoped) && fs.existsSync(destPath)) {
                     report.plugins[pluginId].skippedFiles.push(relPath);
                     continue;
                 }

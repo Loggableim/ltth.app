@@ -147,7 +147,21 @@
           "legacyDataFiles": "{count} legacy data files",
           "legacyImportCompleted": "✅ Import completed successfully!",
           "importedItems": "📦 Imported:",
-          "switchProfileRestart": "⚠️ Go to Settings → User Profiles, switch to the imported profile, then restart the application."
+          "switchProfileRestart": "⚠️ Go to Settings → User Profiles, switch to the imported profile, then restart the application.",
+          "profileScopedTitle": "Profile-scoped plugin data",
+          "profileScopedInfo": "Archive metadata never selects the target profile.",
+          "profileScopedFiles": "Import profile-scoped Advanced Timer / Schnorrbecher files",
+          "profileScopedState": "Import Schnorrbecher persistent state (session state is never imported)",
+          "targetProfile": "Target profile",
+          "activeProfileInfo": "Active server profile for settings: {profile}. Global and plugin settings are disabled when importing files to another profile.",
+          "unknownActiveProfile": "unknown",
+          "settingsTargetMustBeActive": "Global and plugin settings can only be imported into the currently active profile.",
+          "confirmProfileScopedImport": "Import profile files into “{profile}”? Existing files are preserved; conflicts stop that plugin import.",
+          "scopedArchiveInfo": "Archive source: {profile}. Included: {plugins}. Select the destination explicitly below; archive metadata is informational only.",
+          "scopedArchiveMissing": "This archive has no explicitly marked profile-scoped plugin data. Legacy archives are never assigned automatically.",
+          "profileScopedExportFiles": "🔒 Advanced Timer and Schnorrbecher data for the current profile",
+          "profileScopedExportState": "Include Schnorrbecher persistent state (session state is always omitted)",
+          "currentProfileSuffix": "current"
         }
       },
       "labels": {
