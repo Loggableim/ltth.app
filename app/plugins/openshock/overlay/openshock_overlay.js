@@ -11,6 +11,9 @@ let socket = null;
 let currentEvent = null;
 let eventTimeout = null;
 let durationInterval = null;
+let disposed = false;
+const socketHandlers = [];
+const ownedTimeouts = new Set();
 let config = {
     enabled: true,
     showDevice: true,
@@ -23,6 +26,29 @@ let config = {
 // Event queue for handling multiple simultaneous events
 let eventQueue = [];
 let isProcessingEvent = false;
+
+function scheduleOverlayTimeout(callback, delay) {
+    const timeout = setTimeout(() => {
+        ownedTimeouts.delete(timeout);
+        if (!disposed) callback();
+    }, delay);
+    ownedTimeouts.add(timeout);
+    return timeout;
+}
+
+function clearOverlayTimeout(timeout) {
+    if (timeout === null || typeof timeout === 'undefined') return;
+    clearTimeout(timeout);
+    ownedTimeouts.delete(timeout);
+}
+
+function listenToSocket(eventName, handler) {
+    const guardedHandler = (...args) => {
+        if (!disposed) handler(...args);
+    };
+    socket.on(eventName, guardedHandler);
+    socketHandlers.push([eventName, guardedHandler]);
+}
 
 function overlayText(key, fallback, params = {}) {
     const translationKey = `plugins.openshock.runtime.overlays.main.${key}`;
@@ -38,15 +64,6 @@ function overlayText(key, fallback, params = {}) {
 // ============================================================================
 
 /**
- * Initialize the overlay on page load
- */
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Hybrid Shock Overlay] Initializing...');
-    loadConfig();
-    initializeSocket();
-});
-
-/**
  * Load overlay configuration from API
  */
 async function loadConfig() {
@@ -57,6 +74,7 @@ async function loadConfig() {
         }
 
         const data = await response.json();
+        if (disposed) return;
         if (data.overlay) {
             config = { ...config, ...data.overlay };
             console.log('[Hybrid Shock Overlay] Config loaded:', config);
@@ -71,6 +89,7 @@ async function loadConfig() {
  * Initialize Socket.IO connection
  */
 function initializeSocket() {
+    if (disposed) return;
     try {
         // Connect to Socket.IO server
         socket = io({
@@ -82,27 +101,27 @@ function initializeSocket() {
         });
 
         // Connection events
-        socket.on('connect', () => {
+        listenToSocket('connect', () => {
             console.log('[Hybrid Shock Overlay] Socket connected:', socket.id);
         });
 
-        socket.on('disconnect', (reason) => {
+        listenToSocket('disconnect', (reason) => {
             console.log('[Hybrid Shock Overlay] Socket disconnected:', reason);
         });
 
-        socket.on('reconnect', (attemptNumber) => {
+        listenToSocket('reconnect', (attemptNumber) => {
             console.log('[Hybrid Shock Overlay] Socket reconnected after', attemptNumber, 'attempts');
         });
 
-        socket.on('error', (error) => {
+        listenToSocket('error', (error) => {
             console.error('[Hybrid Shock Overlay] Socket error:', error);
         });
 
         // OpenShock plugin events
-        socket.on('openshock:command-sent', handleCommandSent);
-        socket.on('openshock:emergency-stop', handleEmergencyStop);
-        socket.on('openshock:queue-update', handleQueueUpdate);
-        socket.on('openshock:stats-update', handleStatsUpdate);
+        listenToSocket('openshock:command-sent', handleCommandSent);
+        listenToSocket('openshock:emergency-stop', handleEmergencyStop);
+        listenToSocket('openshock:queue-update', handleQueueUpdate);
+        listenToSocket('openshock:stats-update', handleStatsUpdate);
 
         console.log('[Hybrid Shock Overlay] Socket.IO listeners registered');
     } catch (error) {
@@ -119,7 +138,8 @@ function initializeSocket() {
  * @param {Object} data - Event data containing command details
  */
 function handleCommandSent(data) {
-    console.log('[Hybrid Shock Overlay] Command sent:', data);
+    if (disposed) return;
+    console.log('[Hybrid Shock Overlay] Command sent');
 
     if (!config.enabled) {
         console.log('[Hybrid Shock Overlay] Overlay disabled, ignoring event');
@@ -128,6 +148,7 @@ function handleCommandSent(data) {
 
     try {
         const eventData = normalizeCommandPayload(data);
+        if (!eventData) return;
 
         // Queue or process event
         if (isProcessingEvent) {
@@ -159,7 +180,7 @@ function handleEmergencyStop() {
     showSafetyWarning(overlayText('emergency_stop_activated', 'EMERGENCY STOP ACTIVATED'));
 
     // Hide warning after 5 seconds
-    setTimeout(() => {
+    scheduleOverlayTimeout(() => {
         hideSafetyWarning();
     }, 5000);
 }
@@ -169,7 +190,7 @@ function handleEmergencyStop() {
  * @param {Object} data - Queue status data
  */
 function handleQueueUpdate(data) {
-    console.log('[Hybrid Shock Overlay] Queue update:', data);
+    console.log('[Hybrid Shock Overlay] Queue update received');
 
     try {
         updateStatsCorner(normalizeQueueStats(data));
@@ -183,7 +204,7 @@ function handleQueueUpdate(data) {
  * @param {Object} data - Statistics data
  */
 function handleStatsUpdate(data) {
-    console.log('[Hybrid Shock Overlay] Stats update:', data);
+    console.log('[Hybrid Shock Overlay] Stats update received');
 
     try {
         updateStatsCorner(normalizeStatsSnapshot(data));
@@ -197,35 +218,57 @@ function handleStatsUpdate(data) {
  * Accepts both nested `command` payloads and flat legacy fields.
  */
 function normalizeCommandPayload(data = {}) {
-    const command = data.command || {};
-    const type = command.type || data.type || 'shock';
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+    const command = data.command && typeof data.command === 'object' && !Array.isArray(data.command)
+        ? data.command
+        : {};
+    const type = command.type ?? data.type ?? 'shock';
+    if (!['shock', 'vibrate', 'sound'].includes(type)) return null;
     const intensity = command.intensity ?? data.intensity ?? 0;
     const duration = command.duration ?? data.duration ?? 1000;
-    const deviceId = data.deviceId || command.deviceId || '';
-    const deviceName = data.deviceName || data.device || command.deviceName || deviceId || 'Unknown Device';
-    const username = data.username || data.user || command.username || 'Anonymous';
-    const userId = data.userId || command.userId || '';
-    const source = data.source || 'manual';
+    if (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0 || intensity > 100) return null;
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0) return null;
+    const displayName = data.deviceName ?? data.device ?? command.deviceName;
+    const deviceId = data.deviceId ?? command.deviceId;
+    const deviceName = typeof displayName === 'string' && displayName.trim() && displayName !== deviceId
+        ? displayName
+        : 'Unknown Device';
+    const displayUser = data.username ?? data.user ?? command.username;
+    const username = typeof displayUser === 'string' && displayUser.trim() ? displayUser : 'Anonymous';
+    const source = typeof data.source === 'string' && data.source.trim() ? data.source : 'manual';
+    const rawPattern = command.pattern ?? data.pattern;
+    const pattern = rawPattern && typeof rawPattern === 'object' && Array.isArray(rawPattern.steps)
+        ? {
+            steps: rawPattern.steps
+                .filter(step => step && typeof step === 'object'
+                    && typeof step.intensity === 'number' && Number.isFinite(step.intensity)
+                    && step.intensity >= 0 && step.intensity <= 100
+                    && typeof step.duration === 'number' && Number.isFinite(step.duration)
+                    && step.duration >= 0)
+                .map(step => ({ intensity: step.intensity, duration: step.duration }))
+        }
+        : null;
+    const timestamp = typeof data.timestamp === 'number' || typeof data.timestamp === 'string'
+        ? data.timestamp
+        : Date.now();
 
     return {
-        ...data,
         command: {
             type,
             intensity,
             duration,
-            pattern: command.pattern ?? data.pattern ?? null
+            pattern
         },
         type,
         intensity,
         duration,
         deviceName,
-        deviceId,
         device: deviceName,
         username,
-        userId,
         user: username,
         source,
-        timestamp: data.timestamp || Date.now()
+        pattern,
+        timestamp
     };
 }
 
@@ -300,7 +343,7 @@ function processEvent(eventData) {
     const displayDuration = eventData.duration + config.autoHideDelay;
 
     // Schedule event hide
-    eventTimeout = setTimeout(() => {
+    eventTimeout = scheduleOverlayTimeout(() => {
         hideEvent();
         processNextEvent();
     }, displayDuration);
@@ -341,30 +384,19 @@ function showEvent(eventData) {
         overlayContainer.classList.remove('hidden');
 
         // Set type icon and color
-        const typeIcon = getTypeIcon(eventData.type);
-        const typeColor = getTypeColor(eventData.type);
-
-        const typeIconElement = document.getElementById('type-icon');
-        if (typeIconElement) {
-            typeIconElement.textContent = typeIcon;
+        const typeElement = document.getElementById('event-type');
+        if (typeElement) {
+            typeElement.classList.remove('shock', 'vibrate', 'sound');
+            typeElement.classList.add(eventData.type);
+            typeElement.textContent = eventData.type.toUpperCase();
         }
-
-        const typeTextElement = document.getElementById('type-text');
-        if (typeTextElement) {
-            typeTextElement.textContent = eventData.type.toUpperCase();
-        }
-
-        // Apply accent color
-        const accentElements = card.querySelectorAll('.accent-color');
-        accentElements.forEach(el => {
-            el.style.background = typeColor;
-        });
+        card.dataset.type = eventData.type;
 
         // Set device name
         if (config.showDevice) {
-            const deviceElement = document.getElementById('device-name');
+            const deviceElement = document.getElementById('event-device');
             if (deviceElement) {
-                deviceElement.textContent = escapeHtml(eventData.deviceName);
+                deviceElement.textContent = eventData.deviceName;
             }
         }
 
@@ -384,15 +416,15 @@ function showEvent(eventData) {
         }
 
         // Set username
-        const usernameElement = document.getElementById('username');
+        const usernameElement = document.getElementById('event-user');
         if (usernameElement) {
-            usernameElement.textContent = escapeHtml(eventData.username);
+            usernameElement.textContent = eventData.username;
         }
 
         // Set source badge
-        const sourceElement = document.getElementById('source-badge');
+        const sourceElement = document.getElementById('event-source');
         if (sourceElement) {
-            sourceElement.innerHTML = getSourceBadge(eventData.source);
+            sourceElement.textContent = getSourceLabel(eventData.source);
         }
 
         // Show card with slide-in animation
@@ -400,7 +432,7 @@ function showEvent(eventData) {
         card.classList.add('slide-in');
 
         // Remove animation class after animation completes
-        setTimeout(() => {
+        scheduleOverlayTimeout(() => {
             card.classList.remove('slide-in');
         }, config.animationDuration);
 
@@ -425,7 +457,7 @@ function hideEvent() {
         card.classList.add('slide-out');
 
         // Hide card after animation
-        setTimeout(() => {
+        scheduleOverlayTimeout(() => {
             card.classList.add('hidden');
             card.classList.remove('slide-out');
             document.getElementById('overlay-container')?.classList.add('hidden');
@@ -590,7 +622,7 @@ function showSafetyWarning(message) {
 
         const messageElement = document.getElementById('warning-message');
         if (messageElement) {
-            messageElement.textContent = escapeHtml(message);
+            messageElement.textContent = String(message);
         }
 
         // Show warning with pulse animation
@@ -699,22 +731,16 @@ function getTypeColor(type) {
 }
 
 /**
- * Get source badge HTML
+ * Get a safe text label for the source badge.
  * @param {string} source - Event source
  * @returns {string} HTML string for badge
  */
-function getSourceBadge(source) {
-    const badges = {
-        'gift': '<span class="badge badge-gift">🎁 Gift</span>',
-        'chat': '<span class="badge badge-chat">💬 Chat</span>',
-        'follow': '<span class="badge badge-follow">❤️ Follow</span>',
-        'share': '<span class="badge badge-share">🔄 Share</span>',
-        'like': '<span class="badge badge-like">👍 Like</span>',
-        'manual': '<span class="badge badge-manual">⚙️ Manual</span>',
-        'api': '<span class="badge badge-api">🔌 API</span>',
-        'test': '<span class="badge badge-test">🧪 Test</span>'
+function getSourceLabel(source) {
+    const labels = {
+        gift: '🎁 Gift', chat: '💬 Chat', follow: '❤️ Follow', share: '🔄 Share',
+        like: '👍 Like', manual: '⚙️ Manual', api: '🔌 API', test: '🧪 Test'
     };
-    return badges[source.toLowerCase()] || `<span class="badge">${escapeHtml(source)}</span>`;
+    return labels[source.toLowerCase()] || source;
 }
 
 /**
@@ -798,13 +824,18 @@ function getIntensityColorClass(intensity) {
  * Cleanup function called when overlay is being destroyed
  */
 function cleanup() {
+    if (disposed) return;
+    disposed = true;
     console.log('[OpenShock Overlay] Cleaning up...');
 
     // Stop all timers
     if (eventTimeout) {
-        clearTimeout(eventTimeout);
+        clearOverlayTimeout(eventTimeout);
         eventTimeout = null;
     }
+
+    for (const timeout of ownedTimeouts) clearTimeout(timeout);
+    ownedTimeouts.clear();
 
     if (durationInterval) {
         clearInterval(durationInterval);
@@ -818,9 +849,21 @@ function cleanup() {
 
     // Disconnect socket
     if (socket) {
+        for (const [eventName, handler] of socketHandlers) {
+            if (typeof socket.off === 'function') socket.off(eventName, handler);
+            else if (typeof socket.removeListener === 'function') socket.removeListener(eventName, handler);
+        }
+        socketHandlers.length = 0;
         socket.disconnect();
         socket = null;
     }
+
+    document.removeEventListener('DOMContentLoaded', initializeOnReady);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('pagehide', handlePageHide);
+    window.removeEventListener('pageshow', handlePageShow);
+    window.removeEventListener('error', handleGlobalError);
+    window.removeEventListener('unhandledrejection', handleUnhandledRejection);
 
     console.log('[OpenShock Overlay] Cleanup complete');
 }
@@ -828,7 +871,8 @@ function cleanup() {
 /**
  * Handle visibility change (tab switch)
  */
-document.addEventListener('visibilitychange', () => {
+function handleVisibilityChange() {
+    if (disposed) return;
     if (document.hidden) {
         console.log('[OpenShock Overlay] Tab hidden');
     } else {
@@ -839,28 +883,47 @@ document.addEventListener('visibilitychange', () => {
             socket.connect();
         }
     }
-});
+}
+
+function handlePageHide(event) {
+    // A persisted pagehide means the document is entering the back-forward cache.
+    // Keep its socket, listeners, and timers so the same renderer can resume.
+    if (event?.persisted) return;
+    cleanup();
+}
+
+function handlePageShow(event) {
+    if (disposed || !event?.persisted) return;
+    if (socket && !socket.connected) {
+        console.log('[OpenShock Overlay] Reconnecting socket after BFCache restore...');
+        socket.connect();
+    }
+}
 
 /**
  * Handle page unload
  */
-window.addEventListener('beforeunload', () => {
-    cleanup();
-});
+function initializeOnReady() {
+    if (disposed) return;
+    console.log('[Hybrid Shock Overlay] Initializing...');
+    loadConfig();
+    initializeSocket();
+}
 
-/**
- * Global error handler
- */
-window.addEventListener('error', (event) => {
-    console.error('[OpenShock Overlay] Global error:', event.error);
-});
+function handleGlobalError(event) {
+    if (!disposed) console.error('[OpenShock Overlay] Global error:', event.error);
+}
 
-/**
- * Unhandled promise rejection handler
- */
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('[OpenShock Overlay] Unhandled promise rejection:', event.reason);
-});
+function handleUnhandledRejection(event) {
+    if (!disposed) console.error('[OpenShock Overlay] Unhandled promise rejection:', event.reason);
+}
+
+document.addEventListener('DOMContentLoaded', initializeOnReady);
+document.addEventListener('visibilitychange', handleVisibilityChange);
+window.addEventListener('pagehide', handlePageHide);
+window.addEventListener('pageshow', handlePageShow);
+window.addEventListener('error', handleGlobalError);
+window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
 // ============================================================================
 // Debug Functions (Development Only)

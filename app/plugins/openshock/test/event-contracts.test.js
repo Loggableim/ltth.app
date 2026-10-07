@@ -90,6 +90,60 @@ function createScriptContext(relativeScriptPath, html) {
   return { dom, context, socket };
 }
 
+function createActualOverlayContext() {
+  const html = fs.readFileSync(path.join(__dirname, '../overlay/openshock_overlay.html'), 'utf8');
+  const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/openshock' });
+  const handlers = new Map();
+  const socket = {
+    on: jest.fn((event, handler) => {
+      handlers.set(event, handler);
+      return socket;
+    }),
+    off: jest.fn((event, handler) => {
+      if (handlers.get(event) === handler) handlers.delete(event);
+      return socket;
+    }),
+    disconnect: jest.fn(),
+    connect: jest.fn(),
+    connected: true
+  };
+  let nextTimerId = 0;
+  const timeouts = new Map();
+  const intervals = new Map();
+  const context = {
+    window: dom.window,
+    document: dom.window.document,
+    console: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    fetch: jest.fn(),
+    io: jest.fn(() => socket),
+    setTimeout: jest.fn((callback, delay) => {
+      const id = ++nextTimerId;
+      timeouts.set(id, { callback, delay });
+      return id;
+    }),
+    clearTimeout: jest.fn(id => timeouts.delete(id)),
+    setInterval: jest.fn((callback, delay) => {
+      const id = ++nextTimerId;
+      intervals.set(id, { callback, delay });
+      return id;
+    }),
+    clearInterval: jest.fn(id => intervals.delete(id)),
+    Date,
+    Math,
+    JSON,
+    Number,
+    String,
+    Array,
+    Object,
+    Promise
+  };
+  context.global = context;
+  context.globalThis = context;
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../overlay/openshock_overlay.js'), 'utf8'), context);
+  return { dom, context, socket, handlers, timeouts, intervals };
+}
+
 describe('Hybridshock event contracts', () => {
   afterEach(() => {
     jest.useRealTimers();
@@ -311,7 +365,7 @@ describe('Hybridshock event contracts', () => {
         type: 'vibrate',
         intensity: 55,
         duration: 900,
-        pattern: { id: 'pattern-1' }
+        pattern: { id: 'pattern-1', steps: [{ intensity: 35, duration: 500 }] }
       },
       deviceName: 'Collar',
       deviceId: 'device-1',
@@ -325,15 +379,13 @@ describe('Hybridshock event contracts', () => {
         type: 'vibrate',
         intensity: 55,
         duration: 900,
-        pattern: { id: 'pattern-1' }
+        pattern: { steps: [{ intensity: 35, duration: 500 }] }
       }),
       type: 'vibrate',
       intensity: 55,
       duration: 900,
       deviceName: 'Collar',
-      deviceId: 'device-1',
       username: 'alice',
-      userId: 'user-1',
       source: 'gift'
     }));
 
@@ -348,5 +400,146 @@ describe('Hybridshock event contracts', () => {
     expect(dom.window.document.getElementById('total-commands').textContent).toBe('9');
     expect(dom.window.document.getElementById('active-users').textContent).toBe('3');
     expect(dom.window.document.getElementById('session-duration').textContent).toBe('2m 5s');
+  });
+
+  test('original overlay renders safe display fields into actual HTML and never falls back to raw IDs', () => {
+    const { dom, context } = createActualOverlayContext();
+    try {
+      const normalized = context.normalizeCommandPayload({
+        command: {
+          type: 'vibrate', intensity: 42, duration: 1200,
+          pattern: { id: 'private-pattern-id', steps: [{ intensity: 40, duration: 300, token: 'private-step-token' }] }
+        },
+        deviceName: '<img id="device-xss" src=x>',
+        deviceId: 'private-device-id',
+        username: '<svg id="user-xss">',
+        userId: 'private-user-id',
+        source: '<script id="source-xss">',
+        apiKey: 'private-api-key',
+        sessionId: 'private-session-id'
+      });
+
+      expect(normalized).not.toHaveProperty('deviceId');
+      expect(normalized).not.toHaveProperty('userId');
+      expect(JSON.stringify(normalized)).not.toContain('private-pattern-id');
+      expect(JSON.stringify(normalized)).not.toContain('private-step-token');
+      expect(JSON.stringify(normalized)).not.toContain('private-api-key');
+      expect(JSON.stringify(normalized)).not.toContain('private-session-id');
+      expect(normalized.deviceName).toBe('<img id="device-xss" src=x>');
+      expect(normalized.pattern).toEqual({ steps: [{ intensity: 40, duration: 300 }] });
+
+      context.showEvent(normalized);
+      const document = dom.window.document;
+      expect(document.getElementById('event-type').textContent).toBe('VIBRATE');
+      expect(document.getElementById('event-type').classList.contains('vibrate')).toBe(true);
+      expect(document.getElementById('event-device').textContent).toBe('<img id="device-xss" src=x>');
+      expect(document.getElementById('event-user').textContent).toBe('<svg id="user-xss">');
+      expect(document.getElementById('event-source').textContent).toBe('<script id="source-xss">');
+      expect(document.querySelector('#device-xss, #user-xss, #source-xss')).toBeNull();
+
+      const idOnly = context.normalizeCommandPayload({ deviceId: 'private-device-id', userId: 'private-user-id' });
+      expect(idOnly.deviceName).toBe('Unknown Device');
+      expect(JSON.stringify(idOnly)).not.toContain('private-device-id');
+      expect(JSON.stringify(idOnly)).not.toContain('private-user-id');
+    } finally {
+      dom.window.close();
+    }
+  });
+
+  test('overlay normalization rejects invalid types and out-of-range display values', () => {
+    const { dom, context } = createActualOverlayContext();
+    try {
+      for (const payload of [
+        { type: 'shock<script>' },
+        { type: { value: 'shock' } },
+        { intensity: -1 },
+        { intensity: 101 },
+        { intensity: '50' },
+        { intensity: Number.POSITIVE_INFINITY },
+        { duration: -1 },
+        { duration: Number.NaN },
+        { duration: '1000' }
+      ]) {
+        expect(context.normalizeCommandPayload(payload)).toBeNull();
+      }
+      expect(context.normalizeCommandPayload({ type: 'shock', intensity: 100, duration: 0 })).toMatchObject({
+        type: 'shock', intensity: 100, duration: 0
+      });
+    } finally {
+      dom.window.close();
+    }
+  });
+
+  test('pagehide cleanup is idempotent, clears timers and ignores saved socket callbacks', () => {
+    const { dom, context, socket, handlers, timeouts, intervals } = createActualOverlayContext();
+    try {
+      context.initializeSocket();
+      const commandHandler = handlers.get('openshock:command-sent');
+      context.handleCommandSent({ type: 'vibrate', intensity: 40, duration: 1000, username: 'Fixture Viewer' });
+      expect(timeouts.size).toBeGreaterThan(0);
+      expect(intervals.size).toBe(1);
+
+      dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+      dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
+
+      expect(socket.disconnect).toHaveBeenCalledTimes(1);
+      expect(socket.off).toHaveBeenCalled();
+      expect(handlers.size).toBe(0);
+      expect(timeouts.size).toBe(0);
+      expect(intervals.size).toBe(0);
+      const visibleUser = dom.window.document.getElementById('event-user').textContent;
+      commandHandler({ type: 'sound', intensity: 10, duration: 100, username: 'Late Fixture Event' });
+      expect(dom.window.document.getElementById('event-user').textContent).toBe(visibleUser);
+      expect(socket.disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      dom.window.close();
+    }
+  });
+
+  test('beforeunload and persisted pagehide preserve live renderer state until BFCache restore', () => {
+    const { dom, context, socket, handlers, timeouts, intervals } = createActualOverlayContext();
+    try {
+      context.initializeSocket();
+      context.handleCommandSent({ type: 'vibrate', intensity: 40, duration: 1000, username: 'Fixture Viewer' });
+      const commandHandler = handlers.get('openshock:command-sent');
+      const timerIds = [...timeouts.keys()];
+      const intervalIds = [...intervals.keys()];
+
+      dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
+      const persistedHide = new dom.window.Event('pagehide');
+      Object.defineProperty(persistedHide, 'persisted', { value: true });
+      dom.window.dispatchEvent(persistedHide);
+
+      expect(socket.disconnect).not.toHaveBeenCalled();
+      expect(handlers.get('openshock:command-sent')).toBe(commandHandler);
+      expect([...timeouts.keys()]).toEqual(timerIds);
+      expect([...intervals.keys()]).toEqual(intervalIds);
+      expect(vm.runInContext('disposed', context)).toBe(false);
+
+      socket.connected = false;
+      const persistedShow = new dom.window.Event('pageshow');
+      Object.defineProperty(persistedShow, 'persisted', { value: true });
+      dom.window.dispatchEvent(persistedShow);
+      expect(socket.connect).toHaveBeenCalledTimes(1);
+      expect(socket.disconnect).not.toHaveBeenCalled();
+
+      commandHandler({ type: 'sound', intensity: 10, duration: 100, username: 'Restored Fixture Event' });
+      expect(vm.runInContext('eventQueue.length', context)).toBe(1);
+      expect(vm.runInContext('eventQueue[0].username', context)).toBe('Restored Fixture Event');
+
+      const finalHide = new dom.window.Event('pagehide');
+      dom.window.dispatchEvent(finalHide);
+      dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
+      dom.window.dispatchEvent(finalHide);
+      expect(socket.disconnect).toHaveBeenCalledTimes(1);
+      expect(handlers.size).toBe(0);
+      expect(timeouts.size).toBe(0);
+      expect(intervals.size).toBe(0);
+      expect(vm.runInContext('disposed', context)).toBe(true);
+      commandHandler({ type: 'shock', intensity: 10, duration: 100, username: 'Late Fixture Event' });
+      expect(vm.runInContext('eventQueue.length', context)).toBe(0);
+    } finally {
+      dom.window.close();
+    }
   });
 });
