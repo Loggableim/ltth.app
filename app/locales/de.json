@@ -711,7 +711,35 @@
     "dark": "Nacht-Modus",
     "auto": "Auto (System)",
     "high_contrast": "Hoher Kontrast",
-    "vision_impaired": "Modus für Sehbehinderte"
+    "vision_impaired": "Modus für Sehbehinderte",
+    "selector": {
+      "title": "Design ändern",
+      "options": {
+        "vision-impaired": {
+          "name": "Sehfreundlicher Modus",
+          "description": "Große Schrift und besonders hoher Kontrast",
+          "badge": "Barrierefreiheit"
+        },
+        "cid": {
+          "name": "Cid",
+          "description": "Neutrales dunkles Markenthema mit grünen und violetten Akzenten",
+          "badge": "Marke"
+        },
+        "night": {
+          "name": "Nachtmodus",
+          "description": "Dunkles Legacy-Design"
+        },
+        "day": {
+          "name": "Tagmodus",
+          "description": "Helles Design"
+        },
+        "contrast": {
+          "name": "Hoher Kontrast",
+          "description": "Legacy-Modus mit hohem Kontrast",
+          "badge": "Legacy"
+        }
+      }
+    }
   },
   "common": {
     "loading": "Laden...",

@@ -2768,11 +2768,15 @@ input:checked + .toggle-slider:before {
         position: fixed;
         transform: translateX(-100%);
         z-index: 10000;
+        visibility: hidden;
+        transition: transform var(--transition-speed) ease, visibility 0s linear var(--transition-speed);
     }
 
     .sidebar.mobile-open {
         transform: translateX(0);
         box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        visibility: visible;
+        transition-delay: 0s;
     }
 
     .main-content {

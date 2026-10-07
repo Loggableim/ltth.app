@@ -1032,7 +1032,35 @@
     "dark": "Mode Nuit",
     "auto": "Automatique (Système)",
     "high_contrast": "Contraste Élevé",
-    "vision_impaired": "Déficience Visuelle"
+    "vision_impaired": "Déficience Visuelle",
+    "selector": {
+      "title": "Changer de thème",
+      "options": {
+        "vision-impaired": {
+          "name": "Mode accessible",
+          "description": "Texte agrandi et contraste élevé",
+          "badge": "Accessibilité"
+        },
+        "cid": {
+          "name": "Cid",
+          "description": "Thème de marque sombre et neutre avec des accents verts et violets",
+          "badge": "Marque"
+        },
+        "night": {
+          "name": "Mode nuit",
+          "description": "Ancien thème sombre"
+        },
+        "day": {
+          "name": "Mode jour",
+          "description": "Thème clair"
+        },
+        "contrast": {
+          "name": "Contraste élevé",
+          "description": "Ancien thème à contraste élevé",
+          "badge": "Héritage"
+        }
+      }
+    }
   },
   "permissions": {
     "title": "Autorisations",

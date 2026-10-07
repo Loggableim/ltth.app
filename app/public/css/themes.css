@@ -570,7 +570,7 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
     overflow: hidden;
     backdrop-filter: blur(18px) saturate(140%);
 }
@@ -579,6 +579,7 @@
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s;
 }
 
 .theme-option {
@@ -586,9 +587,20 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.85rem 1rem;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
     border-bottom: 1px solid var(--color-border);
+}
+
+.theme-option:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: -2px;
 }
 
 .theme-option:last-child {
@@ -682,6 +694,14 @@
 
     .theme-dropdown {
         min-width: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .theme-dropdown {
+        box-sizing: border-box;
+        width: min(230px, calc(100vw - 1rem));
+        min-width: 0;
     }
 }
 
@@ -2025,4 +2045,55 @@ html:is([data-theme="day"], [data-theme="night"], [data-theme="cid"]) #view-dash
 
 :is([data-theme="day"], [data-theme="night"], [data-theme="cid"], [data-theme="aurora"]) :focus-visible {
     outline-color: #7c3aed;
+}
+
+/* Use the dark brand green for success text on light dashboard surfaces. */
+html[data-theme="day"] :is(
+    .text-green-400,
+    .wizard-step-btn.done,
+    .profile-integrity-status.healthy,
+    .migration-status-badge.completed,
+    .migration-info-card.success h4 i,
+    .integrity-result-card.success .integrity-result-title i,
+    .integrity-status-badge.success,
+    .text-success
+) {
+    color: var(--brand-primary);
+}
+
+html[data-theme="day"] .wizard-step-btn.done .step-num {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+
+html[data-theme="day"] [style*="color: #22c55e"] {
+    color: var(--brand-primary) !important;
+}
+
+/* Restore the light card surface before using the Day theme's muted label token. */
+html[data-theme="day"] #view-dashboard .stat-card {
+    background: var(--color-bg-card);
+    border-color: var(--color-border);
+}
+
+:is([data-theme="day"], [data-theme="night"], [data-theme="cid"]) #view-dashboard #stat-runtime {
+    font-size: clamp(0.8125rem, 1vw, 1.65rem);
+    white-space: nowrap;
+}
+
+html[data-theme="day"] #network-security-warning .text-yellow-400 {
+    color: #854d0e;
+}
+
+html[data-theme="day"] #network-security-warning .text-gray-300 {
+    color: var(--color-text-primary);
+}
+
+:is([data-theme="day"], [data-theme="night"], [data-theme="cid"]) #network-overlay-tunnel-error {
+    color: #fecaca;
+}
+
+:is([data-theme="day"], [data-theme="night"], [data-theme="cid"]) #view-dashboard .connection-input:focus-visible {
+    outline: 2px solid currentColor !important;
+    outline-offset: 2px !important;
 }
