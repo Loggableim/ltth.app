@@ -33,58 +33,61 @@
     const canvas = document.querySelector('#webgpuCanvas');
     const engine = new CinematicWeatherEngine(canvas, {
       onDiagnostic: (metrics) => {
-        if (!debug) return;
+        if (!debug || overlayDisposed) return;
         diagnostics.hidden = false;
         diagnostics.textContent = `${metrics.state} | ${Math.round(metrics.fps || 0)} FPS | ${Math.round(metrics.gpuFrameMs || 0)} ms | ${metrics.activeParticles || 0} particles | ${metrics.reason || ''}`;
       }
     });
     const socket = typeof io === 'function' ? io({ auth: { role: 'overlay' } }) : null;
-    async function loadOverlayConfig() {
-      try {
-        const response = await fetch('/api/webgpu-weather/overlay-config');
-        const payload = await response.json();
-        if (payload.success) engine.applyConfig(payload.config);
-      } catch (_) {
-        // The canvas stays transparent when dashboard-admin config is unavailable.
-      }
-    }
-    function resize() { engine.resize(innerWidth, innerHeight); }
-    addEventListener('resize', resize);
-    engine.init().then((ready) => { if (ready) { resize(); loadOverlayConfig(); } });
-    if (socket) {
-      socket.on('connect', () => {
-        socket.emit('webgpu-weather:client-ready', { renderer: 'webgpu' });
-        socket.emit('webgpu-weather:request-permanent-effects');
-      });
-      socket.on('webgpu-weather:trigger', (event) => engine.trigger(event));
-      socket.on('webgpu-weather:stop-effect', (event = {}) => engine.stop(event.action));
-      socket.on('webgpu-weather:stop', () => engine.stop());
-      socket.on('webgpu-weather:config-changed', () => {
-        loadOverlayConfig();
-      });
-      socket.on('webgpu-weather:gamification-state', (snapshot = {}) => {
-        const overlay = snapshot.config?.overlay || snapshot.overlay || {};
-        const state = snapshot.state || snapshot;
-        const hud = document.querySelector('#communityHud');
-        hud.hidden = overlay.enabled !== true;
-        const rows = [
-          ['hudMeter', 'hudMeterValue', overlay.showMeter, state.communityMeter?.current ?? 0],
-          ['hudQuest', 'hudQuestValue', overlay.showQuest, state.quest?.active?.title ?? '—'],
-          ['hudStreak', 'hudStreakValue', overlay.showStreak, state.streaks?.current ?? 0],
-          ['hudRewardFeed', 'hudRewardValue', overlay.showRewardFeed, state.rewards?.history?.[0]?.label ?? '—']
-        ];
-        rows.forEach(([rowId, valueId, visible, value]) => {
-          document.querySelector(`#${rowId}`).hidden = visible !== true;
-          document.querySelector(`#${valueId}`).textContent = String(value);
-        });
-      });
-    }
+    const socketHandlers = [];
     const telemetryIntervalMs = 500;
+    let overlayDisposed = false;
+    let suspended = false;
+    let frameHandle = null;
     let lastFrameAt = performance.now();
     let lastTelemetryAt = Number.NEGATIVE_INFINITY;
     let lastTelemetrySignature = null;
+    let configRequestGeneration = 0;
+    let configRevision = 0;
+    let configLoadPromise = null;
+
+    function registerSocketHandler(eventName, handler) {
+      if (!socket) return;
+      const guardedHandler = (...args) => {
+        if (overlayDisposed || suspended) return;
+        handler(...args);
+      };
+      socket.on(eventName, guardedHandler);
+      socketHandlers.push([eventName, guardedHandler]);
+    }
+
+    function loadOverlayConfig({ force = false } = {}) {
+      if (overlayDisposed || suspended) return;
+      if (!force && configLoadPromise) return configLoadPromise;
+      const requestGeneration = ++configRequestGeneration;
+      const revision = configRevision;
+      const request = (async () => {
+        try {
+          const response = await fetch('/api/webgpu-weather/overlay-config');
+          const payload = await response.json();
+          if (overlayDisposed || suspended || requestGeneration !== configRequestGeneration || revision !== configRevision) return;
+          if (payload.success) engine.applyConfig(payload.config);
+        } catch (_) {
+          // The canvas stays transparent when the existing public config read is unavailable.
+        } finally {
+          if (configLoadPromise === request) configLoadPromise = null;
+        }
+      })();
+      configLoadPromise = request;
+      return request;
+    }
+
+    function resize() {
+      if (!overlayDisposed && !suspended) engine.resize(innerWidth, innerHeight);
+    }
+
     function publishOverlayState(now) {
-      if (!socket || now - lastTelemetryAt < telemetryIntervalMs) return;
+      if (!socket || !socket.connected || now - lastTelemetryAt < telemetryIntervalMs) return;
       lastTelemetryAt = now;
       const metrics = engine.getMetrics();
       const signature = JSON.stringify(metrics);
@@ -92,14 +95,120 @@
       lastTelemetrySignature = signature;
       socket.emit('webgpu-weather:overlay-state', metrics);
     }
+
     function frame(now) {
+      frameHandle = null;
+      if (overlayDisposed || suspended) return;
       const deltaMs = Math.min(100, Math.max(0, now - lastFrameAt));
       lastFrameAt = now;
       engine.render(deltaMs);
       publishOverlayState(now);
-      requestAnimationFrame(frame);
+      frameHandle = requestAnimationFrame(frame);
     }
-    requestAnimationFrame(frame);
+
+    function startFrameLoop() {
+      if (overlayDisposed || suspended || frameHandle !== null) return;
+      lastFrameAt = performance.now();
+      frameHandle = requestAnimationFrame(frame);
+    }
+
+    function handleConnect() {
+      if (overlayDisposed || suspended || !socket) return;
+      socket.emit('webgpu-weather:client-ready', { renderer: 'webgpu' });
+      socket.emit('webgpu-weather:request-permanent-effects');
+      void loadOverlayConfig();
+    }
+
+    function handleGamificationState(snapshot = {}) {
+      const overlay = snapshot.config?.overlay || snapshot.overlay || {};
+      const state = snapshot.state || snapshot;
+      const hud = document.querySelector('#communityHud');
+      hud.hidden = overlay.enabled !== true;
+      const rows = [
+        ['hudMeter', 'hudMeterValue', overlay.showMeter, state.communityMeter?.current ?? 0],
+        ['hudQuest', 'hudQuestValue', overlay.showQuest, state.quest?.active?.title ?? '—'],
+        ['hudStreak', 'hudStreakValue', overlay.showStreak, state.streaks?.current ?? 0],
+        ['hudRewardFeed', 'hudRewardValue', overlay.showRewardFeed, state.rewards?.history?.[0]?.label ?? '—']
+      ];
+      rows.forEach(([rowId, valueId, visible, value]) => {
+        document.querySelector(`#${rowId}`).hidden = visible !== true;
+        document.querySelector(`#${valueId}`).textContent = String(value);
+      });
+    }
+
+    function handlePageHide(event) {
+      if (event?.persisted === true || overlayDisposed) {
+        suspended = true;
+        configRequestGeneration += 1;
+        configLoadPromise = null;
+        if (frameHandle !== null) cancelAnimationFrame(frameHandle);
+        frameHandle = null;
+        return;
+      }
+      overlayDisposed = true;
+      suspended = false;
+      configRequestGeneration += 1;
+      configLoadPromise = null;
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
+      if (frameHandle !== null) cancelAnimationFrame(frameHandle);
+      frameHandle = null;
+      socketHandlers.forEach(([eventName, handler]) => socket?.off?.(eventName, handler));
+      socketHandlers.length = 0;
+      socket?.disconnect();
+      engine.stop();
+      engine.destroy();
+    }
+
+    function handlePageShow(event) {
+      if (event?.persisted !== true || overlayDisposed) return;
+      suspended = false;
+      resize();
+      startFrameLoop();
+      if (socket?.connected) handleConnect();
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
+
+    if (socket) {
+      registerSocketHandler('connect', handleConnect);
+      registerSocketHandler('webgpu-weather:trigger', (event = {}) => {
+        const trigger = event && typeof event === 'object'
+          ? { ...event, ...(event.options && typeof event.options === 'object' ? event.options : {}) }
+          : {};
+        engine.trigger(trigger);
+      });
+      registerSocketHandler('webgpu-weather:stop-effect', (event = {}) => engine.stop(event.action));
+      registerSocketHandler('webgpu-weather:stop', () => engine.stop());
+      registerSocketHandler('webgpu-weather:config-changed', () => {
+        configRevision += 1;
+        void loadOverlayConfig({ force: true });
+      });
+      registerSocketHandler('webgpu-weather:gamification-state', handleGamificationState);
+    }
+
+    Promise.resolve(engine.init()).then((ready) => {
+      if (overlayDisposed) {
+        engine.destroy();
+        return;
+      }
+      if (suspended) return;
+      if (ready) {
+        resize();
+        void loadOverlayConfig();
+      }
+      startFrameLoop();
+      if (socket?.connected) handleConnect();
+    }).catch((error) => {
+      if (!overlayDisposed && debug) {
+        diagnostics.hidden = false;
+        diagnostics.textContent = `error | ${String(error?.message || error)}`;
+      }
+      if (!overlayDisposed && !suspended) startFrameLoop();
+    });
   </script>
 </body>
 </html>
