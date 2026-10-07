@@ -125,7 +125,6 @@
     "webgpu_emoji_rain": "Emoji Rain",
     "interactive_story": "Historia Interactiva",
     "gcce_hud": "GCCE HUD Overlay",
-    "chatango": "Chatango",
     "fireworks_dev": "Fuegos Artificiales Dev",
     "animazingpal": "AnimazingPal",
     "stt_ticker": "Ticker STT",
@@ -1544,8 +1543,5 @@
     "logs": {
       "empty": "Aún no hay entradas de registro."
     }
-  },
-  "chatango": {
-    "loading": "Cargando Chat Comunitario..."
   }
 }

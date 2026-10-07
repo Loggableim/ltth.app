@@ -120,7 +120,6 @@
     "streamalchemy": "Stream Monsters",
     "gcce": "Global Chat Command Engine",
     "gcce_hud": "GCCE HUD Overlay",
-    "chatango": "Chatango",
     "thermal_printer": "Thermal Printer",
     "config_import": "Config Import",
     "animazingpal": "AnimazingPal",
@@ -133,9 +132,6 @@
     "stt_capture": "STT Capture",
     "developer_guides": "Developer Guides",
     "webgpu_fireworks": "WebGPU Fireworks"
-  },
-  "chatango": {
-    "loading": "Loading Community Chat..."
   },
   "talking_heads_ui": {
     "title": "Talking Heads - AI Avatar Animation",

@@ -121,7 +121,6 @@
     "streamalchemy": "Stream Monsters",
     "gcce": "Globale Chat-Befehls-Engine",
     "gcce_hud": "GCCE HUD-Overlay",
-    "chatango": "Chatango",
     "thermal_printer": "Thermaldrucker",
     "config_import": "Konfiguration Importieren",
     "animazingpal": "AnimazingPal",
@@ -133,9 +132,6 @@
     "stt_capture": "STT-Erfassung",
     "developer_guides": "Entwicklerleitfäden",
     "webgpu_fireworks": "WebGPU Fireworks"
-  },
-  "chatango": {
-    "loading": "Community-Chat wird geladen..."
   },
   "talking_heads_ui": {
     "title": "Talking Heads - KI-Avatar-Animation",

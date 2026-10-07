@@ -125,7 +125,6 @@
     "visual_fx_frame_webgpu": "Visual FX Frame WEBGPU",
     "webgpu_emoji_rain": "Emoji Rain",
     "gcce_hud": "GCCE HUD Overlay",
-    "chatango": "Chatango",
     "fireworks_dev": "Feux d'Artifice Dev",
     "animazingpal": "AnimazingPal",
     "stt_ticker": "Ticker STT",
@@ -1544,8 +1543,5 @@
     "logs": {
       "empty": "Aucune entrée de journal pour le moment."
     }
-  },
-  "chatango": {
-    "loading": "Chargement du Chat Communautaire..."
   }
 }
