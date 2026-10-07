@@ -134,8 +134,10 @@ describe('TTS playback terminal fallback', () => {
     const playback = plugin._playAudio(item);
     await new Promise(resolve => setImmediate(resolve));
     expect(plugin._activeRendererPlaybacks.has(item.id)).toBe(true);
+    const streamClosed = new Promise(resolve => stream.once('close', resolve));
     stream.emit('error', new Error('fixture stream body failure'));
     await playback;
+    await streamClosed;
 
     expect(terminalEvents(plugin)).toEqual([
       expect.objectContaining({
@@ -152,6 +154,12 @@ describe('TTS playback terminal fallback', () => {
       rendererOutcome: 'failed',
       reason: 'stream-error'
     });
+    expect(plugin.api.emit).toHaveBeenCalledWith('tts:stream:abort', {
+      playbackId: item.id,
+      reason: 'stream-error'
+    });
+    expect(plugin._activeStreamingTransports?.has(item.id)).not.toBe(true);
+    expect(['data', 'end', 'error', 'close'].map(event => stream.listenerCount(event))).toEqual([0, 0, 0, 0]);
   });
 
   test('fails pending current and queued IDs on unload and does not duplicate an active record terminal', async () => {

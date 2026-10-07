@@ -746,6 +746,13 @@ class TTSPlugin {
         return this._settledRendererPlaybackIds;
     }
 
+    _ensureActiveStreamingTransports() {
+        if (!this._activeStreamingTransports) {
+            this._activeStreamingTransports = new Map();
+        }
+        return this._activeStreamingTransports;
+    }
+
     _getRendererPlaybackId(meta = {}) {
         return String(meta.playbackId || meta.id || '').trim();
     }
@@ -759,6 +766,66 @@ class TTSPlugin {
     _getRendererPlaybackMaxMs() {
         const configured = Number(this.config?.rendererPlaybackMaxMs);
         return Math.max(1, Math.round(Number.isFinite(configured) ? configured : 120000));
+    }
+
+    _getStreamEofWatchdogMs() {
+        const configured = Number(this.config?.streamEofWatchdogMs);
+        const timeoutMs = Number.isFinite(configured) ? configured : 120000;
+        return Math.min(2147483647, Math.max(1, Math.round(timeoutMs)));
+    }
+
+    _cleanupStreamingTransport(playbackId, { destroy = false } = {}) {
+        const transports = this._ensureActiveStreamingTransports();
+        const transport = transports.get(String(playbackId || ''));
+        if (!transport) return null;
+
+        transports.delete(transport.playbackId);
+        if (transport.eofTimer) clearTimeout(transport.eofTimer);
+        transport.eofTimer = null;
+        transport.stream.removeListener('data', transport.onData);
+        transport.stream.removeListener('end', transport.onEnd);
+        transport.stream.removeListener('error', transport.onError);
+        transport.stream.removeListener('close', transport.onClose);
+        transport.chunks.length = 0;
+
+        if (destroy && typeof transport.stream.destroy === 'function') {
+            const releaseDestroyListeners = () => {
+                transport.stream.removeListener('error', swallowDestroyError);
+                transport.stream.removeListener('close', releaseDestroyListeners);
+            };
+            const swallowDestroyError = () => {};
+            transport.stream.on('error', swallowDestroyError);
+            transport.stream.once('close', releaseDestroyListeners);
+            try {
+                if (!transport.stream.destroyed) transport.stream.destroy();
+            } catch (error) {
+                releaseDestroyListeners();
+                this.logger?.warn?.(`Failed to destroy TTS stream ${transport.playbackId}: ${error.message}`);
+            }
+        }
+        return transport;
+    }
+
+    _abortStreamingTransport(playbackId, reason, error = null, { alreadyClosed = false } = {}) {
+        const transport = this._ensureActiveStreamingTransports().get(String(playbackId || ''));
+        if (!transport || transport.finished) return false;
+
+        transport.finished = true;
+        this._cleanupStreamingTransport(transport.playbackId, { destroy: !alreadyClosed });
+        this.api.emit('tts:stream:abort', {
+            playbackId: transport.playbackId,
+            reason: String(reason || 'stream-aborted').slice(0, 120)
+        });
+        this._settleRendererPlayback(transport.playbackId, 'failed', {
+            reason: String(reason || 'stream-aborted').slice(0, 120)
+        });
+        transport.resolve?.({ type: 'stream-aborted', reason, error });
+        return true;
+    }
+
+    _abortAllStreamingTransports(reason = 'plugin-destroyed') {
+        const playbackIds = Array.from(this._ensureActiveStreamingTransports().keys());
+        playbackIds.forEach((playbackId) => this._abortStreamingTransport(playbackId, reason));
     }
 
     _rendererPayload(record, details = {}) {
@@ -1203,6 +1270,7 @@ class TTSPlugin {
             playbackEstimateBufferMs: 2000, // Compatibility buffer when audio duration cannot be measured
             rendererPlaybackWatchdogMs: 15000, // Release queue when no dashboard renderer acknowledges playback
             rendererPlaybackMaxMs: 120000, // Hard cap remains bounded even if a renderer keeps reporting progress
+            streamEofWatchdogMs: 120000, // Absolute bound for a streaming response that never reaches transport EOF
             enableEngineCircuitBreaker: true, // Temporarily skip engines with repeated failures
             engineCircuitBreakerFailureThreshold: 3,
             engineCircuitBreakerCooldownMs: 30000,
@@ -4053,7 +4121,21 @@ class TTSPlugin {
         let totalBytes = 0;
         const playbackId = playbackMeta.playbackId;
         const streamResultPromise = new Promise((resolve) => {
-            stream.on('data', (chunk) => {
+            const transport = {
+                playbackId,
+                stream,
+                chunks,
+                resolve,
+                eofTimer: null,
+                finished: false,
+                onData: null,
+                onEnd: null,
+                onError: null,
+                onClose: null
+            };
+
+            transport.onData = (chunk) => {
+                if (transport.finished) return;
                 // If Dashboard has already rejected this playback (for example
                 // due to autoplay lock), keep draining the source without
                 // retaining or broadcasting more chunks.
@@ -4075,8 +4157,12 @@ class TTSPlugin {
                     duckOther: item.duckOther ?? this.config.duckOtherAudio,
                     duckVolume: this.config.duckVolume
                 });
-            });
-            stream.once('end', () => {
+            };
+            transport.onEnd = () => {
+                if (transport.finished) return;
+                transport.finished = true;
+                const totalChunks = chunks.length;
+                const completedTotalBytes = totalBytes;
                 const record = this._ensureRendererPlaybackState().get(playbackId);
                 if (record && !record.settled) {
                     const streamedAudio = chunks.length > 0 ? Buffer.concat(chunks).toString('base64') : null;
@@ -4087,24 +4173,42 @@ class TTSPlugin {
                     this._emitPlaybackPrepared(playbackMeta, avatarGate, durationInfo.durationMs);
                 }
 
+                this._cleanupStreamingTransport(playbackId);
+
                 // This remains a transport EOF marker, not a playback terminal
                 // event. It lets Dashboard release a rejected stream buffer.
                 this.api.emit('tts:stream:end', {
                     id: item.id,
                     playbackId,
-                    totalChunks: chunks.length,
-                    totalBytes,
+                    totalChunks,
+                    totalBytes: completedTotalBytes,
                     format: streamResult.format || 'mp3',
                     source: playbackMeta.source
                 });
                 resolve({ type: 'stream-ended' });
-            });
-            stream.once('error', (error) => {
-                const didSettle = this._settleRendererPlayback(playbackId, 'failed', {
-                    reason: 'stream-error'
-                });
-                resolve({ type: 'stream-error', error, didSettle });
-            });
+            };
+            transport.onError = (error) => {
+                if (transport.finished) return;
+                transport.finished = true;
+                this._recordEngineFailure(item.engine, error);
+                this._cleanupStreamingTransport(playbackId, { destroy: true });
+                this.api.emit('tts:stream:abort', { playbackId, reason: 'stream-error' });
+                this._settleRendererPlayback(playbackId, 'failed', { reason: 'stream-error' });
+                resolve({ type: 'stream-error', error });
+            };
+            transport.onClose = () => {
+                if (transport.finished || stream.readableEnded === true) return;
+                this._abortStreamingTransport(playbackId, 'stream-closed', null, { alreadyClosed: true });
+            };
+
+            this._ensureActiveStreamingTransports().set(playbackId, transport);
+            stream.on('data', transport.onData);
+            stream.on('end', transport.onEnd);
+            stream.on('error', transport.onError);
+            stream.on('close', transport.onClose);
+            transport.eofTimer = setTimeout(() => {
+                this._abortStreamingTransport(playbackId, 'stream-eof-timeout');
+            }, this._getStreamEofWatchdogMs());
         });
 
         const firstOutcome = await Promise.race([
@@ -4112,11 +4216,13 @@ class TTSPlugin {
             completion.then((result) => ({ type: 'renderer-terminal', result }))
         ]);
         if (firstOutcome.type === 'stream-error') {
-            this._recordEngineFailure(item.engine, firstOutcome.error);
             throw firstOutcome.error;
         }
         if (firstOutcome.type === 'renderer-terminal') {
             return firstOutcome.result;
+        }
+        if (firstOutcome.type === 'stream-aborted') {
+            return completion;
         }
 
         return completion;
@@ -4132,6 +4238,7 @@ class TTSPlugin {
                 ...(Array.isArray(this.queueManager?.queue) ? this.queueManager.queue : [])
             ].filter(item => item && this._getRendererPlaybackId(item));
 
+            this._abortAllStreamingTransports('plugin-destroyed');
             this._settleAllRendererPlaybacks('plugin-destroyed');
 
             for (const item of pendingItems) {

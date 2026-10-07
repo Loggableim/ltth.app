@@ -19,6 +19,8 @@ let dashboardTTSRenderer = null;
 // TTS Streaming buffer management
 const streamingBuffers = new Map();
 const blockedStreamingPlaybackIds = new Set();
+const abortedStreamingPlaybackIds = new Set();
+const MAX_ABORTED_STREAMING_PLAYBACK_IDS = 1024;
 
 // ========== STATS MENU NAVIGATION DATA ==========
 // Track event data for detail panels
@@ -631,6 +633,10 @@ function initializeSocketListeners() {
 
     socket.on('tts:stream:end', (data) => {
         handleStreamEnd(data);
+    });
+
+    socket.on('tts:stream:abort', (data) => {
+        handleStreamAbort(data);
     });
 
     // NOTE: Soundboard playback is handled by dashboard-soundboard.js (loaded separately)
@@ -3598,6 +3604,7 @@ function getAudioMimeType(format) {
 function handleStreamChunk(data) {
     const playbackId = data.playbackId || data.id;
     if (!playbackId) return;
+    if (abortedStreamingPlaybackIds.has(playbackId)) return;
     console.log(`🎵 [Dashboard] Stream chunk received for ${playbackId}`, {
         chunkNumber: streamingBuffers.has(playbackId) ? streamingBuffers.get(playbackId).chunks.length + 1 : 1,
         isFirst: data.isFirst
@@ -3654,6 +3661,7 @@ function handleStreamChunk(data) {
 function handleStreamEnd(data) {
     const playbackId = data.playbackId || data.id;
     if (!playbackId) return;
+    if (abortedStreamingPlaybackIds.has(playbackId)) return;
     console.log(`🎵 [Dashboard] Stream ended for ${playbackId}`, {
         totalChunks: data.totalChunks,
         totalBytes: data.totalBytes
@@ -3674,6 +3682,23 @@ function handleStreamEnd(data) {
 
     buffer.playbackStarted = true;
     playStreamingAudio(playbackId, data.source || buffer.source || null);
+}
+
+/**
+ * Discard a stream whose transport was aborted before EOF. This event never
+ * starts playback and its tombstone prevents already queued chunks from
+ * recreating the discarded buffer.
+ */
+function handleStreamAbort(data) {
+    const playbackId = data?.playbackId || data?.id;
+    if (!playbackId) return;
+
+    streamingBuffers.delete(playbackId);
+    blockedStreamingPlaybackIds.delete(playbackId);
+    abortedStreamingPlaybackIds.add(playbackId);
+    while (abortedStreamingPlaybackIds.size > MAX_ABORTED_STREAMING_PLAYBACK_IDS) {
+        abortedStreamingPlaybackIds.delete(abortedStreamingPlaybackIds.values().next().value);
+    }
 }
 
 /**
