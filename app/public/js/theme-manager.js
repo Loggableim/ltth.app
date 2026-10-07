@@ -19,9 +19,9 @@ class ThemeManager {
             cid: {
                 name: 'Cid',
                 icon: 'sparkles',
-                description: 'Pup Cid inspired green-on-black brand mode',
+                description: 'Neutral dark brand theme with green and violet accents',
                 badge: 'Brand',
-                swatches: ['#4ade80', '#12a116', '#000000']
+                swatches: ['#166534', '#ffffff', '#7c3aed']
             },
             night: {
                 name: 'Night Mode',

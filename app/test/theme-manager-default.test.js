@@ -15,7 +15,7 @@ function loadThemeManager(savedTheme) {
   if (savedTheme) {
     dom.window.localStorage.setItem('dashboard-theme', savedTheme);
   }
-  dom.window.eval(themeManagerSource);
+  dom.window.eval(`${themeManagerSource}\nwindow.__themeManager = themeManager;`);
   return dom;
 }
 
@@ -30,5 +30,14 @@ describe('ThemeManager default theme', () => {
     const dom = loadThemeManager('night');
 
     expect(dom.window.document.documentElement.getAttribute('data-theme')).toBe('night');
+  });
+
+  test('keeps the Cid theme identity and exposes the green white violet brand palette', () => {
+    const dom = loadThemeManager();
+    const cid = dom.window.__themeManager.themes.cid;
+
+    expect(dom.window.__themeManager.getCurrentTheme()).toBe('cid');
+    expect(cid.swatches).toEqual(['#166534', '#ffffff', '#7c3aed']);
+    expect(cid.description).toMatch(/neutral dark/i);
   });
 });

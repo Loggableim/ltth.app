@@ -1288,8 +1288,8 @@ html:is(
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 24% 12%, rgba(34, 211, 238, 0.12), transparent 24rem),
-        radial-gradient(circle at 82% 8%, rgba(52, 211, 153, 0.10), transparent 20rem),
+        radial-gradient(circle at 24% 12%, rgba(124, 58, 237, 0.08), transparent 24rem),
+        radial-gradient(circle at 82% 8%, rgba(74, 222, 128, 0.045), transparent 20rem),
         radial-gradient(circle at 62% 86%, rgba(139, 92, 246, 0.10), transparent 22rem);
     opacity: 0.9;
     z-index: 0;
