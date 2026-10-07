@@ -604,8 +604,10 @@ async function performImport(parsed, deps, opts = {}) {
                             }
                             fs.copyFileSync(file.stagePath, file.destPath, fs.constants.COPYFILE_EXCL);
                             installed.push(file.destPath);
-                            report.plugins[pluginId].importedFiles.push(file.relPath);
                         }
+                        // Report only the completed batch. A later failure rolls
+                        // earlier files back and must not leave success counts.
+                        report.plugins[pluginId].importedFiles.push(...staged.map(file => file.relPath));
                     } catch (error) {
                         const rollbackErrors = [];
                         for (const installedPath of installed.reverse()) {
