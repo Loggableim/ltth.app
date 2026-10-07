@@ -583,6 +583,61 @@ function Test-AppRootDirectory {
     return (Test-Path -LiteralPath $packageJson) -and ((Test-Path -LiteralPath $launchJs) -or (Test-Path -LiteralPath $serverJs))
 }
 
+function Test-AppDirectoryContainsPersistentData {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Container)) {
+        return $false
+    }
+
+    foreach ($relativePath in @('.config_path', 'user_configs', 'user_data', 'uploads')) {
+        if (Test-Path -LiteralPath (Join-Path $Path $relativePath)) {
+            return $true
+        }
+    }
+
+    $pluginsPath = Join-Path $Path 'plugins'
+    if (-not (Test-Path -LiteralPath $pluginsPath)) {
+        return $false
+    }
+    if (-not (Test-Path -LiteralPath $pluginsPath -PathType Container)) {
+        return $true
+    }
+
+    try {
+        $pluginDirectories = @(Get-ChildItem -LiteralPath $pluginsPath -Directory -Force -ErrorAction Stop)
+    } catch {
+        # If the plugin tree cannot be inspected, do not assume it is disposable.
+        return $true
+    }
+
+    foreach ($pluginDirectory in $pluginDirectories) {
+        if (Test-Path -LiteralPath (Join-Path $pluginDirectory.FullName 'data')) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Assert-AppDirectorySafeForReplacement {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (Test-AppDirectoryContainsPersistentData -Path $Path) {
+        $exception = [System.InvalidOperationException]::new(
+            "LTTH.AppDirectoryContainsPersistentData: Reparatur wurde gestoppt, damit lokale Daten in $Path erhalten bleiben."
+        )
+        $exception.Data['LTTHErrorCode'] = 'AppDirectoryContainsPersistentData'
+        throw $exception
+    }
+}
+
 function Find-AppRootDirectory {
     param(
         [Parameter(Mandatory = $true)]
@@ -632,6 +687,7 @@ function Install-AppBundleFromZip {
     }
 
     $appDir = Join-Path $LTTHDir 'app'
+    Assert-AppDirectorySafeForReplacement -Path $appDir
     $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-app-" + [guid]::NewGuid().ToString('N'))
     $zipPath = Join-Path $tempDir 'ltth_latest.zip'
     $extractDir = Join-Path $tempDir 'extract'
@@ -1644,11 +1700,19 @@ function Download-Source {
             return
         }
 
+        # Keep this guard outside the fallback catch so protected local data cannot
+        # be redirected into a replacement path after the ZIP repair is refused.
+        Assert-AppDirectorySafeForReplacement -Path $appDir
+
         try {
             Install-AppBundleFromZip | Out-Null
             Ok "App-Bundle bereit in $LTTHDir"
             return
         } catch {
+            if ($null -ne $_.Exception -and
+                $_.Exception.Data['LTTHErrorCode'] -eq 'AppDirectoryContainsPersistentData') {
+                throw
+            }
             Warn "App-Bundle konnte nicht vom offiziellen ZIP geladen werden; wechsle auf Git-Clone-Fallback: $($_.Exception.Message)"
             Ensure-Git
             Resolve-Version
