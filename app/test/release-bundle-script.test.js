@@ -35,6 +35,11 @@ function createTempRepo() {
     path.join(root, 'app', 'config', 'plugin-release-policy.json')
   );
   const releasePolicy = JSON.parse(fs.readFileSync(path.join(root, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
+  for (const asset of Object.keys(releasePolicy.publicAssetPathOwners)) {
+    const assetPath = path.join(root, 'app', 'public', asset.slice(1));
+    fs.mkdirSync(path.dirname(assetPath), { recursive: true });
+    fs.writeFileSync(assetPath, 'synthetic-public-asset');
+  }
   for (const id of releasePolicy.closedBeta) {
     const dir = path.join(root, 'app', 'plugins', id);
     fs.mkdirSync(dir, { recursive: true });
@@ -258,10 +263,14 @@ describe('Release bundle script', () => {
     expect(names).toContain('ltth_1.3.24/app/package.json');
     expect(names).toContain('ltth_1.3.24/app/config/distribution-mode.json');
     expect(names).toContain('ltth_1.3.24/app/plugins/goals/plugin.json');
+    const releasePolicy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
+    for (const asset of Object.keys(releasePolicy.publicAssetPathOwners)) {
+      expect(names).not.toContain(`ltth_1.3.24/app/public${asset}`);
+      expect(fs.existsSync(path.join(tempRoot, 'app', 'public', asset.slice(1)))).toBe(true);
+    }
     expect(names.some(name => name.includes('/plugins/renamed-beta/') || name.includes('/plugins/renamed-alias/'))).toBe(false);
     expect(names.some(name => name.includes('/plugins/public-wrapper/'))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT', 'plugin.json'))).toBe(true);
-    const releasePolicy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
     for (const id of [...releasePolicy.closedBeta, ...Object.keys(releasePolicy.aliases)]) {
       expect(names.filter(name => name.startsWith(`ltth_1.3.24/app/plugins/${id}/`))).toEqual([]);
       expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', id, 'plugin.json'))).toBe(true);

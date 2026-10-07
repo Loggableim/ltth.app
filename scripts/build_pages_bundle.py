@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import re
 import shutil
 import zipfile
@@ -69,18 +70,28 @@ def copy_file(source: Path, destination: Path) -> bool:
     return True
 
 
-def load_closed_beta_ids() -> set[str]:
+def load_release_policy() -> tuple[set[str], set[str]]:
     policy = json.loads((REPO_ROOT / "app/config/plugin-release-policy.json").read_text(encoding="utf-8-sig"))
     ids = policy.get("closedBeta")
     aliases = policy.get("aliases", {})
+    public_asset_path_owners = policy.get("publicAssetPathOwners", {})
     if (type(policy.get("schemaVersion")) is not int or policy.get("schemaVersion") != 1
-            or set(policy) - {"schemaVersion", "closedBeta", "aliases"} or not isinstance(ids, list)
+            or set(policy) - {"schemaVersion", "closedBeta", "aliases", "publicAssetPathOwners"} or not isinstance(ids, list)
             or not all(isinstance(item, str) and PLUGIN_ID_PATTERN.fullmatch(item) for item in ids)
             or len(set(ids)) != len(ids) or not isinstance(aliases, dict)
             or not all(isinstance(key, str) and PLUGIN_ID_PATTERN.fullmatch(key)
-                       and key not in ids and value in ids for key, value in aliases.items())):
+                       and key not in ids and value in ids for key, value in aliases.items())
+            or not isinstance(public_asset_path_owners, dict)
+            or not all(isinstance(asset_path, str) and asset_path.startswith("/")
+                       and not asset_path.startswith("//") and asset_path == asset_path.lower()
+                       and "\\" not in asset_path and not any(char in asset_path for char in "%?#")
+                       and posixpath.normpath(asset_path) == asset_path
+                       and all(part not in {"", ".", ".."} for part in asset_path[1:].split("/"))
+                       and isinstance(owner, str) and owner in ids
+                       for asset_path, owner in public_asset_path_owners.items())
+            or len({asset_path.lower() for asset_path in public_asset_path_owners}) != len(public_asset_path_owners)):
         raise ValueError("Invalid plugin release policy")
-    return set(ids) | set(aliases)
+    return set(ids) | set(aliases), {item.lower() for item in public_asset_path_owners}
 
 
 def is_public_package(path: Path, closed_beta: set[str]) -> bool:
@@ -115,7 +126,7 @@ def is_public_package(path: Path, closed_beta: set[str]) -> bool:
         return True
 
 
-def is_public_app_archive(path: Path, closed_beta: set[str]) -> bool:
+def is_public_app_archive(path: Path, closed_beta: set[str], excluded_public_assets: set[str]) -> bool:
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
         markers = [name for name in names if name.endswith("/app/config/distribution-mode.json")]
@@ -127,6 +138,11 @@ def is_public_app_archive(path: Path, closed_beta: set[str]) -> bool:
             return False
         for name in names:
             parts = name.replace("\\", "/").lower().split("/")
+            if "app" in parts:
+                app_parts = parts[parts.index("app") + 1:]
+                if len(app_parts) > 1 and app_parts[0] == "public":
+                    if "/" + "/".join(app_parts[1:]) in excluded_public_assets:
+                        return False
             if "plugins" in parts and any(part in closed_beta for part in parts[parts.index("plugins") + 1:-1]):
                 return False
             if any(parts[index:index + 2] == ["plugins", plugin_id]
@@ -175,7 +191,7 @@ def copy_tree(source: Path, destination: Path, closed_beta: set[str]) -> int:
 
 
 def build_bundle(output_dir: Path) -> None:
-    closed_beta = load_closed_beta_ids()
+    closed_beta, excluded_public_assets = load_release_policy()
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -185,7 +201,7 @@ def build_bundle(output_dir: Path) -> None:
 
     for file_name in ROOT_FILES:
         if file_name == "app/ltth_latest.zip" and (REPO_ROOT / file_name).exists():
-            if not is_public_app_archive(REPO_ROOT / file_name, closed_beta):
+            if not is_public_app_archive(REPO_ROOT / file_name, closed_beta, excluded_public_assets):
                 print("Omitted legacy app download: public distribution policy not satisfied.")
                 continue
         if copy_file(REPO_ROOT / file_name, output_dir / file_name):

@@ -18,7 +18,11 @@ function readReleasePolicy(repoRoot) {
   if (!policy.aliases || typeof policy.aliases !== 'object' || Array.isArray(policy.aliases)) {
     throw new Error('plugin-release-policy.json aliases must be an object');
   }
-  if (Object.keys(policy).some((key) => !['schemaVersion', 'closedBeta', 'aliases'].includes(key))) {
+  if (!policy.publicAssetPathOwners || typeof policy.publicAssetPathOwners !== 'object' ||
+      Array.isArray(policy.publicAssetPathOwners)) {
+    throw new Error('plugin-release-policy.json publicAssetPathOwners must be an object');
+  }
+  if (Object.keys(policy).some((key) => !['schemaVersion', 'closedBeta', 'aliases', 'publicAssetPathOwners'].includes(key))) {
     throw new Error('plugin-release-policy.json contains an unknown key');
   }
   const ids = policy.closedBeta;
@@ -31,7 +35,20 @@ function readReleasePolicy(repoRoot) {
       throw new Error('plugin-release-policy.json contains an invalid alias');
     }
   }
-  return { closedBeta: new Set(ids), aliases: policy.aliases };
+  const closedBeta = new Set(ids);
+  const publicAssetPathOwners = new Map();
+  for (const [assetPath, owner] of Object.entries(policy.publicAssetPathOwners)) {
+    if (typeof assetPath !== 'string' || !assetPath.startsWith('/') || assetPath.startsWith('//') ||
+        assetPath !== assetPath.toLowerCase() || assetPath.includes('\\') || /[%?#]/.test(assetPath) ||
+        path.posix.normalize(assetPath) !== assetPath || assetPath.slice(1).split('/').some((part) => !part || part === '.' || part === '..')) {
+      throw new Error('plugin-release-policy.json contains an invalid public asset path');
+    }
+    if (typeof owner !== 'string' || !PLUGIN_ID_PATTERN.test(owner) || !closedBeta.has(owner)) {
+      throw new Error('plugin-release-policy.json contains an invalid public asset owner');
+    }
+    publicAssetPathOwners.set(assetPath, owner);
+  }
+  return { closedBeta, aliases: policy.aliases, publicAssetPathOwners };
 }
 
 function compareById(left, right) {
@@ -136,4 +153,4 @@ function loadPublishedPluginCatalog(repoRoot) {
   };
 }
 
-module.exports = { isClosedBetaPlugin, loadPublishedPluginCatalog };
+module.exports = { isClosedBetaPlugin, loadPublishedPluginCatalog, readReleasePolicy };

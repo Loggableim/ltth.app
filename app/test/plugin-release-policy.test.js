@@ -8,6 +8,7 @@ const PluginLoader = require('../modules/plugin-loader');
 const { PluginStore } = require('../modules/plugin-store');
 const { createPluginReleasePolicy } = require('../modules/plugin-release-policy');
 const { setupPluginRoutes } = require('../routes/plugin-routes');
+const publicAssetPathOwners = require('../config/plugin-release-policy.json').publicAssetPathOwners;
 
 const closedBeta = [
   'animazingpal', 'interactive-story', 'music-bot', 'osc-bridge', 'schnorrbecher',
@@ -37,7 +38,8 @@ describe('public distribution plugin release policy', () => {
     writeJson(path.join(appRoot, 'config', 'plugin-release-policy.json'), {
       schemaVersion: 1,
       closedBeta,
-      aliases: { streamalchemy: 'stream-monsters' }
+      aliases: { streamalchemy: 'stream-monsters' },
+      publicAssetPathOwners
     });
   });
 
@@ -230,9 +232,54 @@ describe('public distribution plugin release policy', () => {
     await request(localApp).get('/api/plugins/music-bot/status').expect(200);
   });
 
+  test('guards only mapped public assets by their existing closed-beta plugin policy', async () => {
+    const publicDir = path.join(root, 'public');
+    for (const assetPath of Object.keys(publicAssetPathOwners)) {
+      const relativePath = assetPath.replace(/^\//, '');
+      const assetFile = path.join(publicDir, relativePath);
+      fs.mkdirSync(path.dirname(assetFile), { recursive: true });
+      fs.writeFileSync(assetFile, 'asset');
+    }
+    fs.mkdirSync(path.join(publicDir, 'js'), { recursive: true });
+    fs.writeFileSync(path.join(publicDir, 'js', 'unrelated.js'), 'public');
+
+    const createApp = () => {
+      const app = express();
+      app.use(createPluginReleasePolicy({ appRoot }).createRequestGuard());
+      app.use(express.static(publicDir));
+      return app;
+    };
+
+    writeJson(path.join(appRoot, 'config', 'distribution-mode.json'), { channel: 'public' });
+    const publicPolicy = createPluginReleasePolicy({ appRoot });
+    expect(publicPolicy.getSnapshot().publicMode).toBe(true);
+    expect([...publicPolicy.getSnapshot().publicAssetPathOwners.keys()]).toEqual(Object.keys(publicAssetPathOwners));
+    const publicApp = createApp();
+    for (const assetPath of Object.keys(publicAssetPathOwners)) {
+      await request(publicApp).get(assetPath).expect(404);
+    }
+    await request(publicApp).get('/js/%6fsc-bridge-ui.js').expect(404);
+    const publicUnrelated = await request(publicApp).get('/js/unrelated.js').expect(200);
+    expect(publicUnrelated.text).toBe('public');
+
+    writeJson(path.join(appRoot, 'config', 'distribution-mode.json'), { channel: 'local' });
+    const localApp = createApp();
+    for (const assetPath of Object.keys(publicAssetPathOwners)) {
+      const response = await request(localApp).get(assetPath).expect(200);
+      const content = Buffer.isBuffer(response.body) ? response.body.toString('utf8') : response.text;
+      expect(content).toBe('asset');
+    }
+
+    fs.writeFileSync(path.join(appRoot, 'config', 'distribution-mode.json'), '{invalid');
+    const unknownModeApp = createApp();
+    await request(unknownModeApp).get('/js/osc-bridge-ui.js').expect(404);
+    const unknownUnrelated = await request(unknownModeApp).get('/js/unrelated.js').expect(200);
+    expect(unknownUnrelated.text).toBe('public');
+  });
+
   test('server wires the request guard before static assets and plugin routes', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-    const guardIndex = source.indexOf('app.use(createPluginReleasePolicy({ appRoot: __dirname }).createRequestGuard({ pluginsDir: () => pluginsDir }))');
+    const guardIndex = source.indexOf('app.use(pluginReleasePolicy.createRequestGuard({');
     const publicStaticIndex = source.indexOf("app.use(express.static(path.join(__dirname, 'public')))");
     const pluginRoutesIndex = source.indexOf('setupPluginRoutes(app, pluginLoader');
     const pluginStaticIndex = source.indexOf("app.use('/plugins', express.static(pluginsDir))");
@@ -241,6 +288,7 @@ describe('public distribution plugin release policy', () => {
     expect(publicStaticIndex).toBeGreaterThan(guardIndex);
     expect(pluginRoutesIndex).toBeGreaterThan(guardIndex);
     expect(pluginStaticIndex).toBeGreaterThan(guardIndex);
+    expect(source).toContain('pluginReleasePolicy.createRequestGuard');
   });
 
   test('rejects a closed-beta manifest through the original Express ZIP upload route before install', async () => {

@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -4481,13 +4482,14 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 		return fmt.Errorf("invalid release policy size")
 	}
 	var policy struct {
-		SchemaVersion int               `json:"schemaVersion"`
-		ClosedBeta    []string          `json:"closedBeta"`
-		Aliases       map[string]string `json:"aliases"`
+		SchemaVersion         int               `json:"schemaVersion"`
+		ClosedBeta            []string          `json:"closedBeta"`
+		Aliases               map[string]string `json:"aliases"`
+		PublicAssetPathOwners map[string]string `json:"publicAssetPathOwners"`
 	}
 	policyDecoder := json.NewDecoder(bytes.NewReader(policyBytes))
 	policyDecoder.DisallowUnknownFields()
-	if err := policyDecoder.Decode(&policy); err != nil || policy.SchemaVersion != 1 || len(policy.ClosedBeta) == 0 {
+	if err := policyDecoder.Decode(&policy); err != nil || policy.SchemaVersion != 1 || len(policy.ClosedBeta) == 0 || policy.PublicAssetPathOwners == nil {
 		return fmt.Errorf("invalid plugin release policy")
 	}
 	if err := policyDecoder.Decode(new(interface{})); err != io.EOF {
@@ -4509,6 +4511,21 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 			return fmt.Errorf("invalid closed beta plugin ID")
 		}
 		blocked[id] = true
+	}
+	seenPublicAssetPaths := map[string]bool{}
+	for publicPath, owner := range policy.PublicAssetPathOwners {
+		if !strings.HasPrefix(publicPath, "/") || strings.HasPrefix(publicPath, "//") ||
+			publicPath != strings.ToLower(publicPath) || strings.ContainsAny(publicPath, "\\%?#") ||
+			path.Clean(publicPath) != publicPath || len(strings.Split(publicPath[1:], "/")) == 0 ||
+			!validID(owner) || !blocked[owner] || seenPublicAssetPaths[strings.ToLower(publicPath)] {
+			return fmt.Errorf("invalid public asset path owner mapping")
+		}
+		for _, segment := range strings.Split(publicPath[1:], "/") {
+			if segment == "" || segment == "." || segment == ".." {
+				return fmt.Errorf("invalid public asset path owner mapping")
+			}
+		}
+		seenPublicAssetPaths[strings.ToLower(publicPath)] = true
 	}
 	for alias, canonical := range policy.Aliases {
 		if !validID(alias) || !validID(canonical) || !blocked[canonical] || alias == canonical || blocked[alias] {
@@ -4595,6 +4612,12 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 		}
 		if strings.EqualFold(relPath, "config/distribution-mode.json") {
 			continue
+		}
+		if len(segments) > 1 && strings.EqualFold(segments[0], "public") {
+			publicPath := "/" + strings.ToLower(strings.Join(segments[1:], "/"))
+			if _, excluded := policy.PublicAssetPathOwners[publicPath]; excluded {
+				continue
+			}
 		}
 		targetPath, err := filepath.Abs(filepath.Join(cleanDest, filepath.FromSlash(relPath)))
 		if err != nil {

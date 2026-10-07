@@ -437,7 +437,8 @@ app.use('/api', (req, res, next) => {
 
 // Prevent closed-beta plugin API handlers and source assets from being served
 // in the public distribution. This precedes core/static/plugin route registration.
-app.use(createPluginReleasePolicy({ appRoot: __dirname }).createRequestGuard({ pluginsDir: () => pluginsDir }));
+const pluginReleasePolicy = createPluginReleasePolicy({ appRoot: __dirname });
+app.use(pluginReleasePolicy.createRequestGuard({ pluginsDir: () => pluginsDir }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 

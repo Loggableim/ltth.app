@@ -16,34 +16,66 @@ function readJson(filePath) {
   }
 }
 
+function readPublicAssetPathOwners(policy) {
+  const mapping = policy?.publicAssetPathOwners;
+  if (mapping === undefined) return new Map();
+  if (!mapping || typeof mapping !== 'object' || Array.isArray(mapping)) {
+    throw new Error('Invalid public asset ownership mapping');
+  }
+
+  const owners = new Map();
+  for (const [rawPath, rawOwner] of Object.entries(mapping)) {
+    if (typeof rawPath !== 'string' || !rawPath.startsWith('/') || rawPath.startsWith('//') ||
+        rawPath !== rawPath.toLowerCase() || rawPath.includes('\\') || rawPath.includes('%') ||
+        rawPath.includes('?') || rawPath.includes('#') || path.posix.normalize(rawPath) !== rawPath) {
+      throw new Error('Invalid public asset path');
+    }
+    const owner = canonicalizePluginId(assertPluginId(rawOwner));
+    if (owners.has(rawPath)) throw new Error('Duplicate public asset path');
+    owners.set(rawPath, owner);
+  }
+  return owners;
+}
+
 function createPluginReleasePolicy(options = {}) {
   const appRoot = options.appRoot || APP_ROOT;
   const policyPath = options.policyPath || path.join(appRoot, 'config', 'plugin-release-policy.json');
   const modePath = options.modePath || path.join(appRoot, 'config', 'distribution-mode.json');
 
   function getSnapshot() {
+    const policy = readJson(policyPath);
+    let publicAssetPathOwners = new Map();
+    try { publicAssetPathOwners = readPublicAssetPathOwners(policy); } catch { /* public policy validation fails closed below */ }
+    const failClosedSnapshot = () => ({
+      publicMode: true,
+      policyInvalid: true,
+      blockedIds: new Set(),
+      aliases: new Map(),
+      publicAssetPathOwners
+    });
     const markerExists = fs.existsSync(modePath);
     const mode = readJson(modePath);
     if (markerExists && !mode) {
-      return { publicMode: true, policyInvalid: true, blockedIds: new Set(), aliases: new Map() };
+      return failClosedSnapshot();
     }
-    if (!markerExists) return { publicMode: false, blockedIds: new Set(), aliases: new Map() };
+    if (!markerExists) return { publicMode: false, blockedIds: new Set(), aliases: new Map(), publicAssetPathOwners };
     const validModeKeys = mode && typeof mode === 'object' && !Array.isArray(mode) &&
       Object.keys(mode).every(key => ['channel', 'schemaVersion'].includes(key)) &&
       (mode.schemaVersion === undefined || mode.schemaVersion === 1);
     if (!validModeKeys || !['public', 'local'].includes(mode.channel)) {
-      return { publicMode: true, policyInvalid: true, blockedIds: new Set(), aliases: new Map() };
+      return failClosedSnapshot();
     }
     const publicMode = mode.channel === 'public';
-    if (!publicMode) return { publicMode: false, blockedIds: new Set(), aliases: new Map() };
+    if (!publicMode) return { publicMode: false, blockedIds: new Set(), aliases: new Map(), publicAssetPathOwners };
 
-    const policy = readJson(policyPath);
     if (!policy || typeof policy !== 'object' || Array.isArray(policy) || policy.schemaVersion !== 1 ||
         !Array.isArray(policy.closedBeta) ||
-        !Object.keys(policy).every(key => ['schemaVersion', 'closedBeta', 'aliases'].includes(key)) ||
+        !policy.publicAssetPathOwners || typeof policy.publicAssetPathOwners !== 'object' ||
+        Array.isArray(policy.publicAssetPathOwners) ||
+        !Object.keys(policy).every(key => ['schemaVersion', 'closedBeta', 'aliases', 'publicAssetPathOwners'].includes(key)) ||
         (policy.aliases !== undefined && (!policy.aliases || typeof policy.aliases !== 'object' || Array.isArray(policy.aliases)))) {
       // A public marker without a usable policy must not expose an incomplete catalog.
-      return { publicMode: true, policyInvalid: true, blockedIds: new Set(), aliases: new Map() };
+      return failClosedSnapshot();
     }
 
     const blockedIds = new Set();
@@ -53,7 +85,7 @@ function createPluginReleasePolicy(options = {}) {
         if (blockedIds.has(id)) throw new Error('Duplicate closed-beta plugin id');
         blockedIds.add(id);
       } catch {
-        return { publicMode: true, policyInvalid: true, blockedIds: new Set(), aliases: new Map() };
+        return failClosedSnapshot();
       }
     }
 
@@ -69,12 +101,21 @@ function createPluginReleasePolicy(options = {}) {
           aliases.set(alias, canonical);
           if (blockedIds.has(canonical)) blockedIds.add(alias);
         } catch {
-          return { publicMode: true, policyInvalid: true, blockedIds: new Set(), aliases: new Map() };
+          return failClosedSnapshot();
         }
       }
     }
 
-    return { publicMode: true, blockedIds, aliases };
+    try {
+      publicAssetPathOwners = readPublicAssetPathOwners(policy);
+      for (const owner of publicAssetPathOwners.values()) {
+        if (!blockedIds.has(owner)) throw new Error('Public asset owner is not closed beta');
+      }
+    } catch {
+      return failClosedSnapshot();
+    }
+
+    return { publicMode: true, blockedIds, aliases, publicAssetPathOwners };
   }
 
   function resolveId(id, snapshot = getSnapshot()) {
@@ -116,14 +157,16 @@ function createPluginReleasePolicy(options = {}) {
     return function pluginReleaseRequestGuard(req, res, next) {
       let decodedPath = String(req.path || '');
       try { decodedPath = decodeURIComponent(decodedPath); } catch { /* malformed paths are rejected downstream */ }
-      const segments = decodedPath.replace(/\\/g, '/')
-        .split('/')
-        .filter(Boolean)
-        .map(segment => segment.toLowerCase());
+      const normalizedPath = decodedPath.replace(/\\/g, '/').toLowerCase();
+      const segments = normalizedPath.split('/').filter(Boolean);
       let pluginId = '';
       if (segments[0] === 'plugins') pluginId = segments[1] || '';
       if (segments[0] === 'api' && segments[1] === 'plugins') pluginId = segments[2] || '';
       const snapshot = getSnapshot();
+      const assetOwner = snapshot.publicAssetPathOwners?.get(normalizedPath);
+      if (assetOwner && isClosedBetaId(assetOwner, snapshot)) {
+        return res.status(404).json({ success: false, error: 'Asset not found' });
+      }
       let manifestIsClosedBeta = false;
       if (snapshot.publicMode && segments[0] === 'plugins' && pluginId) {
         try {

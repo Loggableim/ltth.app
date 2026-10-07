@@ -157,6 +157,29 @@ describe('Pages release bundle', () => {
     expect(fs.existsSync(path.join(tempRoot, 'app', 'ltth_latest.zip'))).toBe(true);
   });
 
+  it('omits a public app archive containing centrally excluded assets without deleting its source', () => {
+    tempRoot = createTempRepo();
+    const policy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
+    const entries = {
+      'ltth_1.3.24/app/config/distribution-mode.json': '{"channel":"public"}',
+      'ltth_1.3.24/app/plugins/goals/plugin.json': '{"id":"goals"}'
+    };
+    for (const asset of Object.keys(policy.publicAssetPathOwners)) {
+      entries[`ltth_1.3.24/app/public${asset}`] = 'synthetic-public-asset';
+    }
+    const sourceArchive = path.join(tempRoot, 'app', 'ltth_latest.zip');
+    writeZip(sourceArchive, entries);
+
+    const output = path.join(tempRoot, 'out');
+    const python = findPythonCommand();
+    const result = spawnSync(python.command, [...python.args,
+      path.join(tempRoot, 'scripts', 'build_pages_bundle.py'), '--output', output], { encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(fs.existsSync(path.join(output, 'app', 'ltth_latest.zip'))).toBe(false);
+    expect(fs.existsSync(sourceArchive)).toBe(true);
+  });
+
   it('triggers Pages deployments when app release artifacts change', () => {
     const workflowPath = path.join(__dirname, '..', '..', '.github', 'workflows', 'pages.yml');
     const workflow = fs.readFileSync(workflowPath, 'utf8');

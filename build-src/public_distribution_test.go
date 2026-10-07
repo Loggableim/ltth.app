@@ -8,17 +8,22 @@ import (
 )
 
 func TestPublicAppArchivePolicy(t *testing.T) {
-	policy := `{"schemaVersion":1,"closedBeta":["music-bot","stream-monsters"],"aliases":{"streamalchemy":"stream-monsters"}}`
+	policy := `{"schemaVersion":1,"closedBeta":["music-bot","stream-monsters","osc-bridge","webgpu-emoji-rain"],"aliases":{"streamalchemy":"stream-monsters"},"publicAssetPathOwners":{"/js/osc-bridge-ui.js":"osc-bridge","/js/webgpu-emoji-rain-ui.js":"webgpu-emoji-rain","/osc-bridge-icon.png":"osc-bridge","/osc-bridge-logo.png":"osc-bridge"}}`
 	for _, tc := range []struct {
 		name, policy, extra string
 		denied              bool
 	}{
 		{"valid", policy, "", false},
-		{"valid-underscore", `{"schemaVersion":1,"closedBeta":["music-bot","stream-monsters","valid_id"],"aliases":{"streamalchemy":"stream-monsters"}}`, "", false},
+		{"valid-underscore", `{"schemaVersion":1,"closedBeta":["music-bot","stream-monsters","valid_id","osc-bridge","webgpu-emoji-rain"],"aliases":{"streamalchemy":"stream-monsters"},"publicAssetPathOwners":{"/js/osc-bridge-ui.js":"osc-bridge","/js/webgpu-emoji-rain-ui.js":"webgpu-emoji-rain","/osc-bridge-icon.png":"osc-bridge","/osc-bridge-logo.png":"osc-bridge"}}`, "", false},
 		{"leading-hyphen", `{"schemaVersion":1,"closedBeta":["-invalid"]}`, "", true},
 		{"overlong-id", `{"schemaVersion":1,"closedBeta":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]}`, "", true},
 		{"missing", "", "", true},
 		{"bad-alias", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{"../escape":"music-bot"}}`, "", true},
+		{"missing-public-asset-map", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{}}`, "", true},
+		{"traversal-public-asset", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{},"publicAssetPathOwners":{"/js/../private.js":"music-bot"}}`, "", true},
+		{"encoded-public-asset", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{},"publicAssetPathOwners":{"/js/%2e%2e/private.js":"music-bot"}}`, "", true},
+		{"public-asset-owner-not-closed", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{},"publicAssetPathOwners":{"/js/public.js":"public-plugin"}}`, "", true},
+		{"uppercase-public-asset-path", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{},"publicAssetPathOwners":{"/JS/private.js":"music-bot"}}`, "", true},
 		{"unknown-policy-key", `{"schemaVersion":1,"closedBeta":["music-bot"],"extra":true}`, "", true},
 		{"self-alias", `{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{"music-bot":"music-bot"}}`, "", true},
 		{"closed-id-alias", `{"schemaVersion":1,"closedBeta":["music-bot","stream-monsters"],"aliases":{"music-bot":"stream-monsters"}}`, "", true},
@@ -33,7 +38,7 @@ func TestPublicAppArchivePolicy(t *testing.T) {
 				t.Fatal(err)
 			}
 			w := zip.NewWriter(f)
-			entries := map[string]string{"repo/app/package.json": "{}", "repo/app/plugins/music-bot/main.js": "private", "repo/app/plugins/streamalchemy/main.js": "private", "repo/app/plugins/stream-monsters/main.js": "private", "repo/app/plugins/music-bot-extra/main.js": "public", "repo/app/config/distribution-mode.json": `{"channel":"developer"}`}
+			entries := map[string]string{"repo/app/package.json": "{}", "repo/app/plugins/music-bot/main.js": "private", "repo/app/plugins/streamalchemy/main.js": "private", "repo/app/plugins/stream-monsters/main.js": "private", "repo/app/plugins/music-bot-extra/main.js": "public", "repo/app/config/distribution-mode.json": `{"channel":"developer"}`, "repo/app/public/js/osc-bridge-ui.js": "closed", "repo/app/public/js/webgpu-emoji-rain-ui.js": "closed", "repo/app/public/osc-bridge-icon.png": "closed", "repo/app/public/osc-bridge-logo.png": "closed", "repo/app/public/js/unrelated.js": "public"}
 			for dir, manifest := range map[string]string{
 				"renamed-beta":     `{"id":"music-bot"}`,
 				"alias-beta":       `{"id":"vendor","aliases":["streamalchemy"]}`,
@@ -93,6 +98,14 @@ func TestPublicAppArchivePolicy(t *testing.T) {
 			}
 			if _, e := os.Stat(filepath.Join(dest, "plugins", "open-vendor", "assets", "display.svg")); e != nil {
 				t.Fatal(e)
+			}
+			for _, asset := range []string{"public/js/osc-bridge-ui.js", "public/js/webgpu-emoji-rain-ui.js", "public/osc-bridge-icon.png", "public/osc-bridge-logo.png"} {
+				if _, e := os.Stat(filepath.Join(dest, filepath.FromSlash(asset))); !os.IsNotExist(e) {
+					t.Fatalf("closed-beta public asset extracted: %s", asset)
+				}
+			}
+			if _, e := os.Stat(filepath.Join(dest, "public", "js", "unrelated.js")); e != nil {
+				t.Fatal("unrelated public asset should remain extractable")
 			}
 			for _, relative := range []string{"vendor/music-bot", "vendor/music-bot-extra/plugin.json"} {
 				if _, e := os.Stat(filepath.Join(dest, "plugins", "open-vendor", filepath.FromSlash(relative))); e != nil {
