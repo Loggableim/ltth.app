@@ -914,6 +914,14 @@ html[data-theme="vision-impaired"] {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5) !important;
 }
 
+@media (max-height: 1100px) {
+  [data-theme="vision-impaired"] .theme-dropdown {
+    max-height: calc(100vh - 10rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 [data-theme="vision-impaired"] .theme-dropdown {
     background: #0d0d0d;
     border-color: #fbbf24;
