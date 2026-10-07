@@ -363,41 +363,19 @@ app.use((req, res, next) => {
                        req.path.includes('/openshock/') ||
                        req.path.includes('/viewer-xp/') ||
                        req.path.includes('/animazingpal/');
-    const isChatangoEmbed = req.path.startsWith('/chatango/embed/');
-
-    if (isChatangoEmbed) {
-        // Chatango embed views require inline handlers from the third-party script.
-        // Allow inline handlers only for this embed route to avoid global CSP relaxation.
-        res.header('Content-Security-Policy',
-            `default-src 'self'; ` +
-            `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://st.chatango.com; ` +
-            `script-src-elem 'self' 'unsafe-inline' https://st.chatango.com; ` +
-            `style-src 'self' 'unsafe-inline'; ` +
-            `img-src 'self' data: blob: https:; ` +
-            `font-src 'self' data:; ` +
-            `connect-src 'self' ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com wss://*.chatango.com https://*.chatango.com; ` +
-            `media-src 'self' blob: data: https:; ` +
-            `frame-src 'self' https://*.chatango.com https://vdo.ninja https://*.vdo.ninja; ` +
-            `object-src 'none'; ` +
-            `base-uri 'self'; ` +
-            `form-action 'self'; ` +
-            `frame-ancestors 'self' null;`
-        );
-    } else if (isDashboard || isPluginUI) {
+    if (isDashboard || isPluginUI) {
         // Dashboard & Plugin UI CSP: Strict policy - no inline scripts allowed
         // NOTE: All HTML files (dashboard.html, plugin UIs, etc.) use EXTERNAL scripts
         // via <script src="..."> tags, NOT inline scripts. This ensures CSP compliance.
         // The script-src 'self' directive only allows scripts from the same origin,
         // which prevents XSS attacks via inline script injection.
         // 
-        // SECURITY NOTE: 'unsafe-eval' is required for Chatango embed scripts which use eval()
-        // 'unsafe-inline' in script-src-elem allows Chatango's inline JSON configuration tags
         // Hash values allow specific trusted inline scripts (Socket.IO, admin panel)
         // When hashes are present, 'unsafe-inline' is ignored for script execution (secure)
         // 'unsafe-hashes' allows specific inline event handlers (onclick, onchange) by hash
         res.header('Content-Security-Policy',
             `default-src 'self'; ` +
-            `script-src 'self' 'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU=' 'sha256-c4w6M/3j2U1Cx+Flf6JkYQY5MJP+YrJdgD4X3VC1Iho=' 'unsafe-eval' 'unsafe-hashes' ` +
+            `script-src 'self' 'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU=' 'sha256-c4w6M/3j2U1Cx+Flf6JkYQY5MJP+YrJdgD4X3VC1Iho=' 'unsafe-hashes' ` +
             `'sha256-yTT/2KVTQpd5jHFCHbEeJzUylNrUFt3XI9cEFapDHD8=' 'sha256-Bqhs/2Ph5wewVirN87MMeK3kQ72brnPHI7XTMcQu9JA=' 'sha256-gqLyQrF2cS5exPbEQFCeMLr9iGXnKTNLkXEJM35fDYs=' ` +
             `'sha256-Jw5NghBkRZFrm6K45vNtyPk754rmysyQHbrzcGEEwQw=' 'sha256-SOoNvL5qrOUcMTnWe69ljOIhjtqC+26gMSCiSunJ864=' 'sha256-tyBLiSno8nu+gezcbY8m8hjujWw2qc4l0AIFkvBPxpU=' ` +
             `'sha256-56d7YS02VhJKaBsXX+A0KTvkume5cBUobKSNjsB5efc=' 'sha256-T/RK2SHYk5O+vuvnyy6xzIswVp1EXbv8qFZxkEFT52k=' 'sha256-xTS/Zd4fyhjnPqbFzjTX2bLT2Pwa6HdhMyiYThQ99Hs=' ` +
@@ -405,14 +383,14 @@ app.use((req, res, next) => {
             `'sha256-8ma2zXygpXCcq3kiJv4rS0k32SKVcMSL3R+NJdxoVjo=' 'sha256-/tlEW4dBeTXnKAtOeyarIXN7OLveaWQ4JyoQJIEpsHQ=' 'sha256-xu3YClpWdm0JUcsxMW/B0+Lk3vovecXUA4vWkTi/mgA=' ` +
             `'sha256-JIPGJRCq83TqVvN3m7kkxylwHWo0b79G40zWfnZbrQw=' 'sha256-AdSuaVgmlfGgsCXjbD31dRAR3hljDmdiX0yJiFmG55A=' ` +
             `'sha256-K5uNRn2aLxLeK0fjnkWTYWN1J4Vdf92BTAKxjxfz/nQ=' 'sha256-3ymA831yuAiigbGNakMhiy5HDRlr4NxqwATjV/Nn01I=' ` +  // Additional inline event handlers
-            `${CLERK_CSP_SOURCES} https://st.chatango.com; ` +  // Socket.IO hash + admin-panel hash + viewer-xp inline handlers + Chatango eval
-            `script-src-elem 'self' 'unsafe-inline' ${CLERK_CSP_SOURCES} https://st.chatango.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://www.youtube.com; ` +  // Allow Clerk auth, Chatango inline script elements with JSON config + GSAP from cdnjs + TailwindCSS + YouTube IFrame API
+            `${CLERK_CSP_SOURCES}; ` +
+            `script-src-elem 'self' 'unsafe-inline' ${CLERK_CSP_SOURCES} https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://www.youtube.com; ` +  // Allow Clerk auth, GSAP from cdnjs, TailwindCSS, and YouTube IFrame API
             `style-src 'self' 'unsafe-inline'; ` +
             `img-src 'self' data: blob: https:; ` +
             `font-src 'self' data:; ` +
-            `connect-src 'self' ${CLERK_CSP_SOURCES} ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com wss://*.chatango.com https://*.chatango.com; ` +
+            `connect-src 'self' ${CLERK_CSP_SOURCES} ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com; ` +
             `media-src 'self' blob: data: https:; ` +
-            `frame-src 'self' ${CLERK_CSP_SOURCES} https://*.chatango.com https://vdo.ninja https://*.vdo.ninja https://www.youtube.com https://www.youtube-nocookie.com; ` +
+            `frame-src 'self' ${CLERK_CSP_SOURCES} https://vdo.ninja https://*.vdo.ninja https://www.youtube.com https://www.youtube-nocookie.com; ` +
             `object-src 'none'; ` +
             `base-uri 'self'; ` +
             `form-action 'self'; ` +
@@ -423,7 +401,7 @@ app.use((req, res, next) => {
         // 'unsafe-hashes' allows specific inline event handlers (onclick, onchange) by hash
         res.header('Content-Security-Policy',
             `default-src 'self'; ` +
-            `script-src 'self' 'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU=' 'sha256-c4w6M/3j2U1Cx+Flf6JkYQY5MJP+YrJdgD4X3VC1Iho=' 'unsafe-eval' 'unsafe-hashes' ` +
+            `script-src 'self' 'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU=' 'sha256-c4w6M/3j2U1Cx+Flf6JkYQY5MJP+YrJdgD4X3VC1Iho=' 'unsafe-hashes' ` +
             `'sha256-yTT/2KVTQpd5jHFCHbEeJzUylNrUFt3XI9cEFapDHD8=' 'sha256-Bqhs/2Ph5wewVirN87MMeK3kQ72brnPHI7XTMcQu9JA=' 'sha256-gqLyQrF2cS5exPbEQFCeMLr9iGXnKTNLkXEJM35fDYs=' ` +
             `'sha256-Jw5NghBkRZFrm6K45vNtyPk754rmysyQHbrzcGEEwQw=' 'sha256-SOoNvL5qrOUcMTnWe69ljOIhjtqC+26gMSCiSunJ864=' 'sha256-tyBLiSno8nu+gezcbY8m8hjujWw2qc4l0AIFkvBPxpU=' ` +
             `'sha256-56d7YS02VhJKaBsXX+A0KTvkume5cBUobKSNjsB5efc=' 'sha256-T/RK2SHYk5O+vuvnyy6xzIswVp1EXbv8qFZxkEFT52k=' 'sha256-xTS/Zd4fyhjnPqbFzjTX2bLT2Pwa6HdhMyiYThQ99Hs=' ` +
@@ -431,14 +409,13 @@ app.use((req, res, next) => {
             `'sha256-8ma2zXygpXCcq3kiJv4rS0k32SKVcMSL3R+NJdxoVjo=' 'sha256-/tlEW4dBeTXnKAtOeyarIXN7OLveaWQ4JyoQJIEpsHQ=' 'sha256-xu3YClpWdm0JUcsxMW/B0+Lk3vovecXUA4vWkTi/mgA=' ` +
             `'sha256-JIPGJRCq83TqVvN3m7kkxylwHWo0b79G40zWfnZbrQw=' 'sha256-AdSuaVgmlfGgsCXjbD31dRAR3hljDmdiX0yJiFmG55A=' ` +
             `'sha256-K5uNRn2aLxLeK0fjnkWTYWN1J4Vdf92BTAKxjxfz/nQ=' 'sha256-3ymA831yuAiigbGNakMhiy5HDRlr4NxqwATjV/Nn01I=' ` +  // Additional inline event handlers
-            `https://st.chatango.com; ` +  // Socket.IO hash + admin-panel hash + viewer-xp inline handlers + Chatango eval
-            `script-src-elem 'self' 'unsafe-inline' https://st.chatango.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; ` +  // Allow Chatango inline script elements with JSON config + GSAP from cdnjs + TailwindCSS
+            `script-src-elem 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; ` +  // Allow GSAP from cdnjs and TailwindCSS
             `style-src 'self' 'unsafe-inline'; ` +
             `img-src 'self' data: blob: https:; ` +
             `font-src 'self' data:; ` +
-            `connect-src 'self' ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com wss://*.chatango.com https://*.chatango.com; ` +
+            `connect-src 'self' ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com; ` +
             `media-src 'self' blob: data: https:; ` +
-            `frame-src 'self' https://*.chatango.com https://vdo.ninja https://*.vdo.ninja; ` +
+            `frame-src 'self' https://vdo.ninja https://*.vdo.ninja; ` +
             `object-src 'none'; ` +
             `base-uri 'self'; ` +
             `form-action 'self'; ` +

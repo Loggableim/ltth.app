@@ -24,7 +24,6 @@ const { createPluginReleasePolicy } = require('./plugin-release-policy');
 const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https://ltth.app/plugin-store.json';
 
 const PREINSTALLED_PLUGIN_IDS = new Set([
-  'chatango',
   'goals',
   'spotlight',
   'milestone-leaderboard',

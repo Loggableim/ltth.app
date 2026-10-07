@@ -41,6 +41,10 @@ const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
     Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
 ]);
 
+// Keep this retired plugin's saved state opaque and untouched. Removing code
+// must not silently delete persisted user preferences during startup discovery.
+const PRESERVED_REMOVED_PLUGIN_STATE_IDS = new Set(['chatango']);
+
 function isPluginModule(pluginPath, modulePath) {
     const relativePath = path.relative(pluginPath, modulePath);
     return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
@@ -1446,6 +1450,7 @@ class PluginLoader extends EventEmitter {
 
         const staleIds = Object.keys(this.state).filter(pluginId => {
             if (pluginId === STATE_SYNC_METADATA_KEY) return false;
+            if (PRESERVED_REMOVED_PLUGIN_STATE_IDS.has(pluginId)) return false;
             if (this.releasePolicy.isClosedBetaId(pluginId)) return false;
             if (getPluginIdentity(pluginId)) return false;
             return !installedPluginIds.has(pluginId);
@@ -1799,9 +1804,13 @@ class PluginLoader extends EventEmitter {
      * Aktiviert ein Plugin
      */
     async enablePlugin(pluginId) {
-        // Store original state to rollback if needed
         pluginId = canonicalizePluginId(pluginId);
         this.releasePolicy.assertAllowed(pluginId);
+        const installedOnDisk = resolveInstalledPluginDirectory(this.pluginsDir, pluginId);
+        if (!installedOnDisk) {
+            throw new Error(`Plugin directory not found: ${pluginId}`);
+        }
+        // Store original state to rollback if needed only after the disk preflight.
         const originalState = this.state[pluginId] ? { ...this.state[pluginId] } : null;
         const mutuallyExclusivePluginIds = this.getMutuallyExclusivePluginIds(pluginId);
         const disabledConflicts = [];
@@ -1846,12 +1855,7 @@ class PluginLoader extends EventEmitter {
 
             // Wenn Plugin noch nicht geladen, jetzt laden
             if (!this.plugins.has(pluginId)) {
-                const installed = this.resolvePluginInstallation(pluginId);
-                if (!installed) {
-                    this.logger.error(`Plugin installation does not exist: ${pluginId}`);
-                    throw new Error(`Plugin directory not found: ${pluginId}`);
-                }
-                const pluginPath = installed.path;
+                const pluginPath = installedOnDisk.path;
                 
                 // Try to load the plugin with state already set to enabled
                 const loadResult = await this.loadPlugin(pluginPath);
