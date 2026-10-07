@@ -27,6 +27,23 @@ function createPluginWithSavedConfig(savedConfig) {
 }
 
 describe('music-bot config merge behavior', () => {
+  test('keeps mutable default sections isolated between directly constructed plugins before init', () => {
+    const pluginA = createPluginWithSavedConfig(null).plugin;
+    const pluginB = createPluginWithSavedConfig(null).plugin;
+
+    expect(pluginA.config.queue).not.toBe(pluginB.config.queue);
+    expect(pluginA.config.commandAliases).not.toBe(pluginB.config.commandAliases);
+    expect(pluginA.config.commandAliases.request).not.toBe(pluginB.config.commandAliases.request);
+    expect(pluginA.config.playback.ducking).not.toBe(pluginB.config.playback.ducking);
+
+    pluginA.config.commandAliases.request.push('profile-a-only');
+    pluginA.config.queue.maxLength = 9;
+    pluginA.config.playback.ducking.targetVolumePercent = 10;
+    expect(pluginB.config.commandAliases.request).not.toContain('profile-a-only');
+    expect(pluginB.config.queue.maxLength).toBe(50);
+    expect(pluginB.config.playback.ducking.targetVolumePercent).toBe(35);
+  });
+
   test('keeps nested moderation, gift and alias arrays isolated from saved config object', () => {
     const savedConfig = {
       moderation: {

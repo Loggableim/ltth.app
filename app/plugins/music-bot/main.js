@@ -267,10 +267,8 @@ class MusicBotPlugin extends EventEmitter {
 
     // Constructor-only state stays inert for tests and route registration. The
     // persisted/default live-safe lock is applied atomically by _loadConfig().
-    this.config = {
-      ...DEFAULT_CONFIG,
-      safety: { locked: false, lockedAt: null, reason: null }
-    };
+    this.config = this._cloneConfigValue(DEFAULT_CONFIG);
+    this.config.safety = { locked: false, lockedAt: null, reason: null };
     this.banList = null;
     this.queueManager = null;
     this.musicResolver = null;

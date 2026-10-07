@@ -89,7 +89,12 @@ class MusicResolver extends EventEmitter {
         : DEFAULT_CACHE_SIZE_MB,
       moderation: {
         ...DEFAULT_MODERATION,
-        ...(config?.moderation || {})
+        ...(config?.moderation || {}),
+        blockedKeywords: [
+          ...(Array.isArray(config?.moderation?.blockedKeywords)
+            ? config.moderation.blockedKeywords
+            : DEFAULT_MODERATION.blockedKeywords)
+        ]
       }
     };
     if (typeof this.runner.updateLimits === 'function') {
