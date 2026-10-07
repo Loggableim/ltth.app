@@ -72,9 +72,24 @@
     }
 
     function install(documentRef) {
+      const resolveInitialUrl = (value) => String(value || '').replace(
+        /^http:\/\/localhost:3000\/overlay\/game-engine\//,
+        `${root?.location?.origin || 'http://localhost:3000'}/overlay/game-engine/`
+      );
       for (const target of targets) {
         const source = documentRef?.querySelector?.(target.selector);
         if (!source?.parentElement) continue;
+        if (typeof source.value === 'string') {
+          source.value = resolveInitialUrl(source.value);
+        } else {
+          const text = source.textContent;
+          source.textContent = text.startsWith('URL: ')
+            ? `URL: ${resolveInitialUrl(text.slice(5))}`
+            : resolveInitialUrl(text);
+        }
+        if (target.attribute && source.getAttribute(target.attribute)) {
+          source.setAttribute(target.attribute, resolveInitialUrl(source.getAttribute(target.attribute)));
+        }
         const existing = [...source.parentElement.querySelectorAll(
           '[data-tiktok-studio-source]'
         )].find(button => (
@@ -87,7 +102,7 @@
           !source.getAttribute(target.attribute) &&
           target.initialUrl
         ) {
-          source.setAttribute(target.attribute, target.initialUrl);
+          source.setAttribute(target.attribute, resolveInitialUrl(target.initialUrl));
         }
 
         const button = documentRef.createElement('button');
