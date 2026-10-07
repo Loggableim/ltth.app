@@ -77,6 +77,7 @@ function createTempRepo() {
   );
   fs.writeFileSync(path.join(root, 'app', 'ltth_latest.zip'), Buffer.from('old-latest'));
   fs.mkdirSync(path.join(root, 'app', 'plugins', 'streamalchemy'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'streamalchemy', '.env.production'), 'synthetic-nested-environment');
   fs.writeFileSync(
     path.join(root, 'app', 'plugins', 'streamalchemy', 'plugin.json'),
     JSON.stringify({
@@ -90,6 +91,12 @@ function createTempRepo() {
   fs.mkdirSync(path.join(root, 'app', '.playwright-cli'), { recursive: true });
   fs.writeFileSync(path.join(root, 'app', '.playwright-cli', 'session.json'), 'runtime-session');
   const profilesRoot = path.join(root, 'app', 'user_configs');
+  for (const name of ['.env', '.env.local', '.env.production', '.env.example']) {
+    fs.writeFileSync(path.join(root, 'app', name), 'synthetic-environment');
+  }
+  const userDataRoot = path.join(root, 'app', 'user_data');
+  fs.mkdirSync(userDataRoot, { recursive: true });
+  fs.writeFileSync(path.join(userDataRoot, 'tiktok_session.json'), 'synthetic-session');
   fs.mkdirSync(profilesRoot, { recursive: true });
   for (const name of ['.active_profile', 'fixture.db', 'fixture.json', 'test-config.json']) {
     fs.writeFileSync(path.join(profilesRoot, name), 'synthetic-private-profile');
@@ -219,6 +226,12 @@ describe('Release bundle script', () => {
     expect(names).toContain('ltth_1.3.24/launcher.exe');
     expect(names).toContain('ltth_1.3.24/app/package.json');
     expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_configs/'))).toEqual([]);
+    expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_data/'))).toEqual([]);
+    expect(names).toContain('ltth_1.3.24/app/.env.example');
+    expect(names).not.toContain('ltth_1.3.24/app/plugins/streamalchemy/.env.production');
+    for (const name of ['.env', '.env.local', '.env.production']) {
+      expect(names).not.toContain(`ltth_1.3.24/app/${name}`);
+    }
     expect(names).toContain('ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/License.txt');
     expect(names).toContain(
       'ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/Animated body parts/Heads/head1/idle_0.png'

@@ -54,6 +54,7 @@ APP_EXCLUDED_PREFIXES = (
     "output/",
     "test/",
     "user_configs/",
+    "user_data/",
 )
 
 APP_EXCLUDED_EXACT = {
@@ -388,6 +389,9 @@ def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> 
 
 def should_exclude_app_path(relative_path: str) -> bool:
     normalized = relative_path.replace("\\", "/")
+    filename = normalized.rsplit("/", 1)[-1]
+    if filename != ".env.example" and (filename == ".env" or filename.startswith(".env.")):
+        return True
     if normalized in APP_EXCLUDED_EXACT:
         return True
     if "node_modules" in normalized.split("/"):

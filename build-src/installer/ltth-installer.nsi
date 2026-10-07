@@ -397,7 +397,8 @@ Section "!LTTH Core Application" SEC_CORE
   SetOutPath "$INSTDIR\app"
   
   ; Copy root-level files first (exclude backup files and git files)
-  File /nonfatal /x "*.md~" /x ".git*" "${APP_DIR}\*.*"
+  File /nonfatal /x "*.md~" /x ".git*" /x ".env" /x ".env.*" "${APP_DIR}\*.*"
+  File /nonfatal "${APP_DIR}\.env.example"
   
   ; Copy subdirectories individually, excluding runtime-generated directories:
   ; - logs: Contains Winston audit files (.*.json) that cause NSIS errors
@@ -406,23 +407,23 @@ Section "!LTTH Core Application" SEC_CORE
   ; IMPORTANT: If compilation fails with "failed opening file" errors, extract the repo to a SHORT path
   ;            Windows MAX_PATH limit (260 chars) causes issues with long download paths
   ;            Recommended: C:\ltth\ or C:\build\ (NOT C:\Users\...\Downloads\...)
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\data"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\docs"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\locales"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\modules"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\plugins"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\public"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\routes"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\scripts"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\test"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\tts"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\user_data"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" "${APP_DIR}\wiki"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\data"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\docs"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\locales"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\modules"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\plugins"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\public"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\routes"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\scripts"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\test"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\tts"
+  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\wiki"
   
   ; Create runtime directories that were excluded from packaging
   ; These directories are needed for the application to run properly
   CreateDirectory "$INSTDIR\app\logs"
   CreateDirectory "$INSTDIR\app\user_configs"
+  CreateDirectory "$INSTDIR\app\user_data"
   
   Banner::destroy
   
@@ -460,7 +461,7 @@ Section "Node.js Portable Runtime" SEC_NODEJS
   
   ; Check if Node.js portable exists
   IfFileExists "${ASSETS_DIR}\node\node.exe" 0 nodejs_missing
-    File /r "${ASSETS_DIR}\node\*.*"
+    File /r /x ".env" /x ".env.*" "${ASSETS_DIR}\node\*.*"
     Goto nodejs_done
     
 nodejs_missing:
