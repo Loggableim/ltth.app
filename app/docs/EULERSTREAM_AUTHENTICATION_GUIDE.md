@@ -14,7 +14,7 @@ EulerStream Sign Server provides different keys for different purposes. **For We
 
 **Option 1: API Key (euler_ Präfix) - EMPFOHLEN für Community Plan**
 - **Format:** `euler_` gefolgt von Base64-kodierten Zeichen
-- **Beispiel:** `euler_NTI1MTFmMmJkZmE2MTFmODA4Njk5NWVjZDA1NDk1OTUxZDMyNzE0NDIyYzJmZDVlZDRjOWU2`
+- **Beispiel:** `euler_YOUR_API_KEY_HERE`
 - **Wo zu finden:** EulerStream Dashboard → API Keys Bereich
 - **Plan:** Funktioniert mit Community Plan ✅
 
@@ -34,7 +34,7 @@ EulerStream Sign Server provides different keys for different purposes. **For We
 **Beispiel:**
 ```bash
 # In .env Datei - Verwende den API Key mit euler_ Präfix
-EULER_API_KEY=euler_NTI1MTFmMmJkZmE2MTFmODA4Njk5NWVjZDA1NDk1OTUxZDMyNzE0NDIyYzJmZDVlZDRjOWU2
+EULER_API_KEY=euler_YOUR_API_KEY_HERE
 ```
 
 **Was es macht:**
@@ -46,7 +46,7 @@ EULER_API_KEY=euler_NTI1MTFmMmJkZmE2MTFmODA4Njk5NWVjZDA1NDk1OTUxZDMyNzE0NDIyYzJm
 ```javascript
 const wsUrl = createWebSocketUrl({
     uniqueId: 'tiktok_username',
-    apiKey: 'euler_NTI1MTFmMmJkZmE2MTFmODA4Njk5NWVjZDA1NDk1OTUxZDMyNzE0NDIyYzJmZDVlZDRjOWU2' // API Key mit euler_ Präfix
+    apiKey: 'euler_YOUR_API_KEY_HERE' // API Key mit euler_ Präfix
 });
 ```
 
@@ -63,7 +63,7 @@ const wsUrl = createWebSocketUrl({
 **Where to get it:**
 - Found in your EulerStream Dashboard → API Keys section
 - Format: `euler_` prefix followed by base64-encoded data
-- Example: `euler_NTI1MTFmMmJkZmE2MTFmODA4Njk5NWVjZDA1NDk1OTUxZDMyNzE0NDIyYzJmZDVlZDRjOWU2`
+- Example: `euler_YOUR_API_KEY_HERE`
 
 **When to use:**
 - ❌ **NOT for WebSocket connections**
