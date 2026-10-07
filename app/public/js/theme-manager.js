@@ -176,7 +176,7 @@ class ThemeManager {
             </button>
             <div id="theme-dropdown" class="theme-dropdown">
                 ${Object.entries(this.themes).map(([key, theme]) => `
-                    <div class="theme-option ${key === this.currentTheme ? 'active' : ''}" data-theme="${key}">
+                    <div class="theme-option ${key === this.currentTheme ? 'active' : ''}" data-theme-option="${key}">
                         <div class="theme-option-preview" aria-hidden="true">
                             <span style="background:${theme.swatches?.[0] || 'var(--brand-primary)'}"></span>
                             <span style="background:${theme.swatches?.[1] || 'var(--color-accent-primary)'}"></span>
@@ -235,7 +235,7 @@ class ThemeManager {
         const themeOptions = dropdown.querySelectorAll('.theme-option');
         themeOptions.forEach(option => {
             option.addEventListener('click', () => {
-                const theme = option.dataset.theme;
+                const theme = option.dataset.themeOption;
                 this.setTheme(theme);
                 dropdown.classList.remove('show');
             });
@@ -329,7 +329,7 @@ class ThemeManager {
         // Update active state in dropdown
         const themeOptions = document.querySelectorAll('.theme-option');
         themeOptions.forEach(option => {
-            if (option.dataset.theme === theme) {
+            if (option.dataset.themeOption === theme) {
                 option.classList.add('active');
             } else {
                 option.classList.remove('active');
