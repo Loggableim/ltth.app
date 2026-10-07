@@ -2642,6 +2642,13 @@ function projectPublicOverlayPayload(eventName, payload) {
     case 'wheel:spin-start':
     case 'wheel:spin-timeout':
       return null;
+    case 'tts:playback:ended':
+      // Renderer lifecycle metadata has no approved public consumer DTO.
+      return null;
+    case 'unified-queue:status':
+    case 'unified-queue:wheel-queued':
+      // These queue snapshots/events contain raw internal correlation IDs.
+      return null;
     case 'emoji-rain:user-mappings-update':
       return projectEmojiRainUserMappingsUpdate(payload);
     case 'game-engine:current-state':

@@ -272,7 +272,6 @@ unified-queue:request-status
 wheel:request-config
 goals:subscribe
 multigoals:subscribe
-tts:playback:ended
 talkingheads:avatar:spin:complete
 musicbot:request-status
 zappiehell:request:state
