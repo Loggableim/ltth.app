@@ -5,11 +5,11 @@ Stand: 2026-10-07. Diese Nachweise ergänzen die OBS-Prüfung; sie ersetzen sie 
 | Bereich | Unabhängiger Nachweis | Noch offen |
 | --- | --- | --- |
 | STT | Originalrenderer im Browser DE/EN/ES/FR, Clear und Wiederverbindung | OBS und tatsächlicher STT-Backendbetrieb |
-| Advanced Timer | Originale kanonische Route, vier Sprachen, Tick, Reset, fehlende/ungültige ID; Pause orange und Fortsetzen mit nächstem Tick grün im deutschen Browser geprüft | Nachholen verpasster Zustände nach Wiederverbindung; OBS |
+| Advanced Timer | Originale kanonische Route, vier Sprachen, Tick, Reset, fehlende/ungültige ID; Pause orange und Fortsetzen mit nächstem Tick grün im deutschen Browser geprüft. Fünf Host-Tests bestehen einschließlich Nachholen verpassten Zustands, BFCache und Schutz vor verspäteten Antworten; gemeinsame Timer-/Goals-Jest-Suite 26/26 bestanden | Sichtbarer Browsernachweis des neuen Reconnect-Verhaltens; OBS |
 | Spotlight Chatter | Vier Sprachen sichtbar, Update und Wiederverbindung; kontrastreicher synthetischer Hintergrund | OBS, Live-Ereignisse und Tunnel |
-| Goals | Restbetrag und Ziel-erreicht-Anzeige vier Sprachen im Browser; 25 Originalconsumer-Tests bestanden plus gezielter Ersatztext-Test, einschließlich Fehler→Löschung→verspätete Übersetzung→Sprachwechsel | Sprachwechsel über Socket im selben Browser-Tab fehlgeschlagen: gemeinsame Socket-Anbindung fehlt; Korrektur läuft. Quellstand zum Aufnahmezeitpunkt nicht separat gebunden |
+| Goals | Restbetrag und Ziel-erreicht-Anzeige vier Sprachen im Browser; Originalconsumer-Tests einschließlich Fehler→Löschung→verspätete Übersetzung→Sprachwechsel. Nach Socket-Korrektur im unveränderten Browser-Tab FR „Il reste 75“ sichtbar; nach Löschung und Wechsel zu ES bleibt die Anzeige leer | Finale Quellenbindung und Worker-Abschlussprüfung; OBS |
 | Quiz | Frage/Runde bleiben beim Laden in EN/FR erhalten; sechs Host-/Originalconsumer-Tests bestanden, einschließlich Punktebeschriftungen und verborgener Bestenliste bei Sprachwechsel | Weitere praktische Sprachwechselnachweise; OBS |
-| Music Bot Overlay | Kartenlayout im Browser DE/EN/ES/FR; zusätzlich Minimal-, Kompakt- und breites Layout auf Deutsch inspiziert; 13 unabhängige Tests bestanden | Breites Layout: Queue-Anzahl fehlt und Zusatzbox überlagert rechten Bereich; Sprachwechsel im selben Tab; OBS |
+| Music Bot Overlay | Kartenlayout im Browser DE/EN/ES/FR; zusätzlich Minimal-, Kompakt- und breites Layout auf Deutsch inspiziert; 17 unabhängige Tests bestanden einschließlich Queue-Anzahl und Sprachwechsel. Queue-Anzahl und Fullwidth-Abstand im Quellstand korrigiert | Gespeicherte Browseraufnahmen des korrigierten Layouts mit gebundenem Quellstand; praktische Sprachwechselprüfung; Card-Queue-Doppelanzeige; OBS |
 
 Die Music-Bot-Overlayprüfung verwendet synthetische Ereignisse und erzeugt kein Audio. Der bereits separat erbrachte MPV-Hörnachweis wird dadurch weder wiederholt noch ersetzt.
 
