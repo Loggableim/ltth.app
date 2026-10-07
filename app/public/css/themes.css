@@ -1848,6 +1848,7 @@ html[data-theme] button:is([class*="bg-red-500"], [class*="bg-red-600"]) {
     --brand-primary: #4ade80;
     --brand-primary-hover: #86efac;
     --brand-primary-light: rgba(74, 222, 128, 0.18);
+    --theme-radio-focus: #c4b5fd;
     --color-accent-primary: #4ade80;
     --color-accent-secondary: #7c3aed;
     --color-input-focus: #7c3aed;
@@ -2096,4 +2097,9 @@ html[data-theme="day"] #network-security-warning .text-gray-300 {
 :is([data-theme="day"], [data-theme="night"], [data-theme="cid"]) #view-dashboard .connection-input:focus-visible {
     outline: 2px solid currentColor !important;
     outline-offset: 2px !important;
+}
+
+
+:is([data-theme="night"], [data-theme="cid"]) .theme-option:focus-visible {
+    outline-color: var(--theme-radio-focus);
 }
