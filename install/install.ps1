@@ -148,35 +148,44 @@ function Get-LauncherDownloadUrl {
     return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/downloads/launcher.exe"
 }
 
-function Assert-LauncherReleaseManifest {
+function Assert-ReleaseArtifactManifest {
     param(
         [Parameter(Mandatory = $true)]
-        $Manifest
+        $Manifest,
+        [Parameter(Mandatory = $true)]
+        [string]$Component
     )
 
     if ($null -eq $Manifest) {
-        throw "Launcher-Manifest fehlt."
+        throw "Release-Manifest fehlt."
     }
-    if ([string]$Manifest.schema -ne '1') {
-        throw "Launcher-Manifest schema muss 1 sein."
+    $allowedFields = @('schema', 'component', 'version', 'tag', 'commitSha', 'bytes', 'sha256')
+    $manifestFields = @($Manifest.PSObject.Properties | ForEach-Object { $_.Name })
+    if ($manifestFields.Count -ne $allowedFields.Count -or
+        @($manifestFields | Where-Object { $_ -notin $allowedFields }).Count -gt 0 -or
+        @($allowedFields | Where-Object { $_ -notin $manifestFields }).Count -gt 0) {
+        throw "Release-Manifest muss genau die dokumentierten schema/component/version/tag/commitSha/bytes/sha256-Felder enthalten."
     }
-    if ([string]$Manifest.component -ne 'launcher.exe') {
-        throw "Launcher-Manifest component muss launcher.exe sein."
+    if ($Manifest.schema -isnot [int] -or $Manifest.schema -ne 1) {
+        throw "Release-Manifest schema muss 1 sein."
+    }
+    if ([string]$Manifest.component -cne $Component) {
+        throw "Release-Manifest component muss $Component sein."
     }
 
     $version = [string]$Manifest.version
     if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
-        throw "Launcher-Manifest version muss X.Y.Z entsprechen."
+        throw "Release-Manifest version muss X.Y.Z entsprechen."
     }
 
     $tag = [string]$Manifest.tag
     if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or $tag -ne "v$version") {
-        throw "Launcher-Manifest tag muss exakt v$version sein."
+        throw "Release-Manifest tag muss exakt v$version sein."
     }
 
     $commitSha = ([string]$Manifest.commitSha).ToLowerInvariant()
     if ($commitSha -notmatch '^[0-9a-f]{40}$') {
-        throw "Launcher-Manifest commitSha muss 40 Hex-Zeichen enthalten."
+        throw "Release-Manifest commitSha muss 40 Hex-Zeichen enthalten."
     }
 
     $manifestBytes = [int64]0
@@ -184,22 +193,77 @@ function Assert-LauncherReleaseManifest {
         -not [int64]::TryParse([string]$Manifest.bytes, [ref]$manifestBytes) -or
         $manifestBytes -le 0
     ) {
-        throw "Launcher-Manifest bytes muss eine positive Ganzzahl sein."
+        throw "Release-Manifest bytes muss eine positive Ganzzahl sein."
     }
 
     $sha256 = ([string]$Manifest.sha256).ToLowerInvariant()
     if ($sha256 -notmatch '^[0-9a-f]{64}$') {
-        throw "Launcher-Manifest sha256 muss 64 Hex-Zeichen enthalten."
+        throw "Release-Manifest sha256 muss 64 Hex-Zeichen enthalten."
     }
 
     return [pscustomobject][ordered]@{
         schema = 1
-        component = 'launcher.exe'
+        component = $Component
         tag = $tag
         version = $version
         commitSha = $commitSha
         bytes = $manifestBytes
         sha256 = $sha256
+    }
+}
+
+function Assert-LauncherReleaseManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Manifest
+    )
+
+    return Assert-ReleaseArtifactManifest -Manifest $Manifest -Component 'launcher.exe'
+}
+
+function Assert-AppBundleReleaseManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Manifest,
+        [string]$ExpectedVersion
+    )
+
+    $validated = Assert-ReleaseArtifactManifest -Manifest $Manifest -Component 'ltth_latest.zip'
+    $expected = ([string]$ExpectedVersion).Trim().TrimStart('v')
+    if ($expected -and $expected -ne 'latest') {
+        if ($expected -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Erwartete App-Version ist ungueltig: $ExpectedVersion"
+        }
+        if ($validated.version -ne $expected) {
+            throw "App-Bundle-Version $($validated.version) entspricht nicht der erwarteten Version $expected."
+        }
+    }
+
+    return $validated
+}
+
+function Assert-ReleaseArtifactFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ArtifactPath,
+        [Parameter(Mandatory = $true)]
+        $Manifest,
+        [Parameter(Mandatory = $true)]
+        [string]$ArtifactName
+    )
+
+    if (-not (Test-Path -LiteralPath $ArtifactPath -PathType Leaf)) {
+        throw "$ArtifactName-Datei fehlt: $ArtifactPath"
+    }
+
+    $actualBytes = (Get-Item -LiteralPath $ArtifactPath).Length
+    if ($actualBytes -ne [int64]$Manifest.bytes) {
+        throw "$ArtifactName bytes stimmen nicht: erwartet $($Manifest.bytes), erhalten $actualBytes."
+    }
+
+    $actualSha256 = (Get-FileHash -LiteralPath $ArtifactPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualSha256 -ne [string]$Manifest.sha256) {
+        throw "$ArtifactName sha256 stimmt nicht mit dem Release-Manifest ueberein."
     }
 }
 
@@ -211,19 +275,7 @@ function Assert-LauncherFile {
         $Manifest
     )
 
-    if (-not (Test-Path -LiteralPath $LauncherPath -PathType Leaf)) {
-        throw "Launcher-Datei fehlt: $LauncherPath"
-    }
-
-    $actualBytes = (Get-Item -LiteralPath $LauncherPath).Length
-    if ($actualBytes -ne [int64]$Manifest.bytes) {
-        throw "Launcher bytes stimmen nicht: erwartet $($Manifest.bytes), erhalten $actualBytes."
-    }
-
-    $actualSha256 = (Get-FileHash -LiteralPath $LauncherPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($actualSha256 -ne [string]$Manifest.sha256) {
-        throw "Launcher sha256 stimmt nicht mit dem Release-Manifest ueberein."
-    }
+    Assert-ReleaseArtifactFile -ArtifactPath $LauncherPath -Manifest $Manifest -ArtifactName 'Launcher'
 }
 
 function Test-VerifiedInstalledLauncher {
@@ -302,12 +354,216 @@ function Use-OfficialWindowsZipBootstrap {
     )
 }
 
-function Get-AppBundleZipUrl {
+function Get-AppBundleManifestUrl {
     if (Use-OfficialWindowsZipBootstrap) {
-        return 'https://github.com/Loggableim/ltth.app/releases/latest/download/ltth_latest.zip'
+        return 'https://github.com/Loggableim/ltth.app/releases/latest/download/ltth_latest.json'
     }
 
-    return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/app/ltth_latest.zip"
+    return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/app/ltth_latest.json"
+}
+
+function Get-AppBundleZipUrl {
+    param(
+        [string]$ReleaseTag
+    )
+
+    if (Use-OfficialWindowsZipBootstrap) {
+        if ($ReleaseTag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Ein gueltiger Release-Tag ist fuer den offiziellen App-Bundle-Download erforderlich."
+        }
+        return "https://github.com/Loggableim/ltth.app/releases/download/$ReleaseTag/ltth_latest.zip"
+    }
+
+    return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/app/ltth_latest.zip"
+}
+
+function Read-AppBundleZipJson {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.IO.Compression.ZipArchiveEntry]$Entry,
+        [Parameter(Mandatory = $true)]
+        [string]$Description,
+        [int64]$MaxBytes = 1048576
+    )
+
+    if ($Entry.Length -gt $MaxBytes) {
+        throw "$Description im App-Bundle ist zu gross."
+    }
+
+    $stream = $Entry.Open()
+    $reader = $null
+    try {
+        $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::UTF8, $true)
+        $json = $reader.ReadToEnd()
+        $value = ConvertFrom-Json -InputObject $json -ErrorAction Stop
+        if ($value -isnot [System.Management.Automation.PSCustomObject]) {
+            throw "$Description im App-Bundle muss ein JSON-Objekt sein."
+        }
+        return $value
+    } catch {
+        throw "$Description im App-Bundle ist ungueltig: $($_.Exception.Message)"
+    } finally {
+        if ($null -ne $reader) {
+            $reader.Dispose()
+        } else {
+            $stream.Dispose()
+        }
+    }
+}
+
+function Assert-PublicAppBundleArchive {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ArchivePath,
+        [Parameter(Mandatory = $true)]
+        [string]$ExpectedVersion
+    )
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
+    try {
+        $markerSuffix = 'app/config/distribution-mode.json'
+        $markerEntries = @($archive.Entries | Where-Object {
+            $_.FullName.Replace('\', '/').EndsWith($markerSuffix, [System.StringComparison]::OrdinalIgnoreCase)
+        })
+        if ($markerEntries.Count -ne 1) {
+            throw "App-Bundle muss genau einen Distribution-Marker enthalten."
+        }
+
+        $markerName = $markerEntries[0].FullName.Replace('\', '/')
+        $rootPrefix = $markerName.Substring(0, $markerName.Length - $markerSuffix.Length)
+        if ($rootPrefix -and -not $rootPrefix.EndsWith('/')) {
+            throw "App-Bundle Distribution-Marker hat einen ungueltigen Root-Pfad."
+        }
+
+        foreach ($entry in $archive.Entries) {
+            $entryName = $entry.FullName.Replace('\', '/').TrimEnd('/')
+            if (-not $entryName) { continue }
+            if ($entryName.StartsWith('/') -or $entryName -match '^[A-Za-z]:' -or
+                @($entryName.Split('/') | Where-Object { $_ -in @('', '.', '..') }).Count -gt 0) {
+                throw "App-Bundle enthaelt einen unsicheren ZIP-Pfad: $($entry.FullName)"
+            }
+
+            $parts = $entryName.Split('/')
+            for ($index = 0; $index -lt $parts.Count; $index++) {
+                if ($parts[$index] -ine 'app') { continue }
+                $candidatePrefix = if ($index -eq 0) { '' } else { [string]::Join('/', $parts[0..($index - 1)]) + '/' }
+                if ($candidatePrefix -cne $rootPrefix) {
+                    throw "App-Bundle enthaelt mehrere oder falsch verschachtelte app-Roots."
+                }
+            }
+        }
+
+        $marker = Read-AppBundleZipJson -Entry $markerEntries[0] -Description 'Distribution-Marker' -MaxBytes 4096
+        $markerKeys = @($marker.PSObject.Properties | ForEach-Object { $_.Name })
+        if ($marker.channel -cne 'public' -or
+            @($markerKeys | Where-Object { $_ -notin @('channel', 'schemaVersion') }).Count -gt 0 -or
+            ($null -ne $marker.PSObject.Properties['schemaVersion'] -and
+             ($marker.schemaVersion -isnot [int] -or $marker.schemaVersion -ne 1))) {
+            throw "App-Bundle hat keinen gueltigen Public-Distribution-Marker."
+        }
+
+        $policyName = $rootPrefix + 'app/config/plugin-release-policy.json'
+        $policyEntries = @($archive.Entries | Where-Object {
+            $_.FullName.Replace('\', '/') -ieq $policyName
+        })
+        if ($policyEntries.Count -ne 1) {
+            throw "App-Bundle muss genau eine Plugin-Release-Policy enthalten."
+        }
+        $policy = Read-AppBundleZipJson -Entry $policyEntries[0] -Description 'Plugin-Release-Policy'
+        $policyKeys = @($policy.PSObject.Properties | ForEach-Object { $_.Name })
+        if ($policy.schemaVersion -isnot [int] -or $policy.schemaVersion -ne 1 -or
+            $null -eq $policy.closedBeta -or $policy.closedBeta -isnot [System.Array] -or
+            @($policyKeys | Where-Object { $_ -notin @('schemaVersion', 'closedBeta', 'aliases') }).Count -gt 0) {
+            throw "App-Bundle Plugin-Release-Policy ist ungueltig."
+        }
+
+        $blockedIds = @()
+        foreach ($id in $policy.closedBeta) {
+            if ($id -isnot [string] -or $id -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$' -or $blockedIds -contains $id) {
+                throw "App-Bundle Plugin-Release-Policy enthaelt eine ungueltige Closed-Beta-ID."
+            }
+            $blockedIds += $id
+        }
+
+        $aliasProperty = $policy.PSObject.Properties['aliases']
+        if ($null -ne $aliasProperty) {
+            if ($policy.aliases -isnot [System.Management.Automation.PSCustomObject]) {
+                throw "App-Bundle Plugin-Release-Policy Aliase sind ungueltig."
+            }
+            foreach ($alias in $policy.aliases.PSObject.Properties) {
+                $canonical = $alias.Value
+                if ($alias.Name -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$' -or
+                    $canonical -isnot [string] -or $canonical -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$' -or
+                    $blockedIds -contains $alias.Name -or $alias.Name -eq $canonical -or
+                    $canonical -notin $policy.closedBeta) {
+                    throw "App-Bundle Plugin-Release-Policy Alias ist ungueltig."
+                }
+                $blockedIds += $alias.Name
+            }
+        }
+
+        $packageName = $rootPrefix + 'app/package.json'
+        $packageEntries = @($archive.Entries | Where-Object {
+            $_.FullName.Replace('\', '/') -ieq $packageName
+        })
+        if ($packageEntries.Count -ne 1) {
+            throw "App-Bundle muss genau eine app/package.json enthalten."
+        }
+        $package = Read-AppBundleZipJson -Entry $packageEntries[0] -Description 'app/package.json'
+        if ([string]$package.version -cne $ExpectedVersion) {
+            throw "App-Bundle package.json-Version entspricht nicht der Sidecar-Version."
+        }
+
+        $pluginPrefix = $rootPrefix + 'app/plugins/'
+        foreach ($entry in $archive.Entries) {
+            $entryName = $entry.FullName.Replace('\', '/')
+            if (-not $entryName.StartsWith($pluginPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                continue
+            }
+            $relativeName = $entryName.Substring($pluginPrefix.Length).TrimEnd('/')
+            if (-not $relativeName) { continue }
+            $pluginParts = $relativeName.Split('/')
+            $directoryPartCount = $pluginParts.Count
+            if (-not $entry.FullName.Replace('\', '/').EndsWith('/')) {
+                $directoryPartCount--
+            }
+            for ($partIndex = 0; $partIndex -lt $directoryPartCount; $partIndex++) {
+                if ($blockedIds -contains $pluginParts[$partIndex]) {
+                    throw "App-Bundle enthaelt den geschlossenen Plugin-Ordner $($pluginParts[$partIndex])."
+                }
+            }
+            if (-not $entryName.EndsWith('/plugin.json', [System.StringComparison]::OrdinalIgnoreCase)) {
+                continue
+            }
+
+            $pluginManifest = Read-AppBundleZipJson -Entry $entry -Description "Plugin-Manifest $relativeName"
+            if ($pluginManifest.id -isnot [string] -or $pluginManifest.id -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$') {
+                throw "App-Bundle Plugin-Manifest-ID ist ungueltig: $relativeName"
+            }
+            $identities = @($pluginManifest.id)
+            foreach ($field in @('aliases', 'replaces')) {
+                $property = $pluginManifest.PSObject.Properties[$field]
+                if ($null -eq $property) { continue }
+                if ($property.Value -isnot [System.Array]) {
+                    throw "App-Bundle Plugin-Manifest-$field muss eine Liste sein: $relativeName"
+                }
+                foreach ($identity in $property.Value) {
+                    if ($identity -isnot [string] -or $identity -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$') {
+                        throw "App-Bundle Plugin-Manifest-Identitaet ist ungueltig: $relativeName"
+                    }
+                    $identities += $identity
+                }
+            }
+            if (@($identities | Where-Object { $_ -in $blockedIds }).Count -gt 0) {
+                throw "App-Bundle enthaelt ein geschlossenes Plugin-Manifest: $relativeName"
+            }
+        }
+
+        return $true
+    } finally {
+        $archive.Dispose()
+    }
 }
 
 function Test-AppRootDirectory {
@@ -371,8 +627,11 @@ function Copy-DirectoryContents {
 }
 
 function Install-AppBundleFromZip {
+    if (-not (Use-OfficialWindowsZipBootstrap)) {
+        throw "App-ZIP-Bootstrap ist nur fuer offizielle Windows-Latest-Releases verfuegbar."
+    }
+
     $appDir = Join-Path $LTTHDir 'app'
-    $appZipUrl = Get-AppBundleZipUrl
     $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-app-" + [guid]::NewGuid().ToString('N'))
     $zipPath = Join-Path $tempDir 'ltth_latest.zip'
     $extractDir = Join-Path $tempDir 'extract'
@@ -381,8 +640,21 @@ function Install-AppBundleFromZip {
 
     try {
         New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
+        $appManifestUrl = Get-AppBundleManifestUrl
+        try {
+            Log "Lade LTTH App-Bundle-Manifest herunter..."
+            $remoteManifest = Invoke-RestMethod -Uri $appManifestUrl -TimeoutSec 30 -ErrorAction Stop
+        } catch {
+            throw "App-Bundle-Manifest ist nicht verfuegbar; ZIP wird nicht entpackt: $($_.Exception.Message)"
+        }
+
+        $manifest = Assert-AppBundleReleaseManifest -Manifest $remoteManifest -ExpectedVersion $script:LTTHVersion
+        $appZipUrl = Get-AppBundleZipUrl -ReleaseTag $manifest.tag
         Log "Lade LTTH App-Bundle herunter..."
         Invoke-DownloadFileWithProgress -Uri $appZipUrl -OutFile $zipPath -Activity 'LTTH App-Bundle wird heruntergeladen'
+
+        Assert-ReleaseArtifactFile -ArtifactPath $zipPath -Manifest $manifest -ArtifactName 'App-Bundle'
+        Assert-PublicAppBundleArchive -ArchivePath $zipPath -ExpectedVersion $manifest.version | Out-Null
 
         Log "Entpacke LTTH App-Bundle..."
         Expand-Archive -LiteralPath $zipPath -DestinationPath $extractDir -Force
