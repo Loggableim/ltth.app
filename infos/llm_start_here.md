@@ -18,12 +18,12 @@ If older repo names appear in archive files, generated reports, comments, or pat
 This workspace is a full Git checkout:
 
 - `.git/` is present. Use `git log`, `git branch`, `git diff`, etc. normally.
-- Active local branch: `codex/main-deploy`. Remote default: `origin/main`.
+- Active local branch: `main`. Remote default: `origin/main`.
 - Dependencies are installed in `app/`; root `node_modules/` remains intentionally absent.
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
-- Current version: `1.4.3` (see `version.json` and `app/package.json`).
+- Current version: `1.4.4` interim release (see `version.json` and `app/package.json`). OBS and remaining live acceptance are still open.
 
 Before making changes, read:
 

@@ -7,10 +7,22 @@ const { spawnSync } = require('child_process');
 const installerPath = path.join(__dirname, '..', '..', 'install', 'install.ps1');
 const repoRoot = path.join(__dirname, '..', '..');
 
+function windowsPowerShellEnvironment() {
+  // These fixtures explicitly invoke Windows PowerShell 5.1. A parent pwsh 7
+  // may supply its incompatible Utility module first in PSModulePath, hiding
+  // the real built-in Get-FileHash. Isolate only the child module search path;
+  // do not replace hash verification or mutate the test process environment.
+  return {
+    ...process.env,
+    PSModulePath: path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'Modules')
+  };
+}
+
 function hasWindowsPowerShell() {
   return process.platform === 'win32'
     && spawnSync('powershell.exe', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.Major'], {
-      encoding: 'utf8'
+      encoding: 'utf8',
+      env: windowsPowerShellEnvironment()
     }).status === 0;
 }
 
@@ -27,7 +39,8 @@ function invokeInstallerFunctions(functionNames, body) {
     body
   ].join('; ');
   return spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: windowsPowerShellEnvironment()
   });
 }
 
