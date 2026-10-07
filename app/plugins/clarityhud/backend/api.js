@@ -337,7 +337,7 @@ class ClarityHUDBackend {
           this.api.emit(`clarityhud.settings.${dock}`, this.settings[dock]);
         }
 
-        if (validation.customPresets.length > 0) {
+        if (validation.customPresetsProvided) {
           this.customPresets = validation.customPresets;
           await this.api.setConfig('clarityhud.customPresets', this.customPresets);
         }
