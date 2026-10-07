@@ -193,6 +193,7 @@ const getSwaggerSetup = () => {
 };
 const PluginLoader = require('./modules/plugin-loader');
 const { setupPluginRoutes } = require('./routes/plugin-routes');
+const { createPluginReleasePolicy } = require('./modules/plugin-release-policy');
 const { setupDebugRoutes } = require('./routes/debug-routes');
 const UpdateManager = require('./modules/update-manager');
 const { Validators, ValidationError } = require('./modules/validators');
@@ -456,6 +457,10 @@ app.use('/api', (req, res, next) => {
 
     return adminAuth(req, res, next);
 });
+
+// Prevent closed-beta plugin API handlers and source assets from being served
+// in the public distribution. This precedes core/static/plugin route registration.
+app.use(createPluginReleasePolicy({ appRoot: __dirname }).createRequestGuard({ pluginsDir: () => pluginsDir }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 

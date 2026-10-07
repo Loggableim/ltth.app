@@ -29,6 +29,7 @@ const {
     mergeIdentityValues,
     valuesEqual
 } = require('./plugin-identity-sync');
+const { createPluginReleasePolicy } = require('./plugin-release-policy');
 
 function parseJsonText(text) {
     const value = String(text || '');
@@ -970,6 +971,7 @@ class PluginLoader extends EventEmitter {
     constructor(pluginsDir, app, io, db, logger, configPathManager, activeProfile = null, runtimeOptions = {}) {
         super();
         this.pluginsDir = pluginsDir;
+        this.releasePolicy = createPluginReleasePolicy({ appRoot: path.join(__dirname, '..'), ...(runtimeOptions?.releasePolicy || {}) });
         this.app = app;
         this.io = io;
         this.db = db;
@@ -1278,6 +1280,7 @@ class PluginLoader extends EventEmitter {
 
     isPluginEnabledFromDisk(pluginId) {
         try {
+            if (this.releasePolicy.isClosedBetaId(pluginId)) return false;
             const installed = this.resolvePluginInstallation(pluginId);
             if (!installed) return false;
             const manifest = installed.manifest;
@@ -1297,6 +1300,7 @@ class PluginLoader extends EventEmitter {
 
     resolvePluginInstallation(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         const loaded = this.plugins.get(canonicalId);
         if (loaded) {
             return {
@@ -1401,6 +1405,7 @@ class PluginLoader extends EventEmitter {
                     throw new Error('Missing required manifest fields');
                 }
                 const canonicalId = canonicalizePluginId(runtimeManifest.id);
+                if (this.releasePolicy.isClosedBetaId(runtimeManifest.id)) continue;
                 const identity = getPluginIdentity(canonicalId);
                 candidates.push({
                     canonicalId,
@@ -1441,6 +1446,7 @@ class PluginLoader extends EventEmitter {
 
         const staleIds = Object.keys(this.state).filter(pluginId => {
             if (pluginId === STATE_SYNC_METADATA_KEY) return false;
+            if (this.releasePolicy.isClosedBetaId(pluginId)) return false;
             if (getPluginIdentity(pluginId)) return false;
             return !installedPluginIds.has(pluginId);
         });
@@ -1584,6 +1590,7 @@ class PluginLoader extends EventEmitter {
             }
 
             runtimeManifest = inventoryItem?.runtimeManifest || parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
+            this.releasePolicy.assertAllowed(runtimeManifest.id);
             const canonicalId = canonicalizePluginId(runtimeManifest.id);
             manifest = { ...runtimeManifest, id: canonicalId };
 
@@ -1794,6 +1801,7 @@ class PluginLoader extends EventEmitter {
     async enablePlugin(pluginId) {
         // Store original state to rollback if needed
         pluginId = canonicalizePluginId(pluginId);
+        this.releasePolicy.assertAllowed(pluginId);
         const originalState = this.state[pluginId] ? { ...this.state[pluginId] } : null;
         const mutuallyExclusivePluginIds = this.getMutuallyExclusivePluginIds(pluginId);
         const disabledConflicts = [];
@@ -2190,6 +2198,7 @@ class PluginLoader extends EventEmitter {
      */
     getPlugin(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         return this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
     }
 
@@ -2198,6 +2207,7 @@ class PluginLoader extends EventEmitter {
      */
     getPluginInstance(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         const plugin = this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
         return plugin ? plugin.instance : null;
     }
@@ -2207,6 +2217,7 @@ class PluginLoader extends EventEmitter {
      */
     isPluginEnabled(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return false;
         const state = this.state[canonicalId] || getIdentityCandidateIds(canonicalId)
             .map(candidateId => this.state[candidateId])
             .find(Boolean);

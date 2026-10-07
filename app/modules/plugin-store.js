@@ -19,6 +19,7 @@ const {
   getPluginIdentity
 } = require('./plugin-identities');
 const { version: DEFAULT_LTTH_VERSION } = require('../package.json');
+const { createPluginReleasePolicy } = require('./plugin-release-policy');
 
 const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https://ltth.app/plugin-store.json';
 
@@ -186,6 +187,7 @@ function getCategoryFromType(type) {
 class PluginStore {
   constructor(pluginLoader, options = {}) {
     this.pluginLoader = pluginLoader;
+    this.releasePolicy = pluginLoader.releasePolicy || createPluginReleasePolicy({ appRoot: path.join(__dirname, '..'), ...(options.releasePolicy || {}) });
     this.logger = options.logger || pluginLoader.logger || console;
     this.fetchImpl = options.fetchImpl || global.fetch;
     this.officialStoreUrl = options.officialStoreUrl || DEFAULT_OFFICIAL_STORE_URL;
@@ -311,8 +313,9 @@ class PluginStore {
 
     const registry = await response.json();
     this.validateRegistry(registry, source);
-    this.cache.set(source.id, { loadedAt: Date.now(), registry });
-    return registry;
+    const filteredRegistry = this.releasePolicy.filterRegistry(registry);
+    this.cache.set(source.id, { loadedAt: Date.now(), registry: filteredRegistry });
+    return filteredRegistry;
   }
 
   validateRegistry(registry, source = null) {
@@ -345,10 +348,10 @@ class PluginStore {
       try {
         const registry = parseJsonText(fs.readFileSync(registryPath, 'utf8'));
         this.validateRegistry(registry);
-        return {
+        return this.releasePolicy.filterRegistry({
           ...registry,
           generatedFrom: registry.generatedFrom || 'bundled-store-manifest'
-        };
+        });
       } catch (error) {
         this.logger.warn?.(`Failed to load bundled plugin store registry: ${error.message}`);
       }
@@ -376,6 +379,7 @@ class PluginStore {
         if (!manifest.id || manifest.disabled === true) {
           continue;
         }
+        if (this.releasePolicy.isClosedBetaId(manifest.id)) continue;
 
         const runtimeManifestId = assertPluginId(manifest.id);
         const id = canonicalizePluginId(runtimeManifestId);
@@ -426,6 +430,7 @@ class PluginStore {
       try {
         const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
         if (manifest.id) {
+          if (this.releasePolicy.isClosedBetaId(manifest.id)) continue;
           const runtimeManifestId = assertPluginId(manifest.id);
           const id = canonicalizePluginId(runtimeManifestId);
           const candidate = {
@@ -449,6 +454,7 @@ class PluginStore {
 
   normalizeStorePlugin(plugin, source, locale, installedPlugins) {
     const runtimeManifestId = assertPluginId(plugin.id);
+    this.releasePolicy.assertAllowed(runtimeManifestId);
     const id = canonicalizePluginId(runtimeManifestId);
     const installed = installedPlugins.get(id);
     const storeVersion = plugin.version || '0.0.0';
@@ -572,6 +578,7 @@ class PluginStore {
 
   async findPlugin(sourceId, pluginId) {
     const safeSourceId = assertPluginId(sourceId);
+    this.releasePolicy.assertAllowed(pluginId);
     const safePluginId = canonicalizePluginId(assertPluginId(pluginId));
     const source = this.getSources().find((item) => item.id === safeSourceId);
     if (!source) {
@@ -619,6 +626,7 @@ class PluginStore {
     }
 
     const safeManifestId = assertPluginId(manifest.id);
+    this.releasePolicy.assertAllowed(safeManifestId);
     const canonicalManifestId = canonicalizePluginId(safeManifestId);
     if (canonicalManifestId !== canonicalizePluginId(expectedPluginId)) {
       throw new Error(`Plugin id mismatch: expected ${expectedPluginId}, got ${safeManifestId}`);
@@ -749,8 +757,10 @@ class PluginStore {
   }
 
   async installPlugin(sourceId, pluginId, options = {}) {
+    this.releasePolicy.assertAllowed(pluginId);
     const safePluginId = canonicalizePluginId(assertPluginId(pluginId));
     const plugin = options.plugin || (await this.findPlugin(sourceId, safePluginId)).plugin;
+    this.releasePolicy.assertAllowed(plugin.id);
     const minLtthVersion = String(plugin.minLtthVersion || '').trim();
     if (
       minLtthVersion &&
