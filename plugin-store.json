@@ -35,30 +35,6 @@
       ]
     },
     {
-      "id": "animazingpal",
-      "name": {
-        "en": "AnimazingPal"
-      },
-      "description": {
-        "en": "Multi-platform VTuber avatar control via TikTok LIVE events. Supports Animaze, VTube Studio, and VSeeFace with an AI Brain Engine, long-term memory, personality system, and GPT-powered intelligent responses.",
-        "de": "Mehrplattform-Integration für VTuber-Avatar-Steuerung über TikTok LIVE Events. Unterstützt Animaze, VTube Studio und VSeeFace mit KI-Brain Engine, Langzeit-Gedächtnis, Persönlichkeits-System und GPT-gesteuerten Antworten.",
-        "es": "Control de avatar VTuber multiplataforma a través de eventos de TikTok LIVE. Compatible con Animaze, VTube Studio y VSeeFace con un Motor de Cerebro IA, memoria a largo plazo, sistema de personalidades y respuestas inteligentes con GPT.",
-        "fr": "Contrôle d'avatar VTuber multiplateforme via les événements TikTok LIVE. Compatible avec Animaze, VTube Studio et VSeeFace avec un moteur IA, mémoire à long terme, système de personnalités et réponses intelligentes GPT."
-      },
-      "version": "1.4.0",
-      "author": "copilot",
-      "category": "integration",
-      "channel": "open-beta",
-      "badges": ["subscriber-only"],
-      "access": { "type": "subscriber" },
-      "packageUrl": "https://ltth.app/plugin-store/packages/animazingpal-1.4.0.zip",
-      "sha256": "15951a3f7752ebbb317b2f1c31b11c2feb427dc82e4683e938e14b23b60ae693",
-      "pricing": { "type": "free", "amount": 0, "currency": "EUR" },
-      "screenshots": [
-        "/screenshots/features/animazingpal.png"
-      ]
-    },
-    {
       "id": "api-bridge",
       "name": {
         "en": "API Bridge"
@@ -85,35 +61,6 @@
       },
       "screenshots": [
         "/screenshots/features/api-bridge-admin.png"
-      ]
-    },
-    {
-      "id": "chatango",
-      "name": {
-        "en": "Chatango Integration"
-      },
-      "description": {
-        "en": "Integrates Chatango chat rooms into your stream. Configure embeddable chat widgets, customize appearance, and receive chat messages as events for use in flows and automations.",
-        "de": "Integriert Chatango-Chaträume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events für Flows und Automatisierungen.",
-        "es": "Integra salas de chat de Chatango en tu transmisión. Configura widgets de chat insertables, personaliza la apariencia y recibe mensajes de chat como eventos para usar en flujos y automatizaciones.",
-        "fr": "Intègre les salons de chat Chatango dans votre stream. Configurez des widgets de chat intégrables, personnalisez l'apparence et recevez les messages de chat comme événements pour les flux et automatisations."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [
-        "preinstalled"
-      ],
-      "packageUrl": "https://ltth.app/plugin-store/packages/chatango-1.0.0.zip",
-      "sha256": "12dd8bf2632ec2ebc5dbb1170824ad56bb3376c90f0850ffa5115455c2b1ab44",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/chatango.png"
       ]
     },
     {
@@ -342,38 +289,6 @@
       ]
     },
     {
-      "id": "interactive-story",
-      "name": {
-        "en": "Interactive Story Generator"
-      },
-      "description": {
-        "en": "AI-powered interactive story generation with chat voting, image generation, multi-voice TTS, and adaptive OBS overlays. Create engaging stories with your audience using LLM technology.",
-        "de": "KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie.",
-        "es": "Generación de historias interactivas impulsada por IA con votación por chat, generación de imágenes, TTS multi-voz y overlays adaptativos para OBS. Crea historias cautivadoras con tu audiencia usando tecnología LLM.",
-        "fr": "Génération d'histoires interactives alimentée par l'IA avec vote par chat, génération d'images, TTS multi-voix et overlays adaptatifs OBS. Créez des histoires captivantes avec votre public grâce à la technologie LLM."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "entertainment",
-      "channel": "open-beta",
-      "badges": [
-        "closed-beta"
-      ],
-      "access": {
-        "type": "closed-beta"
-      },
-      "packageUrl": "https://ltth.app/plugin-store/packages/interactive-story-1.0.0.zip",
-      "sha256": "650ab7fc925a487fc4467bbdb99ae3cfed8b5135fe48bdea6eb640d3903daaae",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/interactive-story.png"
-      ]
-    },
-    {
       "id": "spotlight",
       "name": {
         "en": "Spotlight"
@@ -461,33 +376,6 @@
       ]
     },
     {
-      "id": "music-bot",
-      "name": {
-        "en": "Music Bot"
-      },
-      "description": {
-        "en": "Viewer-controlled music bot for TikTok LIVE streams. Chat commands let viewers request, skip, and manage songs via YouTube or SoundCloud.",
-        "de": "Zuschauer-gesteuerter Musikbot für TikTok-LIVE-Streams. Chat-Befehle ermöglichen Musikwünsche, Überspringen und Verwaltung von Titeln über YouTube oder SoundCloud.",
-        "es": "Bot de música controlado por la audiencia para directos de TikTok LIVE. Los comandos del chat permiten pedir, saltar y gestionar canciones mediante YouTube o SoundCloud.",
-        "fr": "Bot musical contrôlé par les spectateurs pour les directs TikTok LIVE. Les commandes du chat permettent de demander, passer et gérer des titres via YouTube ou SoundCloud."
-      },
-      "version": "1.2.0",
-      "author": "PupCid",
-      "category": "integration",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/music-bot-1.2.0.zip",
-      "sha256": "96c21c2cd9e2e584132b32cb12eff9aa27dbca29c86c8d59a80ccc0eb3862d53",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/music-bot.png"
-      ]
-    },
-    {
       "id": "openshock",
       "name": {
         "en": "Hybridshock"
@@ -517,33 +405,6 @@
       },
       "screenshots": [
         "/screenshots/features/openshock.png"
-      ]
-    },
-    {
-      "id": "osc-bridge",
-      "name": {
-        "en": "OSC-Bridge (VRChat)"
-      },
-      "description": {
-        "en": "Production-ready OSC bridge for VRChat. Connects TikTok events, IFTTT actions, GCCE commands, and VRChat avatar parameters through validated OSC messages.",
-        "de": "Produktionsreife OSC-Bridge fuer VRChat. Verbindet TikTok-Events, IFTTT-Aktionen, GCCE-Befehle und VRChat-Avatar-Parameter ueber validierte OSC-Nachrichten.",
-        "es": "Puente OSC listo para produccion para VRChat. Conecta eventos de TikTok, acciones IFTTT, comandos GCCE y parametros de avatar de VRChat mediante mensajes OSC validados.",
-        "fr": "Pont OSC pret pour la production pour VRChat. Connecte les evenements TikTok, les actions IFTTT, les commandes GCCE et les parametres d'avatar VRChat via des messages OSC valides."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/osc-bridge-1.0.0.zip",
-      "sha256": "703d7a764df4732cfb753eb5533294a0f510cdb9913ea44daa634fbc82ae8cc6",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/osc-bridge.png"
       ]
     },
     {
@@ -604,65 +465,6 @@
       "screenshots": [
         "/soundboard-logo.png",
         "/screenshots/features/soundboard-detail.png"
-      ]
-    },
-    {
-      "id": "stream-monsters",
-      "aliases": [
-        "streamalchemy"
-      ],
-      "replaces": [
-        "streamalchemy"
-      ],
-      "name": {
-        "de": "Stream Monsters",
-        "en": "Stream Monsters",
-        "es": "Stream Monsters",
-        "fr": "Stream Monsters"
-      },
-      "description": {
-        "de": "Portrait Arcade Rally mit 90-Sekunden-Standard für neue Setups, zweisprachigen Overlay-Hinweisen, 74/26-TikTok-Safe-Arena, K.-o.-Kämpfen nach Rules v8, Arena Collapse, elementspezifischen WebGPU-Effekten, 72 gebündelten Furry-Formen und fairem permanentem Fortschritt. In einem aktiven LTTH-Abonnement enthalten. Kein separater Plugin-Kauf.",
-        "en": "Portrait Arcade Rally with a 90-second fresh default, bilingual overlay guidance, a 74/26 TikTok-safe arena, K.O.-only Rules v8 battles, Arena Collapse, element-specific WebGPU effects, 72 bundled Furry forms, and fair permanent progression. Included with an active LTTH subscription. No separate plugin purchase.",
-        "es": "Portrait Arcade Rally con 90 segundos por defecto en configuraciones nuevas, guía bilingüe, arena 74/26 segura para TikTok, combates Rules v8 hasta K.O., Arena Collapse, efectos WebGPU elementales, 72 formas Furry y progreso permanente justo. Incluido con una suscripción LTTH activa. No requiere comprar el plugin por separado.",
-        "fr": "Portrait Arcade Rally avec 90 secondes par défaut pour les nouvelles configurations, guide bilingue, arène TikTok 74/26, combats Rules v8 jusqu’au K.-O., Arena Collapse, effets WebGPU élémentaires, 72 formes Furry et progression permanente équitable. Inclus avec un abonnement LTTH actif. Aucun achat séparé du plugin."
-      },
-      "version": "1.12.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "stable",
-      "minLtthVersion": "1.4.2",
-      "icon": "/plugins/stream-monsters/assets/branding/stream-monsters-icon.png",
-      "logo": "/plugins/stream-monsters/assets/branding/stream-monsters-logo.png",
-      "badges": [
-        "subscriber-only"
-      ],
-      "access": {
-        "type": "subscriber",
-        "description": {
-          "de": "In einem aktiven LTTH-Abonnement enthalten. Kein separater Plugin-Kauf.",
-          "en": "Included with an active LTTH subscription. No separate plugin purchase.",
-          "es": "Incluido con una suscripción LTTH activa. No requiere comprar el plugin por separado.",
-          "fr": "Inclus avec un abonnement LTTH actif. Aucun achat séparé du plugin."
-        }
-      },
-      "packageUrl": "https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip",
-      "sha256": "634af6e44c2d1d204de4738f0ed88a30645c00036d7c8d47fe709d58bc3d5516",
-      "rollbackVersions": [
-        {
-          "version": "1.11.1",
-          "manifestId": "streamalchemy",
-          "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip",
-          "sha256": "46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60"
-        }
-      ],
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/stream-monsters-creator-1.11.png",
-        "/screenshots/features/stream-monsters-arena-portrait-1.11.png"
       ]
     },
     {
@@ -728,38 +530,6 @@
         "/screenshots/features/stt-ticker-capture-obs-url.png",
         "/screenshots/features/stt-ticker.png"
       ]
-    },
-    {
-      "id": "talking-heads",
-      "name": {
-        "en": "Talking Heads"
-      },
-      "description": {
-        "en": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS. Features role-based activation, multiple style templates, and OBS integration.",
-        "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration.",
-        "es": "Avatares 2D generados por IA con animaciones sincronizadas para usuarios de TikTok que hablan mediante TTS. Incluye activación por roles, varias plantillas de estilo e integración con OBS.",
-        "fr": "Avatars 2D générés par IA avec des animations synchronisées pour les utilisateurs TikTok qui parlent via TTS. Comprend une activation par rôle, plusieurs modèles de style et une intégration OBS."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "module",
-      "channel": "open-beta",
-      "badges": [
-        "subscriber-only"
-      ],
-      "packageUrl": "https://ltth.app/plugin-store/packages/talking-heads-1.0.0.zip",
-      "sha256": "a8da39feb2dc7e7ea697865c98c2b35b3c9efa2272174f5bafbf957d2b66b1c9",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/talking-heads.png"
-      ],
-      "access": {
-        "type": "subscriber"
-      }
     },
     {
       "id": "thermal-printer",
@@ -908,46 +678,6 @@
       ]
     },
     {
-      "id": "webgpu-weather-control",
-      "name": {
-        "en": "WebGPU Weather Control",
-        "de": "WebGPU Wetterkontrolle",
-        "es": "Control meteorologico WebGPU",
-        "fr": "Controle meteo WebGPU"
-      },
-      "description": {
-        "en": "Native cinematic WebGPU weather control with compute particles, HDR bloom, adaptive 1080p60 quality, presets, sequences, gifts, Flow, GCCE, and optional community HUD.",
-        "de": "Native cineastische WebGPU-Wetterkontrolle mit Compute-Partikeln, HDR-Bloom, adaptiver 1080p60-Qualitaet, Presets, Sequenzen, Gifts, Flow, GCCE und optionalem Community-HUD.",
-        "es": "Control meteorologico WebGPU cinematografico nativo con particulas compute, bloom HDR, calidad adaptativa 1080p60, presets, secuencias, regalos, Flow, GCCE y HUD comunitario opcional.",
-        "fr": "Controle meteo WebGPU cinematographique natif avec particules compute, bloom HDR, qualite adaptative 1080p60, presets, sequences, cadeaux, Flow, GCCE et HUD communautaire optionnel."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [
-        "working-beta",
-        "native-webgpu"
-      ],
-      "quality": {
-        "level": "working-beta",
-        "badges": [
-          "native-webgpu",
-          "1080p60"
-        ]
-      },
-      "packageUrl": "https://ltth.app/plugin-store/packages/webgpu-weather-control-1.0.0.zip",
-      "sha256": "9a0eaa5ea680607a1f9df25b6e87e9bd8559414f3be5dfbf15feca0735623bb2",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/webgpu-weather-control.png"
-      ]
-    },
-    {
       "id": "emoji-rain",
       "name": {
         "en": "EmojiRain",
@@ -978,117 +708,6 @@
       "screenshots": [
         "/screenshots/features/emoji-rain.png"
       ]
-    },
-    {
-      "id": "webgpu-emoji-rain",
-      "name": {
-        "en": "WebGPU EmojiRain",
-        "de": "WebGPU EmojiRain",
-        "es": "WebGPU EmojiRain",
-        "fr": "WebGPU EmojiRain"
-      },
-      "description": {
-        "en": "Strict native WebGPU EmojiRain with compute physics, GPU collisions, instanced sprites, HDR bloom, cinematic-neon profiles, and adaptive 1080p60 quality.",
-        "de": "Strikt nativer WebGPU EmojiRain mit Compute-Physik, GPU-Kollisionen, instanzierten Sprites, HDR-Bloom, Cinematic-Neon-Profilen und adaptiver 1080p60-Qualität.",
-        "es": "EmojiRain WebGPU nativo estricto con física de cómputo, colisiones GPU, sprites instanciados, bloom HDR, perfiles cinematográficos-neón y calidad 1080p60 adaptativa.",
-        "fr": "EmojiRain WebGPU natif strict avec physique compute, collisions GPU, sprites instanciés, bloom HDR, profils cinématiques-néon et qualité 1080p60 adaptative."
-      },
-      "version": "3.0.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/webgpu-emoji-rain-3.0.0.zip",
-      "sha256": "3690cbb0d26b72703cc9c6cac50e668e9981cfa5627718b12a4e2808d46965a3",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/webgpu-emoji-rain.png"
-      ]
-    },
-    {
-      "id": "schnorrbecher",
-      "name": {
-        "en": "Schnorrbecher",
-        "de": "Schnorrbecher",
-        "es": "Schnorrbecher",
-        "fr": "Schnorrbecher"
-      },
-      "description": {
-        "en": "A transparent OBS gift jar that fills with physics-driven TikTok LIVE gift icons.",
-        "de": "Ein transparentes OBS-Geschenkeglas, das sich mit physikalisch animierten TikTok-LIVE-Geschenk-Icons füllt.",
-        "es": "Un tarro de regalos transparente para OBS que se llena con iconos de regalos de TikTok LIVE animados con física.",
-        "fr": "Un bocal de cadeaux OBS transparent qui se remplit d’icônes de cadeaux TikTok LIVE animées par la physique."
-      },
-      "version": "1.0.0",
-      "author": "LTTH",
-      "category": "overlay",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/schnorrbecher-1.0.0.zip",
-      "sha256": "49b87bd195053d1728f7ef485289c921df89bf2a01c2e51d9bee94d4eaf11f7c",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": []
-    },
-    {
-      "id": "visual-fx-frame-webgpu",
-      "name": {
-        "en": "Visual FX Frame WEBGPU",
-        "de": "Visual FX Frame WEBGPU",
-        "es": "Visual FX Frame WEBGPU",
-        "fr": "Visual FX Frame WEBGPU"
-      },
-      "description": {
-        "en": "Subscriber beta with ten native WebGPU frame materials, dual-color flames, pulse waves and five premium procedural designs.",
-        "de": "Subscriber-Beta mit zehn nativen WebGPU-Rahmenmaterialien, zweifarbigen Flammen, Pulswellen und fünf Premium-Designs.",
-        "es": "Beta para suscriptores con diez materiales de marco WebGPU nativos, llamas bicolores, ondas de pulso y cinco diseños premium.",
-        "fr": "Bêta abonnés avec dix matériaux de cadre WebGPU natifs, flammes bicolores, ondes pulsées et cinq designs premium."
-      },
-      "version": "1.2.0",
-      "author": "Pup Cid",
-      "category": "overlay",
-      "channel": "open-beta",
-      "badges": ["subscriber-only"],
-      "access": { "type": "subscriber" },
-      "packageUrl": "https://ltth.app/plugin-store/packages/visual-fx-frame-webgpu-1.2.0.zip",
-      "sha256": "3a1dfd59447057022eeb2216258a2d1ce146e07fcf6013e22582b9e865f5ca37",
-      "pricing": { "type": "free", "amount": 0, "currency": "EUR" },
-      "screenshots": []
-    },
-    {
-      "id": "sidekick",
-      "name": {
-        "en": "Sidekick",
-        "de": "Sidekick",
-        "es": "Sidekick",
-        "fr": "Sidekick"
-      },
-      "description": {
-        "en": "Intelligent stream assistant with Animaze and VNyan avatar integration. Features TikTok LIVE event triggers, emotion expressions, item drops, speech synchronization, customizable gift rules, and stream HUD overlay.",
-        "de": "Intelligenter Stream-Assistent mit Animaze- und VNyan-Avatar-Integration. Bietet TikTok LIVE Event-Trigger, Emotions-Ausdrücke, Item-Drops, Sprach-Synchronisation, anpassbare Geschenk-Regeln und Stream-HUD-Overlay.",
-        "es": "Asistente inteligente de transmisión con integración de avatares Animaze y VNyan. Ofrece activadores de eventos TikTok LIVE, expresiones emocionales, lanzamiento de objetos, sincronización de voz, reglas de regalos personalizables y overlay HUD.",
-        "fr": "Assistant de stream intelligent avec intégration d'avatars Animaze et VNyan. Propose des déclencheurs d'événements TikTok LIVE, des expressions émotionnelles, des lancers d'objets, la synchronisation vocale, des règles de cadeaux personnalisables et un overlay HUD."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "tool",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/sidekick-1.0.0.zip",
-      "sha256": "4b8f6081e4412490dd5305a46cd5d91d88eb2bf7a3758a1673cb90bb6a0e3fe7",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": []
     }
   ]
 }

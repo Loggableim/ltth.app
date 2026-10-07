@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { isClosedBetaPlugin } = require('./lib/published-plugin-catalog');
+
 const fs = require('fs');
 const path = require('path');
 
@@ -105,6 +107,9 @@ function projectManifest(root, contract) {
 function projectStore(root, contract) {
   const relativePath = 'plugin-store.json';
   const source = readText(root, relativePath);
+  if (isClosedBetaPlugin(root, contract.product.id)) {
+    return { relativePath, content: source };
+  }
   const registry = JSON.parse(source);
   const plugin = registry.plugins.find(entry => entry.id === contract.product.id);
   if (!plugin) throw new Error(`Missing Store entry: ${contract.product.id}`);
