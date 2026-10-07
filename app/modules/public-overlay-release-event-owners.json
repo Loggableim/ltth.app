@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "sourceBase": "fde29a99d95222e8f441ffedc78df43e15ba0f06",
+  "activeLeakClaim": false,
+  "events": {
+    "outgoing": {
+      "animazingpal:stream-assistant:event": {
+        "owner": "animazingpal",
+        "ownership": "proven-static"
+      },
+      "animazingpal:stream-assistant:reset": {
+        "owner": "animazingpal",
+        "ownership": "proven-static"
+      },
+      "story:chapter-display": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:chapter-ready": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:chapter-sentence": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:chapter-title-phase": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:chapter-tts-complete": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:chapter-tts-start": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:config-updated": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:ended": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:generation-started": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:image-generation-failed": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:image-updated": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:vote-update": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:voting-ended": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "story:voting-started": {
+        "owner": "interactive-story",
+        "ownership": "proven-static"
+      },
+      "musicbot:next-song-vote": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:now-playing": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:paused": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:playback-stopped": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:playback-sync": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:queue-update": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:resumed": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:volume-changed": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "musicbot:vote-skip-update": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "coinJar.add": {
+        "owner": "schnorrbecher",
+        "ownership": "proven-static"
+      },
+      "coinJar.config": {
+        "owner": "schnorrbecher",
+        "ownership": "proven-static"
+      },
+      "coinJar.reset": {
+        "owner": "schnorrbecher",
+        "ownership": "proven-static"
+      },
+      "coinJar.sync": {
+        "owner": "schnorrbecher",
+        "ownership": "proven-static"
+      },
+      "sidekick:public-status": {
+        "owner": "sidekick",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "streammonsters:achievement_unlocked": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:arena_rating_changed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_action": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_arena_collapse": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_cancelled": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_choice_locked": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_choice_opened": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_choice_rejected": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_choices_revealed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:config_updated": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_completed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_knockout": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_match_found": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_roster_locked": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_round": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_skill_locked": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_skill_prompt": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_skill_used": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_special_charged": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:battle_started": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:chat_result": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_boosted": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_expired": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_landed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_hatched": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_ready": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_spawned": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_stage_removed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:egg_stage_updated": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:elemental_hour": {
+        "owner": "stream-monsters",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "streammonsters:free_egg_claimed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:free_egg_public": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:free_egg_reserved": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:owned_ready_egg_claimed": {
+        "owner": "stream-monsters",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "streammonsters:owned_ready_egg_public": {
+        "owner": "stream-monsters",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "streammonsters:unhatched_egg_steal_claimed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:unhatched_egg_steal_public": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:gift_combo": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:hatch_started": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:hype_changed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:hype_milestone": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_discovered": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_evolved": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_level_up": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_stat_auto_assigned": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_stat_chosen": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_stat_prompt": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:monster_visual_evolved": {
+        "owner": "stream-monsters",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "streammonsters:monster_xp_awarded": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:quest_completed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:rivalry": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:season_rank_changed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:stance_revealed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:stat_choice_opened": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:stream_started": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:tutorial_hint": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:upset": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:win_streak": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:collection_shown": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:mastery_unlocked": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "streammonsters:stream_mission_completed": {
+        "owner": "stream-monsters",
+        "ownership": "proven-static"
+      },
+      "talkingheads:animation:end": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "talkingheads:animation:frame": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "talkingheads:animation:start": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "talkingheads:animation:stop": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "talkingheads:avatar:spawn": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "talkingheads:avatar:spin:start": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "talkingheads:config:update": {
+        "owner": "talking-heads",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "visual-fx-frame-webgpu:clear-triggers": {
+        "owner": "visual-fx-frame-webgpu",
+        "ownership": "proven-static"
+      },
+      "visual-fx-frame-webgpu:config-update": {
+        "owner": "visual-fx-frame-webgpu",
+        "ownership": "proven-static"
+      },
+      "visual-fx-frame-webgpu:trigger": {
+        "owner": "visual-fx-frame-webgpu",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:spawn": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:heart-balloons": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:gift-balls": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:clear": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:pause": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:resume": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:toggle": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:opacity": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:speed": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:theme": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:bounding-box": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:config-update": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:user-mappings-update": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:config-changed": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:gamification-state": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:stop": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:stop-effect": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:trigger": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      }
+    },
+    "incoming": {
+      "musicbot:request-status": {
+        "owner": "music-bot",
+        "ownership": "proven-static"
+      },
+      "coinJar.sync.request": {
+        "owner": "schnorrbecher",
+        "ownership": "proven-static"
+      },
+      "sidekick:public-status:request": {
+        "owner": "sidekick",
+        "ownership": "reserved-exclusive-namespace"
+      },
+      "talkingheads:avatar:spin:complete": {
+        "owner": "talking-heads",
+        "ownership": "proven-static"
+      },
+      "visual-fx-frame-webgpu:renderer-status": {
+        "owner": "visual-fx-frame-webgpu",
+        "ownership": "proven-static"
+      },
+      "webgpu-emoji-rain:renderer-metrics": {
+        "owner": "webgpu-emoji-rain",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:client-ready": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:request-permanent-effects": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "webgpu-weather:overlay-state": {
+        "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      }
+    }
+  }
+}

@@ -306,8 +306,9 @@ const io = socketIO(server, {
     // Allow EIO 4 (Socket.IO 4.x)
     allowEIO3: true
 });
-io.adapter(createPublicOverlayAdapter(Adapter));
-attachPublicSocketPolicy({ io, logger });
+const pluginReleasePolicy = createPluginReleasePolicy({ appRoot: __dirname });
+io.adapter(createPublicOverlayAdapter(Adapter, { pluginReleasePolicy }));
+attachPublicSocketPolicy({ io, logger, pluginReleasePolicy });
 io.sockets.setMaxListeners(50);
 
 // Middleware
@@ -437,7 +438,6 @@ app.use('/api', (req, res, next) => {
 
 // Prevent closed-beta plugin API handlers and source assets from being served
 // in the public distribution. This precedes core/static/plugin route registration.
-const pluginReleasePolicy = createPluginReleasePolicy({ appRoot: __dirname });
 app.use(pluginReleasePolicy.createRequestGuard({ pluginsDir: () => pluginsDir }));
 
 app.use(express.static(path.join(__dirname, 'public')));
