@@ -223,6 +223,8 @@ function getDefaultSettings() {
     lineHeight: 1.2,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     textColor: '#ffffff',
+    outlineColor: '#000000',
+    outlineThickness: '2px',
 
     // Transparency and window settings
     opacity: 1,
@@ -245,7 +247,7 @@ function getDefaultSettings() {
     visionImpairedMode: false,
     reduceMotion: false,
     dyslexiaFont: false,
-    accessibilityPreset: 'none'
+    accessibilityPreset: 'default'
   };
 }
 
@@ -278,7 +280,7 @@ function applySettings() {
   const body = document.body;
 
   // Apply accessibility preset first
-  if (s.accessibilityPreset && s.accessibilityPreset !== 'none') {
+  if (s.accessibilityPreset && !['none', 'default'].includes(s.accessibilityPreset)) {
     applyAccessibilityPreset(s.accessibilityPreset);
   } else {
     // Apply individual accessibility settings
@@ -307,6 +309,12 @@ function applySettings() {
   }
   if (s.textColor) {
     root.style.setProperty('--text-color', s.textColor);
+  }
+  if (s.outlineColor) {
+    root.style.setProperty('--outline-color', s.outlineColor);
+  }
+  if (s.outlineThickness) {
+    root.style.setProperty('--outline-width', s.outlineThickness);
   }
 
   // Apply line height
