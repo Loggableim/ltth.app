@@ -251,7 +251,7 @@ function main() {
   fs.mkdirSync(GUIDE_LOCALES_OUT, { recursive: true });
   removeStaleGuidePages(guides);
   for (const guide of guides) writeFileAtomically(path.join(OUT, `${guide.id}.html`), renderGuideDocument(guide, values, byId));
-  writeFileAtomically(path.join(OUT, 'index.json'), `${JSON.stringify(guides.map((guide) => ({ id: guide.id, name: guide.name, category: guide.category, access: guide.devStatus, devStatus: guide.devStatus, storeAvailable: guide.id === 'store-admin' || fs.existsSync(path.join(ROOT, 'plugin-store', 'packages', `${guide.id}.zip`)), image: Object.fromEntries(LOCALES.map((locale) => [locale, imagePath(locale, guide.id, guide.steps[0].id)])), translations: Object.fromEntries(LOCALES.map((locale) => [locale, { title: guide.copy[locale].title, summary: guide.copy[locale].summary, firstResult: guide.copy[locale].firstResult }])) })), null, 2)}\n`);
+  writeFileAtomically(path.join(OUT, 'index.json'), `${JSON.stringify(guides.map((guide) => ({ id: guide.id, name: guide.name, category: guide.category, access: guide.devStatus, devStatus: guide.devStatus, storeAvailable: guide.storeAvailable, image: Object.fromEntries(LOCALES.map((locale) => [locale, imagePath(locale, guide.id, guide.steps[0].id)])), translations: Object.fromEntries(LOCALES.map((locale) => [locale, { title: guide.copy[locale].title, summary: guide.copy[locale].summary, firstResult: guide.copy[locale].firstResult }])) })), null, 2)}\n`);
   for (const locale of LOCALES) {
     const file = path.join(ROOT, 'locales', `${locale}.json`);
     const current = JSON.parse(fs.readFileSync(file, 'utf8'));
