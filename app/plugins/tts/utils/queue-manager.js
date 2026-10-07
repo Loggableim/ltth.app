@@ -133,7 +133,7 @@ class QueueManager {
     /**
      * Add item to queue
      * @param {object} item - Queue item { userId, username, text, voice, engine, audioData, priority, bypassDuplicateFilter, ... }
-     * @returns {object} { success: boolean, reason: string, position: number }
+     * @returns {object} { success: boolean, id?: string, reason?: string, position?: number }
      */
     enqueue(item) {
         try {
@@ -194,6 +194,7 @@ class QueueManager {
 
             return {
                 success: true,
+                id: item.id,
                 position,
                 queueSize: this.queue.length,
                 estimatedWaitMs: this._estimateWaitTime(position)

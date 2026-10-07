@@ -739,6 +739,13 @@ class TTSPlugin {
         return this._activeRendererPlaybacks;
     }
 
+    _ensureSettledRendererPlaybackIds() {
+        if (!this._settledRendererPlaybackIds) {
+            this._settledRendererPlaybackIds = new Set();
+        }
+        return this._settledRendererPlaybackIds;
+    }
+
     _getRendererPlaybackId(meta = {}) {
         return String(meta.playbackId || meta.id || '').trim();
     }
@@ -871,21 +878,42 @@ class TTSPlugin {
         return record.completion;
     }
 
-    _settleRendererPlayback(playbackId, outcome, details = {}) {
+    _settleRendererPlayback(playbackId, outcome, details = {}, fallbackMeta = null) {
         const active = this._ensureRendererPlaybackState();
-        const record = active.get(String(playbackId || ''));
-        if (!record || record.settled) return false;
+        const normalizedPlaybackId = String(playbackId || '').trim();
+        if (!normalizedPlaybackId) return false;
+        const settledIds = this._ensureSettledRendererPlaybackIds();
+        let record = active.get(normalizedPlaybackId);
+        if (!record) {
+            if (!fallbackMeta || settledIds.has(normalizedPlaybackId)) return false;
+            record = {
+                playbackId: normalizedPlaybackId,
+                meta: {
+                    ...fallbackMeta,
+                    id: fallbackMeta.id || normalizedPlaybackId,
+                    playbackId: normalizedPlaybackId
+                },
+                settled: false,
+                durationMs: 0,
+                resolve: null
+            };
+        }
+        if (record.settled) return false;
 
         record.settled = true;
         if (record.watchdogTimer) clearTimeout(record.watchdogTimer);
         if (record.maxTimer) clearTimeout(record.maxTimer);
         active.delete(record.playbackId);
+        settledIds.add(record.playbackId);
+        while (settledIds.size > 1024) {
+            settledIds.delete(settledIds.values().next().value);
+        }
 
         const phase = outcome === 'ended' ? 'ended' : 'failed';
         const payload = this._rendererPayload(record, details);
         this.api.emit(`tts:renderer:${phase}`, payload);
         this._emitLegacyRendererAlias(record, phase, payload);
-        record.resolve({
+        record.resolve?.({
             playbackId: record.playbackId,
             outcome: phase,
             reason: payload.reason || null
@@ -2863,6 +2891,19 @@ class TTSPlugin {
      * @param {object} params - { text, userId, username, voiceId?, engine?, source?, teamLevel?, ... }
      */
   async speak(params) {
+    return this._speak(params, false);
+  }
+
+    /**
+     * Speak for another loaded plugin and return the private queue playback ID.
+     * This method is intentionally not used by HTTP or socket request handlers.
+     * @private
+     */
+  async _speakForPlugin(params) {
+    return this._speak(params, true);
+  }
+
+  async _speak(params, includePlaybackId) {
         // ===== GLOBAL TTS ENABLE/DISABLE CHECK =====
         // This check MUST be first to block ALL TTS calls when disabled
         const db = this.api.getDatabase();
@@ -3712,6 +3753,7 @@ class TTSPlugin {
             return {
                 success: true,
                 queued: true,
+                ...(includePlaybackId ? { playbackId: queueResult.id } : {}),
                 position: queueResult.position,
                 queueSize: queueResult.queueSize,
                 estimatedWaitMs: queueResult.estimatedWaitMs,
@@ -3913,7 +3955,7 @@ class TTSPlugin {
         } catch (error) {
             this._settleRendererPlayback(playbackMeta.playbackId, 'failed', {
                 reason: 'server-playback-error'
-            });
+            }, playbackMeta);
             this._logDebug('PLAYBACK', 'Renderer-synchronised playback failed', {
                 id: playbackMeta.playbackId,
                 error: error.message,
@@ -4085,7 +4127,23 @@ class TTSPlugin {
      */
     async destroy() {
         try {
+            const pendingItems = [
+                this.queueManager?.currentItem,
+                ...(Array.isArray(this.queueManager?.queue) ? this.queueManager.queue : [])
+            ].filter(item => item && this._getRendererPlaybackId(item));
+
             this._settleAllRendererPlaybacks('plugin-destroyed');
+
+            for (const item of pendingItems) {
+                const playbackId = this._getRendererPlaybackId(item);
+                this._settleRendererPlayback(playbackId, 'failed', {
+                    reason: 'plugin-destroyed'
+                }, {
+                    ...item,
+                    id: item.id || playbackId,
+                    playbackId
+                });
+            }
 
             // Stop queue processing
             this.queueManager.stopProcessing();
