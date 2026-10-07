@@ -1948,15 +1948,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this._extractTeamMemberLevelFromFanBadges(data.badges)
         );
 
-        let teamMemberLevel = Math.max(explicitLevel, fansClubLevel, badgeLevel);
-
-        if (data.userIdentity?.isModeratorOfAnchor) {
-            teamMemberLevel = Math.max(teamMemberLevel, 10);
-        } else if (data.userIdentity?.isSubscriberOfAnchor) {
-            teamMemberLevel = Math.max(teamMemberLevel, 1);
-        }
-
-        return teamMemberLevel;
+        return Math.max(explicitLevel, fansClubLevel, badgeLevel);
     }
 
     /**
