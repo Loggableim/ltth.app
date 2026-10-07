@@ -134,6 +134,10 @@ describe('Pages release bundle', () => {
       'plugin.json': '{"id":"open-wrapper"}',
       'vendor/talking-heads/plugin.json': '{"id":"talking-heads"}'
     });
+    writeZip(path.join(packages, 'closed-directory.zip'), {
+      'plugin.json': '{"id":"open-wrapper"}',
+      'vendor/MUSIC-BOT/plugin.json': '{"id":"public-helper"}'
+    });
     writeZip(path.join(tempRoot, 'app', 'ltth_latest.zip'), {
       'ltth_1.4.4/app/config/distribution-mode.json': '{"channel":"public"}',
       'ltth_1.4.4/app/plugins/renamed/main.js': 'local code',
@@ -145,7 +149,7 @@ describe('Pages release bundle', () => {
       path.join(tempRoot, 'scripts', 'build_pages_bundle.py'), '--output', output], { encoding: 'utf8' });
     expect(result.status).toBe(0);
     expect(fs.existsSync(path.join(output, 'plugin-store', 'packages', 'goals-1.0.0.zip'))).toBe(true);
-    for (const name of ['music-bot-1.0.0.zip', 'renamed-package.zip', 'legacy-alias.zip', 'closed-dependency.zip']) {
+    for (const name of ['music-bot-1.0.0.zip', 'renamed-package.zip', 'legacy-alias.zip', 'closed-dependency.zip', 'closed-directory.zip']) {
       expect(fs.existsSync(path.join(output, 'plugin-store', 'packages', name))).toBe(false);
       expect(fs.existsSync(path.join(packages, name))).toBe(true);
     }

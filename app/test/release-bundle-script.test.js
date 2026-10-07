@@ -43,6 +43,10 @@ function createTempRepo() {
   }
   fs.mkdirSync(path.join(root, 'app', 'plugins', 'goals'), { recursive: true });
   fs.writeFileSync(path.join(root, 'app', 'plugins', 'goals', 'plugin.json'), '{"id":"goals"}');
+  const nestedClosedDir = path.join(root, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT');
+  fs.mkdirSync(nestedClosedDir, { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'public-wrapper', 'plugin.json'), '{"id":"public-wrapper"}');
+  fs.writeFileSync(path.join(nestedClosedDir, 'plugin.json'), '{"id":"public-helper"}');
   for (const [directory, manifest] of [
     ['renamed-beta', { id: 'music-bot' }],
     ['renamed-alias', { id: 'other-id', aliases: ['streamalchemy'] }]
@@ -255,6 +259,8 @@ describe('Release bundle script', () => {
     expect(names).toContain('ltth_1.3.24/app/config/distribution-mode.json');
     expect(names).toContain('ltth_1.3.24/app/plugins/goals/plugin.json');
     expect(names.some(name => name.includes('/plugins/renamed-beta/') || name.includes('/plugins/renamed-alias/'))).toBe(false);
+    expect(names.some(name => name.includes('/plugins/public-wrapper/'))).toBe(false);
+    expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT', 'plugin.json'))).toBe(true);
     const releasePolicy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
     for (const id of [...releasePolicy.closedBeta, ...Object.keys(releasePolicy.aliases)]) {
       expect(names.filter(name => name.startsWith(`ltth_1.3.24/app/plugins/${id}/`))).toEqual([]);

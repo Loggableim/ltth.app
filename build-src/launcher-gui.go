@@ -4526,6 +4526,21 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	}
 	for _, f := range r.File {
 		parts := strings.Split(strings.ReplaceAll(f.Name, "\\", "/"), "/")
+		if len(parts) < 4 || parts[1] != "app" || !strings.EqualFold(parts[2], "plugins") {
+			continue
+		}
+		end := len(parts) - 1 // The last component is a filename or empty directory suffix.
+		if f.FileInfo().IsDir() && parts[end] != "" {
+			end++
+		}
+		for _, directory := range parts[3:end] {
+			if blocked[strings.ToLower(directory)] {
+				blockedDirectories[strings.ToLower(parts[3])] = true
+			}
+		}
+	}
+	for _, f := range r.File {
+		parts := strings.Split(strings.ReplaceAll(f.Name, "\\", "/"), "/")
 		if len(parts) < 5 || parts[1] != "app" || !strings.EqualFold(parts[2], "plugins") || !strings.EqualFold(parts[len(parts)-1], "plugin.json") {
 			continue
 		}

@@ -48,6 +48,10 @@ func TestPublicAppArchivePolicy(t *testing.T) {
 			entries["repo/app/plugins/nested-owner/vendor/private/plugin.json"] = `{"id":"music-bot"}`
 			entries["repo/app/plugins/nested-owner/main.js"] = "owner-source"
 			entries["repo/app/plugins/nested-owner/assets/display.svg"] = "owner-asset"
+			entries["repo/app/plugins/nested-directory/vendor/MUSIC-BOT/plugin.json"] = `{"id":"public-wrapper"}`
+			entries["repo/app/plugins/nested-directory/main.js"] = "owner-source"
+			entries["repo/app/plugins/open-vendor/vendor/music-bot-extra/plugin.json"] = `{"id":"public-wrapper"}`
+			entries["repo/app/plugins/open-vendor/vendor/music-bot"] = "filename-not-directory"
 			if tc.policy != "" {
 				entries["repo/app/config/plugin-release-policy.json"] = tc.policy
 			}
@@ -79,7 +83,7 @@ func TestPublicAppArchivePolicy(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, id := range []string{"music-bot", "streamalchemy", "stream-monsters", "renamed-beta", "alias-beta", "replacement-beta", "nested-owner"} {
+			for _, id := range []string{"music-bot", "streamalchemy", "stream-monsters", "renamed-beta", "alias-beta", "replacement-beta", "nested-owner", "nested-directory"} {
 				if _, e := os.Stat(filepath.Join(dest, "plugins", id)); !os.IsNotExist(e) {
 					t.Fatalf("closed plugin extracted: %s", id)
 				}
@@ -89,6 +93,11 @@ func TestPublicAppArchivePolicy(t *testing.T) {
 			}
 			if _, e := os.Stat(filepath.Join(dest, "plugins", "open-vendor", "assets", "display.svg")); e != nil {
 				t.Fatal(e)
+			}
+			for _, relative := range []string{"vendor/music-bot", "vendor/music-bot-extra/plugin.json"} {
+				if _, e := os.Stat(filepath.Join(dest, "plugins", "open-vendor", filepath.FromSlash(relative))); e != nil {
+					t.Fatal(e)
+				}
 			}
 			b, e := os.ReadFile(filepath.Join(dest, "config", "distribution-mode.json"))
 			if e != nil || string(b) != "{\"channel\":\"public\"}\n" {

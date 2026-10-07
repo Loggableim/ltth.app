@@ -87,6 +87,9 @@ def is_public_package(path: Path, closed_beta: set[str]) -> bool:
     if any(path.name.startswith(plugin_id + "-") or path.stem == plugin_id for plugin_id in closed_beta):
         return False
     with zipfile.ZipFile(path) as archive:
+        if any(part in closed_beta for name in archive.namelist()
+               for part in name.replace("\\", "/").lower().split("/")[:-1]):
+            return False
         manifests = [name for name in archive.namelist() if name == "plugin.json" or name.endswith("/plugin.json")]
         if not manifests:
             raise ValueError(f"Package has no plugin manifest: {path.name}")
@@ -124,6 +127,8 @@ def is_public_app_archive(path: Path, closed_beta: set[str]) -> bool:
             return False
         for name in names:
             parts = name.replace("\\", "/").lower().split("/")
+            if "plugins" in parts and any(part in closed_beta for part in parts[parts.index("plugins") + 1:-1]):
+                return False
             if any(parts[index:index + 2] == ["plugins", plugin_id]
                    for index in range(len(parts) - 1) for plugin_id in closed_beta):
                 return False

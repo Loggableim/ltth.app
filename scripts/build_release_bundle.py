@@ -400,6 +400,10 @@ def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> 
         for plugin_dir in plugins_root.iterdir():
             if not plugin_dir.is_dir() or plugin_dir.name.lower() in excluded_directories:
                 continue
+            if any(part.lower() in excluded_ids for path in plugin_dir.rglob("*")
+                   for part in path.relative_to(plugin_dir).parts[:-1]):
+                excluded_directories.add(plugin_dir.name.lower())
+                continue
             for manifest_path in (path for path in plugin_dir.rglob("*") if path.is_file() and path.name.lower() == "plugin.json"):
                 if manifest_path.stat().st_size > 1024 * 1024:
                     raise ValueError(f"Plugin manifest too large: {manifest_path}")
