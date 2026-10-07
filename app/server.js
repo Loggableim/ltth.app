@@ -4594,7 +4594,7 @@ async function gracefulShutdown(signal) {
     const loadedPluginIds = Array.from(pluginLoader.plugins.keys()).reverse();
     for (const pluginId of loadedPluginIds) {
         try {
-            const unloaded = await pluginLoader.unloadPlugin(pluginId);
+            const unloaded = await pluginLoader.unloadPlugin(pluginId, { reason: 'application-shutdown' });
             if (!unloaded) logger.error(`Plugin ${pluginId} reported cleanup errors during shutdown`);
         } catch (error) {
             logger.error(`Failed to unload plugin ${pluginId} during shutdown: ${error.message}`);
