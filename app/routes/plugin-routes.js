@@ -424,6 +424,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
 
             res.json({
                 success: true,
+                distributionMode: pluginLoader.releasePolicy?.getSnapshot?.().publicMode === true
+                    ? 'public'
+                    : 'local',
                 plugins: allPlugins
             });
         } catch (error) {
