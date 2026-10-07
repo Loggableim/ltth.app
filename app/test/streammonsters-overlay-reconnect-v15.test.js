@@ -30,6 +30,13 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
     const replayRequests = [];
     let replayPlaybackCalls = 0;
     const clearedIntervals = [];
+    const intervals = new Map();
+    const requestLog = [];
+    const pendingStateFetches = [];
+    let nextIntervalId = 0;
+    let deferNextStateFetch = false;
+    let socketDisconnected = false;
+    let socketRemovedListeners = 0;
     let snapshot = {
       hype: { points: 0 },
       config: {
@@ -106,30 +113,59 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
       url: 'http://localhost:3000/plugins/streamalchemy/overlay.html',
       runScripts: 'dangerously',
       beforeParse(window) {
-        const nativeClearInterval = window.clearInterval.bind(window);
+        window.setInterval = (callback, milliseconds = 0) => {
+          const id = ++nextIntervalId;
+          intervals.set(id, { callback, milliseconds });
+          return id;
+        };
         window.clearInterval = handle => {
           clearedIntervals.push(handle);
-          nativeClearInterval(handle);
+          intervals.delete(handle);
         };
         window.i18n = {
           init: async () => {},
           updateDOM: () => {},
           t: key => key
         };
-        window.io = () => ({
-          on: (event, handler) => socketHandlers.set(event, handler)
-        });
-        window.fetch = jest.fn(async input => {
-          const url = String(input);
-          if (url.includes('/assets/audio/manifest.json')) {
+        const socket = {
+          on: (event, handler) => socketHandlers.set(event, handler),
+          off: (event, handler) => {
+            if (socketHandlers.get(event) === handler) socketHandlers.delete(event);
+            socketRemovedListeners += 1;
+            return socket;
+          },
+          disconnect: () => {
+            socketDisconnected = true;
+            return socket;
+          }
+        };
+        window.io = () => socket;
+        window.fetch = jest.fn((input, options = {}) => {
+          const url = new URL(String(input), 'http://localhost:3000');
+          requestLog.push(`${url.pathname}${url.search}`);
+          if (url.pathname === '/api/stream-monsters/state' && deferNextStateFetch) {
+            deferNextStateFetch = false;
+            let resolveResponse;
+            const promise = new Promise(resolve => { resolveResponse = resolve; });
+            pendingStateFetches.push({
+              signal:options.signal,
+              promise,
+              resolve:payload => resolveResponse({
+                ok:true,
+                status:200,
+                json:async () => payload
+              })
+            });
+            return promise;
+          }
+          if (url.pathname.includes('/assets/audio/manifest.json')) {
             return { ok: false, status: 404, json: async () => ({}) };
           }
-          if (url.includes('/overlay/heartbeat')) {
+          if (url.pathname.includes('/overlay/heartbeat')) {
             return { ok: true, status: 200, json: async () => ({ success: true }) };
           }
-          if (url.includes('/battles/')) {
-            const parsed = new URL(url, 'http://localhost:3000');
-            const cursor = Number(parsed.searchParams.get('cursor'));
+          if (url.pathname.includes('/battles/')) {
+            const cursor = Number(url.searchParams.get('cursor'));
             replayRequests.push(cursor);
             return {
               ok: true,
@@ -256,10 +292,64 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
       expect(replayPlaybackCalls).toBe(3);
       expect(snapshotVariants.at(-1)).toBe('classic');
 
-      dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+      const connectHandler = socketHandlers.get('connect');
+      const heartbeatInterval = [...intervals.values()][0];
+      const operationsBeforeLifecycle = arenaOperations.length;
       dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
+      dom.window.dispatchEvent(new dom.window.PageTransitionEvent('pagehide', { persisted:true }));
+      dom.window.dispatchEvent(new dom.window.PageTransitionEvent('pageshow', { persisted:true }));
+      const intervalsAfterPersistedRestore = intervals.size;
+      const clearsAfterPersistedHide = clearedIntervals.length;
+      const destroysAfterPersistedHide = arenaOperations.filter(operation => operation === 'destroy').length;
+      const listenersAfterPersistedRestore = socketHandlers.size;
+      const connectedAfterPersistedRestore = !socketDisconnected;
+      heartbeatInterval.callback();
+      await flush();
+      const heartbeatsAfterPersistedRestore = requestLog.filter(url => (
+        url === '/api/stream-monsters/overlay/heartbeat'
+      )).length;
+
+      deferNextStateFetch = true;
+      const reconnectAfterRestore = connectHandler();
+      await waitFor(() => pendingStateFetches.length === 1);
+      const delayedSnapshot = pendingStateFetches[0];
+      const operationsBeforeFinalHide = arenaOperations.length;
+      dom.window.dispatchEvent(new dom.window.PageTransitionEvent('pagehide', { persisted:false }));
+      dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
+      const abortAfterFinalHide = delayedSnapshot.signal?.aborted || false;
+      const intervalsAfterFinalHide = intervals.size;
+      const operationsAfterFinalCleanup = arenaOperations.length;
+      const disconnectAfterFinalHide = socketDisconnected;
+      const listenersAfterFinalHide = socketHandlers.size;
+      const requestsAfterFinalHide = requestLog.length;
+
+      delayedSnapshot.resolve(snapshot);
+      await reconnectAfterRestore;
+      await flush();
+      const operationsAfterLateSnapshot = arenaOperations.length;
+      heartbeatInterval.callback();
+      const staleConnectRequestsBefore = requestLog.length;
+      await connectHandler();
+      const staleConnectRequestsAfter = requestLog.length;
+
+      expect(intervalsAfterPersistedRestore).toBe(1);
+      expect(clearsAfterPersistedHide).toBe(0);
+      expect(destroysAfterPersistedHide).toBe(0);
+      expect(listenersAfterPersistedRestore).toBeGreaterThan(0);
+      expect(connectedAfterPersistedRestore).toBe(true);
+      expect(heartbeatsAfterPersistedRestore).toBeGreaterThanOrEqual(2);
+      expect(intervalsAfterFinalHide).toBe(0);
       expect(clearedIntervals).toHaveLength(1);
-      expect(arenaOperations).toContain('destroy');
+      expect(disconnectAfterFinalHide).toBe(true);
+      expect(listenersAfterFinalHide).toBe(0);
+      expect(socketRemovedListeners).toBeGreaterThan(0);
+      expect(abortAfterFinalHide).toBe(true);
+      expect(operationsAfterFinalCleanup).toBe(operationsBeforeFinalHide + 1);
+      expect(arenaOperations.length).toBe(operationsAfterFinalCleanup);
+      expect(operationsAfterLateSnapshot).toBe(operationsAfterFinalCleanup);
+      expect(requestLog.length).toBe(requestsAfterFinalHide);
+      expect(staleConnectRequestsAfter).toBe(staleConnectRequestsBefore);
+      expect(operationsBeforeLifecycle).toBeGreaterThan(0);
     } finally {
       dom.window.close();
     }

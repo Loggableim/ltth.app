@@ -134,7 +134,7 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(html).toContain('overlayHeartbeatPayload');
     expect(html).toMatch(/window\.setInterval\(sendOverlayHeartbeat,\s*5_000\)/);
     expect(html).toContain("window.addEventListener('pagehide', stopOverlayLifecycle");
-    expect(html).toContain("window.addEventListener('beforeunload', stopOverlayLifecycle");
+    expect(html).not.toContain("window.addEventListener('beforeunload', stopOverlayLifecycle");
     expect(html).toMatch(/if \(overlayLifecycleStopped\) return;/);
     expect(html).not.toContain('value(data?.userId');
     expect(showChatSource).not.toContain('data?.userId');

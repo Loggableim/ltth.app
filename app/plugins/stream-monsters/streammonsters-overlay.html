@@ -2585,10 +2585,16 @@
     applySnapshot:() => ({ total:0, visible:[], overflow:null }),
     destroy:() => {}
   };
-  window.addEventListener('resize', () => {
+  let overlayLifecycleStopped = false;
+  let socket = null;
+  let reconnectController = null;
+  const registeredSocketListeners = [];
+  const handleOverlayResize = () => {
+    if (overlayLifecycleStopped) return;
     effectsRenderer.resize();
     battleEffectsRenderer.resize();
-  });
+  };
+  window.addEventListener('resize', handleOverlayResize);
   eventQueue = window.StreamMonstersOverlayRuntime.createPriorityQueue({
     maxSize: 30,
     staleAfterMs: 15000,
@@ -4154,6 +4160,7 @@
     if (type === 'chat_result') return showChat(data);
   };
   const presentWithPreview = async event => {
+    if (overlayLifecycleStopped) return false;
     const preview = event?.data?.preview;
     if (
       event?.type !== 'state_snapshot' &&
@@ -4162,13 +4169,16 @@
     if (preview) applyPreviewLayout(preview);
     try {
       const result = await present(event);
+      if (overlayLifecycleStopped) return false;
       if (event?.type !== 'state_snapshot') {
         battleReplaySynchronizer?.observe(event?.type, event?.data);
       }
       return result;
     } finally {
-      if (preview) layoutController.apply();
-      updateEggNextHint();
+      if (!overlayLifecycleStopped) {
+        if (preview) layoutController.apply();
+        updateEggNextHint();
+      }
     }
   };
   battleReplaySynchronizer = window.StreamMonstersOverlayRuntime.createBattleReplaySynchronizer({
@@ -4191,6 +4201,7 @@
   let queueWakeTimer = null;
   let queueWakeDeadline = 0;
   const scheduleQueueWake = () => {
+    if (overlayLifecycleStopped) return;
     const nowMs = Date.now();
     const delayMs = eventQueue.releaseDelay?.(nowMs);
     if (delayMs == null || eventQueue.size() < 1) {
@@ -4204,6 +4215,7 @@
     if (queueWakeTimer != null) window.clearTimeout(queueWakeTimer);
     queueWakeDeadline = deadline;
     queueWakeTimer = window.setTimeout(() => {
+      if (overlayLifecycleStopped) return;
       const expectedDeadline = queueWakeDeadline;
       queueWakeTimer = null;
       queueWakeDeadline = 0;
@@ -4214,12 +4226,12 @@
     }, Math.max(1, deadline - nowMs));
   };
   const drainQueue = async logicalReleaseMs => {
-    if (queueRunning || !snapshotReady) return;
+    if (overlayLifecycleStopped || queueRunning || !snapshotReady) return;
     queueRunning = true;
     let releaseMs = Number.isFinite(Number(logicalReleaseMs))
       ? Number(logicalReleaseMs)
       : null;
-    while (snapshotReady) {
+    while (snapshotReady && !overlayLifecycleStopped) {
       const next = eventQueue.shift(releaseMs ?? Date.now());
       releaseMs = null;
       if (!next) break;
@@ -4227,9 +4239,10 @@
       if (!snapshotReady) break;
     }
     queueRunning = false;
-    scheduleQueueWake();
+    if (!overlayLifecycleStopped) scheduleQueueWake();
   };
   const enqueue = (type, data) => {
+    if (overlayLifecycleStopped) return;
     if (window.StreamMonstersOverlayRuntime.isEggStageEvent(type)) {
       if (!bufferReconnectEggDelta(type, data)) {
         eggStageView.applyEvent(type, data);
@@ -4252,6 +4265,7 @@
     drainQueue();
   };
   const sendOverlayHeartbeat = async () => {
+    if (overlayLifecycleStopped) return;
     try {
       const payload = window.StreamMonstersOverlayRuntime.overlayHeartbeatPayload({
         layout:layoutController.current()?.layout,
@@ -4269,11 +4283,12 @@
     } catch (_) {}
   };
   sendOverlayHeartbeat();
-  let overlayLifecycleStopped = false;
   let overlayHeartbeatTimer = window.setInterval(sendOverlayHeartbeat, 5_000);
-  const stopOverlayLifecycle = () => {
+  const stopOverlayLifecycle = event => {
+    if (event?.persisted === true) return;
     if (overlayLifecycleStopped) return;
     overlayLifecycleStopped = true;
+    snapshotReady = false;
     if (overlayHeartbeatTimer != null) {
       window.clearInterval(overlayHeartbeatTimer);
       overlayHeartbeatTimer = null;
@@ -4290,17 +4305,25 @@
     }
     clearReconnectEggSnapshot();
     activeReconnectCycle = 0;
+    if (reconnectController) reconnectController.dispose();
+    else eventQueue.beginSnapshot();
     phaseObserver.disconnect();
+    window.removeEventListener('resize', handleOverlayResize);
     arenaView.destroy?.();
     eggStageView.destroy?.();
     battleEffectsRenderer.destroy?.();
     effectsRenderer.destroy?.();
+    registeredSocketListeners.forEach(([eventName, handler]) => {
+      socket?.off?.(eventName, handler);
+    });
+    registeredSocketListeners.length = 0;
+    socket?.disconnect?.();
+    window.removeEventListener('pagehide', stopOverlayLifecycle);
   };
-  window.addEventListener('pagehide', stopOverlayLifecycle, { once:true });
-  window.addEventListener('beforeunload', stopOverlayLifecycle, { once:true });
-  const socket = typeof io === 'function' ? io() : null;
+  window.addEventListener('pagehide', stopOverlayLifecycle);
+  socket = typeof io === 'function' ? io() : null;
   if (!socket) return;
-  const reconnectController = window.StreamMonstersOverlayRuntime.createReconnectController({
+  reconnectController = window.StreamMonstersOverlayRuntime.createReconnectController({
     queue: eventQueue,
     loadSnapshot: async (signal, requestGeneration) => {
       const response = await fetch('/api/stream-monsters/state', { signal });
@@ -4386,8 +4409,15 @@
     'streammonsters:chat_result':'chat_result',
     'streammonsters:tutorial_hint':'tutorial_hint'
   };
-  Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
-  socket.on('streammonsters:config_updated', data => {
+  const registerSocketListener = (eventName, handler) => {
+    socket.on(eventName, handler);
+    registeredSocketListeners.push([eventName, handler]);
+  };
+  Object.entries(eventTypes).forEach(([eventName, type]) => {
+    registerSocketListener(eventName, data => enqueue(type, data));
+  });
+  registerSocketListener('streammonsters:config_updated', data => {
+    if (overlayLifecycleStopped) return;
     applyEggShelfVisibleCount(data?.config);
     const layerPresentation = applyLayerPresentation(data?.config || {});
     const audioChannels = data?.config?.audioChannels || {};
@@ -4396,20 +4426,23 @@
       master:{ ...(audioChannels.master || {}), enabled:false }
     });
   });
-  socket.on('connect', async () => {
+  const handleSocketConnect = async () => {
+    if (overlayLifecycleStopped) return;
     const reconnectCycle = beginReconnectEggSnapshot(
       reconnectController.generation() + 1
     );
     snapshotReady = false;
     const completed = await reconnectController.reconnect();
-    if (reconnectCycle !== activeReconnectCycle) return;
+    if (overlayLifecycleStopped || reconnectCycle !== activeReconnectCycle) return;
     snapshotReady = reconnectController.isSnapshotReady();
     if (completed) {
       drainQueue();
     } else {
       clearReconnectEggSnapshot(reconnectCycle);
     }
-  });
+  };
+  socket.on('connect', handleSocketConnect);
+  registeredSocketListeners.push(['connect', handleSocketConnect]);
 })();
 </script>
 </body>

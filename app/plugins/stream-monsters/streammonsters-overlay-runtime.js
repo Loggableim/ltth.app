@@ -1421,20 +1421,32 @@
     let generation = 0;
     let controller = null;
     let snapshotReady = false;
+    let disposed = false;
 
     async function reconnect() {
+      if (disposed) return false;
       generation += 1;
       const requestGeneration = generation;
       snapshotReady = false;
       queue.beginSnapshot();
       controller?.abort();
-      controller = new AbortController();
+      const requestController = new AbortController();
+      controller = requestController;
       try {
-        const payload = await loadSnapshot(controller.signal, requestGeneration);
-        if (requestGeneration !== generation || controller.signal.aborted) return false;
+        const payload = await loadSnapshot(requestController.signal, requestGeneration);
+        if (
+          disposed ||
+          requestGeneration !== generation ||
+          requestController.signal.aborted
+        ) return false;
         queue.prependSnapshot(payload, Date.now());
       } catch (error) {
-        if (requestGeneration !== generation || controller.signal.aborted || error?.name === 'AbortError') {
+        if (
+          disposed ||
+          requestGeneration !== generation ||
+          requestController.signal.aborted ||
+          error?.name === 'AbortError'
+        ) {
           return false;
         }
         queue.prependSnapshot(
@@ -1442,13 +1454,24 @@
           Date.now()
         );
       }
-      if (requestGeneration !== generation) return false;
+      if (disposed || requestGeneration !== generation) return false;
       snapshotReady = true;
       return true;
     }
 
+    function dispose() {
+      if (disposed) return;
+      disposed = true;
+      generation += 1;
+      snapshotReady = false;
+      controller?.abort();
+      controller = null;
+      queue?.beginSnapshot?.();
+    }
+
     return {
       reconnect,
+      dispose,
       isSnapshotReady: () => snapshotReady,
       generation: () => generation
     };
