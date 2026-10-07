@@ -734,13 +734,13 @@ Function CheckDiskSpace
   
   ; Get free space on drive (in KB)
   ${GetRoot} "$INSTDIR" $1
-  ${DriveSpace} "$1" "/D=F /S=K" $2 $3
+  ${DriveSpace} "$1" "/D=F /S=K" $2
   
   ; Convert required MB to KB
   IntOp $4 ${MIN_DISK_SPACE_MB} * 1024
   
   ; Compare available space with required space
-  IntCmp $2 $4 space_ok space_ok space_error
+  IntCmp $2 $4 space_ok space_error space_ok
   
 space_error:
   ; Convert KB to MB for display

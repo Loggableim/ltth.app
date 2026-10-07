@@ -9,11 +9,12 @@ REM Environment Variables (optional):
 REM   SIGNTOOL_PATH - Path to signtool.exe (auto-detected if not set)
 REM   TIMESTAMP_URL - Timestamp server URL (default: DigiCert)
 REM   SIGN_ENABLED  - Set to "1" to enable signing (default: disabled)
+REM   SIGN_CERT_SHA1 - Select the intended certificate explicitly when provided
 REM ============================================================================
 
 REM Check if signing is enabled
 if not "%SIGN_ENABLED%"=="1" (
-    echo [INFO] Code signing is disabled (SIGN_ENABLED not set to 1)
+    echo [INFO] Code signing is disabled ^(SIGN_ENABLED not set to 1^)
     echo [INFO] To enable signing, set SIGN_ENABLED=1 before building
     exit /b 0
 )
@@ -104,9 +105,13 @@ REM      /n "Certificate Subject Name" or /sha1 "Certificate Thumbprint"
 REM /fd sha256 = file digest algorithm
 REM /tr = RFC 3161 timestamp server
 REM /td sha256 = timestamp digest algorithm
-"%SIGNTOOL_PATH%" sign /a /fd sha256 /tr "%TIMESTAMP_URL%" /td sha256 "%FILE_TO_SIGN%"
+if defined SIGN_CERT_SHA1 (
+    "%SIGNTOOL_PATH%" sign /sha1 "%SIGN_CERT_SHA1%" /fd sha256 /tr "%TIMESTAMP_URL%" /td sha256 "%FILE_TO_SIGN%"
+) else (
+    "%SIGNTOOL_PATH%" sign /a /fd sha256 /tr "%TIMESTAMP_URL%" /td sha256 "%FILE_TO_SIGN%"
+)
 
-if %ERRORLEVEL% == 0 (
+if not errorlevel 1 (
     echo.
     echo [SUCCESS] File signed successfully
     echo.
@@ -115,7 +120,7 @@ if %ERRORLEVEL% == 0 (
     echo [INFO] Verifying signature...
     "%SIGNTOOL_PATH%" verify /pa "%FILE_TO_SIGN%"
     
-    if %ERRORLEVEL% == 0 (
+    if not errorlevel 1 (
         echo [SUCCESS] Signature verified
     ) else (
         echo [ERROR] Signature verification failed

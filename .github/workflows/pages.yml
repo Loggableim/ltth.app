@@ -57,6 +57,26 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Fetch version-matched app download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c 'import json; print(json.load(open("version.json"))["downloadVersion"])')
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern ltth_latest.zip --pattern ltth_latest.json --dir "$RUNNER_TEMP/verified-download"
+          python3 - "$RUNNER_TEMP/verified-download" <<'PY'
+          import hashlib, json, pathlib, shutil, sys
+          directory = pathlib.Path(sys.argv[1])
+          manifest = json.loads((directory / 'ltth_latest.json').read_text())
+          version = json.loads(pathlib.Path('version.json').read_text())['downloadVersion']
+          archive = directory / 'ltth_latest.zip'
+          if (manifest.get('version') != version or manifest.get('tag') != 'v' + version
+              or manifest.get('component') != 'ltth_latest.zip'
+              or manifest.get('bytes') != archive.stat().st_size
+              or manifest.get('sha256') != hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()):
+              raise SystemExit('Release download metadata/hash mismatch')
+          shutil.copyfile(archive, 'app/ltth_latest.zip')
+          PY
+
       - name: Build website bundle
         run: python3 scripts/build_pages_bundle.py --output "$RUNNER_TEMP/pages-site"
 
