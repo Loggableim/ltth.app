@@ -32,11 +32,11 @@ Die Hauptüberschrift benennt TikTok LIVE und den konkreten Nutzen. Der bisherig
 
 Vorgeschlagene deutsche H1:
 
-> Dein TikTok LIVE: Alerts, Automationen und OBS-Overlays.
+> TikTok LIVE Alerts & OBS-Overlays.
 
 Vorgeschlagene englische H1:
 
-> TikTok LIVE alerts, automations and OBS overlays.
+> TikTok LIVE alerts & OBS overlays.
 
 Deutscher Beschreibungstext:
 

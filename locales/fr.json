@@ -1108,7 +1108,7 @@
     "hero": {
       "eyebrow": "TON CENTRE DE CONTRÔLE TIKTOK LIVE",
       "titleFirst": "TikTok LIVE",
-      "titleSecond": "alertes, automatisations et overlays OBS",
+      "titleSecond": "alertes et overlays OBS",
       "description": "Gère les événements live, les sons et les plugins dans un espace de travail local. Connecte ton stream TikTok LIVE et personnalise ton setup avec des overlays OBS.",
       "primaryCta": "Télécharger",
       "secondaryCta": "Voir les plugins",
