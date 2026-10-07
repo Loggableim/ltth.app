@@ -1255,6 +1255,106 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     expect(engine.getState()).toBe('idle');
   });
 
+  test('shutdown requests acknowledged quit and waits for the owned child close', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const socket = {
+      destroyed: false,
+      destroy() { this.destroyed = true; }
+    };
+    const child = Object.assign(new EventEmitter(), {
+      pid: 778,
+      exitCode: null,
+      signalCode: null,
+      kill: jest.fn()
+    });
+    engine.process = child;
+    engine.socket = socket;
+    engine._processGeneration = 1;
+    engine._socketGeneration = 1;
+    engine._ownedPids.add(child.pid);
+    child.on('close', (code, signal) => engine._handleProcessClose(child, socket, 1, code, signal));
+    engine._sendCommand = jest.fn(async (command, options) => {
+      expect(command).toEqual(['quit']);
+      expect(options).toEqual(expect.objectContaining({ waitForResponse: true }));
+      child.exitCode = 0;
+      child.signalCode = null;
+      child.emit('close', 0, null);
+      return { error: 'success' };
+    });
+
+    await engine.shutdown();
+
+    expect(engine._sendCommand).toHaveBeenCalledTimes(1);
+    expect(spawn).not.toHaveBeenCalled();
+    expect(child.kill).not.toHaveBeenCalled();
+    expect(child.exitCode).toBe(0);
+    expect(engine.process).toBeNull();
+    expect(engine._ownedPids.has(child.pid)).toBe(false);
+    expect(socket.destroyed).toBe(true);
+  });
+
+  test('does not send quit or terminate an unowned child during shutdown', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const socket = {
+      destroyed: false,
+      destroy() { this.destroyed = true; }
+    };
+    const child = Object.assign(new EventEmitter(), {
+      pid: 779,
+      exitCode: null,
+      kill: jest.fn()
+    });
+    engine.process = child;
+    engine.socket = socket;
+    engine._sendCommand = jest.fn();
+    const terminate = jest.spyOn(engine, '_terminateProcess');
+
+    await engine.shutdown();
+
+    expect(engine._sendCommand).not.toHaveBeenCalled();
+    expect(terminate).not.toHaveBeenCalled();
+    expect(spawn).not.toHaveBeenCalled();
+    expect(child.kill).not.toHaveBeenCalled();
+    expect(engine._ownedPids.size).toBe(0);
+    expect(socket.destroyed).toBe(true);
+  });
+
+  test('falls back to bounded owned-process termination when quit is not acknowledged', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const socket = {
+      destroyed: false,
+      destroy() { this.destroyed = true; }
+    };
+    const child = Object.assign(new EventEmitter(), {
+      pid: 780,
+      exitCode: null,
+      signalCode: null,
+      kill: jest.fn()
+    });
+    engine.process = child;
+    engine.socket = socket;
+    engine._processGeneration = 1;
+    engine._socketGeneration = 1;
+    engine._ownedPids.add(child.pid);
+    child.on('close', (code, signal) => engine._handleProcessClose(child, socket, 1, code, signal));
+    engine._sendCommand = jest.fn().mockRejectedValue(new Error('quit acknowledgement timed out'));
+    const terminate = jest.spyOn(engine, '_terminateProcess').mockImplementation(async (ownedChild, options) => {
+      expect(ownedChild).toBe(child);
+      expect(options).toEqual(expect.objectContaining({ waitForClose: true, timeoutMs: expect.any(Number) }));
+      child.exitCode = 0;
+      child.signalCode = null;
+      child.emit('close', 0, null);
+      return true;
+    });
+
+    await engine.shutdown();
+
+    expect(terminate).toHaveBeenCalledTimes(1);
+    expect(child.exitCode).toBe(0);
+    expect(engine._ownedPids.has(child.pid)).toBe(false);
+    expect(socket.destroyed).toBe(true);
+  });
+
   test('shutdown is terminal and rejects later starts', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
 

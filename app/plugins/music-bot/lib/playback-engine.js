@@ -427,32 +427,48 @@ class PlaybackEngine extends EventEmitter {
     this._cancelActiveFade();
     const socket = this.socket;
     const child = this.process;
-    if (socket) {
-      socket.destroy();
-      if (this.socket === socket) {
-        this.socket = null;
-        this._socketGeneration = 0;
-      }
-    }
     this._rejectPendingCommands(new Error('mpv playback engine was shut down'));
     if (child && this._isLiveChild(child)) {
       this._expectedProcessStops.add(child);
-      child.once?.('close', () => {
-        this._shuttingDown = false;
-      });
-      if (this.process === child) {
-        this.process = null;
+      const pid = Number(child.pid);
+      const ownsChild = Number.isInteger(pid) && this._ownedPids.has(pid);
+      const shutdownDeadline = this._now() + 2000;
+      let closedGracefully = false;
+
+      if (ownsChild && socket && !socket.destroyed) {
+        const closeWait = this._waitForChildClose(child, 1000);
+        try {
+          const response = await this._sendCommand(['quit'], {
+            waitForResponse: true,
+            timeoutMs: 1000
+          });
+          if (response?.error === 'success') {
+            const result = await closeWait.promise;
+            closedGracefully = result.closed && result.code === 0 && result.signal == null;
+          }
+        } catch (_) {
+          // A failed or unacknowledged quit falls through to owned-process cleanup.
+        }
+        closeWait.cancel();
       }
-      await this._terminateProcess(child, {
-        waitForClose: Number.isInteger(child.pid),
-        timeoutMs: 2000
-      });
+
+      if (!closedGracefully && this._isLiveChild(child) && ownsChild) {
+        const remainingMs = Math.max(1, shutdownDeadline - this._now());
+        await this._terminateProcess(child, { waitForClose: true, timeoutMs: remainingMs });
+      }
+
+      if (this.process === child) this.process = null;
     } else {
-      this._shuttingDown = false;
       if (this.process === child) {
         this.process = null;
       }
     }
+    if (socket && !socket.destroyed) socket.destroy();
+    if (this.socket === socket) {
+      this.socket = null;
+      this._socketGeneration = 0;
+    }
+    this._shuttingDown = false;
     if (this.ipcPath && fs.existsSync(this.ipcPath)) {
       fs.unlinkSync(this.ipcPath);
     }
@@ -514,11 +530,37 @@ class PlaybackEngine extends EventEmitter {
     return Boolean(child && (child.exitCode === null || child.exitCode === undefined));
   }
 
+  _waitForChildClose(child, timeoutMs) {
+    if (!this._isLiveChild(child)) {
+      return { promise: Promise.resolve({ closed: true, code: child?.exitCode, signal: child?.signalCode }), cancel() {} };
+    }
+
+    let settled = false;
+    let timeout = null;
+    let resolveWait;
+    const promise = new Promise((resolve) => { resolveWait = resolve; });
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) this._clearTimeout(timeout);
+      child.removeListener?.('close', onClose);
+      resolveWait(result);
+    };
+    const onClose = (code, signal) => finish({ closed: true, code, signal });
+    child.once?.('close', onClose);
+    timeout = this._setTimeout(() => finish({ closed: false, code: null, signal: null }), Math.max(1, Number(timeoutMs) || 1));
+
+    return {
+      promise,
+      cancel: () => finish({ closed: false, code: null, signal: null })
+    };
+  }
+
   async _terminateProcess(child, { waitForClose = false, timeoutMs = 2000 } = {}) {
     if (!child || !this._isLiveChild(child)) return true;
     const hasPid = Number.isInteger(child.pid);
     const isOwnedPid = hasPid && this._ownedPids.has(child.pid);
-    if (hasPid && !isOwnedPid) return false;
+    if (!isOwnedPid) return false;
     const boundedTimeoutMs = Math.min(Math.max(Number(timeoutMs) || 2000, 1), 2000);
     let closePromise = null;
     if (waitForClose && typeof child.once === 'function') {

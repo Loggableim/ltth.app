@@ -178,6 +178,9 @@ integrationTest('drives real null-audio MPV through direct Music Bot control rou
     expect(stopResponse.payload).toEqual({ success: true });
     expect(controller.getNowPlaying()).toBeNull();
     expect(controller.getState()).toBe('idle');
+    expect(child.exitCode).toBe(0);
+    expect(child.signalCode).toBeNull();
+    expect(engine._ownedPids.size).toBe(0);
     expect(queueManager.getQueue()).toEqual([]);
     expect(plugin.autoDJ.reset).toHaveBeenCalledTimes(1);
   } finally {

@@ -556,6 +556,36 @@ describe('Music Bot orphan reconciliation', () => {
     expect(processRegistry.cleanupMarked).toHaveBeenCalledWith({ timeoutMs: 2000 });
   });
 
+  test('waits for slot shutdown before scanning marked processes', async () => {
+    const order = [];
+    const processRegistry = {
+      findMarkedProcesses: jest.fn(async () => []),
+      cleanupMarked: jest.fn(async () => {
+        order.push('marked-process-scan');
+        return { found: [], killed: [], remaining: [] };
+      })
+    };
+    const controller = createController(processRegistry);
+    attachOwnedSlot(controller, {
+      pid: 4802,
+      state: 'playing',
+      nowPlaying: { id: 'active-track', title: 'Active track' },
+      shutdown: async () => {
+        order.push('slot-shutdown-start');
+        await Promise.resolve();
+        order.push('slot-shutdown-complete');
+      }
+    });
+
+    await controller.shutdown();
+
+    expect(order).toEqual([
+      'slot-shutdown-start',
+      'slot-shutdown-complete',
+      'marked-process-scan'
+    ]);
+  });
+
   test('does not scan or kill marked processes while controller playback is active', async () => {
     const processRegistry = {
       findMarkedProcesses: jest.fn(async () => [markedProcess(4901)]),

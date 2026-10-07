@@ -400,10 +400,10 @@ class PlaybackController extends EventEmitter {
     this.lifecycle = 'destroying';
     this._abortActiveTransition('shutdown');
     return this._enqueueIntent('shutdown', async () => {
-      await Promise.all([
-        this._terminateAllSlots(),
-        this._cleanupMarkedProcesses()
-      ]);
+      // Let each owned slot finish its acknowledged IPC quit before the
+      // registry scans for any remaining marked orphan processes.
+      await this._terminateAllSlots();
+      await this._cleanupMarkedProcesses();
       this.lifecycle = 'destroyed';
       this.transportState = 'idle';
     });
