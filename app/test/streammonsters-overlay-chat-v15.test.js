@@ -4,6 +4,9 @@ const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
 const chatRuntime = require('../plugins/stream-monsters/streammonsters-chat-view');
+const PublicEventProjector = require(
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
+);
 
 function fixture({
   durationMs = 12_000,
@@ -65,6 +68,7 @@ function fixture({
         detailText: detail.textContent,
         detailHtml: detail.outerHTML,
         compactText: compact.textContent,
+        compactHtml: compact.outerHTML,
         cards: [...detail.querySelectorAll('.sm-collection-card')].map(card => card.textContent)
       });
       if (onWait) await onWait({ milliseconds, detail, compact });
@@ -115,6 +119,8 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
       html.indexOf('const showCard = async'),
       html.indexOf('const showHype = async')
     );
+    const showToastSource = html.match(/const showToast = async \(message,[\s\S]*?\n  \};/)?.[0] || '';
+    const giftComboSource = html.match(/if \(type === 'gift_combo'\)[\s\S]*?\n    \}\);/)?.[0] || '';
 
     expect(html).toContain('id="chat-detail"');
     expect(html).toContain('data-placement="upper"');
@@ -139,6 +145,8 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(html).not.toContain('value(data?.userId');
     expect(showChatSource).not.toContain('data?.userId');
     expect(showChatSource).not.toContain('const userId');
+    expect(showToastSource).toContain("node('toast').textContent = message");
+    expect(giftComboSource).toContain('publicDisplayName(data)');
   });
 
   test('provides a resettable four-stat evolution panel and upper Elemental Hour card', () => {
@@ -236,6 +244,77 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(snapshots[0].compactText).toContain(expected);
     expect(snapshots[0].compactText).not.toContain('canonical-secret');
     expect(snapshots[0].detailHtml).not.toContain('canonical-secret');
+  });
+
+  test.each([
+    {
+      username: '<img src=x onerror="window.pwned=true">',
+      userId: 'private-user-id',
+      result: {
+        status: 'unknown',
+        messageKey: 'commandUnavailable',
+        hint: '<svg onload="window.pwned=true">'
+      }
+    },
+    {
+      username: '12345678901234567890',
+      nickname: null,
+      userId: 'private-user-id',
+      result: {
+        status: null,
+        messageKey: '<script>window.pwned=true</script>',
+        params: { slot: '<b>invalid slot</b>' }
+      }
+    }
+  ])('renders projected socket chat payloads as text without exposing IDs', async input => {
+    const projector = new PublicEventProjector();
+    const payload = projector.project('streammonsters:chat_result', input);
+    const { dom, view, snapshots } = fixture();
+
+    await view.show(payload);
+
+    const rendered = snapshots[0];
+    expect(rendered.compactHtml).not.toMatch(/<(?:img|svg|script|b)\b/i);
+    expect(rendered.detailHtml).not.toMatch(/<(?:img|svg|script|b)\b/i);
+    expect(rendered.compactHtml).not.toContain('private-user-id');
+    expect(rendered.detailHtml).not.toContain('private-user-id');
+    expect(dom.window.pwned).toBeUndefined();
+    if (input.username?.startsWith('<img')) {
+      expect(rendered.compactText).toContain(input.username);
+      expect(rendered.compactText).toContain(input.result.hint);
+    } else {
+      expect(rendered.compactText).toContain('Viewer');
+    }
+    dom.window.close();
+  });
+
+  test('projects gift-combo display data without public IDs or provider URLs', () => {
+    const projector = new PublicEventProjector();
+    const projected = projector.project('streammonsters:gift_combo', {
+      username: '<b>Viewer</b>',
+      userId: 'private-user-id',
+      previousUserId: 'private-previous-user-id',
+      gift: {
+        giftId: 4321,
+        giftName: '<script>Gift</script>',
+        element: 'Ember',
+        effect: 'spark',
+        imageUrl: 'https://provider.invalid/private.png'
+      },
+      hypeBonus: 20
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      displayName: '<b>Viewer</b>',
+      gift: {
+        giftName: '<script>Gift</script>',
+        element: 'Ember',
+        effect: 'spark',
+        imageUrl: null
+      },
+      hypeBonus: 20
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(/private-user-id|4321|provider\.invalid/);
   });
 
   test.each([1, 6])('shows %i owned monster cards together in the upper collection view', async count => {

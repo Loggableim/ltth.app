@@ -4255,6 +4255,7 @@
       );
     }
     const eventId = value(data?.eventId, '').trim();
+    if (eventId && seenPublicEventIds.has(eventId)) return;
     if (eventId) {
       seenPublicEventIds.add(eventId);
       while (seenPublicEventIds.size > 512) {
@@ -4307,6 +4308,7 @@
     activeReconnectCycle = 0;
     if (reconnectController) reconnectController.dispose();
     else eventQueue.beginSnapshot();
+    seenPublicEventIds.clear();
     phaseObserver.disconnect();
     window.removeEventListener('resize', handleOverlayResize);
     arenaView.destroy?.();

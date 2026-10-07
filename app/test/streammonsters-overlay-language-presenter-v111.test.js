@@ -13,6 +13,11 @@ const ArenaDirector = require(
 const EggStageView = require(
   '../plugins/stream-monsters/streammonsters-egg-stage-view'
 );
+const ChatView = require('../plugins/stream-monsters/streammonsters-chat-view');
+const PublicEventProjector = require(
+  '../plugins/stream-monsters/backend/streammonsters/public-event-projector'
+);
+const StreamMonstersPlugin = require('../plugins/stream-monsters');
 
 const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const overlayHtml = fs.readFileSync(
@@ -29,11 +34,32 @@ const localeCatalogs = Object.fromEntries(['de', 'en', 'es', 'fr'].map(locale =>
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+function createProducerEnvelope(projector, eventType, inputPayload) {
+  const emitted = [];
+  const plugin = Object.create(StreamMonstersPlugin.prototype);
+  Object.assign(plugin, {
+    api:{ emit:(type, payload) => emitted.push({ type, payload }) },
+    streamMonstersPublicEventProjector:projector,
+    streamMonstersStore:null,
+    streamMonstersEngine:null,
+    recordStreamMonstersOnboardingEvent:() => [],
+    streamMonstersPrimaryCta:() => null,
+    emitStreamMonstersTutorialHint:() => null,
+    logStructured:() => {}
+  });
+  plugin.emitStreamMonsters(eventType, inputPayload);
+  return emitted.find(entry => entry.type === eventType)?.payload;
+}
+
 async function createPresenterHarness({
   primaryLocale = 'de',
   locales = [primaryLocale],
   secondsPerLocale = 5,
-  useRealEggStage = false
+  useRealEggStage = false,
+  useRealChatView = false,
+  initialSnapshot = null,
+  trackSetInstances = false,
+  trackQueue = false
 } = {}) {
   const socketHandlers = new Map();
   const timers = new Map();
@@ -42,6 +68,23 @@ async function createPresenterHarness({
   const arenaLocales = [];
   const arenaEvents = [];
   const eggEvents = [];
+  const chatDisplays = [];
+  const trackedSets = [];
+  let overlayQueue = null;
+  let snapshotState = initialSnapshot || {
+    hype:{ points:0 },
+    config:{
+      hatchDurationMs:90_000,
+      overlayLanguage:{ primaryLocale, locales, secondsPerLocale }
+    },
+    gcce:{
+      commandPrefix:'!',
+      registeredCommands:[],
+      commandReferences:{ adopt:'!adopt', hatch:'!hatch', eggs:'!eier' }
+    },
+    battle:{ matches:[] },
+    eggStage:[]
+  };
   const schedule = (callback, milliseconds = 0) => {
     const id = ++timerId;
     const delayMs = Math.max(0, Number(milliseconds) || 0);
@@ -56,6 +99,15 @@ async function createPresenterHarness({
     url:'http://localhost:3000/plugins/streamalchemy/streammonsters-overlay.html',
     runScripts:'dangerously',
     beforeParse(window) {
+      if (trackSetInstances) {
+        const NativeSet = window.Set;
+        window.Set = class TrackedSet extends NativeSet {
+          constructor(...args) {
+            super(...args);
+            trackedSets.push(this);
+          }
+        };
+      }
       window.Date.now = () => currentNowMs;
       window.setTimeout = schedule;
       window.clearTimeout = id => timers.delete(id);
@@ -96,30 +148,15 @@ async function createPresenterHarness({
         if (url.includes('/overlay/heartbeat')) {
           return { ok:true, status:200, json:async () => ({ success:true }) };
         }
-        return {
-          ok:true,
-          status:200,
-          json:async () => ({
-            hype:{ points:0 },
-            config:{
-              hatchDurationMs:90_000,
-              overlayLanguage:{ primaryLocale, locales, secondsPerLocale }
-            },
-            gcce:{
-              commandPrefix:'!',
-              registeredCommands:[],
-              commandReferences:{
-                adopt:'!adopt',
-                hatch:'!hatch',
-                eggs:'!eier'
-              }
-            },
-            battle:{ matches:[] },
-            eggStage:[]
-          })
-        };
+        return { ok:true, status:200, json:async () => snapshotState };
       });
-      window.StreamMonstersOverlayRuntime = OverlayRuntime;
+      window.StreamMonstersOverlayRuntime = trackQueue ? {
+        ...OverlayRuntime,
+        createPriorityQueue:options => {
+          overlayQueue = OverlayRuntime.createPriorityQueue(options);
+          return overlayQueue;
+        }
+      } : OverlayRuntime;
       window.StreamMonstersPresentation = Presentation;
       window.StreamMonstersPortraitArena = {
         normalizeVariant(value, fallback = 'classic') {
@@ -193,7 +230,19 @@ async function createPresenterHarness({
               : null
           )
         };
-      window.StreamMonstersChatView = {
+      window.StreamMonstersChatView = useRealChatView ? {
+        ...ChatView,
+        createChatView:options => {
+          const view = ChatView.createChatView(options);
+          return {
+            ...view,
+            show:payload => {
+              chatDisplays.push(payload);
+              return view.show(payload);
+            }
+          };
+        }
+      } : {
         createChatView:() => ({ show:async () => {} }),
         displayName:(payload, fallback) => (
           payload?.displayName || payload?.playerName ||
@@ -265,6 +314,7 @@ async function createPresenterHarness({
   };
 
   return {
+    dom,
     arenaLocales,
     arenaEvents,
     eggEvents,
@@ -275,6 +325,15 @@ async function createPresenterHarness({
       visible:dom.window.document.getElementById('toast').classList.contains('visible'),
       text:dom.window.document.getElementById('toast').textContent
     }),
+    chat:() => ({
+      compactText:dom.window.document.getElementById('chat-card').textContent,
+      compactHtml:dom.window.document.getElementById('chat-card').innerHTML,
+      detailText:dom.window.document.getElementById('chat-detail').textContent,
+      detailHtml:dom.window.document.getElementById('chat-detail').innerHTML
+    }),
+    chatDisplays,
+    trackedSetContaining:value => trackedSets.find(set => set.has(value)) || null,
+    overlayQueueSize:() => overlayQueue?.size() ?? null,
     activateBattle:() => {
       dom.window.document.getElementById('streammonsters-overlay')
         .dataset.battleActive = 'true';
@@ -297,6 +356,12 @@ async function createPresenterHarness({
       dom.window.document.getElementById('arena-skill-prompt').textContent = text;
     },
     now:() => currentNowMs,
+    setNow:nowMs => { currentNowMs = Number(nowMs) || currentNowMs; },
+    setSnapshot:snapshot => { snapshotState = snapshot; },
+    reconnect:async () => {
+      await socketHandlers.get('connect')();
+      for (let attempt = 0; attempt < 10; attempt += 1) await flush();
+    },
     shelf:() => ({
       total:Number(
         dom.window.document.getElementById('egg-shelf')?.dataset.total || 0
@@ -319,6 +384,308 @@ async function createPresenterHarness({
 }
 
 describe('Stream Monsters 1.11 critical overlay locale presenter', () => {
+  test('drains a projected chat_result Socket.IO payload through the original overlay DOM', async () => {
+    const payload = new PublicEventProjector().project('streammonsters:chat_result', {
+      username:'<img src=x onerror="window.pwned=true">',
+      userId:'private-user-id',
+      command:'unknown',
+      result:{
+        status:'unknown',
+        messageKey:'chatResultUnknown',
+        hint:'<svg onload="window.pwned=true">'
+      }
+    });
+    payload.eventId = 'chat-event-synthetic';
+    payload.correlationId = 'chat-correlation-synthetic';
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en'],
+      useRealChatView:true
+    });
+    try {
+      harness.setNow(10_000);
+      await harness.emit('streammonsters:chat_result', payload);
+      const chat = harness.chat();
+      expect(chat.compactText).toContain(payload.displayName);
+      expect(chat.compactText).toContain(payload.result.hint);
+      expect(chat.compactHtml).not.toMatch(/<(?:img|svg|script)\b/i);
+      expect(chat.detailHtml).not.toContain('private-user-id');
+      expect(harness.dom.window.pwned).toBeUndefined();
+    } finally {
+      harness.close();
+    }
+
+    const giftPayload = new PublicEventProjector().project('streammonsters:gift_combo', {
+      username:'<b>Gift Viewer</b>',
+      userId:'private-gift-user-id',
+      previousUserId:'private-previous-user-id',
+      gift:{ giftId:9876, giftName:'<script>Gift</script>' },
+      hypeBonus:20
+    });
+    giftPayload.eventId = 'gift-event-synthetic';
+    giftPayload.correlationId = 'gift-correlation-synthetic';
+    const giftHarness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en']
+    });
+    try {
+      giftHarness.setNow(10_000);
+      await giftHarness.emit('streammonsters:gift_combo', giftPayload);
+      expect(giftHarness.toast().text).toContain(giftPayload.displayName);
+      expect(giftHarness.dom.window.document.getElementById('toast').innerHTML)
+        .not.toMatch(/<(?:b|script)\b/i);
+      expect(giftHarness.toast().text).not.toContain('private-gift-user-id');
+      expect(giftHarness.toast().text).not.toContain('private-previous-user-id');
+      expect(giftHarness.dom.window.pwned).toBeUndefined();
+    } finally {
+      giftHarness.close();
+    }
+  });
+
+  test('deduplicates producer envelopes across reconnect, replays only fresh events, and stays inert after dispose', async () => {
+    const projector = new PublicEventProjector();
+    const envelope = (eventType, username, command = 'rank') => createProducerEnvelope(
+      projector,
+      eventType,
+      eventType === 'streammonsters:chat_result'
+        ? {
+            username,
+            userId:`private:${username}`,
+            command,
+            result:{ status:'unknown', messageKey:'chatResultUnknown' }
+          }
+        : {
+            username,
+            userId:`private:${username}`,
+            gift:{ giftId:77, giftName:'Rose', element:'Ember' },
+            hypeBonus:20
+          }
+    );
+    const chatType = 'streammonsters:chat_result';
+    const giftType = 'streammonsters:gift_combo';
+    const chatA = envelope(chatType, 'Chat Viewer');
+    const giftA = envelope(giftType, 'Gift Viewer');
+    const chatB = envelope(chatType, 'Fresh Chat Viewer');
+    const giftB = envelope(giftType, 'Fresh Gift Viewer');
+    [chatA, giftA, chatB, giftB].forEach(payload => {
+      expect(payload.eventId).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(payload.correlationId).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(JSON.stringify(payload)).not.toMatch(/private:/);
+    });
+
+    const initialSnapshot = {
+      hype:{ points:0 },
+      config:{
+        hatchDurationMs:90_000,
+        overlayLanguage:{ primaryLocale:'en', locales:['en'], secondsPerLocale:5 }
+      },
+      gcce:{ commandPrefix:'!', registeredCommands:[] },
+      battle:{ matches:[] },
+      eggStage:[],
+      eventCursor:10,
+      recentEvents:[]
+    };
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en'],
+      useRealChatView:true,
+      initialSnapshot
+    });
+    let giftDisplays = 0;
+    const observer = new harness.dom.window.MutationObserver(records => {
+      giftDisplays += records.reduce((count, record) => count + [...record.addedNodes]
+        .filter(node => node.nodeType === 3 && node.textContent.trim()).length, 0);
+    });
+    observer.observe(harness.dom.window.document.getElementById('toast'), { childList:true });
+    const drainPresentations = async () => {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (!await harness.runNextTimer()) break;
+      }
+      await flush();
+    };
+
+    try {
+      harness.setNow(10_000);
+      await harness.emit(chatType, chatA);
+      await drainPresentations();
+      await harness.emit(giftType, giftA);
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(1);
+      expect(giftDisplays).toBe(1);
+
+      harness.setNow(20_000);
+      await harness.emit(chatType, chatA);
+      await harness.emit(giftType, giftA);
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(1);
+      expect(giftDisplays).toBe(1);
+
+      harness.setSnapshot({
+        ...initialSnapshot,
+        eventCursor:14,
+        recentEvents:[
+          { sequence:11, eventId:chatA.eventId, correlationId:chatA.correlationId, type:chatType, payload:chatA },
+          { sequence:12, eventId:giftA.eventId, correlationId:giftA.correlationId, type:giftType, payload:giftA },
+          { sequence:13, eventId:chatB.eventId, correlationId:chatB.correlationId, type:chatType, payload:chatB },
+          { sequence:14, eventId:giftB.eventId, correlationId:giftB.correlationId, type:giftType, payload:giftB }
+        ]
+      });
+      harness.setNow(30_000);
+      await harness.reconnect();
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(2);
+      expect(harness.chatDisplays[1].displayName).toBe(chatB.displayName);
+      expect(giftDisplays).toBe(2);
+      expect(harness.toast().text).toContain(giftB.displayName);
+
+      harness.setNow(40_000);
+      await harness.emit(chatType, chatA);
+      await harness.emit(giftType, giftA);
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(2);
+      expect(giftDisplays).toBe(2);
+
+      harness.stopLifecycle();
+      await harness.emit(chatType, envelope(chatType, 'After Dispose'));
+      await harness.emit(giftType, envelope(giftType, 'After Dispose Gift'));
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(2);
+      expect(giftDisplays).toBe(2);
+    } finally {
+      observer.disconnect();
+      harness.close();
+    }
+  });
+
+  test('keeps the 512-ID overlay window bounded through stream changes and final dispose', async () => {
+    const projector = new PublicEventProjector();
+    const chatType = 'streammonsters:chat_result';
+    const chatEnvelope = username => createProducerEnvelope(projector, chatType, {
+      username,
+      userId:`private:${username}`,
+      command:'rank',
+      result:{ status:'unknown', messageKey:'chatResultUnknown' }
+    });
+    const initialSnapshot = {
+      hype:{ points:0 },
+      config:{
+        hatchDurationMs:90_000,
+        overlayLanguage:{ primaryLocale:'en', locales:['en'], secondsPerLocale:5 }
+      },
+      gcce:{ commandPrefix:'!', registeredCommands:[] },
+      battle:{ matches:[] },
+      eggStage:[],
+      eventCursor:10,
+      recentEvents:[]
+    };
+    const first = chatEnvelope('Window First');
+    const harness = await createPresenterHarness({
+      primaryLocale:'en',
+      locales:['en'],
+      useRealChatView:true,
+      initialSnapshot,
+      trackSetInstances:true,
+      trackQueue:true
+    });
+    const drainPresentations = async () => {
+      for (let attempt = 0; attempt < 80; attempt += 1) {
+        if (!await harness.runNextTimer()) break;
+      }
+      await flush();
+    };
+
+    try {
+      harness.setNow(10_000);
+      await harness.emit(chatType, first);
+      await drainPresentations();
+      const publicIds = harness.trackedSetContaining(first.eventId);
+      expect(publicIds).not.toBeNull();
+      expect(publicIds.size).toBe(1);
+
+      const burst = Array.from({ length:512 }, (_, index) => chatEnvelope(`Window Burst ${index + 1}`));
+      harness.setNow(20_000);
+      await harness.emitBurst(burst.map(payload => [chatType, payload]));
+      expect(publicIds.size).toBe(512);
+      expect(publicIds.has(first.eventId)).toBe(false);
+      expect(publicIds.has(burst.at(-1).eventId)).toBe(true);
+      await drainPresentations();
+
+      const beforeEvictedId = harness.chatDisplays.length;
+      harness.setNow(harness.now() + 20_000);
+      await harness.emit(chatType, first);
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(beforeEvictedId + 1);
+
+      const streamStart = createProducerEnvelope(
+        projector,
+        'streammonsters:stream_started',
+        { element:'Tide' }
+      );
+      await harness.emit('streammonsters:stream_started', streamStart);
+      await drainPresentations();
+
+      const staleFromPriorStream = chatEnvelope('Old Stream History');
+      harness.setSnapshot({
+        ...initialSnapshot,
+        eventCursor:5,
+        recentEvents:[{
+          sequence:5,
+          eventId:staleFromPriorStream.eventId,
+          correlationId:staleFromPriorStream.correlationId,
+          type:chatType,
+          payload:staleFromPriorStream
+        }]
+      });
+      const beforeLowerCursorReconnect = harness.chatDisplays.length;
+      await harness.reconnect();
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(beforeLowerCursorReconnect);
+      expect(publicIds.size).toBe(512);
+
+      const freshOnNewStream = chatEnvelope('New Stream Viewer');
+      harness.setSnapshot({
+        ...initialSnapshot,
+        eventCursor:11,
+        recentEvents:[{
+          sequence:11,
+          eventId:freshOnNewStream.eventId,
+          correlationId:freshOnNewStream.correlationId,
+          type:chatType,
+          payload:freshOnNewStream
+        }]
+      });
+      const beforeFreshStreamReplay = harness.chatDisplays.length;
+      harness.setNow(harness.now() + 20_000);
+      await harness.reconnect();
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(beforeFreshStreamReplay + 1);
+      expect(harness.chatDisplays.at(-1).displayName).toBe(freshOnNewStream.displayName);
+
+      const beforeKnownLiveDuplicate = harness.chatDisplays.length;
+      harness.setNow(harness.now() + 20_000);
+      await harness.emit(chatType, freshOnNewStream);
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(beforeKnownLiveDuplicate);
+
+      const freshLiveEvent = chatEnvelope('New Live Viewer');
+      await harness.emit(chatType, freshLiveEvent);
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(beforeKnownLiveDuplicate + 1);
+
+      const beforeDispose = harness.chatDisplays.length;
+      expect(harness.overlayQueueSize()).toBe(0);
+      expect(publicIds.size).toBe(512);
+      harness.stopLifecycle();
+      expect(harness.overlayQueueSize()).toBe(0);
+      expect(publicIds.size).toBe(0);
+      await harness.emit(chatType, chatEnvelope('After Dispose Viewer'));
+      await drainPresentations();
+      expect(harness.chatDisplays).toHaveLength(beforeDispose);
+    } finally {
+      harness.close();
+    }
+  });
+
   test.each([
     ['de', 'arenaChoiceSpecialNotCharged', /Special.*noch nicht/i],
     ['en', 'arenaChoiceAlreadyLocked', /already locked/i],

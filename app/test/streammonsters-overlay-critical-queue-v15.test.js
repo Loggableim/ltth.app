@@ -165,6 +165,28 @@ describe('Stream Monsters public critical overlay queue', () => {
     expect(queue.size()).toBeLessThanOrEqual(2);
   });
 
+  test('bounds the event-ID fingerprint window and clears it when a snapshot begins', () => {
+    const queue = runtime.createPriorityQueue({ maxSize:30 });
+    const enqueueAndDrain = eventId => {
+      expect(queue.enqueue('gift_combo', { eventId }, 1)).toBe(true);
+      expect(queue.shift(1)?.data?.eventId).toBe(eventId);
+    };
+
+    enqueueAndDrain('fingerprint-0');
+    expect(queue.enqueue('gift_combo', { eventId:'fingerprint-0' }, 2)).toBe(false);
+
+    for (let index = 1; index <= 120; index += 1) {
+      enqueueAndDrain(`fingerprint-${index}`);
+    }
+
+    // The default queue retains four fingerprints per soft queue slot (30 * 4).
+    enqueueAndDrain('fingerprint-0');
+    expect(queue.enqueue('gift_combo', { eventId:'fingerprint-120' }, 3)).toBe(false);
+
+    queue.beginSnapshot();
+    enqueueAndDrain('fingerprint-120');
+  });
+
   test('replays collection, mastery and mission completion after a reconnect', () => {
     const replay = runtime.replayableRecentEvents({ recentEvents: [
       { sequence: 1, type: 'streammonsters:collection_shown', payload: { cards: [] } },
