@@ -7,7 +7,22 @@
 
     const container = document.getElementById('minecraft-overlay');
     let socket = null;
+    const timers = new Set();
+    let disposed = false;
     const OVERLAY_I18N_PREFIX = 'plugins.minecraft-connect.minecraft_connect.overlay.';
+    const ACTION_NAMES = new Set([
+        'spawn_entity', 'give_item', 'change_weather', 'set_time',
+        'apply_potion_effect', 'post_chat_message', 'execute_command'
+    ]);
+
+    function scheduleTimeout(callback, delay) {
+        const timer = window.setTimeout(() => {
+            timers.delete(timer);
+            if (!disposed) callback();
+        }, delay);
+        timers.add(timer);
+        return timer;
+    }
 
     function interpolateOverlayFallback(fallback, params = {}) {
         return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
@@ -45,7 +60,14 @@
 
     // Connect to Socket.IO
     function connectSocket() {
-        socket = io();
+        if (typeof io !== 'function') return;
+        try {
+            socket = io();
+        } catch (error) {
+            console.error('[Minecraft Overlay] Socket unavailable', error);
+            return;
+        }
+        if (!socket || typeof socket.on !== 'function') return;
         
         socket.on('connect', () => {
             console.log('[Minecraft Overlay] Socket connected');
@@ -58,50 +80,63 @@
 
     // Show notification
     function showNotification(data) {
-        const { action, username, params } = data;
-        
-        // Create notification element
+        if (!data || typeof data !== 'object' || Array.isArray(data) || disposed) return;
+
+        const action = typeof data.action === 'string' && ACTION_NAMES.has(data.action)
+            ? data.action
+            : 'unknown';
+        const username = typeof data.username === 'string' ? data.username : '';
+        const params = data.params && typeof data.params === 'object' && !Array.isArray(data.params)
+            ? data.params
+            : {};
+
         const notification = document.createElement('div');
-        notification.className = `mc-notification ${action}`;
-        
-        // Get icon
+        notification.className = 'mc-notification';
+        if (ACTION_NAMES.has(action)) notification.classList.add(action);
+
         const icon = ACTION_ICONS[action] || ACTION_ICONS.default;
-        
-        // Format action name
         const actionName = formatActionName(action);
-        
-        // Format parameters
         const paramText = formatParameters(action, params);
-        
-        notification.innerHTML = `
-            <div class="mc-notification-header">
-                <div class="mc-notification-icon">${icon}</div>
-                <div class="mc-notification-title">${actionName}</div>
-            </div>
-            <div class="mc-notification-body">
-                ${paramText ? `<div class="mc-notification-action">${paramText}</div>` : ''}
-                ${username ? `<div class="mc-notification-user">${overlayText('triggered_by', 'Triggered by {username}', { username })}</div>` : ''}
-            </div>
-        `;
-        
-        // Add to container
+
+        const header = document.createElement('div');
+        header.className = 'mc-notification-header';
+        const iconElement = document.createElement('div');
+        iconElement.className = 'mc-notification-icon';
+        iconElement.textContent = icon;
+        const title = document.createElement('div');
+        title.className = 'mc-notification-title';
+        title.textContent = actionName;
+        header.append(iconElement, title);
+
+        const body = document.createElement('div');
+        body.className = 'mc-notification-body';
+        if (paramText) {
+            const actionElement = document.createElement('div');
+            actionElement.className = 'mc-notification-action';
+            actionElement.textContent = paramText;
+            body.appendChild(actionElement);
+        }
+        if (username) {
+            const userElement = document.createElement('div');
+            userElement.className = 'mc-notification-user';
+            userElement.textContent = overlayText('triggered_by', 'Triggered by {username}', { username });
+            body.appendChild(userElement);
+        }
+        notification.append(header, body);
         container.appendChild(notification);
-        
-        // Create particles
         createParticles(notification);
-        
-        // Remove after animation
-        setTimeout(() => {
+        scheduleTimeout(() => {
             notification.remove();
         }, 3000);
     }
 
     // Format action name
     function formatActionName(action) {
-        const fallback = action.split('_').map(word =>
+        const safeAction = ACTION_NAMES.has(action) ? action : 'unknown';
+        const fallback = safeAction.split('_').map(word =>
             word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
-        return overlayText(`actions.${action}`, fallback);
+        return overlayText(`actions.${safeAction}`, fallback);
     }
 
     // Format parameters
@@ -156,7 +191,7 @@
         const particleCount = 10;
         
         for (let i = 0; i < particleCount; i++) {
-            setTimeout(() => {
+            scheduleTimeout(() => {
                 const particle = document.createElement('div');
                 particle.className = 'mc-particle';
                 
@@ -171,12 +206,27 @@
                 element.appendChild(particle);
                 
                 // Remove after animation
-                setTimeout(() => {
+                scheduleTimeout(() => {
                     particle.remove();
                 }, 2500);
             }, i * 100);
         }
     }
+
+    function dispose() {
+        if (disposed) return;
+        disposed = true;
+        for (const timer of timers) window.clearTimeout(timer);
+        timers.clear();
+        if (socket && typeof socket.disconnect === 'function') socket.disconnect();
+        socket = null;
+        container.replaceChildren();
+    }
+
+    window.addEventListener('pagehide', event => {
+        if (event.persisted) return;
+        dispose();
+    });
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
