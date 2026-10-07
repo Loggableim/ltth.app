@@ -38,7 +38,6 @@
     "i18n:inventory": "node scripts/translation-inventory.js",
     "i18n:literals": "node scripts/check-i18n-literals.js",
     "i18n:literals:strict": "node scripts/check-i18n-literals.js --strict --files obs-webgpu.html",
-    "plugin:chatango:i18n": "node scripts/repair-chatango-locales.js",
     "plugin:config-import:i18n": "node scripts/repair-config-import-locales.js && node scripts/extend-config-import-ui-locales.js && node scripts/extend-config-import-ui-extra.js",
     "plugins:generated-i18n": "node scripts/repair-generated-plugin-locales.js",
     "app:dashboard:i18n": "node scripts/repair-dashboard-i18n.js",

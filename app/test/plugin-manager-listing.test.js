@@ -7,6 +7,7 @@ const express = require('express');
 const request = require('supertest');
 
 const { setupPluginRoutes } = require('../routes/plugin-routes');
+const PluginLoader = require('../modules/plugin-loader');
 
 function writePlugin(root, id, overrides = {}) {
     const pluginDir = path.join(root, id);
@@ -40,6 +41,9 @@ function createTestApp(pluginsDir, loadedPlugins = new Map()) {
         pluginsDir,
         plugins: loadedPlugins,
         state: {},
+        logger,
+        releasePolicy: { isClosedBetaId: () => false },
+        buildPluginInventory: PluginLoader.prototype.buildPluginInventory,
         getLocalizedDescription: (manifest) => manifest.description
     };
 
@@ -185,7 +189,7 @@ describe('Plugin Manager listing', () => {
     it('keeps the featured store plugin list aligned with the preinstalled set', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
 
-        assert(managerScript.includes("['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
+        assert(managerScript.includes("['goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
     });
 
     it('renders detail-drawer metadata and a contextual store action', () => {
