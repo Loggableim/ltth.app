@@ -317,7 +317,7 @@ class MusicResolver extends EventEmitter {
 
   async _resolvePlaylistUncached(url, index, signal) {
     const args = [
-      '--no-warnings', '--ignore-errors', '--skip-download',
+      '--ignore-config', '--no-warnings', '--ignore-errors', '--skip-download',
       '--playlist-items', String(index), '--format', 'bestaudio/best',
       '--print', '%(age_limit)s', '--print', '%(channel_id)s',
       '--print', '%(channel)s', '--print', '%(categories)s',
@@ -329,7 +329,7 @@ class MusicResolver extends EventEmitter {
 
   _directArgs(target) {
     return [
-      '--no-warnings', '--ignore-errors', '--skip-download', '--no-playlist',
+      '--ignore-config', '--no-warnings', '--ignore-errors', '--skip-download', '--no-playlist',
       '--format', 'bestaudio/best', '--print', '%(age_limit)s',
       '--print', '%(channel_id)s', '--print', '%(channel)s',
       '--print', '%(categories)s', '--dump-json', target
@@ -338,7 +338,7 @@ class MusicResolver extends EventEmitter {
 
   async _searchProvider(target, deadline, signal) {
     const args = [
-      '--no-warnings', '--ignore-errors', '--skip-download', '--no-playlist',
+      '--ignore-config', '--no-warnings', '--ignore-errors', '--skip-download', '--no-playlist',
       '--format', 'bestaudio/best', '--dump-single-json', target
     ];
     const output = await this._runYtDlp(args, { deadline, signal });
