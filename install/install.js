@@ -618,7 +618,10 @@ function publicZipEntries(buffer, version) {
     const localNameLength = buffer.readUInt16LE(local + 26); const start = local + 30 + localNameLength + buffer.readUInt16LE(local + 28);
     if (!buffer.subarray(local + 30, local + 30 + localNameLength).equals(rawName) || start + compressed > offset) throw new Error('Invalid ZIP member range.');
     expanded += length; if (expanded > 1024 * 1024 * 1024) throw new Error('Expanded ZIP limit exceeded.');
-    const key = relative.toLowerCase(); if (entries.has(key)) throw new Error('Duplicate ZIP path.');
+    const key = relative.toLowerCase();
+    if ((key === 'app' && relative !== 'app') || (key.startsWith('app/') && !relative.startsWith('app/'))) throw new Error('Noncanonical app directory case.');
+    if (key === 'app/.config_path') throw new Error('Public release must not include a bootstrap config pointer.');
+    if (entries.has(key)) throw new Error('Duplicate ZIP path.');
     if (relative) entries.set(key, { relative, directory: name.endsWith('/'), data() {
       const input = buffer.subarray(start, start + compressed);
       const output = method === 0 ? input : zlib.inflateRawSync(input, { maxOutputLength: Math.max(1, length) });
@@ -634,7 +637,7 @@ function publicZipEntries(buffer, version) {
 function validatePublicZip(buffer, m) {
   if (buffer.length !== m.bytes || crypto.createHash('sha256').update(buffer).digest('hex') !== m.sha256) throw new Error('Release ZIP bytes/SHA256 mismatch.');
   const entries = publicZipEntries(buffer, m.version);
-  const json = (name) => { const entry = entries.get(name); if (!entry || entry.directory) throw new Error(`Missing ${name}`); const data = entry.data(); if (data.length > 1024 * 1024) throw new Error('Oversized metadata'); return JSON.parse(data.toString('utf8')); };
+  const json = (name) => { const entry = entries.get(name); if (!entry || entry.directory || entry.relative !== name) throw new Error(`Missing/noncanonical ${name}`); const data = entry.data(); if (data.length > 1024 * 1024) throw new Error('Oversized metadata'); return JSON.parse(data.toString('utf8')); };
   if (json('app/package.json').version !== m.version) throw new Error('Release package version mismatch.');
   const marker = json('app/config/distribution-mode.json'); if (Object.keys(marker).length !== 1 || marker.channel !== 'public') throw new Error('Non-public release marker.');
   const policy = json('app/config/plugin-release-policy.json');
@@ -650,7 +653,10 @@ function validatePublicZip(buffer, m) {
     if (!blocked.has(owner) || !asset.startsWith('/') || asset.slice(1).split('/').some((part) => !part || part === '.' || part === '..' || /[\\%?#:]/.test(part))) throw new Error('Invalid asset policy.');
     deniedAssets.add(`app/public${asset}`.toLowerCase());
   }
-  for (const required of ['app/launch.js', 'app/server.js', 'app/package-lock.json']) if (!entries.has(required) || entries.get(required).directory) throw new Error(`Missing ${required}`);
+  for (const required of ['app/launch.js', 'app/server.js', 'app/package-lock.json']) {
+    const entry = entries.get(required);
+    if (!entry || entry.directory || entry.relative !== required) throw new Error(`Missing/noncanonical ${required}`);
+  }
   for (const [key, entry] of entries) {
     if (deniedAssets.has(key)) throw new Error('Withdrawn public asset present.');
     if (key.startsWith('app/plugins/')) {
@@ -916,5 +922,6 @@ async function main() {
     console.log('');
 }
 
-if (require.main === module) main().catch((e) => { err(e.stack || e.message); process.exit(1); });
+// Node's pipe / `node -` entry is [stdin]; imported modules retain their file ID.
+if (require.main === module || (module.id === '[stdin]' && !module.parent)) main().catch((e) => { err(e.stack || e.message); process.exit(1); });
 module.exports = { releaseManifest, publicCRC, publicZipEntries, validatePublicZip, applyPublicEntries, assertInstallMode, rejectUnsafeExistingApp, assertDeveloperCloneTarget, recoverDeveloperCheckout };

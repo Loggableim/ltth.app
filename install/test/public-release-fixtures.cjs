@@ -157,3 +157,33 @@ test('Developer recovery destination collision refuses to move/delete any copy',
   const { dir, preserved } = recoveryTarget(t); const backup = `${dir}.recovery-backup-collision`; fs.mkdirSync(backup); fs.writeFileSync(path.join(backup, 'keep'), 'unrelated'); let cloned = false;
   await assert.rejects(api.recoverDeveloperCheckout(dir, async () => { cloned = true; }, fs.renameSync, 'collision'), /already exists/); assert.equal(cloned, false); preserved(dir); assert.equal(fs.readFileSync(path.join(backup, 'keep'), 'utf8'), 'unrelated');
 });
+
+test('actual entry guard runs exactly once for file, pipe and node -, never require imports', (t) => {
+  const { spawnSync } = require('node:child_process'); const source = fs.readFileSync(path.join(__dirname, '..', 'install.js'), 'utf8');
+  const start = source.indexOf('async function main() {'); const entry = source.indexOf('// Node\'s pipe / `node -` entry');
+  assert.ok(start >= 0 && entry > start);
+  // Real main is excluded from the subprocess payload; no installer/net/process action occurs.
+  const probe = source.slice(0, start) + 'async function main() { console.log("ENTRY-FIXTURE-MAIN"); }\n' + source.slice(entry);
+  const file = path.join(temp(t), 'entry-fixture.cjs'); fs.writeFileSync(file, probe);
+  for (const args of [[], ['-']]) { const result = spawnSync(process.execPath, args, { input: probe, encoding: 'utf8' }); assert.equal(result.status, 0, result.stderr); assert.equal(result.stdout.trim(), 'ENTRY-FIXTURE-MAIN'); }
+  const direct = spawnSync(process.execPath, [file], { encoding: 'utf8' }); assert.equal(direct.status, 0, direct.stderr); assert.equal(direct.stdout.trim(), 'ENTRY-FIXTURE-MAIN');
+  const imported = spawnSync(process.execPath, ['-e', `require(${JSON.stringify(file)})`], { encoding: 'utf8' }); assert.equal(imported.status, 0, imported.stderr); assert.equal(imported.stdout.trim(), '');
+  const realImport = spawnSync(process.execPath, ['-e', `require(${JSON.stringify(path.join(__dirname, '..', 'install.js'))})`], { encoding: 'utf8' }); assert.equal(realImport.status, 0, realImport.stderr); assert.equal(realImport.stdout.trim(), '');
+});
+
+for (const required of ['app/package.json', 'app/package-lock.json', 'app/server.js', 'app/launch.js', 'app/config/distribution-mode.json', 'app/config/plugin-release-policy.json']) test(`required file case is exact before swap: ${required}`, (t) => {
+  const defaults = {
+    'app/package.json': '{"version":"1.4.5"}', 'app/package-lock.json': '{}', 'app/server.js': 'server', 'app/launch.js': 'launch',
+    'app/config/distribution-mode.json': '{"channel":"public"}', 'app/config/plugin-release-policy.json': '{"schemaVersion":1,"closedBeta":["music-bot"],"aliases":{},"publicAssetPathOwners":{}}'
+  };
+  const alternative = required.slice(0, required.lastIndexOf('/') + 1) + required.slice(required.lastIndexOf('/') + 1).toUpperCase();
+  const bytes = archive({ [required]: null, [alternative]: defaults[required] }); const dir = temp(t); const app = existing(dir);
+  assert.throws(() => api.applyPublicEntries(api.validatePublicZip(bytes, manifest(bytes)), dir), /noncanonical/); assert.equal(fs.readFileSync(path.join(app, 'old'), 'utf8'), 'unchanged');
+});
+test('APP/server.js cannot validate then disappear during extraction', () => {
+  const bytes = archive({ 'app/server.js': null, 'APP/server.js': 'server' }); assert.throws(() => api.validatePublicZip(bytes, manifest(bytes)), /Noncanonical app directory/);
+});
+for (const pointer of ['app/.config_path', 'app/.CONFIG_PATH']) test(`public artifact bootstrap pointer is denied: ${pointer}`, (t) => {
+  const bytes = archive({ [pointer]: 'C:/fixture/external-profile' }); const dir = temp(t);
+  assert.throws(() => api.applyPublicEntries(api.validatePublicZip(bytes, manifest(bytes)), dir), /bootstrap config pointer/); assert.equal(fs.existsSync(path.join(dir, 'app')), false);
+});
