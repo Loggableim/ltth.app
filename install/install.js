@@ -12,7 +12,9 @@
  *    LTTH_PORT         - HTTP-Port (Default: 3000)
  *    LTTH_NO_BROWSER   - Browser nicht oeffnen
  *    LTTH_QUIET        - Reduzierte Ausgabe
- *    LTTH_REPO_BRANCH  - Git-Branch fuer die Installation (Default: main)
+ *    LTTH_REPO_BRANCH  - Git-Branch (requires LTTH_DEVELOPER=1)
+ *    LTTH_DEVELOPER    - explicit source checkout, developer channel
+ *    LTTH_OFFLINE_UPDATE - set to 1 only after stopping an existing app
  * ============================================================================== */
 
 'use strict';
@@ -22,6 +24,8 @@ const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
+const zlib = require('zlib');
 
 const cfg = {
     repoOwner: process.env.LTTH_REPO_OWNER || 'Loggableim',
@@ -34,6 +38,7 @@ const cfg = {
     quiet: process.env.LTTH_QUIET === '1'
 };
 const useLatestBranch = cfg.version === 'latest';
+const developerMode = process.env.LTTH_DEVELOPER === '1';
 const branchRefSpec = `+refs/heads/${cfg.branch}:refs/remotes/origin/${cfg.branch}`;
 const gitHttpVersion = process.env.GIT_HTTP_VERSION || 'HTTP/1.1';
 
@@ -135,38 +140,47 @@ async function cloneRepository() {
     }
 }
 
-async function replaceWithFreshClone(reason) {
-    const backupDir = `${cfg.dir}.broken-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const reasonText = reason ? ` (${reason})` : '';
-    let backupCreated = false;
-
-    warn(`Bestehende Installation ist nicht sauber aktualisierbar${reasonText}; erstelle frische Kopie...`);
-
+// Recovery never removes old checkouts or partially cloned content.
+async function recoverDeveloperCheckout(directory, clone, rename = fs.renameSync, nonce = crypto.randomBytes(12).toString('hex')) {
+    const backup = `${directory}.recovery-backup-${nonce}`;
+    const failedClone = `${directory}.failed-clone-${nonce}`;
+    const exists = (location) => {
+        try { fs.lstatSync(location); return true; }
+        catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+    };
+    if (!exists(directory)) throw new Error(`Recovery target missing: ${directory}; nothing changed.`);
+    if (exists(backup) || exists(failedClone)) throw new Error(`Recovery destination already exists: ${backup} or ${failedClone}; nothing changed.`);
+    try { rename(directory, backup); }
+    catch (error) { throw new Error(`Could not preserve existing checkout ${directory} at ${backup}: ${error.message}; clone was not attempted.`); }
     try {
-        fs.rmSync(backupDir, { recursive: true, force: true });
-        fs.renameSync(cfg.dir, backupDir);
-        backupCreated = true;
-    } catch {
-        warn('Bestehende Installation konnte nicht in ein Backup verschoben werden; ueberschreibe sie direkt.');
-        fs.rmSync(cfg.dir, { recursive: true, force: true });
-    }
-
-    try {
-        await cloneRepository();
-        if (backupCreated) {
-            fs.rmSync(backupDir, { recursive: true, force: true });
-        }
+        await clone();
+        if (!exists(directory)) throw new Error('Clone returned without creating its target.');
+        return { directory, backup };
     } catch (error) {
-        fs.rmSync(cfg.dir, { recursive: true, force: true });
-        if (backupCreated) {
-            try {
-                fs.renameSync(backupDir, cfg.dir);
-            } catch {
-                // Best effort restore only.
+        // A failed clone may contain diagnostic/user files: retain it separately
+        // before restoring the original. If any move fails, leave every copy.
+        if (exists(directory)) {
+            try { rename(directory, failedClone); }
+            catch (moveError) {
+                throw new Error(`Clone failed: ${error.message}; could not preserve partial clone ${directory} at ${failedClone}: ${moveError.message}. Original checkout remains at ${backup}; manual recovery required.`);
             }
         }
-        throw error;
+        try { rename(backup, directory); }
+        catch (restoreError) {
+            throw new Error(`Clone failed: ${error.message}; RESTORE FAILED: ${restoreError.message}. Original checkout: ${backup}; partial clone (if created): ${failedClone}; target: ${directory}. Nothing deleted; manual recovery required.`);
+        }
+        throw new Error(`Clone failed: ${error.message}; original checkout restored at ${directory}; partial clone (if created) retained at ${failedClone}.`);
     }
+}
+
+async function replaceWithFreshClone(reason) {
+    const reasonText = reason ? ` (${reason})` : '';
+    warn(`Developer checkout recovery${reasonText}; preserving the original directory.`);
+    const result = await recoverDeveloperCheckout(cfg.dir, cloneRepository);
+    warn(`Original checkout retained at ${result.backup}. Profiles, logs and .config_path are not automatically migrated to the new checkout; review this recovery copy before starting the app.`);
+    // A fresh checkout cannot safely inherit arbitrary legacy/profile data.
+    // Stop before dependency installation/startup until migration is reviewed.
+    throw new Error(`Fresh Developer checkout prepared at ${result.directory}; original checkout retained at ${result.backup}. Manual profile/config migration required before continuing; no app started.`);
 }
 
 function probeExecutable(executable) {
@@ -531,12 +545,226 @@ async function ensureNode() {
     ok(`Node.js ${process.versions.node} gefunden`);
 }
 
-async function downloadSource() {
-    const gitDir = path.join(cfg.dir, '.git');
-    if (fs.existsSync(cfg.dir) && !fs.existsSync(gitDir)) {
-        warn('Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige...');
-        fs.rmSync(cfg.dir, { recursive: true, force: true });
+
+// Public installs use immutable release assets, never a source-checkout fallback.
+const publicZipLimit = 512 * 1024 * 1024;
+function assertInstallMode() {
+  if (!developerMode && (cfg.repoOwner !== 'Loggableim' || cfg.repoName !== 'ltth.app' || cfg.branch !== 'main' || !useLatestBranch)) {
+    throw new Error('Custom repository/branch/version requires explicit LTTH_DEVELOPER=1.');
+  }
+}
+
+function boundedReleaseGet(address, limit, redirects = 0) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(address);
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || redirects > 8) return reject(new Error('Unsafe release URL/redirect.'));
+    const request = https.get(parsed, (response) => {
+      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        response.resume();
+        return boundedReleaseGet(new URL(response.headers.location, parsed).toString(), limit, redirects + 1).then(resolve, reject);
+      }
+      if (response.statusCode !== 200) { response.resume(); return reject(new Error(`Release HTTP ${response.statusCode}`)); }
+      if (Number(response.headers['content-length']) > limit) { response.destroy(); return reject(new Error('Release exceeds download limit.')); }
+      const chunks = []; let length = 0;
+      response.on('data', (chunk) => { length += chunk.length; if (length > limit) { response.destroy(new Error('Release exceeds download limit.')); } else chunks.push(chunk); });
+      response.on('error', reject);
+      response.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+    request.setTimeout(120000, () => request.destroy(new Error('Release download timeout.')));
+    request.on('error', reject);
+  });
+}
+
+function releaseManifest(data) {
+  const m = JSON.parse(data.toString('utf8'));
+  const fields = ['schema', 'component', 'version', 'tag', 'commitSha', 'bytes', 'sha256'];
+  if (Object.keys(m).length !== fields.length || Object.keys(m).some((key) => !fields.includes(key)) || m.schema !== 1 || m.component !== 'ltth_latest.zip' ||
+      !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(m.version) || m.tag !== `v${m.version}` ||
+      !/^[a-f0-9]{40}$/.test(m.commitSha) || !/^[a-f0-9]{64}$/.test(m.sha256) || !Number.isSafeInteger(m.bytes) || m.bytes <= 0 || m.bytes > publicZipLimit) {
+    throw new Error('Invalid public release manifest.');
+  }
+  return m;
+}
+
+function publicCRC(data) {
+  let crc = 0xffffffff;
+  for (const value of data) { crc ^= value; for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0); }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function publicZipEntries(buffer, version) {
+  let end = -1;
+  for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 65557); i--) {
+    if (buffer.readUInt32LE(i) === 0x06054b50 && i + 22 + buffer.readUInt16LE(i + 20) === buffer.length) { end = i; break; }
+  }
+  if (end < 0 || buffer.readUInt16LE(end + 4) || buffer.readUInt16LE(end + 6)) throw new Error('Unsupported ZIP end/disk.');
+  const count = buffer.readUInt16LE(end + 10); const offset = buffer.readUInt32LE(end + 16); const size = buffer.readUInt32LE(end + 12);
+  if (count === 0xffff || offset === 0xffffffff || count !== buffer.readUInt16LE(end + 8) || offset + size !== end) throw new Error('Unsupported ZIP64 or invalid directory.');
+  const entries = new Map(); let cursor = offset; let expanded = 0;
+  const root = `ltth_${version}/`;
+  for (let i = 0; i < count; i++) {
+    if (cursor + 46 > end || buffer.readUInt32LE(cursor) !== 0x02014b50) throw new Error('Invalid ZIP directory.');
+    const flags = buffer.readUInt16LE(cursor + 8); const method = buffer.readUInt16LE(cursor + 10); const crc = buffer.readUInt32LE(cursor + 16);
+    const compressed = buffer.readUInt32LE(cursor + 20); const length = buffer.readUInt32LE(cursor + 24);
+    const nameLength = buffer.readUInt16LE(cursor + 28); const extra = buffer.readUInt16LE(cursor + 30); const comment = buffer.readUInt16LE(cursor + 32);
+    const external = buffer.readUInt32LE(cursor + 38); const local = buffer.readUInt32LE(cursor + 42);
+    const next = cursor + 46 + nameLength + extra + comment;
+    if (next > end || (flags & 1) || ![0, 8].includes(method) || (external >>> 16 & 0xf000) === 0xa000 || length > 128 * 1024 * 1024) throw new Error('Unsafe/unsupported ZIP member.');
+    const rawName = buffer.subarray(cursor + 46, cursor + 46 + nameLength); const name = rawName.toString('utf8');
+    if (!Buffer.from(name).equals(rawName) || !name.startsWith(root) || name.includes('\\')) throw new Error('Unexpected release root/name.');
+    const relative = name.slice(root.length).replace(/\/$/, '');
+    if (relative && relative.split('/').some((part) => !part || part === '.' || part === '..' || /[:\x00-\x1f]/.test(part) || /[. ]$/.test(part))) throw new Error('Unsafe ZIP path.');
+    if (local + 30 > offset || buffer.readUInt32LE(local) !== 0x04034b50 || buffer.readUInt16LE(local + 8) !== method) throw new Error('Invalid ZIP local header.');
+    const localNameLength = buffer.readUInt16LE(local + 26); const start = local + 30 + localNameLength + buffer.readUInt16LE(local + 28);
+    if (!buffer.subarray(local + 30, local + 30 + localNameLength).equals(rawName) || start + compressed > offset) throw new Error('Invalid ZIP member range.');
+    expanded += length; if (expanded > 1024 * 1024 * 1024) throw new Error('Expanded ZIP limit exceeded.');
+    const key = relative.toLowerCase(); if (entries.has(key)) throw new Error('Duplicate ZIP path.');
+    if (relative) entries.set(key, { relative, directory: name.endsWith('/'), data() {
+      const input = buffer.subarray(start, start + compressed);
+      const output = method === 0 ? input : zlib.inflateRawSync(input, { maxOutputLength: Math.max(1, length) });
+      if (output.length !== length || publicCRC(output) !== crc) throw new Error('ZIP CRC/size mismatch.');
+      return output;
+    } });
+    cursor = next;
+  }
+  if (cursor !== end) throw new Error('ZIP directory count mismatch.');
+  return entries;
+}
+
+function validatePublicZip(buffer, m) {
+  if (buffer.length !== m.bytes || crypto.createHash('sha256').update(buffer).digest('hex') !== m.sha256) throw new Error('Release ZIP bytes/SHA256 mismatch.');
+  const entries = publicZipEntries(buffer, m.version);
+  const json = (name) => { const entry = entries.get(name); if (!entry || entry.directory) throw new Error(`Missing ${name}`); const data = entry.data(); if (data.length > 1024 * 1024) throw new Error('Oversized metadata'); return JSON.parse(data.toString('utf8')); };
+  if (json('app/package.json').version !== m.version) throw new Error('Release package version mismatch.');
+  const marker = json('app/config/distribution-mode.json'); if (Object.keys(marker).length !== 1 || marker.channel !== 'public') throw new Error('Non-public release marker.');
+  const policy = json('app/config/plugin-release-policy.json');
+  if (policy.schemaVersion !== 1 || !Array.isArray(policy.closedBeta) || !policy.closedBeta.length || Object.keys(policy).some((key) => !['schemaVersion', 'closedBeta', 'aliases', 'publicRuntimeExcluded', 'publicAssetPathOwners'].includes(key))) throw new Error('Invalid release policy.');
+  if (policy.publicRuntimeExcluded !== undefined && !Array.isArray(policy.publicRuntimeExcluded)) throw new Error('Invalid public runtime exclusions.');
+  if (policy.aliases !== undefined && (!policy.aliases || Array.isArray(policy.aliases) || typeof policy.aliases !== 'object')) throw new Error('Invalid alias policy.');
+  if (policy.publicAssetPathOwners !== undefined && (!policy.publicAssetPathOwners || Array.isArray(policy.publicAssetPathOwners) || typeof policy.publicAssetPathOwners !== 'object')) throw new Error('Invalid asset policy.');
+  const blocked = new Set(['chatango']); const idPattern = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+  for (const id of [...policy.closedBeta, ...(policy.publicRuntimeExcluded || [])]) { if (typeof id !== 'string' || !idPattern.test(id) || blocked.has(id)) throw new Error('Invalid policy ID.'); blocked.add(id); }
+  for (const [alias, target] of Object.entries(policy.aliases || {})) { if (typeof target !== 'string' || !idPattern.test(alias) || !blocked.has(target) || blocked.has(alias)) throw new Error('Invalid policy alias.'); blocked.add(alias); }
+  const deniedAssets = new Set(['app/public/js/chatango-theme-adapter.js']);
+  for (const [asset, owner] of Object.entries(policy.publicAssetPathOwners || {})) {
+    if (!blocked.has(owner) || !asset.startsWith('/') || asset.slice(1).split('/').some((part) => !part || part === '.' || part === '..' || /[\\%?#:]/.test(part))) throw new Error('Invalid asset policy.');
+    deniedAssets.add(`app/public${asset}`.toLowerCase());
+  }
+  for (const required of ['app/launch.js', 'app/server.js', 'app/package-lock.json']) if (!entries.has(required) || entries.get(required).directory) throw new Error(`Missing ${required}`);
+  for (const [key, entry] of entries) {
+    if (deniedAssets.has(key)) throw new Error('Withdrawn public asset present.');
+    if (key.startsWith('app/plugins/')) {
+      if (key.split('/').slice(2).some((part) => blocked.has(part))) throw new Error('Withdrawn plugin directory present.');
+      if (key.endsWith('/plugin.json')) { const manifest = JSON.parse(entry.data().toString('utf8')); const ids = [manifest.id, ...(manifest.aliases || []), ...(manifest.replaces || [])]; if (ids.some((id) => typeof id !== 'string' || !idPattern.test(id) || blocked.has(id))) throw new Error('Withdrawn/invalid plugin identity present.'); }
     }
+    if (!entry.directory) entry.data(); // CRC validation before any destination mutation.
+  }
+  return entries;
+}
+
+function rejectUnsafeExistingApp(appDir, installDir, releaseEntries = new Map()) {
+  const pidFile = path.join(installDir, 'ltth.pid');
+  if (fs.existsSync(pidFile)) throw new Error(`PID file ${pidFile} exists. Stop LTTH, verify that its recorded process is no longer LTTH/running; never terminate an unidentified process. Only then remove this PID file, set LTTH_OFFLINE_UPDATE=1 and repeat the original installer with the same LTTH_DIR. Nothing replaced.`);
+  if (!fs.existsSync(appDir)) return;
+  if (fs.lstatSync(appDir).isSymbolicLink()) throw new Error('Symlink app directory requires manual migration.');
+  if (process.env.LTTH_OFFLINE_UPDATE !== '1') throw new Error('Existing app: stop it first, then explicitly set LTTH_OFFLINE_UPDATE=1; nothing replaced.');
+  const pointer = path.join(appDir, '.config_path');
+  if (fs.existsSync(pointer)) {
+    const value = fs.readFileSync(pointer, 'utf8').trim();
+    if (value) {
+      const resolved = fs.existsSync(value) ? fs.realpathSync(value) : path.resolve(value);
+      const relative = path.relative(fs.realpathSync(appDir), resolved);
+      if (!relative || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))) throw new Error('Custom config path inside app: offline data migration required.');
+    }
+  }
+  const inspect = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const location = path.join(dir, entry.name);
+      if (entry.isSymbolicLink()) throw new Error('Existing app has symlinks; manual migration required.');
+      const relative = path.relative(appDir, location).split(path.sep);
+      const dataNames = ['user_data', 'user_configs', 'uploads', 'logs', 'data'];
+      const nestedData = relative.slice(0, entry.isDirectory() ? undefined : -1).some((part) => dataNames.includes(part));
+      const releaseKey = `app/${relative.join('/')}`.toLowerCase();
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules') continue;
+        if (dir === appDir && dataNames.includes(entry.name) && fs.readdirSync(location).length) throw new Error('Existing persistent app data: safe offline migration required; nothing replaced.');
+        if (nestedData && !releaseEntries.has(releaseKey) && ![...releaseEntries.keys()].some((key) => key.startsWith(releaseKey + '/'))) throw new Error('Unexpected app-local data directory: offline migration required; nothing replaced.');
+        inspect(location);
+      }
+      else if (nestedData && !releaseEntries.has(releaseKey)) throw new Error('Unexpected app-local data file: offline migration required; nothing replaced.');
+      else if (/\.(?:db|sqlite|sqlite3)(?:-(?:wal|shm))?$|\.log$/i.test(entry.name)) throw new Error('Existing SQLite data: consistent offline migration required; nothing replaced.');
+    }
+  };
+  inspect(appDir);
+}
+
+function applyPublicEntries(entries, installDir, rename = fs.renameSync) {
+  const appDir = path.join(installDir, 'app'); rejectUnsafeExistingApp(appDir, installDir, entries);
+  if (fs.existsSync(appDir)) {
+    const oldVersion = JSON.parse(fs.readFileSync(path.join(appDir, 'package.json'), 'utf8')).version;
+    const newVersion = JSON.parse(entries.get('app/package.json').data().toString('utf8')).version;
+    const pattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+    if (!pattern.test(oldVersion) || !pattern.test(newVersion)) throw new Error('Version migration requires manual review.');
+    const oldParts = oldVersion.split('.').map(BigInt); const newParts = newVersion.split('.').map(BigInt);
+    let order = 0; for (let i = 0; i < 3 && !order; i++) order = newParts[i] > oldParts[i] ? 1 : newParts[i] < oldParts[i] ? -1 : 0;
+    if (order <= 0) throw new Error('Public release is not newer than installed app.');
+  }
+  fs.mkdirSync(installDir, { recursive: true });
+  const work = fs.mkdtempSync(path.join(installDir, '.ltth-release-')); const staged = path.join(work, 'app'); const backup = path.join(work, 'previous-app');
+  let moved = false; let installed = false;
+  try {
+    for (const entry of entries.values()) {
+      if (!entry.relative.startsWith('app/')) continue;
+      const target = path.join(staged, ...entry.relative.slice(4).split('/'));
+      if (entry.directory) fs.mkdirSync(target, { recursive: true });
+      else { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, entry.data(), { flag: 'wx', mode: 0o600 }); }
+    }
+    // Existing config-path selection and secrets/configs survive; release policy
+    // and public marker always come from the freshly verified artifact.
+    if (fs.existsSync(appDir)) {
+      for (const name of ['.config_path', '.env']) if (fs.existsSync(path.join(appDir, name))) fs.copyFileSync(path.join(appDir, name), path.join(staged, name));
+      const config = path.join(appDir, 'config');
+      if (fs.existsSync(config)) for (const name of fs.readdirSync(config)) {
+        if (['plugin-release-policy.json', 'distribution-mode.json'].includes(name)) continue;
+        fs.cpSync(path.join(config, name), path.join(staged, 'config', name), { recursive: true, errorOnExist: false });
+      }
+      rename(appDir, backup); moved = true;
+    }
+    rename(staged, appDir); installed = true;
+    return { backup: moved ? backup : null, appDir };
+  } catch (error) {
+    if (installed) fs.rmSync(appDir, { recursive: true, force: true });
+    if (moved) { try { rename(backup, appDir); } catch (restore) { throw new Error(`${error.message}; RESTORE FAILED: ${restore.message}; old app retained at ${backup}`); } }
+    throw error;
+  } finally {
+    // Never discard a previous app/recovery copy or its persistent files.
+    if (!moved) fs.rmSync(work, { recursive: true, force: true });
+  }
+}
+
+async function installPublicRelease() {
+  const manifest = releaseManifest(await boundedReleaseGet('https://github.com/Loggableim/ltth.app/releases/latest/download/ltth_latest.json', 65536));
+  const bytes = await boundedReleaseGet(`https://github.com/Loggableim/ltth.app/releases/download/${manifest.tag}/ltth_latest.zip`, manifest.bytes);
+  const entries = validatePublicZip(bytes, manifest);
+  const result = applyPublicEntries(entries, cfg.dir);
+  cfg.version = manifest.version;
+  if (result.backup) log(`Previous app retained for recovery: ${result.backup}`);
+}
+
+function assertDeveloperCloneTarget(directory) {
+  if (!fs.existsSync(directory)) return;
+  const info = fs.lstatSync(directory);
+  if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('Developer target must be an ordinary directory; nothing removed.');
+  if (!fs.existsSync(path.join(directory, '.git')) && fs.readdirSync(directory).length !== 0) {
+    throw new Error('Nonempty non-Git Developer target rejected; profiles, configs and logs remain untouched. Choose an empty target.');
+  }
+}
+
+async function downloadSource() {
+    assertInstallMode();
+    if (!developerMode) return installPublicRelease();
+    const gitDir = path.join(cfg.dir, '.git');
+    assertDeveloperCloneTarget(cfg.dir);
 
     fs.mkdirSync(cfg.dir, { recursive: true });
 
@@ -602,7 +830,7 @@ async function downloadSource() {
 async function installDeps() {
     const configDir = path.join(cfg.dir, 'app', 'config');
     fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(path.join(configDir, 'distribution-mode.json'), '{"channel":"public"}\n');
+    fs.writeFileSync(path.join(configDir, 'distribution-mode.json'), JSON.stringify({ channel: developerMode ? 'developer' : 'public' }) + '\n');
     log('Installiere npm-Abhaengigkeiten...');
     await exec('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], { cwd: path.join(cfg.dir, 'app') });
     ok('Abhaengigkeiten installiert');
@@ -662,9 +890,10 @@ async function main() {
     log(`Port:           ${cfg.port}`);
     console.log('');
 
-    await ensureGit();
+    assertInstallMode();
+    if (developerMode) await ensureGit();
     await ensureNode();
-    await resolveVersion();
+    if (developerMode) await resolveVersion();
     await downloadSource();
     await installDeps();
     await startApp();
@@ -676,8 +905,16 @@ async function main() {
     console.log(`  Dashboard:   http://localhost:${cfg.port}/dashboard.html`);
     console.log(`  Log-Datei:   ${path.join(cfg.dir, 'ltth.log')}`);
     console.log(`  Stoppen:     kill $(cat ${path.join(cfg.dir, 'ltth.pid')})`);
-    console.log(`  Updates:     cd ${path.join(cfg.dir, 'app')} && git pull && npm install`);
+    if (developerMode) console.log(`  Updates:     cd ${path.join(cfg.dir, 'app')} && git pull && npm install`);
+    else {
+        console.log('  Updates:     stop LTTH first; verify that its recorded PID is no longer running as LTTH.');
+        console.log(`  PID file:    ${path.join(cfg.dir, 'ltth.pid')} (remove only after confirming LTTH stopped; never terminate an unidentified process).`);
+        console.log(process.platform === 'win32' ? "  Offline flag (PowerShell): $env:LTTH_OFFLINE_UPDATE='1'" : '  Offline flag (shell): export LTTH_OFFLINE_UPDATE=1');
+        console.log(`  Then repeat the original official installer, using the same LTTH_DIR: ${cfg.dir}`);
+        console.log('  Legacy app-local profiles/SQLite/uploads require a separate offline migration; this installer refuses to replace them.');
+    }
     console.log('');
 }
 
-main().catch((e) => { err(e.stack || e.message); process.exit(1); });
+if (require.main === module) main().catch((e) => { err(e.stack || e.message); process.exit(1); });
+module.exports = { releaseManifest, publicCRC, publicZipEntries, validatePublicZip, applyPublicEntries, assertInstallMode, rejectUnsafeExistingApp, assertDeveloperCloneTarget, recoverDeveloperCheckout };

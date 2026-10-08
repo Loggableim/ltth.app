@@ -12,7 +12,9 @@
 #    LTTH_PORT         - HTTP-Port fuer das Dashboard (Default: 3000)
 #    LTTH_NO_BROWSER   - Browser nach Start nicht automatisch oeffnen
 #    LTTH_QUIET        - Reduzierte Ausgabe
-#    LTTH_REPO_BRANCH  - Git-Branch fuer die Installation (Default: main)
+#    LTTH_REPO_BRANCH  - Git-Branch (requires LTTH_DEVELOPER=1)
+#    LTTH_DEVELOPER    - explicit source checkout, developer channel
+#    LTTH_OFFLINE_UPDATE - set to 1 only after stopping an existing app
 # ==============================================================================
 
 set -euo pipefail
@@ -355,7 +357,7 @@ download_source() {
 # ---------- Dependencies installieren ----------
 install_deps() {
     mkdir -p "$LTTH_DIR/app/config"
-    printf '%s\n' '{"channel":"public"}' > "$LTTH_DIR/app/config/distribution-mode.json" || return 1
+    printf '%s\n' '{"channel":"developer"}' > "$LTTH_DIR/app/config/distribution-mode.json" || return 1
     log "Installiere npm-Abhaengigkeiten..."
     (cd "$LTTH_DIR/app" && npm install --no-audit --no-fund --loglevel=error)
     ok "Abhaengigkeiten installiert"
@@ -400,6 +402,25 @@ main() {
     log "Erkannte Plattform: ${platform}"
 
     need_cmd curl
+    if [ "${LTTH_DEVELOPER:-0}" != "1" ]; then
+        if [ "$LTTH_REPO_OWNER" != "Loggableim" ] || [ "$LTTH_REPO_NAME" != "ltth.app" ] || [ "$LTTH_REPO_BRANCH" != "main" ] || [ "$LTTH_INSTALL_MODE" != "latest" ]; then
+            err "Custom repository/branch/version requires LTTH_DEVELOPER=1."
+            return 1
+        fi
+        ensure_node
+        local public_installer
+        public_installer="$(mktemp "${TMPDIR:-/tmp}/ltth-public-installer.XXXXXX")"
+        if ! curl --proto '=https' --proto-redir '=https' -fsSL https://ltth.app/install/install.js -o "$public_installer"; then
+            rm -f -- "$public_installer"
+            err "Public installer unavailable; no Git fallback."
+            return 1
+        fi
+        export LTTH_DIR LTTH_PORT LTTH_NO_BROWSER LTTH_QUIET
+        local public_result=0
+        node "$public_installer" || public_result=$?
+        rm -f -- "$public_installer"
+        return "$public_result"
+    fi
     ensure_git
     ensure_node
     resolve_version
