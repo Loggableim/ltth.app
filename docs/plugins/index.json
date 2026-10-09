@@ -108,42 +108,6 @@
     }
   },
   {
-    "id": "chatango",
-    "name": "Chatango Integration",
-    "category": "plugin",
-    "access": "early-version",
-    "devStatus": "early-version",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/chatango/chatango-card.png",
-      "en": "/screenshots/docs/plugins/chatango/chatango-card.png",
-      "es": "/screenshots/es/docs/plugins/chatango/chatango-card.png",
-      "fr": "/screenshots/fr/docs/plugins/chatango/chatango-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration richtet Raumname, Widget-Position und Chat-Thema ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "das Widget zeigt die gewählte Position ohne einen externen Chat zu öffnen"
-      },
-      "en": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration configures room name, widget position, and chat theme with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the widget shows the chosen position without opening an external chat"
-      },
-      "es": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration configura nombre de sala, posición del widget y tema del chat mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el widget muestra la posición elegida sin abrir un chat externo"
-      },
-      "fr": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration configure nom de salon, position du widget et thème du chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le widget montre la position choisie sans ouvrir de chat externe"
-      }
-    }
-  },
-  {
     "id": "clarityhud",
     "name": "ClarityHUD",
     "category": "plugin",
