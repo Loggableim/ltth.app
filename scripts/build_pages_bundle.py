@@ -62,8 +62,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def is_retired_chatango_asset(relative_path: str) -> bool:
+    parts = relative_path.replace("\\", "/").split("/")
+    if not parts or parts[0].casefold() not in {"assets", "screenshots"}:
+        return False
+    return any(re.search(r"(?:^|[-_.])chatango(?:$|[-_.])", part, re.IGNORECASE) for part in parts[1:])
+
+
 def copy_file(source: Path, destination: Path) -> bool:
     if not source.exists():
+        return False
+    if source.is_relative_to(REPO_ROOT) and is_retired_chatango_asset(source.relative_to(REPO_ROOT).as_posix()):
         return False
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, destination)
@@ -179,6 +188,8 @@ def copy_tree(source: Path, destination: Path, closed_beta: set[str]) -> int:
             if not is_public_package(path, closed_beta):
                 continue
         relative_path = path.relative_to(source)
+        if path.is_relative_to(REPO_ROOT) and is_retired_chatango_asset(path.relative_to(REPO_ROOT).as_posix()):
+            continue
         if source == REPO_ROOT / "streammonsters" and relative_path.as_posix() != "index.html":
             continue
         if source == REPO_ROOT / "docs" and relative_path.parts[0] == "coordination":
