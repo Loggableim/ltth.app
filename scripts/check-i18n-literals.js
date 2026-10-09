@@ -24,6 +24,9 @@ function walk(dir, result = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'docs_archive') continue;
     const relativeEntry = path.relative(root, path.join(dir, entry.name)).replace(/\\/g, '/');
+    // Root output/ contains disposable release/review snapshots. They are not
+    // active website inputs and may preserve old copy from earlier candidates.
+    if (relativeEntry === 'output' || relativeEntry.startsWith('output/')) continue;
     if ((exceptions.ignoredPaths || []).some(prefix => relativeEntry.startsWith(prefix))) continue;
     // Keep generated scratch copies and patch staging trees out of the active
     // product inventory. They are useful forensic artifacts, but are not
