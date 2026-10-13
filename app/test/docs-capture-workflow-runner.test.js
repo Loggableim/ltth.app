@@ -8,8 +8,12 @@ const {
 } = require('../../scripts/lib/docs-capture-workflow-runner');
 const os = require('os');
 const {
+  assertDashboardNavigationResponse,
   buildSafeCaptureEnvironment,
   getCapturePluginAllowlist,
+  isAllowedDashboardCaptureUrl,
+  attachDashboardOnlyRequestPolicy,
+  validateDashboardOutputDirectory,
   validateSafeCaptureEnvironment
 } = require('../../scripts/capture-product-screenshots');
 
@@ -114,6 +118,88 @@ describe('documentation screenshot workflow runner', () => {
 
       expect(getCapturePluginAllowlist(null)).toBe('');
       expect(getCapturePluginAllowlist(fixtureRoot)).toBe('dashboard-local');
+    });
+  });
+
+  describe('dashboard-only capture boundaries', () => {
+    const origin = 'http://127.0.0.1:34567';
+
+    test.each([
+      ['dashboard route', `${origin}/dashboard.html?lang=de`, true],
+      ['local asset', `${origin}/js/dashboard.js`, true],
+      ['local API', `${origin}/api/health`, true],
+      ['different host', 'http://localhost:34567/dashboard.html', false],
+      ['different port', 'http://127.0.0.1:34568/dashboard.html', false],
+      ['different scheme', 'https://127.0.0.1:34567/dashboard.html', false],
+      ['external host', 'https://example.com/dashboard.html', false],
+      ['credentials in URL', 'http://user@127.0.0.1:34567/dashboard.html', false]
+    ])('origin policy handles %s', (_label, url, allowed) => {
+      expect(isAllowedDashboardCaptureUrl(url, origin)).toBe(allowed);
+    });
+
+    test('rejects redirects and any navigation response outside the exact origin', async () => {
+      const response = (url, status) => ({ url: () => url, status: () => status });
+      await expect(assertDashboardNavigationResponse(response(`${origin}/dashboard.html`, 200), origin)).resolves.toBeDefined();
+      await expect(assertDashboardNavigationResponse(response(`${origin}/dashboard.html`, 302), origin))
+        .rejects.toThrow('Dashboard navigation redirects are not allowed');
+      await expect(assertDashboardNavigationResponse(response('http://localhost:34567/dashboard.html', 200), origin))
+        .rejects.toThrow('Dashboard navigation escaped its allowed origin');
+    });
+
+    test('continues only requests matching the allowed origin and aborts all others', async () => {
+      const handlers = {};
+      const page = {
+        setRequestInterception: jest.fn(async () => {}),
+        on: jest.fn((event, handler) => { handlers[event] = handler; })
+      };
+      await attachDashboardOnlyRequestPolicy(page, origin);
+      const allowed = { url: () => `${origin}/js/dashboard.js`, continue: jest.fn(), abort: jest.fn(async () => {}) };
+      const denied = { url: () => 'https://example.com/tracker.js', continue: jest.fn(), abort: jest.fn(async () => {}) };
+
+      handlers.request(allowed);
+      handlers.request(denied);
+      await Promise.resolve();
+
+      expect(allowed.continue).toHaveBeenCalledWith({ url: `${origin}/js/dashboard.js` });
+      expect(allowed.abort).not.toHaveBeenCalled();
+      expect(denied.abort).toHaveBeenCalledWith('blockedbyclient');
+      expect(denied.continue).not.toHaveBeenCalled();
+    });
+
+    test('requires an explicit absolute output directory outside the repository', () => {
+      const repository = path.resolve(__dirname, '..', '..');
+      expect(() => validateDashboardOutputDirectory(undefined, repository)).toThrow('explicit absolute SCREENSHOT_OUTPUT_DIR');
+      expect(() => validateDashboardOutputDirectory(path.join(repository, 'screenshots'), repository))
+        .toThrow('must be outside the repository');
+      expect(() => validateDashboardOutputDirectory(path.join(os.tmpdir(), 'arbitrary-temp-dir'), repository))
+        .toThrow('dedicated disposable temp prefix');
+      expect(validateDashboardOutputDirectory(path.join(os.tmpdir(), 'ltth-dashboard-capture-output'), repository))
+        .toBe(path.resolve(os.tmpdir(), 'ltth-dashboard-capture-output'));
+    });
+
+    test('keeps dashboard-only mode separate and validates output before any app/browser runner', () => {
+      const source = fs.readFileSync(runnerPath, 'utf8');
+      const capture = source.slice(source.indexOf('async function capture()'), source.indexOf("if (require.main === module)"));
+
+      expect(capture.indexOf('validateDashboardOutputDirectory(process.env.SCREENSHOT_OUTPUT_DIR)'))
+        .toBeLessThan(capture.indexOf('captureDashboardOnly(locale, outputDir)'));
+      expect(capture.indexOf('DASHBOARD_ONLY')).toBeLessThan(capture.indexOf('buildDocsSpec(REPO_ROOT)'));
+      expect(capture).toContain('await captureDashboardOnly(locale, outputDir)');
+      expect(capture).toContain('return;');
+      expect(source).toContain("new URL('/dashboard.html', origin)");
+      expect(source).toContain('await attachDashboardOnlyRequestPolicy(page, origin)');
+      expect(source).toContain("path.join(outputDir, 'dashboard-state.json')");
+      expect(source).toContain('response.status()');
+      const dashboardFlow = source.slice(source.indexOf('async function captureDashboardOnly('), source.indexOf('function compatibleDocsOutput('));
+      expect(dashboardFlow).toContain("redirect: 'manual'");
+      expect(dashboardFlow.indexOf('await assertDashboardNavigationResponse(response, origin)'))
+        .toBeLessThan(dashboardFlow.indexOf('await page.waitForFunction'));
+
+      const appStart = source.slice(source.indexOf('async function startIsolatedApp('), source.indexOf('async function stopIsolatedApp('));
+      expect(appStart).toContain("!DASHBOARD_ONLY && COLLECTION === 'docs'");
+      expect(appStart).toContain('validateSafeCaptureEnvironment(childEnvironment)');
+      expect(appStart).toContain('env: childEnvironment');
+      expect(appStart).not.toContain('...process.env');
     });
   });
 

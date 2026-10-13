@@ -42,6 +42,7 @@ const LIFECYCLE_TIMEOUT_MS = Number(process.env.SCREENSHOT_LIFECYCLE_TIMEOUT_MS 
 const FAILURE_CONTEXT_TIMEOUT_MS = Number(process.env.SCREENSHOT_FAILURE_CONTEXT_TIMEOUT_MS || 1000);
 const DEBUG_CAPTURE = process.env.SCREENSHOT_DEBUG_CAPTURE === 'true';
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
+const DASHBOARD_ONLY = process.env.SCREENSHOT_MODE === 'dashboard-only';
 const RUNTIME_PLUGIN_ROUTE_PREFIXES = new Set(['flame-overlay', 'visual-fx-frame-webgpu']);
 const DOCUMENTATION_DEMO_INPUT_VALUES = Object.freeze({
   'emoji-rain/choose-emojis': '💧, ✨, 🎉'
@@ -93,9 +94,66 @@ function browserExecutablePath() {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
-function outputPath(asset, locale) {
+function outputPath(asset, locale, outputRoot = SCREENSHOT_ROOT) {
   const relative = asset.canonical.replace(/^\/screenshots\//, '');
-  return path.join(locale === 'en' ? SCREENSHOT_ROOT : path.join(SCREENSHOT_ROOT, locale), relative);
+  return path.join(locale === 'en' ? outputRoot : path.join(outputRoot, locale), relative);
+}
+
+function isAllowedDashboardCaptureUrl(value, origin) {
+  try {
+    const url = new URL(value);
+    const allowed = new URL(origin);
+    return allowed.protocol === 'http:'
+      && allowed.hostname === '127.0.0.1'
+      && !url.username
+      && !url.password
+      && url.origin === allowed.origin;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function validateDashboardOutputDirectory(outputDir, repoRoot = REPO_ROOT) {
+  if (!outputDir || !path.isAbsolute(outputDir)) {
+    throw new Error('Dashboard capture requires an explicit absolute SCREENSHOT_OUTPUT_DIR');
+  }
+  const resolved = path.resolve(outputDir);
+  const relative = path.relative(path.resolve(repoRoot), resolved);
+  if (relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))) {
+    throw new Error('Dashboard capture output directory must be outside the repository');
+  }
+  if (!path.basename(resolved).toLowerCase().startsWith('ltth-dashboard-capture-')) {
+    throw new Error('Dashboard capture output directory must use its dedicated disposable temp prefix');
+  }
+  if (path.dirname(resolved) !== path.resolve(os.tmpdir())) {
+    throw new Error('Dashboard capture output directory must be a direct child of the system temp directory');
+  }
+  let existingPath = resolved;
+  while (!fs.existsSync(existingPath)) {
+    const parent = path.dirname(existingPath);
+    if (parent === existingPath) break;
+    existingPath = parent;
+  }
+  const realExistingPath = fs.realpathSync(existingPath);
+  const realRepoRoot = fs.realpathSync(path.resolve(repoRoot));
+  const realRelative = path.relative(realRepoRoot, realExistingPath);
+  if (realRelative === '' || (!realRelative.startsWith('..' + path.sep) && realRelative !== '..' && !path.isAbsolute(realRelative))) {
+    throw new Error('Dashboard capture output directory must resolve outside the repository');
+  }
+  return resolved;
+}
+
+function validateDashboardCaptureResponse(response, origin) {
+  if (!response) throw new Error('Dashboard navigation returned no response');
+  const responseUrl = response.url();
+  if (!isAllowedDashboardCaptureUrl(responseUrl, origin)) {
+    throw new Error(`Dashboard navigation escaped its allowed origin: ${responseUrl}`);
+  }
+  const status = response.status();
+  if (status >= 300 && status < 400) {
+    throw new Error(`Dashboard navigation redirects are not allowed (HTTP ${status})`);
+  }
+  return response;
 }
 
 function urlFor(baseUrl, route, locale) {
@@ -166,6 +224,31 @@ async function attachPluginAssetRewrite(page) {
     }
     if (!rewritePluginAssetRequest(request)) request.continue();
   });
+}
+
+async function attachDashboardOnlyRequestPolicy(page, origin) {
+  await page.setRequestInterception(true);
+  page.on('request', (request) => {
+    const url = request.url();
+    const redirectResponse = request.redirectChain?.().length ? request.redirectChain()[request.redirectChain().length - 1]?.response?.() : null;
+    if (redirectResponse) {
+      try {
+        validateDashboardCaptureResponse(redirectResponse, origin);
+      } catch (_error) {
+        request.abort('blockedbyclient').catch(() => {});
+        return;
+      }
+    }
+    if (!isAllowedDashboardCaptureUrl(url, origin)) {
+      request.abort('blockedbyclient').catch(() => {});
+      return;
+    }
+    request.continue({ url });
+  });
+}
+
+async function assertDashboardNavigationResponse(response, origin) {
+  return validateDashboardCaptureResponse(response, origin);
 }
 
 function freePort() {
@@ -267,12 +350,12 @@ async function startIsolatedApp(profileName, guideId = null) {
     return { baseUrl: EXTERNAL_BASE_URL, child: null, profileDir: null };
   }
   const port = await freePort();
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `${DASHBOARD_ONLY ? 'ltth-dashboard-capture-profile-' : 'ltth-docs-capture-'}${profileName}-`));
   let child;
   try {
     const logsDir = path.join(profileDir, 'logs');
     fs.mkdirSync(logsDir, { recursive: true });
-    const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
+    const docsCapturePluginDir = !DASHBOARD_ONLY && COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
     const allowedPluginIds = getCapturePluginAllowlist(docsCapturePluginDir);
     const childEnvironment = buildSafeCaptureEnvironment({ profileDir, port, pluginDir: docsCapturePluginDir, allowedPluginIds });
     validateSafeCaptureEnvironment(childEnvironment);
@@ -315,7 +398,8 @@ async function stopIsolatedApp(app, label = 'isolated LTTH app') {
     cleanupError = error;
   }
   try {
-    if (app.profileDir && app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) {
+    if (app.profileDir && (app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))
+      || app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-dashboard-capture-profile-')))) {
       fs.rmSync(app.profileDir, { recursive: true, force: true });
     }
   } catch (error) {
@@ -1432,6 +1516,46 @@ async function captureProduct(spec, assets, locales) {
   return { outputs, failures };
 }
 
+async function captureDashboardOnly(locale, outputDir) {
+  validateDashboardOutputDirectory(outputDir);
+  fs.mkdirSync(outputDir, { recursive: true });
+  const app = await startIsolatedApp('dashboard-only');
+  let browser;
+  try {
+    const origin = app.baseUrl;
+    const parsedOrigin = new URL(origin);
+    if (parsedOrigin.origin !== origin || parsedOrigin.protocol !== 'http:' || parsedOrigin.hostname !== '127.0.0.1') {
+      throw new Error('Dashboard capture origin must be exactly http://127.0.0.1:<port>');
+    }
+    const puppeteer = loadPuppeteer();
+    const executablePath = browserExecutablePath();
+    browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const page = await browser.newPage();
+    await configurePage(page, locale);
+    await attachDashboardOnlyRequestPolicy(page, origin);
+    const target = new URL('/dashboard.html', origin);
+    target.searchParams.set('lang', locale);
+    const response = await page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS, redirect: 'manual' });
+    await assertDashboardNavigationResponse(response, origin);
+    await page.waitForFunction(() => window.i18n?.initialized === true, { timeout: LIFECYCLE_TIMEOUT_MS });
+    const initial = await page.evaluate(() => ({
+      language: document.documentElement.lang,
+      connection: document.getElementById('connection-info')?.textContent?.trim() || '',
+      status: document.getElementById('connection-status')?.textContent?.trim() || '',
+      connectDisabled: Boolean(document.getElementById('connect-btn')?.disabled),
+      disconnectDisabled: Boolean(document.getElementById('disconnect-btn')?.disabled),
+      eventRows: document.querySelectorAll('#event-log tr').length
+    }));
+    const outputPath = path.join(outputDir, 'dashboard-state.json');
+    fs.writeFileSync(outputPath, JSON.stringify({ origin, route: '/dashboard.html', locale, initial }, null, 2), 'utf8');
+    console.log(JSON.stringify({ outputPath, initial }, null, 2));
+    await page.close();
+  } finally {
+    if (browser) await browser.close();
+    await stopIsolatedApp(app, 'dashboard-only');
+  }
+}
+
 function compatibleDocsOutput(output, expectedById) {
   const asset = expectedById.get(output.id);
   if (!asset || !DOCS_LOCALES.includes(output.locale)) return false;
@@ -1481,6 +1605,19 @@ function mergePartialDocsOutputs(spec, newOutputs) {
 }
 
 async function capture() {
+  if (DASHBOARD_ONLY) {
+    if (COLLECTION !== 'product' || !START_APP) {
+      throw new Error('Dashboard-only capture requires the isolated local product capture mode');
+    }
+    if (process.env.LTTH_DOCS_CAPTURE !== undefined || process.env.SCREENSHOT_START_APP === 'false') {
+      throw new Error('Dashboard-only capture does not allow external or pre-existing app processes');
+    }
+    const outputDir = validateDashboardOutputDirectory(process.env.SCREENSHOT_OUTPUT_DIR);
+    const locale = String(process.env.SCREENSHOT_LANGS || 'de').split(',')[0].trim().toLowerCase();
+    if (!PRODUCT_LOCALES.includes(locale)) throw new Error('Dashboard-only capture locale is unsupported');
+    await captureDashboardOnly(locale, outputDir);
+    return;
+  }
   const fullSpec = COLLECTION === 'docs' ? buildDocsSpec(REPO_ROOT) : buildSpec(REPO_ROOT);
   const locales = (process.env.SCREENSHOT_LANGS || (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).join(','))
     .split(',').map((value) => value.trim().toLowerCase()).filter((value) => (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).includes(value));
@@ -1520,4 +1657,12 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildSafeCaptureEnvironment, getCapturePluginAllowlist, validateSafeCaptureEnvironment };
+module.exports = {
+  attachDashboardOnlyRequestPolicy,
+  assertDashboardNavigationResponse,
+  buildSafeCaptureEnvironment,
+  getCapturePluginAllowlist,
+  isAllowedDashboardCaptureUrl,
+  validateDashboardOutputDirectory,
+  validateSafeCaptureEnvironment
+};
