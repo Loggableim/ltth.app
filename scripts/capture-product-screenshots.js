@@ -9,6 +9,10 @@ const { spawn } = require('child_process');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
+const {
+  getDocumentationCaptureAllowedEnvironmentKeys,
+  validateDocumentationCaptureEnvironment
+} = require('../app/modules/docs-capture-policy');
 const { assertNoBlockedNetworkAttempts, createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
 const {
   assertWorkflowOperationsExecuted,
@@ -175,6 +179,55 @@ function freePort() {
   });
 }
 
+function buildSafeCaptureEnvironment({ profileDir, port, pluginDir, allowedPluginIds = '', platform = process.platform, tempDir = os.tmpdir(), systemEnvironment = process.env }) {
+  const profileRoot = path.resolve(profileDir);
+  const root = path.resolve(tempDir);
+  const logsDir = path.join(profileRoot, 'logs');
+  const environment = {
+    TEMP: root,
+    TMP: root,
+    LOCALAPPDATA: profileRoot,
+    LTTH_LOG_DIR: logsDir,
+    LTTH_PORT: String(port),
+    LTTH_DOCS_CAPTURE: 'true',
+    LTTH_DOCS_CAPTURE_ALLOWED_PLUGINS: allowedPluginIds,
+    LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
+    LTTH_NO_BROWSER: 'true',
+    DISABLE_SWAGGER: 'true',
+    LTTH_BIND_ADDRESS: '127.0.0.1'
+  };
+  if (platform === 'win32') {
+    for (const key of ['SystemRoot', 'WINDIR']) {
+      if (systemEnvironment[key]) environment[key] = systemEnvironment[key];
+    }
+    for (const key of ['HOMEDRIVE', 'HOMEPATH', 'LOGONSERVER', 'PATH', 'SYSTEMDRIVE', 'USERDOMAIN', 'USERNAME', 'USERPROFILE']) {
+      environment[key] = '';
+    }
+  } else {
+    environment.TMPDIR = root;
+  }
+  if (pluginDir) environment.LTTH_DOCS_CAPTURE_PLUGIN_DIR = path.resolve(pluginDir);
+  return environment;
+}
+
+function validateSafeCaptureEnvironment(environment, options = {}) {
+  const allowedKeys = getDocumentationCaptureAllowedEnvironmentKeys(options.platform || process.platform);
+  for (const key of Object.keys(environment)) {
+    if (![...allowedKeys].some((allowedKey) => allowedKey.toLowerCase() === key.toLowerCase())) {
+      throw new Error(`Safe capture environment contains unsupported variable: ${key}`);
+    }
+  }
+  return validateDocumentationCaptureEnvironment(environment, options);
+}
+
+function getCapturePluginAllowlist(pluginDir) {
+  if (!pluginDir) return '';
+  return fs.readdirSync(pluginDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(pluginDir, entry.name, 'plugin.json')))
+    .map((entry) => entry.name)
+    .join(',');
+}
+
 function waitForServer(child, baseUrl) {
   return new Promise((resolve, reject) => {
     const started = Date.now();
@@ -215,23 +268,24 @@ async function startIsolatedApp(profileName, guideId = null) {
   }
   const port = await freePort();
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`));
-  const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
-  const child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
-    cwd: path.join(REPO_ROOT, 'app'),
-    env: {
-      ...process.env,
-      LOCALAPPDATA: profileDir,
-      LTTH_PORT: String(port),
-      LTTH_DOCS_CAPTURE: 'true',
-      LTTH_DOCS_SAFE_MODE: 'true',
-      LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
-      LTTH_NO_BROWSER: 'true',
-      DISABLE_SWAGGER: 'true',
-      LTTH_BIND_ADDRESS: '127.0.0.1',
-      ...(docsCapturePluginDir ? { LTTH_DOCS_CAPTURE_PLUGIN_DIR: docsCapturePluginDir } : {})
-    },
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
+  let child;
+  try {
+    const logsDir = path.join(profileDir, 'logs');
+    fs.mkdirSync(logsDir, { recursive: true });
+    const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
+    const allowedPluginIds = getCapturePluginAllowlist(docsCapturePluginDir);
+    const childEnvironment = buildSafeCaptureEnvironment({ profileDir, port, pluginDir: docsCapturePluginDir, allowedPluginIds });
+    validateSafeCaptureEnvironment(childEnvironment);
+    child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
+      cwd: path.join(REPO_ROOT, 'app'),
+      env: childEnvironment,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+  } catch (error) {
+    fs.rmSync(profileDir, { recursive: true, force: true });
+    throw error;
+  }
   let startupLog = '';
   const appendStartupLog = (chunk) => {
     startupLog = `${startupLog}${chunk.toString()}`.slice(-16000);
@@ -1459,7 +1513,11 @@ async function capture() {
   if (result.failures.length) process.exitCode = 1;
 }
 
-capture().catch((error) => {
-  console.error(`Fatal screenshot capture error: ${error.stack || error.message}`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  capture().catch((error) => {
+    console.error(`Fatal screenshot capture error: ${error.stack || error.message}`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { buildSafeCaptureEnvironment, getCapturePluginAllowlist, validateSafeCaptureEnvironment };
