@@ -14,28 +14,67 @@ function probeMpv(candidate) {
     windowsHide: true
   });
   if (result.error || result.status !== 0) return null;
-  return String(result.stdout || '') + String(result.stderr || '');
+  const version = String(result.stdout || '') + String(result.stderr || '');
+  return version.trim() || null;
 }
 
-function resolveMpv() {
-  const configuredPath = String(process.env.LTTH_TEST_MPV_PATH || '').trim();
-  if (configuredPath && fs.existsSync(configuredPath)) {
-    return { path: configuredPath, version: probeMpv(configuredPath) };
+function resolveMpv({
+  configuredPath = String(process.env.LTTH_TEST_MPV_PATH || '').trim(),
+  chocolateyPath = CHOCOLATEY_MPV_PATH,
+  fileExists = fs.existsSync,
+  probe = probeMpv
+} = {}) {
+  const candidates = [];
+  if (configuredPath && fileExists(configuredPath)) {
+    candidates.push(configuredPath);
   }
-  if (fs.existsSync(CHOCOLATEY_MPV_PATH)) {
-    return { path: CHOCOLATEY_MPV_PATH, version: probeMpv(CHOCOLATEY_MPV_PATH) };
+  if (fileExists(chocolateyPath)) {
+    candidates.push(chocolateyPath);
   }
-  const version = probeMpv('mpv');
-  return version ? { path: 'mpv', version } : null;
+  candidates.push('mpv');
+
+  for (const candidate of candidates) {
+    const version = probe(candidate);
+    if (version) return { path: candidate, version };
+  }
+  return null;
 }
 
 const mpv = resolveMpv();
 const MPV_PATH = mpv?.path || null;
 const integrationTest = MPV_PATH ? test : test.skip;
 
-function integrationName(name) {
-  return MPV_PATH ? name : 'skipped: no mpv found - ' + name;
+function integrationName(name, mpvFound = Boolean(MPV_PATH)) {
+  return mpvFound ? name : 'skipped: no mpv found - ' + name;
 }
+
+test('MPV resolution rejects failed candidates and continues in the configured order', () => {
+  const probedCandidates = [];
+  const resolved = resolveMpv({
+    configuredPath: 'configured-mpv',
+    chocolateyPath: 'chocolatey-mpv',
+    fileExists: () => true,
+    probe: (candidate) => {
+      probedCandidates.push(candidate);
+      return candidate === 'mpv' ? 'mpv v0.41.0' : null;
+    }
+  });
+
+  expect(probedCandidates).toEqual(['configured-mpv', 'chocolatey-mpv', 'mpv']);
+  expect(resolved).toEqual({ path: 'mpv', version: 'mpv v0.41.0' });
+});
+
+test('MPV resolution returns no candidate and names the skip when all version probes fail', () => {
+  const resolved = resolveMpv({
+    configuredPath: 'configured-mpv',
+    chocolateyPath: 'chocolatey-mpv',
+    fileExists: () => true,
+    probe: () => null
+  });
+
+  expect(resolved).toBeNull();
+  expect(integrationName('starts real MPV', false)).toBe('skipped: no mpv found - starts real MPV');
+});
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
