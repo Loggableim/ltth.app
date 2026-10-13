@@ -302,7 +302,7 @@ class MusicResolver extends EventEmitter {
       output = await this._runYtDlp(args, { deadline, signal });
     } catch (error) {
       if (error.name === 'AbortError') throw error;
-      if (error.ytdlpNotFound && this._extractYouTubeId(url)) {
+      if (error.ytdlpNotFound && extractYouTubeId(url)) {
         this.api.log?.('[music-bot] yt-dlp not found; cannot resolve a playable YouTube stream', 'warn');
         return this._resolverUnavailableResult('YouTube');
       }
@@ -550,10 +550,6 @@ class MusicResolver extends EventEmitter {
     return value;
   }
 
-  _extractYouTubeId(url) {
-    return extractYouTubeId(url);
-  }
-
   _isSoundCloudUrl(url) {
     try {
       const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
@@ -564,7 +560,7 @@ class MusicResolver extends EventEmitter {
   }
 
   _isSupportedSourceUrl(url) {
-    return Boolean(this._extractYouTubeId(url)) || this._isYouTubePlaylistUrl(url) || this._isSoundCloudUrl(url);
+    return Boolean(extractYouTubeId(url)) || this._isYouTubePlaylistUrl(url) || this._isSoundCloudUrl(url);
   }
 
   _isYouTubePlaylistUrl(url) {
@@ -589,7 +585,7 @@ class MusicResolver extends EventEmitter {
   async _resolveViaOEmbed(url, signal) {
     const json = await this._getJson(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, signal, 'oEmbed');
     const data = {
-      id: this._extractYouTubeId(url),
+      id: extractYouTubeId(url),
       title: json.title || url,
       uploader: json.author_name || '',
       thumbnail: json.thumbnail_url || null,
