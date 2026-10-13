@@ -94,6 +94,15 @@ function browserExecutablePath() {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
+function assertSandboxedDashboardBrowserSupport(executablePath) {
+  if (!executablePath || !fs.existsSync(executablePath)) {
+    throw new Error('Dashboard capture requires a locally installed browser with sandbox support');
+  }
+  const stat = fs.statSync(executablePath);
+  if (!stat.isFile()) throw new Error('Dashboard capture browser executable is not a regular file');
+  return executablePath;
+}
+
 function outputPath(asset, locale, outputRoot = SCREENSHOT_ROOT) {
   const relative = asset.canonical.replace(/^\/screenshots\//, '');
   return path.join(locale === 'en' ? outputRoot : path.join(outputRoot, locale), relative);
@@ -128,19 +137,36 @@ function validateDashboardOutputDirectory(outputDir, repoRoot = REPO_ROOT) {
   if (path.dirname(resolved) !== path.resolve(os.tmpdir())) {
     throw new Error('Dashboard capture output directory must be a direct child of the system temp directory');
   }
-  let existingPath = resolved;
-  while (!fs.existsSync(existingPath)) {
-    const parent = path.dirname(existingPath);
-    if (parent === existingPath) break;
-    existingPath = parent;
+  if (fs.existsSync(resolved)) {
+    throw new Error('Dashboard capture output directory must not already exist');
   }
-  const realExistingPath = fs.realpathSync(existingPath);
+  const realTempRoot = fs.realpathSync(path.resolve(os.tmpdir()));
   const realRepoRoot = fs.realpathSync(path.resolve(repoRoot));
-  const realRelative = path.relative(realRepoRoot, realExistingPath);
-  if (realRelative === '' || (!realRelative.startsWith('..' + path.sep) && realRelative !== '..' && !path.isAbsolute(realRelative))) {
-    throw new Error('Dashboard capture output directory must resolve outside the repository');
+  const realTempRelative = path.relative(realTempRoot, path.dirname(resolved));
+  if (realTempRelative !== '') {
+    throw new Error('Dashboard capture output parent must resolve to the system temp directory');
+  }
+  const repoRelative = path.relative(realRepoRoot, path.dirname(resolved));
+  if (repoRelative === '' || (!repoRelative.startsWith('..' + path.sep) && repoRelative !== '..' && !path.isAbsolute(repoRelative))) {
+    throw new Error('Dashboard capture output parent must resolve outside the repository');
   }
   return resolved;
+}
+
+function createDashboardOutputDirectory(requestedPath, repoRoot = REPO_ROOT) {
+  const resolved = validateDashboardOutputDirectory(requestedPath, repoRoot);
+  const created = fs.mkdtempSync(`${resolved}-`);
+  const realCreated = fs.realpathSync(created);
+  const realTempRoot = fs.realpathSync(path.resolve(os.tmpdir()));
+  const relative = path.relative(realTempRoot, realCreated);
+  const realRepoRoot = fs.realpathSync(path.resolve(repoRoot));
+  const repoRelative = path.relative(realRepoRoot, realCreated);
+  if (!relative || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)
+    || repoRelative === '' || (!repoRelative.startsWith('..' + path.sep) && repoRelative !== '..' && !path.isAbsolute(repoRelative))) {
+    fs.rmSync(created, { recursive: true, force: true });
+    throw new Error('Dashboard capture output must resolve to a new directory inside the system temp directory');
+  }
+  return realCreated;
 }
 
 function validateDashboardCaptureResponse(response, origin) {
@@ -1517,8 +1543,6 @@ async function captureProduct(spec, assets, locales) {
 }
 
 async function captureDashboardOnly(locale, outputDir) {
-  validateDashboardOutputDirectory(outputDir);
-  fs.mkdirSync(outputDir, { recursive: true });
   const app = await startIsolatedApp('dashboard-only');
   let browser;
   try {
@@ -1528,8 +1552,8 @@ async function captureDashboardOnly(locale, outputDir) {
       throw new Error('Dashboard capture origin must be exactly http://127.0.0.1:<port>');
     }
     const puppeteer = loadPuppeteer();
-    const executablePath = browserExecutablePath();
-    browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const executablePath = assertSandboxedDashboardBrowserSupport(browserExecutablePath());
+    browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}) });
     const page = await browser.newPage();
     await configurePage(page, locale);
     await attachDashboardOnlyRequestPolicy(page, origin);
@@ -1546,9 +1570,11 @@ async function captureDashboardOnly(locale, outputDir) {
       disconnectDisabled: Boolean(document.getElementById('disconnect-btn')?.disabled),
       eventRows: document.querySelectorAll('#event-log tr').length
     }));
-    const outputPath = path.join(outputDir, 'dashboard-state.json');
-    fs.writeFileSync(outputPath, JSON.stringify({ origin, route: '/dashboard.html', locale, initial }, null, 2), 'utf8');
-    console.log(JSON.stringify({ outputPath, initial }, null, 2));
+    const screenshotPath = path.join(outputDir, 'dashboard.png');
+    await page.screenshot({ path: screenshotPath, type: 'png', fullPage: true });
+    const statePath = path.join(outputDir, 'dashboard-state.json');
+    fs.writeFileSync(statePath, JSON.stringify({ origin, route: '/dashboard.html', locale, initial, screenshotPath }, null, 2), 'utf8');
+    console.log(JSON.stringify({ outputDir, screenshotPath, statePath, initial }, null, 2));
     await page.close();
   } finally {
     if (browser) await browser.close();
@@ -1612,10 +1638,15 @@ async function capture() {
     if (process.env.LTTH_DOCS_CAPTURE !== undefined || process.env.SCREENSHOT_START_APP === 'false') {
       throw new Error('Dashboard-only capture does not allow external or pre-existing app processes');
     }
-    const outputDir = validateDashboardOutputDirectory(process.env.SCREENSHOT_OUTPUT_DIR);
+    const outputDir = createDashboardOutputDirectory(process.env.SCREENSHOT_OUTPUT_DIR);
     const locale = String(process.env.SCREENSHOT_LANGS || 'de').split(',')[0].trim().toLowerCase();
-    if (!PRODUCT_LOCALES.includes(locale)) throw new Error('Dashboard-only capture locale is unsupported');
-    await captureDashboardOnly(locale, outputDir);
+    try {
+      if (!PRODUCT_LOCALES.includes(locale)) throw new Error('Dashboard-only capture locale is unsupported');
+      await captureDashboardOnly(locale, outputDir);
+    } catch (error) {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+      throw error;
+    }
     return;
   }
   const fullSpec = COLLECTION === 'docs' ? buildDocsSpec(REPO_ROOT) : buildSpec(REPO_ROOT);
@@ -1661,6 +1692,7 @@ module.exports = {
   attachDashboardOnlyRequestPolicy,
   assertDashboardNavigationResponse,
   buildSafeCaptureEnvironment,
+  createDashboardOutputDirectory,
   getCapturePluginAllowlist,
   isAllowedDashboardCaptureUrl,
   validateDashboardOutputDirectory,

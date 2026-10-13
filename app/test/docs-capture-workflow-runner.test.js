@@ -10,6 +10,7 @@ const os = require('os');
 const {
   assertDashboardNavigationResponse,
   buildSafeCaptureEnvironment,
+  createDashboardOutputDirectory,
   getCapturePluginAllowlist,
   isAllowedDashboardCaptureUrl,
   attachDashboardOnlyRequestPolicy,
@@ -173,8 +174,31 @@ describe('documentation screenshot workflow runner', () => {
         .toThrow('must be outside the repository');
       expect(() => validateDashboardOutputDirectory(path.join(os.tmpdir(), 'arbitrary-temp-dir'), repository))
         .toThrow('dedicated disposable temp prefix');
-      expect(validateDashboardOutputDirectory(path.join(os.tmpdir(), 'ltth-dashboard-capture-output'), repository))
-        .toBe(path.resolve(os.tmpdir(), 'ltth-dashboard-capture-output'));
+      const requested = path.join(os.tmpdir(), `ltth-dashboard-capture-test-${process.pid}`);
+      expect(validateDashboardOutputDirectory(requested, repository)).toBe(path.resolve(requested));
+      fs.mkdirSync(requested, { recursive: true });
+      expect(() => validateDashboardOutputDirectory(requested, repository)).toThrow('must not already exist');
+      fs.rmSync(requested, { recursive: true, force: true });
+
+      const linkPath = path.join(os.tmpdir(), `ltth-dashboard-capture-link-${process.pid}`);
+      const targetPath = path.join(os.tmpdir(), `ltth-dashboard-capture-target-${process.pid}`);
+      fs.mkdirSync(targetPath, { recursive: true });
+      try {
+        fs.symlinkSync(targetPath, linkPath, process.platform === 'win32' ? 'junction' : 'dir');
+        expect(() => validateDashboardOutputDirectory(linkPath, repository)).toThrow('must not already exist');
+      } finally {
+        fs.rmSync(linkPath, { recursive: true, force: true });
+        fs.rmSync(targetPath, { recursive: true, force: true });
+      }
+
+      const created = createDashboardOutputDirectory(requested, repository);
+      try {
+        expect(fs.realpathSync(created)).toBe(created);
+        expect(path.dirname(created)).toBe(path.resolve(os.tmpdir()));
+        expect(path.basename(created)).toMatch(/^ltth-dashboard-capture-test-/);
+      } finally {
+        fs.rmSync(created, { recursive: true, force: true });
+      }
     });
 
     test('keeps dashboard-only mode separate and validates output before any app/browser runner', () => {
@@ -189,8 +213,13 @@ describe('documentation screenshot workflow runner', () => {
       expect(source).toContain("new URL('/dashboard.html', origin)");
       expect(source).toContain('await attachDashboardOnlyRequestPolicy(page, origin)');
       expect(source).toContain("path.join(outputDir, 'dashboard-state.json')");
+      expect(source).toContain("path.join(outputDir, 'dashboard.png')");
+      expect(source).toContain("await page.screenshot({ path: screenshotPath, type: 'png', fullPage: true })");
+      expect(source).toContain('assertSandboxedDashboardBrowserSupport(browserExecutablePath())');
       expect(source).toContain('response.status()');
       const dashboardFlow = source.slice(source.indexOf('async function captureDashboardOnly('), source.indexOf('function compatibleDocsOutput('));
+      expect(dashboardFlow).not.toContain('--no-sandbox');
+      expect(dashboardFlow).not.toContain('--disable-setuid-sandbox');
       expect(dashboardFlow).toContain("redirect: 'manual'");
       expect(dashboardFlow.indexOf('await assertDashboardNavigationResponse(response, origin)'))
         .toBeLessThan(dashboardFlow.indexOf('await page.waitForFunction'));
