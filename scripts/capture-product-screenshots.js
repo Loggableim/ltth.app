@@ -252,7 +252,40 @@ async function attachPluginAssetRewrite(page) {
   });
 }
 
-async function attachDashboardOnlyRequestPolicy(page, origin) {
+function createDashboardProfileRestartFixture() {
+  let activeProfile = 'default';
+  return {
+    get activeProfile() { return activeProfile; },
+    scheduleRestart() { activeProfile = 'ltth-dashboard-qa'; },
+    response(url, method) {
+      const parsed = new URL(url);
+      if (method !== 'GET' || parsed.pathname !== '/api/profiles/active') return null;
+      return {
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          activeProfile,
+          pendingProfile: null,
+          requiresRestart: false,
+          port: Number(parsed.port)
+        })
+      };
+    }
+  };
+}
+
+async function dispatchDashboardFixtureEvent(page, eventName, data) {
+  const listenerCount = await page.evaluate((name, payload) => {
+    const listeners = window.socket?.listeners(name) || [];
+    listeners.forEach((listener) => listener(payload));
+    return listeners.length;
+  }, eventName, data);
+  if (!listenerCount) throw new Error(`Dashboard fixture event has no client listeners: ${eventName}`);
+  return listenerCount;
+}
+
+async function attachDashboardOnlyRequestPolicy(page, origin, options = {}) {
+  const { profileRestartFixture = null, requestEvidence = null } = options;
   await page.setRequestInterception(true);
   page.on('request', (request) => {
     const url = request.url();
@@ -266,11 +299,43 @@ async function attachDashboardOnlyRequestPolicy(page, origin) {
       }
     }
     if (!isAllowedDashboardCaptureUrl(url, origin)) {
+      if (requestEvidence) {
+        const entry = { url, method: request.method(), resourceType: request.resourceType() };
+        requestEvidence.blocked.push(entry);
+        try {
+          const blockedUrl = new URL(url);
+          const hostname = blockedUrl.hostname.toLowerCase();
+          if (['http:', 'https:'].includes(blockedUrl.protocol)
+            && !['127.0.0.1', 'localhost', '[::1]', '::1'].includes(hostname)) {
+            requestEvidence.external.push(entry);
+          }
+        } catch (_error) {
+            requestEvidence.external.push(entry);
+        }
+      }
       request.abort('blockedbyclient').catch(() => {});
       return;
     }
+    if (profileRestartFixture) {
+      const fixtureResponse = profileRestartFixture.response(url, request.method());
+      if (fixtureResponse) {
+        request.respond(fixtureResponse).catch(() => {});
+        return;
+      }
+    }
+    if (requestEvidence && /\/api\/(?:i18n|profiles\/active)(?:\/|\?|$)/.test(url)) {
+      requestEvidence.allowed ||= [];
+      requestEvidence.allowed.push({ url, method: request.method(), resourceType: request.resourceType() });
+    }
     request.continue({ url });
   });
+}
+
+function assertNoDashboardExternalRequests(requestEvidence) {
+  if (requestEvidence.external.length) {
+    const urls = requestEvidence.external.map((entry) => entry.url).join(', ');
+    throw new Error(`Dashboard capture attempted an external request; blocked and stopping: ${urls}`);
+  }
 }
 
 async function assertDashboardNavigationResponse(response, origin) {
@@ -434,17 +499,19 @@ async function stopIsolatedApp(app, label = 'isolated LTTH app') {
   if (cleanupError) throw cleanupError;
 }
 
-function applyCaptureDocumentSettings(lang) {
+function applyCaptureDocumentSettings(lang, preserveSavedLocale = false) {
   localStorage.setItem('dashboard-theme', 'cid');
-  localStorage.setItem('app_locale', lang);
+  const savedLocale = preserveSavedLocale ? localStorage.getItem('app_locale') : null;
+  const effectiveLocale = savedLocale || lang;
+  if (!savedLocale || !preserveSavedLocale) localStorage.setItem('app_locale', lang);
   const root = document.documentElement;
   if (!root) {
-    document.addEventListener('DOMContentLoaded', () => applyCaptureDocumentSettings(lang), { once: true });
+    document.addEventListener('DOMContentLoaded', () => applyCaptureDocumentSettings(lang, preserveSavedLocale), { once: true });
     return;
   }
   root.setAttribute('data-theme', 'cid');
-  root.lang = lang;
-  root.dataset.lang = lang;
+  root.lang = effectiveLocale;
+  root.dataset.lang = effectiveLocale;
 }
 
 function isBlockedExternalRequestConsoleError(message) {
@@ -455,7 +522,7 @@ function isBlockedExternalRequestConsoleError(message) {
     && !isAllowedCaptureNetworkUrl(location.url);
 }
 
-async function configurePage(page, locale) {
+async function configurePage(page, locale, options = {}) {
   page.__docsCaptureConsoleErrors = [];
   page.__docsCaptureNetwork = [];
   page.__docsCaptureBlockedNetwork = [];
@@ -469,7 +536,7 @@ async function configurePage(page, locale) {
     }
   });
   page.on('pageerror', (error) => page.__docsCaptureConsoleErrors.push(error.message));
-  await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale);
+  await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale, options.preserveSavedLocale === true);
 }
 
 async function synchronizeCaptureLocale(page, locale) {
@@ -1555,26 +1622,181 @@ async function captureDashboardOnly(locale, outputDir) {
     const executablePath = assertSandboxedDashboardBrowserSupport(browserExecutablePath());
     browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}) });
     const page = await browser.newPage();
-    await configurePage(page, locale);
-    await attachDashboardOnlyRequestPolicy(page, origin);
+    const profileRestartFixture = createDashboardProfileRestartFixture();
+    const requestEvidence = { allowed: [], blocked: [], external: [], localeResponses: [] };
+    const consoleEvidence = [];
+    const dialogEvidence = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error' || message.text().includes('[i18n]')) consoleEvidence.push(message.text());
+    });
+    page.on('pageerror', (error) => consoleEvidence.push(error.message));
+    page.on('dialog', async (dialog) => {
+      dialogEvidence.push({ type: dialog.type(), message: dialog.message() });
+      await dialog.dismiss();
+    });
+    page.on('response', (response) => {
+      if (/\/api\/i18n\/translations\//.test(response.url())) {
+        requestEvidence.localeResponses.push({ url: response.url(), status: response.status() });
+      }
+    });
+    await configurePage(page, locale, { preserveSavedLocale: true });
+    await attachDashboardOnlyRequestPolicy(page, origin, { profileRestartFixture, requestEvidence });
     const target = new URL('/dashboard.html', origin);
     target.searchParams.set('lang', locale);
     const response = await page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS, redirect: 'manual' });
     await assertDashboardNavigationResponse(response, origin);
     await page.waitForFunction(() => window.i18n?.initialized === true, { timeout: LIFECYCLE_TIMEOUT_MS });
-    const initial = await page.evaluate(() => ({
-      language: document.documentElement.lang,
-      connection: document.getElementById('connection-info')?.textContent?.trim() || '',
-      status: document.getElementById('connection-status')?.textContent?.trim() || '',
-      connectDisabled: Boolean(document.getElementById('connect-btn')?.disabled),
-      disconnectDisabled: Boolean(document.getElementById('disconnect-btn')?.disabled),
-      eventRows: document.querySelectorAll('#event-log tr').length
-    }));
-    const screenshotPath = path.join(outputDir, 'dashboard.png');
-    await page.screenshot({ path: screenshotPath, type: 'png', fullPage: true });
+    await page.waitForFunction(() => window.socket?.listeners?.('tiktok:status')?.length > 0
+      && window.profileManager?.activeProfile === 'default', { timeout: TIMEOUT_MS });
+    assertNoDashboardExternalRequests(requestEvidence);
+
+    const captures = {};
+    const captureState = async (name) => {
+      assertNoDashboardExternalRequests(requestEvidence);
+      const state = await page.evaluate(() => ({
+        language: document.documentElement.lang,
+        locale: window.i18n?.getLocale?.() || null,
+        savedLocale: localStorage.getItem('app_locale'),
+        connection: document.getElementById('connection-info')?.textContent?.trim() || '',
+        status: document.getElementById('connection-status')?.textContent?.trim() || '',
+        connectDisabled: Boolean(document.getElementById('connect-btn')?.disabled),
+        disconnectDisabled: Boolean(document.getElementById('disconnect-btn')?.disabled),
+        eventRows: document.querySelectorAll('#event-log tr').length,
+        eventText: [...document.querySelectorAll('#event-log tr')].map((row) => row.textContent.trim()),
+        activeProfile: document.getElementById('current-profile-name')?.textContent?.trim() || '',
+        selectedProfile: window.profileManager?.selectedProfile || null,
+        profileSwitchPending: Boolean(window.profileManager?.profileSwitchPending),
+        connectLabel: document.querySelector('#connect-btn span')?.textContent?.trim() || '',
+        restartOverlay: Boolean(document.getElementById('server-restart-overlay')),
+        profileSwitchWarning: Boolean(document.getElementById('profile-switch-warning'))
+      }));
+      const screenshotPath = path.join(outputDir, `dashboard-${name}.png`);
+      await page.screenshot({ path: screenshotPath, type: 'png', fullPage: false });
+      captures[name] = { ...state, screenshotPath };
+      console.log(`[dashboard-capture] captured ${name}`);
+      return state;
+    };
+
+    const assertState = (name, state, predicate) => {
+      if (!predicate(state)) throw new Error(`Dashboard fixture state did not meet its expected UI contract: ${name}`);
+    };
+
+    const initial = await captureState('initial-empty');
+    assertState('initial-empty', initial, (state) => state.status === 'Getrennt'
+      && state.eventRows === 0 && !state.connectDisabled && state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', { status: 'connecting' });
+    const loading = await captureState('connecting');
+    assertState('connecting', loading, (state) => state.connection.includes('Verbindung wird aufgebaut')
+      && state.connectDisabled && !state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', {
+      status: 'connection_error',
+      error: 'Lokaler QA-Fehlerfixture'
+    });
+    const error = await captureState('connection-error');
+    assertState('connection-error', error, (state) => state.connection.includes('Lokaler QA-Fehlerfixture')
+      && !state.connectDisabled && state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', {
+      status: 'connected',
+      username: 'dashboard_qa_fixture'
+    });
+    const connected = await captureState('connected-fixture');
+    assertState('connected-fixture', connected, (state) => state.connection.includes('@dashboard_qa_fixture')
+      && state.connectDisabled && !state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', { status: 'disconnected' });
+    await dispatchDashboardFixtureEvent(page, 'tiktok:event', {
+      type: 'chat',
+      data: { username: 'qa_viewer', uniqueId: 'qa_viewer', message: 'Lokale Event-Fixture', teamMemberLevel: 0 }
+    });
+    await dispatchDashboardFixtureEvent(page, 'tiktok:event', {
+      type: 'gift',
+      data: { username: 'qa_viewer', giftName: 'Fixture Rose', repeatCount: 1, coins: 1, teamMemberLevel: 0 }
+    });
+    const eventHistory = await captureState('local-event-history');
+    assertState('local-event-history', eventHistory, (state) => state.status === 'Getrennt'
+      && state.eventRows === 2 && state.eventText.some((text) => text.includes('Lokale Event-Fixture'))
+      && state.eventText.some((text) => text.includes('Fixture Rose')));
+
+    await page.evaluate(() => window.history.replaceState({}, '', '/dashboard.html'));
+    await page.waitForFunction(() => document.getElementById('topbar-language-selector')?.value === window.i18n?.getLocale?.(), { timeout: TIMEOUT_MS });
+    await page.evaluate(() => {
+      const selector = document.getElementById('topbar-language-selector');
+      selector.value = 'fr';
+      selector.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const languageSwitchStartedAt = Date.now();
+    try {
+      await page.waitForFunction(() => window.i18n?.getLocale?.() === 'fr', { timeout: 15000 });
+    } catch (error) {
+      const languageDiagnostic = {
+        elapsedMs: Date.now() - languageSwitchStartedAt,
+        recentConsoleErrors: consoleEvidence.slice(-10),
+        localeRequests: requestEvidence.allowed.filter((entry) => entry.url.includes('/api/i18n/')),
+        localeResponses: requestEvidence.localeResponses,
+        blockedRequestCount: requestEvidence.blocked.length
+      };
+      throw new Error(`Immediate language switch did not complete: ${error.message}; evidence=${JSON.stringify(languageDiagnostic)}`);
+    }
+    const languageChanged = await captureState('language-fr-immediate');
+    captures['language-fr-immediate'].switchDurationMs = Date.now() - languageSwitchStartedAt;
+    assertState('language-fr-immediate', languageChanged, (state) => state.language === 'fr'
+      && state.locale === 'fr' && state.savedLocale === 'fr' && state.connectLabel === 'Connecter');
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
+    try {
+      await page.waitForFunction(() => window.i18n?.initialized === true && window.i18n?.getLocale?.() === 'fr', { timeout: LIFECYCLE_TIMEOUT_MS });
+    } catch (error) {
+      const reloadDiagnostic = await page.evaluate(() => ({
+        readyState: document.readyState,
+        locale: window.i18n?.getLocale?.() || null,
+        initialized: window.i18n?.initialized ?? null,
+        savedLocale: localStorage.getItem('app_locale'),
+        documentLanguage: document.documentElement.lang,
+        url: location.href
+      })).catch((probeError) => ({ probeError: probeError.message }));
+      throw new Error(`Language persistence after dashboard reload did not complete: ${error.message}; evidence=${JSON.stringify({ reloadDiagnostic, recentConsoleErrors: consoleEvidence.slice(-10), localeResponses: requestEvidence.localeResponses, dialogs: dialogEvidence.slice(-5) })}`);
+    }
+    const languageAfterReload = await captureState('language-fr-after-reload');
+    assertState('language-fr-after-reload', languageAfterReload, (state) => state.language === 'fr'
+      && state.locale === 'fr' && state.savedLocale === 'fr');
+
+    profileRestartFixture.scheduleRestart();
+    const reload = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: LIFECYCLE_TIMEOUT_MS });
+    await page.evaluate((profile) => {
+      if (typeof window.profileManager?.beginProfileRestart !== 'function') {
+        throw new Error('Local profile restart method is unavailable');
+      }
+      void window.profileManager.beginProfileRestart({ to: profile, requiresRestart: true, restartScheduled: true });
+    }, profileRestartFixture.activeProfile);
+    await reload;
+    await page.waitForFunction(() => window.i18n?.initialized === true
+      && window.i18n?.getLocale?.() === 'fr'
+      && window.profileManager?.activeProfile === 'ltth-dashboard-qa', { timeout: TIMEOUT_MS });
+    const profileRestart = await captureState('profile-restart-completed');
+    assertState('profile-restart-completed', profileRestart, (state) => state.activeProfile === 'ltth-dashboard-qa'
+      && state.selectedProfile === 'ltth-dashboard-qa' && !state.profileSwitchPending && !state.restartOverlay
+      && state.language === 'fr' && state.savedLocale === 'fr');
+    assertNoDashboardExternalRequests(requestEvidence);
+
     const statePath = path.join(outputDir, 'dashboard-state.json');
-    fs.writeFileSync(statePath, JSON.stringify({ origin, route: '/dashboard.html', locale, initial, screenshotPath }, null, 2), 'utf8');
-    console.log(JSON.stringify({ outputDir, screenshotPath, statePath, initial }, null, 2));
+    const state = {
+      origin,
+      route: '/dashboard.html',
+      requestedLocale: locale,
+      fixtures: {
+        socketEventsDispatchedLocally: ['connecting', 'connection_error', 'connected', 'disconnected', 'chat', 'gift'],
+        restartProfile: profileRestartFixture.activeProfile,
+        profileRestartWasServerFixture: true,
+        profileRestartWasStartedThroughLocalProfileManager: true,
+        profileSwitchedSocketEventWasVerified: false,
+        connectButtonWasClicked: false
+      },
+      captures,
+      requestEvidence,
+      consoleErrors: consoleEvidence,
+      dialogs: dialogEvidence,
+      statePath
+    };
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
+    console.log(JSON.stringify({ outputDir, statePath, captures, requestEvidence }, null, 2));
     await page.close();
   } finally {
     if (browser) await browser.close();
@@ -1691,8 +1913,11 @@ if (require.main === module) {
 module.exports = {
   attachDashboardOnlyRequestPolicy,
   assertDashboardNavigationResponse,
+  assertNoDashboardExternalRequests,
   buildSafeCaptureEnvironment,
+  createDashboardProfileRestartFixture,
   createDashboardOutputDirectory,
+  dispatchDashboardFixtureEvent,
   getCapturePluginAllowlist,
   isAllowedDashboardCaptureUrl,
   validateDashboardOutputDirectory,

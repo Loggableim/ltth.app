@@ -126,4 +126,35 @@ describe('i18n client fallback rendering', () => {
     expect(window.fetch)
       .toHaveBeenCalledWith('/api/talkingheads/overlay/translations/de');
   });
+
+  test('switches language without opening a blocking success alert', async () => {
+    const dom = new JSDOM(
+      '<!doctype html><html lang="de"><body><select id="topbar-language-selector"><option value="de">Deutsch</option><option value="fr">Français</option></select><span data-i18n="custom.title">Title</span></body></html>',
+      { url: 'http://127.0.0.1:3000/dashboard.html', runScripts: 'outside-only' }
+    );
+    const { window } = dom;
+    loadI18nClient(window);
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ custom: { title: 'Titre' } })
+    });
+    window.alert = jest.fn();
+
+    const i18n = new window.__I18nClient();
+    i18n.initialized = true;
+    i18n.currentLocale = 'de';
+    i18n.translations.de = { custom: { title: 'Titel' } };
+    i18n.setupLanguageSwitcher(window.document.getElementById('topbar-language-selector'));
+
+    const selector = window.document.getElementById('topbar-language-selector');
+    selector.value = 'fr';
+    selector.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+
+    expect(i18n.getLocale()).toBe('fr');
+    expect(window.document.documentElement.lang).toBe('fr');
+    expect(window.document.getElementById('custom-label')?.textContent || window.document.querySelector('[data-i18n="custom.title"]').textContent).toBe('Titre');
+    expect(window.alert).not.toHaveBeenCalled();
+    dom.window.close();
+  });
 });

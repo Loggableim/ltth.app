@@ -14,8 +14,11 @@ const {
   getCapturePluginAllowlist,
   isAllowedDashboardCaptureUrl,
   attachDashboardOnlyRequestPolicy,
+  assertNoDashboardExternalRequests,
   validateDashboardOutputDirectory,
-  validateSafeCaptureEnvironment
+  validateSafeCaptureEnvironment,
+  createDashboardProfileRestartFixture,
+  dispatchDashboardFixtureEvent
 } = require('../../scripts/capture-product-screenshots');
 
 const runnerPath = path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js');
@@ -167,6 +170,71 @@ describe('documentation screenshot workflow runner', () => {
       expect(denied.continue).not.toHaveBeenCalled();
     });
 
+    test('records blocked remote requests and fails the capture contract when one was attempted', () => {
+      const evidence = { blocked: [], external: [] };
+      const entry = { url: 'https://example.com/tracker.js', method: 'GET', resourceType: 'script' };
+      evidence.blocked.push(entry);
+      evidence.external.push(entry);
+      expect(() => assertNoDashboardExternalRequests(evidence))
+        .toThrow('Dashboard capture attempted an external request; blocked and stopping: https://example.com/tracker.js');
+      expect(() => assertNoDashboardExternalRequests({ blocked: [], external: [] })).not.toThrow();
+    });
+
+    test('keeps blocked data URLs in evidence without treating them as external network access', async () => {
+      const handlers = {};
+      const requestEvidence = { blocked: [], external: [] };
+      const page = {
+        setRequestInterception: jest.fn(async () => {}),
+        on: jest.fn((event, handler) => { handlers[event] = handler; })
+      };
+      await attachDashboardOnlyRequestPolicy(page, origin, { requestEvidence });
+      const dataImage = {
+        url: () => 'data:image/svg+xml,<svg></svg>',
+        method: () => 'GET',
+        resourceType: () => 'image',
+        abort: jest.fn(async () => {}),
+        continue: jest.fn()
+      };
+
+      handlers.request(dataImage);
+      await Promise.resolve();
+
+      expect(dataImage.abort).toHaveBeenCalledWith('blockedbyclient');
+      expect(dataImage.continue).not.toHaveBeenCalled();
+      expect(requestEvidence.blocked).toHaveLength(1);
+      expect(requestEvidence.external).toHaveLength(0);
+      expect(() => assertNoDashboardExternalRequests(requestEvidence)).not.toThrow();
+    });
+
+    test('serves only the local profile restart fixture and never changes backend state', () => {
+      const fixture = createDashboardProfileRestartFixture();
+      const profileUrl = `${origin}/api/profiles/active?restartPoll=1`;
+      expect(fixture.response(profileUrl, 'GET')).toMatchObject({
+        status: 200,
+        body: JSON.stringify({ activeProfile: 'default', pendingProfile: null, requiresRestart: false, port: 34567 })
+      });
+      expect(fixture.response(profileUrl, 'POST')).toBeNull();
+      expect(fixture.response(`${origin}/api/profiles/switch`, 'POST')).toBeNull();
+
+      fixture.scheduleRestart();
+      expect(fixture.activeProfile).toBe('ltth-dashboard-qa');
+      expect(fixture.response(profileUrl, 'GET').body).toContain('ltth-dashboard-qa');
+    });
+
+    test('dispatches fixture events to registered dashboard listeners without emitting socket events', async () => {
+      const page = { evaluate: jest.fn(async (_callback, name, payload) => {
+        expect(name).toBe('tiktok:status');
+        expect(payload).toEqual({ status: 'connected', username: 'fixture' });
+        return 2;
+      }) };
+      await expect(dispatchDashboardFixtureEvent(page, 'tiktok:status', { status: 'connected', username: 'fixture' }))
+        .resolves.toBe(2);
+      await expect(dispatchDashboardFixtureEvent({ evaluate: jest.fn(async () => 0) }, 'tiktok:status', {}))
+        .rejects.toThrow('Dashboard fixture event has no client listeners');
+      expect(page.evaluate.mock.calls[0][0].toString()).toContain('window.socket?.listeners(name)');
+      expect(page.evaluate.mock.calls[0][0].toString()).not.toContain('socket.emit(');
+    });
+
     test('requires an explicit absolute output directory outside the repository', () => {
       const repository = path.resolve(__dirname, '..', '..');
       expect(() => validateDashboardOutputDirectory(undefined, repository)).toThrow('explicit absolute SCREENSHOT_OUTPUT_DIR');
@@ -211,16 +279,22 @@ describe('documentation screenshot workflow runner', () => {
       expect(capture).toContain('await captureDashboardOnly(locale, outputDir)');
       expect(capture).toContain('return;');
       expect(source).toContain("new URL('/dashboard.html', origin)");
-      expect(source).toContain('await attachDashboardOnlyRequestPolicy(page, origin)');
+      expect(source).toContain('await attachDashboardOnlyRequestPolicy(page, origin, { profileRestartFixture, requestEvidence })');
+      expect(source).toContain("await configurePage(page, locale, { preserveSavedLocale: true })");
+      expect(source).toContain('const savedLocale = preserveSavedLocale ? localStorage.getItem(\'app_locale\') : null');
       expect(source).toContain("path.join(outputDir, 'dashboard-state.json')");
-      expect(source).toContain("path.join(outputDir, 'dashboard.png')");
-      expect(source).toContain("await page.screenshot({ path: screenshotPath, type: 'png', fullPage: true })");
+      expect(source).toContain('path.join(outputDir, `dashboard-${name}.png`)');
+      expect(source).toContain("await page.screenshot({ path: screenshotPath, type: 'png', fullPage: false })");
       expect(source).toContain('assertSandboxedDashboardBrowserSupport(browserExecutablePath())');
       expect(source).toContain('response.status()');
       const dashboardFlow = source.slice(source.indexOf('async function captureDashboardOnly('), source.indexOf('function compatibleDocsOutput('));
       expect(dashboardFlow).not.toContain('--no-sandbox');
       expect(dashboardFlow).not.toContain('--disable-setuid-sandbox');
       expect(dashboardFlow).toContain("redirect: 'manual'");
+      expect(dashboardFlow).toContain("status: 'connection_error'");
+      expect(dashboardFlow).toContain("profileRestartFixture.scheduleRestart()");
+      expect(dashboardFlow).toContain("selector.dispatchEvent(new Event('change', { bubbles: true }))");
+      expect(dashboardFlow).toContain("assertNoDashboardExternalRequests(requestEvidence)");
       expect(dashboardFlow.indexOf('await assertDashboardNavigationResponse(response, origin)'))
         .toBeLessThan(dashboardFlow.indexOf('await page.waitForFunction'));
 

@@ -800,6 +800,16 @@ function restoreConnectButton() {
     }
 }
 
+if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(() => {
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        if (connectBtn && !connectBtn.disabled && disconnectBtn?.disabled) {
+            restoreConnectButton();
+        }
+    });
+}
+
 async function disconnect() {
     try {
         const response = await fetch('/api/disconnect', { method: 'POST' });
