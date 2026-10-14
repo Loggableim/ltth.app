@@ -1,0 +1,47 @@
+{
+  "result": "PASS",
+  "scope": "GCCE configuration form save, browser reload, and app process restart",
+  "pluginAllowlist": [
+    "gcce"
+  ],
+  "profile": "C:\\Users\\logga\\AppData\\Local\\Temp\\ltth-l009-gcce-ui-0bd90fc433b84d5da8590120cadfd983\\profile",
+  "pluginFixture": "C:\\Users\\logga\\AppData\\Local\\Temp\\ltth-l009-gcce-ui-0bd90fc433b84d5da8590120cadfd983\\profile\\docs-capture-app\\plugins\\gcce",
+  "port": 51176,
+  "firstProcessPid": 47072,
+  "restartProcessPid": 30256,
+  "browserOrigin": "http://127.0.0.1:51176",
+  "browserPath": "/gcce/ui",
+  "control": "enableOverlayMessages",
+  "initialValue": true,
+  "submittedValue": false,
+  "saveUiMessage": "Konfiguration erfolgreich gespeichert!",
+  "postSaveGet": false,
+  "afterBrowserReloadCheckboxChecked": false,
+  "afterProcessRestartGet": false,
+  "afterProcessRestartCheckboxChecked": false,
+  "pluginLoadedCount": 1,
+  "pluginLoadLog": "Plugin loading complete: 1 loaded",
+  "firstScreenshot": "C:\\Users\\logga\\.codex\\worktrees\\l009-locale-ui-qa-2211\\ltth_desktop2-main\\output\\playwright\\l009-gcce-followup\\after-ui-reload.png",
+  "restartScreenshot": "C:\\Users\\logga\\.codex\\worktrees\\l009-locale-ui-qa-2211\\ltth_desktop2-main\\output\\playwright\\l009-gcce-followup\\after-process-restart.png",
+  "getEvidence": [
+    "after-save-get.json",
+    "after-restart-get.json"
+  ],
+  "console": "0 errors on saved/reloaded page and 0 errors after process restart; one transient local connection-refused warning/error was recorded while the old process was shutting down",
+  "externalEgress": "App-level capture connector gates and source paths reviewed; browser interactions used loopback only. No OS-level egress capture was performed.",
+  "notInvoked": [
+    "command execution or mutation",
+    "parameter validation",
+    "chat/event mutation",
+    "TikTok connect",
+    "OBS",
+    "providers",
+    "advanced settings"
+  ],
+  "limitations": [
+    "This is local source/runtime QA in a temporary profile, not package, device, release, or live-provider acceptance."
+  ],
+  "readonlyUiReads": [
+    "/api/gcce/stats and /api/gcce/commands were automatically read by the page; no command execution or command mutation action was invoked"
+  ]
+}
