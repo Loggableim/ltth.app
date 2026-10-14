@@ -438,6 +438,15 @@
         return;
       }
 
+      if (typeof defaults[key] === 'boolean') {
+        if (typeof value !== 'boolean') {
+          errors.push(`${key} must be a boolean`);
+        } else {
+          sanitized[key] = value;
+        }
+        return;
+      }
+
       if (Object.prototype.hasOwnProperty.call(NUMERIC_RANGES, key)) {
         if (validateNumber(key, value, errors)) {
           sanitized[key] = value;
@@ -477,15 +486,6 @@
           errors.push(`${key} must be ${STRING_LIMITS[key]} characters or less`);
         } else {
           sanitized[key] = value.trim();
-        }
-        return;
-      }
-
-      if (typeof defaults[key] === 'boolean') {
-        if (typeof value !== 'boolean') {
-          errors.push(`${key} must be a boolean`);
-        } else {
-          sanitized[key] = value;
         }
         return;
       }
