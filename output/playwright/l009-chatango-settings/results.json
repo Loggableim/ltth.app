@@ -1,0 +1,341 @@
+{
+  "captureMode": true,
+  "allowedPlugins": [
+    "chatango"
+  ],
+  "baseUrl": "http://127.0.0.1:56356",
+  "profilePath": "<redacted disposable Temp profile>",
+  "databasePath": "<same disposable Temp profile>",
+  "browserRequests": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/chatango/ui"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/js/theme-manager.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/i18n/translations/de"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:56356/api/chatango/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/chatango/ui"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/js/theme-manager.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/i18n/translations/de"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/chatango/ui"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/js/theme-manager.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/i18n/translations/de"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:56356/api/chatango/embed"
+    }
+  ],
+  "blockedRequests": [],
+  "httpRoutes": [
+    "POST /api/chatango/config"
+  ],
+  "externalConnectorStartup": "disabled by LTTH_DOCS_CAPTURE=true",
+  "tiktokAutoReconnect": "disabled by LTTH_DISABLE_TIKTOK_AUTO_RECONNECT=true and Capture mode",
+  "osEgressIsolation": "not provided; browser requests guarded, app process not OS-firewalled",
+  "databaseCreatedInDisposableProfile": true,
+  "firstProcessPid": 64108,
+  "baselineConfig": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "night",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30,
+    "dashboardEnabled": true,
+    "widgetEnabled": true
+  },
+  "allowedProjection": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "day",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30,
+    "dashboardEnabled": true,
+    "widgetEnabled": true
+  },
+  "socketPollingRequests": 3,
+  "loadedUiBeforeSave": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "night",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "dashboardEnabled": true,
+    "widgetEnabled": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30
+  },
+  "loadedUiMatchesApiBaseline": true,
+  "payload": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "day",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "dashboardEnabled": true,
+    "widgetEnabled": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30
+  },
+  "payloadMatchesProjection": true,
+  "postStatus": 200,
+  "savedMessage": "",
+  "afterSave": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "day",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30,
+    "dashboardEnabled": true,
+    "widgetEnabled": true
+  },
+  "afterSaveMatchesProjection": true,
+  "afterReloadUi": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "day",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "dashboardEnabled": true,
+    "widgetEnabled": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30
+  },
+  "afterReloadMatchesProjection": true,
+  "shutdownOne": {
+    "success": true,
+    "message": "Shutting down..."
+  },
+  "processExitOne": {
+    "code": 0,
+    "signal": null
+  },
+  "secondProcessPid": 61144,
+  "afterRestart": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "day",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30,
+    "dashboardEnabled": true,
+    "widgetEnabled": true
+  },
+  "afterRestartMatchesProjection": true,
+  "afterRestartUi": {
+    "enabled": true,
+    "roomHandle": "pupcidsltth",
+    "theme": "day",
+    "fontSize": "10",
+    "allowPM": false,
+    "showTicker": true,
+    "dashboardEnabled": true,
+    "widgetEnabled": true,
+    "widgetPosition": "br",
+    "widgetWidth": 200,
+    "widgetHeight": 300,
+    "collapsedWidth": 75,
+    "collapsedHeight": 30
+  },
+  "afterRestartUiMatchesProjection": true,
+  "externalBrowserRequests": [],
+  "localBrowserBlockedRequests": [],
+  "shutdownTwo": {
+    "success": true,
+    "message": "Shutting down..."
+  },
+  "processExitTwo": {
+    "code": 0,
+    "signal": null
+  },
+  "profileRemoved": true
+}
