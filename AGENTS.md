@@ -51,3 +51,13 @@ When changing a specific plugin, also run the closest matching tests in `app/tes
 - User docs live in `app/wiki/`.
 - Technical notes live in `docs/`.
 - Historical implementation reports live in `docs_archive/` and must not be treated as current instructions.
+
+## Cursor Cloud specific instructions
+
+- Install from `app/` with `npm ci`. Set `PUPPETEER_SKIP_DOWNLOAD=true` and `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` so optional Puppeteer and Playwright browser downloads are skipped. Node 22 on the default image can load `better-sqlite3` from its prebuild.
+- Asset tests call `python` and `PIL`. The environment image includes `python-is-python3` and `python3-pil`.
+- Start the backend with `LTTH_DISABLE_AUTO_UPDATE=true`. Plain `npm start` runs the Git updater and can `git reset --hard` the working tree when `origin` is ahead. `LTTH_SKIP_DEFERRED_CONFIG_REPAIR=true` skips the delayed profile-database repair scan.
+- The app listens on `127.0.0.1:3000`. Dashboard: `http://127.0.0.1:3000/dashboard.html`. Health: `GET /api/health`. Overlay: `http://127.0.0.1:3000/overlay.html`.
+- Profile databases are created under `~/.local/share/ltth.app/user_configs/`, outside the repository.
+- An Eulerstream API key is required only to connect to a live TikTok stream. The dashboard, goals, settings, and local APIs work without one.
+- CI-equivalent checks from `app/` are `npm run build:css`, `npm run lint`, and `npm test -- --runInBand --forceExit`.
