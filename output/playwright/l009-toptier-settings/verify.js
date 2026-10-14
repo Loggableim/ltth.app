@@ -37,6 +37,45 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 
+function readUiConfigProjection(page) {
+  return page.evaluate(() => {
+    const number = (id, fallback) => Number.parseInt(document.getElementById(id).value, 10) || fallback;
+    const selectedVariant = document.querySelector('.tt-variant-option.selected');
+    return {
+      likesBoard: { enabled: document.getElementById('likes-enabled').checked, displayCount: number('likes-count', 5), scoreMultiplier: Number.parseFloat(document.getElementById('likes-multiplier').value) || 1.0 },
+      giftsBoard: { enabled: document.getElementById('gifts-enabled').checked, displayCount: number('gifts-count', 5) },
+      decay: {
+        enabled: document.getElementById('decay-enabled-main').checked,
+        type: document.getElementById('decay-type').value,
+        intervalMs: number('decay-interval', 10000), decayAmount: number('decay-amount', 5), decayPercent: number('decay-percent', 10),
+        scoreFloor: number('decay-floor', 0), idleThresholdMs: number('decay-idle-threshold', 30000),
+        stepThreshold: number('decay-step-threshold', 50), decayOnlyWhenConnected: document.getElementById('decay-connected-only').checked
+      },
+      overlay: {
+        variant: selectedVariant ? selectedVariant.getAttribute('data-variant') : 'animated-race', theme: document.getElementById('ov-theme').value,
+        orientation: document.getElementById('ov-orientation').value, size: document.getElementById('ov-size').value,
+        displayCount: number('ov-count', 5), rotationIntervalMs: number('ov-rotation', 8000),
+        showAvatars: document.getElementById('ov-avatars').checked, showScoreBars: document.getElementById('ov-bars').checked,
+        accentColor: document.getElementById('ov-accent').value || '#f59e0b', bgOpacity: Number.parseFloat(document.getElementById('ov-opacity').value) || 0.85,
+        customCSS: document.getElementById('ov-css').value || '', rankIcons: { 1: '👑', 2: '🥈', 3: '🥉' }, position: 'top-right'
+      },
+      sound: { playOnNewLeader: document.getElementById('snd-leader-panel').checked, playOnRankChange: document.getElementById('snd-rank').checked },
+      chat: { rankCommandEnabled: document.getElementById('chat-rank-enabled').checked, rankCommandKeyword: document.getElementById('chat-keyword').value.trim() || '!rank' }
+    };
+  });
+}
+
+async function waitForUiProjection(page, expected, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  let actual;
+  while (Date.now() < deadline) {
+    actual = await readUiConfigProjection(page);
+    if (canonical(actual) === canonical(expected)) return actual;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw new Error(`TopTier UI did not hydrate to expected projection: ${JSON.stringify(actual)}`);
+}
+
 function waitExit(processHandle, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
     if (processHandle.exitCode !== null) return resolve({ code: processHandle.exitCode, signal: processHandle.signalCode });
@@ -104,11 +143,7 @@ async function addBrowserGuard(context, baseUrl, record) {
       }
       const payload = request.postDataJSON();
       record.postPayload = payload;
-      const expected = structuredClone(record.baselineConfig);
-      expected.overlay.theme = 'night';
-      expected.overlay.position = 'top-right';
-      record.allowedConfigProjection = expected;
-      record.postMatchesExpectedUiProjection = canonical(payload) === canonical(expected);
+      record.postMatchesExpectedUiProjection = canonical(payload) === canonical(record.allowedConfigProjection);
       if (!record.postMatchesExpectedUiProjection) {
         return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ success: false, error: 'Payload differs from reviewed UI projection' }) });
       }
@@ -158,6 +193,9 @@ async function main() {
     const baselineData = await baselineResponse.json();
     if (!baselineData.success || !baselineData.config) throw new Error('Could not read TopTier baseline configuration');
     record.baselineConfig = baselineData.config;
+    record.allowedConfigProjection = structuredClone(record.baselineConfig);
+    record.allowedConfigProjection.overlay.theme = 'night';
+    record.allowedConfigProjection.overlay.position = 'top-right';
     record.baselineSession = await (await fetch(`${baseUrl}/session/current`)).json();
     record.baselineDecay = record.baselineConfig.decay;
 
@@ -166,20 +204,9 @@ async function main() {
     await addBrowserGuard(context, baseUrl, record);
     const page = await context.newPage();
     await page.goto(`${baseUrl}/toptier/ui`, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => document.getElementById('save-config') && document.getElementById('chat-keyword')?.value === '!rank');
-    await page.waitForFunction(() => document.getElementById('likes-count')?.value === '5' && document.getElementById('ov-theme')?.value === 'night');
-    record.loadedUiBeforeSave = await page.evaluate(() => ({
-      likesEnabled: document.getElementById('likes-enabled').checked,
-      likesCount: Number(document.getElementById('likes-count').value),
-      likesMultiplier: Number(document.getElementById('likes-multiplier').value),
-      giftsEnabled: document.getElementById('gifts-enabled').checked,
-      giftsCount: Number(document.getElementById('gifts-count').value),
-      decayEnabled: document.getElementById('decay-enabled-main').checked,
-      decayConnectedOnly: document.getElementById('decay-connected-only').checked,
-      theme: document.getElementById('ov-theme').value,
-      variant: document.querySelector('.tt-variant-option.selected')?.getAttribute('data-variant'),
-      positionAddedBySerializer: 'top-right'
-    }));
+    await page.waitForFunction(() => document.getElementById('save-config'));
+    record.loadedUiBeforeSave = await waitForUiProjection(page, record.allowedConfigProjection);
+    record.loadedUiMatchesExpectedProjection = canonical(record.loadedUiBeforeSave) === canonical(record.allowedConfigProjection);
     const savedResponse = page.waitForResponse(response => response.url() === `${baseUrl}/config` && response.request().method() === 'POST');
     await page.locator('#save-config').click();
     const saveResponse = await savedResponse;
@@ -251,7 +278,7 @@ async function main() {
     streams[2].end(); streams[3].end();
     record.profileRemoved = false;
     fs.writeFileSync(path.join(evidenceDir, 'results.json'), JSON.stringify(record, null, 2));
-    const checks = [record.postMatchesExpectedUiProjection, record.afterSaveMatchesUiProjection, record.afterReloadMatchesUiProjection,
+    const checks = [record.loadedUiMatchesExpectedProjection, record.postMatchesExpectedUiProjection, record.afterSaveMatchesUiProjection, record.afterReloadMatchesUiProjection,
       record.afterRestartMatchesUiProjection, record.processExitOne.code === 0, record.processExitTwo.code === 0];
     if (checks.some(value => value !== true)) throw new Error('One or more TopTier save/reload/restart checks did not pass');
     console.log(JSON.stringify({ ok: true, result: path.join(evidenceDir, 'results.json') }));
