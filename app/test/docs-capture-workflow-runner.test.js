@@ -6,10 +6,306 @@ const {
   assertWorkflowOperationsExecuted,
   createBlockedNetworkEvidence
 } = require('../../scripts/lib/docs-capture-workflow-runner');
+const os = require('os');
+const {
+  assertDashboardNavigationResponse,
+  buildSafeCaptureEnvironment,
+  createDashboardOutputDirectory,
+  getCapturePluginAllowlist,
+  isAllowedDashboardCaptureUrl,
+  attachDashboardOnlyRequestPolicy,
+  assertNoDashboardExternalRequests,
+  validateDashboardOutputDirectory,
+  validateSafeCaptureEnvironment,
+  createDashboardProfileRestartFixture,
+  dispatchDashboardFixtureEvent
+} = require('../../scripts/capture-product-screenshots');
 
 const runnerPath = path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js');
 
 describe('documentation screenshot workflow runner', () => {
+  describe('safe local capture environment', () => {
+    let tempRoot;
+    let profileDir;
+
+    beforeEach(() => {
+      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-capture-env-test-'));
+      profileDir = path.join(tempRoot, 'profile');
+      fs.mkdirSync(path.join(profileDir, 'logs'), { recursive: true });
+    });
+
+    afterEach(() => fs.rmSync(tempRoot, { recursive: true, force: true }));
+
+    test('builds a minimal Windows environment and ignores unrelated inherited values', () => {
+      const env = buildSafeCaptureEnvironment({
+        profileDir,
+        port: 34567,
+        platform: 'win32',
+        tempDir: tempRoot,
+        systemEnvironment: {
+          SystemRoot: 'C:\\Windows',
+          WINDIR: 'C:\\Windows',
+          USERPROFILE: 'C:\\Users\\real-user',
+          APPDATA: 'C:\\Users\\real-user\\AppData\\Roaming',
+          API_TOKEN: 'must-not-pass'
+        }
+      });
+
+      expect(env.APPDATA).toBeUndefined();
+      expect(env.API_TOKEN).toBeUndefined();
+      expect(env.SystemRoot).toBe('C:\\Windows');
+      expect(env.USERPROFILE).toBe('');
+      expect(env.LTTH_DOCS_CAPTURE_ALLOWED_PLUGINS).toBe('');
+      expect(env.LOCALAPPDATA).toBe(profileDir);
+      expect(env.LTTH_LOG_DIR).toBe(path.join(profileDir, 'logs'));
+      expect(env.LTTH_BIND_ADDRESS).toBe('127.0.0.1');
+      expect(env.LTTH_NO_BROWSER).toBe('true');
+      expect(() => validateSafeCaptureEnvironment(env, { platform: 'win32', tempDir: tempRoot })).not.toThrow();
+    });
+
+    test('rejects an inherited secret or other unapproved variable before capture can start', () => {
+      const env = buildSafeCaptureEnvironment({ profileDir, port: 34567, tempDir: tempRoot });
+      env.API_TOKEN = 'must-not-pass';
+
+      expect(() => validateSafeCaptureEnvironment(env, { tempDir: tempRoot }))
+        .toThrow('Safe capture environment contains unsupported variable: API_TOKEN');
+    });
+
+    test('rejects missing isolated logs and a non-loopback bind address', () => {
+      const missingLogs = buildSafeCaptureEnvironment({ profileDir, port: 34567, tempDir: tempRoot });
+      missingLogs.LTTH_LOG_DIR = path.join(tempRoot, 'outside-logs');
+      expect(() => validateSafeCaptureEnvironment(missingLogs, { tempDir: tempRoot }))
+        .toThrow('Documentation capture paths must stay inside a nested temporary profile');
+
+      const nonLoopback = buildSafeCaptureEnvironment({ profileDir, port: 34567, tempDir: tempRoot });
+      nonLoopback.LTTH_BIND_ADDRESS = '0.0.0.0';
+      expect(() => validateSafeCaptureEnvironment(nonLoopback, { tempDir: tempRoot }))
+        .toThrow('Documentation capture environment has unsafe flag values');
+    });
+
+    test('allows a plugin only when its fixture is nested and explicitly listed', () => {
+      const pluginDir = path.join(profileDir, 'plugins');
+      const pluginRoot = path.join(pluginDir, 'dashboard-local');
+      fs.mkdirSync(pluginRoot, { recursive: true });
+      fs.writeFileSync(path.join(pluginRoot, 'plugin.json'), JSON.stringify({ id: 'dashboard-local' }));
+      const env = buildSafeCaptureEnvironment({
+        profileDir,
+        port: 34567,
+        pluginDir,
+        allowedPluginIds: 'dashboard-local',
+        tempDir: tempRoot
+      });
+
+      expect(() => validateSafeCaptureEnvironment(env, { tempDir: tempRoot })).not.toThrow();
+      env.LTTH_DOCS_CAPTURE_ALLOWED_PLUGINS = '';
+      expect(() => validateSafeCaptureEnvironment(env, { tempDir: tempRoot }))
+        .toThrow('Documentation capture plugin fixture manifest ID must match its canonical directory and allowlist ID');
+    });
+
+    test('validates the isolated child environment before spawning the app', () => {
+      const source = fs.readFileSync(runnerPath, 'utf8');
+      const start = source.slice(source.indexOf('async function startIsolatedApp('), source.indexOf('async function stopIsolatedApp('));
+
+      expect(start.indexOf('validateSafeCaptureEnvironment(childEnvironment)'))
+        .toBeLessThan(start.indexOf('spawn(process.execPath'));
+      expect(start).toContain('env: childEnvironment');
+      expect(start).not.toContain('...process.env');
+      expect(start).toContain('http://127.0.0.1:${port}');
+    });
+
+    test('derives the plugin allowlist only from manifests inside the isolated fixture', () => {
+      const fixtureRoot = path.join(profileDir, 'plugins');
+      const pluginRoot = path.join(fixtureRoot, 'dashboard-local');
+      fs.mkdirSync(pluginRoot, { recursive: true });
+      fs.writeFileSync(path.join(pluginRoot, 'plugin.json'), JSON.stringify({ id: 'dashboard-local' }));
+      fs.mkdirSync(path.join(fixtureRoot, 'without-manifest'));
+
+      expect(getCapturePluginAllowlist(null)).toBe('');
+      expect(getCapturePluginAllowlist(fixtureRoot)).toBe('dashboard-local');
+    });
+  });
+
+  describe('dashboard-only capture boundaries', () => {
+    const origin = 'http://127.0.0.1:34567';
+
+    test.each([
+      ['dashboard route', `${origin}/dashboard.html?lang=de`, true],
+      ['local asset', `${origin}/js/dashboard.js`, true],
+      ['local API', `${origin}/api/health`, true],
+      ['different host', 'http://localhost:34567/dashboard.html', false],
+      ['different port', 'http://127.0.0.1:34568/dashboard.html', false],
+      ['different scheme', 'https://127.0.0.1:34567/dashboard.html', false],
+      ['external host', 'https://example.com/dashboard.html', false],
+      ['credentials in URL', 'http://user@127.0.0.1:34567/dashboard.html', false]
+    ])('origin policy handles %s', (_label, url, allowed) => {
+      expect(isAllowedDashboardCaptureUrl(url, origin)).toBe(allowed);
+    });
+
+    test('rejects redirects and any navigation response outside the exact origin', async () => {
+      const response = (url, status) => ({ url: () => url, status: () => status });
+      await expect(assertDashboardNavigationResponse(response(`${origin}/dashboard.html`, 200), origin)).resolves.toBeDefined();
+      await expect(assertDashboardNavigationResponse(response(`${origin}/dashboard.html`, 302), origin))
+        .rejects.toThrow('Dashboard navigation redirects are not allowed');
+      await expect(assertDashboardNavigationResponse(response('http://localhost:34567/dashboard.html', 200), origin))
+        .rejects.toThrow('Dashboard navigation escaped its allowed origin');
+    });
+
+    test('continues only requests matching the allowed origin and aborts all others', async () => {
+      const handlers = {};
+      const page = {
+        setRequestInterception: jest.fn(async () => {}),
+        on: jest.fn((event, handler) => { handlers[event] = handler; })
+      };
+      await attachDashboardOnlyRequestPolicy(page, origin);
+      const allowed = { url: () => `${origin}/js/dashboard.js`, continue: jest.fn(), abort: jest.fn(async () => {}) };
+      const denied = { url: () => 'https://example.com/tracker.js', continue: jest.fn(), abort: jest.fn(async () => {}) };
+
+      handlers.request(allowed);
+      handlers.request(denied);
+      await Promise.resolve();
+
+      expect(allowed.continue).toHaveBeenCalledWith({ url: `${origin}/js/dashboard.js` });
+      expect(allowed.abort).not.toHaveBeenCalled();
+      expect(denied.abort).toHaveBeenCalledWith('blockedbyclient');
+      expect(denied.continue).not.toHaveBeenCalled();
+    });
+
+    test('records blocked remote requests and fails the capture contract when one was attempted', () => {
+      const evidence = { blocked: [], external: [] };
+      const entry = { url: 'https://example.com/tracker.js', method: 'GET', resourceType: 'script' };
+      evidence.blocked.push(entry);
+      evidence.external.push(entry);
+      expect(() => assertNoDashboardExternalRequests(evidence))
+        .toThrow('Dashboard capture attempted an external request; blocked and stopping: https://example.com/tracker.js');
+      expect(() => assertNoDashboardExternalRequests({ blocked: [], external: [] })).not.toThrow();
+    });
+
+    test('keeps blocked data URLs in evidence without treating them as external network access', async () => {
+      const handlers = {};
+      const requestEvidence = { blocked: [], external: [] };
+      const page = {
+        setRequestInterception: jest.fn(async () => {}),
+        on: jest.fn((event, handler) => { handlers[event] = handler; })
+      };
+      await attachDashboardOnlyRequestPolicy(page, origin, { requestEvidence });
+      const dataImage = {
+        url: () => 'data:image/svg+xml,<svg></svg>',
+        method: () => 'GET',
+        resourceType: () => 'image',
+        abort: jest.fn(async () => {}),
+        continue: jest.fn()
+      };
+
+      handlers.request(dataImage);
+      await Promise.resolve();
+
+      expect(dataImage.abort).toHaveBeenCalledWith('blockedbyclient');
+      expect(dataImage.continue).not.toHaveBeenCalled();
+      expect(requestEvidence.blocked).toHaveLength(1);
+      expect(requestEvidence.external).toHaveLength(0);
+      expect(() => assertNoDashboardExternalRequests(requestEvidence)).not.toThrow();
+    });
+
+    test('serves only the local profile restart fixture and never changes backend state', () => {
+      const fixture = createDashboardProfileRestartFixture();
+      const profileUrl = `${origin}/api/profiles/active?restartPoll=1`;
+      expect(fixture.response(profileUrl, 'GET')).toMatchObject({
+        status: 200,
+        body: JSON.stringify({ activeProfile: 'default', pendingProfile: null, requiresRestart: false, port: 34567 })
+      });
+      expect(fixture.response(profileUrl, 'POST')).toBeNull();
+      expect(fixture.response(`${origin}/api/profiles/switch`, 'POST')).toBeNull();
+
+      fixture.scheduleRestart();
+      expect(fixture.activeProfile).toBe('ltth-dashboard-qa');
+      expect(fixture.response(profileUrl, 'GET').body).toContain('ltth-dashboard-qa');
+    });
+
+    test('dispatches fixture events to registered dashboard listeners without emitting socket events', async () => {
+      const page = { evaluate: jest.fn(async (_callback, name, payload) => {
+        expect(name).toBe('tiktok:status');
+        expect(payload).toEqual({ status: 'connected', username: 'fixture' });
+        return 2;
+      }) };
+      await expect(dispatchDashboardFixtureEvent(page, 'tiktok:status', { status: 'connected', username: 'fixture' }))
+        .resolves.toBe(2);
+      await expect(dispatchDashboardFixtureEvent({ evaluate: jest.fn(async () => 0) }, 'tiktok:status', {}))
+        .rejects.toThrow('Dashboard fixture event has no client listeners');
+      expect(page.evaluate.mock.calls[0][0].toString()).toContain('window.socket?.listeners(name)');
+      expect(page.evaluate.mock.calls[0][0].toString()).not.toContain('socket.emit(');
+    });
+
+    test('requires an explicit absolute output directory outside the repository', () => {
+      const repository = path.resolve(__dirname, '..', '..');
+      expect(() => validateDashboardOutputDirectory(undefined, repository)).toThrow('explicit absolute SCREENSHOT_OUTPUT_DIR');
+      expect(() => validateDashboardOutputDirectory(path.join(repository, 'screenshots'), repository))
+        .toThrow('must be outside the repository');
+      expect(() => validateDashboardOutputDirectory(path.join(os.tmpdir(), 'arbitrary-temp-dir'), repository))
+        .toThrow('dedicated disposable temp prefix');
+      const requested = path.join(os.tmpdir(), `ltth-dashboard-capture-test-${process.pid}`);
+      expect(validateDashboardOutputDirectory(requested, repository)).toBe(path.resolve(requested));
+      fs.mkdirSync(requested, { recursive: true });
+      expect(() => validateDashboardOutputDirectory(requested, repository)).toThrow('must not already exist');
+      fs.rmSync(requested, { recursive: true, force: true });
+
+      const linkPath = path.join(os.tmpdir(), `ltth-dashboard-capture-link-${process.pid}`);
+      const targetPath = path.join(os.tmpdir(), `ltth-dashboard-capture-target-${process.pid}`);
+      fs.mkdirSync(targetPath, { recursive: true });
+      try {
+        fs.symlinkSync(targetPath, linkPath, process.platform === 'win32' ? 'junction' : 'dir');
+        expect(() => validateDashboardOutputDirectory(linkPath, repository)).toThrow('must not already exist');
+      } finally {
+        fs.rmSync(linkPath, { recursive: true, force: true });
+        fs.rmSync(targetPath, { recursive: true, force: true });
+      }
+
+      const created = createDashboardOutputDirectory(requested, repository);
+      try {
+        expect(fs.realpathSync(created)).toBe(created);
+        expect(path.dirname(created)).toBe(path.resolve(os.tmpdir()));
+        expect(path.basename(created)).toMatch(/^ltth-dashboard-capture-test-/);
+      } finally {
+        fs.rmSync(created, { recursive: true, force: true });
+      }
+    });
+
+    test('keeps dashboard-only mode separate and validates output before any app/browser runner', () => {
+      const source = fs.readFileSync(runnerPath, 'utf8');
+      const capture = source.slice(source.indexOf('async function capture()'), source.indexOf("if (require.main === module)"));
+
+      expect(capture.indexOf('validateDashboardOutputDirectory(process.env.SCREENSHOT_OUTPUT_DIR)'))
+        .toBeLessThan(capture.indexOf('captureDashboardOnly(locale, outputDir)'));
+      expect(capture.indexOf('DASHBOARD_ONLY')).toBeLessThan(capture.indexOf('buildDocsSpec(REPO_ROOT)'));
+      expect(capture).toContain('await captureDashboardOnly(locale, outputDir)');
+      expect(capture).toContain('return;');
+      expect(source).toContain("new URL('/dashboard.html', origin)");
+      expect(source).toContain('await attachDashboardOnlyRequestPolicy(page, origin, { profileRestartFixture, requestEvidence })');
+      expect(source).toContain("await configurePage(page, locale, { preserveSavedLocale: true })");
+      expect(source).toContain('const savedLocale = preserveSavedLocale ? localStorage.getItem(\'app_locale\') : null');
+      expect(source).toContain("path.join(outputDir, 'dashboard-state.json')");
+      expect(source).toContain('path.join(outputDir, `dashboard-${name}.png`)');
+      expect(source).toContain("await page.screenshot({ path: screenshotPath, type: 'png', fullPage: false })");
+      expect(source).toContain('assertSandboxedDashboardBrowserSupport(browserExecutablePath())');
+      expect(source).toContain('response.status()');
+      const dashboardFlow = source.slice(source.indexOf('async function captureDashboardOnly('), source.indexOf('function compatibleDocsOutput('));
+      expect(dashboardFlow).not.toContain('--no-sandbox');
+      expect(dashboardFlow).not.toContain('--disable-setuid-sandbox');
+      expect(dashboardFlow).toContain("redirect: 'manual'");
+      expect(dashboardFlow).toContain("status: 'connection_error'");
+      expect(dashboardFlow).toContain("profileRestartFixture.scheduleRestart()");
+      expect(dashboardFlow).toContain("selector.dispatchEvent(new Event('change', { bubbles: true }))");
+      expect(dashboardFlow).toContain("assertNoDashboardExternalRequests(requestEvidence)");
+      expect(dashboardFlow.indexOf('await assertDashboardNavigationResponse(response, origin)'))
+        .toBeLessThan(dashboardFlow.indexOf('await page.waitForFunction'));
+
+      const appStart = source.slice(source.indexOf('async function startIsolatedApp('), source.indexOf('async function stopIsolatedApp('));
+      expect(appStart).toContain("!DASHBOARD_ONLY && COLLECTION === 'docs'");
+      expect(appStart).toContain('validateSafeCaptureEnvironment(childEnvironment)');
+      expect(appStart).toContain('env: childEnvironment');
+      expect(appStart).not.toContain('...process.env');
+    });
+  });
+
   test('accepts only declared operations with matching observed local evidence', () => {
     const operations = assertWorkflowOperationsExecuted({
       workflow: {
