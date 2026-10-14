@@ -1,0 +1,102 @@
+- generic [ref=f4e2]:
+  - generic [ref=f4e3]:
+    - generic [ref=f4e4]:
+      - img "Viewer XP" [ref=f4e5]
+      - generic [ref=f4e6]: Zuschauer-XP
+    - generic [ref=f4e7]: Zuschauer-Gamification und Bestenlisten
+    - navigation [ref=f4e8]:
+      - generic [ref=f4e9]:
+        - generic [ref=f4e10]: 📊 Übersicht
+        - link "📊 Übersicht" [ref=f4e97] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e12]: 📊
+          - generic [ref=f4e13]: Übersicht
+        - link "🏆 Bestenliste" [ref=f4e98] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e15]: 🏆
+          - generic [ref=f4e16]: Bestenliste
+      - generic [ref=f4e17]:
+        - generic [ref=f4e18]: Einblicke
+        - link "👤 Benutzerdetails" [ref=f4e99] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e20]: 👤
+          - generic [ref=f4e21]: Benutzerdetails
+        - link "📜 Ereignisprotokolle" [ref=f4e100] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e23]: 📜
+          - generic [ref=f4e24]: Ereignisprotokolle
+      - generic [ref=f4e25]:
+        - generic [ref=f4e26]: OBS Overlays
+        - link "🎬 OBS-Panel" [ref=f4e101] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e28]: 🎬
+          - generic [ref=f4e29]: OBS-Panel
+        - link "👁️ Live-Vorschau" [ref=f4e102] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e31]: 👁️
+          - generic [ref=f4e32]: Live-Vorschau
+      - generic [ref=f4e33]:
+        - generic [ref=f4e34]: Konfiguration
+        - link "⚙️ XP-Einstellungen" [ref=f4e103] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e36]: ⚙️
+          - generic [ref=f4e37]: XP-Einstellungen
+        - link "📈 Level-Konfig" [ref=f4e104] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e39]: 📈
+          - generic [ref=f4e40]: Level-Konfig
+      - generic [ref=f4e41]:
+        - generic [ref=f4e42]: Verwaltung
+        - link "🎁 Manuelle Auszeichnung" [active] [ref=f4e105] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e44]: 🎁
+          - generic [ref=f4e45]: Manuelle Auszeichnung
+        - link "🎰 Drehrad" [ref=f4e106] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e47]: 🎰
+          - generic [ref=f4e48]: Drehrad
+        - link "💾 Importieren/Exportieren" [ref=f4e107] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=f4e50]: 💾
+          - generic [ref=f4e51]: Importieren/Exportieren
+  - generic [ref=f4e113]:
+    - heading "🎁 Manuelle Auszeichnung" [level=1] [ref=f4e115]
+    - generic [ref=f4e116]:
+      - generic [ref=f4e117]: XP vergeben
+      - generic [ref=f4e118]:
+        - generic [ref=f4e119]:
+          - generic [ref=f4e120]: 💡
+          - generic [ref=f4e121]:
+            - strong [ref=f4e122]: "Tip:"
+            - text: Nutzen Sie dies, um Zuschauer für besondere Beiträge, Meilensteine oder Community-Events zu belohnen. Die XP werden sofort hinzugefügt und eine Level-Up-Animation wird ausgelöst, wenn sie ein neues Level erreichen.
+        - generic [ref=f4e123]:
+          - generic [ref=f4e124]:
+            - generic [ref=f4e125]: Benutzername *
+            - combobox "Zuschauer-Benutzernamen eingeben" [ref=f4e126]
+          - generic [ref=f4e127]:
+            - generic [ref=f4e128]: XP-Betrag *
+            - spinbutton "100" [ref=f4e129]
+            - generic [ref=f4e130]: "Zu vergebende XP (mindestens: 1)"
+          - generic [ref=f4e131]:
+            - generic [ref=f4e132]: Grund (optional)
+            - textbox "z. B. Gewinner eines Community-Events, Meilensteinfeier usw." [ref=f4e133]
+            - generic [ref=f4e134]: Optionaler Hinweis, warum diese XP vergeben wurden (für Ihre Unterlagen)
+          - generic [ref=f4e135]:
+            - button "XP vergeben" [ref=f4e136] [cursor=pointer]
+            - button "🔄 Klare Form" [ref=f4e137] [cursor=pointer]
+    - generic [ref=f4e138]:
+      - generic [ref=f4e139]: 📜Aktuelle manuelle Auszeichnungen
+      - table [ref=f4e143]:
+        - rowgroup [ref=f4e144]:
+          - row [ref=f4e145]:
+            - columnheader "Datum/Uhrzeit" [ref=f4e146]
+            - columnheader "Benutzername" [ref=f4e147]
+            - columnheader "XP-Betrag" [ref=f4e148]
+            - columnheader "Grund" [ref=f4e149]
+        - rowgroup [ref=f4e150]:
+          - row [ref=f4e151]:
+            - cell "14.10.2026, 10:26:45" [ref=f4e152]
+            - cell [ref=f4e153]:
+              - strong [ref=f4e154]: l009_synthetic_viewer_20261014
+            - cell "+1 XP" [ref=f4e155]
+            - cell "L-009 isolated Temp QA" [ref=f4e157]
