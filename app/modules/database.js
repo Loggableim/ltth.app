@@ -2613,6 +2613,10 @@ class DatabaseManager {
      * Create or update a milestone tier
      */
     saveMilestoneTier(tier) {
+        const enabled = tier.enabled === undefined || tier.enabled === null
+            ? 1
+            : (tier.enabled === 0 || tier.enabled === false || tier.enabled === '0' ? 0 : 1);
+
         if (tier.id) {
             // Update existing tier
             const stmt = this.db.prepare(`
@@ -2624,7 +2628,7 @@ class DatabaseManager {
             `);
             stmt.run(tier.name, tier.tier_level, tier.threshold,
                 tier.animation_gif_path, tier.animation_video_path, tier.animation_audio_path,
-                tier.enabled, tier.id);
+                enabled, tier.id);
             return tier.id;
         } else {
             // Create new tier
@@ -2635,7 +2639,7 @@ class DatabaseManager {
             `);
             const result = stmt.run(tier.name, tier.tier_level, tier.threshold,
                 tier.animation_gif_path || null, tier.animation_video_path || null,
-                tier.animation_audio_path || null, tier.enabled !== false ? 1 : 0);
+                tier.animation_audio_path || null, enabled);
             return result.lastInsertRowid;
         }
     }
