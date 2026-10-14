@@ -3,52 +3,124 @@
   "allowedPlugins": [
     "spotlight"
   ],
-  "baseUrl": "http://127.0.0.1:55061",
+  "baseUrl": "http://127.0.0.1:60269",
   "dbPath": "<redacted Temp profile>",
   "browserRequests": [
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/spotlight/ui"
+      "url": "http://127.0.0.1:60269/spotlight/ui"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/css/themes.css"
+      "url": "http://127.0.0.1:60269/css/themes.css"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/socket.io/socket.io.js"
+      "url": "http://127.0.0.1:60269/socket.io/socket.io.js"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/js/i18n-client.js"
+      "url": "http://127.0.0.1:60269/js/i18n-client.js"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/plugins/spotlight/assets/spotlight-logo-v1.1.4.png"
+      "url": "http://127.0.0.1:60269/plugins/spotlight/assets/spotlight-logo-v1.1.4.png"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/js/tiktok-studio-url.js"
+      "url": "http://127.0.0.1:60269/js/tiktok-studio-url.js"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/plugins/spotlight/ui/main.js"
+      "url": "http://127.0.0.1:60269/plugins/spotlight/ui/main.js"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/api/i18n/translations/de"
+      "url": "http://127.0.0.1:60269/api/i18n/translations/de"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/api/lastevent/settings"
+      "url": "http://127.0.0.1:60269/api/lastevent/settings"
     },
     {
       "method": "GET",
-      "url": "http://127.0.0.1:55061/api/lastevent/settings"
+      "url": "http://127.0.0.1:60269/api/lastevent/settings"
     },
     {
       "method": "POST",
-      "url": "http://127.0.0.1:55061/api/lastevent/settings/follower"
+      "url": "http://127.0.0.1:60269/api/lastevent/settings/follower"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/spotlight/ui"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/plugins/spotlight/assets/spotlight-logo-v1.1.4.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/js/tiktok-studio-url.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/plugins/spotlight/ui/main.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/api/i18n/translations/de"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/api/lastevent/settings"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/spotlight/ui"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/plugins/spotlight/assets/spotlight-logo-v1.1.4.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/js/tiktok-studio-url.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/plugins/spotlight/ui/main.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/api/i18n/translations/de"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:60269/api/lastevent/settings"
     }
   ],
   "blockedRequests": [],
@@ -64,6 +136,14 @@
     {
       "method": "POST",
       "path": "/api/lastevent/settings/follower"
+    },
+    {
+      "method": "GET",
+      "path": "/api/lastevent/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/lastevent/settings"
     }
   ],
   "payload": {
@@ -133,6 +213,8 @@
     "rotationIntervalSeconds": 5
   },
   "payloadFieldsMatchBaseline": true,
+  "savedMessage": "Einstellungen wurden gespeichert!",
+  "baselineMatchesPayload": true,
   "afterSave": {
     "designVariant": "default",
     "fontFamily": "Exo 2",
@@ -172,13 +254,157 @@
     ],
     "rotationIntervalSeconds": 5
   },
-  "savedMessage": "Einstellungen wurden gespeichert!",
-  "baselineMatchesPayload": true,
   "afterSaveMatchesBaseline": true,
+  "afterReloadApi": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameWave": false,
+    "usernameWaveSpeed": "medium",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "borderWidth": "3px",
+    "borderRadius": "50%",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true,
+    "selectedEvents": [
+      "follower",
+      "like",
+      "chatter",
+      "share",
+      "gifter",
+      "subscriber"
+    ],
+    "rotationIntervalSeconds": 5
+  },
+  "afterReloadApiMatchesBaseline": true,
+  "uiAfterReload": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true
+  },
+  "uiAfterReloadMatchesPayload": true,
+  "shutdownResponseOne": {
+    "success": true,
+    "message": "Shutting down..."
+  },
+  "processExitOne": {
+    "code": 0,
+    "signal": null
+  },
+  "afterRestartApi": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameWave": false,
+    "usernameWaveSpeed": "medium",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "borderWidth": "3px",
+    "borderRadius": "50%",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true,
+    "selectedEvents": [
+      "follower",
+      "like",
+      "chatter",
+      "share",
+      "gifter",
+      "subscriber"
+    ],
+    "rotationIntervalSeconds": 5
+  },
+  "afterRestartApiMatchesBaseline": true,
+  "uiAfterRestart": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true
+  },
+  "uiAfterRestartMatchesPayload": true,
   "browserExternalBlocked": 0,
-  "processExit": {
-    "code": null,
-    "signal": "SIGTERM"
+  "shutdownResponseTwo": {
+    "success": true,
+    "message": "Shutting down..."
+  },
+  "processExitTwo": {
+    "code": 0,
+    "signal": null
   },
   "profileRemoved": true
 }
