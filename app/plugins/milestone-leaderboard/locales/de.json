@@ -465,7 +465,7 @@
         "example_bet_5000_land_on_10000_net_gain": "• Beispiel: Wetten Sie 5.000, landen Sie auf +10.000 = Nettogewinn +5.000 XP",
         "copy_4f6bea": "📋 Kopieren",
         "xp_per_level_500b2f": "XP pro Level",
-        "average_level": "Average Level",
+        "average_level": "Durchschnittliches Level",
         "viewer_details": "Zuschauerdetails",
         "viewer_xp_history": "Viewer-XP-Verlauf",
         "all_time_50efab": "Alle Zeit",
@@ -579,7 +579,7 @@
         "import_export": "💾 Importieren/Exportieren",
         "select_an_overlay_798695": "-- Wählen Sie ein Overlay aus --",
         "add_milestone_rewards_for_reaching_specific_levels": "Fügen Sie Meilensteinbelohnungen für das Erreichen bestimmter Level hinzu",
-        "average_level_79e764": "Average Level",
+        "average_level_79e764": "Durchschnittliches Level",
         "preview_how_overlays_look_before_adding_them_to": "Sehen Sie sich in der Vorschau an, wie Overlays aussehen, bevor Sie sie zu OBS hinzufügen",
         "add_milestone_rewards_for_reaching_specific_levels_7acc4a": "Fügen Sie Meilensteinbelohnungen für das Erreichen bestimmter Level hinzu",
         "refresh_7ae317": "🔄 Aktualisieren",
@@ -687,7 +687,7 @@
         "use_this_to_reward_viewers_for_special_contributions_9ca1a0": "Nutzen Sie dies, um Zuschauer für besondere Beiträge, Meilensteine oder Community-Events zu belohnen. Die XP werden sofort hinzugefügt und eine Level-Up-Animation wird ausgelöst, wenn sie ein neues Level erreichen.",
         "xp_amount_9ce9cd": "XP-Betrag",
         "obs_overlays": "OBS Overlays",
-        "average_level_9e2cec": "Average Level",
+        "average_level_9e2cec": "Durchschnittliches Level",
         "extreme_2_0x_per_level": "Extrem (2,0x pro Level)",
         "plugin_status": "Plugin-Status:",
         "all_time_9e8d28": "Alle Zeit",
@@ -750,7 +750,7 @@
         "what_s_included_b074cf": "Was ist enthalten:",
         "system_overview_with_real_time_statistics_and_leaderboard": "Systemübersicht mit Echtzeitstatistiken und Bestenliste",
         "import_data_b18bab": "Daten importieren",
-        "average_level_b200ef": "Average Level",
+        "average_level_b200ef": "Durchschnittliches Level",
         "setup_obs_overlays": "Richten Sie OBS-Overlays ein",
         "backup_and_restore_viewer_data_b36e3f": "Betrachterdaten sichern und wiederherstellen",
         "0_this_week_b38e32": "+0 diese Woche",
@@ -959,7 +959,9 @@
         "save_progression_settings_fead6a": "💾 Fortschrittseinstellungen speichern",
         "test_user_profile_fefc70": "👤 Testen Sie das Benutzerprofil",
         "import_data_ff64df": "Daten importieren",
-        "user_detail_ffb565": "Benutzerdetails"
+        "user_detail_ffb565": "Benutzerdetails",
+        "viewer_xp_insights_section": "Einblicke",
+        "viewer_xp_management_section": "Verwaltung"
       },
       "ui": {
         "status": {
@@ -1048,27 +1050,27 @@
           "no_champions": "Noch keine Champions..."
         }
       },
-    "form_controls": {
-      "placeholders": {
-        "gift_tier_names": "z. B. Bronze, Silber, Gold...",
-        "search_viewers": "Zuschauer suchen...",
-        "font_family": "z. B. 'Inter', sans-serif",
-        "test_username": "Benutzernamen zum Testen eingeben",
-        "viewer_username": "Zuschauer-Benutzernamen eingeben",
-        "award_reason": "z. B. Gewinner eines Community-Events, Meilensteinfeier usw.",
-        "spin_values": "5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000",
-        "username": "Benutzernamen eingeben",
-        "title_badge": "Titel/Abzeichen",
-        "custom_emote": "Eigenes Emote oder Nachricht",
-        "animation_key": "Animationsschlüssel",
-        "overview_username_search": "Benutzernamen zum Suchen eingeben...",
-        "user_detail_username_search": "Benutzernamen eingeben...",
-        "filter_username": "Nach Benutzername filtern..."
-      },
-      "aria": {
-        "enable_plugin": "Plugin aktivieren"
+      "form_controls": {
+        "placeholders": {
+          "gift_tier_names": "z. B. Bronze, Silber, Gold...",
+          "search_viewers": "Zuschauer suchen...",
+          "font_family": "z. B. 'Inter', sans-serif",
+          "test_username": "Benutzernamen zum Testen eingeben",
+          "viewer_username": "Zuschauer-Benutzernamen eingeben",
+          "award_reason": "z. B. Gewinner eines Community-Events, Meilensteinfeier usw.",
+          "spin_values": "5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000",
+          "username": "Benutzernamen eingeben",
+          "title_badge": "Titel/Abzeichen",
+          "custom_emote": "Eigenes Emote oder Nachricht",
+          "animation_key": "Animationsschlüssel",
+          "overview_username_search": "Benutzernamen zum Suchen eingeben...",
+          "user_detail_username_search": "Benutzernamen eingeben...",
+          "filter_username": "Nach Benutzername filtern..."
+        },
+        "aria": {
+          "enable_plugin": "Plugin aktivieren"
+        }
       }
-    }
     }
   }
 }

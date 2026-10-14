@@ -959,7 +959,9 @@
         "save_progression_settings_fead6a": "💾 Save Progression Settings",
         "test_user_profile_fefc70": "👤 Test User Profile",
         "import_data_ff64df": "Import Data",
-        "user_detail_ffb565": "User Detail"
+        "user_detail_ffb565": "User Detail",
+        "viewer_xp_insights_section": "Insights",
+        "viewer_xp_management_section": "Management"
       },
       "ui": {
         "status": {
@@ -1048,27 +1050,27 @@
           "no_champions": "No champions yet..."
         }
       },
-    "form_controls": {
-      "placeholders": {
-        "gift_tier_names": "e.g. Bronze, Silver, Gold...",
-        "search_viewers": "Search viewers...",
-        "font_family": "e.g. 'Inter', sans-serif",
-        "test_username": "Enter username for testing",
-        "viewer_username": "Enter viewer username",
-        "award_reason": "e.g. Winner of a community event, milestone celebration, etc.",
-        "spin_values": "5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000",
-        "username": "Enter username",
-        "title_badge": "Title/badge",
-        "custom_emote": "Custom emote or message",
-        "animation_key": "Animation key",
-        "overview_username_search": "Enter username to search...",
-        "user_detail_username_search": "Enter username...",
-        "filter_username": "Filter by username..."
-      },
-      "aria": {
-        "enable_plugin": "Enable plugin"
+      "form_controls": {
+        "placeholders": {
+          "gift_tier_names": "e.g. Bronze, Silver, Gold...",
+          "search_viewers": "Search viewers...",
+          "font_family": "e.g. 'Inter', sans-serif",
+          "test_username": "Enter username for testing",
+          "viewer_username": "Enter viewer username",
+          "award_reason": "e.g. Winner of a community event, milestone celebration, etc.",
+          "spin_values": "5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000",
+          "username": "Enter username",
+          "title_badge": "Title/badge",
+          "custom_emote": "Custom emote or message",
+          "animation_key": "Animation key",
+          "overview_username_search": "Enter username to search...",
+          "user_detail_username_search": "Enter username...",
+          "filter_username": "Filter by username..."
+        },
+        "aria": {
+          "enable_plugin": "Enable plugin"
+        }
       }
-    }
     }
   }
 }
