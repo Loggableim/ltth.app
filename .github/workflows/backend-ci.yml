@@ -28,6 +28,7 @@ jobs:
   test:
     name: Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     strategy:
       matrix:
@@ -52,6 +53,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./app
+        timeout-minutes: 75
         run: npm test -- --runInBand --forceExit
 
       - name: Validate four-language translation contract
