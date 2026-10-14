@@ -1,0 +1,590 @@
+{
+  "captureMode": true,
+  "allowedPlugins": [
+    "toptier"
+  ],
+  "baseUrl": "http://127.0.0.1:64432",
+  "sourceSha": "b90337b858a7ba5ef5664dd4fdeae1249ec788c6",
+  "profilePath": "<redacted system Temp profile>",
+  "browserRequests": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/toptier/ui"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/lucide.min.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/tiktok-studio-url.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/plugins/toptier/assets/toptier-logo.png"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/api/i18n/translations/de"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/session/current"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/session/current"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/toptier/ui"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/lucide.min.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/tiktok-studio-url.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/plugins/toptier/assets/toptier-logo.png"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/api/i18n/translations/de"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/session/current"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/session/current"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/toptier/ui"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/lucide.min.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/js/tiktok-studio-url.js"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/plugins/toptier/assets/toptier-logo.png"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/api/i18n/translations/de"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/session/current"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/config"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/session/current"
+    },
+    {
+      "method": "POST",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:64432/socket.io/"
+    }
+  ],
+  "blockedRequests": [],
+  "routePosts": [],
+  "externalConnectorStartup": "disabled by LTTH_DOCS_CAPTURE=true",
+  "tiktokAutoReconnect": "disabled by LTTH_DISABLE_TIKTOK_AUTO_RECONNECT=true and Capture mode",
+  "osEgressIsolation": "not provided; browser requests guarded, app process not OS-firewalled",
+  "firstProcessPid": 21360,
+  "databaseExistedAfterStartup": true,
+  "baselineConfig": {
+    "likesBoard": {
+      "enabled": true,
+      "displayCount": 5,
+      "scoreMultiplier": 1
+    },
+    "giftsBoard": {
+      "enabled": true,
+      "displayCount": 5
+    },
+    "decay": {
+      "enabled": true,
+      "intervalMs": 10000,
+      "type": "linear",
+      "decayAmount": 5,
+      "decayPercent": 10,
+      "idleThresholdMs": 30000,
+      "stepThreshold": 50,
+      "scoreFloor": 0,
+      "decayOnlyWhenConnected": true
+    },
+    "overlay": {
+      "variant": "animated-race",
+      "theme": "dark",
+      "orientation": "landscape",
+      "size": "M",
+      "displayCount": 5,
+      "rotationIntervalMs": 8000,
+      "showAvatars": true,
+      "showScoreBars": true,
+      "rankIcons": {
+        "1": "👑",
+        "2": "🥈",
+        "3": "🥉"
+      },
+      "customCSS": "",
+      "accentColor": "#f59e0b",
+      "bgOpacity": 0.85
+    },
+    "sound": {
+      "playOnNewLeader": false,
+      "playOnRankChange": false
+    },
+    "chat": {
+      "rankCommandEnabled": true,
+      "rankCommandKeyword": "!rank"
+    }
+  },
+  "baselineSession": {
+    "success": true,
+    "active": false,
+    "sessionId": null,
+    "streamUsername": null,
+    "streamKey": null
+  },
+  "baselineDecay": {
+    "enabled": true,
+    "intervalMs": 10000,
+    "type": "linear",
+    "decayAmount": 5,
+    "decayPercent": 10,
+    "idleThresholdMs": 30000,
+    "stepThreshold": 50,
+    "scoreFloor": 0,
+    "decayOnlyWhenConnected": true
+  },
+  "socketPollingRequests": 6,
+  "loadedUiBeforeSave": {
+    "likesEnabled": false,
+    "likesCount": 5,
+    "likesMultiplier": 1,
+    "giftsEnabled": false,
+    "giftsCount": 5,
+    "decayEnabled": false,
+    "decayConnectedOnly": false,
+    "theme": "night",
+    "positionAddedBySerializer": "top-right"
+  },
+  "postPayload": {
+    "likesBoard": {
+      "enabled": true,
+      "displayCount": 5,
+      "scoreMultiplier": 1
+    },
+    "giftsBoard": {
+      "enabled": true,
+      "displayCount": 5
+    },
+    "decay": {
+      "enabled": true,
+      "type": "linear",
+      "intervalMs": 10000,
+      "decayAmount": 5,
+      "decayPercent": 10,
+      "scoreFloor": 0,
+      "idleThresholdMs": 30000,
+      "stepThreshold": 50,
+      "decayOnlyWhenConnected": true
+    },
+    "overlay": {
+      "variant": "animated-race",
+      "theme": "night",
+      "orientation": "landscape",
+      "size": "M",
+      "displayCount": 5,
+      "rotationIntervalMs": 8000,
+      "showAvatars": true,
+      "showScoreBars": true,
+      "accentColor": "#f59e0b",
+      "bgOpacity": 0.85,
+      "customCSS": "",
+      "rankIcons": {
+        "1": "👑",
+        "2": "🥈",
+        "3": "🥉"
+      },
+      "position": "top-right"
+    },
+    "sound": {
+      "playOnNewLeader": false,
+      "playOnRankChange": false
+    },
+    "chat": {
+      "rankCommandEnabled": true,
+      "rankCommandKeyword": "!rank"
+    }
+  },
+  "allowedConfigProjection": {
+    "likesBoard": {
+      "enabled": true,
+      "displayCount": 5,
+      "scoreMultiplier": 1
+    },
+    "giftsBoard": {
+      "enabled": true,
+      "displayCount": 5
+    },
+    "decay": {
+      "enabled": true,
+      "intervalMs": 10000,
+      "type": "linear",
+      "decayAmount": 5,
+      "decayPercent": 10,
+      "idleThresholdMs": 30000,
+      "stepThreshold": 50,
+      "scoreFloor": 0,
+      "decayOnlyWhenConnected": true
+    },
+    "overlay": {
+      "variant": "animated-race",
+      "theme": "night",
+      "orientation": "landscape",
+      "size": "M",
+      "displayCount": 5,
+      "rotationIntervalMs": 8000,
+      "showAvatars": true,
+      "showScoreBars": true,
+      "rankIcons": {
+        "1": "👑",
+        "2": "🥈",
+        "3": "🥉"
+      },
+      "customCSS": "",
+      "accentColor": "#f59e0b",
+      "bgOpacity": 0.85,
+      "position": "top-right"
+    },
+    "sound": {
+      "playOnNewLeader": false,
+      "playOnRankChange": false
+    },
+    "chat": {
+      "rankCommandEnabled": true,
+      "rankCommandKeyword": "!rank"
+    }
+  },
+  "postMatchesExpectedUiProjection": true,
+  "postStatus": 200,
+  "saveToast": "Konfiguration gespeichert.",
+  "afterSave": {
+    "likesBoard": {
+      "enabled": true,
+      "displayCount": 5,
+      "scoreMultiplier": 1
+    },
+    "giftsBoard": {
+      "enabled": true,
+      "displayCount": 5
+    },
+    "decay": {
+      "enabled": true,
+      "type": "linear",
+      "intervalMs": 10000,
+      "decayAmount": 5,
+      "decayPercent": 10,
+      "scoreFloor": 0,
+      "idleThresholdMs": 30000,
+      "stepThreshold": 50,
+      "decayOnlyWhenConnected": true
+    },
+    "overlay": {
+      "variant": "animated-race",
+      "theme": "night",
+      "orientation": "landscape",
+      "size": "M",
+      "displayCount": 5,
+      "rotationIntervalMs": 8000,
+      "showAvatars": true,
+      "showScoreBars": true,
+      "accentColor": "#f59e0b",
+      "bgOpacity": 0.85,
+      "customCSS": "",
+      "rankIcons": {
+        "1": "👑",
+        "2": "🥈",
+        "3": "🥉"
+      },
+      "position": "top-right"
+    },
+    "sound": {
+      "playOnNewLeader": false,
+      "playOnRankChange": false
+    },
+    "chat": {
+      "rankCommandEnabled": true,
+      "rankCommandKeyword": "!rank"
+    }
+  },
+  "afterSaveMatchesUiProjection": true,
+  "saveDeltaFields": {
+    "baselineTheme": "dark",
+    "savedTheme": "night",
+    "baselinePositionPresent": false,
+    "savedPosition": "top-right"
+  },
+  "afterReload": {
+    "likesBoard": {
+      "enabled": true,
+      "displayCount": 5,
+      "scoreMultiplier": 1
+    },
+    "giftsBoard": {
+      "enabled": true,
+      "displayCount": 5
+    },
+    "decay": {
+      "enabled": true,
+      "type": "linear",
+      "intervalMs": 10000,
+      "decayAmount": 5,
+      "decayPercent": 10,
+      "scoreFloor": 0,
+      "idleThresholdMs": 30000,
+      "stepThreshold": 50,
+      "decayOnlyWhenConnected": true
+    },
+    "overlay": {
+      "variant": "animated-race",
+      "theme": "night",
+      "orientation": "landscape",
+      "size": "M",
+      "displayCount": 5,
+      "rotationIntervalMs": 8000,
+      "showAvatars": true,
+      "showScoreBars": true,
+      "accentColor": "#f59e0b",
+      "bgOpacity": 0.85,
+      "customCSS": "",
+      "rankIcons": {
+        "1": "👑",
+        "2": "🥈",
+        "3": "🥉"
+      },
+      "position": "top-right"
+    },
+    "sound": {
+      "playOnNewLeader": false,
+      "playOnRankChange": false
+    },
+    "chat": {
+      "rankCommandEnabled": true,
+      "rankCommandKeyword": "!rank"
+    }
+  },
+  "afterReloadMatchesUiProjection": true,
+  "afterReloadUi": {
+    "likesCount": 5,
+    "decayEnabled": true,
+    "theme": "night",
+    "variant": "animated-race",
+    "chatKeyword": "!rank"
+  },
+  "shutdownResponseOne": {
+    "success": true,
+    "message": "Shutting down..."
+  },
+  "processExitOne": {
+    "code": 0,
+    "signal": null
+  },
+  "secondProcessPid": 34596,
+  "afterRestart": {
+    "likesBoard": {
+      "enabled": true,
+      "displayCount": 5,
+      "scoreMultiplier": 1
+    },
+    "giftsBoard": {
+      "enabled": true,
+      "displayCount": 5
+    },
+    "decay": {
+      "enabled": true,
+      "type": "linear",
+      "intervalMs": 10000,
+      "decayAmount": 5,
+      "decayPercent": 10,
+      "scoreFloor": 0,
+      "idleThresholdMs": 30000,
+      "stepThreshold": 50,
+      "decayOnlyWhenConnected": true
+    },
+    "overlay": {
+      "variant": "animated-race",
+      "theme": "night",
+      "orientation": "landscape",
+      "size": "M",
+      "displayCount": 5,
+      "rotationIntervalMs": 8000,
+      "showAvatars": true,
+      "showScoreBars": true,
+      "accentColor": "#f59e0b",
+      "bgOpacity": 0.85,
+      "customCSS": "",
+      "rankIcons": {
+        "1": "👑",
+        "2": "🥈",
+        "3": "🥉"
+      },
+      "position": "top-right"
+    },
+    "sound": {
+      "playOnNewLeader": false,
+      "playOnRankChange": false
+    },
+    "chat": {
+      "rankCommandEnabled": true,
+      "rankCommandKeyword": "!rank"
+    }
+  },
+  "afterRestartMatchesUiProjection": true,
+  "sessionAfterRestart": {
+    "success": true,
+    "active": false,
+    "sessionId": null,
+    "streamUsername": null,
+    "streamKey": null
+  },
+  "afterRestartUi": {
+    "likesCount": 5,
+    "decayEnabled": true,
+    "theme": "night",
+    "variant": "animated-race",
+    "chatKeyword": "!rank"
+  },
+  "externalBrowserRequests": [],
+  "localBrowserBlockedRequests": [],
+  "shutdownResponseTwo": {
+    "success": true,
+    "message": "Shutting down..."
+  },
+  "processExitTwo": {
+    "code": 0,
+    "signal": null
+  },
+  "profileRemoved": true
+}
