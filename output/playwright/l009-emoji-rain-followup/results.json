@@ -1,0 +1,110 @@
+{
+  "profile": "<temporary profile removed after verification>",
+  "captureMode": "LTTH_DOCS_CAPTURE=true",
+  "allowedPlugins": [
+    "emoji-rain"
+  ],
+  "pluginLoadedCount": 1,
+  "port": 54942,
+  "appBind": "127.0.0.1",
+  "browserOrigin": "http://127.0.0.1:54942",
+  "initialConfigPixelSize": 4,
+  "initialLoadedUiSliderPixelSize": 4,
+  "initialLoadedUiDisplayLabel": 4,
+  "pixelSizeChangedViaRealUiSlider": true,
+  "submittedPixelSize": 7,
+  "saveUiMessage": "Gespeichert. Die Kommandos werden registriert, sobald GCCE verfügbar ist.",
+  "pixelSizeAfterSaveGet": 7,
+  "pixelSizeAfterBrowserReload": 7,
+  "pixelSizeAfterProcessRestartGet": 7,
+  "pixelSizeAfterProcessRestartUi": 7,
+  "pixelSizePersistence": "PASS",
+  "sideEffectResult": "FAIL: the UI save serialized the full config and changed unrelated existing visual defaults in the disposable profile",
+  "changedConfigFields": {
+    "pupcid_defaults_version": {
+      "before": 2,
+      "source": "app/public/js/emoji-rain-ui.js hardcodes 1",
+      "after": 1
+    },
+    "physics_gravity_y": {
+      "rangeStep": 0.1,
+      "before": 0.88,
+      "after": 0.9
+    },
+    "physics_air": {
+      "rangeStep": 0.01,
+      "before": 0.028,
+      "after": 0.03
+    },
+    "physics_friction": {
+      "rangeStep": 0.05,
+      "before": 0.11,
+      "after": 0.1
+    },
+    "physics_restitution": {
+      "rangeStep": 0.05,
+      "before": 0.62,
+      "after": 0.6
+    },
+    "bounce_height": {
+      "rangeStep": 0.05,
+      "before": 0.62,
+      "after": 0.6
+    },
+    "superfan_burst_intensity": {
+      "rangeStep": 0.5,
+      "before": 3.8,
+      "after": 4
+    },
+    "emoji_rotation_speed": {
+      "rangeStep": 0.01,
+      "before": 0.035,
+      "after": 0.04
+    }
+  },
+  "uiSaveEntireConfig": true,
+  "browserResourceOrigins": [
+    "http://127.0.0.1:54942"
+  ],
+  "browserRequestsUsedOnlyLoopback": true,
+  "captureExternalConnectorStartupSuppressed": true,
+  "startupUpdateCheck": "spawn git.exe ENOENT because sanitized PATH is empty; no network attempt was observed",
+  "osLevelEgressIsolation": "not performed",
+  "actionsNotInvoked": [
+    "upload",
+    "test buttons/triggers",
+    "command execution or mutation",
+    "TikTok connect or event emission",
+    "OBS",
+    "provider request",
+    "invalid config values"
+  ],
+  "initialPageAutoReads": [
+    "GET /api/emoji-rain/config",
+    "GET /api/emoji-rain/images",
+    "GET /api/emoji-rain/user-mappings"
+  ],
+  "shutdown": "graceful shutdown completed; listener stopped",
+  "fixStatus": "The documented side effects were observed in this pre-fix run. Runtime fix and regression test were implemented after explicit HANDOFF; see followupFix.",
+  "evidence": [
+    "baseline-get.json",
+    "after-save-get.json",
+    "after-restart-get.json",
+    "after-ui-reload-state.json",
+    "after-process-restart-state.json",
+    "after-ui-reload.png",
+    "after-process-restart.png"
+  ],
+  "followupFix": {
+    "status": "implemented after explicit HANDOFF",
+    "behavior": "preserve untouched loaded range values and pupcid_defaults_version; keep deliberate slider/preset edits",
+    "test": "app/test/emoji-rain-ui-save-preserves-config.test.js",
+    "focusedVerification": {
+      "suites": 4,
+      "tests": 21,
+      "exitCode": 0
+    },
+    "temporaryProfileRemoved": true
+  },
+  "temporaryProfileCleanup": "removed and verified absent"
+}

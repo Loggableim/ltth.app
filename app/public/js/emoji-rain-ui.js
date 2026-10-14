@@ -1,6 +1,7 @@
 const socket = io();
 let config = {};
 let animalCommandEditor = null;
+const changedRangeFields = new Set();
 
 function pluginText(key, fallback, params = {}) {
     const fullKey = `plugins.emoji-rain.${key}`;
@@ -218,6 +219,10 @@ function applyVisualModePreset() {
     if (!preset) return;
 
     Object.entries(preset).forEach(([key, value]) => setControlValue(key, value));
+    Object.keys(preset).forEach(key => {
+        const control = document.getElementById(key);
+        if (control && control.type === 'range') changedRangeFields.add(key);
+    });
 }
 
 // Apply resolution preset
@@ -470,7 +475,7 @@ async function saveConfig() {
     const newConfig = {
         enabled: document.getElementById('enabled-toggle').checked,
         visual_mode: document.getElementById('visual_mode').value,
-        pupcid_defaults_version: 1,
+        pupcid_defaults_version: config.pupcid_defaults_version ?? 1,
         // Toaster mode (Low-End PC Mode)
         toaster_mode: document.getElementById('toaster_mode').checked,
         // OBS HUD settings
@@ -569,6 +574,14 @@ async function saveConfig() {
         sticker_superfan_burst_enabled: document.getElementById('sticker_superfan_burst_enabled').checked
     };
 
+    // Range controls snap loaded values to their declared step. Preserve the
+    // stored precision unless the user actually changed that slider.
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+        if (!changedRangeFields.has(input.id) && config[input.id] !== undefined) {
+            newConfig[input.id] = config[input.id];
+        }
+    });
+
     try {
         const response = await fetch('/api/emoji-rain/config', {
             method: 'POST',
@@ -580,6 +593,7 @@ async function saveConfig() {
 
         if (data.success) {
             config = data.config || newConfig;
+            changedRangeFields.clear();
             if (animalCommandEditor) animalCommandEditor.load(config);
             const message = data.commandRegistration?.status === 'pending'
                 ? pluginText(
@@ -778,6 +792,7 @@ function updateEmojiPreview() {
 function setupRangeInputs() {
     document.querySelectorAll('input[type="range"]').forEach(input => {
         input.addEventListener('input', function() {
+            changedRangeFields.add(this.id);
             const valueDisplay = document.getElementById(this.id + '_value');
             if (valueDisplay) {
                 valueDisplay.textContent = this.value;
