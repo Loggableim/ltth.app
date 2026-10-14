@@ -1740,7 +1740,7 @@
             </div>
 
             <div class="form-group">
-                <label for="frameThickness"><span data-i18n="plugins.flame-overlay.flame_overlay.ui.settings.frameThickness">Rahmenbreite:</span> <span class="slider-value" id="frameThicknessValue" data-i18n="plugins.flame-overlay.labels.150_px">150 px</span></label>
+                <label for="frameThickness"><span data-i18n="plugins.flame-overlay.flame_overlay.ui.settings.frameThickness">Rahmenbreite:</span> <span class="slider-value" id="frameThicknessValue">150 px</span></label>
                 <input type="range" id="frameThickness" min="50" max="500" value="150" step="10">
             </div>
 
@@ -2270,6 +2270,31 @@
                                           'pulseEnabled', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor',
                                           'qualityMode', 'sparkEnabled', 'heatDistortionEnabled'];
         const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
+        const loadedRangeValues = new Map();
+        const editedRangeControls = new Set();
+        let rangeSaveSequence = 0;
+        let appliedRangeSaveSequence = 0;
+
+        function rememberLoadedRangeValues(config) {
+            appliedRangeSaveSequence = ++rangeSaveSequence;
+            loadedRangeValues.clear();
+            editedRangeControls.clear();
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                if (!Object.prototype.hasOwnProperty.call(config, slider.id)) return;
+                const value = Number(config[slider.id]);
+                if (Number.isFinite(value)) loadedRangeValues.set(slider.id, config[slider.id]);
+            });
+        }
+
+        function rememberSavedRangeValues(config, sequence) {
+            if (sequence < appliedRangeSaveSequence) return;
+            appliedRangeSaveSequence = sequence;
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                if (!Object.prototype.hasOwnProperty.call(config, slider.id)) return;
+                loadedRangeValues.set(slider.id, config[slider.id]);
+                if (Number(slider.value) === Number(config[slider.id])) editedRangeControls.delete(slider.id);
+            });
+        }
 
         function translateUi(key, fallback, params = {}) {
             const translation = window.i18n?.t?.(key, params);
@@ -3142,6 +3167,7 @@
         function applyFramePosition() {
             // collectConfig already includes framePositions from the input fields
             const config = collectConfig();
+            const saveSequence = ++rangeSaveSequence;
 
             // Save complete config
             fetch('/api/flame-overlay/config', {
@@ -3153,6 +3179,7 @@
             }).then(response => response.json())
               .then(data => {
                   if (data.success) {
+                      rememberSavedRangeValues(config, saveSequence);
                       showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.framePositionUpdated', '✅ Rahmenposition aktualisiert!'), 'success');
                   } else {
                       showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', {
@@ -3168,6 +3195,7 @@
         // Update slider value displays and trigger real-time updates
         document.querySelectorAll('input[type="range"]').forEach(slider => {
             slider.addEventListener('input', (e) => {
+                editedRangeControls.add(e.target.id);
                 const valueSpan = document.getElementById(e.target.id + 'Value');
                 if (valueSpan) {
                     let value = e.target.value;
@@ -3206,6 +3234,7 @@
         async function saveConfigSilent() {
             try {
                 const config = collectConfig();
+                const saveSequence = ++rangeSaveSequence;
 
                 const response = await fetch('/api/flame-overlay/config', {
                     method: 'POST',
@@ -3215,7 +3244,8 @@
                     body: JSON.stringify(config)
                 });
 
-                await response.json();
+                const data = await response.json();
+                if (data.success) rememberSavedRangeValues(config, saveSequence);
             } catch (error) {
                 console.error('Error saving config:', error);
             }
@@ -3229,7 +3259,7 @@
             const frameWidth = Math.max(10, Math.min(100, parseFloat(document.getElementById('frameWidth').value) || 100));
             const frameHeight = Math.max(10, Math.min(100, parseFloat(document.getElementById('frameHeight').value) || 100));
 
-            return {
+            const config = {
                 effectType: document.getElementById('effectType').value,
                 qualityMode: document.getElementById('qualityMode').value,
                 resolutionPreset: document.getElementById('resolutionPreset').value,
@@ -3298,6 +3328,17 @@
                     height: frameHeight
                 }]
             };
+
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                if (!Object.prototype.hasOwnProperty.call(config, slider.id)) return;
+                if (!editedRangeControls.has(slider.id) && loadedRangeValues.has(slider.id)) {
+                    config[slider.id] = loadedRangeValues.get(slider.id);
+                } else {
+                    config[slider.id] = Number(slider.value);
+                }
+            });
+
+            return config;
         }
 
         // Toggle custom resolution inputs and trigger updates
@@ -3481,6 +3522,7 @@
                     // Trigger custom resolution visibility
                     document.getElementById('resolutionPreset').dispatchEvent(new Event('change'));
 
+                    rememberLoadedRangeValues(config);
                     showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.configLoaded', 'Konfiguration geladen'), 'success');
 
                     // Refresh preset list
@@ -3495,6 +3537,7 @@
         async function saveConfig() {
             try {
                 const config = collectConfig();
+                const saveSequence = ++rangeSaveSequence;
 
                 const response = await fetch('/api/flame-overlay/config', {
                     method: 'POST',
@@ -3507,6 +3550,7 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    rememberSavedRangeValues(config, saveSequence);
                     showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.settingsSaved', '✅ Einstellungen gespeichert!'), 'success');
                 } else {
                     showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error }), 'error');
