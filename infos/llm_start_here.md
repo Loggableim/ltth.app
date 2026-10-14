@@ -23,7 +23,7 @@ This workspace is a full Git checkout:
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
-- Current version: `1.4.4` interim release (see `version.json` and `app/package.json`). OBS and remaining live acceptance are still open.
+- Current version: `1.5.0` interim release (see `version.json` and `app/package.json`). OBS and remaining live acceptance are still open.
 
 Before making changes, read:
 
