@@ -46,6 +46,48 @@ function createPlugin(db) {
 }
 
 describe('Gift Milestone regression coverage', () => {
+  test('tier payload persists unchecked and checked enabled values on create and update', () => {
+    const ctx = createTempDatabase();
+
+    try {
+      const disabledId = ctx.db.saveMilestoneTier({
+        name: 'Disabled regression tier',
+        tier_level: 90,
+        threshold: 100,
+        enabled: 0
+      });
+      const enabledId = ctx.db.saveMilestoneTier({
+        name: 'Enabled regression tier',
+        tier_level: 91,
+        threshold: 200,
+        enabled: 1
+      });
+
+      expect(ctx.db.getMilestoneTier(disabledId).enabled).toBe(0);
+      expect(ctx.db.getMilestoneTier(enabledId).enabled).toBe(1);
+
+      ctx.db.saveMilestoneTier({
+        id: disabledId,
+        name: 'Disabled regression tier',
+        tier_level: 90,
+        threshold: 100,
+        enabled: false
+      });
+      ctx.db.saveMilestoneTier({
+        id: enabledId,
+        name: 'Enabled regression tier',
+        tier_level: 91,
+        threshold: 200,
+        enabled: true
+      });
+
+      expect(ctx.db.getMilestoneTier(disabledId).enabled).toBe(0);
+      expect(ctx.db.getMilestoneTier(enabledId).enabled).toBe(1);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   test('config updates preserve existing media paths when fields are omitted and clear them when null is explicit', () => {
     const ctx = createTempDatabase();
 

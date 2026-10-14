@@ -1,0 +1,158 @@
+{
+  "result": "PASS",
+  "pluginIds": [
+    "milestone-leaderboard"
+  ],
+  "initialConfig": {
+    "enabled": true,
+    "threshold": 1000,
+    "mode": "auto_increment",
+    "increment_step": 1000,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "audio_volume": 80,
+    "playback_mode": "exclusive",
+    "animation_duration": 0,
+    "session_reset": false
+  },
+  "beforeSaveUi": {
+    "enabled": true,
+    "playback_mode": "exclusive",
+    "audio_volume": 80,
+    "animation_duration": 0,
+    "threshold": 1000,
+    "increment_step": 1000,
+    "mode": "auto_increment",
+    "session_reset": false
+  },
+  "threshold1001Ui": {
+    "enabled": true,
+    "playback_mode": "exclusive",
+    "audio_volume": 80,
+    "animation_duration": 0,
+    "threshold": 1001,
+    "increment_step": 1000,
+    "mode": "auto_increment",
+    "session_reset": false
+  },
+  "threshold1001Post": {
+    "enabled": true,
+    "playback_mode": "exclusive",
+    "audio_volume": 80,
+    "animation_duration": 0,
+    "threshold": 1001,
+    "increment_step": 1000,
+    "mode": "auto_increment",
+    "session_reset": false
+  },
+  "afterSave": {
+    "enabled": true,
+    "threshold": 1001,
+    "mode": "auto_increment",
+    "increment_step": 1000,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "audio_volume": 80,
+    "playback_mode": "exclusive",
+    "animation_duration": 0,
+    "session_reset": false
+  },
+  "afterReload": {
+    "enabled": true,
+    "threshold": 1001,
+    "mode": "auto_increment",
+    "increment_step": 1000,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "audio_volume": 80,
+    "playback_mode": "exclusive",
+    "animation_duration": 0,
+    "session_reset": false
+  },
+  "afterProcessRestart": {
+    "enabled": true,
+    "threshold": 1001,
+    "mode": "auto_increment",
+    "increment_step": 1000,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "audio_volume": 80,
+    "playback_mode": "exclusive",
+    "animation_duration": 0,
+    "session_reset": false
+  },
+  "afterProcessRestartUi": {
+    "enabled": true,
+    "playback_mode": "exclusive",
+    "audio_volume": 80,
+    "animation_duration": 0,
+    "threshold": 1001,
+    "increment_step": 1000,
+    "mode": "auto_increment",
+    "session_reset": false
+  },
+  "threshold1000RestorePost": {
+    "enabled": true,
+    "playback_mode": "exclusive",
+    "audio_volume": 80,
+    "animation_duration": 0,
+    "threshold": 1000,
+    "increment_step": 1000,
+    "mode": "auto_increment",
+    "session_reset": false
+  },
+  "finalConfig": {
+    "enabled": true,
+    "threshold": 1000,
+    "mode": "auto_increment",
+    "increment_step": 1000,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "audio_volume": 80,
+    "playback_mode": "exclusive",
+    "animation_duration": 0,
+    "session_reset": false
+  },
+  "afterFinalReload": {
+    "enabled": true,
+    "threshold": 1000,
+    "mode": "auto_increment",
+    "increment_step": 1000,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "audio_volume": 80,
+    "playback_mode": "exclusive",
+    "animation_duration": 0,
+    "session_reset": false
+  },
+  "noOtherConfigChanged": true,
+  "browserGuard": {
+    "allowedOriginOnly": true,
+    "blockedExternalRequests": [],
+    "userStatsRouteBlockedBeforeBackend": true,
+    "userStatsRouteAttemptsAborted": 4
+  },
+  "appProcesses": [
+    {
+      "code": 0,
+      "signal": null
+    },
+    {
+      "code": 0,
+      "signal": null
+    }
+  ],
+  "allProcessesExitedGracefully": true,
+  "tempProfileRemoved": true,
+  "temporaryPathRedacted": true,
+  "screenshots": [
+    "threshold-1001-before-restart.png",
+    "threshold-1000-restored.png"
+  ]
+}

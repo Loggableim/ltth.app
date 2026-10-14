@@ -959,7 +959,9 @@
         "save_progression_settings_fead6a": "💾 Enregistrer les paramètres de progression",
         "test_user_profile_fefc70": "👤 Tester le profil utilisateur",
         "import_data_ff64df": "Importer des données",
-        "user_detail_ffb565": "Détails de l'utilisateur"
+        "user_detail_ffb565": "Détails de l'utilisateur",
+        "viewer_xp_insights_section": "Analyses",
+        "viewer_xp_management_section": "Gestion"
       },
       "ui": {
         "status": {
@@ -1048,27 +1050,27 @@
           "no_champions": "Aucun champion pour le moment..."
         }
       },
-    "form_controls": {
-      "placeholders": {
-        "gift_tier_names": "ex. Bronze, Argent, Or...",
-        "search_viewers": "Rechercher des spectateurs...",
-        "font_family": "ex. 'Inter', sans-serif",
-        "test_username": "Saisissez un nom d’utilisateur pour le test",
-        "viewer_username": "Saisissez le nom d’utilisateur du spectateur",
-        "award_reason": "ex. Gagnant d’un événement communautaire, célébration d’un palier, etc.",
-        "spin_values": "5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000",
-        "username": "Saisissez le nom d’utilisateur",
-        "title_badge": "Titre/badge",
-        "custom_emote": "Émote ou message personnalisé",
-        "animation_key": "Clé d’animation",
-        "overview_username_search": "Saisissez un nom d’utilisateur à rechercher...",
-        "user_detail_username_search": "Saisissez un nom d’utilisateur...",
-        "filter_username": "Filtrer par nom d’utilisateur..."
-      },
-      "aria": {
-        "enable_plugin": "Activer le plugin"
+      "form_controls": {
+        "placeholders": {
+          "gift_tier_names": "ex. Bronze, Argent, Or...",
+          "search_viewers": "Rechercher des spectateurs...",
+          "font_family": "ex. 'Inter', sans-serif",
+          "test_username": "Saisissez un nom d’utilisateur pour le test",
+          "viewer_username": "Saisissez le nom d’utilisateur du spectateur",
+          "award_reason": "ex. Gagnant d’un événement communautaire, célébration d’un palier, etc.",
+          "spin_values": "5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000",
+          "username": "Saisissez le nom d’utilisateur",
+          "title_badge": "Titre/badge",
+          "custom_emote": "Émote ou message personnalisé",
+          "animation_key": "Clé d’animation",
+          "overview_username_search": "Saisissez un nom d’utilisateur à rechercher...",
+          "user_detail_username_search": "Saisissez un nom d’utilisateur...",
+          "filter_username": "Filtrer par nom d’utilisateur..."
+        },
+        "aria": {
+          "enable_plugin": "Activer le plugin"
+        }
       }
-    }
     }
   }
 }

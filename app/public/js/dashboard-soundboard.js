@@ -67,6 +67,12 @@ function getSoundboardLocale() {
     return 'en';
 }
 
+function soundboardText(key, fallback) {
+    const translationKey = `plugins.soundboard.labels.${key}`;
+    const translated = window.i18n?.t?.(translationKey);
+    return typeof translated === 'string' && translated !== translationKey ? translated : fallback;
+}
+
 function normalizeGiftCatalogText(value) {
     return String(value ?? '').toLowerCase().trim();
 }
@@ -162,7 +168,10 @@ function setWorkspaceDirty(isDirty = true) {
     workspaceDirty = isDirty;
     const saveState = document.getElementById('soundboard-save-state');
     if (saveState) {
-        saveState.textContent = workspaceDirty ? 'Unsaved changes' : 'All settings saved';
+        saveState.textContent = soundboardText(
+            workspaceDirty ? 'unsaved_changes' : 'all_settings_saved',
+            workspaceDirty ? 'Unsaved changes' : 'All settings saved'
+        );
         saveState.style.color = workspaceDirty ? '#f59e0b' : '';
     }
 }
@@ -176,28 +185,40 @@ function updateWorkspaceOverview() {
     const enabledState = document.getElementById('overview-enabled-state');
     const enabledInput = document.getElementById('soundboard-enabled');
     if (enabledState && enabledInput) {
-        enabledState.textContent = enabledInput.checked ? 'Enabled' : 'Disabled';
+        enabledState.textContent = soundboardText(
+            enabledInput.checked ? 'status_enabled' : 'status_disabled',
+            enabledInput.checked ? 'Enabled' : 'Disabled'
+        );
     }
 
     const obsState = document.getElementById('overview-obs-state');
     const overlayUrl = document.getElementById('animation-overlay-url');
     if (obsState && overlayUrl) {
-        obsState.textContent = overlayUrl.value ? 'Ready' : 'Loading';
+        const statusKey = overlayUrl.value ? 'status_ready' : 'status_loading';
+        const statusFallback = overlayUrl.value ? 'Ready' : 'Loading';
+        obsState.textContent = soundboardText(statusKey, statusFallback);
     }
+}
+
+function setGiftRecommendationsMessage(container, key, fallback, className) {
+    const message = document.createElement('div');
+    message.className = className;
+    message.textContent = soundboardText(key, fallback);
+    container.replaceChildren(message);
 }
 
 async function loadGiftRecommendations() {
     const container = document.getElementById('gift-recommendations-list');
     if (!container) return;
 
-    container.innerHTML = '<div class="text-gray-400 text-sm">Loading recommendations...</div>';
+    setGiftRecommendationsMessage(container, 'loading_recommendations', 'Loading recommendations...', 'text-gray-400 text-sm');
 
     try {
         giftRecommendationsCache = await fetchGiftRecommendations();
         renderGiftRecommendations();
     } catch (error) {
         log.error('Error loading gift recommendations', { error: error.message });
-        container.innerHTML = '<div class="text-red-400 text-sm">Could not load recommendations.</div>';
+        setGiftRecommendationsMessage(container, 'recommendations_load_failed', 'Could not load recommendations.', 'text-red-400 text-sm');
     }
 }
 
@@ -3247,7 +3268,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSoundboardSettings();
     loadGiftSounds();
     loadGiftCatalog();
-    loadGiftRecommendations();
+    if (window.i18n?.ready && typeof window.i18n.ready.then === 'function') {
+        window.i18n.ready.then(loadGiftRecommendations);
+    } else {
+        loadGiftRecommendations();
+    }
     loadCategories(); // Load categories for advanced search
     checkAudioSystemStatus();
     initializeEventSoundSliders(); // Initialize event sound volume sliders
@@ -3526,7 +3551,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
         window.i18n.onLanguageChange(() => {
+            updateWorkspaceOverview();
+            setWorkspaceDirty(workspaceDirty);
+            loadGiftRecommendations();
             loadGiftCatalog();
+        });
+    }
+
+    if (window.i18n?.ready && typeof window.i18n.ready.then === 'function') {
+        window.i18n.ready.then(() => {
+            updateWorkspaceOverview();
+            setWorkspaceDirty(workspaceDirty);
         });
     }
 

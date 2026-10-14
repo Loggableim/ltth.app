@@ -659,8 +659,8 @@ function renderTabContent(dock, tabId) {
             <div class="form-group">
               <label>Alignment</label>
               <select id="alignment">
-                <option value="left" ${s.alignLeft !== false ? 'selected' : ''}>Left</option>
-                <option value="center" ${s.alignLeft === false ? 'selected' : ''}>Center</option>
+                <option value="left" ${s.align !== 'center' ? 'selected' : ''}>Left</option>
+                <option value="center" ${s.align === 'center' ? 'selected' : ''}>Center</option>
               </select>
             </div>
             <div class="form-group">

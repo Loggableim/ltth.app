@@ -1,0 +1,61 @@
+{
+  "baseUrl": "http://127.0.0.1:60435",
+  "baselineStatus": 200,
+  "baselineTierNames": [
+    "Bronze",
+    "Silver",
+    "Gold",
+    "Platinum",
+    "Diamond"
+  ],
+  "checkboxBeforeSave": false,
+  "post": {
+    "method": "POST",
+    "url": "http://127.0.0.1:60435/api/gift-milestone/tiers",
+    "body": "{\"name\":\"L009 Synthetic Disabled Tier 20261014\",\"tier_level\":99,\"threshold\":100,\"enabled\":0}"
+  },
+  "afterSaveStatus": 200,
+  "savedTier": {
+    "id": 6,
+    "name": "L009 Synthetic Disabled Tier 20261014",
+    "tier_level": 99,
+    "threshold": 100,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "enabled": 0,
+    "created_at": "2026-10-14 10:51:23",
+    "updated_at": "2026-10-14 10:51:23"
+  },
+  "reloadStatus": 200,
+  "reloadedTier": {
+    "id": 6,
+    "name": "L009 Synthetic Disabled Tier 20261014",
+    "tier_level": 99,
+    "threshold": 100,
+    "animation_gif_path": null,
+    "animation_video_path": null,
+    "animation_audio_path": null,
+    "enabled": 0,
+    "created_at": "2026-10-14 10:51:23",
+    "updated_at": "2026-10-14 10:51:23"
+  },
+  "cleanupStatus": 200,
+  "afterCleanupTierNames": [
+    "Bronze",
+    "Silver",
+    "Gold",
+    "Platinum",
+    "Diamond"
+  ],
+  "blockedExternalRequests": [],
+  "profileCleanup": {
+    "listenerExitCode": 0,
+    "profileRemoved": true,
+    "temporaryPathRedacted": true
+  },
+  "screenshots": [
+    "disabled-tier-form.png",
+    "disabled-tier-saved.png"
+  ]
+}

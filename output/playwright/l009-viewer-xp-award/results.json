@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "sha": "7be86ec03c1d7cb680e85d50ccdae2be49c438ff",
+  "pluginIds": [
+    "milestone-leaderboard"
+  ],
+  "database": "%TEMP%\\ltth-l009-viewer-xp-award-<redacted>\\ltth.app\\user_configs\\default.db",
+  "worktreeDatabase": "absent",
+  "syntheticUsername": "l009_synthetic_viewer_20261014",
+  "award": {
+    "reason": "L-009 isolated Temp QA",
+    "uiPostResponse": {
+      "success": true
+    },
+    "uiPostStatus": 200,
+    "amount": 1
+  },
+  "preAwardManualAwards": [],
+  "afterBatchFlush": {
+    "username": "l009_synthetic_viewer_20261014",
+    "total_xp_earned": 1,
+    "coins": 1,
+    "xp": 1,
+    "level": 1
+  },
+  "afterGracefulProcessRestart": {
+    "profileXp": 1,
+    "manualAwards": [
+      {
+        "username": "l009_synthetic_viewer_20261014",
+        "amount": 1,
+        "reason": "L-009 isolated Temp QA",
+        "timestamp": "2026-10-14 10:26:45"
+      }
+    ],
+    "profileCoins": 1,
+    "totalCoinsEarned": 1
+  },
+  "reload": {
+    "visibleInManualAwardTable": true,
+    "screenshot": "award-visible.png"
+  },
+  "processRestart": {
+    "screenshot": "after-restart-awards.png",
+    "run": 4,
+    "sameTempProfile": true,
+    "visibleInManualAwardTable": true,
+    "uiSnapshot": "after-restart-ui-snapshot.yml"
+  },
+  "browserNetwork": {
+    "allowedOrigin": "http://127.0.0.1:58025",
+    "externalProviderOrTikTokRequests": 0,
+    "blockedRequests": 0,
+    "observedRequests": "loopback origin only"
+  },
+  "observations": [
+    "Immediately refreshed manual-awards list was empty before the 2-second XP batch flush; a later reload displayed the saved award.",
+    "No runtime changes made."
+  ],
+  "exclusions": [
+    "production data",
+    "TikTok",
+    "OBS",
+    "provider requests",
+    "external browser requests"
+  ]
+}

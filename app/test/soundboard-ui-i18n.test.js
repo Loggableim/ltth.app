@@ -114,4 +114,40 @@ describe('Soundboard UI i18n', () => {
       expect(values[key]).toEqual(expect.any(String));
     }
   });
+
+  test('localizes dynamic workspace statuses and recommendation errors', () => {
+    const source = fs.readFileSync(path.join(repoRoot, 'app', 'public', 'js', 'dashboard-soundboard.js'), 'utf8');
+    expect(source).toContain('function soundboardText(key, fallback)');
+    for (const key of [
+      'all_settings_saved',
+      'unsaved_changes',
+      'status_enabled',
+      'status_disabled',
+      'status_ready',
+      'status_loading',
+      'loading_recommendations',
+      'recommendations_load_failed'
+    ]) {
+      expect(source).toContain(key);
+    }
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const values = flattenTranslations(JSON.parse(fs.readFileSync(
+        path.join(repoRoot, 'app', 'plugins', pluginId, 'locales', `${locale}.json`),
+        'utf8'
+      )));
+      for (const key of [
+        'all_settings_saved',
+        'unsaved_changes',
+        'status_enabled',
+        'status_disabled',
+        'status_ready',
+        'status_loading',
+        'loading_recommendations',
+        'recommendations_load_failed'
+      ]) {
+        expect(values[`plugins.soundboard.labels.${key}`]).toEqual(expect.any(String));
+      }
+    }
+  });
 });

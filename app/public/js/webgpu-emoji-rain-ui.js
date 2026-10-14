@@ -1,6 +1,25 @@
 ﻿const socket = io();
 let config = {};
 let animalCommandEditor = null;
+const loadedRangeValues = new Map();
+const editedRangeValues = new Set();
+
+function rememberLoadedRangeValues() {
+    loadedRangeValues.clear();
+    editedRangeValues.clear();
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+        if (Object.prototype.hasOwnProperty.call(config, input.id)) {
+            loadedRangeValues.set(input.id, config[input.id]);
+        }
+    });
+}
+
+function getRangeConfigValue(id, parseValue) {
+    if (!editedRangeValues.has(id) && loadedRangeValues.has(id)) {
+        return loadedRangeValues.get(id);
+    }
+    return parseValue(document.getElementById(id).value);
+}
 
 function commandEditorText(key, fallback) {
     const fullKey = `plugins.webgpu-emoji-rain.webgpu_emoji_rain.commands_editor.${key}`;
@@ -207,6 +226,7 @@ function setControlValue(id, value) {
         element.checked = Boolean(value);
     } else {
         element.value = value;
+        if (element.type === 'range') editedRangeValues.add(id);
         const valueDisplay = document.getElementById(id + '_value');
         if (valueDisplay) valueDisplay.textContent = value;
     }
@@ -234,6 +254,8 @@ function updateUI() {
     console.log('?? [EMOJI RAIN UI] Updating UI with config...');
 
     try {
+        rememberLoadedRangeValues();
+
         // Main toggle
         console.log('?? [EMOJI RAIN UI] Setting enabled toggle:', config.enabled);
         document.getElementById('enabled-toggle').checked = config.enabled;
@@ -499,7 +521,7 @@ async function saveConfig() {
         visual_mode: document.getElementById('visual_mode').value,
         renderer_profile: document.getElementById('renderer_profile').value,
         quality_preset: document.getElementById('quality_preset').value,
-        effect_intensity: parseInt(document.getElementById('effect_intensity').value),
+        effect_intensity: getRangeConfigValue('effect_intensity', parseInt),
         adaptive_quality: document.getElementById('adaptive_quality').checked,
         enable_bloom: document.getElementById('enable_bloom').checked,
         enable_trails: document.getElementById('enable_trails').checked,
@@ -520,39 +542,39 @@ async function saveConfig() {
         use_custom_images: document.getElementById('use_custom_images').checked,
         image_urls: imageUrls,
         effect: document.getElementById('effect').value,
-        physics_gravity_y: parseFloat(document.getElementById('physics_gravity_y').value),
-        physics_air: parseFloat(document.getElementById('physics_air').value),
-        physics_friction: parseFloat(document.getElementById('physics_friction').value),
-        physics_restitution: parseFloat(document.getElementById('physics_restitution').value),
+        physics_gravity_y: getRangeConfigValue('physics_gravity_y', parseFloat),
+        physics_air: getRangeConfigValue('physics_air', parseFloat),
+        physics_friction: getRangeConfigValue('physics_friction', parseFloat),
+        physics_restitution: getRangeConfigValue('physics_restitution', parseFloat),
         // Wind simulation
         wind_enabled: document.getElementById('wind_enabled').checked,
-        wind_strength: parseFloat(document.getElementById('wind_strength').value),
+        wind_strength: getRangeConfigValue('wind_strength', parseFloat),
         wind_direction: document.getElementById('wind_direction').value,
         // Bounce physics
         floor_enabled: document.getElementById('floor_enabled').checked,
-        bounce_height: parseFloat(document.getElementById('bounce_height').value),
-        bounce_damping: parseFloat(document.getElementById('bounce_damping').value),
+        bounce_height: getRangeConfigValue('bounce_height', parseFloat),
+        bounce_damping: getRangeConfigValue('bounce_damping', parseFloat),
         // Color theme
         color_mode: document.getElementById('color_mode').value,
-        color_intensity: parseFloat(document.getElementById('color_intensity').value),
+        color_intensity: getRangeConfigValue('color_intensity', parseFloat),
         // Rainbow mode
         rainbow_enabled: document.getElementById('rainbow_enabled').checked,
-        rainbow_speed: parseFloat(document.getElementById('rainbow_speed').value),
+        rainbow_speed: getRangeConfigValue('rainbow_speed', parseFloat),
         // Pixel mode
         pixel_enabled: document.getElementById('pixel_enabled').checked,
-        pixel_size: parseInt(document.getElementById('pixel_size').value),
+        pixel_size: getRangeConfigValue('pixel_size', parseInt),
         // SuperFan burst
         superfan_burst_enabled: document.getElementById('superfan_burst_enabled').checked,
         ...(animalCommandEditor ? animalCommandEditor.serialize() : {}),
-        superfan_burst_intensity: parseFloat(document.getElementById('superfan_burst_intensity').value),
+        superfan_burst_intensity: getRangeConfigValue('superfan_burst_intensity', parseFloat),
         superfan_burst_duration: parseInt(document.getElementById('superfan_burst_duration').value),
         // FPS optimization
         fps_optimization_enabled: document.getElementById('fps_optimization_enabled').checked,
-        fps_sensitivity: parseFloat(document.getElementById('fps_sensitivity').value),
+        fps_sensitivity: getRangeConfigValue('fps_sensitivity', parseFloat),
         // Appearance
         emoji_min_size_px: parseInt(document.getElementById('emoji_min_size_px').value),
         emoji_max_size_px: parseInt(document.getElementById('emoji_max_size_px').value),
-        emoji_rotation_speed: parseFloat(document.getElementById('emoji_rotation_speed').value),
+        emoji_rotation_speed: getRangeConfigValue('emoji_rotation_speed', parseFloat),
         emoji_lifetime_ms: parseInt(document.getElementById('emoji_lifetime_ms').value),
         emoji_fade_duration_ms: parseInt(document.getElementById('emoji_fade_duration_ms').value),
         max_emojis_on_screen: parseInt(document.getElementById('max_emojis_on_screen').value),
@@ -564,7 +586,7 @@ async function saveConfig() {
         like_min_emojis: parseInt(document.getElementById('like_min_emojis').value),
         like_max_emojis: parseInt(document.getElementById('like_max_emojis').value),
         gift_base_emojis: parseInt(document.getElementById('gift_base_emojis').value),
-        gift_coin_multiplier: parseFloat(document.getElementById('gift_coin_multiplier').value),
+        gift_coin_multiplier: getRangeConfigValue('gift_coin_multiplier', parseFloat),
         gift_max_emojis: parseInt(document.getElementById('gift_max_emojis').value),
         // Geschenk-Kugeln
         gift_balls_enabled: document.getElementById('gift_balls_enabled').checked,
@@ -591,8 +613,8 @@ async function saveConfig() {
         heart_balloon_min_hearts: parseInt(document.getElementById('heart_balloon_min_hearts').value),
         heart_balloon_max_hearts: parseInt(document.getElementById('heart_balloon_max_hearts').value),
         heart_balloon_profile_every: parseInt(document.getElementById('heart_balloon_profile_every').value),
-        heart_balloon_pop_y: parseFloat(document.getElementById('heart_balloon_pop_y').value),
-        heart_balloon_wind_strength: parseFloat(document.getElementById('heart_balloon_wind_strength').value),
+        heart_balloon_pop_y: getRangeConfigValue('heart_balloon_pop_y', parseFloat),
+        heart_balloon_wind_strength: getRangeConfigValue('heart_balloon_wind_strength', parseFloat),
         heart_balloon_test_count: parseInt(document.getElementById('heart_balloon_test_count').value),
         // Sticker rain configuration
         sticker_enabled: document.getElementById('sticker_enabled').checked,
@@ -615,6 +637,7 @@ async function saveConfig() {
 
         if (data.success) {
             config = data.config || newConfig;
+            rememberLoadedRangeValues();
             if (animalCommandEditor) animalCommandEditor.load(config);
             showNotification(data.commandRegistration?.status === 'pending'
                 ? commandEditorText(
@@ -808,6 +831,7 @@ function updateEmojiPreview() {
 function setupRangeInputs() {
     document.querySelectorAll('input[type="range"]').forEach(input => {
         input.addEventListener('input', function() {
+            editedRangeValues.add(this.id);
             const valueDisplay = document.getElementById(this.id + '_value');
             if (valueDisplay) {
                 valueDisplay.textContent = this.value;
