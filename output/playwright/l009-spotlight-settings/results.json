@@ -1,0 +1,184 @@
+{
+  "captureMode": true,
+  "allowedPlugins": [
+    "spotlight"
+  ],
+  "baseUrl": "http://127.0.0.1:55061",
+  "dbPath": "<redacted Temp profile>",
+  "browserRequests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/spotlight/ui"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/css/themes.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/socket.io/socket.io.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/js/i18n-client.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/plugins/spotlight/assets/spotlight-logo-v1.1.4.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/js/tiktok-studio-url.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/plugins/spotlight/ui/main.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/api/i18n/translations/de"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/api/lastevent/settings"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:55061/api/lastevent/settings"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:55061/api/lastevent/settings/follower"
+    }
+  ],
+  "blockedRequests": [],
+  "routeHits": [
+    {
+      "method": "GET",
+      "path": "/api/lastevent/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/lastevent/settings"
+    },
+    {
+      "method": "POST",
+      "path": "/api/lastevent/settings/follower"
+    }
+  ],
+  "payload": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true
+  },
+  "baselineAll": null,
+  "baselineFollower": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameWave": false,
+    "usernameWaveSpeed": "medium",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "borderWidth": "3px",
+    "borderRadius": "50%",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true,
+    "selectedEvents": [
+      "follower",
+      "like",
+      "chatter",
+      "share",
+      "gifter",
+      "subscriber"
+    ],
+    "rotationIntervalSeconds": 5
+  },
+  "payloadFieldsMatchBaseline": true,
+  "afterSave": {
+    "designVariant": "default",
+    "fontFamily": "Exo 2",
+    "fontSize": "32px",
+    "fontLineSpacing": "1.2",
+    "fontLetterSpacing": "normal",
+    "fontColor": "#FFFFFF",
+    "usernameEffect": "none",
+    "usernameWave": false,
+    "usernameWaveSpeed": "medium",
+    "usernameGlow": false,
+    "usernameGlowColor": "#00FF00",
+    "enableBorder": true,
+    "borderColor": "#FFFFFF",
+    "borderWidth": "3px",
+    "borderRadius": "50%",
+    "enableBackground": false,
+    "backgroundColor": "rgba(0, 0, 0, 0.7)",
+    "showProfilePicture": true,
+    "profilePictureSize": "80px",
+    "showUsername": true,
+    "hudAlignment": "center",
+    "inAnimationType": "fade",
+    "outAnimationType": "fade",
+    "animationSpeed": "medium",
+    "fadeDuration": "0.5s",
+    "refreshIntervalSeconds": 0,
+    "hideOnNullUser": true,
+    "preloadImages": true,
+    "selectedEvents": [
+      "follower",
+      "like",
+      "chatter",
+      "share",
+      "gifter",
+      "subscriber"
+    ],
+    "rotationIntervalSeconds": 5
+  },
+  "savedMessage": "Einstellungen wurden gespeichert!",
+  "baselineMatchesPayload": true,
+  "afterSaveMatchesBaseline": true,
+  "browserExternalBlocked": 0,
+  "processExit": {
+    "code": null,
+    "signal": "SIGTERM"
+  },
+  "profileRemoved": true
+}
