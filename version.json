@@ -3,7 +3,7 @@
   "releaseDate": "2026-10-07",
   "status": "beta",
   "downloadVersion": "1.5.0",
-  "downloadNote": "LTTH 1.4.4 is an interim release with verified shutdown persistence, overlay lifecycle/localization fixes and isolated backend checks. OBS matrix acceptance and remaining live/provider checks are still open.",
+  "downloadNote": "LTTH 1.5.0. See CHANGELOG.md for release details.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.5.0",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
