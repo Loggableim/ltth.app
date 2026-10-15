@@ -51,7 +51,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
-- Version: `1.4.4` interim release (see `version.json` and `app/package.json`); OBS and remaining live acceptance are still open.
+- Version: `1.5.0` (see `version.json` and `app/package.json`). Release details: `CHANGELOG.md`.
 
 ## Dependency State
 

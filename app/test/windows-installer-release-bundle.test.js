@@ -117,7 +117,7 @@ function downloadSourceFunctions() {
 }
 
 async function createAppBundleZip(filename, {
-  version = '1.4.5',
+  version = '1.5.0',
   policy = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8')),
   marker = { channel: 'public' },
   omitPolicy = false,
@@ -143,7 +143,7 @@ function runInstallAppBundle({
   remoteManifest,
   remoteManifestRaw,
   manifestUnavailable = false,
-  expectedVersion = '1.4.5'
+  expectedVersion = '1.5.0'
 }) {
   const escapedTempDir = tempDir.replace(/'/g, "''");
   const escapedZipPath = zipPath.replace(/'/g, "''");
@@ -544,7 +544,7 @@ describe('Verified launcher installation', () => {
 
 describe('Verified Windows app ZIP bootstrap', () => {
   let tempDir;
-  const expectedVersion = '1.4.5';
+  const expectedVersion = '1.5.0';
 
   afterEach(() => {
     if (tempDir) {
