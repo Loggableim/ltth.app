@@ -503,6 +503,21 @@ function Assert-PublicAppBundleArchive {
             }
         }
 
+        # Mirrors install/install.js (publicRuntimeExcluded, line 645/649): array of IDs,
+        # each valid, unique and blocked (added to $blockedIds like closed-beta IDs).
+        $runtimeExcludedProperty = $policy.PSObject.Properties['publicRuntimeExcluded']
+        if ($null -ne $runtimeExcludedProperty) {
+            if ($null -ne $policy.publicRuntimeExcluded -and $policy.publicRuntimeExcluded -isnot [System.Array]) {
+                throw "App-Bundle Plugin-Release-Policy publicRuntimeExcluded ist ungueltig."
+            }
+            foreach ($id in @($policy.publicRuntimeExcluded)) {
+                if ($id -isnot [string] -or $id -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$' -or $blockedIds -contains $id) {
+                    throw "App-Bundle Plugin-Release-Policy publicRuntimeExcluded enthaelt eine ungueltige ID."
+                }
+                $blockedIds += $id
+            }
+        }
+
         # Mirrors install/install.js (publicAssetPathOwners): absolute, lowercase,
         # normalized asset paths; every owner must be a closed-beta or alias ID.
         $publicOwnersProperty = $policy.PSObject.Properties['publicAssetPathOwners']
