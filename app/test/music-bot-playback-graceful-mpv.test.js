@@ -108,7 +108,8 @@ integrationTest('controller stop exits its owned MPV through IPC quit with code 
   }
 
   expect(processRegistry.findMarkedProcesses).not.toHaveBeenCalled();
-  expect(processRegistry.cleanupMarked).toHaveBeenCalledTimes(1);
+  // Default shutdown does not reconcile orphans (playback-controller.js:396-406, reconcileOrphans gate).
+    expect(processRegistry.cleanupMarked).not.toHaveBeenCalled();
   expect(fs.existsSync(tempDir)).toBe(false);
 });
 
@@ -138,7 +139,8 @@ integrationTest('track replacement and controller shutdown close each owned MPV 
 
     expectGracefulClose(second.engine, second.child);
     expect(processRegistry.findMarkedProcesses).not.toHaveBeenCalled();
-    expect(processRegistry.cleanupMarked).toHaveBeenCalledTimes(1);
+    // Default shutdown does not reconcile orphans (playback-controller.js:396-406, reconcileOrphans gate).
+    expect(processRegistry.cleanupMarked).not.toHaveBeenCalled();
     console.info(`[isolated mpv replace/shutdown] pids=${first.child.pid}:${first.child.exitCode},${second.child.pid}:${second.child.exitCode} owned=0`);
   } finally {
     await controller.shutdown();
