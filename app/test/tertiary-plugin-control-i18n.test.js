@@ -81,6 +81,10 @@ describe('tertiary plugin control i18n', () => {
 
   test('documents the runtime-labelled import checkbox as a parser artifact rather than a missing translation', () => {
     const source = fs.readFileSync(path.join(repoRoot, 'app/plugins/config-import/ui.html'), 'utf8');
-    expect(source).toContain("<input type=\"checkbox\" id=\"impUserConfigs\" checked><span data-i18n=\"plugins.config-import.config-import.ui.userConfigs\"></span>");
+    // The checkbox is created at runtime (ui.html:890-894) without a static `checked`
+    // attribute, and it is reset via `.checked = false` (ui.html:979). The stale static
+    // markup with `checked` is no longer the contract.
+    expect(source).toContain('<input type="checkbox" id="impUserConfigs"><span data-i18n="plugins.config-import.config-import.ui.userConfigs"></span>');
+    expect(source).toContain("document.getElementById('impUserConfigs').checked = false;");
   });
 });
