@@ -25,33 +25,25 @@ describe('Stream Monsters 1.12.0 stable source contract', () => {
       'utf8'
     );
     const rootReadme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
-    const docsPage = fs.readFileSync(
-      path.join(repoRoot, 'docs/plugins/stream-monsters.html'),
-      'utf8'
-    );
-    const docsIndex = readJson('docs/plugins/index.json')
-      .find(plugin => plugin.id === 'stream-monsters');
 
     expect(pluginReadme).toMatch(/Version 1\.12\.0 is a bundled-only stable release/i);
     expect(pluginReadme).not.toMatch(/Open Beta/i);
     expect(rootReadme).toMatch(
       /current published Stream Monsters release is \*\*1\.12\.0\*\* \(Stable/i
     );
-    expect(docsIndex).toEqual(expect.objectContaining({
-      access: 'stable',
-      devStatus: 'stable'
-    }));
-    expect(docsPage).toContain('>Stabil<');
-    expect(docsPage).toContain('<dt>Version</dt><dd>1.12.0</dd>');
+    // Closed-beta contract (app/config/plugin-release-policy.json closedBeta):
+    // the public docs generator excludes closed-beta plugins
+    // (scripts/lib/published-plugin-catalog.js), so no public docs page or index entry exists.
+    expect(fs.existsSync(path.join(repoRoot, 'docs/plugins/stream-monsters.html'))).toBe(false);
+    expect(readJson('docs/plugins/index.json')
+      .find(plugin => plugin.id === 'stream-monsters')).toBeUndefined();
   });
 
-  test.each([
-    ['de', 'Stabil'],
-    ['en', 'Stable'],
-    ['es', 'Estable'],
-    ['fr', 'Stable']
-  ])('publishes the stable guide status in %s', (locale, expectedStatus) => {
-    const guide = readJson(`locales/guides/${locale}.json`);
-    expect(guide['docs.plugin.stream-monsters.status']).toBe(expectedStatus);
-  });
+  test.each(['de', 'en', 'es', 'fr'])(
+    'keeps the closed-beta guide status out of public locale guides in %s',
+    (locale) => {
+      const guide = readJson(`locales/guides/${locale}.json`);
+      expect(guide['docs.plugin.stream-monsters.status']).toBeUndefined();
+    }
+  );
 });
