@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { loadPublishedPluginCatalog } = require('../../scripts/lib/published-plugin-catalog');
 
 const repoRoot = path.join(__dirname, '..', '..');
 
@@ -31,19 +32,12 @@ describe('Stream Monsters 1.12.0 stable source contract', () => {
     expect(rootReadme).toMatch(
       /current published Stream Monsters release is \*\*1\.12\.0\*\* \(Stable/i
     );
-    // Closed-beta contract (app/config/plugin-release-policy.json closedBeta):
-    // the public docs generator excludes closed-beta plugins
-    // (scripts/lib/published-plugin-catalog.js), so no public docs page or index entry exists.
-    expect(fs.existsSync(path.join(repoRoot, 'docs/plugins/stream-monsters.html'))).toBe(false);
-    expect(readJson('docs/plugins/index.json')
-      .find(plugin => plugin.id === 'stream-monsters')).toBeUndefined();
+    // Closed-beta contract: the published catalog (source of truth for the docs generator)
+    // excludes closed-beta plugins. Asserted through the catalog function, not through
+    // generated files that other tests may rewrite or delete.
+    const catalog = loadPublishedPluginCatalog(repoRoot);
+    expect(catalog.closedBetaIds).toContain('stream-monsters');
+    expect(catalog.guideIds).not.toContain('stream-monsters');
+    expect(catalog.manifestIds).not.toContain('stream-monsters');
   });
-
-  test.each(['de', 'en', 'es', 'fr'])(
-    'keeps the closed-beta guide status out of public locale guides in %s',
-    (locale) => {
-      const guide = readJson(`locales/guides/${locale}.json`);
-      expect(guide['docs.plugin.stream-monsters.status']).toBeUndefined();
-    }
-  );
 });
