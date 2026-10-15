@@ -1,0 +1,22 @@
+'use strict';
+
+const owners = require('./public-overlay-release-event-owners.json');
+const { createPluginReleasePolicy } = require('./plugin-release-policy');
+
+// Exact reviewed event ownership only. Shared namespaces are not inferred.
+function createPublicReleaseEventGuard(pluginReleasePolicy = createPluginReleasePolicy()) {
+  return (direction, eventName) => {
+    const entry = Object.prototype.hasOwnProperty.call(owners.events[direction] || {}, eventName)
+      ? owners.events[direction][eventName] : undefined;
+    if (!entry) return true;
+    try {
+      const snapshot = pluginReleasePolicy.getSnapshot();
+      return !snapshot.publicMode || !pluginReleasePolicy.isClosedBetaId(entry.owner, snapshot);
+    } catch {
+      // Unavailable policy cannot reopen a reviewed public-only boundary.
+      return false;
+    }
+  };
+}
+
+module.exports = { createPublicReleaseEventGuard };

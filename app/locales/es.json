@@ -125,7 +125,6 @@
     "webgpu_emoji_rain": "Emoji Rain",
     "interactive_story": "Historia Interactiva",
     "gcce_hud": "GCCE HUD Overlay",
-    "chatango": "Chatango",
     "fireworks_dev": "Fuegos Artificiales Dev",
     "animazingpal": "AnimazingPal",
     "stt_ticker": "Ticker STT",
@@ -775,6 +774,9 @@
     "search": "Buscar"
   },
   "events": {
+    "superfan_label": "SuperFan",
+    "superfan_join": "SuperFan se ha unido al LIVE",
+    "superfan_event": "Evento SuperFan recibido",
     "gift": "{username} envió {giftName} x{repeatCount} ({coins} monedas)",
     "follow": "¡{username} te siguió!",
     "subscribe": "¡{username} se suscribió!",
@@ -1030,7 +1032,35 @@
     "dark": "Modo Noche",
     "auto": "Automático (Sistema)",
     "high_contrast": "Alto Contraste",
-    "vision_impaired": "Discapacidad Visual"
+    "vision_impaired": "Discapacidad Visual",
+    "selector": {
+      "title": "Cambiar tema",
+      "options": {
+        "vision-impaired": {
+          "name": "Modo accesible",
+          "description": "Texto grande y contraste muy alto",
+          "badge": "Accesibilidad"
+        },
+        "cid": {
+          "name": "Cid",
+          "description": "Tema de marca oscuro y neutro con acentos verdes y violetas",
+          "badge": "Marca"
+        },
+        "night": {
+          "name": "Modo noche",
+          "description": "Tema oscuro heredado"
+        },
+        "day": {
+          "name": "Modo día",
+          "description": "Tema claro"
+        },
+        "contrast": {
+          "name": "Alto contraste",
+          "description": "Tema heredado de alto contraste",
+          "badge": "Heredado"
+        }
+      }
+    }
   },
   "permissions": {
     "title": "Permisos",
@@ -1544,8 +1574,5 @@
     "logs": {
       "empty": "Aún no hay entradas de registro."
     }
-  },
-  "chatango": {
-    "loading": "Cargando Chat Comunitario..."
   }
 }

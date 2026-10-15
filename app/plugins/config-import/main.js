@@ -248,8 +248,18 @@ class ConfigImportPlugin {
                     includeUserConfigs: parseBooleanOption(includeUserConfigs, true),
                     includeUploads: parseBooleanOption(includeUploads, true),
                     includeUserData: parseBooleanOption(includeUserData, true),
+                    profileScopedDataPlugins: parseBooleanOption((req.body || {}).includeProfileScopedPluginData, false)
+                        ? require('../../modules/backup/profile-scoped-data').PROFILE_SCOPED_PLUGIN_DATA
+                        : [],
+                    includeSchnorrbecherPersistentState: parseBooleanOption((req.body || {}).includeSchnorrbecherPersistentState, false),
                     pluginFilter: Array.isArray(pluginFilter) && pluginFilter.length > 0 ? pluginFilter : null
                 };
+                if (opts.profileScopedDataPlugins.length && !opts.includePluginData) {
+                    return res.status(400).json({ success: false, error: 'Profile-scoped plugin data requires Plugin Data Files to be enabled' });
+                }
+                if (opts.includeSchnorrbecherPersistentState && !opts.profileScopedDataPlugins.includes('schnorrbecher')) {
+                    return res.status(400).json({ success: false, error: 'Persistent Schnorrbecher state requires profile-scoped plugin data to be enabled' });
+                }
 
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
                 const filename = `ltth-backup-${timestamp}.zip`;
@@ -305,8 +315,18 @@ class ConfigImportPlugin {
                     includeUserConfigs: parseBooleanOption(includeUserConfigs, true),
                     includeUploads: parseBooleanOption(includeUploads, true),
                     includeUserData: parseBooleanOption(includeUserData, true),
+                    profileScopedDataPlugins: parseBooleanOption((req.body || {}).includeProfileScopedPluginData, false)
+                        ? require('../../modules/backup/profile-scoped-data').PROFILE_SCOPED_PLUGIN_DATA
+                        : [],
+                    includeSchnorrbecherPersistentState: parseBooleanOption((req.body || {}).includeSchnorrbecherPersistentState, false),
                     pluginFilter: Array.isArray(pluginFilter) && pluginFilter.length > 0 ? pluginFilter : null
                 };
+                if (opts.profileScopedDataPlugins.length && !opts.includePluginData) {
+                    return res.status(400).json({ success: false, error: 'Profile-scoped plugin data requires Plugin Data Files to be enabled' });
+                }
+                if (opts.includeSchnorrbecherPersistentState && !opts.profileScopedDataPlugins.includes('schnorrbecher')) {
+                    return res.status(400).json({ success: false, error: 'Persistent Schnorrbecher state requires profile-scoped plugin data to be enabled' });
+                }
 
                 // Clean up expired tokens on each request
                 const now = Date.now();
@@ -508,7 +528,12 @@ class ConfigImportPlugin {
                     pluginFilter: body.pluginFilter ? JSON.parse(body.pluginFilter) : null
                 };
 
-                const result = await backupManager.import(parsed, opts);
+                const result = await backupManager.import(parsed, {
+                    ...opts,
+                    includeProfileScopedPluginData: parseBooleanOption(body.includeProfileScopedPluginData, false),
+                    includeSchnorrbecherPersistentState: parseBooleanOption(body.includeSchnorrbecherPersistentState, false),
+                    targetProfile: typeof body.targetProfile === 'string' ? body.targetProfile : null
+                });
 
                 res.json({
                     success: result.success,

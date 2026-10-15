@@ -43,21 +43,9 @@ describe('Stream Monsters 1.12 canonical release contract', () => {
       manifestVersion: '1.12.0',
       package: 'plugin-store/packages/stream-monsters-1.12.0.zip'
     }));
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toEqual(expect.objectContaining({
-      id: 'stream-monsters',
-      aliases: ['streamalchemy'],
-      replaces: ['streamalchemy'],
-      version: '1.12.0',
-      minLtthVersion: '1.4.2',
-      sha256: release.sha256,
-      rollbackVersions: [{
-        version: '1.11.1',
-        manifestId: 'streamalchemy',
-        packageUrl: 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip',
-        sha256: expectedHistoricalHashes['1.11.1']
-      }]
-    }));
+    // stream-monsters is closedBeta (app/config/plugin-release-policy.json:7);
+    // filterRegistry (app/modules/plugin-release-policy.js:147-152) keeps it out of the public store.
+    expect(entries).toHaveLength(0);
   });
 
   test('binds the canonical archive to its recorded source tree and manifest', async () => {

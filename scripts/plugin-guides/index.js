@@ -7,7 +7,6 @@ module.exports = Object.freeze(applySafeWorkflowContracts([
   require('./advanced-timer'),
   require('./animazingpal'),
   require('./api-bridge'),
-  require('./chatango'),
   require('./clarityhud'),
   require('./coinbattle'),
   require('./config-import'),

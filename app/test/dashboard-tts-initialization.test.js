@@ -114,4 +114,30 @@ describe('Dashboard TTS initialization failures', () => {
     expect(dashboard.failures()[0][1]).not.toHaveProperty('audioData');
     expect(dashboard.failures()[0][1]).not.toHaveProperty('text');
   });
+
+  test('discards aborted stream buffers and ignores late chunks and EOF without starting playback', () => {
+    const createObjectURL = jest.fn(() => 'blob:should-not-play');
+    const dashboard = loadDashboardPlayback({ createObjectURL });
+    const handleStreamChunk = vm.runInContext('handleStreamChunk', dashboard.context);
+    const handleStreamEnd = vm.runInContext('handleStreamEnd', dashboard.context);
+    const handleStreamAbort = vm.runInContext('handleStreamAbort', dashboard.context);
+    const playbackId = 'aborted-stream-fixture';
+
+    handleStreamChunk({ playbackId, chunk: 'AQ==', isFirst: true, format: 'mp3' });
+    vm.runInContext(`blockedStreamingPlaybackIds.add('${playbackId}')`, dashboard.context);
+    expect(vm.runInContext(`streamingBuffers.has('${playbackId}')`, dashboard.context)).toBe(true);
+
+    handleStreamAbort({ playbackId, reason: 'stream-eof-timeout' });
+    expect(vm.runInContext(`streamingBuffers.has('${playbackId}')`, dashboard.context)).toBe(false);
+    expect(vm.runInContext(`blockedStreamingPlaybackIds.has('${playbackId}')`, dashboard.context)).toBe(false);
+    expect(vm.runInContext(`abortedStreamingPlaybackIds.has('${playbackId}')`, dashboard.context)).toBe(true);
+
+    handleStreamChunk({ playbackId, chunk: 'Ag==', isFirst: true, format: 'mp3' });
+    handleStreamEnd({ playbackId, totalChunks: 2, totalBytes: 2 });
+
+    expect(vm.runInContext(`streamingBuffers.has('${playbackId}')`, dashboard.context)).toBe(false);
+    expect(dashboard.audio.src).toBe('');
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(dashboard.failures()).toEqual([]);
+  });
 });

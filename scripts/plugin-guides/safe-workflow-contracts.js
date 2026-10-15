@@ -30,9 +30,6 @@ const REVIEW_ONLY_STEPS = Object.freeze({
 // These controls are shipped local-only UI actions. Each evidence selector is
 // distinct from the trigger so the receipt proves the resulting real state.
 const LOCAL_ACTION_STEPS = Object.freeze({
-  chatango: {
-    'widget-preview': { clickSelector: '#btn-preview', evidenceSelector: '#preview-card' }
-  },
   coinbattle: {
     'demo-match': { clickSelector: '#btn-start-match', evidenceSelector: '#match-status-text' }
   },

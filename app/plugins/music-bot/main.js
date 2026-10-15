@@ -267,10 +267,8 @@ class MusicBotPlugin extends EventEmitter {
 
     // Constructor-only state stays inert for tests and route registration. The
     // persisted/default live-safe lock is applied atomically by _loadConfig().
-    this.config = {
-      ...DEFAULT_CONFIG,
-      safety: { locked: false, lockedAt: null, reason: null }
-    };
+    this.config = this._cloneConfigValue(DEFAULT_CONFIG);
+    this.config.safety = { locked: false, lockedAt: null, reason: null };
     this.banList = null;
     this.queueManager = null;
     this.musicResolver = null;
@@ -387,7 +385,7 @@ class MusicBotPlugin extends EventEmitter {
     this._emitSetupStatus();
   }
 
-  async destroy() {
+  async destroy(context = {}) {
     if (this._destroyed) return;
     this._destroyed = true;
     this._cancelNextSongVote('plugin-destroyed');
@@ -419,7 +417,9 @@ class MusicBotPlugin extends EventEmitter {
       this.api.log(`[music-bot] Failed to shutdown playlist imports: ${error.message}`, 'error');
     });
     this.playbackEngine?.removeAllListeners?.();
-    const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.()).catch((error) => {
+    const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.({
+      reconcileOrphans: context.reason === 'application-shutdown'
+    })).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
     });
     await Promise.all([
@@ -1023,16 +1023,29 @@ class MusicBotPlugin extends EventEmitter {
     return this._mpvInstallStatus;
   }
 
+  _cloneConfigValue(value) {
+    if (Array.isArray(value)) {
+      return value.map((entry) => this._cloneConfigValue(entry));
+    }
+    if (value && typeof value === 'object') {
+      return Object.keys(value).reduce((clone, key) => {
+        clone[key] = this._cloneConfigValue(value[key]);
+        return clone;
+      }, {});
+    }
+    return value;
+  }
+
   _mergeDeep(target, source) {
+    const output = this._cloneConfigValue(target && typeof target === 'object' ? target : {});
     if (!source || typeof source !== 'object') {
-      return target;
+      return output;
     }
 
-    const output = Array.isArray(target) ? [...target] : { ...target };
     Object.keys(source).forEach((key) => {
       const sourceVal = source[key];
       if (Array.isArray(sourceVal)) {
-        output[key] = [...sourceVal];
+        output[key] = this._cloneConfigValue(sourceVal);
       } else if (sourceVal && typeof sourceVal === 'object') {
         output[key] = this._mergeDeep(target[key] || {}, sourceVal);
       } else {

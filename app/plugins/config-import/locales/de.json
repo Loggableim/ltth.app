@@ -147,7 +147,24 @@
           "legacyDataFiles": "{count} alte Datendatei(en)",
           "legacyImportCompleted": "✅ Import erfolgreich abgeschlossen!",
           "importedItems": "📦 Importiert:",
-          "switchProfileRestart": "⚠️ Öffne Einstellungen → Benutzerprofile, wechsle zum importierten Profil und starte dann die Anwendung neu."
+          "switchProfileRestart": "⚠️ Öffne Einstellungen → Benutzerprofile, wechsle zum importierten Profil und starte dann die Anwendung neu.",
+          "scopedMergeRequired": "Profildaten können nur zusammengeführt werden. Wähle „Zusammenführen“, damit vorhandene Zieldateien erhalten bleiben.",
+          "persistentStateRequiresScoped": "Gespeicherter Schnorrbecher-Stand erfordert die Auswahl des Profildatenimports.",
+          "recoveryRetainedHint": "Die Wiederherstellung konnte nicht vollständig abgeschlossen werden. Sicherungsdaten bleiben am angezeigten Pfad erhalten. Diese Dateien nicht löschen; Details prüfen und die Wiederherstellung vor weiteren Importen klären.",
+          "profileScopedTitle": "Profildaten für Plug-ins",
+          "profileScopedInfo": "Das Archiv bestimmt niemals das Zielprofil.",
+          "profileScopedFiles": "Profildaten von Advanced Timer und Schnorrbecher importieren",
+          "profileScopedState": "Gespeicherten Schnorrbecher-Stand importieren (Sessionzustand wird nie importiert)",
+          "targetProfile": "Zielprofil",
+          "activeProfileInfo": "Aktives Serverprofil für Einstellungen: {profile}. Beim Import in ein anderes Profil sind globale und Plug-in-Einstellungen deaktiviert.",
+          "unknownActiveProfile": "unbekannt",
+          "settingsTargetMustBeActive": "Globale und Plug-in-Einstellungen können nur in das aktuell aktive Profil importiert werden.",
+          "confirmProfileScopedImport": "Profildateien in „{profile}“ importieren? Vorhandene Dateien bleiben erhalten; Konflikte brechen den jeweiligen Plug-in-Import ab.",
+          "scopedArchiveInfo": "Archivquelle: {profile}. Enthalten: {plugins}. Ziel unten ausdrücklich auswählen; Archivmetadaten sind nur informativ.",
+          "scopedArchiveMissing": "Dieses Archiv enthält keine ausdrücklich markierten Profildaten. Alte Archive werden keinem Profil automatisch zugeordnet.",
+          "profileScopedExportFiles": "🔒 Advanced-Timer- und Schnorrbecher-Daten für das aktuelle Profil",
+          "profileScopedExportState": "Persistenten Schnorrbecher-Zustand einschließen (Sessionzustand wird immer ausgelassen)",
+          "currentProfileSuffix": "aktuell"
         }
       },
       "labels": {

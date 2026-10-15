@@ -3,6 +3,7 @@ const path = require('path');
 const { LOCALES, buildGuides } = require('../../scripts/plugin-tutorial-source');
 const { buildDocsSpec } = require('../../scripts/docs-screenshot-spec');
 const { collectGuideUiInventory } = require('../../scripts/lib/plugin-guide-ui-inventory');
+const { isRegisteredEntrypoint } = require('../modules/public-overlay-registry');
 
 describe('plugin WorkflowStep contracts', () => {
   const repoRoot = path.join(__dirname, '..', '..');
@@ -100,6 +101,21 @@ describe('plugin WorkflowStep contracts', () => {
     const guide = buildGuides(repoRoot).find((candidate) => candidate.id === 'advanced-timer');
     const overlay = guide.steps.find((step) => step.id === 'timer-overlay');
 
+    expect(guide.overlay).toBe('/advanced-timer/overlay');
+    expect(isRegisteredEntrypoint(guide.overlay)).toBe(true);
+    expect(overlay.capture.route).toBe(guide.overlay);
+    expect(overlay.workflow.route).toBe(guide.overlay);
+    expect(overlay.workflow.operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'goto', route: guide.overlay })
+    ]));
+    expect(overlay.workflow.postconditions).toContainEqual(expect.objectContaining({
+      type: 'url',
+      expected: expect.objectContaining({
+        path: guide.overlay,
+        query: { lang: '$locale', timer: 'non-empty' },
+        exactQuery: true
+      })
+    }));
     expect(overlay.capture.action).toEqual(expect.objectContaining({
       type: 'open-overlay-preview',
       prepare: 'create-demo-timer-overlay'
@@ -111,6 +127,18 @@ describe('plugin WorkflowStep contracts', () => {
     expect(overlay.workflow.postconditions).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: 'text', selector: '#timer-container', expected: '01:30' })
     ]));
+    const optionalLayerCopy = {
+      de: 'optional',
+      en: 'optional',
+      es: 'opcionales',
+      fr: 'facultatifs'
+    };
+    for (const locale of LOCALES) {
+      expect(overlay.copy[locale].body).toContain(optionalLayerCopy[locale]);
+      expect(overlay.copy[locale].expected).toContain('01:30');
+      expect(overlay.capture.expected[locale]).toContain('01:30');
+      expect(overlay.workflow.instructions[locale].body).toContain(optionalLayerCopy[locale]);
+    }
   });
 
   test('creates a real local goal before documenting the Goal Overlay URL', () => {

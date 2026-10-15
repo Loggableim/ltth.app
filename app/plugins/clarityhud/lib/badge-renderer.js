@@ -68,9 +68,11 @@ class BadgeRenderer {
 
     // Extract from userIdentity
     if (eventData.userIdentity) {
-      badges.isModerator = eventData.userIdentity.isModeratorOfAnchor || false;
-      badges.isSubscriber = eventData.userIdentity.isSubscriberOfAnchor || false;
+      badges.isModerator = eventData.userIdentity.isModeratorOfAnchor === true;
+      badges.isSubscriber = eventData.userIdentity.isSubscriberOfAnchor === true;
     }
+    badges.isModerator = badges.isModerator || eventData.isModerator === true || eventData.user?.isModerator === true;
+    badges.isSubscriber = badges.isSubscriber || eventData.isSubscriber === true || eventData.user?.isSubscriber === true;
 
     // Extract team member level (heart level)
     // This is NOT subscription - it's the team hearts system

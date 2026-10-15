@@ -378,7 +378,10 @@
     const limit = Math.max(1, Math.min(50, parseInt(urlParams.get('limit') || '10') || 10));
     const rawDays = urlParams.get('days') ? parseInt(urlParams.get('days')) : null;
     const days = Number.isInteger(rawDays) && rawDays > 0 ? Math.min(365, rawDays) : null;
-    const refreshInterval = parseInt(urlParams.get('refresh') || '30000');
+    const requestedRefreshInterval = Number.parseInt(urlParams.get('refresh') || '30000', 10);
+    const refreshInterval = Number.isFinite(requestedRefreshInterval)
+      ? Math.min(2147483647, Math.max(5000, requestedRefreshInterval))
+      : 30000;
     const theme = urlParams.get('theme');
     const accent = urlParams.get('accent');
     const accent2 = urlParams.get('accent2');

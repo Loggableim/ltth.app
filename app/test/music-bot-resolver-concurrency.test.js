@@ -604,3 +604,30 @@ describe('track identity and resolver memory cache', () => {
     expect(resolver.cacheSizeBytes).toBe(entries[0].size);
   });
 });
+
+describe('music resolver moderation default isolation', () => {
+  test.each([
+    ['omitted moderation', {}],
+    ['partial moderation', { moderation: { rejectExplicit: true } }]
+  ])('does not share default blockedKeywords across resolver instances with %s', async (_label, config) => {
+    const createRunner = () => ({
+      run: jest.fn(),
+      destroy: jest.fn(async () => {}),
+      getStatus: jest.fn(() => ({}))
+    });
+    const resolverA = new MusicResolver(config, { log: jest.fn() }, { runner: createRunner() });
+    const resolverB = new MusicResolver(config, { log: jest.fn() }, { runner: createRunner() });
+
+    try {
+      expect(resolverA.config.moderation.blockedKeywords)
+        .not.toBe(resolverB.config.moderation.blockedKeywords);
+      resolverA.config.moderation.blockedKeywords.push('profile-a-only');
+      expect(resolverB.config.moderation.blockedKeywords).toEqual([]);
+      if (config.moderation) {
+        expect(resolverB.config.moderation.rejectExplicit).toBe(true);
+      }
+    } finally {
+      await Promise.all([resolverA.destroy(), resolverB.destroy()]);
+    }
+  });
+});

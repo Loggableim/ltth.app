@@ -29,6 +29,38 @@ function createTempRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-release-bundle-'));
   fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
   fs.mkdirSync(path.join(root, 'app'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'app', 'config'), { recursive: true });
+  fs.copyFileSync(
+    path.join(__dirname, '..', 'config', 'plugin-release-policy.json'),
+    path.join(root, 'app', 'config', 'plugin-release-policy.json')
+  );
+  const releasePolicy = JSON.parse(fs.readFileSync(path.join(root, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
+  for (const asset of Object.keys(releasePolicy.publicAssetPathOwners)) {
+    const assetPath = path.join(root, 'app', 'public', asset.slice(1));
+    fs.mkdirSync(path.dirname(assetPath), { recursive: true });
+    fs.writeFileSync(assetPath, 'synthetic-public-asset');
+  }
+  for (const id of releasePolicy.closedBeta) {
+    const dir = path.join(root, 'app', 'plugins', id);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'plugin.json'), JSON.stringify({ id }));
+    fs.writeFileSync(path.join(dir, 'main.js'), 'module.exports = {};');
+  }
+  fs.mkdirSync(path.join(root, 'app', 'plugins', 'goals'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'goals', 'plugin.json'), '{"id":"goals"}');
+  const nestedClosedDir = path.join(root, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT');
+  fs.mkdirSync(nestedClosedDir, { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'public-wrapper', 'plugin.json'), '{"id":"public-wrapper"}');
+  fs.writeFileSync(path.join(nestedClosedDir, 'plugin.json'), '{"id":"public-helper"}');
+  for (const [directory, manifest] of [
+    ['renamed-beta', { id: 'music-bot' }],
+    ['renamed-alias', { id: 'other-id', aliases: ['streamalchemy'] }]
+  ]) {
+    const dir = path.join(root, 'app', 'plugins', directory);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'plugin.json'), JSON.stringify(manifest));
+    fs.writeFileSync(path.join(dir, 'main.js'), 'module.exports = {};');
+  }
 
   const sourceScript = path.join(__dirname, '..', '..', 'scripts', 'build_release_bundle.py');
   const targetScript = path.join(root, 'scripts', 'build_release_bundle.py');
@@ -77,6 +109,7 @@ function createTempRepo() {
   );
   fs.writeFileSync(path.join(root, 'app', 'ltth_latest.zip'), Buffer.from('old-latest'));
   fs.mkdirSync(path.join(root, 'app', 'plugins', 'streamalchemy'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'streamalchemy', '.env.production'), 'synthetic-nested-environment');
   fs.writeFileSync(
     path.join(root, 'app', 'plugins', 'streamalchemy', 'plugin.json'),
     JSON.stringify({
@@ -89,6 +122,21 @@ function createTempRepo() {
   fs.writeFileSync(path.join(root, 'app', 'output', 'playwright', 'private.png'), 'runtime-output');
   fs.mkdirSync(path.join(root, 'app', '.playwright-cli'), { recursive: true });
   fs.writeFileSync(path.join(root, 'app', '.playwright-cli', 'session.json'), 'runtime-session');
+  for (const directory of ['.codex-isolated', 'test_user_configs', 'coverage']) {
+    fs.mkdirSync(path.join(root, 'app', directory), { recursive: true });
+    fs.writeFileSync(path.join(root, 'app', directory, 'private-test-artifact.json'), '{}');
+  }
+  const profilesRoot = path.join(root, 'app', 'user_configs');
+  for (const name of ['.env', '.env.local', '.env.production', '.env.example']) {
+    fs.writeFileSync(path.join(root, 'app', name), 'synthetic-environment');
+  }
+  const userDataRoot = path.join(root, 'app', 'user_data');
+  fs.mkdirSync(userDataRoot, { recursive: true });
+  fs.writeFileSync(path.join(userDataRoot, 'tiktok_session.json'), 'synthetic-session');
+  fs.mkdirSync(profilesRoot, { recursive: true });
+  for (const name of ['.active_profile', 'fixture.db', 'fixture.json', 'test-config.json']) {
+    fs.writeFileSync(path.join(profilesRoot, name), 'synthetic-private-profile');
+  }
 
   const rgsRoot = path.join(
     root,
@@ -213,11 +261,35 @@ describe('Release bundle script', () => {
     const names = JSON.parse(inspect.stdout.trim());
     expect(names).toContain('ltth_1.3.24/launcher.exe');
     expect(names).toContain('ltth_1.3.24/app/package.json');
-    expect(names).toContain('ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/License.txt');
-    expect(names).toContain(
+    expect(names).toContain('ltth_1.3.24/app/config/distribution-mode.json');
+    expect(names).toContain('ltth_1.3.24/app/plugins/goals/plugin.json');
+    const releasePolicy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
+    for (const asset of Object.keys(releasePolicy.publicAssetPathOwners)) {
+      expect(names).not.toContain(`ltth_1.3.24/app/public${asset}`);
+      expect(fs.existsSync(path.join(tempRoot, 'app', 'public', asset.slice(1)))).toBe(true);
+    }
+    expect(names.some(name => name.includes('/plugins/renamed-beta/') || name.includes('/plugins/renamed-alias/'))).toBe(false);
+    expect(names.some(name => name.includes('/plugins/public-wrapper/'))).toBe(false);
+    expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT', 'plugin.json'))).toBe(true);
+    for (const id of [...releasePolicy.closedBeta, ...Object.keys(releasePolicy.aliases)]) {
+      expect(names.filter(name => name.startsWith(`ltth_1.3.24/app/plugins/${id}/`))).toEqual([]);
+      expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', id, 'plugin.json'))).toBe(true);
+    }
+    expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_configs/'))).toEqual([]);
+    expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_data/'))).toEqual([]);
+    for (const directory of ['.codex-isolated', 'test_user_configs', 'coverage']) {
+      expect(names.filter(name => name.startsWith(`ltth_1.3.24/app/${directory}/`))).toEqual([]);
+    }
+    expect(names).toContain('ltth_1.3.24/app/.env.example');
+    expect(names).not.toContain('ltth_1.3.24/app/plugins/streamalchemy/.env.production');
+    for (const name of ['.env', '.env.local', '.env.production']) {
+      expect(names).not.toContain(`ltth_1.3.24/app/${name}`);
+    }
+    expect(names).not.toContain('ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/License.txt');
+    expect(names).not.toContain(
       'ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/Animated body parts/Heads/head1/idle_0.png'
     );
-    expect(names).toContain(
+    expect(names).not.toContain(
       'ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/Animated body parts/Eyes/eyes1/idle_3.png'
     );
     expect(names).not.toContain(
@@ -226,7 +298,7 @@ describe('Release bundle script', () => {
     expect(names).not.toContain(
       'ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/rgs/Animated body parts/Eyes/eyes1/idle_7.png'
     );
-    expect(names).toContain(
+    expect(names).not.toContain(
       'ltth_1.3.24/app/plugins/talking-heads/assets/asset-packs/boba/animals/Fox/Layers/Fox_Base.png'
     );
     expect(names).not.toContain(
@@ -539,7 +611,7 @@ describe('Release bundle script', () => {
     });
 
     const entries = await readZipEntries(firstZip);
-    expect(entries.map(entry => entry.name)).toContain(
+    expect(entries.map(entry => entry.name)).not.toContain(
       'ltth_1.3.24/app/plugins/streamalchemy/plugin.json'
     );
     expect(entries.map(entry => entry.name).join('\n')).not.toMatch(

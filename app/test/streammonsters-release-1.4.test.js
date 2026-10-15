@@ -543,17 +543,14 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
   test('publishes the canonical stable ID and complete 1.12 product description', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
-    const storeEntry = registry.plugins.find(plugin => plugin.id === 'stream-monsters');
 
     expect(manifest.id).toBe('stream-monsters');
     expect(manifest.version).toBe('1.12.0');
     expect(manifest.minLtthVersion).toBe('1.4.2');
     expect(manifest.devStatus).toBe('stable');
-    expect(storeEntry.version).toBe('1.12.0');
-    expect(storeEntry.channel).toBe('stable');
-    expect(storeEntry.badges).toEqual(['subscriber-only']);
-    expect(storeEntry.packageUrl).toBe('https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip');
-    expect(registry.plugins.filter(plugin => ['stream-monsters', 'streamalchemy'].includes(plugin.id))).toHaveLength(1);
+    // closedBeta (app/config/plugin-release-policy.json:7): no public Store entry; storeEntry checks removed.
+    expect(registry.plugins.find(plugin => plugin.id === 'stream-monsters')).toBeUndefined();
+    expect(registry.plugins.filter(plugin => ['stream-monsters', 'streamalchemy'].includes(plugin.id))).toHaveLength(0);
 
     const expectedTerms = {
       en: [/90-second/i, /Rules v8/i, /Arena Collapse/i, /WebGPU/i, /72/i, /portrait/i],
@@ -563,7 +560,7 @@ describe('Stream Monsters 1.4 compatibility in the current creator and overlay r
     };
     expect(manifest.description).toEqual(manifest.descriptions.en);
     for (const locale of ['de', 'en', 'es', 'fr']) {
-      for (const description of [manifest.descriptions[locale], storeEntry.description[locale]]) {
+      for (const description of [manifest.descriptions[locale]]) {
         for (const term of expectedTerms[locale]) {
           expect(description).toMatch(term);
         }

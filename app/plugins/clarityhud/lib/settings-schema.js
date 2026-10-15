@@ -445,6 +445,15 @@
         return;
       }
 
+      if (typeof defaults[key] === 'boolean') {
+        if (typeof value !== 'boolean') {
+          errors.push(`${key} must be a boolean`);
+        } else {
+          sanitized[key] = value;
+        }
+        return;
+      }
+
       if (key.toLowerCase().includes('color')) {
         if (!isColor(value)) {
           errors.push(`${key} must be a valid color`);
@@ -477,15 +486,6 @@
           errors.push(`${key} must be ${STRING_LIMITS[key]} characters or less`);
         } else {
           sanitized[key] = value.trim();
-        }
-        return;
-      }
-
-      if (typeof defaults[key] === 'boolean') {
-        if (typeof value !== 'boolean') {
-          errors.push(`${key} must be a boolean`);
-        } else {
-          sanitized[key] = value;
         }
         return;
       }
@@ -622,6 +622,9 @@
     if (!isPlainObject(profile.settings)) {
       errors.push('Profile settings must be an object');
     }
+    if (Object.prototype.hasOwnProperty.call(profile, 'customPresets') && !Array.isArray(profile.customPresets)) {
+      errors.push('Profile customPresets must be an array');
+    }
 
     const settings = {};
     if (isPlainObject(profile.settings)) {
@@ -642,6 +645,7 @@
     return {
       valid: errors.length === 0,
       settings,
+      customPresetsProvided: Object.prototype.hasOwnProperty.call(profile, 'customPresets'),
       customPresets: normalizeCustomPresets(profile.customPresets),
       errors
     };

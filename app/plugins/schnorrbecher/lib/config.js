@@ -42,14 +42,7 @@ const DEFAULT_CONFIG = Object.freeze({
   requireResetConfirmation: true
 });
 
-const DEFAULT_STATE = Object.freeze({
-  sessionId: null,
-  totalCoinValue: 0,
-  visualCoinCount: 0,
-  recentGifts: [],
-  lastProcessedEventIds: [],
-  updatedAt: 0
-});
+const { DEFAULT_STATE } = require('../../../modules/backup/schnorrbecher-state-schema');
 
 function clamp(value, fallback, minimum, maximum) {
   const number = Number(value);

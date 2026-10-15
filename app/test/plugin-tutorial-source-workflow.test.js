@@ -1,28 +1,21 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 
 const { buildGuides } = require('../../scripts/plugin-tutorial-source');
+const { loadPublishedPluginCatalog } = require('../../scripts/lib/published-plugin-catalog');
 
 describe('plugin tutorial workflow evidence', () => {
-  test('requires a real preview click and an independently visible result', () => {
-    const guides = buildGuides(path.join(__dirname, '..', '..'));
-    const chatango = guides.find((guide) => guide.id === 'chatango');
-    const review = chatango.steps.find((step) => step.id === 'chatango-review');
+  test('publishes only the current public guide catalog while retaining closed-beta sources', () => {
+    const repoRoot = path.join(__dirname, '..', '..');
+    const catalog = loadPublishedPluginCatalog(repoRoot);
+    const guideIds = buildGuides(repoRoot).map((guide) => guide.id).sort();
 
-    expect(review.workflow.operations).toContainEqual({
-      type: 'run-local-preview',
-      selector: '#btn-preview'
-    });
-    expect(review.workflow.postconditions).toContainEqual({
-      type: 'visible',
-      selector: '#close-preview-btn'
-    });
-    expect(review.workflow.postconditions).toContainEqual({
-      type: 'interaction',
-      selector: '#btn-preview',
-      expected: { type: 'run-local-preview', changed: true }
-    });
+    expect(guideIds).toEqual(catalog.guideIds);
+    expect(guideIds).not.toContain('chatango');
+    expect(catalog.closedBetaIds.every((id) => !guideIds.includes(id))).toBe(true);
+    expect(catalog.closedBetaIds.every((id) => fs.existsSync(path.join(repoRoot, 'app', 'plugins', id)))).toBe(true);
   });
 
   test('backs every declared local interaction with an executable local action', () => {
@@ -52,24 +45,19 @@ describe('plugin tutorial workflow evidence', () => {
   });
 
   test.each([
-    ['chatango', 'widget-preview', '#btn-preview', '#preview-card'],
     ['coinbattle', 'demo-match', '#btn-start-match', '#match-status-text'],
     ['gift-catalog', 'gift-preview', '#demo-shuffle-list', '#demo-list'],
     ['gift-catalog', 'catalog-review', '#save-config', '#connection-state'],
     ['gcce', 'command-dry-run', '#btn-validate-commands', '#message-container'],
-    ['interactive-story', 'local-decision', '#toggleOverlayPreviewBtn', '#overlayPreviewContainer'],
     ['multicam', 'multicam-review', '#saveMappingsBtn', '#saveStatus'],
     ['soundboard', 'soundboard-review', '[data-save-proxy]', '#soundboard-save-state'],
     ['milestone-leaderboard', 'xp-pulse', '#testButton', '#notification'],
     ['flame-overlay', 'frame-preview', '#previewToggle', '#previewContainer'],
-    ['visual-fx-frame-webgpu', 'gpu-frame-preview', '#previewToggle', '#previewContainer'],
     ['emoji-rain', 'save-emoji-rain', '#save-config-btn', '#notification'],
     ['fireworks', 'fireworks-test', '#test-btn', '#toast'],
     ['fireworks', 'fireworks-reset', '#save-btn', '#toast'],
     ['spotlight', 'chatter-preview', '#preview-test-btn', '#toast'],
-    ['schnorrbecher', 'test-gift', '#test-gift', '#total-value'],
     ['toptier', 'tier-threshold', '#test-overlay', '#toast'],
-    ['webgpu-emoji-rain', 'gpu-rain-test', '#test-emoji-rain-btn', '#notification']
   ])('uses a real local result surface for %s/%s', (guideId, stepId, clickSelector, evidenceSelector) => {
     const guide = buildGuides(path.join(__dirname, '..', '..')).find((entry) => entry.id === guideId);
     const step = guide.steps.find((entry) => entry.id === stepId);
@@ -88,17 +76,10 @@ describe('plugin tutorial workflow evidence', () => {
     ['gcce', 'command-review'],
     ['openshock', 'shock-simulation'],
     ['openshock', 'safety-reset'],
-    ['interactive-story', 'story-reset'],
     ['minecraft-connect', 'offline-message'],
     ['multicam', 'scene-dry-run'],
-    ['music-bot', 'queue-reset'],
-    ['osc-bridge', 'loopback-check'],
-    ['osc-bridge', 'osc-review'],
-    ['streamalchemy', 'rule-reset'],
     ['stt-ticker', 'sample-sentence'],
     ['stt-ticker', 'ticker-reset'],
-    ['talking-heads', 'text-preview'],
-    ['talking-heads', 'heads-reset'],
     ['thermal-printer', 'queue-test'],
     ['thermal-printer', 'printer-review'],
     ['toptier', 'rank-preview'],
@@ -109,9 +90,6 @@ describe('plugin tutorial workflow evidence', () => {
     ['vdoninja', 'ninja-reset'],
     ['milestone-leaderboard', 'xp-reset'],
     ['flame-overlay', 'frame-reset'],
-    ['visual-fx-frame-webgpu', 'frame-reset'],
-    ['webgpu-emoji-rain', 'gpu-preset'],
-    ['webgpu-emoji-rain', 'gpu-rain-reset'],
     ['webgpu-fireworks', 'gpu-fireworks-reset']
   ])('keeps an unexecutable external or unseeded workflow as a review for %s/%s', (guideId, stepId) => {
     const guide = buildGuides(path.join(__dirname, '..', '..')).find((entry) => entry.id === guideId);

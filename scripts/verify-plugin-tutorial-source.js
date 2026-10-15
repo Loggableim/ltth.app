@@ -22,7 +22,14 @@ assert.ok(!captureSource.includes('data-ltth-docs-'), 'captures must not inject 
 assert.ok(!captureSource.includes('document.createElement('), 'captures must not inject synthetic DOM elements');
 assert.ok(captureSource.includes('asset.action && asset.action.allowClick'), 'a declared local-safe action must be able to execute its real workflow');
 assert.deepStrictEqual(guides.map((guide) => guide.id).sort(), catalog.guideIds, 'every published plugin plus Store Admin needs one guide');
-assert.ok(guides.some((guide) => guide.id === 'visual-fx-frame-webgpu'), 'Visual FX Frame WEBGPU needs a guide');
+assert.ok(
+  fs.existsSync(path.join(ROOT, 'scripts', 'plugin-guides', 'visual-fx-frame-webgpu.js')),
+  'the closed-beta Visual FX guide source remains available locally'
+);
+assert.ok(
+  catalog.closedBetaIds.every((id) => !guides.some((guide) => guide.id === id)),
+  'closed-beta plugin guides must not enter the public tutorial inventory'
+);
 const workflowSignatures = new Set();
 const SAFE_ACTION_TYPES = new Set([
   'open-plugin-manager',

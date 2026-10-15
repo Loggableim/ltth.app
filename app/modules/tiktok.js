@@ -66,7 +66,7 @@ class TikTokConnector extends EventEmitter {
 
   _bindAdapterEvents(adapter) {
     this._eventForwarders = {};
-    const events = ['gift', 'chat', 'follow', 'like', 'share', 'subscribe',
+    const events = ['gift', 'chat', 'follow', 'like', 'share', 'subscribe', 'superfan',
       'join', 'emote', 'connected', 'disconnected', 'error', 'viewerChange',
       'streamChanged'];
     events.forEach((event) => {

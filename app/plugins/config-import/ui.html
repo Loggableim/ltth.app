@@ -465,6 +465,14 @@
                     📁 Plugin Data Files
                 </span></label>
                 <label class="checkbox-label">
+                    <input type="checkbox" id="incProfileScopedPluginData"><span>
+                    <span data-i18n="plugins.config-import.config-import.ui.profileScopedExportFiles">🔒 Advanced Timer and Schnorrbecher data for the current profile</span>
+                </span></label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incSchnorrbecherPersistentState"><span>
+                    <span data-i18n="plugins.config-import.config-import.ui.profileScopedExportState">Include Schnorrbecher persistent state (session state is always omitted)</span>
+                </span></label>
+                <label class="checkbox-label">
                     <input type="checkbox" id="incUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs">
                     User Configs
                 </span></label>
@@ -543,6 +551,16 @@
 
             <div id="previewWarnings"></div>
 
+            <div class="card" style="margin:12px 0;padding:14px;">
+                <strong data-i18n="plugins.config-import.config-import.ui.profileScopedTitle">Profile-scoped plugin data</strong>
+                <p id="profileScopedImportInfo" style="margin:6px 0 10px;" data-i18n="plugins.config-import.config-import.ui.profileScopedInfo">Archive metadata never selects the target profile.</p>
+                <label class="checkbox-label"><input type="checkbox" id="impProfileScopedPluginData"><span data-i18n="plugins.config-import.config-import.ui.profileScopedFiles">Import profile-scoped Advanced Timer / Schnorrbecher files</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impSchnorrbecherPersistentState" disabled><span data-i18n="plugins.config-import.config-import.ui.profileScopedState">Import Schnorrbecher persistent state (session state is never imported)</span></label>
+                <label for="profileScopedTarget" data-i18n="plugins.config-import.config-import.ui.targetProfile">Target profile</label>
+                <select id="profileScopedTarget" style="display:block;min-width:220px;margin-top:4px;"></select>
+                <p id="profileScopedActiveInfo" style="margin:6px 0 0;"></p>
+            </div>
+
             <p class="section-title" data-i18n="plugins.config-import.config-import.ui.pluginDetails">Plugin details</p>
             <div style="overflow-x:auto;">
                 <table class="preview-table" id="pluginTable">
@@ -597,7 +615,7 @@
             <h2 data-i18n="plugins.config-import.config-import.ui.resultTitle">📋 Import Result</h2>
             <div id="importResultMsg"></div>
             <div id="importResultLog" class="log-area"></div>
-            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="plugins.config-import.config-import.ui.showDetails">
+            <button class="btn btn-secondary hidden" id="toggleLogBtn" style="margin-top:10px;" data-i18n="plugins.config-import.config-import.ui.showDetails">
                 🔽 Show Details
             </button>
             <div style="margin-top:16px;">
@@ -683,7 +701,8 @@
     });
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    function showAlert(el, msg, type) {
+    function showAlert(el, msg, type, validationNotice = false) {
+        el.dataset.validationNotice = String(validationNotice);
         el.className = 'alert alert-' + type;
         el.textContent = msg;
         el.classList.remove('hidden');
@@ -708,6 +727,40 @@
     const exportStatus = document.getElementById('exportStatus');
     const exportResultCard = document.getElementById('exportResultCard');
     const exportAlert = document.getElementById('exportAlert');
+    const exportScopedToggle = document.getElementById('incProfileScopedPluginData');
+    const exportStateToggle = document.getElementById('incSchnorrbecherPersistentState');
+    const exportPluginDataToggle = document.getElementById('incPluginData');
+    const importTargetProfile = document.getElementById('profileScopedTarget');
+    const importGlobalSettings = document.getElementById('impGlobal');
+    const importPluginSettings = document.getElementById('impPluginSettings');
+    let serverActiveProfile = null;
+    function syncProfileScopedSettingsAvailability() {
+        const targetDiffers = Boolean(serverActiveProfile && importTargetProfile.value !== serverActiveProfile);
+        for (const checkbox of [importGlobalSettings, importPluginSettings]) {
+            if (!checkbox) continue;
+            if (targetDiffers) checkbox.checked = false;
+            checkbox.disabled = targetDiffers;
+        }
+        const activeInfo = document.getElementById('profileScopedActiveInfo');
+        if (activeInfo) activeInfo.textContent = t('plugins.config-import.config-import.ui.activeProfileInfo', { profile: serverActiveProfile || t('plugins.config-import.config-import.ui.unknownActiveProfile') });
+    }
+    importTargetProfile.addEventListener('change', syncProfileScopedSettingsAvailability);
+    let previewPersistentStateAvailable = false;
+    function syncImportStateToggle() {
+        const scoped = document.getElementById('impProfileScopedPluginData');
+        const state = document.getElementById('impSchnorrbecherPersistentState');
+        state.disabled = !scoped.checked || scoped.disabled || !previewPersistentStateAvailable;
+        if (state.disabled) state.checked = false;
+        if (scoped.checked && !scoped.disabled) selectImportMode('merge');
+    }
+    document.getElementById('impProfileScopedPluginData').addEventListener('change', syncImportStateToggle);
+    const syncExportStateToggle = () => {
+        exportStateToggle.disabled = !exportScopedToggle.checked || !exportPluginDataToggle.checked;
+        if (exportStateToggle.disabled) exportStateToggle.checked = false;
+    };
+    exportScopedToggle.addEventListener('change', syncExportStateToggle);
+    exportPluginDataToggle.addEventListener('change', syncExportStateToggle);
+    syncExportStateToggle();
 
     function loadCapabilities() {
         fetch('/api/config-backup/capabilities')
@@ -739,7 +792,9 @@
             includePluginData: document.getElementById('incPluginData').checked,
             includeUserConfigs: document.getElementById('incUserConfigs').checked,
             includeUploads: document.getElementById('incUploads').checked,
-            includeUserData: document.getElementById('incUserData').checked
+            includeUserData: document.getElementById('incUserData').checked,
+            includeProfileScopedPluginData: document.getElementById('incProfileScopedPluginData').checked,
+            includeSchnorrbecherPersistentState: document.getElementById('incSchnorrbecherPersistentState').checked
         };
 
         try {
@@ -836,7 +891,7 @@
         const userConfigsLabel = document.createElement('label');
         userConfigsLabel.className = 'checkbox-label';
         userConfigsLabel.id = 'impUserConfigsLbl';
-        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs"></span>';
+        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs"><span data-i18n="plugins.config-import.config-import.ui.userConfigs"></span>';
         importSections.insertBefore(userConfigsLabel, document.getElementById('impUploadsLbl'));
     }
     ['impUploads', 'impUserData'].forEach(id => {
@@ -862,11 +917,23 @@
     document.getElementById('cancelImportBtn').addEventListener('click', resetImport);
     document.getElementById('newImportBtn').addEventListener('click', resetImport);
 
+    function clearImportValidationAlert() {
+        if (importAlert.dataset.validationNotice === 'true') {
+            hideEl(importAlert);
+            importAlert.dataset.validationNotice = 'false';
+        }
+    }
+
+    function selectImportMode(mode) {
+        clearImportValidationAlert();
+        importMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(button =>
+            button.classList.toggle('selected', button.dataset.mode === mode));
+    }
+
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            importMode = btn.dataset.mode;
+            selectImportMode(btn.dataset.mode);
         });
     });
 
@@ -894,9 +961,23 @@
         validateBtn.disabled = true;
     }
 
+    function resetImportDetails() {
+        const log = document.getElementById('importResultLog');
+        const button = document.getElementById('toggleLogBtn');
+        log.replaceChildren();
+        log.classList.remove('show');
+        button.onclick = null;
+        hideEl(button);
+    }
+
     function resetImport() {
+        resetImportDetails();
         clearFile();
         parsedPreview = null;
+        previewPersistentStateAvailable = false;
+        document.getElementById('impProfileScopedPluginData').checked = false;
+        document.getElementById('impUserConfigs').checked = false;
+        syncImportStateToggle();
         hideEl(importAlert);
         hideEl(importStep2);
         hideEl(importStep3);
@@ -936,12 +1017,23 @@
     });
 
     function renderPreview(preview, warnings) {
+        clearImportValidationAlert();
         const manifest = preview.manifest || {};
         const appInfo = manifest.app || {};
         document.getElementById('manifestInfo').innerHTML =
             `<strong>${t('plugins.config-import.config-import.ui.manifestBackupFrom')}</strong> ${escHtml(manifest.exportedAt || t('plugins.config-import.config-import.ui.unknownValue'))} &nbsp;|&nbsp; ` +
             `<strong>${t('plugins.config-import.config-import.ui.manifestAppVersion')}</strong> ${escHtml(appInfo.version || '?')} &nbsp;|&nbsp; ` +
             `<strong>${t('plugins.config-import.config-import.ui.manifestProfile')}</strong> ${escHtml(manifest.sourceProfile || t('plugins.config-import.config-import.ui.noProfile'))}`;
+        const scoped = preview.profileScopedPluginData || {};
+        document.getElementById('profileScopedImportInfo').textContent = scoped.plugins?.length
+            ? t('plugins.config-import.config-import.ui.scopedArchiveInfo', { profile: scoped.sourceProfile || t('plugins.config-import.config-import.ui.unknownValue'), plugins: scoped.plugins.join(', ') })
+            : t('plugins.config-import.config-import.ui.scopedArchiveMissing');
+        document.getElementById('impProfileScopedPluginData').disabled = !scoped.plugins?.length;
+        document.getElementById('impProfileScopedPluginData').checked = false;
+        previewPersistentStateAvailable = scoped.schnorrbecherPersistentStateAvailable === true;
+        document.getElementById('impSchnorrbecherPersistentState').checked = false;
+        document.getElementById('impUserConfigs').checked = false;
+        syncImportStateToggle();
 
         // Summary grid
         const grid = document.getElementById('summaryGrid');
@@ -990,7 +1082,7 @@
         // Show/hide file sections based on backup content
         if ((preview.userConfigFiles || 0) > 0) {
             showEl(document.getElementById('impUserConfigsLbl'));
-            document.getElementById('impUserConfigs').checked = true;
+            document.getElementById('impUserConfigs').checked = false;
         } else {
             hideEl(document.getElementById('impUserConfigsLbl'));
         }
@@ -1011,6 +1103,23 @@
     document.getElementById('doImportBtn').addEventListener('click', async () => {
         await i18nReady;
         if (!selectedFile) return;
+        const includeScoped = document.getElementById('impProfileScopedPluginData').checked;
+        const includeJarState = document.getElementById('impSchnorrbecherPersistentState').checked;
+        const targetProfile = document.getElementById('profileScopedTarget').value;
+        if (includeScoped && importMode !== 'merge') {
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.scopedMergeRequired'), 'error', true);
+            return;
+        }
+        if (includeScoped && targetProfile !== serverActiveProfile && (importGlobalSettings.checked || importPluginSettings.checked)) {
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.settingsTargetMustBeActive'), 'error', true);
+            return;
+        }
+        if (includeJarState && !includeScoped) {
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.persistentStateRequiresScoped'), 'error', true);
+            return;
+        }
+        if (includeScoped && (!targetProfile || !window.confirm(t('plugins.config-import.config-import.ui.confirmProfileScopedImport', { profile: targetProfile })))) return;
+        clearImportValidationAlert();
         const btn = document.getElementById('doImportBtn');
         btn.disabled = true;
         showEl(document.getElementById('doImportStatus'));
@@ -1024,6 +1133,9 @@
         fd.append('includeUserConfigs', document.getElementById('impUserConfigs').checked);
         fd.append('includeUploads', document.getElementById('impUploads').checked);
         fd.append('includeUserData', document.getElementById('impUserData').checked);
+        fd.append('includeProfileScopedPluginData', includeScoped);
+        fd.append('includeSchnorrbecherPersistentState', includeJarState);
+        fd.append('targetProfile', targetProfile);
 
         try {
             const resp = await fetch('/api/config-backup/import', { method: 'POST', body: fd });
@@ -1034,7 +1146,7 @@
 
             const logArea = document.getElementById('importResultLog');
             const toggleBtn = document.getElementById('toggleLogBtn');
-            logArea.innerHTML = '';
+            resetImportDetails();
 
             if (data.success) {
                 document.getElementById('importResultMsg').innerHTML =
@@ -1043,6 +1155,17 @@
                 const errMsg = (data.errors || [t('plugins.config-import.config-import.ui.unknownError')]).join('\n');
                 document.getElementById('importResultMsg').innerHTML =
                     `<div class="alert alert-error">${t('plugins.config-import.config-import.ui.importCompletedWithErrors')}\n${escHtml(errMsg)}</div>`;
+            }
+
+            const recoveryError = (data.errors || []).find(error =>
+                /recovery data retained at|recovery path became unsafe/i.test(error));
+            if (recoveryError) {
+                const hint = document.createElement('div');
+                hint.className = 'alert alert-warn';
+                const retainedPath = /recovery data retained at (.+)$/i.exec(recoveryError)?.[1];
+                hint.textContent = t('plugins.config-import.config-import.ui.recoveryRetainedHint') +
+                    (retainedPath ? ' ' + retainedPath : '');
+                document.getElementById('importResultMsg').appendChild(hint);
             }
 
             // Build log lines
@@ -1274,6 +1397,21 @@
     i18nReady.then(() => {
         window.i18n?.updateDOM();
         loadCapabilities();
+        fetch('/api/profiles').then(response => response.json()).then(data => {
+            const select = document.getElementById('profileScopedTarget');
+            select.replaceChildren();
+            for (const profile of data.profiles || []) {
+                const option = document.createElement('option');
+                option.value = profile.username;
+                option.textContent = profile.username + (profile.isActive
+                    ? ` (${t('plugins.config-import.config-import.ui.currentProfileSuffix')})`
+                    : '');
+                option.selected = profile.isActive;
+                select.appendChild(option);
+            }
+            serverActiveProfile = data.activeProfile || (data.profiles || []).find(profile => profile.isActive)?.username || null;
+            syncProfileScopedSettingsAvailability();
+        }).catch(() => {});
         loadLegacyDiscovery();
     });
 

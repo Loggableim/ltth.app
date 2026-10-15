@@ -29,6 +29,7 @@ const {
     mergeIdentityValues,
     valuesEqual
 } = require('./plugin-identity-sync');
+const { createPluginReleasePolicy } = require('./plugin-release-policy');
 
 function parseJsonText(text) {
     const value = String(text || '');
@@ -39,6 +40,10 @@ const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
     Object.freeze(['fireworks', 'webgpu-fireworks']),
     Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
 ]);
+
+// Keep this retired plugin's saved state opaque and untouched. Removing code
+// must not silently delete persisted user preferences during startup discovery.
+const PRESERVED_REMOVED_PLUGIN_STATE_IDS = new Set(['chatango']);
 
 function isPluginModule(pluginPath, modulePath) {
     const relativePath = path.relative(pluginPath, modulePath);
@@ -970,6 +975,7 @@ class PluginLoader extends EventEmitter {
     constructor(pluginsDir, app, io, db, logger, configPathManager, activeProfile = null, runtimeOptions = {}) {
         super();
         this.pluginsDir = pluginsDir;
+        this.releasePolicy = createPluginReleasePolicy({ appRoot: path.join(__dirname, '..'), ...(runtimeOptions?.releasePolicy || {}) });
         this.app = app;
         this.io = io;
         this.db = db;
@@ -1278,6 +1284,7 @@ class PluginLoader extends EventEmitter {
 
     isPluginEnabledFromDisk(pluginId) {
         try {
+            if (this.releasePolicy.isClosedBetaId(pluginId)) return false;
             const installed = this.resolvePluginInstallation(pluginId);
             if (!installed) return false;
             const manifest = installed.manifest;
@@ -1297,6 +1304,7 @@ class PluginLoader extends EventEmitter {
 
     resolvePluginInstallation(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         const loaded = this.plugins.get(canonicalId);
         if (loaded) {
             return {
@@ -1401,6 +1409,7 @@ class PluginLoader extends EventEmitter {
                     throw new Error('Missing required manifest fields');
                 }
                 const canonicalId = canonicalizePluginId(runtimeManifest.id);
+                if (this.releasePolicy.isClosedBetaId(runtimeManifest.id)) continue;
                 const identity = getPluginIdentity(canonicalId);
                 candidates.push({
                     canonicalId,
@@ -1441,6 +1450,8 @@ class PluginLoader extends EventEmitter {
 
         const staleIds = Object.keys(this.state).filter(pluginId => {
             if (pluginId === STATE_SYNC_METADATA_KEY) return false;
+            if (PRESERVED_REMOVED_PLUGIN_STATE_IDS.has(pluginId)) return false;
+            if (this.releasePolicy.isClosedBetaId(pluginId)) return false;
             if (getPluginIdentity(pluginId)) return false;
             return !installedPluginIds.has(pluginId);
         });
@@ -1584,6 +1595,7 @@ class PluginLoader extends EventEmitter {
             }
 
             runtimeManifest = inventoryItem?.runtimeManifest || parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
+            this.releasePolicy.assertAllowed(runtimeManifest.id);
             const canonicalId = canonicalizePluginId(runtimeManifest.id);
             manifest = { ...runtimeManifest, id: canonicalId };
 
@@ -1749,7 +1761,7 @@ class PluginLoader extends EventEmitter {
     /**
      * Entlädt ein Plugin
      */
-    async unloadPlugin(pluginId) {
+    async unloadPlugin(pluginId, context = {}) {
         const canonicalId = canonicalizePluginId(pluginId);
         const plugin = this.plugins.get(canonicalId);
         if (!plugin) return false;
@@ -1762,7 +1774,7 @@ class PluginLoader extends EventEmitter {
                 }
             }
             if (typeof plugin.instance.destroy === 'function') {
-                await plugin.instance.destroy();
+                await plugin.instance.destroy(context);
             }
         } catch (error) {
             errors.push(error);
@@ -1792,8 +1804,13 @@ class PluginLoader extends EventEmitter {
      * Aktiviert ein Plugin
      */
     async enablePlugin(pluginId) {
-        // Store original state to rollback if needed
         pluginId = canonicalizePluginId(pluginId);
+        this.releasePolicy.assertAllowed(pluginId);
+        const installedOnDisk = resolveInstalledPluginDirectory(this.pluginsDir, pluginId);
+        if (!installedOnDisk) {
+            throw new Error(`Plugin directory not found: ${pluginId}`);
+        }
+        // Store original state to rollback if needed only after the disk preflight.
         const originalState = this.state[pluginId] ? { ...this.state[pluginId] } : null;
         const mutuallyExclusivePluginIds = this.getMutuallyExclusivePluginIds(pluginId);
         const disabledConflicts = [];
@@ -1838,12 +1855,7 @@ class PluginLoader extends EventEmitter {
 
             // Wenn Plugin noch nicht geladen, jetzt laden
             if (!this.plugins.has(pluginId)) {
-                const installed = this.resolvePluginInstallation(pluginId);
-                if (!installed) {
-                    this.logger.error(`Plugin installation does not exist: ${pluginId}`);
-                    throw new Error(`Plugin directory not found: ${pluginId}`);
-                }
-                const pluginPath = installed.path;
+                const pluginPath = installedOnDisk.path;
                 
                 // Try to load the plugin with state already set to enabled
                 const loadResult = await this.loadPlugin(pluginPath);
@@ -2190,6 +2202,7 @@ class PluginLoader extends EventEmitter {
      */
     getPlugin(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         return this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
     }
 
@@ -2198,6 +2211,7 @@ class PluginLoader extends EventEmitter {
      */
     getPluginInstance(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         const plugin = this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
         return plugin ? plugin.instance : null;
     }
@@ -2207,6 +2221,7 @@ class PluginLoader extends EventEmitter {
      */
     isPluginEnabled(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (this.releasePolicy.isClosedBetaId(canonicalId)) return false;
         const state = this.state[canonicalId] || getIdentityCandidateIds(canonicalId)
             .map(candidateId => this.state[candidateId])
             .find(Boolean);

@@ -48,7 +48,12 @@ const STATE = {
   messagesContainer: null,
   multiContainer: null,
   eventCount: 0,
-  activeStreams: 0
+  activeStreams: 0,
+  isLoadingState: false,
+  pendingLiveEvents: [],
+  statePromise: null,
+  stateRefreshRequested: false,
+  settingsRequestRevision: 0
 };
 
 // ==================== DEBUG HELPERS ====================
@@ -101,6 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize systems
   initializeSystems();
+
+  // Re-render translated gift text and anonymous fallbacks when the shared
+  // locale client adopts a server-origin language change.
+  window.i18n?.onLanguageChange?.(() => {
+    renderMessageHistory();
+    updateDebugStatus('Ready');
+    updateDebugSocket(STATE.socket?.connected ? 'Connected' : 'Disconnected');
+    updateDebugStreams(STATE.activeStreams);
+  });
   
   // Connect to socket
   connectSocket();
@@ -146,11 +160,17 @@ function connectSocket() {
   
   try {
     STATE.socket = io();
+    // The shared i18n client binds to the existing overlay socket. Keep any
+    // socket already published by the embedding page.
+    if (!window.socket) window.socket = STATE.socket;
     
     STATE.socket.on('connect', () => {
       HUD_LOG.debug('[MULTI HUD] ✅ Socket connected');
       updateDebugSocket('Connected');
-      loadSettings();
+      void (async () => {
+        await loadSettings();
+        await loadInitialState();
+      })();
     });
     
     STATE.socket.on('disconnect', () => {
@@ -158,23 +178,17 @@ function connectSocket() {
       updateDebugSocket('Disconnected');
     });
     
-    STATE.socket.on('reconnect', () => {
-      HUD_LOG.debug('[MULTI HUD] 🔄 Socket reconnected');
-      updateDebugSocket('Reconnected');
-      loadSettings();
-    });
-    
     // Listen for multi-stream chat events
     STATE.socket.on('clarityhud:multi:chat', (event) => {
       HUD_LOG.debug('[MULTI HUD] 📨 Multi-stream chat event received:', event);
-      handleChatEvent(event);
+      receiveMultiEvent('chat', event);
       updateDebugEvents();
     });
     
     // Listen for multi-stream gift events
     STATE.socket.on('clarityhud:multi:gift', (event) => {
       HUD_LOG.debug('[MULTI HUD] 🎁 Multi-stream gift event received:', event);
-      handleGiftEvent(event);
+      receiveMultiEvent('gift', event);
       updateDebugEvents();
     });
     
@@ -190,8 +204,103 @@ function connectSocket() {
   }
 }
 
+function receiveMultiEvent(type, event) {
+  if (STATE.isLoadingState) {
+    if (STATE.pendingLiveEvents.length >= STATE.settings.maxMessages) STATE.pendingLiveEvents.shift();
+    STATE.pendingLiveEvents.push({ type, event });
+    return;
+  }
+  if (type === 'gift') handleGiftEvent(event);
+  else handleChatEvent(event);
+}
+
+function loadInitialState() {
+  STATE.stateRefreshRequested = true;
+  if (STATE.statePromise) return STATE.statePromise;
+
+  const refreshState = async () => {
+    do {
+      STATE.stateRefreshRequested = false;
+      await loadStateSnapshot();
+    } while (STATE.stateRefreshRequested);
+  };
+
+  STATE.statePromise = refreshState().finally(() => {
+    STATE.statePromise = null;
+    if (STATE.stateRefreshRequested) void loadInitialState();
+  });
+  return STATE.statePromise;
+}
+
+async function loadStateSnapshot() {
+  STATE.isLoadingState = true;
+  STATE.pendingLiveEvents = [];
+  let loaded = false;
+  try {
+    const response = await fetch('/api/clarityhud/state/multi');
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const data = await response.json();
+
+    if (data.success && Array.isArray(data.events?.multi)) {
+      const pendingNewestFirst = STATE.pendingLiveEvents.slice().reverse().map(item => item.event);
+      STATE.messages = mergeMultiMessages([...data.events.multi, ...pendingNewestFirst, ...STATE.messages])
+        .slice(0, STATE.settings.maxMessages);
+      loaded = true;
+    }
+  } catch (error) {
+    HUD_LOG.error('[MULTI HUD] ❌ Error loading initial state:', error);
+  } finally {
+    STATE.isLoadingState = false;
+    const pending = STATE.pendingLiveEvents;
+    STATE.pendingLiveEvents = [];
+    if (!loaded) {
+      pending.forEach(({ type, event }) => {
+        if (type === 'gift') handleGiftEvent(event);
+        else handleChatEvent(event);
+      });
+    }
+    renderMessageHistory();
+  }
+}
+
+function mergeMultiMessages(messages) {
+  const seenIds = new Set();
+  return messages.filter(event => {
+    if (!event.eventId) return true;
+    const eventId = String(event.eventId);
+    if (seenIds.has(eventId)) return false;
+    seenIds.add(eventId);
+    return true;
+  });
+}
+
+function renderMessageHistory() {
+  if (!STATE.messagesContainer) return;
+  STATE.messagesContainer.replaceChildren();
+  const visibleMessages = STATE.messages.slice(0, Math.min(STATE.settings.maxMessages, 100));
+  for (const event of [...visibleMessages].reverse()) {
+    if (event.gift) renderGiftMessage(event);
+    else renderChatMessage(event);
+  }
+}
+
+function getMultiEventKey(event) {
+  return event.eventId ? String(event.eventId) : null;
+}
+
+function recordMultiEvent(event, type, render) {
+  const key = getMultiEventKey(event);
+  if (key && STATE.messages.some(message => message.eventId && String(message.eventId) === key)) return;
+  STATE.messages.unshift(event);
+  if (STATE.messages.length > STATE.settings.maxMessages) {
+    STATE.messages = STATE.messages.slice(0, STATE.settings.maxMessages);
+  }
+  render(event);
+}
+
 // ==================== SETTINGS MANAGEMENT ====================
 async function loadSettings() {
+  const requestRevision = ++STATE.settingsRequestRevision;
   try {
     HUD_LOG.debug('[MULTI HUD] 📥 Loading settings from API...');
     const response = await fetch('/api/clarityhud/settings/multi');
@@ -201,6 +310,7 @@ async function loadSettings() {
     }
     
     const data = await response.json();
+    if (requestRevision !== STATE.settingsRequestRevision) return;
     
     if (data.success && data.settings) {
       HUD_LOG.debug('[MULTI HUD] ✅ Settings loaded:', data.settings);
@@ -210,6 +320,7 @@ async function loadSettings() {
       updateDebugStatus('Invalid settings');
     }
   } catch (error) {
+    if (requestRevision !== STATE.settingsRequestRevision) return;
     HUD_LOG.error('[MULTI HUD] ❌ Error loading settings:', error);
     updateDebugStatus(`Settings error: ${error.message}`);
   }
@@ -259,16 +370,7 @@ function applySettings(settings) {
 // ==================== EVENT HANDLING ====================
 function handleChatEvent(event) {
   try {
-    // Add to messages array
-    STATE.messages.unshift(event);
-    
-    // Trim to max messages
-    if (STATE.messages.length > STATE.settings.maxMessages) {
-      STATE.messages = STATE.messages.slice(0, STATE.settings.maxMessages);
-    }
-    
-    // Render the message
-    renderChatMessage(event);
+    recordMultiEvent(event, 'chat', renderChatMessage);
     
     HUD_LOG.debug(`[MULTI HUD] ✅ Chat from ${event.sourceLabel}: ${event.user.nickname}`);
   } catch (error) {
@@ -278,16 +380,7 @@ function handleChatEvent(event) {
 
 function handleGiftEvent(event) {
   try {
-    // Add to messages array
-    STATE.messages.unshift(event);
-    
-    // Trim to max messages
-    if (STATE.messages.length > STATE.settings.maxMessages) {
-      STATE.messages = STATE.messages.slice(0, STATE.settings.maxMessages);
-    }
-    
-    // Render the gift as a special message
-    renderGiftMessage(event);
+    recordMultiEvent(event, 'gift', renderGiftMessage);
     
     HUD_LOG.debug(`[MULTI HUD] ✅ Gift from ${event.sourceLabel}: ${event.user.nickname} sent ${event.gift.name} x${event.gift.count}`);
   } catch (error) {
@@ -337,9 +430,9 @@ function renderChatMessage(event) {
     const badgeContainerEl = document.createElement('div');
     badgeContainerEl.className = 'badge-container';
     if (typeof STATE.badgeRenderer.renderToHTML === 'function') {
-      STATE.badgeRenderer.renderToHTML(event.user.badge, badgeContainerEl);
+      STATE.badgeRenderer.renderToHTML(badgeData, badgeContainerEl);
     } else {
-      badgeContainerEl.textContent = String(event.user.badge);
+      badgeContainerEl.textContent = String(badgeData);
     }
     headerEl.appendChild(badgeContainerEl);
   }

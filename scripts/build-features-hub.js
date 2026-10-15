@@ -26,7 +26,7 @@ const OG_LOCALES = {
   fr: 'fr_FR',
 };
 const LANGS = ['de', 'en', 'es', 'fr'];
-const REMOVED_FEATURE_SLUGS = new Set(['overlays', 'plugin-leaderboard', 'plugin-openshock']);
+const REMOVED_FEATURE_SLUGS = new Set(['overlays', 'plugin-leaderboard', 'plugin-openshock', 'plugin-chatango']);
 const FEATURE_OVERVIEW_IMAGE = '/screenshots/features/dashboard-main.png';
 const SITE_NAME = 'ltth.app';
 const SITE_URL = 'https://ltth.app';
@@ -39,6 +39,20 @@ const SKIP_LABELS = {
 
 const store = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'plugin-store.json'), 'utf8'));
 const storeById = new Map((store.plugins || []).map(plugin => [plugin.id, plugin]));
+const releasePolicy = JSON.parse(fs.readFileSync(
+  path.join(REPO_ROOT, 'app', 'config', 'plugin-release-policy.json'),
+  'utf8'
+));
+const closedBetaPluginIds = new Set(releasePolicy.closedBeta || []);
+const closedBetaPluginAliases = new Set(Object.entries(releasePolicy.aliases || {})
+  .filter(([, canonicalId]) => closedBetaPluginIds.has(canonicalId))
+  .map(([alias]) => alias));
+
+function isClosedBetaFeature(slug) {
+  const storeId = catalog.storeIdBySlug[slug];
+  return closedBetaPluginIds.has(storeId) || closedBetaPluginIds.has(slug)
+    || closedBetaPluginAliases.has(storeId) || closedBetaPluginAliases.has(slug);
+}
 
 function readFile(filePath) {
   return fs.readFileSync(filePath, 'utf8');
@@ -221,6 +235,7 @@ function buildFeatureCatalog(lang) {
     const category = catalog.categories.find(entry => entry.id === categoryId) || catalog.categories[0];
     const title = getTitle(detail, storeItem);
     const description = getDescription(slug, lang, detail, storeItem);
+    const closedBeta = isClosedBetaFeature(slug);
     const declaredScreenshots = [
       ...detail.screenshots,
       ...((storeItem && Array.isArray(storeItem.screenshots))
@@ -251,12 +266,14 @@ function buildFeatureCatalog(lang) {
       category.benefit[lang],
       category.context[lang],
       ...screenshots.map(shot => `${shot.alt} ${shot.caption}`),
+      ...(closedBeta ? [catalog.pageCopy[lang].closedBetaBadge, catalog.pageCopy[lang].closedBetaNotice] : []),
     ].join(' ').toLowerCase();
 
     return {
       slug,
       title,
       description,
+      closedBeta,
       categoryId,
       category,
       screenshots,
@@ -446,6 +463,7 @@ function renderItem(page, lang, item, category) {
             <div>
               <p class="catalog-entry__kicker">${escapeHtml(category.label[lang])}</p>
               <h3>${escapeHtml(item.title)}</h3>
+              ${item.closedBeta ? `<p class="catalog-entry__availability" role="status">${escapeHtml(page.closedBetaBadge)} · ${escapeHtml(page.closedBetaNotice)}</p>` : ''}
             </div>
             <a class="catalog-entry__link" href="${escapeAttr(item.href)}">${escapeHtml(page.deepDiveLabel)}</a>
           </div>

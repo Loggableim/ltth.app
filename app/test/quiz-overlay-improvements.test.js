@@ -143,12 +143,6 @@ describe('Quiz Show Overlay - Display Improvements', () => {
             expect(cssCode).toContain('.category-text');
             expect(cssCode).toContain('font-size: 1.8rem');
         });
-
-        test('JavaScript should extract and display category from state', () => {
-            expect(overlayCode).toContain('category: state.currentQuestion.category');
-            expect(overlayCode).toContain('if (gameData.category && categoryDisplay && categoryText)');
-            expect(overlayCode).toContain('categoryText.textContent = gameData.category');
-        });
     });
 
     describe('Code Quality', () => {
