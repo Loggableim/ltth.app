@@ -31,32 +31,10 @@ describe('Stream Monsters 1.12 public branding', () => {
     const pluginManifest = readJson('app', 'plugins', 'stream-monsters', 'plugin.json');
     const streamMonsters = storeRegistry.plugins.find((plugin) => plugin.id === 'stream-monsters');
 
-    expect(streamMonsters).toMatchObject({
-      id: 'stream-monsters',
-      version: '1.12.0',
-      channel: 'stable',
-      packageUrl: 'https://ltth.app/plugin-store/packages/stream-monsters-1.12.0.zip',
-      screenshots: [creatorScreenshot, arenaScreenshot]
-    });
-    expect(streamMonsters.sha256).toMatch(/^[a-f0-9]{64}$/);
-    expect(pluginManifest.version).toBe(streamMonsters.version);
+    // closedBeta (app/config/plugin-release-policy.json:7): no public Store entry.
+    expect(streamMonsters).toBeUndefined();
+    expect(pluginManifest.version).toBe('1.12.0');
     expect(pluginManifest.devStatus).toBe('stable');
-    expect(streamMonsters.badges).toEqual(['subscriber-only']);
-    expect(streamMonsters.access).toEqual(expect.objectContaining({
-      type: 'subscriber',
-      description: expect.objectContaining({
-        de: expect.any(String),
-        en: expect.any(String),
-        es: expect.any(String),
-        fr: expect.any(String)
-      })
-    }));
-
-    for (const locale of ['de', 'en', 'es', 'fr']) {
-      const description = streamMonsters.description[locale];
-      expect(description).toContain('72');
-      expect(description).toMatch(/Rules v8/i);
-    }
 
     expect(featurePage).toContain('/assets/plugin-logos/stream-monsters-logo.png');
     expect(featurePage).toContain('/assets/plugin-logos/stream-monsters-icon.png');
