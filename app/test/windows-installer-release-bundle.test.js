@@ -852,7 +852,16 @@ describe('Verified Windows app ZIP bootstrap', () => {
     ['case-variant plugin paths and manifest IDs', {
       pluginPath: 'Plugins/renamed/Plugin.json',
       pluginManifest: { id: 'MUSIC-BOT' }
-    }]
+    }],
+    ['invalid publicRuntimeExcluded ID', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], publicRuntimeExcluded: ['Bad ID'] }
+    }],
+    ['publicRuntimeExcluded duplicate of closed-beta ID', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], publicRuntimeExcluded: ['music-bot'] }
+    }],
+    ['publicAssetPathOwners owner not in blocked IDs', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], publicAssetPathOwners: { '/js/x.js': 'unknown-owner' } }
+    }],
   ])('rejects app contents with %s before extraction', async (_caseName, zipOptions) => {
     if (!hasWindowsPowerShell()) return;
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-policy-'));
@@ -869,6 +878,29 @@ describe('Verified Windows app ZIP bootstrap', () => {
     expect(state.downloadCalled).toBe(true);
     expect(state.expandCalled).toBe(false);
     expect(state.installed).toBe(false);
+  });
+
+  test('accepts an asset owner that is blocked only through publicRuntimeExcluded', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-runtime-excluded-'));
+    const { zipPath, zipBytes } = await writeFixtureZip({
+      policy: {
+        schemaVersion: 1,
+        closedBeta: ['music-bot'],
+        publicRuntimeExcluded: ['sidekick'],
+        publicAssetPathOwners: { '/js/sidekick-ui.js': 'sidekick' }
+      }
+    });
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes)
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(true);
+    expect(state.installed).toBe(true);
   });
 
   test('keeps unrelated nested public vendor plugin directories valid', async () => {
