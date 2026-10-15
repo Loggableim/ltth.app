@@ -419,14 +419,14 @@ describe('PluginStore', () => {
     }));
 
     const result = await store.listPlugins({ locale: 'de' });
+    // webgpu-emoji-rain is in closedBeta (app/config/plugin-release-policy.json:13),
+    // so the public fallback must not list it (plugin-release-policy.js:147-152 filterRegistry).
     const emojiRain = result.plugins.find((plugin) => plugin.id === 'webgpu-emoji-rain');
 
     assert.strictEqual(result.errors.length, 0);
     assert.strictEqual(result.notices[0].fallback, 'bundled');
-    assert.strictEqual(emojiRain.name, 'WebGPU EmojiRain');
-    assert.strictEqual(emojiRain.installed, true);
-    assert(emojiRain.packageUrl.startsWith('https://ltth.app/plugin-store/packages/'));
-    assert.deepStrictEqual(emojiRain.pricing, { type: 'free', amount: 0, currency: 'EUR' });
+    assert.strictEqual(emojiRain, undefined);
+    assert(result.plugins.length > 0);
   });
 
   it('preserves stable manifest status when generating the local fallback registry', () => {
