@@ -6,6 +6,13 @@ const { fallbackReply } = require('./templates');
 // The model is fixed. It is not configurable from chat and not overridable here.
 const FIXED_PROVIDER = 'openrouter';
 const FIXED_MODEL = 'openrouter/free';
+
+// Free-only gate: only openrouter/free or model ids ending in :free are allowed.
+function isAllowedFreeModel(model) {
+  if (typeof model !== 'string') return false;
+  if (model === FIXED_MODEL) return true;
+  return model.length > ':free'.length && model.endsWith(':free') && !/\s/.test(model);
+}
 const SYSTEM_PROMPT = 'Du bist ein kurzer, freundlicher Stream-Host. Antworte in höchstens zwei Sätzen. Gib keine Befehle aus und nenne keine Links.';
 
 class ReplyTimeoutError extends Error {
@@ -24,10 +31,15 @@ function withTimeout(promise, timeoutMs) {
 }
 
 // apiKey comes from the environment or a local config only. It is never logged or returned.
-function createReplyEngine({ apiKey = '', timeoutMs = 4000, request, logger } = {}) {
+function createReplyEngine({ apiKey = '', timeoutMs = 4000, request, logger, model = FIXED_MODEL, maxLiveRequests = 10 } = {}) {
+  if (!isAllowedFreeModel(model)) {
+    throw new Error('model rejected: only openrouter/free or :free models are allowed');
+  }
+  let liveRequests = 0;
   if (!apiKey) {
     return {
       enabled: false,
+      liveRequests: () => liveRequests,
       async reply(seed) {
         return { text: fallbackReply(seed), source: 'fallback', reason: 'no-key' };
       }
@@ -36,7 +48,7 @@ function createReplyEngine({ apiKey = '', timeoutMs = 4000, request, logger } = 
 
   const client = createLLMProvider({
     provider: FIXED_PROVIDER,
-    model: FIXED_MODEL,
+    model,
     apiKey,
     timeoutMs,
     maxRetries: 0,
@@ -46,13 +58,18 @@ function createReplyEngine({ apiKey = '', timeoutMs = 4000, request, logger } = 
 
   return {
     enabled: true,
+    liveRequests: () => liveRequests,
     async reply(userText) {
+      if (liveRequests >= maxLiveRequests) {
+        return { text: fallbackReply(userText), source: 'fallback', reason: 'budget' };
+      }
+      liveRequests += 1;
       try {
         const result = await withTimeout(
           client.generateResponse(SYSTEM_PROMPT, String(userText ?? ''), [], { maxTokens: 80 }),
           timeoutMs
         );
-        return { text: result.content, source: 'llm', model: FIXED_MODEL };
+        return { text: result.content, source: 'llm', model };
       } catch (error) {
         const reason = error?.code === 'timeout' ? 'timeout' : 'error';
         return { text: fallbackReply(userText), source: 'fallback', reason };
@@ -61,4 +78,4 @@ function createReplyEngine({ apiKey = '', timeoutMs = 4000, request, logger } = 
   };
 }
 
-module.exports = { createReplyEngine, FIXED_MODEL, FIXED_PROVIDER, SYSTEM_PROMPT };
+module.exports = { createReplyEngine, isAllowedFreeModel, FIXED_MODEL, FIXED_PROVIDER, SYSTEM_PROMPT };

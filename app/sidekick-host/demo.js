@@ -18,9 +18,15 @@ const LOG_PATH = path.join(os.tmpdir(), 'ltth-sidekick-demo.log');
 const LOCAL_CONFIG = path.join(__dirname, 'local-config.json');
 const SWITCH_EVERY = 4;
 
-// The key is read from the environment or a git-ignored local config. It is never logged.
-function readApiKey() {
-  if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
+// Network is opt-in only: SIDEKICK_LIVE=1. Without it no key is read and no request is sent.
+// The key is never logged.
+function liveEnabled(env = process.env) {
+  return env.SIDEKICK_LIVE === '1';
+}
+
+function readApiKey(env = process.env) {
+  if (!liveEnabled(env)) return '';
+  if (env.OPENROUTER_API_KEY) return env.OPENROUTER_API_KEY;
   try {
     const local = JSON.parse(fs.readFileSync(LOCAL_CONFIG, 'utf8'));
     return typeof local.openrouterApiKey === 'string' ? local.openrouterApiKey : '';
@@ -81,4 +87,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runDemo, readApiKey };
+module.exports = { runDemo, readApiKey, liveEnabled };
