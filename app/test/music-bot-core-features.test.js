@@ -2,6 +2,36 @@ const QueueManager = require('../plugins/music-bot/lib/queue-manager');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
 const AutoDJ = require('../plugins/music-bot/lib/auto-dj');
 const MusicBotPlugin = require('../plugins/music-bot/main');
+const childProcess = require('child_process');
+
+// Owned-child termination spawns taskkill on Windows (playback-engine.js:592).
+// Mock spawn so tests never signal real processes; the killer reports success.
+jest.mock('child_process', () => ({
+  ...jest.requireActual('child_process'),
+  spawn: jest.fn()
+}));
+
+// Platform fixture (playback-engine.js:_terminateProcess): owned child -> taskkill on
+// win32 (no direct kill), otherwise SIGTERM. Unowned children are never signalled.
+function expectOwnedTermination(child) {
+  if (process.platform === 'win32') {
+    expect(childProcess.spawn).toHaveBeenCalledWith(
+      'taskkill.exe',
+      ['/PID', String(child.pid), '/T', '/F'],
+      expect.any(Object)
+    );
+    expect(child.kill).not.toHaveBeenCalled();
+  } else {
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+  }
+}
+
+beforeEach(() => {
+  childProcess.spawn.mockReset();
+  childProcess.spawn.mockImplementation(() => ({
+    once: (event, cb) => { if (event === 'close') cb(0); }
+  }));
+});
 
 function createDbMock() {
   return {
@@ -566,20 +596,36 @@ describe('Music Bot core features', () => {
 
   test('keeps shutdown protection active until the MPV child closes', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
-    const child = {
-      kill: jest.fn(),
-      once: jest.fn()
-    };
+    const child = { pid: 4242, kill: jest.fn(), once: jest.fn() };
+    engine._ownedPids.add(child.pid);
     engine.process = child;
+
+    // shutdown() clears _shuttingDown only after the owned child is terminated
+    // (playback-engine.js:471). Capture the flag while termination is in progress.
+    let protectedDuringTermination = null;
+    const terminate = engine._terminateProcess.bind(engine);
+    engine._terminateProcess = async (...args) => {
+      protectedDuringTermination = engine._shuttingDown;
+      return terminate(...args);
+    };
 
     await engine.shutdown();
 
     expect(child.once).toHaveBeenCalledWith('close', expect.any(Function));
-    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
-    expect(engine._shuttingDown).toBe(true);
-
-    child.once.mock.calls[0][1]();
+    expectOwnedTermination(child);
+    expect(protectedDuringTermination).toBe(true);
     expect(engine._shuttingDown).toBe(false);
+  });
+
+  test('does not signal an MPV child the engine does not own (ownership gate)', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const child = { pid: 5151, kill: jest.fn(), once: jest.fn() };
+    engine.process = child;
+
+    await engine._terminateProcess(child, { waitForClose: false });
+
+    expect(childProcess.spawn).not.toHaveBeenCalled();
+    expect(child.kill).not.toHaveBeenCalled();
   });
 
   test('restarts an unresponsive MPV process without discarding the active track', async () => {
@@ -587,12 +633,14 @@ describe('Music Bot core features', () => {
     const track = { id: 'keep-playing', title: 'Keep Playing' };
     let closeHandler;
     const child = {
+      pid: 4343,
       exitCode: null,
       kill: jest.fn(),
       once: jest.fn((event, handler) => {
         if (event === 'close') closeHandler = handler;
       })
     };
+    engine._ownedPids.add(child.pid);
 
     engine.process = child;
     engine.socket = { destroy: jest.fn() };
@@ -601,7 +649,7 @@ describe('Music Bot core features', () => {
 
     const restart = engine.restart();
 
-    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+    expectOwnedTermination(child);
     expect(engine.getNowPlaying()).toEqual(track);
     closeHandler();
     await expect(restart).resolves.toEqual(track);
