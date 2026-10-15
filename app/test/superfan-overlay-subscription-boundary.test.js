@@ -2,9 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const parser = require('@babel/parser');
-const reviewRoot = path.resolve(__dirname, '../../..');
+const { execFileSync } = require('child_process');
+const repoRoot = path.resolve(__dirname, '..', '..');
+// Sources come from git history, not sibling checkouts. The fix commit under test is
+// 126ec4900 (Keep SuperFan events out of subscription display handlers); its parent is the baseline.
+const CANDIDATE_REV = '126ec4900';
+const BASELINE_REV = '126ec4900^';
 function method(side, file, name) {
-  const source = fs.readFileSync(path.join(reviewRoot, side, 'app/plugins', file), 'utf8');
+  const rev = side === 'baseline' ? BASELINE_REV : CANDIDATE_REV;
+  const source = execFileSync('git', ['-C', repoRoot, 'show', `${rev}:app/plugins/${file}`], { encoding: 'utf8' });
   const ast = parser.parse(source, { sourceType: 'script' });
   const clazz = ast.program.body.find(node => node.type === 'ClassDeclaration');
   const node = clazz.body.body.find(node => node.key && node.key.name === name);
