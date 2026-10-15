@@ -474,7 +474,7 @@ function Assert-PublicAppBundleArchive {
         $policyKeys = @($policy.PSObject.Properties | ForEach-Object { $_.Name })
         if ($policy.schemaVersion -isnot [int] -or $policy.schemaVersion -ne 1 -or
             $null -eq $policy.closedBeta -or $policy.closedBeta -isnot [System.Array] -or
-            @($policyKeys | Where-Object { $_ -notin @('schemaVersion', 'closedBeta', 'aliases') }).Count -gt 0) {
+            @($policyKeys | Where-Object { $_ -notin @('schemaVersion', 'closedBeta', 'aliases', 'publicRuntimeExcluded', 'publicAssetPathOwners') }).Count -gt 0) {
             throw "App-Bundle Plugin-Release-Policy ist ungueltig."
         }
 
@@ -500,6 +500,26 @@ function Assert-PublicAppBundleArchive {
                     throw "App-Bundle Plugin-Release-Policy Alias ist ungueltig."
                 }
                 $blockedIds += $alias.Name
+            }
+        }
+
+        # Mirrors install/install.js (publicAssetPathOwners): absolute, lowercase,
+        # normalized asset paths; every owner must be a closed-beta or alias ID.
+        $publicOwnersProperty = $policy.PSObject.Properties['publicAssetPathOwners']
+        if ($null -ne $publicOwnersProperty) {
+            if ($null -eq $policy.publicAssetPathOwners -or $policy.publicAssetPathOwners -isnot [System.Management.Automation.PSCustomObject]) {
+                throw "App-Bundle Plugin-Release-Policy publicAssetPathOwners ist ungueltig."
+            }
+            foreach ($asset in $policy.publicAssetPathOwners.PSObject.Properties) {
+                $assetPath = [string]$asset.Name
+                $assetOwner = $asset.Value
+                $assetParts = $assetPath.TrimStart('/').Split('/')
+                if (-not $assetPath.StartsWith('/') -or $assetPath.StartsWith('//') -or
+                    $assetPath -cne $assetPath.ToLowerInvariant() -or $assetPath -match '[\\%?#:]' -or
+                    @($assetParts | Where-Object { $_ -in @('', '.', '..') }).Count -gt 0 -or
+                    $assetOwner -isnot [string] -or $blockedIds -notcontains $assetOwner) {
+                    throw "App-Bundle Plugin-Release-Policy publicAssetPathOwners enthaelt einen ungueltigen Eintrag."
+                }
             }
         }
 
