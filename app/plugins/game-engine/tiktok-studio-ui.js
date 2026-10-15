@@ -83,8 +83,9 @@
           source.value = resolveInitialUrl(source.value);
         } else {
           const text = source.textContent;
-          source.textContent = text.startsWith('URL: ')
-            ? `URL: ${resolveInitialUrl(text.slice(5))}`
+          const labelled = text.match(/^(.*?)(https?:\/\/\S*)$/s);
+          source.textContent = labelled
+            ? `${labelled[1]}${resolveInitialUrl(labelled[2])}`
             : resolveInitialUrl(text);
         }
         if (target.attribute && source.getAttribute(target.attribute)) {
