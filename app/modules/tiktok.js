@@ -2,6 +2,7 @@
 
 const EventEmitter = require('events');
 const EulerstreamAdapter = require('./adapters/EulerstreamAdapter');
+const { attachLiveReadHook } = require('../sidekick-host/adapters/live-read-hook');
 
 /**
  * TikTokConnector - Facade / Router
@@ -84,10 +85,16 @@ class TikTokConnector extends EventEmitter {
   }
 
   _switchAdapter() {
+    if (this._liveReadHook) {
+      this._liveReadHook.dispose();
+      this._liveReadHook = null;
+    }
     if (this._adapter) {
       this._unbindAdapterEvents(this._adapter);
     }
     this._adapter = new EulerstreamAdapter(this.io, this.db, this.logger);
+    // Read-only live path. Attaches only when SIDEKICK_LIVE is exactly '1'.
+    this._liveReadHook = attachLiveReadHook(this._adapter, process.env.SIDEKICK_LIVE);
     if (typeof this._adapter.setStreamSessionLifecycleHandler === 'function') {
       this._adapter.setStreamSessionLifecycleHandler(
         data => this._emitAsync('streamSessionStarted', data)

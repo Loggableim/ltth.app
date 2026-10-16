@@ -543,6 +543,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Create event emitter for processing messages
             this.eventEmitter = new WebcastEventEmitter(this.ws);
+            this._notifyEmitterListener();
 
             // Setup WebSocket event handlers
             this._setupWebSocketHandlers(generation);
@@ -822,6 +823,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._connectedEventEmitted = false;
         this._connectionHadLive = false;
         this.eventEmitter = new EventEmitter();
+        this._notifyEmitterListener();
         this._registerEulerstreamEvents();
 
         // Keep this optional connector lazy so the main adapter and Jest suite
@@ -876,7 +878,22 @@ class EulerstreamAdapter extends BaseAdapter {
         );
     }
 
-    _rejectPendingConnect(error) {
+    // Read-only hook point: the live-read path re-attaches when the emitter is reset.
+  // Null clears it. Nothing is called when no listener is set.
+  setEmitterListener(listener) {
+    this._emitterListener = typeof listener === 'function' ? listener : null;
+  }
+
+  _notifyEmitterListener() {
+    if (!this._emitterListener) return;
+    try {
+      this._emitterListener(this.eventEmitter || null);
+    } catch (error) {
+      this.logger?.warn?.('[EulerstreamAdapter] emitter listener failed', { error: error?.message });
+    }
+  }
+
+  _rejectPendingConnect(error) {
         if (this._connectReject) {
             const reject = this._connectReject;
             this._connectReject = null;
@@ -2926,6 +2943,7 @@ class EulerstreamAdapter extends BaseAdapter {
         if (this.eventEmitter) {
             this.eventEmitter.removeAllListeners();
             this.eventEmitter = null;
+            this._notifyEmitterListener();
         }
         this.isConnected = false;
         this.connectionState = 'disconnected';
