@@ -513,7 +513,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             this.logger.info(`🔄 Verbinde mit TikTok LIVE: @${this._nameForLog(username)}...`);
             this.logger.info(`⚙️  Connection Mode: Eulerstream WebSocket API`);
-            this.logger.info(`🔑 Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
+            this.logger.info(`🔑 Authentication Key configured (${this._isLiveIsolated() ? 'hidden' : apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4)})`);
             
             // Log key type for debugging
             if (apiKey.startsWith('euler_')) {
@@ -2917,7 +2917,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this._consecutiveWatchdogOfflineChecks++;
             this.logger.warn(
                 `TikTok LIVE watchdog received confirmed offline result ${this._consecutiveWatchdogOfflineChecks}/` +
-                `${EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS} for @${this.currentUsername}`
+                `${EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS} for @${this._nameForLog(this.currentUsername)}`
             );
             if (this._consecutiveWatchdogOfflineChecks >= EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS) {
                 this._endStreamFromWatchdog();
@@ -3196,7 +3196,7 @@ class EulerstreamAdapter extends BaseAdapter {
             throw new Error('Username is required to fetch room ID');
         }
 
-        this.logger.info(`📡 Fetching room ID for @${targetUsername}...`);
+        this.logger.info(`📡 Fetching room ID for @${this._nameForLog(targetUsername)}...`);
         const result = await this._checkTikTokLivePage(targetUsername);
         if (result.status === 'live' && result.roomId) {
             this.roomId = result.roomId;
