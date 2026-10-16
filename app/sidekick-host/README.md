@@ -41,6 +41,16 @@ npx jest --runInBand test/sidekick-host-demo.test.js --verbose
 
 Die Tests nutzen injizierte Requests und einen Netzwerk-Guard. Sie brauchen kein Internet und keinen Key. Gate-Läufe nur mit explizit aufgerufenem Node 22 (nicht aus dem PATH).
 
+## Vergleichs-Fixture (offline)
+
+`demo/fixture-feed.jsonl` hat 200 synthetische Nachrichten (`viewer_01` bis `viewer_24`): alle vier Befehle, Spam, Beleidigungen, Prompt-Injection und Leerlauf. Keine echten Namen.
+
+```bash
+npm run sidekick:fixture
+```
+
+Das Skript liest keinen Key und öffnet kein Netz. `gapMs` schiebt nur eine virtuelle Uhr, damit Leerlauf das Rate-Limit öffnet. Die Zusammenfassung zählt Antwortquote, Plugin-Wechsel, vom Ausgabe-Filter verworfene Texte und Fallbacks auf Textvorlagen.
+
 ## Aufbau
 
 | Datei | Aufgabe |
@@ -57,6 +67,7 @@ Die Tests nutzen injizierte Requests und einen Netzwerk-Guard. Sie brauchen kein
 | `adapters/text-adapter.js` | Reine Textausgabe. |
 | `adapters/animaze-adapter.js` | Animaze nur als Adapter mit injiziertem Transport. `HostCore` kennt Animaze nicht. |
 | `demo.js` | Startpunkt für die Demo. |
+| `fixture-play.js` | Spielt `demo/fixture-feed.jsonl` offline ab und zählt. |
 
 ## Lücken (Stand dieses Branches)
 
