@@ -34,13 +34,21 @@ function createLiveReadAdapter({ stream, env = {}, log = () => {} } = {}) {
     return { started: true, events };
   }
 
+  async function poll() {
+    if (!started || !stream || typeof stream.read !== 'function') return [];
+    const raw = await stream.read();
+    const events = (Array.isArray(raw) ? raw : []).map(publicEvent);
+    if (events.length > 0) log({ kind: 'live-read', count: events.length });
+    return events;
+  }
+
   async function stop() {
     if (!started) return;
     started = false;
     if (stream && typeof stream.close === 'function') await stream.close();
   }
 
-  return Object.freeze({ start, stop });
+  return Object.freeze({ start, poll, stop });
 }
 
 module.exports = { createLiveReadAdapter };
