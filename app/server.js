@@ -1339,6 +1339,26 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             userInitiated: true
         };
 
+        // Read-only live run (SIDEKICK_LIVE=1 exactly): connect one target without profile logic,
+        // alias writes, settings writes or account names in the log. Without the switch nothing changes.
+        if (process.env.SIDEKICK_LIVE === '1') {
+            if (String(username).toLowerCase() === String(loadedProfile || '').toLowerCase()) {
+                return res.status(409).json({
+                    success: false,
+                    status: 'refused',
+                    error: 'Lesetest: Ziel ist das geladene Profil. Verbindung abgelehnt.'
+                });
+            }
+            const liveConnection = await tiktok.connect(username, connectionOptions);
+            logger.info('✅ Connected to TikTok user: [live-user]');
+            return res.json({
+                success: true,
+                profileSwitched: false,
+                status: liveConnection.identityPending ? 'live_identity_pending' : 'connected',
+                ...liveConnection
+            });
+        }
+
         // Check active profile's open DB directly (avoids WAL contention on the active DB)
         const isActiveProfileAlias = db.hasUsernameAlias(username);
         if (isActiveProfileAlias) {
