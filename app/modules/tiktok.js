@@ -2,6 +2,13 @@
 
 const EventEmitter = require('events');
 const EulerstreamAdapter = require('./adapters/EulerstreamAdapter');
+const { attachLiveReadHook } = require('../sidekick-host/adapters/live-read-hook');
+
+// Live event names that plugins must not receive while the read-only hook is attached.
+const LIVE_EVENTS_FOR_PLUGINS = new Set([
+  'gift', 'chat', 'follow', 'like', 'share', 'subscribe', 'superfan', 'join', 'emote', 'viewerChange',
+  'streamChanged'
+]);
 
 /**
  * TikTokConnector - Facade / Router
@@ -70,7 +77,11 @@ class TikTokConnector extends EventEmitter {
       'join', 'emote', 'connected', 'disconnected', 'error', 'viewerChange',
       'streamChanged'];
     events.forEach((event) => {
-      const handler = (data) => this.emit(event, data);
+      const handler = (data) => {
+        // Read-only live isolation: plugins get no live events while the hook is attached.
+        if (adapter._isLiveIsolated?.() && LIVE_EVENTS_FOR_PLUGINS.has(event)) return;
+        this.emit(event, data);
+      };
       this._eventForwarders[event] = handler;
       adapter.on(event, handler);
     });
@@ -84,10 +95,24 @@ class TikTokConnector extends EventEmitter {
   }
 
   _switchAdapter() {
+    if (this._liveReadHook) {
+      this._liveReadHook.dispose();
+      this._liveReadHook = null;
+    }
     if (this._adapter) {
       this._unbindAdapterEvents(this._adapter);
     }
     this._adapter = new EulerstreamAdapter(this.io, this.db, this.logger);
+    // Read-only live path. Attaches only when SIDEKICK_LIVE is exactly '1'.
+    this._liveReadHook = attachLiveReadHook(
+      this._adapter,
+      process.env.SIDEKICK_LIVE,
+      message => this.logger.info(message)
+    );
+    // Isolation only when the hook is attached (exact SIDEKICK_LIVE=1). Without it nothing changes.
+    if (typeof this._adapter.setLiveIsolation === 'function') {
+      this._adapter.setLiveIsolation(Boolean(this._liveReadHook));
+    }
     if (typeof this._adapter.setStreamSessionLifecycleHandler === 'function') {
       this._adapter.setStreamSessionLifecycleHandler(
         data => this._emitAsync('streamSessionStarted', data)

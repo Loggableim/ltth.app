@@ -75,3 +75,10 @@ Das Skript liest keinen Key und öffnet kein Netz. `gapMs` schiebt nur eine virt
 - Der Animaze-Transport ist nicht verdrahtet. Für die Demo reicht der Text-Adapter.
 - `openrouter/free` ist nur teilweise geprüft: Live-Check am 15.10. um 22:0x, 10 Anfragen, 5 Antworten, 5 Fehler der Klasse `error`. Antwortqualität und Latenz sind nicht bewertet.
 - Der Lesetest (ab 09:00) ist nicht Teil dieser Demo und läuft nur im freigegebenen Rahmen.
+
+## Lesepfad (read-only, opt-in)
+
+- Start: die normale App mit \SIDEKICK_LIVE=1\ starten. Ohne diesen Schalter (exakt \1\) passiert nichts: kein Listener, kein zusätzlicher Code-Pfad.
+- Der Hook hängt sich an den Event-Strom der bestehenden TikTok-Verbindung (\modules/tiktok.js\, \EulerstreamAdapter.setEmitterListener\). Er liest nur \chat\, \gift\, \ollow\ und reicht sie an die Brücke weiter.
+- Keine Aktionen, kein Senden, kein Sound, kein Overlay, keine Plugin-Aktion. Keine Usernamen im Log. Sidekick sieht keine Keys.
+- Ein separates Startskript gibt es nicht.

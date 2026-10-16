@@ -1339,6 +1339,26 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             userInitiated: true
         };
 
+        // Read-only live run (SIDEKICK_LIVE=1 exactly): connect one target without profile logic,
+        // alias writes, settings writes or account names in the log. Without the switch nothing changes.
+        if (process.env.SIDEKICK_LIVE === '1') {
+            if (String(username).toLowerCase() === String(loadedProfile || '').toLowerCase()) {
+                return res.status(409).json({
+                    success: false,
+                    status: 'refused',
+                    error: 'Lesetest: Ziel ist das geladene Profil. Verbindung abgelehnt.'
+                });
+            }
+            const liveConnection = await tiktok.connect(username, connectionOptions);
+            logger.info('✅ Connected to TikTok user: [live-user]');
+            // Only neutral fields: no username, no streamIdentity, no spread of the connection object.
+            return res.json({
+                success: true,
+                profileSwitched: false,
+                status: liveConnection.identityPending ? 'live_identity_pending' : 'connected'
+            });
+        }
+
         // Check active profile's open DB directly (avoids WAL contention on the active DB)
         const isActiveProfileAlias = db.hasUsernameAlias(username);
         if (isActiveProfileAlias) {
@@ -1438,11 +1458,17 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             ...connection
         });
     } catch (error) {
+        // Under SIDEKICK_LIVE=1 neither the log nor the response may carry the target name.
+        const liveSwitch = process.env.SIDEKICK_LIVE === '1';
         if (error instanceof ValidationError) {
-            logger.warn(`Invalid connection attempt: ${error.message}`);
-            return res.status(400).json({ success: false, error: error.message });
+            logger.warn(`Invalid connection attempt: ${liveSwitch ? '[live-user]' : error.message}`);
+            return res.status(400).json({ success: false, error: liveSwitch ? 'Ungueltiger Benutzername.' : error.message });
         }
-        logger.error('Connection error:', error);
+        if (liveSwitch) {
+            logger.error('Connection error: [live-user]', { code: error.code || null, status: error.connectionStatus || 'error' });
+        } else {
+            logger.error('Connection error:', error);
+        }
         const statusByConnectionState = {
             offline: 409,
             stream_ended: 409,
@@ -1458,10 +1484,10 @@ app.post('/api/connect', authLimiter, async (req, res) => {
         res.status(statusByConnectionState[connectionStatus] || 500).json({
             success: false,
             status: connectionStatus,
-            error: error.message,
+            error: liveSwitch ? 'Verbindung fehlgeschlagen.' : error.message,
             code: error.code || null,
             roomId: tiktok.roomId || null,
-            streamIdentity: tiktok.streamIdentity || null,
+            streamIdentity: liveSwitch ? null : (tiktok.streamIdentity || null),
             retryAllowedAt: error.retryAllowedAt || null,
             fallbackKey: error.fallbackKey === true,
             confirmationDelayMs: error.confirmationDelayMs || null
