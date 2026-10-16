@@ -1,11 +1,12 @@
 'use strict';
 
 // Event bridge for the read-only live path.
-// Subscribes to chat, gift, and follow events on an injected event source and buffers them.
+// Subscribes to chat, gift and follow events on an injected event source and buffers them.
+// The live connection emits follows as 'social' (WebcastSocialMessage); a social event is a
+// follow when action is 1 or the displayType names a follow. Shares are not buffered.
 // It opens no connection, uses no network, reads no credentials, and never writes to the source.
 // Without env.SIDEKICK_LIVE === '1' it subscribes to nothing.
 // setSource() re-attaches to a new emitter after the live connection resets it, without duplicate listeners.
-const EVENT_NAMES = ['chat', 'gift', 'follow'];
 
 function textOf(data) {
   if (typeof data?.comment === 'string') return data.comment;
@@ -14,7 +15,28 @@ function textOf(data) {
   return '';
 }
 
-function createEventBridgeStream({ source = null, env = {}, eventNames = EVENT_NAMES } = {}) {
+function isFollowSocial(data) {
+  const actionValue = parseInt(data?.action, 10);
+  const displayType = data?.displayType || data?.common?.displayText?.displayType || '';
+  const followByType = typeof displayType === 'string' && displayType.length > 0 && (
+    displayType === 'pm_main_follow_message_viewer_2' ||
+    displayType === 'pm_mt_guidance_viewer_follow' ||
+    displayType.includes('_follow') ||
+    displayType.includes('follow_message') ||
+    displayType.includes('follow_viewer')
+  );
+  return actionValue === 1 || followByType;
+}
+
+// Source event name -> bridge type. An optional filter decides whether the event is buffered.
+const SPECS = [
+  { source: 'chat', type: 'chat' },
+  { source: 'gift', type: 'gift' },
+  { source: 'follow', type: 'follow' },
+  { source: 'social', type: 'follow', filter: isFollowSocial }
+];
+
+function createEventBridgeStream({ source = null, env = {}, specs = SPECS } = {}) {
   let buffer = [];
   let current = null;
   let handlers = null;
@@ -30,12 +52,13 @@ function createEventBridgeStream({ source = null, env = {}, eventNames = EVENT_N
   function attach() {
     detach();
     if (!connected || !current || typeof current.on !== 'function') return;
-    handlers = eventNames.map(name => {
+    handlers = specs.map(spec => {
       const handler = data => {
-        buffer.push({ type: name, text: textOf(data) });
+        if (spec.filter && !spec.filter(data)) return;
+        buffer.push({ type: spec.type, text: textOf(data) });
       };
-      current.on(name, handler);
-      return { name, handler };
+      current.on(spec.source, handler);
+      return { name: spec.source, handler };
     });
   }
 
@@ -65,4 +88,4 @@ function createEventBridgeStream({ source = null, env = {}, eventNames = EVENT_N
   };
 }
 
-module.exports = { createEventBridgeStream, EVENT_NAMES };
+module.exports = { createEventBridgeStream, isFollowSocial, SPECS };

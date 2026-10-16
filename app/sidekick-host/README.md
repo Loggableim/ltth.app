@@ -79,6 +79,6 @@ Das Skript liest keinen Key und öffnet kein Netz. `gapMs` schiebt nur eine virt
 ## Lesepfad (read-only, opt-in)
 
 - Start: die normale App mit \SIDEKICK_LIVE=1\ starten. Ohne diesen Schalter (exakt \1\) passiert nichts: kein Listener, kein zusätzlicher Code-Pfad.
-- Der Hook hängt sich an den Event-Strom der bestehenden TikTok-Verbindung (\modules/tiktok.js\, \EulerstreamAdapter.setEmitterListener\). Er liest nur \chat\, \gift\, \ollow\ und reicht sie an die Brücke weiter.
+- Der Hook hängt sich an den Event-Strom der bestehenden TikTok-Verbindung (\modules/tiktok.js\, \EulerstreamAdapter.setEmitterListener\). Er liest nur \chat\, \gift\, \ollow\ und reicht sie an die Brücke weiter.
 - Keine Aktionen, kein Senden, kein Sound, kein Overlay, keine Plugin-Aktion. Keine Usernamen im Log. Sidekick sieht keine Keys.
 - Ein separates Startskript gibt es nicht.

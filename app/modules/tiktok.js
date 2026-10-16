@@ -94,7 +94,11 @@ class TikTokConnector extends EventEmitter {
     }
     this._adapter = new EulerstreamAdapter(this.io, this.db, this.logger);
     // Read-only live path. Attaches only when SIDEKICK_LIVE is exactly '1'.
-    this._liveReadHook = attachLiveReadHook(this._adapter, process.env.SIDEKICK_LIVE);
+    this._liveReadHook = attachLiveReadHook(
+      this._adapter,
+      process.env.SIDEKICK_LIVE,
+      message => this.logger.info(message)
+    );
     if (typeof this._adapter.setStreamSessionLifecycleHandler === 'function') {
       this._adapter.setStreamSessionLifecycleHandler(
         data => this._emitAsync('streamSessionStarted', data)
