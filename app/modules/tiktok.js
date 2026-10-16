@@ -6,7 +6,8 @@ const { attachLiveReadHook } = require('../sidekick-host/adapters/live-read-hook
 
 // Live event names that plugins must not receive while the read-only hook is attached.
 const LIVE_EVENTS_FOR_PLUGINS = new Set([
-  'gift', 'chat', 'follow', 'like', 'share', 'subscribe', 'superfan', 'join', 'emote', 'viewerChange'
+  'gift', 'chat', 'follow', 'like', 'share', 'subscribe', 'superfan', 'join', 'emote', 'viewerChange',
+  'streamChanged'
 ]);
 
 /**

@@ -511,7 +511,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 throw new Error(errorMsg);
             }
 
-            this.logger.info(`🔄 Verbinde mit TikTok LIVE: @${username}...`);
+            this.logger.info(`🔄 Verbinde mit TikTok LIVE: @${this._nameForLog(username)}...`);
             this.logger.info(`⚙️  Connection Mode: Eulerstream WebSocket API`);
             this.logger.info(`🔑 Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
             
@@ -870,7 +870,7 @@ class EulerstreamAdapter extends BaseAdapter {
             payload: {}
         });
 
-        this.logger.info(`✅ Connected to TikTok LIVE via Eulerstream REST fallback: @${username}`);
+        this.logger.info(`✅ Connected to TikTok LIVE via Eulerstream REST fallback: @${this._nameForLog(username)}`);
         return this._buildConnectedPayload(
             classification.isNewStream,
             classification.isReconnect,
@@ -902,6 +902,11 @@ class EulerstreamAdapter extends BaseAdapter {
   _emitLiveIo(channel, payload) {
     if (this._isLiveIsolated()) return;
     this.io.emit(channel, payload);
+  }
+
+  // Viewer and account names never reach the log under isolation.
+  _nameForLog(name) {
+    return this._isLiveIsolated() ? '[live-user]' : name;
   }
 
   _notifyEmitterListener() {
@@ -1085,7 +1090,8 @@ class EulerstreamAdapter extends BaseAdapter {
             this.processedEvents.clear();
             this._giftDedupeMap.clear();
             this.sessionGifts.clear();
-            this.db.resetStreamStats({
+            // Under SIDEKICK_LIVE=1 the owner's stream statistics are left untouched.
+            if (!this._isLiveIsolated()) this.db.resetStreamStats({
                 username: this.confirmedUsername,
                 roomId: this.confirmedRoomId,
                 streamStartTime: this.streamStartTime
@@ -1104,22 +1110,28 @@ class EulerstreamAdapter extends BaseAdapter {
                 source,
                 timestamp: new Date().toISOString()
             };
-            this.emit('streamSessionStarted', sessionPayload);
-            if (this._streamSessionLifecycleHandler) {
-                await this._streamSessionLifecycleHandler(sessionPayload);
+            // Under read-only isolation the session start triggers no plugin, goal or leaderboard reset.
+            if (!this._isLiveIsolated()) {
+                this.emit('streamSessionStarted', sessionPayload);
+                if (this._streamSessionLifecycleHandler) {
+                    await this._streamSessionLifecycleHandler(sessionPayload);
+                }
+                this.emit('streamChanged', {
+                    ...sessionPayload,
+                    newUsername: this.confirmedUsername,
+                    newRoomId: this.confirmedRoomId,
+                    newStreamIdentity: this.streamIdentity
+                });
             }
-            this.emit('streamChanged', {
-                ...sessionPayload,
-                newUsername: this.confirmedUsername,
-                newRoomId: this.confirmedRoomId,
-                newStreamIdentity: this.streamIdentity
-            });
             this.broadcastStats();
         } else if (!this.streamStartTime && this._persistedStreamStart) {
             this.streamStartTime = this._persistedStreamStart;
         }
 
-        this.db.setSetting('last_connected_username', this.confirmedUsername);
+        // Under SIDEKICK_LIVE=1 the read-only run persists nothing, so auto-reconnect never gets this account.
+        if (!this._isLiveIsolated()) {
+            this.db.setSetting('last_connected_username', this.confirmedUsername);
+        }
         this._persistStreamStats();
         return { isNewStream, isReconnect, streamSessionId: this.streamSessionId };
     }
@@ -1266,6 +1278,8 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     _persistStreamStats() {
+        // Read-only isolation: no stream statistics are written under SIDEKICK_LIVE=1.
+        if (this._isLiveIsolated()) return;
         this.db.saveStreamStats({
             ...this.stats,
             username: this.confirmedUsername,
@@ -1656,7 +1670,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: new Date().toISOString()
                 };
 
-                this.logger.info(`👤 [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
+                this.logger.info(`👤 [FOLLOW] New follower: ${this._nameForLog(eventData.username || eventData.nickname)}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('follow', eventData)) {
                     this._logEvent('follow', eventData.username, eventData);
@@ -1678,7 +1692,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: new Date().toISOString()
                 };
 
-                this.logger.info(`📢 [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
+                this.logger.info(`📢 [SHARE] User shared stream: ${this._nameForLog(eventData.username || eventData.nickname)}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('share', eventData)) {
                     this._logEvent('share', eventData.username, eventData);
@@ -1852,7 +1866,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 timestamp: new Date().toISOString()
             };
 
-            this.logger.info(`🎭 Sticker sent: ${emoteData.emoteName || emoteData.emoteId} by ${userData.username || userData.nickname}`);
+            this.logger.info(`🎭 Sticker sent: ${emoteData.emoteName || emoteData.emoteId} by ${this._nameForLog(userData.username || userData.nickname)}`);
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('emote', eventData)) {

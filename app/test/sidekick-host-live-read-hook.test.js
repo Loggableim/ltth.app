@@ -106,7 +106,13 @@ describe('live read hook on the existing connection', () => {
 
   function isolationAdapter() {
     const io = { emit: jest.fn() };
-    const db = { logEvent: jest.fn(), loadStreamStats: () => null };
+    const db = {
+      logEvent: jest.fn(),
+      loadStreamStats: () => null,
+      saveStreamStats: jest.fn(),
+      setSetting: jest.fn(),
+      resetStreamStats: jest.fn()
+    };
     const logger = { info() {}, warn() {}, debug() {}, error() {} };
     return { adapter: new EulerstreamAdapter(io, db, logger), io, db };
   }
@@ -133,6 +139,18 @@ describe('live read hook on the existing connection', () => {
     expect(io.emit).not.toHaveBeenCalled();
     expect(forwarded).not.toHaveBeenCalled();
     expect(db.logEvent).not.toHaveBeenCalled();
+  });
+
+  test('isolation writes no stream stats and no last_connected_username, and masks names in logs', () => {
+    const { adapter, db } = isolationAdapter();
+    adapter.setLiveIsolation(true);
+    adapter.confirmedUsername = 'test_stream';
+    adapter._persistStreamStats();
+    expect(db.saveStreamStats).not.toHaveBeenCalled();
+    expect(db.setSetting).not.toHaveBeenCalled();
+    expect(adapter._nameForLog('test_stream')).toBe('[live-user]');
+    adapter.setLiveIsolation(false);
+    expect(adapter._nameForLog('test_stream')).toBe('test_stream');
   });
 
   test('isolation does not stop the status channel, which is not a live event', () => {
