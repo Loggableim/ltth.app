@@ -1351,11 +1351,11 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             }
             const liveConnection = await tiktok.connect(username, connectionOptions);
             logger.info('✅ Connected to TikTok user: [live-user]');
+            // Only neutral fields: no username, no streamIdentity, no spread of the connection object.
             return res.json({
                 success: true,
                 profileSwitched: false,
-                status: liveConnection.identityPending ? 'live_identity_pending' : 'connected',
-                ...liveConnection
+                status: liveConnection.identityPending ? 'live_identity_pending' : 'connected'
             });
         }
 
@@ -1487,7 +1487,7 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             error: liveSwitch ? 'Verbindung fehlgeschlagen.' : error.message,
             code: error.code || null,
             roomId: tiktok.roomId || null,
-            streamIdentity: tiktok.streamIdentity || null,
+            streamIdentity: liveSwitch ? null : (tiktok.streamIdentity || null),
             retryAllowedAt: error.retryAllowedAt || null,
             fallbackKey: error.fallbackKey === true,
             confirmationDelayMs: error.confirmationDelayMs || null
