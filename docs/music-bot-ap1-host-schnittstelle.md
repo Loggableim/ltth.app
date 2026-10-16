@@ -100,3 +100,24 @@ Kein Code. Der Port hält diese Funktionen. `transport` ist injiziert (HTTP gege
 - `status()` liest `GET /api/plugins/music-bot/status`. Ausgabe `{ nowPlayingTitle: string | null, queueLength: number, playbackState: string, locked: boolean }`. URLs und Playback-IDs bleiben intern.
 
 `code` ist einer von `queue-full`, `invalid-song`, `duration`, `duplicate`, `user-limit`, `cooldown`, `banned`, `locked`, `idle`, `stale`, `bad-index`, `player`, `resolve`, `busy`. `text` ist der Satz, den der Port an `HostCore` gibt. Der Adapter wirft nicht in den Chat-Pfad. Ein Transportfehler wird `{ ok: false, code: 'player', text }` und zählt als kein Play.
+
+## 5. Vertragstests
+
+Fake und Referenz-Adapter, kein Produktivcode:
+
+- `app/sidekick-host/testing/fake-music-bot.js`
+- `app/sidekick-host/testing/contract-music-adapter.js`
+- `app/sidekick-host/testing/music-adapter-contract.js`
+- `app/test/sidekick-host-music-adapter-contract.test.js` gegen den Fake
+- `app/test/sidekick-host-music-adapter-prod.test.js` gegen `app/sidekick-host/adapters/music-bot-adapter.js`
+
+Die Prod-Datei ist rot, solange dieses Modul fehlt. Takt macht sie grün, indem `createMusicBotAdapter({ transport })` dieselben Fälle besteht. `HostCore` wird dafür nicht geändert.
+
+Tests, die den Host-Kern von #154 (`edc33360420291e5b1262362932cd76bf00dfecb`) aufrufen, ohne ihn zu ändern:
+
+- `!song` bei aktivem Quiz wird ignoriert (`sidekick-host-music-adapter-contract.test.js`, Host-Grenze).
+- `!sound` spricht nur Text und ruft die Queue nicht (`sidekick-host-music-adapter-contract.test.js`, Host-Grenze).
+- Text bei voller Queue läuft durch `HostCore.emitChatText` (`sidekick-host-music-adapter-contract.test.js`, Host-Grenze).
+- Bestehend und weiter grün: `app/test/sidekick-host-demo.test.js` (Allowlist, inaktives Plugin, Rate-Limit, Filter, freier Chat, Animaze) und `app/test/sidekick-host-fixture.test.js`.
+
+Die Fälle in `sidekick-host-music-adapter-prod.test.js` importieren `HostCore` nicht.
