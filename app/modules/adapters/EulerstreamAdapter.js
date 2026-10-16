@@ -884,6 +884,26 @@ class EulerstreamAdapter extends BaseAdapter {
     this._emitterListener = typeof listener === 'function' ? listener : null;
   }
 
+  // Read-only live isolation. Set by tiktok.js only when the live-read hook is attached (SIDEKICK_LIVE=1).
+  // While on: no DB event logs and no socket emits for live events. Plugins get no live events.
+  setLiveIsolation(on) {
+    this._liveIsolated = on === true;
+  }
+
+  _isLiveIsolated() {
+    return this._liveIsolated === true;
+  }
+
+  _logEvent(type, username, data) {
+    if (this._isLiveIsolated()) return;
+    this.db.logEvent(type, username, data);
+  }
+
+  _emitLiveIo(channel, payload) {
+    if (this._isLiveIsolated()) return;
+    this.io.emit(channel, payload);
+  }
+
   _notifyEmitterListener() {
     if (!this._emitterListener) return;
     try {
@@ -1358,7 +1378,7 @@ class EulerstreamAdapter extends BaseAdapter {
                             this.logger.info(`📅 Set stream start time from earliest event: ${new Date(this.streamStartTime).toISOString()}`);
                             
                             // Broadcast updated stream time info
-                            this.io.emit('tiktok:streamTimeInfo', {
+                            this._emitLiveIo('tiktok:streamTimeInfo', {
                                 streamStartTime: this.streamStartTime,
                                 streamStartISO: new Date(this.streamStartTime).toISOString(),
                                 detectionMethod: this._streamTimeDetectionMethod,
@@ -1390,7 +1410,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('chat', eventData)) {
-                this.db.logEvent('chat', eventData.username, eventData);
+                this._logEvent('chat', eventData.username, eventData);
             }
         });
 
@@ -1492,7 +1512,7 @@ class EulerstreamAdapter extends BaseAdapter {
                         this.logger.info(`✅ [GIFT CATALOG] Added gift to catalog: ${normalizedGift.name} (ID: ${normalizedGift.id})`);
                         
                         // Emit event to notify frontend of new gift in catalog
-                        this.io.emit('gift-catalog:updated', {
+                        this._emitLiveIo('gift-catalog:updated', {
                             gift: {
                                 id: normalizedGift.id,
                                 name: normalizedGift.name,
@@ -1579,7 +1599,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('gift', eventData)) {
-                    this.db.logEvent('gift', eventData.username, eventData);
+                    this._logEvent('gift', eventData.username, eventData);
                 }
                 this.broadcastStats();
             } else {
@@ -1639,7 +1659,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 this.logger.info(`👤 [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('follow', eventData)) {
-                    this.db.logEvent('follow', eventData.username, eventData);
+                    this._logEvent('follow', eventData.username, eventData);
                 }
                 this.broadcastStats();
             } else if (isShare) {
@@ -1661,7 +1681,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 this.logger.info(`📢 [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('share', eventData)) {
-                    this.db.logEvent('share', eventData.username, eventData);
+                    this._logEvent('share', eventData.username, eventData);
                 }
                 this.broadcastStats();
             } else {
@@ -1689,7 +1709,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('share', eventData)) {
-                this.db.logEvent('share', eventData.username, eventData);
+                this._logEvent('share', eventData.username, eventData);
             }
             this.broadcastStats();
         });
@@ -1746,7 +1766,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('like', eventData)) {
-                this.db.logEvent('like', eventData.username, eventData);
+                this._logEvent('like', eventData.username, eventData);
             }
             this.broadcastStats();
         });
@@ -1782,7 +1802,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('subscribe', eventData)) {
-                this.db.logEvent('subscribe', eventData.username, eventData);
+                this._logEvent('subscribe', eventData.username, eventData);
             }
         });
 
@@ -1807,7 +1827,7 @@ class EulerstreamAdapter extends BaseAdapter {
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('join', eventData)) {
-                this.db.logEvent('join', eventData.username, eventData);
+                this._logEvent('join', eventData.username, eventData);
             }
         });
 
@@ -1836,7 +1856,7 @@ class EulerstreamAdapter extends BaseAdapter {
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('emote', eventData)) {
-                this.db.logEvent('emote', eventData.username, eventData);
+                this._logEvent('emote', eventData.username, eventData);
             }
         });
     }
@@ -3076,11 +3096,13 @@ class EulerstreamAdapter extends BaseAdapter {
             return false; // Return false to indicate event was not processed
         }
 
-        // Forward event to server modules
-        this.emit(eventType, data);
+        // Forward event to server modules (plugins), unless the read-only live isolation is on
+        if (!this._isLiveIsolated()) {
+            this.emit(eventType, data);
+        }
 
         // Broadcast event to frontend
-        this.io.emit('tiktok:event', {
+        this._emitLiveIo('tiktok:event', {
             type: eventType,
             data: data
         });
@@ -3103,7 +3125,7 @@ class EulerstreamAdapter extends BaseAdapter {
             ? Math.floor((Date.now() - this.streamStartTime) / 1000)
             : 0;
 
-        this.io.emit('tiktok:stats', {
+        this._emitLiveIo('tiktok:stats', {
             ...this.stats,
             streamDuration: streamDuration
         });
@@ -3279,7 +3301,7 @@ class EulerstreamAdapter extends BaseAdapter {
                         
                         // Broadcast updated stream time info
                         if (this.io) {
-                            this.io.emit('tiktok:streamTimeInfo', {
+                            this._emitLiveIo('tiktok:streamTimeInfo', {
                                 streamStartTime: this.streamStartTime,
                                 streamStartISO: new Date(this.streamStartTime).toISOString(),
                                 detectionMethod: this._streamTimeDetectionMethod,

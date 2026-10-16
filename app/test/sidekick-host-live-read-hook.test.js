@@ -104,6 +104,44 @@ describe('live read hook on the existing connection', () => {
     expect(logged).not.toContain('geheimer Text');
   });
 
+  function isolationAdapter() {
+    const io = { emit: jest.fn() };
+    const db = { logEvent: jest.fn(), loadStreamStats: () => null };
+    const logger = { info() {}, warn() {}, debug() {}, error() {} };
+    return { adapter: new EulerstreamAdapter(io, db, logger), io, db };
+  }
+
+  test('without isolation a live event still reaches sockets, plugins and the DB', () => {
+    const { adapter, io, db } = isolationAdapter();
+    const forwarded = jest.fn();
+    adapter.on('gift', forwarded);
+    adapter.handleEvent('gift', { uniqueId: 'viewer_zz', giftName: 'rose' });
+    adapter._logEvent('gift', 'viewer_zz', { giftName: 'rose' });
+    expect(io.emit).toHaveBeenCalledWith('tiktok:event', expect.anything());
+    expect(forwarded).toHaveBeenCalledTimes(1);
+    expect(db.logEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test('with isolation a live event reaches no socket, no plugin forwarder and no DB log', () => {
+    const { adapter, io, db } = isolationAdapter();
+    adapter.setLiveIsolation(true);
+    const forwarded = jest.fn();
+    adapter.on('gift', forwarded);
+    adapter.handleEvent('gift', { uniqueId: 'viewer_zz', giftName: 'rose' });
+    adapter._logEvent('chat', 'viewer_zz', { comment: 'x' });
+    adapter._emitLiveIo('tiktok:stats', { likes: 1 });
+    expect(io.emit).not.toHaveBeenCalled();
+    expect(forwarded).not.toHaveBeenCalled();
+    expect(db.logEvent).not.toHaveBeenCalled();
+  });
+
+  test('isolation does not stop the status channel, which is not a live event', () => {
+    const { adapter, io } = isolationAdapter();
+    adapter.setLiveIsolation(true);
+    adapter.broadcastStatus('connected', {});
+    expect(io.emit).toHaveBeenCalledWith('tiktok:status', expect.anything());
+  });
+
   test('dispose removes the listener from the adapter and the emitter', () => {
     const adapter = newAdapter();
     const hook = attachLiveReadHook(adapter, '1');
