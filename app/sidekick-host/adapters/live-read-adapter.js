@@ -16,6 +16,7 @@ function publicEvent(event) {
 
 function createLiveReadAdapter({ stream, env = {}, log = () => {} } = {}) {
   let started = false;
+  const pending = [];
 
   async function start() {
     if (env.SIDEKICK_LIVE !== '1') {
@@ -35,7 +36,8 @@ function createLiveReadAdapter({ stream, env = {}, log = () => {} } = {}) {
   }
 
   async function poll() {
-    if (!started || !stream || typeof stream.read !== 'function') return [];
+    if (!stream || typeof stream.read !== 'function') return [];
+    if (!started) return pending.splice(0);
     const raw = await stream.read();
     const events = (Array.isArray(raw) ? raw : []).map(publicEvent);
     if (events.length > 0) log({ kind: 'live-read', count: events.length });
@@ -44,8 +46,11 @@ function createLiveReadAdapter({ stream, env = {}, log = () => {} } = {}) {
 
   async function stop() {
     if (!started) return;
+    // Drain events that arrived before stop, so poll() can still return them.
+    const raw = typeof stream.read === 'function' ? await stream.read() : [];
+    pending.push(...(Array.isArray(raw) ? raw : []).map(publicEvent));
     started = false;
-    if (stream && typeof stream.close === 'function') await stream.close();
+    if (typeof stream.close === 'function') await stream.close();
   }
 
   return Object.freeze({ start, poll, stop });

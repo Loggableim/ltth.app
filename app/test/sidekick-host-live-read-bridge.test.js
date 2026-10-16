@@ -63,6 +63,20 @@ describe('live read event bridge', () => {
     expect(source.listenerCount('chat')).toBe(0);
   });
 
+  test('events received after start are still returned by poll when stop comes first', async () => {
+    const source = new EventEmitter();
+    const stream = createEventBridgeStream({ source, env: { SIDEKICK_LIVE: '1' } });
+    const adapter = createLiveReadAdapter({ stream, env: { SIDEKICK_LIVE: '1' } });
+    await adapter.start();
+    source.emit('chat', { message: 'vor stop', uniqueId: 'viewer_zz' });
+    await adapter.stop();
+    const polled = await adapter.poll();
+    expect(polled).toEqual([{ type: 'chat', text: 'vor stop' }]);
+    expect(JSON.stringify(polled)).not.toContain('viewer_zz');
+    expect(await adapter.poll()).toEqual([]);
+    expect(source.listenerCount('chat')).toBe(0);
+  });
+
   test('the adapter does not start and nothing is subscribed without SIDEKICK_LIVE=1', async () => {
     const source = new EventEmitter();
     const stream = createEventBridgeStream({ source, env: {} });
