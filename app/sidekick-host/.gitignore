@@ -1,0 +1,2 @@
+# Local secrets only. Never commit an API key.
+local-config.json
