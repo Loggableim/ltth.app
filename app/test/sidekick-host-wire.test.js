@@ -74,23 +74,32 @@ describe('music command wiring', () => {
     expect(calls).toEqual([{ method: 'POST', path: '/api/plugins/music-bot/request' }]);
     expect(bot.queueLength()).toBe(1);
 
-    const cooled = await host.handleChat({ user: 'viewer_06', text: '!song titel_b' });
-    expect(cooled.emitted).toBe(true);
-    expect(cooled.type).toBe('command');
-    expect(spoken[2]).toMatch(/Sekunden/);
-    expect(bot.queueLength()).toBe(1);
+    // A different viewer is not cooled down by viewer_05's request.
+    const other = await host.handleChat({ user: 'viewer_06', text: '!song titel_b' });
+    expect(other.emitted).toBe(true);
+    expect(other.type).toBe('command');
+    expect(spoken[2]).toBe(SONG_ACCEPTED);
+    expect(bot.queueLength()).toBe(2);
     expect(calls).toHaveLength(2);
 
-    now = 30000;
-    const again = await host.handleChat({ user: 'viewer_07', text: '!song titel_b' });
-    expect(again.emitted).toBe(true);
-    expect(spoken[3]).toBe(SONG_ACCEPTED);
+    // The same viewer is cooled down while the per-user window is open.
+    const cooled = await host.handleChat({ user: 'viewer_05', text: '!song titel_c' });
+    expect(cooled.emitted).toBe(true);
+    expect(cooled.type).toBe('command');
+    expect(spoken[3]).toMatch(/Sekunden/);
     expect(bot.queueLength()).toBe(2);
+    expect(calls).toHaveLength(3);
+
+    now = 30000;
+    const again = await host.handleChat({ user: 'viewer_05', text: '!song titel_c' });
+    expect(again.emitted).toBe(true);
+    expect(spoken[4]).toBe(SONG_ACCEPTED);
+    expect(bot.queueLength()).toBe(3);
 
     host.planner.switchTo('connect4');
     const blocked = await host.handleChat({ user: 'viewer_08', text: '!song titel_c' });
     expect(blocked).toEqual({ type: 'ignored', reason: 'not-in-active-plugin' });
-    expect(bot.queueLength()).toBe(2);
-    expect(calls).toHaveLength(3);
+    expect(bot.queueLength()).toBe(3);
+    expect(calls).toHaveLength(4);
   });
 });
