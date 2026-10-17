@@ -1608,6 +1608,94 @@ class QuizShowPlugin {
             }
         });
 
+        // Start a new quiz or advance to the next question (HTTP surface for the
+        // sidekick host). Mirrors the quiz-show:start / quiz-show:next Socket.IO
+        // handlers and reuses the same internal startRound/endRound logic.
+        this.api.registerRoute('post', '/api/quiz-show/start', async (req, res) => {
+            try {
+                const advance = req.body?.next === true || req.body?.action === 'next';
+
+                if (advance) {
+                    if (this.gameState.isRunning) {
+                        await this.endRound({ suppressTTS: true });
+                    }
+
+                    const totalRoundsReached = this.config.totalRounds > 0 && this.gameState.currentRound >= this.config.totalRounds;
+                    if (totalRoundsReached) {
+                        await this.showLeaderboardAtEnd();
+                        const mvp = this.getMVPPlayer();
+                        this.api.emit('quiz-show:quiz-ended', {
+                            mvp,
+                            message: 'Quiz beendet. Klicken Sie "Quiz starten", um eine neue Runde zu beginnen.'
+                        });
+                        this.resetGameState();
+                        return res.json({ ok: true, running: false, ended: true, round: this.gameState.currentRound, mvp, question: null });
+                    }
+
+                    await this.stopActiveTTS();
+                    await this.startRound();
+                } else {
+                    if (this.gameState.isRunning && this.gameState.roundState === 'ended') {
+                        this.resetGameState();
+                    } else if (this.gameState.isRunning) {
+                        return res.status(409).json({ ok: false, error: 'Quiz already running' });
+                    }
+
+                    const questionCount = this.db.prepare('SELECT COUNT(*) as count FROM questions').get().count;
+                    if (questionCount === 0) {
+                        return res.status(400).json({ ok: false, error: 'No questions available' });
+                    }
+
+                    if (this.config.slotMachineEnabled && this.config.slotMachineAutoStart) {
+                        await this.triggerSlotMachine();
+                    }
+
+                    await this.startRound();
+                }
+
+                const question = this.gameState.currentQuestion;
+                return res.json({
+                    ok: true,
+                    running: this.gameState.isRunning,
+                    ended: false,
+                    round: this.gameState.currentRound,
+                    question: question
+                        ? { id: question.id, question: question.question, answers: question.answers }
+                        : null
+                });
+            } catch (error) {
+                this.api.log('Error starting quiz via API: ' + error.message, 'error');
+                return res.status(500).json({ ok: false, error: error.message });
+            }
+        });
+
+        // Check one chat answer and return a synchronous ack. Reuses handleAnswer,
+        // which stays the single source of truth for scoring, anti-spam, jokers
+        // and permissions.
+        this.api.registerRoute('post', '/api/quiz-show/answer', (req, res) => {
+            try {
+                const body = req.body || {};
+                const message = typeof body.message === 'string' ? body.message : '';
+                const userId = typeof body.userId === 'string' && body.userId
+                    ? body.userId
+                    : (typeof body.username === 'string' ? body.username : '');
+                const username = typeof body.username === 'string' && body.username ? body.username : userId;
+
+                if (!message.trim()) {
+                    return res.status(400).json({ ok: false, accepted: false, correct: false, points: 0, reason: 'empty', text: 'Leere Antwort.' });
+                }
+                if (!userId) {
+                    return res.status(400).json({ ok: false, accepted: false, correct: false, points: 0, reason: 'no-user', text: 'Kein Nutzer angegeben.' });
+                }
+
+                const result = this.handleAnswer(userId, username, message, body.profilePictureUrl || null);
+                return res.json(result);
+            } catch (error) {
+                this.api.log('Error handling answer via API: ' + error.message, 'error');
+                return res.status(500).json({ ok: false, accepted: false, correct: false, points: 0, reason: 'error', text: error.message });
+            }
+        });
+
         this.api.registerRoute('get', '/api/quiz-show/leaderboard', (req, res) => {
             if (!hasExactRawQuery(req.originalUrl || req.url || '', 'type=round')) {
                 return res.status(400).json({ success: false, error: 'Unsupported leaderboard query' });
@@ -5042,11 +5130,11 @@ class QuizShowPlugin {
     handleAnswer(userId, username, message, profilePictureUrl = null) {
         // Check if user is eliminated (elimination mode)
         if (this.config.gameMode === 'elimination' && this.gameState.eliminatedUsers.has(userId)) {
-            return;
+            return { ok: true, accepted: false, correct: false, points: 0, reason: 'eliminated', text: 'Du bist ausgeschieden.' };
         }
 
         if (!Array.isArray(this.gameState?.currentQuestion?.answers)) {
-            return;
+            return { ok: false, accepted: false, correct: false, points: 0, reason: 'no-question', text: 'Keine aktive Frage.' };
         }
 
         const answerMap = this.gameState.answers && typeof this.gameState.answers.has === 'function'
@@ -5057,7 +5145,7 @@ class QuizShowPlugin {
 
         // Check if user already answered
         if (answerMap.has(userId)) {
-            return;
+            return { ok: true, accepted: false, correct: false, points: 0, reason: 'duplicate', text: 'Antwort bereits abgegeben.' };
         }
 
         const normalized = message.toLowerCase().trim();
@@ -5095,7 +5183,7 @@ class QuizShowPlugin {
 
         // No valid answer format matched
         if (!isLetter && !isFullText) {
-            return;
+            return { ok: true, accepted: false, correct: false, points: 0, reason: 'invalid', text: 'Ungültiges Antwortformat.' };
         }
 
         // Determine which answer index this is for
@@ -5107,6 +5195,21 @@ class QuizShowPlugin {
             answerIndex = currentQuestionAnswers.findIndex(
                 ans => ans.toLowerCase().trim() === normalized
             );
+        }
+
+        // Evaluate correctness and whether this is the first correct answer.
+        // Points are still awarded later in calculateResults(); this is only
+        // the synchronous ack for HTTP/Socket.IO callers.
+        const correctAnswerIndex = this.gameState.currentQuestion.correct;
+        const correctAnswerText = currentQuestionAnswers[correctAnswerIndex];
+        const correct = this.isAnswerCorrect(message, correctAnswerIndex, correctAnswerText);
+        let firstCorrect = true;
+        for (const [answeredUserId, answerData] of answerMap) {
+            if (answeredUserId === userId) continue;
+            if (this.isAnswerCorrect(answerData?.answer, correctAnswerIndex, correctAnswerText)) {
+                firstCorrect = false;
+                break;
+            }
         }
 
         // Record answer with profile picture
@@ -5177,6 +5280,23 @@ class QuizShowPlugin {
             username,
             totalAnswers: Number.isInteger(this.gameState?.answers?.size) ? this.gameState.answers.size : 0
         });
+
+        let points = 0;
+        if (correct) {
+            points = firstCorrect
+                ? this.config.pointsFirstCorrect
+                : (this.config.multipleWinners ? this.config.pointsOtherCorrect : 0);
+        }
+
+        return {
+            ok: true,
+            accepted: true,
+            correct,
+            points,
+            answerIndex,
+            reason: correct ? 'correct' : 'wrong',
+            text: correct ? `Richtig! +${points} Punkte.` : 'Leider falsch.'
+        };
     }
 
     handleJokerCommand(userId, username, message, isGiftActivated = false) {
